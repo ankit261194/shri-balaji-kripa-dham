@@ -14,7 +14,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
-        const val DATABASE_VERSION = 13
+        const val DATABASE_VERSION = 14
 
         fun hashPin(pin: String): String {
             val md = MessageDigest.getInstance("SHA-256")
@@ -321,7 +321,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     SET latest_version_code = 2,
                         latest_version_name = '2.0',
                         update_notes = 'नया अपडेट: बग सुधार, 6 दिव्य थीम्स, सोशल मीडिया हब एवं स्वचालित 1-क्लिक अपडेट प्रणाली।',
-                        apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.3.0/ShriBalajiKripaDham-release.apk'
+                        apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.4.0/ShriBalajiKripaDham-release.apk'
                     WHERE id = 1
                 """.trimIndent())
             } catch (e: Exception) {
@@ -373,7 +373,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     SET latest_version_code = 3,
                         latest_version_name = '2.2.0',
                         update_notes = 'नया अपडेट v2.2.0: 8 नए सुपर एडमिन नियंत्रण फीचर्स (मास्टर पासवर्ड, टोकन डिलीट/रद्द, दैनिक कोटा, एक्सेल/CSV एक्सपोर्ट, भक्त UI लेआउट नियंत्रण, कस्टम गाँव सड़क दूरी प्रबंधक, JSON बैकअप/रिस्टोर एवं क्लाउड सिंक)',
-                        apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.3.0/ShriBalajiKripaDham-release.apk'
+                        apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.4.0/ShriBalajiKripaDham-release.apk'
                     WHERE id = 1
                 """.trimIndent())
             } catch (e: Exception) {
@@ -408,12 +408,22 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     SET latest_version_code = 4,
                         latest_version_name = '2.3.0',
                         update_notes = 'नया अपडेट v2.3.0: सुपर एडमिन UI लेआउट एवं बॉक्स कंट्रोल (ऊपर/नीचे क्रम बदलना, छिपाना/दिखाना, ड्रैग एवं ड्रॉप)',
-                        apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.3.0/ShriBalajiKripaDham-release.apk'
+                        apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.4.0/ShriBalajiKripaDham-release.apk'
                     WHERE id = 1
                 """.trimIndent())
             } catch (e: Exception) {
                 // Ignore
             }
+        }
+        if (oldVersion < 14) {
+            db.execSQL("""
+                UPDATE ashram_settings 
+                SET latest_version_code = 5,
+                    latest_version_name = '2.4.0',
+                    update_notes = 'नया भव्य अपडेट (v2.4.0): आधुनिक एवं प्रोफेशनल वेलकम व होम स्क्रीन इंटरफ़ेस, दिव्य ऑरा एनीमेशन, 100% निःशुल्क सेवा ट्रस्ट सील।',
+                    apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.4.0/ShriBalajiKripaDham-release.apk'
+                WHERE id = 1
+            """.trimIndent())
         }
     }
 
@@ -445,10 +455,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             put("is_emergency_notice_visible", 1)
             put("scheduled_token_open_timestamp", 0L)
             put("is_geofence_enforced", 1)
-            put("latest_version_code", 4)
-            put("latest_version_name", "2.3.0")
+            put("latest_version_code", 5)
+            put("latest_version_name", "2.4.0")
             put("update_notes", "नया अपडेट v2.3.0: सुपर एडमिन UI लेआउट एवं बॉक्स कंट्रोल (ऊपर/नीचे क्रम बदलना, छिपाना/दिखाना, ड्रैग एवं ड्रॉप)")
-            put("apk_download_url", "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.3.0/ShriBalajiKripaDham-release.apk")
+            put("apk_download_url", "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.4.0/ShriBalajiKripaDham-release.apk")
             put("is_force_update", 0)
             put("whatsapp_group_url", "https://chat.whatsapp.com/invite")
             put("whatsapp_number", "+919876543210")
