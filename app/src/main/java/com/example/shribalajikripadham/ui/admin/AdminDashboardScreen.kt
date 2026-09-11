@@ -783,6 +783,17 @@ fun AdminDashboardScreen(
                                         repository.deleteToken(tokenId)
                                         refreshData()
                                     }
+                                },
+                                onSyncFromGoogleSheet = {
+                                    scope.launch {
+                                        val res = repository.syncTokensFromGoogleSheet()
+                                        refreshData()
+                                        if (res.first) {
+                                            Toast.makeText(context, if (isHindi) "✅ Google Sheet से ${res.second} नए टोकन सिंक हुए!" else "✅ Synced ${res.second} new tokens from Google Sheet!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, if (isHindi) "Google Sheet सिंक: कोई नया टोकन नहीं मिला या वेबहुक लिंक सेट नहीं है" else "Google Sheet sync: No new tokens or webhook not set", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
                                 }
                             )
                         }
@@ -1546,9 +1557,14 @@ fun TokenQueueTab(
     onUpdateStatus: (Long, TokenStatus) -> Unit,
     onToggleDarshan: (Long, Boolean) -> Unit,
     onCancelToken: ((Long) -> Unit)? = null,
-    onDeleteToken: ((Long) -> Unit)? = null
+    onDeleteToken: ((Long) -> Unit)? = null,
+    onSyncFromGoogleSheet: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val syncManager = com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager
+    var showSheetConfigDialog by remember { mutableStateOf(false) }
+    var sheetWebhookUrlInput by remember { mutableStateOf(syncManager.getWebhookUrl(context)) }
+    var isSyncingSheet by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedDistanceFilter by remember { mutableStateOf(DistanceFilter.ALL) }
     var selectedSortOrder by remember { mutableStateOf(TokenSortOrder.TOKEN_NUMBER) }
@@ -1720,6 +1736,87 @@ fun TokenQueueTab(
                             fontSize = 13.sp,
                             color = Color.White
                         )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // 📈 CENTRAL GOOGLE SHEETS LIVE SYNC CARD
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFF81C784)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("📈", fontSize = 20.sp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = if (isHindi) "Google Sheets टोकन सिंक" else "Google Sheets Token Sync",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            color = Color(0xFF1B5E20)
+                                        )
+                                        Text(
+                                            text = if (syncManager.isConfigured(context)) "🟢 सिंक सक्रिय (Active)" else "⚠️ लिंक सेट करें",
+                                            fontSize = 11.sp,
+                                            color = if (syncManager.isConfigured(context)) Color(0xFF2E7D32) else Color(0xFFE65100),
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                                IconButton(onClick = { showSheetConfigDialog = true }) {
+                                    Text("⚙️", fontSize = 18.sp)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        if (onSyncFromGoogleSheet != null) {
+                                            isSyncingSheet = true
+                                            onSyncFromGoogleSheet()
+                                            isSyncingSheet = false
+                                        }
+                                    },
+                                    enabled = !isSyncingSheet,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = "🔄 " + (if (isHindi) "शीट से सिंक करें" else "Sync Sheet Tokens"),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+
+                                OutlinedButton(
+                                    onClick = { showSheetConfigDialog = true },
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1B5E20)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = "🔗 " + (if (isHindi) "वेबहुक सेटिंग्स" else "Webhook Config"),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

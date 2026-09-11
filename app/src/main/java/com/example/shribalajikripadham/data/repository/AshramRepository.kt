@@ -448,7 +448,7 @@ class AshramRepository(context: Context) {
             db.endTransaction()
         }
 
-        Token(
+        val createdToken = Token(
             id = insertedId,
             tokenNumber = nextTokenNum,
             darbarDate = today,
@@ -468,6 +468,13 @@ class AshramRepository(context: Context) {
             distanceKm = calculatedDistance,
             createdAt = System.currentTimeMillis()
         )
+
+        // 📊 Universal Real-Time Google Sheets Sync for ALL tokens (Devotees + Admin + Sevadar)
+        try {
+            com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.postTokenToSheet(appContext, createdToken)
+        } catch (e: Exception) {}
+
+        createdToken
     }
 
     suspend fun getAllTokensToday(): List<Token> = withContext(Dispatchers.IO) {
@@ -1540,5 +1547,58 @@ class AshramRepository(context: Context) {
         saveUiSectionConfigs(sections)
         // Publish to GitHub
         com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveConfig(appContext, config)
+    }
+
+    // --- Google Sheets Central Token Sync ---
+    suspend fun syncTokensFromGoogleSheet(date: String = DatabaseHelper.getTodayDateString()): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
+        try {
+            val remoteTokens = com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.fetchTokensFromSheet(appContext, date)
+            if (remoteTokens.isEmpty()) {
+                return@withContext Pair(false, 0)
+            }
+            val db = dbHelper.writableDatabase
+            var newCount = 0
+            db.beginTransaction()
+            try {
+                remoteTokens.forEach { t ->
+                    val c = db.rawQuery(
+                        "SELECT id FROM tokens WHERE darbar_date = ? AND token_number = ?",
+                        arrayOf(t.darbarDate, t.tokenNumber.toString())
+                    )
+                    val exists = c.moveToFirst()
+                    c.close()
+
+                    if (!exists) {
+                        val cv = ContentValues().apply {
+                            put("token_number", t.tokenNumber)
+                            put("darbar_date", t.darbarDate)
+                            put("patient_name", t.patientName)
+                            put("phone_number", t.phoneNumber)
+                            put("city", t.city)
+                            put("device_id", t.deviceId)
+                            put("latitude", t.latitude)
+                            put("longitude", t.longitude)
+                            put("status", t.status.name)
+                            put("registered_by", t.registeredBy)
+                            put("photo_uri", t.photoUri)
+                            put("is_darshan_completed", if (t.isDarshanCompleted) 1 else 0)
+                            put("darshan_completed_at", t.darshanCompletedAt)
+                            put("origin_address", t.originAddress)
+                            put("destination_address", t.destinationAddress)
+                            put("distance_km", t.distanceKm)
+                            put("created_at", t.createdAt)
+                        }
+                        db.insertWithOnConflict("tokens", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                        newCount++
+                    }
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+            Pair(true, newCount)
+        } catch (e: Exception) {
+            Pair(false, 0)
+        }
     }
 }

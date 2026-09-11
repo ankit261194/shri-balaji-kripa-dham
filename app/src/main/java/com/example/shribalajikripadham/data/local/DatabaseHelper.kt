@@ -14,7 +14,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
-        const val DATABASE_VERSION = 14
+        const val DATABASE_VERSION = 16
 
         fun hashPin(pin: String): String {
             val md = MessageDigest.getInstance("SHA-256")
@@ -432,6 +432,16 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     latest_version_name = '2.5.0',
                     update_notes = 'नया अपडेट (v2.5.0): GitHub Live API रियल-टाइम सिंक — सुपर एडमिन के फोन से 1-टैप में UI व बॉक्सेज का दुनिया भर के सभी भक्तों के फोन में लाइव सिंक।',
                     apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.5.0/ShriBalajiKripaDham-release.apk'
+                WHERE id = 1
+            """.trimIndent())
+        }
+        if (oldVersion < 16) {
+            db.execSQL("""
+                UPDATE ashram_settings 
+                SET latest_version_code = 7,
+                    latest_version_name = '2.6.0',
+                    update_notes = 'नया भव्य अपडेट (v2.6.0): सेंट्रल Google Sheets टोकन रियल-टाइम सिंक — भक्तों व एडमिन द्वारा जनरेट किए गए सभी टोकन एक ही गूगल शीट में लाइव सिंक।',
+                    apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.6.0/ShriBalajiKripaDham-release.apk'
                 WHERE id = 1
             """.trimIndent())
         }
