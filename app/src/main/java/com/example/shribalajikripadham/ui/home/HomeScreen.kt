@@ -96,6 +96,18 @@ fun HomeScreen(
         val sections = repository.getUiSectionConfigs()
         if (sections.isNotEmpty()) uiSectionConfigs = sections
 
+        // 🔄 Real-time Background Sync from GitHub Live Config (Instant, non-blocking)
+        scope.launch {
+            try {
+                val (synced, liveConfig) = repository.syncLiveConfigFromGitHub()
+                if (synced && liveConfig != null && liveConfig.sections.isNotEmpty()) {
+                    uiSectionConfigs = liveConfig.sections
+                }
+            } catch (e: Exception) {
+                // Smooth fallback to local SQLite cache
+            }
+        }
+
         // Check for App Auto-Update: immediately trigger popup on Home Screen!
         val currentCode = AppUpdateManager.getCurrentVersionCode(context)
         if (AppUpdateManager.isUpdateAvailable(currentCode, s.latestVersionCode)) {
@@ -170,6 +182,14 @@ fun HomeScreen(
                     IconButton(
                         onClick = {
                             scope.launch {
+                                // 🔄 Sync latest live UI layout from GitHub
+                                try {
+                                    val (synced, liveConfig) = repository.syncLiveConfigFromGitHub()
+                                    if (synced && liveConfig != null && liveConfig.sections.isNotEmpty()) {
+                                        uiSectionConfigs = liveConfig.sections
+                                    }
+                                } catch (e: Exception) {}
+
                                 val freshSettings = repository.getSettings()
                                 settings = freshSettings
                                 val currentCode = AppUpdateManager.getCurrentVersionCode(context)

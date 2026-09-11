@@ -1150,6 +1150,11 @@ fun AdminDashboardScreen(
                                         refreshData()
                                         Toast.makeText(context, if (isHindi) "डिफ़ॉल्ट UI क्रम रीसेट कर दिया गया!" else "Reset to default UI layout!", Toast.LENGTH_SHORT).show()
                                     }
+                                },
+                                onPublishToGitHub = { updatedList ->
+                                    val res = repository.publishLiveConfigToGitHub(updatedList, admin.name)
+                                    refreshData()
+                                    res
                                 }
                             )
                         }
@@ -3773,8 +3778,10 @@ fun UiBoxControlTab(
     isHindi: Boolean,
     sections: List<UiSectionConfig>,
     onSaveSections: (List<UiSectionConfig>) -> Unit,
-    onResetToDefault: () -> Unit
+    onResetToDefault: () -> Unit,
+    onPublishToGitHub: suspend (List<UiSectionConfig>) -> Pair<Boolean, String> = { Pair(false, "Not configured") }
 ) {
+    val scope = rememberCoroutineScope()
     var localSections by remember(sections) {
         mutableStateOf(
             if (sections.isNotEmpty()) sections.sortedBy { it.orderIndex }
@@ -3783,6 +3790,9 @@ fun UiBoxControlTab(
     }
     var showConfirmResetDialog by remember { mutableStateOf(false) }
     var hasUnsavedChanges by remember { mutableStateOf(false) }
+    var isPublishing by remember { mutableStateOf(false) }
+    var publishResult by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
+    var showPublishResultDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -3854,6 +3864,74 @@ fun UiBoxControlTab(
                         colors = ButtonDefaults.buttonColors(containerColor = if (hasUnsavedChanges) Color(0xFF2E7D32) else MaroonPrimary)
                     ) {
                         Text("💾 " + (if (isHindi) "क्रम सहेजें" else "Save Order"), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // 🚀 GRAND 1-TAP PUBLISH LIVE TO ALL DEVOTEES BUTTON
+                Button(
+                    onClick = {
+                        scope.launch {
+                            isPublishing = true
+                            val res = onPublishToGitHub(localSections)
+                            isPublishing = false
+                            hasUnsavedChanges = false
+                            publishResult = res
+                            showPublishResultDialog = true
+                        }
+                    },
+                    enabled = !isPublishing,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF1B5E20)
+                    ),
+                    contentPadding = PaddingValues(vertical = 12.dp)
+                ) {
+                    if (isPublishing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isHindi) "GitHub पर लाइव पब्लिश हो रहा है..." else "Publishing to GitHub Cloud...",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = Color.White
+                        )
+                    } else {
+                        Text("🚀 ", fontSize = 16.sp)
+                        Text(
+                            text = if (isHindi) "सभी भक्तों के फोन में लाइव पब्लिश करें" else "Publish Live to All Devotees (1-Tap)",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 14.sp,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                // Cloud Status Badge
+                Surface(
+                    color = Color(0xFFE8F5E9),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, Color(0xFF81C784)),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🟢", fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isHindi) "GitHub Live Sync सक्रिय: सभी भक्तों के ऐप में तुरंत लोड होगा" else "GitHub Live Sync Active: Instantly synced across all devotee apps",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF1B5E20)
+                        )
                     }
                 }
 
@@ -4112,6 +4190,44 @@ fun UiBoxControlTab(
             dismissButton = {
                 TextButton(onClick = { showConfirmResetDialog = false }) {
                     Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
+
+    if (showPublishResultDialog && publishResult != null) {
+        val isSuccess = publishResult!!.first
+        val msg = publishResult!!.second
+        AlertDialog(
+            onDismissRequest = { showPublishResultDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (isSuccess) "✅" else "⚠️", fontSize = 22.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isSuccess) (if (isHindi) "लाइव पब्लिश सफल!" else "Live Publish Successful!")
+                        else (if (isHindi) "लाइव सिंक विफल" else "Live Sync Failed"),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = if (isSuccess) Color(0xFF1B5E20) else Color.Red
+                    )
+                }
+            },
+            text = {
+                Text(
+                    text = msg,
+                    fontSize = 13.sp,
+                    color = Color.DarkGray
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showPublishResultDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSuccess) Color(0xFF1B5E20) else MaroonPrimary
+                    )
+                ) {
+                    Text(if (isHindi) "उत्कृष्ट (OK)" else "OK", fontWeight = FontWeight.Bold)
                 }
             }
         )

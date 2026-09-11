@@ -18,7 +18,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class AshramRepository(context: Context) {
-    private val dbHelper = DatabaseHelper(context.applicationContext)
+    private val appContext = context.applicationContext
+    private val dbHelper = DatabaseHelper(appContext)
 
     // --- Ashram Settings & Customization ---
     suspend fun getSettings(): AshramSettings = withContext(Dispatchers.IO) {
@@ -1509,5 +1510,35 @@ class AshramRepository(context: Context) {
         } catch (e: Exception) {
             false
         }
+    }
+
+    // --- Central GitHub Live Sync Methods ---
+    suspend fun syncLiveConfigFromGitHub(): Pair<Boolean, LiveUiConfigDto?> = withContext(Dispatchers.IO) {
+        val remoteConfig = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveConfig()
+        if (remoteConfig != null && remoteConfig.sections.isNotEmpty()) {
+            saveUiSectionConfigs(remoteConfig.sections)
+            Pair(true, remoteConfig)
+        } else {
+            Pair(false, null)
+        }
+    }
+
+    suspend fun publishLiveConfigToGitHub(
+        sections: List<UiSectionConfig>,
+        adminName: String = "Super Admin"
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+        val config = LiveUiConfigDto(
+            updatedAt = isoFormat.format(Date()),
+            updatedBy = adminName,
+            version = 1,
+            sections = sections
+        )
+        // Also save locally
+        saveUiSectionConfigs(sections)
+        // Publish to GitHub
+        com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveConfig(appContext, config)
     }
 }
