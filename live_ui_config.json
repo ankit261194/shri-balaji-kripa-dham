@@ -1,0 +1,109 @@
+{
+  "updated_at": "2026-09-12T00:59:00Z",
+  "updated_by": "Super Admin",
+  "version": 1,
+  "emergency_notice": {
+    "is_enabled": true,
+    "notice_hindi": "श्री बालाजी कृपा धाम में आपका स्वागत है। आगामी रविवार दिव्य दरबार प्रातः 7:00 बजे से प्रारंभ होगा। 100% निःशुल्क सेवा व इलाज।",
+    "notice_english": "Welcome to Shri Balaji Kripa Dham. Upcoming Sunday Divine Darbar starts at 7:00 AM. 100% Free Service."
+  },
+  "active_ui_layout": "CLASSIC_DARBAR",
+  "sections": [
+    {
+      "section_id": "GURUJI_BANNER",
+      "title_hindi": "गुरुजी दर्शन बैनर व आश्रम हेडर",
+      "title_english": "Guruji Banner & Ashram Header",
+      "icon": "👑",
+      "is_visible": true,
+      "order_index": 0
+    },
+    {
+      "section_id": "EMERGENCY_NOTICE",
+      "title_hindi": "आपातकालीन घोषणा टिकर",
+      "title_english": "Emergency Broadcast Notice",
+      "icon": "📢",
+      "is_visible": true,
+      "order_index": 1
+    },
+    {
+      "section_id": "FREE_TREATMENT_BOX",
+      "title_hindi": "100% निःशुल्क सेवा सूचना बॉक्स",
+      "title_english": "100% Free Treatment Notice",
+      "icon": "🕊️",
+      "is_visible": true,
+      "order_index": 2
+    },
+    {
+      "section_id": "TOKEN_COUNTDOWN",
+      "title_hindi": "टोकन समय-सीमा / उलटी गिनती",
+      "title_english": "Token Schedule Countdown",
+      "icon": "⏳",
+      "is_visible": true,
+      "order_index": 3
+    },
+    {
+      "section_id": "SMART_FACE_TOKEN",
+      "title_hindi": "स्मार्ट फेस टोकन कार्ड (< 1s)",
+      "title_english": "Smart Face Token Card",
+      "icon": "⚡",
+      "is_visible": true,
+      "order_index": 4
+    },
+    {
+      "section_id": "QUICK_SERVICES",
+      "title_hindi": "मुख्य सेवाएँ व विकल्प ग्रिड",
+      "title_english": "Quick Services Grid",
+      "icon": "📱",
+      "is_visible": true,
+      "order_index": 5
+    },
+    {
+      "section_id": "DARBAR_STATUS",
+      "title_hindi": "रविवार दरबार व लाइव टोकन काउंटर",
+      "title_english": "Darbar Status & Token Counter",
+      "icon": "🔢",
+      "is_visible": true,
+      "order_index": 6
+    },
+    {
+      "section_id": "SEVADAR_TEAM",
+      "title_hindi": "आश्रम सेवादार दल",
+      "title_english": "Sevadar Team Showcase",
+      "icon": "🤝",
+      "is_visible": true,
+      "order_index": 7
+    },
+    {
+      "section_id": "DYNAMIC_EVENTS",
+      "title_hindi": "आगामी धार्मिक उत्सव व कार्यक्रम",
+      "title_english": "Upcoming Ashram Events",
+      "icon": "🚩",
+      "is_visible": true,
+      "order_index": 8
+    },
+    {
+      "section_id": "AARTI_TIMINGS",
+      "title_hindi": "आरती एवं दर्शन समय-सारणी",
+      "title_english": "Aarti & Darbar Timings",
+      "icon": "🪔",
+      "is_visible": true,
+      "order_index": 9
+    },
+    {
+      "section_id": "SOCIAL_MEDIA_HUB",
+      "title_hindi": "सोशल मीडिया हब (YT, FB, Insta, WA)",
+      "title_english": "Social Media Hub",
+      "icon": "🌐",
+      "is_visible": true,
+      "order_index": 10
+    },
+    {
+      "section_id": "CONTACT_FOOTER",
+      "title_hindi": "धाम संपर्क सूत्र व आधिकारिक पता",
+      "title_english": "Ashram Contact & Location",
+      "icon": "📍",
+      "is_visible": true,
+      "order_index": 11
+    }
+  ]
+}
