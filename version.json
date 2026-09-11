@@ -1,8 +1,8 @@
 {
-  "latest_version_code": 6,
-  "latest_version_name": "2.5.0",
-  "update_notes_hindi": "नया भव्य अपडेट (v2.5.0): GitHub Live API रियल-टाइम सिंक — सुपर एडमिन के फोन से 1-टैप में UI व बॉक्सेज का दुनिया भर के सभी भक्तों के फोन में लाइव सिंक।",
-  "update_notes_english": "New Release (v2.5.0): GitHub Live API Real-Time Sync — 1-Tap UI and Box reordering sync to all devotee devices worldwide.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.5.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 7,
+  "latest_version_name": "2.6.0",
+  "update_notes_hindi": "नया भव्य अपडेट (v2.6.0): सेंट्रल Google Sheets टोकन रियल-टाइम सिंक — भक्तों व एडमिन द्वारा जनरेट किए गए सभी टोकन एक ही गूगल शीट में लाइव सिंक।",
+  "update_notes_english": "New Release (v2.6.0): Central Google Sheets Token Real-Time Sync — all devotee and admin tokens sync to one central sheet.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.6.0/ShriBalajiKripaDham-release.apk",
   "is_force_update": false
 }
