@@ -1,0 +1,126 @@
+<resources>
+    <string name="app_name">Shri Balaji Kripa Dham</string>
+    <string name="app_subtitle">Gram Dungra Jaat, Bulandshahr (UP)</string>
+    <string name="guruji_title">Param Pujya Guruji Tejveer Singh Ji</string>
+    <string name="ashram_address">Gram Dungra Jaat, District Bulandshahr, Uttar Pradesh</string>
+
+    <!-- Notice Banner -->
+    <string name="free_treatment_banner">100% FREE SPIRITUAL &amp; MENTAL HEALING</string>
+    <string name="free_treatment_desc">Spiritual afflictions, negative energies, and mental stress are treated completely FREE of charge. No money or donations are ever demanded. Only divine prayers, holy rituals, and spiritual disciplines are prescribed.</string>
+
+    <!-- Navigation & Tabs -->
+    <string name="nav_home">Home</string>
+    <string name="nav_token">Sunday Token</string>
+    <string name="nav_yatra">Balaji Yatra</string>
+    <string name="nav_ashram">Ashram Info</string>
+    <string name="nav_admin">Admin Portal</string>
+
+    <!-- Home Screen -->
+    <string name="home_welcome">Welcome to Shri Balaji Kripa Dham</string>
+    <string name="home_guruji_section">About Revered Guruji</string>
+    <string name="home_guruji_desc">Under the sacred blessings of Guruji Tejveer Singh Ji, thousands of devotees find liberation from mental anguish, spiritual disturbances, and physical distress through pure faith, bhakti, and divine surrender to Lord Hanuman.</string>
+    <string name="home_sevadar_section">Dedicated Sevadars (Ashram Volunteers)</string>
+    <string name="home_annual_events">Annual Sacred Celebrations (Varshik Utsav)</string>
+    <string name="event_guru_purnima">Guru Purnima Mahotsav</string>
+    <string name="event_guru_purnima_desc">Grand Guru Pooja, Akhand Ramayan Path, and Mega Community Feast (Bhandara). Devotees may participate with voluntary seva; there is no compulsion.</string>
+    <string name="event_hanuman_jayanti">Hanuman Jayanti Utsav</string>
+    <string name="event_hanuman_jayanti_desc">Chanting of Sri Hanuman Chalisa, Sundarkand, Special Darbar, and Grand Mahaprasad distribution.</string>
+
+    <!-- Token System & Geofencing -->
+    <string name="token_title">Sunday Darbar Token Registration</string>
+    <string name="token_subtitle">Every Sunday Darbar at Dungra Jaat Ashram</string>
+    <string name="token_rule_heading">Strict Registration Rules:</string>
+    <string name="token_rule_1">1 Device = 1 Token per Sunday. Multiple tokens from one phone are blocked.</string>
+    <string name="token_rule_2">GPS Geofencing: You must be physically present inside the Ashram premises (within 200m).</string>
+    <string name="token_status_inside">You are INSIDE the Ashram premises. Token registration is ACTIVE.</string>
+    <string name="token_status_outside">You are OUTSIDE the Ashram premises. Distance: %1$.1f km. Tokens can only be issued upon physical arrival at the Ashram.</string>
+    <string name="token_btn_register">Get Sunday Token</string>
+    <string name="token_field_name">Patient / Devotee Full Name</string>
+    <string name="token_field_phone">Contact Mobile Number</string>
+    <string name="token_issued_today">Token already issued for this device today!</string>
+    <string name="token_your_number">Your Assigned Token</string>
+    <string name="token_running_number">Currently Calling Token</string>
+    <string name="token_patients_ahead">%1$d devotees ahead of you</string>
+    <string name="token_current_called">It is your turn! Please proceed to Guruji\'s Darbar.</string>
+
+    <!-- Yatra Module -->
+    <string name="yatra_title">Shri Balaji Bus Pilgrimage (Every 6 Months)</string>
+    <string name="yatra_transparency_note">Notice: Bus journeys are organized on a non-profit basis. Only actual costs for AC bus travel and Dharamshala accommodation are collected from pilgrims.</string>
+    <string name="yatra_bus_layout">Interactive Bus Seat Layout</string>
+    <string name="seat_available">Available</string>
+    <string name="seat_booked_paid">Booked (Paid)</string>
+    <string name="seat_booked_unpaid">Booked (Pending Dues)</string>
+    <string name="seat_selected">Selected</string>
+    <string name="yatra_driver">Driver Cabin</string>
+    <string name="yatra_gate">Entrance</string>
+    <string name="yatra_total_fare">Fare Per Person: ₹%1$d</string>
+    <string name="yatra_passenger_name">Passenger Name</string>
+    <string name="yatra_passenger_phone">Mobile Number</string>
+    <string name="yatra_payment_status">Payment Status</string>
+    <string name="yatra_paid">PAID</string>
+    <string name="yatra_unpaid">UNPAID</string>
+    <string name="yatra_expenses">Yatra Expense Ledger</string>
+    <string name="expense_diesel">Fuel / Diesel</string>
+    <string name="expense_dharamshala">Dharamshala Booking</string>
+    <string name="expense_food">Food &amp; Refreshments</string>
+    <string name="expense_misc">Toll &amp; Miscellaneous</string>
+    <string name="expense_total_collection">Total Seat Collections</string>
+    <string name="expense_total_spent">Total Trip Expenses</string>
+    <string name="expense_net_balance">Net Balance</string>
+    <string name="btn_add_expense">Add Yatra Expense</string>
+
+    <!-- Admin & Sevadar Control -->
+    <string name="admin_login_title">Sevadar &amp; Admin Access</string>
+    <string name="admin_enter_pin">Enter 4-Digit Security PIN</string>
+    <string name="admin_login_btn">Authenticate</string>
+    <string name="admin_super_badge">SUPER ADMIN</string>
+    <string name="admin_sevadar_badge">SEVADAR ADMIN</string>
+    <string name="admin_queue_control">Darbar Queue Controller</string>
+    <string name="admin_next_token">Call Next Token (+1)</string>
+    <string name="admin_prev_token">Previous Token (-1)</string>
+    <string name="admin_reset_queue">Reset Sunday Darbar Queue</string>
+    <string name="admin_manual_token_title">Manual Token Issuance (No Smartphone)</string>
+    <string name="admin_manual_token_desc">Issue tokens on behalf of elderly, illiterate, or devotees without handsets.</string>
+    <string name="admin_location_config">Ashram GPS Coordinates</string>
+    <string name="admin_location_permission_denied">Permission Denied: Only Super Admin or authorized Admins with \'can_change_location\' permission can modify Ashram coordinates.</string>
+    <string name="admin_update_coords">Save New Coordinates</string>
+    <string name="admin_use_my_gps">Set to My Current Location</string>
+    <string name="admin_user_management">Admin &amp; Sevadar Roster</string>
+    <string name="admin_create_admin">Create New Admin</string>
+    <string name="admin_perm_location">Allow Updating Ashram Location</string>
+    <string name="admin_perm_token">Allow Issuing Tokens</string>
+    <string name="admin_perm_yatra">Allow Managing Yatra Seats</string>
+    <string name="admin_perm_expenses">Allow Adding Expenses</string>
+
+    <!-- Common & Dialogs -->
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_confirm">Confirm</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_delete">Delete</string>
+    <string name="lang_hindi">हिंदी</string>
+    <string name="lang_english">English</string>
+
+    <!-- Super Admin Control & RBAC -->
+    <string name="admin_username">Username</string>
+    <string name="admin_password">Password</string>
+    <string name="admin_login_with_creds">Login with Username &amp; Password</string>
+    <string name="admin_login_with_pin">Login with Quick PIN</string>
+    <string name="admin_tab_super">Super Admin Control</string>
+    <string name="admin_tab_sevadars">Sevadar Accounts</string>
+    <string name="admin_tab_services">Public Service Matrix</string>
+    <string name="admin_tab_customizer">App Customizer</string>
+    <string name="admin_tab_notifications">Send Broadcast</string>
+    <string name="admin_tab_update">App Auto-Update</string>
+
+    <string name="admin_perm_notif">Allow Sending Broadcast Notifications</string>
+    <string name="admin_perm_content">Allow Editing Ashram Info &amp; Events</string>
+
+    <!-- Notifications & Updates -->
+    <string name="notif_title">Ashram Broadcast Notifications</string>
+    <string name="notif_compose">Compose Urgent Announcement</string>
+    <string name="notif_send_btn">Broadcast to Devotees</string>
+    <string name="update_title">App Update Manager</string>
+    <string name="update_available_dialog">A New Version is Available!</string>
+    <string name="update_btn_now">Update Now</string>
+    <string name="update_btn_later">Later</string>
+</resources>

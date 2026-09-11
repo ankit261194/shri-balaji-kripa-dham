@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">श्री बालाजी कृपा धाम</string>
+    <string name="app_subtitle">ग्राम डुंगरा जाट, बुलंदशहर (उ.प्र.)</string>
+    <string name="guruji_title">परम पूज्य गुरुजी तेजवीर सिंह जी</string>
+    <string name="ashram_address">ग्राम डुंगरा जाट, जिला बुलंदशहर, उत्तर प्रदेश</string>
+
+    <!-- Notice Banner -->
+    <string name="free_treatment_banner">निःशुल्क सेवा (100% FREE ILAAJ)</string>
+    <string name="free_treatment_desc">यहाँ भूत-प्रेत व मानसिक समस्याओं का इलाज पूर्णतः निःशुल्क (FREE) किया जाता है। कोई पैसा नहीं लिया जाता, केवल भगवान की पूजा-पाठ और नियम बताए जाते हैं।</string>
+
+    <!-- Navigation & Tabs -->
+    <string name="nav_home">मुख्य पृष्ठ</string>
+    <string name="nav_token">रविवार टोकन</string>
+    <string name="nav_yatra">बालाजी यात्रा</string>
+    <string name="nav_ashram">आश्रम परिचय</string>
+    <string name="nav_admin">सेवादार पोर्टल</string>
+
+    <!-- Home Screen -->
+    <string name="home_welcome">श्री बालाजी कृपा धाम में आपका स्वागत है</string>
+    <string name="home_guruji_section">परम पूज्य गुरुजी परिचय</string>
+    <string name="home_guruji_desc">गुरुजी तेजवीर सिंह जी के आशीर्वाद और पावन सानिध्य में हजारों भक्तजन मानसिक कष्टों, भूत-प्रेत बाधाओं एवं सांसारिक व्याधियों से मुक्ति प्राप्त करते हैं। यहाँ केवल ईश्वर भक्ति, निष्काम सेवा और पवित्र नियमों का विधान है।</string>
+    <string name="home_sevadar_section">आश्रम के समर्पित सेवादार</string>
+    <string name="home_annual_events">वार्षिक धार्मिक उत्सव (मुख्य कार्यक्रम)</string>
+    <string name="event_guru_purnima">गुरु पूर्णिमा महोत्सव</string>
+    <string name="event_guru_purnima_desc">भव्य गुरु पूजा, अखंड संकीर्तन और विशाल भंडारा/भोज। श्रद्धालु अपनी स्वेच्छा व श्रद्धा से सहयोग कर सकते हैं, कोई दबाव नहीं होता।</string>
+    <string name="event_hanuman_jayanti">हनुमान जयंती महोत्सव</string>
+    <string name="event_hanuman_jayanti_desc">श्री हनुमान चालीसा, सुंदरकांड पाठ, विशेष दरबार एवं महाप्रसाद वितरण।</string>
+
+    <!-- Token System & Geofencing -->
+    <string name="token_title">रविवार दरबार टोकन पंजीकरण</string>
+    <string name="token_subtitle">प्रत्येक रविवार - डुंगरा जाट आश्रम दरबार</string>
+    <string name="token_rule_heading">टोकन के कड़े नियम:</string>
+    <string name="token_rule_1">1 मोबाइल = 1 टोकन (एक रविवार को एक फोन से केवल 1 नंबर लगेगा)।</string>
+    <string name="token_rule_2">GPS लोकेशन अनिवार्य: आपका आश्रम परिसर (200 मीटर के भीतर) उपस्थित होना जरूरी है।</string>
+    <string name="token_status_inside">आप आश्रम परिसर के अंदर उपस्थित हैं। टोकन पंजीकरण चालू है।</string>
+    <string name="token_status_outside">आप आश्रम परिसर से बाहर हैं। दूरी: %1$.1f किमी। टोकन केवल आश्रम में उपस्थित होने पर ही मिलेगा।</string>
+    <string name="token_btn_register">रविवार टोकन प्राप्त करें</string>
+    <string name="token_field_name">मरीज / भक्त का पूरा नाम</string>
+    <string name="token_field_phone">मोबाइल नंबर</string>
+    <string name="token_issued_today">इस मोबाइल से आज का टोकन पहले ही लिया जा चुका है!</string>
+    <string name="token_your_number">आपका टोकन नंबर</string>
+    <string name="token_running_number">दरबार में चालू नंबर</string>
+    <string name="token_patients_ahead">आपके आगे %1$d मरीज बाकी हैं</string>
+    <string name="token_current_called">आपका नंबर आ गया है! कृपया गुरुजी के दरबार में पधारें।</string>
+
+    <!-- Yatra Module -->
+    <string name="yatra_title">श्री बालाजी बस यात्रा (हर 6 महीने में)</string>
+    <string name="yatra_transparency_note">विशेष सूचना: बस द्वारा बालाजी यात्रा पूर्णतः सेवा भाव से जाती है। यात्रियों से केवल बस व धर्मशाला का वास्तविक किराया ही लिया जाता है।</string>
+    <string name="yatra_bus_layout">बस सीट व्यवस्था (सीट चुनें)</string>
+    <string name="seat_available">खाली सीट</string>
+    <string name="seat_booked_paid">बुक (किराया जमा)</string>
+    <string name="seat_booked_unpaid">बुक (किराया बाकी)</string>
+    <string name="seat_selected">चयनित सीट</string>
+    <string name="yatra_driver">ड्राइवर केबिन</string>
+    <string name="yatra_gate">प्रवेश द्वार</string>
+    <string name="yatra_total_fare">प्रति यात्री किराया: ₹%1$d</string>
+    <string name="yatra_passenger_name">यात्री का नाम</string>
+    <string name="yatra_passenger_phone">मोबाइल नंबर</string>
+    <string name="yatra_payment_status">भुगतान स्थिति</string>
+    <string name="yatra_paid">भुगतान पूर्ण (PAID)</string>
+    <string name="yatra_unpaid">भुगतान बाकी (UNPAID)</string>
+    <string name="yatra_expenses">यात्रा खर्च हिसाब-किताब</string>
+    <string name="expense_diesel">डीजल / ईंधन खर्च</string>
+    <string name="expense_dharamshala">धर्मशाला बुकिंग</string>
+    <string name="expense_food">खान-पान व जलपान</string>
+    <string name="expense_misc">टोल टैक्स व अन्य खर्च</string>
+    <string name="expense_total_collection">कुल सीट किराया संग्रह</string>
+    <string name="expense_total_spent">कुल वास्तविक यात्रा खर्च</string>
+    <string name="expense_net_balance">अवशेष राशि (बैलेंस)</string>
+    <string name="btn_add_expense">यात्रा खर्च जोड़ें</string>
+
+    <!-- Admin & Sevadar Control -->
+    <string name="admin_login_title">सेवादार एवं व्यवस्थापक प्रवेश</string>
+    <string name="admin_enter_pin">4 अंकों का सुरक्षा पिन डालें</string>
+    <string name="admin_login_btn">प्रवेश करें (Login)</string>
+    <string name="admin_super_badge">सुपर एडमिन</string>
+    <string name="admin_sevadar_badge">सेवादार एडमिन</string>
+    <string name="admin_queue_control">दरबार कतार नियंत्रक</string>
+    <string name="admin_next_token">अगला नंबर बुलाएं (+1)</string>
+    <string name="admin_prev_token">पिछला नंबर (-1)</string>
+    <string name="admin_reset_queue">दरबार टोकन रीसेट करें</string>
+    <string name="admin_manual_token_title">मैनुअल टोकन जारी करें (स्मार्टफोन रहित भक्तों हेतु)</string>
+    <string name="admin_manual_token_desc">बुजुर्ग व ग्रामीण भक्तों के लिए जिनका स्मार्ट फोन नहीं है, सेवादार उनका टोकन लगाएं।</string>
+    <string name="admin_location_config">आश्रम GPS लोकेशन सेटिंग</string>
+    <string name="admin_location_permission_denied">अनुमति अस्वीकृत: केवल सुपर एडमिन या \'can_change_location\' अधिकार प्राप्त सेवादार ही आश्रम लोकेशन बदल सकते हैं।</string>
+    <string name="admin_update_coords">नए कोऑर्डिनेट्स सेव करें</string>
+    <string name="admin_use_my_gps">मेरी वर्तमान लोकेशन सेट करें</string>
+    <string name="admin_user_management">सेवादार एवं एडमिन सूची</string>
+    <string name="admin_create_admin">नया व्यवस्थापक जोड़ें</string>
+    <string name="admin_perm_location">आश्रम लोकेशन बदलने का अधिकार</string>
+    <string name="admin_perm_token">टोकन जारी करने का अधिकार</string>
+    <string name="admin_perm_yatra">यात्रा सीट प्रबंधन का अधिकार</string>
+    <string name="admin_perm_expenses">खर्च जोड़ने का अधिकार</string>
+
+    <!-- Common & Dialogs -->
+    <string name="btn_cancel">रद्द करें</string>
+    <string name="btn_confirm">पुष्टि करें</string>
+    <string name="btn_save">सुरक्षित करें</string>
+    <string name="btn_delete">हटाएं</string>
+    <string name="lang_hindi">हिंदी</string>
+    <string name="lang_english">English</string>
+
+    <!-- Super Admin Control & RBAC -->
+    <string name="admin_username">उपयोगकर्ता नाम (Username)</string>
+    <string name="admin_password">पासवर्ड (Password)</string>
+    <string name="admin_login_with_creds">यूजरनेम एवं पासवर्ड द्वारा लॉगिन</string>
+    <string name="admin_login_with_pin">त्वरित पिन द्वारा लॉगिन</string>
+    <string name="admin_tab_super">सुपर एडमिन नियंत्रण</string>
+    <string name="admin_tab_sevadars">सेवादार खाते</string>
+    <string name="admin_tab_services">सेवाएं व अनुमतियाँ</string>
+    <string name="admin_tab_customizer">ऐप कस्टमाइजर</string>
+    <string name="admin_tab_notifications">सूचना प्रसारण</string>
+    <string name="admin_tab_update">ऐप ऑटो-अपडेट</string>
+
+    <string name="admin_perm_notif">सूचना प्रसारित करने का अधिकार</string>
+    <string name="admin_perm_content">आश्रम विवरण व उत्सव बदलने का अधिकार</string>
+
+    <!-- Notifications & Updates -->
+    <string name="notif_title">आश्रम प्रसारण सूचनाएं</string>
+    <string name="notif_compose">महत्वपूर्ण सूचना तैयार करें</string>
+    <string name="notif_send_btn">भक्तों को सूचना प्रसारित करें</string>
+    <string name="update_title">ऐप ऑटो-अपडेट प्रबंधन</string>
+    <string name="update_available_dialog">नया संस्करण उपलब्ध है!</string>
+    <string name="update_btn_now">अभी अपडेट करें</string>
+    <string name="update_btn_later">बाद में</string>
+</resources>

@@ -1,0 +1,204 @@
+package com.example.shribalajikripadham.hardware
+
+import android.app.AppOpsManager
+import android.content.Context
+import android.location.Location
+import android.location.LocationManager
+import android.os.Build
+import android.os.Process
+import android.provider.Settings
+import kotlin.math.*
+
+data class LocationSecurityResult(
+    val isValid: Boolean,
+    val isMock: Boolean,
+    val accuracyMeters: Float,
+    val distanceMeters: Double,
+    val isInsideGeofence: Boolean,
+    val securityExceptionReason: String? = null
+)
+
+object GeofenceLocationManager {
+
+    const val MAX_ALLOWED_ACCURACY_METERS = 50.0f
+
+    /**
+     * Calculates great-circle distance between two points on Earth using the Haversine formula.
+     * Returns distance in meters.
+     */
+    fun calculateDistanceMeters(
+        lat1: Double, lon1: Double,
+        lat2: Double, lon2: Double
+    ): Double {
+        val r = 6371000.0 // Earth radius in meters
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = sin(dLat / 2).pow(2.0) +
+                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+                sin(dLon / 2).pow(2.0)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return r * c
+    }
+
+    /**
+     * Checks if coordinates are within the specified radius from the Ashram.
+     */
+    fun isInsideGeofence(
+        userLat: Double, userLon: Double,
+        ashramLat: Double, ashramLon: Double,
+        allowedRadiusMeters: Double
+    ): Boolean {
+        val distance = calculateDistanceMeters(userLat, userLon, ashramLat, ashramLon)
+        return distance <= allowedRadiusMeters
+    }
+
+    /**
+     * Comprehensive Fake GPS & Mock Location Detection:
+     * 1. Location.isMock (API 31+) / Location.isFromMockProvider (API 18+)
+     * 2. Settings.Secure.ALLOW_MOCK_LOCATION (Legacy check)
+     * 3. AppOpsManager OPSTR_MOCK_LOCATION check
+     */
+    fun isMockLocation(location: Location?, context: Context): Boolean {
+        if (location == null) return false
+
+        // 1. Native Location Object Mock Check
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (location.isMock) return true
+        } else {
+            @Suppress("DEPRECATION")
+            if (location.isFromMockProvider) return true
+        }
+
+        // 2. System AppOps Mock Location Check
+        try {
+            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
+            if (appOps != null) {
+                val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    appOps.unsafeCheckOpNoThrow(
+                        AppOpsManager.OPSTR_MOCK_LOCATION,
+                        Process.myUid(),
+                        context.packageName
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    appOps.checkOpNoThrow(
+                        AppOpsManager.OPSTR_MOCK_LOCATION,
+                        Process.myUid(),
+                        context.packageName
+                    )
+                }
+                if (mode == AppOpsManager.MODE_ALLOWED) return true
+            }
+        } catch (ignored: Exception) {}
+
+        // 3. Settings Mock Location Check for legacy Android versions
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            try {
+                @Suppress("DEPRECATION")
+                if (Settings.Secure.getString(context.contentResolver, Settings.Secure.ALLOW_MOCK_LOCATION) != "0") {
+                    return true
+                }
+            } catch (ignored: Exception) {}
+        }
+
+        return false
+    }
+
+    /**
+     * Strict Server/Repository-Side Location Validation:
+     * - Blocks Mock Location / Fake GPS
+     * - Rejects low confidence / inaccurate location (> 50m)
+     * - Verifies Geofence boundaries
+     */
+    fun validateLocationSecurity(
+        location: Location?,
+        context: Context,
+        ashramLat: Double,
+        ashramLon: Double,
+        allowedRadiusMeters: Double
+    ): LocationSecurityResult {
+        if (location == null) {
+            return LocationSecurityResult(
+                isValid = false,
+                isMock = false,
+                accuracyMeters = Float.MAX_VALUE,
+                distanceMeters = Double.MAX_VALUE,
+                isInsideGeofence = false,
+                securityExceptionReason = "Security Exception: Location unavailable. Please enable GPS."
+            )
+        }
+
+        // 1. Detect Fake GPS / Mock Location
+        val isMock = isMockLocation(location, context)
+        if (isMock) {
+            return LocationSecurityResult(
+                isValid = false,
+                isMock = true,
+                accuracyMeters = location.accuracy,
+                distanceMeters = calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon),
+                isInsideGeofence = false,
+                securityExceptionReason = "Security Exception: Spoofed Location or Duplicate Device Request Denied."
+            )
+        }
+
+        // 2. Validate Accuracy Threshold (Must be <= 50m)
+        val accuracy = if (location.hasAccuracy()) location.accuracy else Float.MAX_VALUE
+        if (accuracy > MAX_ALLOWED_ACCURACY_METERS) {
+            return LocationSecurityResult(
+                isValid = false,
+                isMock = false,
+                accuracyMeters = accuracy,
+                distanceMeters = calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon),
+                isInsideGeofence = false,
+                securityExceptionReason = "Security Exception: Low GPS accuracy (${String.format("%.1f", accuracy)}m > ${MAX_ALLOWED_ACCURACY_METERS}m). Stand in open area."
+            )
+        }
+
+        // 3. Geofence Distance Check
+        val distance = calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon)
+        val isInside = distance <= allowedRadiusMeters
+
+        if (!isInside) {
+            val km = String.format("%.1f", distance / 1000.0)
+            return LocationSecurityResult(
+                isValid = false,
+                isMock = false,
+                accuracyMeters = accuracy,
+                distanceMeters = distance,
+                isInsideGeofence = false,
+                securityExceptionReason = "Security Exception: Outside Geofence. You are $km km away from Ashram."
+            )
+        }
+
+        return LocationSecurityResult(
+            isValid = true,
+            isMock = false,
+            accuracyMeters = accuracy,
+            distanceMeters = distance,
+            isInsideGeofence = true,
+            securityExceptionReason = null
+        )
+    }
+
+    /**
+     * Tries to get the highest accuracy location from GPS or Network provider.
+     */
+    @Suppress("MissingPermission")
+    fun getLastKnownLocation(context: Context): Location? {
+        val locManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
+        return try {
+            val gpsLoc = locManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+            val netLoc = locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            when {
+                gpsLoc != null && netLoc != null -> {
+                    // Prefer GPS if reasonably recent or more accurate
+                    if (gpsLoc.hasAccuracy() && gpsLoc.accuracy <= (netLoc.accuracy + 20f)) gpsLoc else netLoc
+                }
+                gpsLoc != null -> gpsLoc
+                else -> netLoc
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
