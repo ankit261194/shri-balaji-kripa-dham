@@ -58,6 +58,8 @@ object GoogleSheetTokenSyncManager {
                 put("registered_by", token.registeredBy)
                 put("distance_km", token.distanceKm)
                 put("status", token.status.name)
+                put("has_photo", token.photoUri.isNotBlank())
+                put("photo_uri", token.photoUri)
             }
 
             var currentUrl = webhookUrl

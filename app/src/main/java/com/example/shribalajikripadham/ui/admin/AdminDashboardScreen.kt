@@ -33,6 +33,14 @@ import com.example.shribalajikripadham.hardware.GeofenceLocationManager
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.ui.common.SacredAvatar
 import com.example.shribalajikripadham.util.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import com.example.shribalajikripadham.util.DevoteePhotoHelper
+import com.example.shribalajikripadham.util.TakeAnyPicturePreview
+
 import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.launch
 
@@ -806,7 +814,7 @@ fun AdminDashboardScreen(
                                 phone = manualPhone,
                                 onPhoneChange = { manualPhone = it },
                                 successMsg = manualSuccessMsg,
-                                onSubmit = {
+                                onSubmit = { photoUri ->
                                     scope.launch {
                                         try {
                                             val t = repository.registerToken(
@@ -815,7 +823,8 @@ fun AdminDashboardScreen(
                                                 deviceId = "MANUAL_BY_${admin.id}_${System.currentTimeMillis()}",
                                                 latitude = settings.latitude,
                                                 longitude = settings.longitude,
-                                                registeredBy = "DESK_${admin.name}"
+                                                registeredBy = "DESK_${admin.name}",
+                                                photoUri = photoUri
                                             )
                                             manualSuccessMsg = if (isHindi)
                                                 "सफलतापूर्वक टोकन #${t.tokenNumber} जारी किया गया!"
@@ -1570,6 +1579,7 @@ fun TokenQueueTab(
     var selectedSortOrder by remember { mutableStateOf(TokenSortOrder.TOKEN_NUMBER) }
     var isExportingPdf by remember { mutableStateOf(false) }
     var tokenToDelete by remember { mutableStateOf<Token?>(null) }
+    var zoomedPhotoToken by remember { mutableStateOf<Token?>(null) }
 
     val filteredTokens = remember(todayTokens, searchQuery, selectedDistanceFilter, selectedSortOrder, settings) {
         TokenDistanceHelper.filterAndSortTokens(
@@ -2030,18 +2040,78 @@ fun TokenQueueTab(
                         color = Color.DarkGray
                     )
 
-                    // Optional Devotee Photo if permitted
-                    if (canViewPhotos) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (token.photoUri.isNotBlank()) {
-                                SacredAvatar(photoUri = token.photoUri, name = token.patientName, size = 32.dp)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("📸 सत्यापित फोटो संलग्न", fontSize = 11.sp, color = Color(0xFF2E7D32), fontWeight = FontWeight.SemiBold)
-                            } else {
-                                Text("📷 फोटो संलग्न नहीं", fontSize = 11.sp, color = Color.Gray)
+                    // Devotee Photo with tap-to-zoom
+                    if (token.photoUri.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            color = Color(0xFFE8F5E9),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, Color(0xFFA5D6A7)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { zoomedPhotoToken = token }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(42.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .border(1.5.dp, Color(0xFF2E7D32), RoundedCornerShape(8.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        val bmp = remember(token.photoUri) { DevoteePhotoHelper.loadBitmap(context, token.photoUri) }
+                                        if (bmp != null) {
+                                            Image(
+                                                bitmap = bmp.asImageBitmap(),
+                                                contentDescription = token.patientName,
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        } else {
+                                            SacredAvatar(photoUri = token.photoUri, name = token.patientName, size = 42.dp)
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = "📸 " + (if (isHindi) "सत्यापित फोटो संलग्न" else "Verified Photo Attached"),
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF1B5E20)
+                                        )
+                                        Text(
+                                            text = if (isHindi) "टैप करें: बड़ा फोटो देखें (Zoom)" else "Tap to Zoom Full Screen",
+                                            fontSize = 10.sp,
+                                            color = Color(0xFF2E7D32)
+                                        )
+                                    }
+                                }
+                                Surface(
+                                    color = Color(0xFF2E7D32),
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "🔍 ZOOM",
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
                             }
                         }
+                    } else {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isHindi) "📷 बिना फोटो (मैनुअल काउंटर टोकन)" else "📷 No Photo (Desk Token)",
+                            fontSize = 11.sp,
+                            color = Color.Gray
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -2119,6 +2189,117 @@ fun TokenQueueTab(
             }
         }
     }
+
+    // Full-Screen Devotee Photo Zoom Dialog for Gate Verification
+    if (zoomedPhotoToken != null) {
+        val zToken = zoomedPhotoToken!!
+        Dialog(onDismissRequest = { zoomedPhotoToken = null }) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "टोकन #${zToken.tokenNumber} फोटो सत्यापन",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaroonPrimary
+                            )
+                            Text(
+                                text = if (isHindi) "दरबार प्रवेश द्वार सत्यापन" else "Temple Entry Gate Verification",
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
+                        }
+                        IconButton(onClick = { zoomedPhotoToken = null }) {
+                            Text("✕", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val bigBmp = remember(zToken.photoUri) { DevoteePhotoHelper.loadBitmap(context, zToken.photoUri) }
+                    if (bigBmp != null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(280.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .border(2.dp, SaffronPrimary, RoundedCornerShape(14.dp))
+                                .background(Color.Black),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                bitmap = bigBmp.asImageBitmap(),
+                                contentDescription = zToken.patientName,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color(0xFFF5F5F5)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("फोटो लोड नहीं हो सकी", color = Color.Gray)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = zToken.patientName,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E293B)
+                    )
+                    Text(
+                        text = "📞 ${zToken.phoneNumber}  |  🏠 ${zToken.originAddress.ifEmpty { zToken.city }}",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    Text(
+                        text = "पंजीकरण: ${zToken.registeredBy}  |  दूरी: ${if (zToken.distanceKm >= 0f) "%.1f km".format(zToken.distanceKm) else "आश्रम परिसर"}",
+                        fontSize = 11.sp,
+                        color = SaffronDark,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = { zoomedPhotoToken = null },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("✓ सत्यापन पूर्ण (Close)", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -2130,8 +2311,21 @@ fun ManualTokenTab(
     phone: String,
     onPhoneChange: (String) -> Unit,
     successMsg: String?,
-    onSubmit: () -> Unit
+    onSubmit: (String) -> Unit
 ) {
+    val context = LocalContext.current
+    var manualPhotoUri by remember { mutableStateOf("") }
+    var manualCapturedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = TakeAnyPicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            manualCapturedBitmap = bitmap
+            manualPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "desk_manual")
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -2152,9 +2346,9 @@ fun ManualTokenTab(
                 )
                 Text(
                     text = if (isHindi)
-                        "जिनके पास स्मार्टफोन नहीं है, सेवादार उनका विवरण दर्ज करके टोकन जारी कर सकते हैं।"
+                        "जिनके पास स्मार्टफोन नहीं है, सेवादार उनका विवरण दर्ज करके टोकन जारी कर सकते हैं। फोटो वैकल्पिक (Optional) है।"
                     else
-                        "Issue a token for elderly or visitors without smartphones directly.",
+                        "Issue a token for elderly or visitors without smartphones directly. Photo capture is optional.",
                     fontSize = 13.sp,
                     color = Color.Gray
                 )
@@ -2163,17 +2357,100 @@ fun ManualTokenTab(
                 OutlinedTextField(
                     value = name,
                     onValueChange = onNameChange,
-                    label = { Text(if (isHindi) "भक्त / मरीज का नाम" else "Devotee / Patient Name") },
+                    label = { Text(if (isHindi) "भक्त / मरीज का नाम *" else "Devotee / Patient Name *") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = phone,
                     onValueChange = onPhoneChange,
-                    label = { Text(if (isHindi) "संपर्क फोन नंबर" else "Mobile Number") },
+                    label = { Text(if (isHindi) "संपर्क फोन नंबर *" else "Mobile Number *") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Optional Photo Capture Row for Admin
+                Surface(
+                    color = if (manualCapturedBitmap != null) Color(0xFFF1F8E9) else Color(0xFFF8F9FA),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, if (manualCapturedBitmap != null) Color(0xFF2E7D32) else Color(0xFFE0E0E0)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            if (manualCapturedBitmap != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .border(1.dp, Color(0xFF2E7D32), RoundedCornerShape(8.dp))
+                                ) {
+                                    Image(
+                                        bitmap = manualCapturedBitmap!!.asImageBitmap(),
+                                        contentDescription = "Devotee Photo",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (isHindi) "✓ फोटो संलग्न" else "✓ Photo Attached",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF2E7D32)
+                                    )
+                                    Text(
+                                        text = if (isHindi) "वैकल्पिक फोटो जोड़ी गई" else "Optional photo captured",
+                                        fontSize = 10.sp,
+                                        color = Color.Gray
+                                    )
+                                }
+                            } else {
+                                Text("📸", fontSize = 20.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = if (isHindi) "भक्त का फोटो (वैकल्पिक)" else "Devotee Photo (Optional)",
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFF333333)
+                                    )
+                                    Text(
+                                        text = if (isHindi) "बिना फोटो के भी 3 सेकंड में टोकन जारी कर सकते हैं" else "Fast 3-sec issuance with or without photo",
+                                        fontSize = 10.sp,
+                                        color = Color.Gray
+                                    )
+                                }
+                            }
+                        }
+
+                        if (manualCapturedBitmap != null) {
+                            IconButton(onClick = {
+                                manualCapturedBitmap = null
+                                manualPhotoUri = ""
+                            }) {
+                                Text("✕", color = Color.Red, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = { cameraLauncher.launch(null) },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(if (isHindi) "फोटो खींचें" else "Take Photo", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
 
                 if (successMsg != null) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -2182,7 +2459,11 @@ fun ManualTokenTab(
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = onSubmit,
+                    onClick = {
+                        onSubmit(manualPhotoUri)
+                        manualCapturedBitmap = null
+                        manualPhotoUri = ""
+                    },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
                 ) {

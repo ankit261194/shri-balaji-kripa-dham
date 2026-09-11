@@ -40,6 +40,8 @@ import com.example.shribalajikripadham.hardware.DeviceFingerprintManager
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.util.TokenCardExporter
+import com.example.shribalajikripadham.util.DevoteePhotoHelper
+import com.example.shribalajikripadham.util.TakeFrontPicturePreview
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -47,20 +49,7 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class TakeFrontPicturePreview : ActivityResultContracts.TakePicturePreview() {
-    override fun createIntent(context: Context, input: Void?): Intent {
-        val intent = super.createIntent(context, input)
-        intent.putExtra("android.intent.extras.CAMERA_FACING", 1) // 1 = Front
-        intent.putExtra("android.intent.extras.LENS_FACING_FRONT", 1)
-        intent.putExtra("android.intent.extra.USE_FRONT_CAMERA", true)
-        intent.putExtra("android.intent.extras.FRONT_CAMERA", true)
-        intent.putExtra("com.google.assistant.extra.USE_FRONT_CAMERA", true)
-        intent.putExtra("default_camera", "1")
-        intent.putExtra("camerafacing", "front")
-        intent.putExtra("camerasensortype", 2)
-        return intent
-    }
-}
+
 
 enum class FaceScanState {
     SCANNING,
@@ -95,6 +84,7 @@ fun FaceTokenRegistrationScreen(
 
     // Real Camera Captured Photo & Face Recognition State
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var capturedPhotoUri by remember { mutableStateOf("") }
     var matchResult by remember { mutableStateOf<FaceMatchResult?>(null) }
     var candidateVector by remember { mutableStateOf(FloatArray(FaceEmbeddingEngine.EMBEDDING_DIM)) }
     var generatedToken by remember { mutableStateOf<Token?>(null) }
@@ -164,6 +154,7 @@ fun FaceTokenRegistrationScreen(
     ) { bitmap ->
         if (bitmap != null) {
             capturedBitmap = bitmap
+            capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "face_token")
             processCapturedFace(bitmap)
         }
     }
@@ -766,6 +757,7 @@ fun FaceTokenRegistrationScreen(
                                                     latitude = userLatitude,
                                                     longitude = userLongitude,
                                                     candidateVector = candidateVector,
+                                                    photoUri = if (capturedPhotoUri.isNotBlank()) capturedPhotoUri else match.profile.photoUri,
                                                     isMockLocation = isMock,
                                                     locationAccuracy = accuracy
                                                 )
@@ -1021,6 +1013,7 @@ fun FaceTokenRegistrationScreen(
                                                 longitude = userLongitude,
                                                 city = manualCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
                                                 registeredBy = "MANUAL_FALLBACK",
+                                                photoUri = capturedPhotoUri,
                                                 isMockLocation = isMock,
                                                 locationAccuracy = accuracy
                                             )

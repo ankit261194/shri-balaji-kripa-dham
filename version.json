@@ -1,8 +1,8 @@
 {
-  "latest_version_code": 7,
-  "latest_version_name": "2.6.0",
-  "update_notes_hindi": "नया भव्य अपडेट (v2.6.0): सेंट्रल Google Sheets टोकन रियल-टाइम सिंक — भक्तों व एडमिन द्वारा जनरेट किए गए सभी टोकन एक ही गूगल शीट में लाइव सिंक।",
-  "update_notes_english": "New Release (v2.6.0): Central Google Sheets Token Real-Time Sync — all devotee and admin tokens sync to one central sheet.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.6.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 8,
+  "latest_version_name": "2.7.0",
+  "update_notes_hindi": "नया भव्य अपडेट (v2.7.0): भक्त टोकन हेतु अनिवार्य सेल्फी फोटो सत्यापन, एडमिन टोकन डेस्क पर वैकल्पिक फोटो सुविधा, टोकन कतार में फुल-स्क्रीन फोटो ज़ूम एवं डुअल v1+v2 साइनिंग फिक्स।",
+  "update_notes_english": "New Release (v2.7.0): Mandatory Devotee Selfie Photo Verification, Optional Admin Desk Photo, Full-Screen Photo Zoom in Token Queue, and Dual v1+v2 Signature Scheme Fix.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.7.0/ShriBalajiKripaDham-release.apk",
   "is_force_update": false
 }

@@ -14,7 +14,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
-        const val DATABASE_VERSION = 16
+        const val DATABASE_VERSION = 17
 
         fun hashPin(pin: String): String {
             val md = MessageDigest.getInstance("SHA-256")
@@ -435,13 +435,23 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 WHERE id = 1
             """.trimIndent())
         }
+        if (oldVersion < 17) {
+            db.execSQL("""
+                UPDATE ashram_settings 
+                SET latest_version_code = 8,
+                    latest_version_name = '2.7.0',
+                    update_notes = 'नया भव्य अपडेट (v2.7.0): भक्त टोकन हेतु अनिवार्य सेल्फी फोटो सत्यापन, एडमिन टोकन डेस्क पर वैकल्पिक फोटो सुविधा, टोकन कतार में फुल-स्क्रीन फोटो ज़ूम एवं डुअल v1+v2 साइनिंग फिक्स।',
+                    apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.7.0/ShriBalajiKripaDham-release.apk'
+                WHERE id = 1
+            """.trimIndent())
+        }
         if (oldVersion < 16) {
             db.execSQL("""
                 UPDATE ashram_settings 
                 SET latest_version_code = 7,
                     latest_version_name = '2.6.0',
                     update_notes = 'नया भव्य अपडेट (v2.6.0): सेंट्रल Google Sheets टोकन रियल-टाइम सिंक — भक्तों व एडमिन द्वारा जनरेट किए गए सभी टोकन एक ही गूगल शीट में लाइव सिंक।',
-                    apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.6.0/ShriBalajiKripaDham-release.apk'
+                    apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.7.0/ShriBalajiKripaDham-release.apk'
                 WHERE id = 1
             """.trimIndent())
         }

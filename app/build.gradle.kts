@@ -10,9 +10,9 @@ android {
     defaultConfig {
         applicationId = "com.example.shribalajikripadham"
         minSdk = 24
-        targetSdk = 36
-        versionCode = 7
-        versionName = "2.6.0"
+        targetSdk = 34
+        versionCode = 8
+        versionName = "2.7.0"
     }
 
     signingConfigs {
@@ -21,6 +21,8 @@ android {
             storePassword = "balajikripadham"
             keyAlias = "shribalaji"
             keyPassword = "balajikripadham"
+            enableV1Signing = true
+            enableV2Signing = true
         }
     }
 

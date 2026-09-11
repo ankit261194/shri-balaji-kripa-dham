@@ -29,6 +29,13 @@ import com.example.shribalajikripadham.data.repository.AshramRepository
 import com.example.shribalajikripadham.hardware.DeviceFingerprintManager
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
 import com.example.shribalajikripadham.theme.*
+import android.graphics.Bitmap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import com.example.shribalajikripadham.util.DevoteePhotoHelper
+import com.example.shribalajikripadham.util.TakeFrontPicturePreview
 import com.example.shribalajikripadham.util.DistanceCalculatorService
 import com.example.shribalajikripadham.util.TokenCardExporter
 import kotlinx.coroutines.launch
@@ -60,6 +67,20 @@ fun TokenRegistrationScreen(
     var isCalculatingDistance by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSubmitting by remember { mutableStateOf(false) }
+    // Compulsory Devotee Photo State (Mandatory Selfie)
+    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var capturedPhotoUri by remember { mutableStateOf("") }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = TakeFrontPicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            capturedBitmap = bitmap
+            capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "devotee_selfie")
+            errorMessage = null
+        }
+    }
+
     var todayActiveTokens by remember { mutableIntStateOf(0) }
 
     // Geofencing Simulation / Live State
@@ -538,6 +559,115 @@ fun TokenRegistrationScreen(
                             }
                         }
 
+                        
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // 📸 MANDATORY DEVOTEE SELFIE VERIFICATION CARD
+                        Surface(
+                            color = if (capturedBitmap != null) Color(0xFFF1F8E9) else Color(0xFFFFF3E0),
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.5.dp, if (capturedBitmap != null) Color(0xFF2E7D32) else SaffronPrimary),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("📸", fontSize = 20.sp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = if (isHindi) "भक्त का फोटो (अनिवार्य / Mandatory) *" else "Devotee Photo (Mandatory) *",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            color = if (capturedBitmap != null) Color(0xFF1B5E20) else MaroonAccent
+                                        )
+                                        Text(
+                                            text = if (isHindi)
+                                                "दरबार गेट सत्यापन हेतु मरीज/भक्त की सेल्फी फोटो अनिवार्य है।"
+                                            else
+                                                "Mandatory live selfie of devotee for temple gate verification.",
+                                            fontSize = 11.sp,
+                                            color = TextSecondaryDark
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                if (capturedBitmap != null) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(130.dp)
+                                            .clip(RoundedCornerShape(16.dp))
+                                            .border(2.dp, SaffronPrimary, RoundedCornerShape(16.dp))
+                                    ) {
+                                        Image(
+                                            bitmap = capturedBitmap!!.asImageBitmap(),
+                                            contentDescription = "Devotee Photo",
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("✓", color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = if (isHindi) "फोटो सफलतापूर्वक ली गई" else "Photo Captured",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF2E7D32),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    OutlinedButton(
+                                        onClick = { cameraLauncher.launch(null) },
+                                        shape = RoundedCornerShape(20.dp),
+                                        border = BorderStroke(1.dp, SaffronPrimary),
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isHindi) "🔄 पुनः फोटो खींचें (Retake)" else "🔄 Retake Photo",
+                                            fontSize = 11.sp,
+                                            color = SaffronPrimary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                } else {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier.padding(vertical = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isHindi) "⚠️ बिना फोटो के टोकन जारी नहीं होगा" else "⚠️ Photo is compulsory to get token",
+                                            fontSize = 12.sp,
+                                            color = Color(0xFFC62828),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Button(
+                                            onClick = { cameraLauncher.launch(null) },
+                                            colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                                            shape = RoundedCornerShape(20.dp),
+                                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
+                                        ) {
+                                            Text(
+                                                text = if (isHindi) "📷 सेल्फी कैमरा खोलें (फोटो लें)" else "📷 Open Selfie Camera",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.sp,
+                                                color = Color.White
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         if (errorMessage != null) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
@@ -599,6 +729,10 @@ fun TokenRegistrationScreen(
                                     errorMessage = if (isHindi) "कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।" else "Please enter valid 10-digit mobile number."
                                     return@Button
                                 }
+                                if (capturedBitmap == null || capturedPhotoUri.isBlank()) {
+                                    errorMessage = if (isHindi) "कृपया टोकन प्राप्त करने के लिए अपनी फोटो अवश्य खींचें (अनिवार्य है)।" else "Devotee photo is mandatory. Please capture your photo first."
+                                    return@Button
+                                }
                                 if (isBeforeSchedule) {
                                     val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
                                     val scheduledTimeStr = sdf.format(Date(settings.scheduledTokenOpenTimestamp))
@@ -638,6 +772,8 @@ fun TokenRegistrationScreen(
                                             latitude = userLatitude,
                                             longitude = userLongitude,
                                             city = city.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                                            registeredBy = "USER_APP",
+                                            photoUri = capturedPhotoUri,
                                             isMockLocation = isMock,
                                             locationAccuracy = accuracy,
                                             originAddress = originAddress.trim().ifEmpty { city.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" } },
@@ -654,7 +790,7 @@ fun TokenRegistrationScreen(
                                     }
                                 }
                             },
-                            enabled = isInsideGeofence && !isSubmitting && !isBeforeSchedule && !isQuotaExceeded,
+                            enabled = isInsideGeofence && !isSubmitting && !isBeforeSchedule && !isQuotaExceeded && capturedBitmap != null,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(50.dp),
@@ -671,6 +807,7 @@ fun TokenRegistrationScreen(
                                     text = when {
                                         isQuotaExceeded -> if (isHindi) "⛔ आज की सीमा समाप्त" else "⛔ Quota Full"
                                         isBeforeSchedule -> if (isHindi) "🔒 पंजीकरण अभी बंद है" else "🔒 Registration Locked"
+                                        capturedBitmap == null -> if (isHindi) "🔒 पहले फोटो खींचें (टोकन अनलॉक होगा)" else "🔒 Capture Photo to Unlock"
                                         else -> if (isHindi) "टोकन प्राप्त करें  ➔" else "Generate Sunday Token  ➔"
                                     },
                                     fontSize = 16.sp,

@@ -34,9 +34,10 @@ function doPost(e) {
         "शहर / गाँव (City)",
         "पंजीकरणकर्ता (Registered By)",
         "दूरी किमी (Distance Km)",
-        "स्थिति (Status)"
+        "स्थिति (Status)",
+        "फोटो स्थिति (Photo)"
       ]);
-      var headerRange = sheet.getRange("A1:I1");
+      var headerRange = sheet.getRange("A1:J1");
       headerRange.setFontWeight("bold");
       headerRange.setBackground("#B71C1C");
       headerRange.setFontColor("#FFFFFF");
@@ -55,7 +56,8 @@ function doPost(e) {
       data.city || "",
       data.registered_by || "",
       data.distance_km != null ? data.distance_km : 0,
-      data.status || "WAITING"
+      data.status || "WAITING",
+      data.has_photo ? "📸 संलग्न (Yes)" : "— बिना फोटो"
     ]);
 
     // Format new row
