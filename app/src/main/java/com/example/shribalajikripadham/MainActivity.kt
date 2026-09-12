@@ -32,10 +32,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Set global crash handler to prevent abrupt crash & log diagnostic
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            android.util.Log.e("ShriBalajiCrash", "Caught uncaught exception on thread ${thread.name}", throwable)
-        }
 
         // Create notification channel on app launch
         try {

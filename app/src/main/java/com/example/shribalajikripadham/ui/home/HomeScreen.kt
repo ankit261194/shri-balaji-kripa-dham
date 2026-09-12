@@ -80,22 +80,27 @@ fun HomeScreen(
     var downloadErrorMsg by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        val s = repository.getSettings()
-        settings = s
-        activeLayout = if (s.isUiLayoutEnforced) {
-            AppUiLayout.fromId(s.activeUiLayout)
-        } else {
-            LayoutPreferences.getSavedLayout(context, AppUiLayout.fromId(s.activeUiLayout))
+        var s = settings
+        try {
+            s = repository.getSettings()
+            settings = s
+            activeLayout = if (s.isUiLayoutEnforced) {
+                AppUiLayout.fromId(s.activeUiLayout)
+            } else {
+                LayoutPreferences.getSavedLayout(context, AppUiLayout.fromId(s.activeUiLayout))
+            }
+            val customDists = repository.getAllCustomCityDistances()
+            DistanceCalculatorService.loadCustomDistances(customDists.map { Pair(it.cityName, it.distanceKm) })
+            val evs = repository.getAllEvents()
+            if (evs.isNotEmpty()) {
+                dynamicEvents = evs
+            }
+            activeSevadars = repository.getAllActiveSevadars()
+            val sections = repository.getUiSectionConfigs()
+            if (sections.isNotEmpty()) uiSectionConfigs = sections
+        } catch (e: Exception) {
+            android.util.Log.e("HomeScreenInit", "Safe fallback on initial data load", e)
         }
-        val customDists = repository.getAllCustomCityDistances()
-        DistanceCalculatorService.loadCustomDistances(customDists.map { Pair(it.cityName, it.distanceKm) })
-        val evs = repository.getAllEvents()
-        if (evs.isNotEmpty()) {
-            dynamicEvents = evs
-        }
-        activeSevadars = repository.getAllActiveSevadars()
-        val sections = repository.getUiSectionConfigs()
-        if (sections.isNotEmpty()) uiSectionConfigs = sections
 
         // 🔄 Real-time Background Sync from GitHub Live Config (Instant, non-blocking)
         scope.launch {
@@ -1404,7 +1409,7 @@ fun RenderClassicSection(
             Card(
                 colors = CardDefaults.cardColors(containerColor = currentTheme.primaryColor),
                 shape = currentTheme.cardShape,
-                elevation = CardDefaults.cardElevation(currentTheme.cardElevation + 4.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                 border = BorderStroke(currentTheme.cardBorderWidth + 0.5.dp, currentTheme.secondaryColor),
                 modifier = Modifier.fillMaxWidth()
             ) {

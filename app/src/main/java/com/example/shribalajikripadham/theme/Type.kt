@@ -9,8 +9,8 @@ import androidx.compose.ui.text.font.FontFamily
  * preserving all proper platform metrics.
  */
 fun getSacredTypography(fontFamily: FontFamily = FontFamily.Serif): Typography {
-    val base = Typography()
-    return Typography(
+    val base = androidx.compose.material3.Typography()
+    return androidx.compose.material3.Typography(
         displayLarge = base.displayLarge.copy(fontFamily = fontFamily),
         displayMedium = base.displayMedium.copy(fontFamily = fontFamily),
         displaySmall = base.displaySmall.copy(fontFamily = fontFamily),

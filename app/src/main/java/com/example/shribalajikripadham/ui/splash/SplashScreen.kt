@@ -406,16 +406,15 @@ fun SplashScreen(
 
             Spacer(modifier = Modifier.height(26.dp))
 
-            // GRAND ROYAL CTA BUTTON (GOLDEN GRADIENT PILL)
-            Button(
+            // GRAND ROYAL CTA BUTTON (GOLDEN GRADIENT PILL) - 100% Reliable Surface Click
+            Surface(
                 onClick = onEnterDarbar,
+                shape = RoundedCornerShape(28.dp),
+                color = Color.Transparent,
+                shadowElevation = 8.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .shadow(12.dp, RoundedCornerShape(28.dp)),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                contentPadding = PaddingValues(),
-                shape = RoundedCornerShape(28.dp)
             ) {
                 Box(
                     modifier = Modifier
@@ -447,6 +446,31 @@ fun SplashScreen(
                             color = Color(0xFF4A0017)
                         )
                     }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Secondary instant skip button so user is never trapped on welcome screen
+            Surface(
+                onClick = onEnterDarbar,
+                shape = RoundedCornerShape(12.dp),
+                color = Color.White.copy(alpha = 0.12f),
+                border = BorderStroke(0.8.dp, Color.White.copy(alpha = 0.25f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (isHindi) "⚡ सीधे मुख्य पृष्ठ पर जाएं (Skip)" else "⚡ Skip directly to Darbar",
+                        color = Color.White.copy(alpha = 0.90f),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
 

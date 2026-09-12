@@ -114,7 +114,7 @@ enum class SacredTheme(
         isDark = false,
         fontFamily = FontFamily.SansSerif,
         cardShape = RoundedCornerShape(26.dp),
-        buttonShape = RoundedCornerShape(50),
+        buttonShape = RoundedCornerShape(24.dp),
         cardBorderWidth = 1.dp,
         cardElevation = 3.dp,
         styleNameHindi = "आधुनिक मयूर स्क्वर्कर",

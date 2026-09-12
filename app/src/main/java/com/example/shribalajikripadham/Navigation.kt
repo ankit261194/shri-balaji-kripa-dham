@@ -1,5 +1,6 @@
 package com.example.shribalajikripadham
 
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -8,6 +9,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.example.shribalajikripadham.theme.SacredTheme
 import com.example.shribalajikripadham.ui.admin.AdminDashboardScreen
 import com.example.shribalajikripadham.ui.home.HomeScreen
@@ -35,21 +37,31 @@ fun MainNavigation(
     currentTheme: SacredTheme = SacredTheme.ROYAL_MAROON,
     onThemeChanged: (SacredTheme) -> Unit = {}
 ) {
+    val context = LocalContext.current
     var isHindi by remember { mutableStateOf(true) }
-    val screenStack = remember { mutableStateListOf(AppScreen.SPLASH) }
-    val currentScreen = screenStack.lastOrNull() ?: AppScreen.HOME
+
+    // Persistent Darbar Entrance State: Returning users go directly to Home Screen!
+    val prefs = remember { context.getSharedPreferences("shri_balaji_app_prefs", Context.MODE_PRIVATE) }
+    val initialScreen = remember {
+        val hasEntered = prefs.getBoolean("has_entered_darbar", false)
+        if (hasEntered) AppScreen.HOME else AppScreen.SPLASH
+    }
+
+    var currentScreen by remember { mutableStateOf(initialScreen) }
+    val backStack = remember { mutableStateListOf<AppScreen>() }
 
     fun navigateTo(screen: AppScreen) {
-        screenStack.add(screen)
+        backStack.add(currentScreen)
+        currentScreen = screen
     }
 
     fun navigateBack() {
-        if (screenStack.size > 1) {
-            screenStack.removeAt(screenStack.size - 1)
+        if (backStack.isNotEmpty()) {
+            currentScreen = backStack.removeAt(backStack.size - 1)
         }
     }
 
-    BackHandler(enabled = screenStack.size > 1) {
+    BackHandler(enabled = backStack.isNotEmpty()) {
         navigateBack()
     }
 
@@ -62,8 +74,13 @@ fun MainNavigation(
         when (screen) {
             AppScreen.SPLASH -> SplashScreen(
                 onEnterDarbar = {
-                    screenStack.clear()
-                    screenStack.add(AppScreen.HOME)
+                    try {
+                        prefs.edit().putBoolean("has_entered_darbar", true).apply()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                    backStack.clear()
+                    currentScreen = AppScreen.HOME
                 },
                 isHindi = isHindi,
                 onToggleLanguage = { isHindi = !isHindi }

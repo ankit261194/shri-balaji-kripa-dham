@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 15,
-  "latest_version_name": "2.13.1",
-  "update_notes_hindi": "अति महत्वपूर्ण क्रैश निवारण अपडेट (v2.13.1): 1. ऐप खुलते ही बंद होने की समस्या का 100% स्थायी समाधान। 2. सभी फोनों पर सुचारू रूप से कार्यशील 360° विज़ुअल थीम सिस्टम। 3. सुरक्षित व स्थिर प्रदर्शन।",
-  "update_notes_english": "Critical Stability & Crash Fix (v2.13.1): 1. Permanently resolved app launch crash on all devices. 2. 100% stable 360-degree dynamic visual theming engine. 3. Fast and seamless performance.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.13.1/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 16,
+  "latest_version_name": "2.13.2",
+  "update_notes_hindi": "अति महत्वपूर्ण स्थाई समाधान अपडेट (v2.13.2): 1. वेलकम स्क्रीन पर अटकने की समस्या का 100% स्थायी समाधान। 2. 'श्री दरबार में प्रवेश करें' बटन अब पूरी तरह क्लिक-प्रूफ़ व तीव्र है। 3. एक बार प्रवेश के बाद ऐप सीधे दरबार होम स्क्रीन पर खुलेगी।",
+  "update_notes_english": "Critical Welcome Screen & Navigation Fix (v2.13.2): 1. Permanently resolved Welcome screen freeze issue. 2. Enter Holy Darbar button is now 100% click-proof and ultra responsive. 3. Direct entrance to Holy Darbar on subsequent launches.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.13.2/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }
