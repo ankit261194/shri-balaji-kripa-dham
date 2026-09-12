@@ -171,6 +171,7 @@ fun FaceTokenRegistrationScreen(
             userLatitude = loc.latitude
             userLongitude = loc.longitude
         }
+        repository.syncDevoteesFromCloud()
     }
 
     // Auto-save Token Card to Photo Gallery whenever token is issued

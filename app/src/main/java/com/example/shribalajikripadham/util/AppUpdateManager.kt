@@ -24,7 +24,7 @@ import org.json.JSONObject
 
 object AppUpdateManager {
 
-    const val DEFAULT_APK_URL = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.3.0/ShriBalajiKripaDham-release.apk"
+    const val DEFAULT_APK_URL = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.11.0/ShriBalajiKripaDham-release.apk"
     const val DEFAULT_VERSION_JSON_URL = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/version.json"
 
     data class OnlineUpdateInfo(
@@ -51,12 +51,17 @@ object AppUpdateManager {
                     val response = reader.readText()
                     reader.close()
                     val json = JSONObject(response)
+                    val parsedApkUrl = when {
+                        json.has("apk_url") && json.optString("apk_url").isNotBlank() -> json.optString("apk_url")
+                        json.has("apk_download_url") && json.optString("apk_download_url").isNotBlank() -> json.optString("apk_download_url")
+                        else -> DEFAULT_APK_URL
+                    }
                     OnlineUpdateInfo(
                         versionCode = json.optInt("latest_version_code", 1),
                         versionName = json.optString("latest_version_name", "1.0"),
                         updateNotesHindi = json.optString("update_notes_hindi", ""),
                         updateNotesEnglish = json.optString("update_notes_english", ""),
-                        apkUrl = json.optString("apk_download_url", DEFAULT_APK_URL),
+                        apkUrl = parsedApkUrl,
                         isForce = json.optBoolean("is_force_update", false)
                     )
                 } else {

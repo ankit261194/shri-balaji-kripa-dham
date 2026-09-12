@@ -2403,6 +2403,78 @@ fun TokenQueueTab(
             }
         }
     }
+
+    if (showSheetConfigDialog) {
+        AlertDialog(
+            onDismissRequest = { showSheetConfigDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🔗 ", fontSize = 20.sp)
+                    Text(
+                        text = if (isHindi) "Google Sheets वेबहुक सेटिंग्स" else "Google Sheets Webhook Config",
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonPrimary
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = if (isHindi)
+                            "गूगल शीट्स वेबहुक URL दर्ज करें ताकि सभी टोकन, चेहरे का डाटा और डिवाइस टेलीमेट्री लाइव गूगल शीट पर सिंक हो सकें।"
+                        else
+                            "Enter Google Apps Script Webhook URL to enable live sync of tokens, face profiles, and device telemetry to Google Sheets.",
+                        fontSize = 13.sp,
+                        color = Color.DarkGray
+                    )
+                    OutlinedTextField(
+                        value = sheetWebhookUrlInput,
+                        onValueChange = { sheetWebhookUrlInput = it },
+                        label = { Text("Webhook URL") },
+                        placeholder = { Text("https://script.google.com/macros/s/...") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (syncManager.isConfigured(context)) {
+                        Text(
+                            text = if (isHindi) "✅ वर्तमान स्थिति: सक्रिय एवं कनेक्टेड" else "✅ Current Status: Active & Connected",
+                            fontSize = 12.sp,
+                            color = Color(0xFF2E7D32),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    } else {
+                        Text(
+                            text = if (isHindi) "⚠️ वर्तमान स्थिति: कनेक्ट नहीं है" else "⚠️ Current Status: Not Connected",
+                            fontSize = 12.sp,
+                            color = Color(0xFFD32F2F),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        syncManager.saveWebhookUrl(context, sheetWebhookUrlInput)
+                        showSheetConfigDialog = false
+                        Toast.makeText(
+                            context,
+                            if (isHindi) "वेबहुक URL सफलतापूर्वक सेव किया गया!" else "Webhook URL saved successfully!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                ) {
+                    Text(if (isHindi) "सुरक्षित करें (Save)" else "Save", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSheetConfigDialog = false }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel", color = Color.Gray)
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -2443,6 +2515,7 @@ fun ManualTokenTab(
             userLat = loc.latitude
             userLng = loc.longitude
         }
+        repository.syncDevoteesFromCloud()
     }
 
     val cameraLauncher = rememberLauncherForActivityResult(

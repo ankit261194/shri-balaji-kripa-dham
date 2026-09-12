@@ -1,6 +1,8 @@
 package com.example.shribalajikripadham.data.network
 
+import android.content.ContentValues
 import android.content.Context
+import com.example.shribalajikripadham.data.local.DatabaseHelper
 import com.example.shribalajikripadham.data.model.Token
 import com.example.shribalajikripadham.data.model.TokenStatus
 import kotlinx.coroutines.Dispatchers
@@ -18,12 +20,47 @@ object GoogleSheetTokenSyncManager {
 
     fun getWebhookUrl(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_WEBHOOK_URL, "") ?: ""
+        val url = prefs.getString(KEY_WEBHOOK_URL, "") ?: ""
+        if (url.isNotBlank()) return url.trim()
+
+        // Fallback: check SQLite ashram_settings cloud_sync_url
+        return try {
+            val dbHelper = DatabaseHelper(context)
+            val db = dbHelper.readableDatabase
+            val cursor = db.rawQuery("SELECT cloud_sync_url FROM ashram_settings WHERE id = 1 LIMIT 1", null)
+            var dbUrl = ""
+            if (cursor.moveToFirst()) {
+                dbUrl = cursor.getString(0) ?: ""
+            }
+            cursor.close()
+            if (dbUrl.isNotBlank()) {
+                prefs.edit().putString(KEY_WEBHOOK_URL, dbUrl.trim()).apply()
+            }
+            dbUrl.trim()
+        } catch (e: Exception) {
+            ""
+        }
     }
 
     fun saveWebhookUrl(context: Context, url: String) {
+        val trimmed = url.trim()
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_WEBHOOK_URL, url.trim()).apply()
+        prefs.edit().putString(KEY_WEBHOOK_URL, trimmed).apply()
+
+        // Synchronize to SQLite ashram_settings as well
+        try {
+            val dbHelper = DatabaseHelper(context)
+            val db = dbHelper.writableDatabase
+            val cv = ContentValues().apply {
+                put("cloud_sync_url", trimmed)
+                if (trimmed.isNotBlank()) {
+                    put("is_cloud_sync_enabled", 1)
+                }
+            }
+            db.update("ashram_settings", cv, "id = 1", null)
+        } catch (e: Exception) {
+            // ignore
+        }
     }
 
     fun isConfigured(context: Context): Boolean {
