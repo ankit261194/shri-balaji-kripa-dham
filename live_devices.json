@@ -1,7 +1,17 @@
 {
-  "total_devices": 1,
-  "updated_at": 1789228968022,
+  "total_devices": 2,
+  "updated_at": 1789230646825,
   "devices": [
+    {
+      "device_id": "dc672a70b799db25e71d9f0dba57bffb8de13aab787448bb2738322b243fc66c",
+      "device_model": "Xiaomi 26022PCACI",
+      "user_name": "",
+      "phone_number": "",
+      "city": "",
+      "app_version": "2.25.0",
+      "last_seen_at": 1789230646825,
+      "open_count": 1
+    },
     {
       "device_id": "2b01861028f80b2cdbb506932fe1ec27a8f041d05d01534805212b64de18d93a",
       "device_model": "motorola edge 40 neo",
