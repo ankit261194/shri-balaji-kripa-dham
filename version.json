@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 20,
-  "latest_version_name": "2.17.0",
-  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.17.0): 1. कैमरा फोटो क्रैश का 100% स्थायी समाधान - हार्डवेयर बिटमैप व गेट-पिक्सल्स एरर को जड़ से ठीक किया गया, अब फोटो खींचने पर ऐप कभी बंद नहीं होगी। 2. रनटाइम कैमरा परमिशन चेकिंग जोड़ी गई। 3. गैलरी से फोटो चुनने का नया विकल्प (Gallery Photo Fallback) रविवार टोकन व स्मार्ट चेहरा दोनों में उपलब्ध। 4. संपूर्ण ऐप के सभी बटनों और सुविधाओं का गहन स्थायित्व ऑडिट पूर्ण।",
-  "update_notes_english": "Critical Stability Update (v2.17.0): 1. Fixed camera photo capture crash - Resolved Hardware Bitmap getPixels exception, ensuring crash-proof photo capturing across all Android devices. 2. Added runtime camera permission handling. 3. Added Gallery Photo Fallback picker for tokens. 4. Complete app-wide stability and button audit.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.17.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 22,
+  "latest_version_name": "2.19.0",
+  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.19.0): 1. संपूर्ण ऑनलाइन क्लाउड सिंक: भक्तों द्वारा आश्रम से जनरेट किया गया टोकन तुरंत क्लाउड पर सिंक होकर एडमिन व सुपर एडमिन डैशबोर्ड पर दिखेगा। 2. आश्रम भू-घेरा (Strict Geofence): भक्त केवल आश्रम परिसर के अंदर उपस्थित होने पर ही टोकन बना सकते हैं, बाहर से कदापि नहीं। 3. आश्रम कस्टमाइज़र लाइव अपडेट: सुपर एडमिन द्वारा नाम, संपर्क, सूचना, लोकेशन या लिंक्स बदलने पर सभी भक्तों के फोन में बिना ऐप अपडेट स्वतः लाइव अपडेट। 4. सुपर एडमिन A to Z एडमिन परमिशन लिस्ट: 16 अनुमतियों द्वारा सेवादारों के अधिकारों का पूर्ण लाइव नियंत्रण। 5. टोकन कैंसिल, डिलीट, कस्टम टोकन नंबर एवं आज की टोकन सूची PDF में सटीक किलोमीटर दूरी।",
+  "update_notes_english": "Universal Cloud Sync & Strict Geofence Release (v2.19.0): 1. 100% Real-time Cloud Token Sync directly to GitHub Cloud repository. 2. Strict Ashram Geofence Enforcement: Devotees can ONLY generate tokens while physically present at the Ashram. 3. Live Ashram Customizer: Any details, notices, contact, or location changes by Super Admin reflect live on all devotee phones without app update. 4. Complete A-to-Z 16 Permissions Matrix for Admins/Sevadars managed by Super Admin. 5. Token Cancel, Delete, Custom Token # controls, and accurate road KM calculation.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.19.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

@@ -224,10 +224,17 @@ object TokenPdfExporter {
                     canvas.drawText(safeCity, colXCity, textY, rowTextPaint)
 
                     // 5. Distance
-                    val distKm = TokenDistanceHelper.calculateDistanceKm(
-                        settings.latitude, settings.longitude, token.latitude, token.longitude
-                    )
-                    val distStr = if (distKm < 0f) "काउंटर" else if (distKm < 1f) "< 1 किमी" else "%.1f किमी".format(distKm)
+                    val distStr = when {
+                        token.distanceKm >= 0.2f -> "%.1f किमी".format(Locale.getDefault(), token.distanceKm)
+                        token.distanceKm in 0f..0.2f -> "स्थानीय"
+                        token.city.contains("डूँगरा") || token.city.contains("स्थानीय") || token.city.contains("dungra", ignoreCase = true) -> "स्थानीय"
+                        else -> {
+                            val calculated = TokenDistanceHelper.calculateDistanceKm(
+                                settings.latitude, settings.longitude, token.latitude, token.longitude
+                            )
+                            if (calculated > 1.0f) "%.1f किमी".format(Locale.getDefault(), calculated) else "काउंटर"
+                        }
+                    }
                     canvas.drawText(distStr, colXDistance, textY, rowTextPaint)
 
                     // 6. Time

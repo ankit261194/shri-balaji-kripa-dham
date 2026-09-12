@@ -14,24 +14,55 @@ import java.io.FileOutputStream
 import java.io.InputStream
 
 /**
- * Camera Contract to explicitly request the front-facing selfie camera.
- * Uses only standard Android camera extras to guarantee compatibility across
- * all OEM camera implementations (Samsung, Xiaomi, Oppo, Vivo, OnePlus, Motorola, Pixel).
+ * Camera Contract to explicitly request the front-facing selfie camera for Devotees.
+ * Uses comprehensive OEM camera intent extras to guarantee front camera across
+ * all OEM camera implementations (Samsung, Xiaomi/Redmi, Oppo, Vivo, Realme, OnePlus, Motorola, Pixel).
  */
 class TakeFrontPicturePreview : ActivityResultContracts.TakePicturePreview() {
     override fun createIntent(context: Context, input: Void?): Intent {
         val intent = super.createIntent(context, input)
-        // Standard Android camera intent extras
+        // Standard Android & OEM camera intent extras for FRONT camera
         intent.putExtra("android.intent.extras.CAMERA_FACING", 1) // 1 = Front
         intent.putExtra("android.intent.extras.LENS_FACING_FRONT", 1)
         intent.putExtra("android.intent.extra.USE_FRONT_CAMERA", true)
         intent.putExtra("android.intent.extras.FRONT_CAMERA", true)
+        intent.putExtra("camerafacing", "front")
+        intent.putExtra("facing", "front")
+        intent.putExtra("android.intent.extra.LENS_FACING", 1)
+        intent.putExtra("front_camera", true)
+        intent.putExtra("camerasensortype", 2) // 2 = Front on Xiaomi/MIUI
+        intent.putExtra("oppo_camera_facing", 1) // 1 = Front on Oppo/Realme
+        intent.putExtra("com.google.assistant.extra.USE_FRONT_CAMERA", true)
+        intent.putExtra("com.android.camera.extra.facing", 1)
         return intent
     }
 }
 
 /**
- * Camera Contract for standard rear or front camera (e.g. for desk sevadars/admins).
+ * Camera Contract to explicitly request the rear/back camera for Admins/Sevadars
+ * (e.g. taking devotee photo from desk or scanning paper register).
+ */
+class TakeRearPicturePreview : ActivityResultContracts.TakePicturePreview() {
+    override fun createIntent(context: Context, input: Void?): Intent {
+        val intent = super.createIntent(context, input)
+        // Standard Android & OEM camera intent extras for REAR camera
+        intent.putExtra("android.intent.extras.CAMERA_FACING", 0) // 0 = Back
+        intent.putExtra("android.intent.extras.LENS_FACING_FRONT", 0)
+        intent.putExtra("android.intent.extra.USE_FRONT_CAMERA", false)
+        intent.putExtra("android.intent.extras.FRONT_CAMERA", false)
+        intent.putExtra("camerafacing", "back")
+        intent.putExtra("facing", "back")
+        intent.putExtra("android.intent.extra.LENS_FACING", 0)
+        intent.putExtra("front_camera", false)
+        intent.putExtra("camerasensortype", 1) // 1 = Rear on Xiaomi/MIUI
+        intent.putExtra("oppo_camera_facing", 0) // 0 = Rear on Oppo/Realme
+        intent.putExtra("com.android.camera.extra.facing", 0)
+        return intent
+    }
+}
+
+/**
+ * Camera Contract for standard rear or front camera (fallback).
  */
 class TakeAnyPicturePreview : ActivityResultContracts.TakePicturePreview()
 

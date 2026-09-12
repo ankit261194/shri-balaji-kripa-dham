@@ -13,9 +13,12 @@ data class Admin(
     val role: AdminRole = AdminRole.SEVADAR,
     val pinHash: String = "",
     val passwordHash: String = "",
-    // Granular permissions matrix:
+    // Granular permissions matrix (A-to-Z):
     val canManageTokens: Boolean = true,
     val canIssueManualTokens: Boolean = true,
+    val canCancelTokens: Boolean = false,
+    val canDeleteTokens: Boolean = false,
+    val canSetCustomTokenNumber: Boolean = false,
     val canManageYatra: Boolean = true,
     val canManageExpenses: Boolean = true,
     val canChangeLocation: Boolean = false,
@@ -26,6 +29,7 @@ data class Admin(
     val canIssueTokensAnywhere: Boolean = false,
     val canScanPaperRegister: Boolean = false,
     val canManageParchas: Boolean = false,
+    val canExportPdf: Boolean = true,
     val photoUri: String = "",
     val isActive: Boolean = true,
     val createdAt: Long = System.currentTimeMillis()

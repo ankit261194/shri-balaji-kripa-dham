@@ -18,11 +18,27 @@ data class LocationConfigDto(
     val updatedAt: Long = System.currentTimeMillis()
 )
 
+data class AshramDetailsConfigDto(
+    val ashramName: String = "श्री बालाजी कृपा धाम",
+    val gurujiName: String = "परम पूज्य गुरुजी",
+    val address: String = "ग्राम डूंगरा जाट, तहसील शिकारपुर, जिला बुलन्दशहर (उ.प्र.)",
+    val contactPhone: String = "7417531776",
+    val contactPhoneSecondary: String = "9456488344",
+    val whatsappNumber: String = "7417531776",
+    val darbarTimings: String = "प्रत्येक रविवार प्रातः 7:00 बजे से प्रभु इच्छा तक",
+    val freeDisclaimer: String = "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।",
+    val whatsappGroupUrl: String = "https://chat.whatsapp.com/invite",
+    val youtubeChannelUrl: String = "https://www.youtube.com/@ShriBalajiKripaDham",
+    val facebookPageUrl: String = "https://www.facebook.com/ShriBalajiKripaDham",
+    val instagramUrl: String = "https://www.instagram.com/shribalajikripadham"
+)
+
 data class LiveUiConfigDto(
     val updatedAt: String = "",
     val updatedBy: String = "Super Admin",
     val version: Int = 1,
     val activeUiLayout: String = "CLASSIC_DARBAR",
+    val ashramDetails: AshramDetailsConfigDto = AshramDetailsConfigDto(),
     val emergencyNotice: EmergencyNoticeDto = EmergencyNoticeDto(),
     val locationConfig: LocationConfigDto = LocationConfigDto(),
     val sections: List<UiSectionConfig> = UiSectionConfig.defaultSections()
@@ -33,6 +49,21 @@ data class LiveUiConfigDto(
         root.put("updated_by", updatedBy)
         root.put("version", version)
         root.put("active_ui_layout", activeUiLayout)
+
+        val detObj = JSONObject()
+        detObj.put("ashram_name", ashramDetails.ashramName)
+        detObj.put("guruji_name", ashramDetails.gurujiName)
+        detObj.put("address", ashramDetails.address)
+        detObj.put("contact_phone", ashramDetails.contactPhone)
+        detObj.put("contact_phone_secondary", ashramDetails.contactPhoneSecondary)
+        detObj.put("whatsapp_number", ashramDetails.whatsappNumber)
+        detObj.put("darbar_timings", ashbarTimings(ashramDetails))
+        detObj.put("free_disclaimer", ashramDetails.freeDisclaimer)
+        detObj.put("whatsapp_group_url", ashramDetails.whatsappGroupUrl)
+        detObj.put("youtube_channel_url", ashramDetails.youtubeChannelUrl)
+        detObj.put("facebook_page_url", ashramDetails.facebookPageUrl)
+        detObj.put("instagram_url", ashramDetails.instagramUrl)
+        root.put("ashram_details", detObj)
 
         val emObj = JSONObject()
         emObj.put("is_enabled", emergencyNotice.isEnabled)
@@ -64,6 +95,8 @@ data class LiveUiConfigDto(
         return root.toString(2)
     }
 
+    private fun ashbarTimings(details: AshramDetailsConfigDto): String = details.darbarTimings
+
     companion object {
         fun fromJson(jsonStr: String): LiveUiConfigDto? {
             if (jsonStr.isBlank()) return null
@@ -73,6 +106,24 @@ data class LiveUiConfigDto(
                 val updatedBy = root.optString("updated_by", "Super Admin")
                 val version = root.optInt("version", 1)
                 val activeLayout = root.optString("active_ui_layout", "CLASSIC_DARBAR")
+
+                val detObj = root.optJSONObject("ashram_details")
+                val ashramDetails = if (detObj != null) {
+                    AshramDetailsConfigDto(
+                        ashramName = detObj.optString("ashram_name", "श्री बालाजी कृपा धाम"),
+                        gurujiName = detObj.optString("guruji_name", "परम पूज्य गुरुजी"),
+                        address = detObj.optString("address", "ग्राम डूंगरा जाट, तहसील शिकारपुर, जिला बुलन्दशहर (उ.प्र.)"),
+                        contactPhone = detObj.optString("contact_phone", "7417531776"),
+                        contactPhoneSecondary = detObj.optString("contact_phone_secondary", "9456488344"),
+                        whatsappNumber = detObj.optString("whatsapp_number", "7417531776"),
+                        darbarTimings = detObj.optString("darbar_timings", "प्रत्येक रविवार प्रातः 7:00 बजे से प्रभु इच्छा तक"),
+                        freeDisclaimer = detObj.optString("free_disclaimer", "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।"),
+                        whatsappGroupUrl = detObj.optString("whatsapp_group_url", "https://chat.whatsapp.com/invite"),
+                        youtubeChannelUrl = detObj.optString("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham"),
+                        facebookPageUrl = detObj.optString("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham"),
+                        instagramUrl = detObj.optString("instagram_url", "https://www.instagram.com/shribalajikripadham")
+                    )
+                } else AshramDetailsConfigDto()
 
                 val emObj = root.optJSONObject("emergency_notice")
                 val emergencyNotice = if (emObj != null) {
@@ -117,6 +168,7 @@ data class LiveUiConfigDto(
                     updatedBy = updatedBy,
                     version = version,
                     activeUiLayout = activeLayout,
+                    ashramDetails = ashramDetails,
                     emergencyNotice = emergencyNotice,
                     locationConfig = locationConfig,
                     sections = if (sectionsList.isNotEmpty()) sectionsList else UiSectionConfig.defaultSections()

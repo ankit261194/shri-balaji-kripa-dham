@@ -840,8 +840,13 @@ fun FaceTokenRegistrationScreen(
                                 // 2 ACTION BUTTONS:
                                 // BUTTON 1: [ Confirm / Sahi Hai ] -> Generates Token & Auto-Updates Profile
                                 Button(
+                                    enabled = isInsideGeofence,
                                     onClick = {
                                         scope.launch {
+                                            if (!isInsideGeofence) {
+                                                errorMessage = if (isHindi) "आप आश्रम परिसर से बाहर हैं। टोकन केवल आश्रम में उपस्थित होने पर मिलेगा।" else "You are outside Ashram premises."
+                                                return@launch
+                                            }
                                             try {
                                                 val loc = GeofenceLocationManager.getLastKnownLocation(context)
                                                 val isMock = GeofenceLocationManager.isMockLocation(loc, context)
@@ -1078,9 +1083,14 @@ fun FaceTokenRegistrationScreen(
                             Spacer(modifier = Modifier.height(18.dp))
 
                             Button(
+                                enabled = isInsideGeofence,
                                 onClick = {
                                     scope.launch {
                                         try {
+                                            if (!isInsideGeofence) {
+                                                errorMessage = if (isHindi) "आप आश्रम परिसर से बाहर हैं। टोकन केवल आश्रम में उपस्थित होने पर मिलेगा।" else "You are outside Ashram premises."
+                                                return@launch
+                                            }
                                             if (manualName.isBlank() || manualPhone.isBlank()) {
                                                 errorMessage = "कृपया नाम व फोन नंबर भरें"
                                                 return@launch

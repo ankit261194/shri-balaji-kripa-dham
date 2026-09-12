@@ -42,6 +42,11 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import com.example.shribalajikripadham.util.DevoteePhotoHelper
 import com.example.shribalajikripadham.util.TakeAnyPicturePreview
+import com.example.shribalajikripadham.util.TakeRearPicturePreview
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
 
 import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.launch
@@ -182,6 +187,14 @@ fun AdminDashboardScreen(
     var customSharePin by remember { mutableStateOf("") }
     var isSharingBanner by remember { mutableStateOf(false) }
     var editSevCanParchas by remember { mutableStateOf(false) }
+    var newSevCanCancelTokens by remember { mutableStateOf(false) }
+    var newSevCanDeleteTokens by remember { mutableStateOf(false) }
+    var newSevCanCustomTokenNumber by remember { mutableStateOf(false) }
+    var newSevCanExportPdf by remember { mutableStateOf(true) }
+    var editSevCanCancelTokens by remember { mutableStateOf(false) }
+    var editSevCanDeleteTokens by remember { mutableStateOf(false) }
+    var editSevCanCustomTokenNumber by remember { mutableStateOf(false) }
+    var editSevCanExportPdf by remember { mutableStateOf(true) }
     var customDistancesList by remember { mutableStateOf<List<CustomCityDistance>>(emptyList()) }
     var uiSectionsList by remember { mutableStateOf<List<UiSectionConfig>>(emptyList()) }
 
@@ -241,6 +254,14 @@ fun AdminDashboardScreen(
     LaunchedEffect(loggedInAdmin) {
         if (loggedInAdmin != null) {
             refreshData()
+            scope.launch {
+                try {
+                    repository.syncLiveConfigFromGitHub()
+                    repository.syncLiveTokensFromCloud()
+                    repository.syncAdminsFromGitHub()
+                    refreshData()
+                } catch (e: Exception) {}
+            }
         }
     }
 
@@ -791,6 +812,9 @@ fun AdminDashboardScreen(
                                 settings = settings,
                                 todayTokens = todayTokens,
                                 canViewPhotos = admin.canViewDevoteePhotos || isSuper,
+                                canCancelTokens = admin.canCancelTokens || isSuper,
+                                canDeleteTokens = admin.canDeleteTokens || isSuper,
+                                canExportPdf = admin.canExportPdf || isSuper,
                                 onUpdateRunningToken = { newNum ->
                                     scope.launch {
                                         repository.updateRunningTokenNumber(newNum)
@@ -821,14 +845,25 @@ fun AdminDashboardScreen(
                                         refreshData()
                                     }
                                 },
-                                onSyncFromGoogleSheet = {
+                                onSyncFromCloud = {
                                     scope.launch {
-                                        val res = repository.syncTokensFromGoogleSheet()
+                                        val res = repository.syncLiveTokensFromCloud()
                                         refreshData()
                                         if (res.first) {
-                                            Toast.makeText(context, if (isHindi) "✅ Google Sheet से ${res.second} नए टोकन सिंक हुए!" else "✅ Synced ${res.second} new tokens from Google Sheet!", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, if (isHindi) "✅ क्लाउड से ${res.second} नए भक्त टोकन सिंक हुए!" else "✅ Synced ${res.second} new tokens from cloud!", Toast.LENGTH_SHORT).show()
                                         } else {
-                                            Toast.makeText(context, if (isHindi) "Google Sheet सिंक: कोई नया टोकन नहीं मिला या वेबहुक लिंक सेट नहीं है" else "Google Sheet sync: No new tokens or webhook not set", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, if (isHindi) "क्लाउड सिंक: सभी टोकन पहले से अपडेट हैं" else "Cloud sync: All tokens are up to date", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                onSyncFromGoogleSheet = {
+                                    scope.launch {
+                                        val res = repository.syncLiveTokensFromCloud()
+                                        refreshData()
+                                        if (res.first) {
+                                            Toast.makeText(context, if (isHindi) "✅ क्लाउड से ${res.second} नए टोकन सिंक हुए!" else "✅ Synced ${res.second} new tokens from cloud!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, if (isHindi) "क्लाउड सिंक: सभी टोकन पहले से अपडेट हैं" else "Cloud sync: All tokens are up to date", Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 }
@@ -897,6 +932,7 @@ fun AdminDashboardScreen(
                                             val longVal = longInput.toDouble()
                                             val radVal = radiusInput.toDouble()
                                             repository.updateAshramLocation(admin, latVal, longVal, radVal, geofenceEnforced)
+                                            try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                             locationSuccessMsg = if (isHindi) "✓ नई GPS लोकेशन सुरक्षित व क्लाउड द्वारा सभी भक्तों के फोन पर लाइव अपडेट हो गई!" else "GPS coordinates updated & broadcast to all users live!"
                                             locationErrorMsg = null
                                             refreshData()
@@ -982,6 +1018,10 @@ fun AdminDashboardScreen(
                                     editSevCanAnywhere = targetAdmin.canIssueTokensAnywhere
                                     editSevCanScanRegister = targetAdmin.canScanPaperRegister
                                     editSevCanParchas = targetAdmin.canManageParchas
+                                    editSevCanCancelTokens = targetAdmin.canCancelTokens
+                                    editSevCanDeleteTokens = targetAdmin.canDeleteTokens
+                                    editSevCanCustomTokenNumber = targetAdmin.canSetCustomTokenNumber
+                                    editSevCanExportPdf = targetAdmin.canExportPdf
                                 },
                                 onToggleActive = { targetAdmin ->
                                     scope.launch {
@@ -1127,7 +1167,8 @@ fun AdminDashboardScreen(
                                             customInstagramPage,
                                             customAppShareUrl
                                         )
-                                        customizerSuccessMsg = if (isHindi) "आश्रम का विवरण, गुरुजी फोटो व सोशल लिंक्स सुरक्षित किए गए!" else "Ashram details, Guruji photo & social links saved!"
+                                        try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
+                                        customizerSuccessMsg = if (isHindi) "✓ आश्रम विवरण, फोटो व सोशल लिंक्स सुरक्षित व सभी भक्तों के फोन पर लाइव अपडेट हो गए!" else "Ashram details saved & published live to all users!"
                                         refreshData()
                                     }
                                 }
@@ -1230,8 +1271,9 @@ fun AdminDashboardScreen(
                                 onSaveSections = { updatedList ->
                                     scope.launch {
                                         repository.saveUiSectionConfigs(updatedList)
+                                        try { repository.publishLiveConfigToGitHub(updatedList, admin.name) } catch (e: Exception) {}
                                         refreshData()
-                                        Toast.makeText(context, if (isHindi) "UI लेआउट क्रम सफलतापूर्वक अपडेट हो गया!" else "UI layout updated successfully!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, if (isHindi) "✓ UI लेआउट क्रम सुरक्षित व सभी भक्तों के फोन पर लाइव अपडेट हो गया!" else "UI layout updated & published live to all devotees!", Toast.LENGTH_SHORT).show()
                                     }
                                 },
                                 onResetToDefault = {
@@ -1403,6 +1445,22 @@ fun AdminDashboardScreen(
                             color = Color(0xFFE65100)
                         )
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = newSevCanCancelTokens, onCheckedChange = { newSevCanCancelTokens = it })
+                        Text(if (isHindi) "🚫 टोकन रद्द करने की अनुमति (Cancel Token)" else "Allow Cancel Token", fontSize = 13.sp)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = newSevCanDeleteTokens, onCheckedChange = { newSevCanDeleteTokens = it })
+                        Text(if (isHindi) "🗑️ टोकन स्थायी हटाने की अनुमति (Delete Token)" else "Allow Delete Token", fontSize = 13.sp)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = newSevCanCustomTokenNumber, onCheckedChange = { newSevCanCustomTokenNumber = it })
+                        Text(if (isHindi) "🔢 मनचाहा टोकन नंबर डालने की अनुमति (Custom Token #)" else "Allow Custom Token Number", fontSize = 13.sp)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = newSevCanExportPdf, onCheckedChange = { newSevCanExportPdf = it })
+                        Text(if (isHindi) "📄 आज की टोकन सूची PDF डाउनलोड (Export PDF)" else "Allow Export PDF", fontSize = 13.sp)
+                    }
                 }
             },
             confirmButton = {
@@ -1441,6 +1499,10 @@ fun AdminDashboardScreen(
                                     canIssueTokensAnywhere = newSevCanAnywhere,
                                     canScanPaperRegister = newSevCanScanRegister,
                                     canManageParchas = newSevCanParchas,
+                                    canCancelTokens = newSevCanCancelTokens,
+                                    canDeleteTokens = newSevCanDeleteTokens,
+                                    canSetCustomTokenNumber = newSevCanCustomTokenNumber,
+                                    canExportPdf = newSevCanExportPdf,
                                     photoUri = newSevPhotoUri
                                 )
 
@@ -1870,6 +1932,22 @@ fun AdminDashboardScreen(
                             color = Color(0xFFE65100)
                         )
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = editSevCanCancelTokens, onCheckedChange = { editSevCanCancelTokens = it })
+                        Text(if (isHindi) "🚫 टोकन रद्द करने की अनुमति (Cancel Token)" else "Allow Cancel Token", fontSize = 13.sp)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = editSevCanDeleteTokens, onCheckedChange = { editSevCanDeleteTokens = it })
+                        Text(if (isHindi) "🗑️ टोकन स्थायी हटाने की अनुमति (Delete Token)" else "Allow Delete Token", fontSize = 13.sp)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = editSevCanCustomTokenNumber, onCheckedChange = { editSevCanCustomTokenNumber = it })
+                        Text(if (isHindi) "🔢 मनचाहा टोकन नंबर डालने की अनुमति (Custom Token #)" else "Allow Custom Token Number", fontSize = 13.sp)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = editSevCanExportPdf, onCheckedChange = { editSevCanExportPdf = it })
+                        Text(if (isHindi) "📄 आज की टोकन सूची PDF डाउनलोड (Export PDF)" else "Allow Export PDF", fontSize = 13.sp)
+                    }
                 }
             },
             confirmButton = {
@@ -1889,6 +1967,10 @@ fun AdminDashboardScreen(
                                 canIssueTokensAnywhere = editSevCanAnywhere,
                                 canScanPaperRegister = editSevCanScanRegister,
                                 canManageParchas = editSevCanParchas,
+                                canCancelTokens = editSevCanCancelTokens,
+                                canDeleteTokens = editSevCanDeleteTokens,
+                                canSetCustomTokenNumber = editSevCanCustomTokenNumber,
+                                canExportPdf = editSevCanExportPdf,
                                 isActive = target.isActive
                             )
                             repository.updateAdminPhoto(target.id, editSevPhotoUri)
@@ -2010,14 +2092,20 @@ fun TokenQueueTab(
     settings: AshramSettings,
     todayTokens: List<Token>,
     canViewPhotos: Boolean = false,
+    canCancelTokens: Boolean = true,
+    canDeleteTokens: Boolean = true,
+    canExportPdf: Boolean = true,
     onUpdateRunningToken: (Int) -> Unit,
     onUpdateStatus: (Long, TokenStatus) -> Unit,
     onToggleDarshan: (Long, Boolean) -> Unit,
     onCancelToken: ((Long) -> Unit)? = null,
     onDeleteToken: ((Long) -> Unit)? = null,
+    onSyncFromCloud: (() -> Unit)? = null,
     onSyncFromGoogleSheet: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val syncManager = com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager
     var showSheetConfigDialog by remember { mutableStateOf(false) }
     var sheetWebhookUrlInput by remember { mutableStateOf(syncManager.getWebhookUrl(context)) }
@@ -2026,6 +2114,7 @@ fun TokenQueueTab(
     var selectedDistanceFilter by remember { mutableStateOf(DistanceFilter.ALL) }
     var selectedSortOrder by remember { mutableStateOf(TokenSortOrder.TOKEN_NUMBER) }
     var isExportingPdf by remember { mutableStateOf(false) }
+    var tokenToCancel by remember { mutableStateOf<Token?>(null) }
     var tokenToDelete by remember { mutableStateOf<Token?>(null) }
     var zoomedPhotoToken by remember { mutableStateOf<Token?>(null) }
 
@@ -2045,7 +2134,9 @@ fun TokenQueueTab(
     val pendingCount = totalCount - completedCount
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .imePadding(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         // 1. Current Calling Token
@@ -2137,36 +2228,38 @@ fun TokenQueueTab(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Button(
-                        onClick = {
-                            if (todayTokens.isEmpty()) {
-                                Toast.makeText(context, if (isHindi) "आज कोई टोकन नहीं है" else "No tokens today", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-                            isExportingPdf = true
-                            try {
-                                val pdfFile = TokenPdfExporter.exportTokensToPdf(context, todayTokens, settings)
-                                TokenPdfExporter.openOrSharePdf(context, pdfFile)
-                                Toast.makeText(context, if (isHindi) "PDF रिपोर्ट तैयार है!" else "PDF report ready!", Toast.LENGTH_SHORT).show()
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "PDF Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                            } finally {
-                                isExportingPdf = false
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = if (isExportingPdf)
-                                (if (isHindi) "PDF बनाई जा रही है..." else "Generating PDF...")
-                            else
-                                ("📄 " + (if (isHindi) "आज की टोकन सूची PDF डाउनलोड / शेयर करें" else "Export Today's Token List to PDF")),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = Color.White
-                        )
+                    if (canExportPdf) {
+                        Button(
+                            onClick = {
+                                if (todayTokens.isEmpty()) {
+                                    Toast.makeText(context, if (isHindi) "आज कोई टोकन नहीं है" else "No tokens today", Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
+                                isExportingPdf = true
+                                try {
+                                    val pdfFile = TokenPdfExporter.exportTokensToPdf(context, todayTokens, settings)
+                                    TokenPdfExporter.openOrSharePdf(context, pdfFile)
+                                    Toast.makeText(context, if (isHindi) "PDF रिपोर्ट तैयार है!" else "PDF report ready!", Toast.LENGTH_SHORT).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "PDF Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                } finally {
+                                    isExportingPdf = false
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = if (isExportingPdf)
+                                    (if (isHindi) "PDF बनाई जा रही है..." else "Generating PDF...")
+                                else
+                                    ("📄 " + (if (isHindi) "आज की टोकन सूची PDF डाउनलोड / शेयर करें" else "Export Today's Token List to PDF")),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color.White
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(6.dp))
@@ -2198,9 +2291,9 @@ fun TokenQueueTab(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // 📈 CENTRAL GOOGLE SHEETS LIVE SYNC CARD
+                    // ☁️ UNIVERSAL 100% ONLINE CLOUD TOKEN SYNC CARD (GitHub + Google Sheets)
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, Color(0xFF81C784)),
                         modifier = Modifier.fillMaxWidth()
@@ -2212,19 +2305,19 @@ fun TokenQueueTab(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("📈", fontSize = 20.sp)
+                                    Text("☁️", fontSize = 22.sp)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
                                         Text(
-                                            text = if (isHindi) "Google Sheets टोकन सिंक" else "Google Sheets Token Sync",
+                                            text = if (isHindi) "लाइव क्लाउड टोकन सिंक (100% ऑनलाइन)" else "Live Cloud Token Sync (100% Online)",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 14.sp,
                                             color = Color(0xFF1B5E20)
                                         )
                                         Text(
-                                            text = if (syncManager.isConfigured(context)) "🟢 सिंक सक्रिय (Active)" else "⚠️ लिंक सेट करें",
+                                            text = if (isHindi) "🟢 सेंट्रल क्लाउड सिंक सक्रिय (भक्तों के फोन से स्वतः जुड़ेगा)" else "🟢 Central Cloud Active (Auto Devotee Sync)",
                                             fontSize = 11.sp,
-                                            color = if (syncManager.isConfigured(context)) Color(0xFF2E7D32) else Color(0xFFE65100),
+                                            color = Color(0xFF2E7D32),
                                             fontWeight = FontWeight.SemiBold
                                         )
                                     }
@@ -2242,9 +2335,10 @@ fun TokenQueueTab(
                             ) {
                                 Button(
                                     onClick = {
-                                        if (onSyncFromGoogleSheet != null) {
+                                        val syncAction = onSyncFromCloud ?: onSyncFromGoogleSheet
+                                        if (syncAction != null) {
                                             isSyncingSheet = true
-                                            onSyncFromGoogleSheet()
+                                            syncAction()
                                             isSyncingSheet = false
                                         }
                                     },
@@ -2254,7 +2348,10 @@ fun TokenQueueTab(
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Text(
-                                        text = "🔄 " + (if (isHindi) "शीट से सिंक करें" else "Sync Sheet Tokens"),
+                                        text = if (isSyncingSheet)
+                                            (if (isHindi) "सिंक हो रहा है..." else "Syncing...")
+                                        else
+                                            ("🔄 " + (if (isHindi) "क्लाउड से सिंक करें" else "Sync Cloud Tokens")),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
@@ -2268,7 +2365,7 @@ fun TokenQueueTab(
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Text(
-                                        text = "🔗 " + (if (isHindi) "वेबहुक सेटिंग्स" else "Webhook Config"),
+                                        text = "⚙️ " + (if (isHindi) "शीट सेटिंग्स" else "Sheet Settings"),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -2289,16 +2386,63 @@ fun TokenQueueTab(
                     placeholder = { Text(if (isHindi) "नाम, फोन नंबर या शहर से खोजें..." else "Search devotee by name, phone or city...") },
                     leadingIcon = { Text("🔍") },
                     trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Text("✕")
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    searchQuery = ""
+                                    keyboardController?.hide()
+                                    focusManager.clearFocus()
+                                }) {
+                                    Text("✕")
+                                }
+                            }
+                            IconButton(onClick = {
+                                keyboardController?.hide()
+                                focusManager.clearFocus()
+                            }) {
+                                Text("⌨️⬇️", fontSize = 13.sp)
                             }
                         }
                     },
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Search
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            keyboardController?.hide()
+                            focusManager.clearFocus()
+                        }
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
                 )
+
+                if (searchQuery.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isHindi) "खोज परिणाम: ${filteredTokens.size} भक्त मिले" else "Found: ${filteredTokens.size} devotees",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonPrimary
+                        )
+                        OutlinedButton(
+                            onClick = {
+                                keyboardController?.hide()
+                                focusManager.clearFocus()
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(26.dp)
+                        ) {
+                            Text(if (isHindi) "कीपैड बन्द करें ⬇️" else "Hide Keypad ⬇️", fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
 
                 // Distance Filter Chips Row
                 Text(
@@ -2660,6 +2804,41 @@ fun TokenQueueTab(
                             )
                         )
                     }
+
+                    // Row 4: Super Admin & Admin Token Cancellation & Removal Action Buttons (Permission Controlled)
+                    if ((canCancelTokens && onCancelToken != null) || (canDeleteTokens && onDeleteToken != null)) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (canCancelTokens && onCancelToken != null && token.status != TokenStatus.CANCELLED) {
+                                OutlinedButton(
+                                    onClick = { tokenToCancel = token },
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFC62828)),
+                                    border = BorderStroke(1.dp, Color(0xFFFFCDD2)),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.height(28.dp)
+                                ) {
+                                    Text("🚫 " + (if (isHindi) "रद्द करें" else "Cancel"), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            if (canDeleteTokens && onDeleteToken != null) {
+                                Button(
+                                    onClick = { tokenToDelete = token },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.height(28.dp)
+                                ) {
+                                    Text("🗑️ " + (if (isHindi) "हटाएं" else "Delete"), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -2847,6 +3026,84 @@ fun TokenQueueTab(
             }
         )
     }
+
+    // Confirmation Dialog for Token Cancellation
+    if (tokenToCancel != null) {
+        val t = tokenToCancel!!
+        AlertDialog(
+            onDismissRequest = { tokenToCancel = null },
+            title = {
+                Text(
+                    text = if (isHindi) "टोकन #${t.tokenNumber} रद्द (Cancel) करें?" else "Cancel Token #${t.tokenNumber}?",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFC62828)
+                )
+            },
+            text = {
+                Text(
+                    text = if (isHindi)
+                        "क्या आप भक्त ${t.patientName} (फोन: ${t.phoneNumber}) का टोकन #${t.tokenNumber} रद्द करना चाहते हैं? इसकी स्थिति 'रद्द' (CANCELLED) में बदल दी जाएगी।"
+                    else
+                        "Cancel Token #${t.tokenNumber} for ${t.patientName}? The status will be marked as CANCELLED."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onCancelToken?.invoke(t.id)
+                        tokenToCancel = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828))
+                ) {
+                    Text(if (isHindi) "हाँ, रद्द करें" else "Yes, Cancel", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { tokenToCancel = null }) {
+                    Text(if (isHindi) "वापस जाएं" else "Back")
+                }
+            }
+        )
+    }
+
+    // Confirmation Dialog for Permanent Token Deletion
+    if (tokenToDelete != null) {
+        val t = tokenToDelete!!
+        AlertDialog(
+            onDismissRequest = { tokenToDelete = null },
+            title = {
+                Text(
+                    text = if (isHindi) "टोकन #${t.tokenNumber} को हमेशा के लिए हटाएं?" else "Delete Token #${t.tokenNumber}?",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFD32F2F)
+                )
+            },
+            text = {
+                Text(
+                    text = if (isHindi)
+                        "क्या आप भक्त ${t.patientName} (फोन: ${t.phoneNumber}) का टोकन #${t.tokenNumber} डेटाबेस से पूर्णतः हटाना (Delete) चाहते हैं? यह क्रिया वापस नहीं ली जा सकती।"
+                    else
+                        "Permanently delete Token #${t.tokenNumber} for ${t.patientName}? This action cannot be reversed."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeleteToken?.invoke(t.id)
+                        tokenToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) {
+                    Text(if (isHindi) "हाँ, हमेशा के लिए हटाएं" else "Yes, Delete", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { tokenToDelete = null }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -2861,11 +3118,14 @@ fun ManualTokenTab(
     onNavigateToScanRegister: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
 
     var searchInput by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<DevoteeFaceProfile>>(emptyList()) }
 
+    var formCustomTokenNumber by remember { mutableStateOf("") }
     var formName by remember { mutableStateOf("") }
     var formPhone by remember { mutableStateOf("") }
     var formCity by remember { mutableStateOf("डूँगरा जाट (स्थानीय)") }
@@ -2891,7 +3151,7 @@ fun ManualTokenTab(
     }
 
     val cameraLauncher = rememberLauncherForActivityResult(
-        contract = TakeAnyPicturePreview()
+        contract = TakeRearPicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
             val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
@@ -2960,6 +3220,7 @@ fun ManualTokenTab(
                     }
                 }
 
+                val customNum = formCustomTokenNumber.trim().toIntOrNull()
                 val token = repository.registerToken(
                     patientName = pName.trim(),
                     phoneNumber = pPhone.trim(),
@@ -2969,7 +3230,8 @@ fun ManualTokenTab(
                     city = pCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
                     registeredBy = attribution,
                     photoUri = pPhotoUri,
-                    bypassGeofence = canBypassGeofence
+                    bypassGeofence = canBypassGeofence,
+                    customTokenNumber = customNum
                 )
 
                 // If photo was captured, enroll face vector in universal registry
@@ -2992,6 +3254,7 @@ fun ManualTokenTab(
                 else
                     "✅ Token #${token.tokenNumber} successfully issued for ${token.patientName}!"
 
+                formCustomTokenNumber = ""
                 formName = ""
                 formPhone = ""
                 formCity = "डूँगरा जाट (स्थानीय)"
@@ -2999,6 +3262,8 @@ fun ManualTokenTab(
                 formCapturedBitmap = null
                 searchInput = ""
                 searchResults = emptyList()
+                keyboardController?.hide()
+                focusManager.clearFocus()
                 onTokenIssued()
             } catch (e: Exception) {
                 errorMessage = "त्रुटि: ${e.localizedMessage ?: "अज्ञात समस्या"}"
@@ -3011,6 +3276,7 @@ fun ManualTokenTab(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -3111,10 +3377,29 @@ fun ManualTokenTab(
                     placeholder = { Text(if (isHindi) "उदा. राजेश, 9876543210..." else "e.g. Ramesh, 9876543210...") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(
+                        onSearch = {
+                            keyboardController?.hide()
+                            focusManager.clearFocus()
+                        }
+                    ),
                     trailingIcon = {
-                        if (searchInput.isNotEmpty()) {
-                            IconButton(onClick = { searchInput = "" }) {
-                                Text("✕", color = Color.Gray)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (searchInput.isNotEmpty()) {
+                                IconButton(onClick = {
+                                    searchInput = ""
+                                    keyboardController?.hide()
+                                    focusManager.clearFocus()
+                                }) {
+                                    Text("✕", color = Color.Gray)
+                                }
+                            }
+                            IconButton(onClick = {
+                                keyboardController?.hide()
+                                focusManager.clearFocus()
+                            }) {
+                                Text("⌨️⬇️", fontSize = 13.sp)
                             }
                         }
                     }
@@ -3123,12 +3408,29 @@ fun ManualTokenTab(
                 // Search Results Dropdown Cards
                 if (searchResults.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = if (isHindi) "मिले भक्त (${searchResults.size}):" else "Matching Devotees (${searchResults.size}):",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaroonAccent
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isHindi) "मिले भक्त (${searchResults.size}):" else "Matching Devotees (${searchResults.size}):",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonAccent
+                        )
+                        OutlinedButton(
+                            onClick = {
+                                keyboardController?.hide()
+                                focusManager.clearFocus()
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.height(26.dp)
+                        ) {
+                            Text(if (isHindi) "कीपैड बन्द करें ⬇️" else "Hide Keypad ⬇️", fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
                     Spacer(modifier = Modifier.height(6.dp))
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         searchResults.forEach { devotee ->
@@ -3153,6 +3455,8 @@ fun ManualTokenTab(
                                     }
                                     Button(
                                         onClick = {
+                                            keyboardController?.hide()
+                                            focusManager.clearFocus()
                                             issueTokenForDevotee(
                                                 devotee.patientName,
                                                 devotee.phoneNumber,
@@ -3270,6 +3574,19 @@ fun ManualTokenTab(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = formCustomTokenNumber,
+                    onValueChange = { if (it.length <= 6 && it.all { ch -> ch.isDigit() }) formCustomTokenNumber = it },
+                    label = { Text(if (isHindi) "टोकन नंबर (वैकल्पिक / अपनी पसंद का टोकन #)" else "Custom Token Number (Optional)") },
+                    placeholder = { Text(if (isHindi) "खाली छोड़ें (स्वतः अगला # मिलेगा) या नंबर लिखें (उदा. 51)" else "Leave blank for auto or enter custom number (e.g. 51)") },
+                    leadingIcon = { Text("🔢") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Optional Photo Capture Row
@@ -3367,6 +3684,8 @@ fun ManualTokenTab(
 
                 Button(
                     onClick = {
+                        keyboardController?.hide()
+                        focusManager.clearFocus()
                         if (formName.isBlank()) {
                             errorMessage = if (isHindi) "कृपया भक्त का नाम दर्ज करें" else "Please enter devotee name"
                             return@Button
@@ -3686,11 +4005,13 @@ fun SevadarManagementTab(
                     fontSize = 16.sp,
                     color = MaroonPrimary
                 )
-                Button(
-                    onClick = onOpenCreate,
-                    colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
-                ) {
-                    Text(if (isHindi) "+ नया सेवादार" else "+ Add Sevadar")
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Button(
+                        onClick = onOpenCreate,
+                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
+                    ) {
+                        Text(if (isHindi) "+ नया सेवादार" else "+ Add Sevadar")
+                    }
                 }
             }
         }

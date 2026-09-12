@@ -376,7 +376,8 @@ class AshramRepository(context: Context) {
         originAddress: String = city,
         destinationAddress: String = "श्री बालाजी कृपा धाम, डुंगरा जाट",
         distanceKm: Float = -1f,
-        bypassGeofence: Boolean = false
+        bypassGeofence: Boolean = false,
+        customTokenNumber: Int? = null
     ): Token = withContext(Dispatchers.IO) {
         val today = DatabaseHelper.getTodayDateString()
         val db = dbHelper.writableDatabase
@@ -447,15 +448,22 @@ class AshramRepository(context: Context) {
             }
         }
 
-        val maxTokenCursor = db.rawQuery(
-            "SELECT MAX(token_number) FROM tokens WHERE darbar_date = ?",
-            arrayOf(today)
-        )
-        var nextTokenNum = 1
-        if (maxTokenCursor.moveToFirst() && !maxTokenCursor.isNull(0)) {
-            nextTokenNum = maxTokenCursor.getInt(0) + 1
+        val nextTokenNum = if (customTokenNumber != null && customTokenNumber > 0) {
+            // If replacing a previously cancelled token with this number, remove old entry
+            db.delete("tokens", "darbar_date = ? AND token_number = ? AND status = 'CANCELLED'", arrayOf(today, customTokenNumber.toString()))
+            customTokenNumber
+        } else {
+            val maxTokenCursor = db.rawQuery(
+                "SELECT MAX(token_number) FROM tokens WHERE darbar_date = ?",
+                arrayOf(today)
+            )
+            var num = 1
+            if (maxTokenCursor.moveToFirst() && !maxTokenCursor.isNull(0)) {
+                num = maxTokenCursor.getInt(0) + 1
+            }
+            maxTokenCursor.close()
+            num
         }
-        maxTokenCursor.close()
 
         val safeCity = if (city.isBlank()) "डूँगरा जाट (स्थानीय)" else city.trim()
         val safeOrigin = if (originAddress.isNotBlank()) originAddress.trim() else safeCity
@@ -533,6 +541,13 @@ class AshramRepository(context: Context) {
             distanceKm = calculatedDistance,
             createdAt = System.currentTimeMillis()
         )
+
+        // ☁️ 100% Real-Time Online Central Sync (GitHub Live Tokens)
+        try {
+            com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadTokenToGitHub(appContext, createdToken)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
         // 📊 Universal Real-Time Google Sheets Sync for ALL tokens (Devotees + Admin + Sevadar)
         try {
@@ -938,6 +953,10 @@ class AshramRepository(context: Context) {
             canIssueTokensAnywhere = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_issue_tokens_anywhere")) == 1 } catch (e: Exception) { false },
             canScanPaperRegister = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_scan_paper_register")) == 1 } catch (e: Exception) { false },
             canManageParchas = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_parchas")) == 1 } catch (e: Exception) { false },
+            canCancelTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_cancel_tokens")) == 1 } catch (e: Exception) { false },
+            canDeleteTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_delete_tokens")) == 1 } catch (e: Exception) { false },
+            canSetCustomTokenNumber = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_custom_token_number")) == 1 } catch (e: Exception) { false },
+            canExportPdf = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_export_pdf")) == 1 } catch (e: Exception) { true },
             photoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) } catch (e: Exception) { "" } ?: "",
             isActive = cursor.getInt(cursor.getColumnIndexOrThrow("is_active")) == 1,
             createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
@@ -973,6 +992,10 @@ class AshramRepository(context: Context) {
         canIssueTokensAnywhere: Boolean = false,
         canScanPaperRegister: Boolean = false,
         canManageParchas: Boolean = false,
+        canCancelTokens: Boolean = false,
+        canDeleteTokens: Boolean = false,
+        canSetCustomTokenNumber: Boolean = false,
+        canExportPdf: Boolean = true,
         photoUri: String = ""
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
@@ -995,11 +1018,19 @@ class AshramRepository(context: Context) {
             put("can_issue_tokens_anywhere", if (canIssueTokensAnywhere || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_scan_paper_register", if (canScanPaperRegister || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_manage_parchas", if (canManageParchas || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_cancel_tokens", if (canCancelTokens || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_delete_tokens", if (canDeleteTokens || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_custom_token_number", if (canSetCustomTokenNumber || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_export_pdf", if (canExportPdf || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("photo_uri", photoUri.trim())
             put("is_active", 1)
             put("created_at", System.currentTimeMillis())
         }
-        db.insert("admins", null, cv) > 0
+        val inserted = db.insert("admins", null, cv) > 0
+        if (inserted) {
+            try { publishAdminsToGitHub() } catch (e: Exception) {}
+        }
+        inserted
     }
 
     suspend fun updateAdminPhoto(adminId: Long, photoUri: String): Boolean = withContext(Dispatchers.IO) {
@@ -1023,6 +1054,10 @@ class AshramRepository(context: Context) {
         canIssueTokensAnywhere: Boolean = false,
         canScanPaperRegister: Boolean = false,
         canManageParchas: Boolean = false,
+        canCancelTokens: Boolean = false,
+        canDeleteTokens: Boolean = false,
+        canSetCustomTokenNumber: Boolean = false,
+        canExportPdf: Boolean = true,
         isActive: Boolean
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
@@ -1038,9 +1073,17 @@ class AshramRepository(context: Context) {
             put("can_issue_tokens_anywhere", if (canIssueTokensAnywhere) 1 else 0)
             put("can_scan_paper_register", if (canScanPaperRegister) 1 else 0)
             put("can_manage_parchas", if (canManageParchas) 1 else 0)
+            put("can_cancel_tokens", if (canCancelTokens) 1 else 0)
+            put("can_delete_tokens", if (canDeleteTokens) 1 else 0)
+            put("can_custom_token_number", if (canSetCustomTokenNumber) 1 else 0)
+            put("can_export_pdf", if (canExportPdf) 1 else 0)
             put("is_active", if (isActive) 1 else 0)
         }
-        db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
+        val updated = db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
+        if (updated) {
+            try { publishAdminsToGitHub() } catch (e: Exception) {}
+        }
+        updated
     }
 
     suspend fun updateAdminParchaPermission(adminId: Long, canManageParchas: Boolean): Boolean = withContext(Dispatchers.IO) {
@@ -1339,16 +1382,50 @@ class AshramRepository(context: Context) {
     // --- Token Cancellation & Permanent Deletion ---
     suspend fun cancelToken(tokenId: Long): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
+        var tokenNum = 0
+        var darbarDate = ""
+        val cur = db.rawQuery("SELECT token_number, darbar_date FROM tokens WHERE id = ?", arrayOf(tokenId.toString()))
+        if (cur.moveToFirst()) {
+            tokenNum = cur.getInt(0)
+            darbarDate = cur.getString(1)
+        }
+        cur.close()
+
         val cv = ContentValues().apply {
             put("status", TokenStatus.CANCELLED.name)
             put("is_darshan_completed", 0)
         }
-        db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
+        val updated = db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
+        if (updated && tokenNum > 0) {
+            try {
+                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.updateLiveTokenStatusInGitHub(
+                    appContext, tokenNum, darbarDate, TokenStatus.CANCELLED
+                )
+            } catch (e: Exception) {}
+        }
+        updated
     }
 
     suspend fun deleteToken(tokenId: Long): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
-        db.delete("tokens", "id = ?", arrayOf(tokenId.toString())) > 0
+        var tokenNum = 0
+        var darbarDate = ""
+        val cur = db.rawQuery("SELECT token_number, darbar_date FROM tokens WHERE id = ?", arrayOf(tokenId.toString()))
+        if (cur.moveToFirst()) {
+            tokenNum = cur.getInt(0)
+            darbarDate = cur.getString(1)
+        }
+        cur.close()
+
+        val deleted = db.delete("tokens", "id = ?", arrayOf(tokenId.toString())) > 0
+        if (deleted && tokenNum > 0) {
+            try {
+                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.removeLiveTokenFromGitHub(
+                    appContext, tokenNum, darbarDate
+                )
+            } catch (e: Exception) {}
+        }
+        deleted
     }
 
     suspend fun getTodayActiveTokenCount(): Int = withContext(Dispatchers.IO) {
@@ -1784,22 +1861,52 @@ class AshramRepository(context: Context) {
             if (remoteConfig.sections.isNotEmpty()) {
                 saveUiSectionConfigs(remoteConfig.sections)
             }
-            // Automatically synchronize coordinates from cloud to local SQLite
-            val loc = remoteConfig.locationConfig
-            if (loc.latitude != 0.0 && loc.longitude != 0.0) {
-                try {
-                    val db = dbHelper.writableDatabase
-                    val cv = ContentValues().apply {
-                        put("latitude", loc.latitude)
-                        put("longitude", loc.longitude)
-                        put("allowed_radius_meters", loc.allowedRadiusMeters)
-                        put("is_geofence_enforced", if (loc.isGeofenceEnforced) 1 else 0)
-                    }
-                    db.update("ashram_settings", cv, "id = 1", null)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+
+            try {
+                val db = dbHelper.writableDatabase
+                val cv = ContentValues()
+
+                // Synchronize Ashram Details across all devices
+                val det = remoteConfig.ashramDetails
+                if (det.ashramName.isNotBlank()) cv.put("ashram_name", det.ashramName)
+                if (det.gurujiName.isNotBlank()) cv.put("guruji_name", det.gurujiName)
+                if (det.address.isNotBlank()) cv.put("address", det.address)
+                if (det.contactPhone.isNotBlank()) cv.put("contact_phone", det.contactPhone)
+                if (det.darbarTimings.isNotBlank()) cv.put("darbar_timings", det.darbarTimings)
+                if (det.freeDisclaimer.isNotBlank()) cv.put("free_disclaimer", det.freeDisclaimer)
+                if (det.whatsappNumber.isNotBlank()) cv.put("whatsapp_number", det.whatsappNumber)
+                if (det.whatsappGroupUrl.isNotBlank()) cv.put("whatsapp_group_url", det.whatsappGroupUrl)
+                if (det.youtubeChannelUrl.isNotBlank()) cv.put("youtube_channel_url", det.youtubeChannelUrl)
+                if (det.facebookPageUrl.isNotBlank()) cv.put("facebook_page_url", det.facebookPageUrl)
+                if (det.instagramUrl.isNotBlank()) cv.put("instagram_url", det.instagramUrl)
+
+                // Synchronize Emergency Broadcast Notice
+                val em = remoteConfig.emergencyNotice
+                if (em.noticeHindi.isNotBlank()) {
+                    cv.put("emergency_notice", em.noticeHindi)
+                    cv.put("is_emergency_notice_visible", if (em.isEnabled) 1 else 0)
                 }
+
+                // Automatically synchronize coordinates & geofence from cloud to local SQLite
+                val loc = remoteConfig.locationConfig
+                if (loc.latitude != 0.0 && loc.longitude != 0.0) {
+                    cv.put("latitude", loc.latitude)
+                    cv.put("longitude", loc.longitude)
+                    cv.put("allowed_radius_meters", loc.allowedRadiusMeters)
+                    cv.put("is_geofence_enforced", if (loc.isGeofenceEnforced) 1 else 0)
+                }
+
+                if (remoteConfig.activeUiLayout.isNotBlank()) {
+                    cv.put("active_ui_layout", remoteConfig.activeUiLayout)
+                }
+
+                if (cv.size() > 0) {
+                    db.update("ashram_settings", cv, "id = 1", null)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+
             Pair(true, remoteConfig)
         } else {
             Pair(false, null)
@@ -1810,6 +1917,7 @@ class AshramRepository(context: Context) {
         sections: List<UiSectionConfig>,
         adminName: String = "Super Admin"
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val currentSettings = getSettings()
         val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }
@@ -1817,12 +1925,168 @@ class AshramRepository(context: Context) {
             updatedAt = isoFormat.format(Date()),
             updatedBy = adminName,
             version = 1,
+            activeUiLayout = currentSettings.activeUiLayout,
+            ashramDetails = com.example.shribalajikripadham.data.model.AshramDetailsConfigDto(
+                ashramName = currentSettings.ashramName,
+                gurujiName = currentSettings.gurujiName,
+                address = currentSettings.address,
+                contactPhone = currentSettings.contactPhone,
+                whatsappNumber = currentSettings.whatsappNumber,
+                darbarTimings = currentSettings.darbarTimings,
+                freeDisclaimer = currentSettings.freeDisclaimer,
+                whatsappGroupUrl = currentSettings.whatsappGroupUrl,
+                youtubeChannelUrl = currentSettings.youtubeChannelUrl,
+                facebookPageUrl = currentSettings.facebookPageUrl,
+                instagramUrl = currentSettings.instagramUrl
+            ),
+            emergencyNotice = com.example.shribalajikripadham.data.model.EmergencyNoticeDto(
+                isEnabled = currentSettings.isEmergencyNoticeVisible,
+                noticeHindi = currentSettings.emergencyNoticeText,
+                noticeEnglish = currentSettings.emergencyNoticeText
+            ),
+            locationConfig = com.example.shribalajikripadham.data.model.LocationConfigDto(
+                latitude = currentSettings.latitude,
+                longitude = currentSettings.longitude,
+                allowedRadiusMeters = currentSettings.allowedRadiusMeters,
+                isGeofenceEnforced = currentSettings.isGeofenceEnforced,
+                locationName = currentSettings.ashramName,
+                updatedAt = System.currentTimeMillis()
+            ),
             sections = sections
         )
         // Also save locally
         saveUiSectionConfigs(sections)
         // Publish to GitHub
         com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveConfig(appContext, config)
+    }
+
+    suspend fun publishCurrentSettingsToGitHub(adminName: String = "Super Admin"): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val sections = getUiSectionConfigs()
+        publishLiveConfigToGitHub(sections, adminName)
+    }
+
+    suspend fun syncLiveTokensFromCloud(date: String = DatabaseHelper.getTodayDateString()): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
+        var totalNew = 0
+        try {
+            // 1. Fetch from GitHub live_tokens.json
+            val ghTokens = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveTokensFromGitHub(appContext, date)
+            // 2. Fetch from Google Sheet (if configured)
+            val gsTokens = try {
+                com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.fetchTokensFromSheet(appContext, date)
+            } catch (e: Exception) { emptyList() }
+
+            val allRemote = mutableListOf<Token>()
+            allRemote.addAll(ghTokens)
+            for (gt in gsTokens) {
+                if (allRemote.none { it.tokenNumber == gt.tokenNumber && it.darbarDate == gt.darbarDate }) {
+                    allRemote.add(gt)
+                }
+            }
+
+            if (allRemote.isEmpty()) return@withContext Pair(false, 0)
+
+            val db = dbHelper.writableDatabase
+            db.beginTransaction()
+            try {
+                allRemote.forEach { t ->
+                    val c = db.rawQuery(
+                        "SELECT id, status FROM tokens WHERE darbar_date = ? AND token_number = ?",
+                        arrayOf(t.darbarDate, t.tokenNumber.toString())
+                    )
+                    val exists = c.moveToFirst()
+                    var localStatus = ""
+                    var localId: Long = -1
+                    if (exists) {
+                        localId = c.getLong(0)
+                        localStatus = c.getString(1)
+                    }
+                    c.close()
+
+                    if (!exists) {
+                        val cv = ContentValues().apply {
+                            put("token_number", t.tokenNumber)
+                            put("darbar_date", t.darbarDate)
+                            put("patient_name", t.patientName)
+                            put("phone_number", t.phoneNumber)
+                            put("city", t.city)
+                            put("device_id", t.deviceId)
+                            put("latitude", t.latitude)
+                            put("longitude", t.longitude)
+                            put("status", t.status.name)
+                            put("registered_by", t.registeredBy)
+                            put("photo_uri", t.photoUri)
+                            put("is_darshan_completed", if (t.isDarshanCompleted) 1 else 0)
+                            put("darshan_completed_at", t.darshanCompletedAt)
+                            put("origin_address", t.originAddress)
+                            put("destination_address", t.destinationAddress)
+                            put("distance_km", t.distanceKm)
+                            put("created_at", t.createdAt)
+                        }
+                        db.insert("tokens", null, cv)
+                        totalNew++
+                    } else if (localStatus != t.status.name) {
+                        val cv = ContentValues().apply {
+                            put("status", t.status.name)
+                            put("is_darshan_completed", if (t.isDarshanCompleted) 1 else 0)
+                        }
+                        db.update("tokens", cv, "id = ?", arrayOf(localId.toString()))
+                    }
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+            Pair(true, totalNew)
+        } catch (e: Exception) {
+            Pair(false, 0)
+        }
+    }
+
+    suspend fun publishAdminsToGitHub(): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val admins = getAllAdmins()
+        com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveAdmins(appContext, admins)
+    }
+
+    suspend fun syncAdminsFromGitHub(): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
+        try {
+            val remoteAdmins = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveAdmins(appContext)
+            if (remoteAdmins.isEmpty()) return@withContext Pair(false, 0)
+            val db = dbHelper.writableDatabase
+            var synced = 0
+            db.beginTransaction()
+            try {
+                remoteAdmins.forEach { a ->
+                    if (a.role == AdminRole.SEVADAR) {
+                        val cv = ContentValues().apply {
+                            put("can_manage_tokens", if (a.canManageTokens) 1 else 0)
+                            put("can_issue_manual_tokens", if (a.canIssueManualTokens) 1 else 0)
+                            put("can_cancel_tokens", if (a.canCancelTokens) 1 else 0)
+                            put("can_delete_tokens", if (a.canDeleteTokens) 1 else 0)
+                            put("can_custom_token_number", if (a.canSetCustomTokenNumber) 1 else 0)
+                            put("can_manage_yatra", if (a.canManageYatra) 1 else 0)
+                            put("can_manage_expenses", if (a.canManageExpenses) 1 else 0)
+                            put("can_change_location", if (a.canChangeLocation) 1 else 0)
+                            put("can_send_notifications", if (a.canSendNotifications) 1 else 0)
+                            put("can_edit_ashram_info", if (a.canEditAshramInfo) 1 else 0)
+                            put("can_view_devotee_photos", if (a.canViewDevoteePhotos) 1 else 0)
+                            put("can_issue_tokens_anywhere", if (a.canIssueTokensAnywhere) 1 else 0)
+                            put("can_scan_paper_register", if (a.canScanPaperRegister) 1 else 0)
+                            put("can_manage_parchas", if (a.canManageParchas) 1 else 0)
+                            put("can_export_pdf", if (a.canExportPdf) 1 else 0)
+                            put("is_active", if (a.isActive) 1 else 0)
+                        }
+                        val count = db.update("admins", cv, "username = ?", arrayOf(a.username))
+                        if (count > 0) synced++
+                    }
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+            Pair(true, synced)
+        } catch (e: Exception) {
+            Pair(false, 0)
+        }
     }
 
     // --- Google Sheets Central Token Sync ---

@@ -106,8 +106,11 @@ fun HomeScreen(
         scope.launch {
             try {
                 val (synced, liveConfig) = repository.syncLiveConfigFromGitHub()
-                if (synced && liveConfig != null && liveConfig.sections.isNotEmpty()) {
-                    uiSectionConfigs = liveConfig.sections
+                if (synced && liveConfig != null) {
+                    if (liveConfig.sections.isNotEmpty()) {
+                        uiSectionConfigs = liveConfig.sections
+                    }
+                    settings = repository.getSettings()
                 }
             } catch (e: Exception) {
                 // Smooth fallback to local SQLite cache

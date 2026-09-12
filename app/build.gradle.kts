@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.shribalajikripadham"
         minSdk = 24
         targetSdk = 34
-        versionCode = 20
-        versionName = "2.17.0"
+        versionCode = 22
+        versionName = "2.19.0"
     }
 
     signingConfigs {

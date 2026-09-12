@@ -151,6 +151,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     can_issue_tokens_anywhere INTEGER NOT NULL DEFAULT 0,
                     can_scan_paper_register INTEGER NOT NULL DEFAULT 0,
                     can_manage_parchas INTEGER NOT NULL DEFAULT 0,
+                    can_cancel_tokens INTEGER NOT NULL DEFAULT 0,
+                    can_delete_tokens INTEGER NOT NULL DEFAULT 0,
+                    can_custom_token_number INTEGER NOT NULL DEFAULT 0,
+                    can_export_pdf INTEGER NOT NULL DEFAULT 1,
                     photo_uri TEXT NOT NULL DEFAULT '',
                     is_active INTEGER NOT NULL,
                     created_at INTEGER NOT NULL
@@ -368,7 +372,11 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             "ALTER TABLE admins ADD COLUMN can_issue_tokens_anywhere INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE admins ADD COLUMN can_scan_paper_register INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE admins ADD COLUMN can_manage_parchas INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE admins ADD COLUMN photo_uri TEXT NOT NULL DEFAULT ''"
+            "ALTER TABLE admins ADD COLUMN photo_uri TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE admins ADD COLUMN can_cancel_tokens INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_delete_tokens INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_custom_token_number INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_export_pdf INTEGER NOT NULL DEFAULT 1"
         )
         for (sql in alterStatements) {
             try {
@@ -376,7 +384,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             } catch (ignored: Exception) {}
         }
         try {
-            db.execSQL("UPDATE admins SET can_manage_parchas = 1 WHERE role = 'SUPER_ADMIN'")
+            db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1 WHERE role = 'SUPER_ADMIN'")
         } catch (ignored: Exception) {}
     }
 
@@ -465,6 +473,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     put("can_issue_tokens_anywhere", 1)
                     put("can_scan_paper_register", 1)
                     put("can_manage_parchas", 1)
+                    put("can_cancel_tokens", 1)
+                    put("can_delete_tokens", 1)
+                    put("can_custom_token_number", 1)
+                    put("can_export_pdf", 1)
                     put("photo_uri", "")
                     put("is_active", 1)
                     put("created_at", System.currentTimeMillis())
