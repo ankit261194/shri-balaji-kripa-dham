@@ -1,0 +1,30 @@
+{
+  "updated_at": "2026-09-12T12:00:00Z",
+  "admins": [
+    {
+      "username": "admin",
+      "name": "\u092e\u0941\u0916\u094d\u092f \u0935\u094d\u092f\u0935\u0938\u094d\u0925\u093e\u092a\u0915 (Super Admin)",
+      "phone": "7417531776",
+      "role": "SUPER_ADMIN",
+      "is_active": true,
+      "permissions": {
+        "can_manage_tokens": true,
+        "can_issue_manual_tokens": true,
+        "can_cancel_tokens": true,
+        "can_delete_tokens": true,
+        "can_custom_token_number": true,
+        "can_manage_yatra": true,
+        "can_manage_expenses": true,
+        "can_change_location": true,
+        "can_send_notifications": true,
+        "can_edit_ashram_info": true,
+        "can_manage_admins": true,
+        "can_view_devotee_photos": true,
+        "can_issue_tokens_anywhere": true,
+        "can_scan_paper_register": true,
+        "can_manage_parchas": true,
+        "can_export_pdf": true
+      }
+    }
+  ]
+}
