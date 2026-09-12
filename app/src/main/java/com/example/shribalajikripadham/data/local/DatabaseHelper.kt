@@ -14,7 +14,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
-        const val DATABASE_VERSION = 19
+        const val DATABASE_VERSION = 20
 
         fun hashPin(pin: String): String {
             val md = MessageDigest.getInstance("SHA-256")
@@ -36,6 +36,29 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
     }
 
     override fun onCreate(db: SQLiteDatabase) {
+        // 0. Sacred Parchas / Documents Table
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS sacred_parchas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                parcha_id TEXT UNIQUE NOT NULL,
+                title TEXT NOT NULL,
+                category TEXT NOT NULL,
+                subtitle TEXT NOT NULL DEFAULT '',
+                samagri_list TEXT NOT NULL DEFAULT '',
+                vidhi_text TEXT NOT NULL DEFAULT '',
+                precautions TEXT NOT NULL DEFAULT '',
+                mantra_text TEXT NOT NULL DEFAULT '',
+                image_uri TEXT NOT NULL DEFAULT '',
+                is_published INTEGER NOT NULL DEFAULT 1,
+                is_hidden INTEGER NOT NULL DEFAULT 0,
+                view_count INTEGER NOT NULL DEFAULT 0,
+                download_count INTEGER NOT NULL DEFAULT 0,
+                created_by TEXT NOT NULL DEFAULT 'SUPER_ADMIN',
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            )
+        """.trimIndent())
+
         // 1. Ashram Settings Table with Customization & Auto-Update support
         db.execSQL("""
             CREATE TABLE ashram_settings (
@@ -453,6 +476,42 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 WHERE id = 1
             """.trimIndent())
         }
+        if (oldVersion < 20) {
+            try {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS sacred_parchas (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        parcha_id TEXT UNIQUE NOT NULL,
+                        title TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        subtitle TEXT NOT NULL DEFAULT '',
+                        samagri_list TEXT NOT NULL DEFAULT '',
+                        vidhi_text TEXT NOT NULL DEFAULT '',
+                        precautions TEXT NOT NULL DEFAULT '',
+                        mantra_text TEXT NOT NULL DEFAULT '',
+                        image_uri TEXT NOT NULL DEFAULT '',
+                        is_published INTEGER NOT NULL DEFAULT 1,
+                        is_hidden INTEGER NOT NULL DEFAULT 0,
+                        view_count INTEGER NOT NULL DEFAULT 0,
+                        download_count INTEGER NOT NULL DEFAULT 0,
+                        created_by TEXT NOT NULL DEFAULT 'SUPER_ADMIN',
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    UPDATE ashram_settings 
+                    SET latest_version_code = 11,
+                        latest_version_name = '2.10.0',
+                        update_notes = 'नया भव्य अपडेट (v2.10.0): आश्रम पर्चे व दस्तावेज (हवन पर्चा, मैया का उतारा पर्चा, अर्जी व नियम), A4 PDF डाउनलोड, OCR स्कैनर व 1-क्लिक लाइव पब्लिश।',
+                        apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.10.0/ShriBalajiKripaDham-release.apk'
+                    WHERE id = 1
+                """.trimIndent())
+            } catch (e: Exception) {
+                // Ignore if exists
+            }
+        }
+
         if (oldVersion < 19) {
             try {
                 db.execSQL("ALTER TABLE admins ADD COLUMN can_scan_paper_register INTEGER NOT NULL DEFAULT 0")

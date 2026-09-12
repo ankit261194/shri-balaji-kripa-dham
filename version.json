@@ -1,8 +1,8 @@
 {
-  "latest_version_code": 10,
-  "latest_version_name": "2.9.0",
-  "update_notes_hindi": "नया ऐतिहासिक अपडेट (v2.9.0): 1. सुपर एडमिन (अंकित चौधरी) हेतु लाइव फोन टेलीमेट्री (सक्रिय फोन व उपयोगकर्ता मॉनिटरिंग)। 2. डायरी / रजिस्टर पेज फोटो स्कैन (OCR) व क्रमबद्ध बैच टोकन जनरेशन (Strict Sequence Preservation)। 3. सुपर एडमिन द्वारा सेवादारों को रजिस्टर स्कैन अधिकार प्रदान/वापस लेने की सुविधा।",
-  "update_notes_english": "Major Release (v2.9.0): 1. Live Handset & Presence Telemetry for Super Admin (Ankit Chaudhary). 2. Physical Paper Register / Notebook Photo OCR & Strict Sequential Batch Token Issuance. 3. Permission Delegation for Sevadars to scan register copies.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.9.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 11,
+  "latest_version_name": "2.10.0",
+  "update_notes_hindi": "नया ऐतिहासिक अपडेट (v2.10.0): 1. आश्रम पर्चे व दस्तावेज फोल्डर (एडमिन पैनल के बराबर में) - हवन पर्चा, मैया का उतारा, अर्जी व नियम। 2. A4 साइज सुंदर PDF डाउनलोड व शेयर। 3. एडमिन/सुपर एडमिन द्वारा पर्चा फोटो स्कैन, OCR संपादन, 1-क्लिक लाइव पब्लिश व शो/हाइड नियंत्रण।",
+  "update_notes_english": "Major Release (v2.10.0): 1. Sacred Documents & Parchas Folder next to Admin Panel (Hawan Parcha, Maiya Utara, Ardas & Rules). 2. High-Res A4 PDF Download & WhatsApp Share. 3. Admin Parcha OCR Scanner, Auto-Formatting, 1-Click Live Publish & Show/Hide Controls.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.10.0/ShriBalajiKripaDham-release.apk",
   "is_force_update": false
 }

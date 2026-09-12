@@ -1901,4 +1901,140 @@ class AshramRepository(context: Context) {
         return com.example.shribalajikripadham.data.network.AppTelemetryManager.getLocalDevices(appContext)
     }
 
+
+    // ==========================================
+    // SACRED PARCHAS & DOCUMENTS REPOSITORY
+    // ==========================================
+
+    fun seedDefaultParchasIfEmpty() {
+        val db = dbHelper.writableDatabase
+        val cursor = db.rawQuery("SELECT COUNT(*) FROM sacred_parchas", null)
+        var count = 0
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0)
+        }
+        cursor.close()
+
+        if (count == 0) {
+            val canonicals = com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
+            for (p in canonicals) {
+                upsertParcha(p)
+            }
+        }
+    }
+
+    fun getAllPublicParchas(): List<com.example.shribalajikripadham.data.model.SacredParcha> {
+        seedDefaultParchasIfEmpty()
+        val db = dbHelper.readableDatabase
+        val list = mutableListOf<com.example.shribalajikripadham.data.model.SacredParcha>()
+        val cursor = db.rawQuery(
+            "SELECT * FROM sacred_parchas WHERE is_published = 1 AND is_hidden = 0 ORDER BY id ASC",
+            null
+        )
+        while (cursor.moveToNext()) {
+            list.add(parseParchaCursor(cursor))
+        }
+        cursor.close()
+        return list
+    }
+
+    fun getAllAdminParchas(): List<com.example.shribalajikripadham.data.model.SacredParcha> {
+        seedDefaultParchasIfEmpty()
+        val db = dbHelper.readableDatabase
+        val list = mutableListOf<com.example.shribalajikripadham.data.model.SacredParcha>()
+        val cursor = db.rawQuery(
+            "SELECT * FROM sacred_parchas ORDER BY id ASC",
+            null
+        )
+        while (cursor.moveToNext()) {
+            list.add(parseParchaCursor(cursor))
+        }
+        cursor.close()
+        return list
+    }
+
+    fun getParchaById(parchaId: String): com.example.shribalajikripadham.data.model.SacredParcha? {
+        val db = dbHelper.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM sacred_parchas WHERE parcha_id = ?", arrayOf(parchaId))
+        var result: com.example.shribalajikripadham.data.model.SacredParcha? = null
+        if (cursor.moveToFirst()) {
+            result = parseParchaCursor(cursor)
+        }
+        cursor.close()
+        return result
+    }
+
+    fun upsertParcha(parcha: com.example.shribalajikripadham.data.model.SacredParcha): Boolean {
+        val db = dbHelper.writableDatabase
+        val cv = android.content.ContentValues().apply {
+            put("parcha_id", parcha.parchaId)
+            put("title", parcha.title)
+            put("category", parcha.category.name)
+            put("subtitle", parcha.subtitle)
+            put("samagri_list", parcha.samagriListToJson())
+            put("vidhi_text", parcha.vidhiStepsToJson())
+            put("precautions", parcha.precautionsToJson())
+            put("mantra_text", parcha.mantraText)
+            put("image_uri", parcha.imageUri)
+            put("is_published", if (parcha.isPublished) 1 else 0)
+            put("is_hidden", if (parcha.isHidden) 1 else 0)
+            put("view_count", parcha.viewCount)
+            put("download_count", parcha.downloadCount)
+            put("created_by", parcha.createdBy)
+            put("created_at", parcha.createdAt)
+            put("updated_at", System.currentTimeMillis())
+        }
+        val rowId = db.insertWithOnConflict("sacred_parchas", null, cv, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+        return rowId != -1L
+    }
+
+    fun toggleParchaHidden(parchaId: String, isHidden: Boolean): Boolean {
+        val db = dbHelper.writableDatabase
+        val cv = android.content.ContentValues().apply {
+            put("is_hidden", if (isHidden) 1 else 0)
+            put("updated_at", System.currentTimeMillis())
+        }
+        val affected = db.update("sacred_parchas", cv, "parcha_id = ?", arrayOf(parchaId))
+        return affected > 0
+    }
+
+    fun deleteParcha(parchaId: String): Boolean {
+        val db = dbHelper.writableDatabase
+        val affected = db.delete("sacred_parchas", "parcha_id = ?", arrayOf(parchaId))
+        return affected > 0
+    }
+
+    fun incrementParchaDownload(parchaId: String) {
+        val db = dbHelper.writableDatabase
+        db.execSQL("UPDATE sacred_parchas SET download_count = download_count + 1 WHERE parcha_id = ?", arrayOf(parchaId))
+    }
+
+    private fun parseParchaCursor(cursor: android.database.Cursor): com.example.shribalajikripadham.data.model.SacredParcha {
+        val categoryStr = try { cursor.getString(cursor.getColumnIndexOrThrow("category")) } catch (e: Exception) { "OTHER" }
+        val category = com.example.shribalajikripadham.data.model.ParchaCategory.fromString(categoryStr)
+        val samagriJson = try { cursor.getString(cursor.getColumnIndexOrThrow("samagri_list")) } catch (e: Exception) { "" }
+        val vidhiJson = try { cursor.getString(cursor.getColumnIndexOrThrow("vidhi_text")) } catch (e: Exception) { "" }
+        val precautionsJson = try { cursor.getString(cursor.getColumnIndexOrThrow("precautions")) } catch (e: Exception) { "" }
+
+        return com.example.shribalajikripadham.data.model.SacredParcha(
+            id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+            parchaId = cursor.getString(cursor.getColumnIndexOrThrow("parcha_id")),
+            title = cursor.getString(cursor.getColumnIndexOrThrow("title")),
+            category = category,
+            subtitle = cursor.getString(cursor.getColumnIndexOrThrow("subtitle")),
+            samagriList = com.example.shribalajikripadham.data.model.SacredParcha.parseJsonList(samagriJson),
+            vidhiSteps = com.example.shribalajikripadham.data.model.SacredParcha.parseJsonList(vidhiJson),
+            precautions = com.example.shribalajikripadham.data.model.SacredParcha.parseJsonList(precautionsJson),
+            mantraText = cursor.getString(cursor.getColumnIndexOrThrow("mantra_text")),
+            imageUri = cursor.getString(cursor.getColumnIndexOrThrow("image_uri")),
+            isPublished = cursor.getInt(cursor.getColumnIndexOrThrow("is_published")) == 1,
+            isHidden = cursor.getInt(cursor.getColumnIndexOrThrow("is_hidden")) == 1,
+            viewCount = cursor.getInt(cursor.getColumnIndexOrThrow("view_count")),
+            downloadCount = cursor.getInt(cursor.getColumnIndexOrThrow("download_count")),
+            createdBy = cursor.getString(cursor.getColumnIndexOrThrow("created_by")),
+            createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at")),
+            updatedAt = cursor.getLong(cursor.getColumnIndexOrThrow("updated_at"))
+        )
+    }
 }
+

@@ -1,0 +1,235 @@
+package com.example.shribalajikripadham.ai
+
+import com.example.shribalajikripadham.data.model.ParchaCategory
+import com.example.shribalajikripadham.data.model.SacredParcha
+
+/**
+ * Intelligent Parcha OCR Text Parser & Sacred Layout Engine.
+ * Formats handwritten or scanned paper parchas into structured A4-ready documents.
+ */
+object SacredParchaEngine {
+
+    /**
+     * Parses unstructured OCR text from a photographed paper slip into structured SacredParcha components.
+     */
+    fun parseScannedParchaText(rawText: String, defaultCategory: ParchaCategory = ParchaCategory.OTHER): SacredParcha {
+        val lines = rawText.lines().map { it.trim() }.filter { it.isNotBlank() }
+        if (lines.isEmpty()) {
+            return SacredParcha(
+                title = "नया आश्रम पर्चा",
+                category = defaultCategory
+            )
+        }
+
+        var title = lines[0]
+        var subtitle = ""
+        val samagri = mutableListOf<String>()
+        val vidhi = mutableListOf<String>()
+        val precautions = mutableListOf<String>()
+        val mantras = mutableListOf<String>()
+
+        var currentSection = 0 // 0=Header/Subtitle, 1=Samagri, 2=Vidhi, 3=Precautions, 4=Mantra
+
+        // Detect category from title keywords
+        var category = defaultCategory
+        val lowerText = rawText.lowercase()
+        if (lowerText.contains("हवन") || lowerText.contains("hawan")) category = ParchaCategory.HAWAN
+        else if (lowerText.contains("उतारा") || lowerText.contains("मैया") || lowerText.contains("utara")) category = ParchaCategory.UTARA
+        else if (lowerText.contains("अर्जी") || lowerText.contains("अरदास") || lowerText.contains("arji")) category = ParchaCategory.ARJI_ARDAS
+        else if (lowerText.contains("नियम") || lowerText.contains("परहेज") || lowerText.contains("झाड़ा")) category = ParchaCategory.NIYAM_PARHEZ
+        else if (lowerText.contains("आरती") || lowerText.contains("चालीसा") || lowerText.contains("स्तुति")) category = ParchaCategory.AARTI_STUTI
+
+        for (i in lines.indices) {
+            val line = lines[i]
+            val lowerLine = line.lowercase()
+
+            if (i == 0) {
+                title = line.trimStart('#', '*', ' ', '-')
+                continue
+            }
+
+            // Detect section triggers
+            if (lowerLine.contains("सामग्री") || lowerLine.contains("आवश्यक") || lowerLine.contains("वस्तु") || lowerLine.contains("सामान")) {
+                currentSection = 1
+                continue
+            } else if (lowerLine.contains("विधि") || lowerLine.contains("नियम से करें") || lowerLine.contains("प्रक्रिया") || lowerLine.contains("तरीका")) {
+                currentSection = 2
+                continue
+            } else if (lowerLine.contains("परहेज") || lowerLine.contains("सावधानी") || lowerLine.contains("वर्जित") || lowerLine.contains("ध्यान दें")) {
+                currentSection = 3
+                continue
+            } else if (lowerLine.contains("मंत्र") || lowerLine.contains("श्लोक") || lowerLine.contains("स्तुति") || lowerLine.contains("दोहा") || line.startsWith("।।")) {
+                currentSection = 4
+                mantras.add(line)
+                continue
+            }
+
+            val cleanedLine = line.trimStart('-', '*', '•', '~', '>', ' ', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '.', ')')
+            if (cleanedLine.isBlank()) continue
+
+            when (currentSection) {
+                0 -> {
+                    if (subtitle.isBlank()) subtitle = line
+                    else samagri.add(cleanedLine)
+                }
+                1 -> samagri.add(cleanedLine)
+                2 -> vidhi.add(cleanedLine)
+                3 -> precautions.add(cleanedLine)
+                4 -> mantras.add(line)
+            }
+        }
+
+        return SacredParcha(
+            title = title.ifBlank { "आश्रम सेवा पर्चा" },
+            subtitle = subtitle,
+            category = category,
+            samagriList = samagri,
+            vidhiSteps = vidhi,
+            precautions = precautions,
+            mantraText = mantras.joinToString("\n"),
+            isPublished = true,
+            isHidden = false
+        )
+    }
+
+    /**
+     * Canonical Ashram Parchas pre-populated for Shri Balaji Kripa Dham.
+     */
+    fun getCanonicalParchas(): List<SacredParcha> {
+        val now = System.currentTimeMillis()
+        return listOf(
+            SacredParcha(
+                parchaId = "CANONICAL_HAWAN",
+                title = "श्री बालाजी हवन सामग्री एवं संपूर्ण विधि पर्चा",
+                category = ParchaCategory.HAWAN,
+                subtitle = "दरबार में होने वाले विशेष संकट निवारण व रोग मुक्ति हवन की आवश्यक सामग्री व चरणबद्ध नियम",
+                samagriList = listOf(
+                    "हवन कुंड एवं आम की सूखी पवित्र लकड़ी (1-2 किलो)",
+                    "शुद्ध देशी गाय का घी (250 ग्राम)",
+                    "हवन सामग्री पैकेट (अच्छी गुणवत्ता वाला)",
+                    "जौ (250 ग्राम) एवं काले तिल (250 ग्राम)",
+                    "गूगल, लोबान एवं शुद्ध भीमसेनी कपूर (विशेष)",
+                    "गोला (सूखा नारियल) - 1 या 2 पीस",
+                    "लौंग का जोड़ा, छोटी इलायची, बताशे",
+                    "रोली, मौली (कलावा), अक्षत (साबुत चावल)",
+                    "पान के पत्ते, सुपारी, जनेऊ"
+                ),
+                vidhiSteps = listOf(
+                    "1. हवन से पूर्व स्नान करके शुद्ध एवं धुले हुए वस्त्र धारण करें।",
+                    "2. पूर्व या उत्तर दिशा की ओर मुख करके बैठें और आचमन व प्राणायाम करें।",
+                    "3. हवन कुंड में आम की लकड़ी सजाकर कपूर से पवित्र अग्नि प्रज्वलित करें।",
+                    "4. प्रथम 5 आहुति 'ॐ श्री गणेशाय नमः स्वाहा' एवं 'ॐ कुलदेवतायै नमः स्वाहा' से दें।",
+                    "5. इसके उपरांत 108 आहुति श्री हनुमान चालीसा अथवा 'ॐ हं हनुमते नमः स्वाहा' से दें।",
+                    "6. संकट निवारण हेतु गूगल व लोबान की विशेष आहुतियां अर्पित करें।",
+                    "7. अंत में सूखे नारियल के गोले में घी, बताशा व लौंग भरकर पूर्णाहूति दें।",
+                    "8. हवन की पवित्र भभूति (राख) को मस्तक पर लगाएं व घर के चारों कोनों में छिड़कें।"
+                ),
+                precautions = listOf(
+                    "हवन वाले दिन व अगले 7 दिन तक लहसुन, प्याज, मांस व मदिरा का पूर्ण त्याग रखें।",
+                    "हवन के समय क्रोध व वाद-विवाद न करें, शांत चित्त से केवल बालाजी महाराज का ध्यान करें।",
+                    "हवन की पवित्र अग्नि को पानी डालकर न बुझाएं, उसे स्वतः शांत होने दें।"
+                ),
+                mantraText = "।। ॐ हं हनुमते रुद्रात्मकाय हुं फट् स्वाहा ।।\n।। ॐ ऐं ह्रीं क्लीं चामुण्डायै विच्चे स्वाहा ।।\n।। ॐ नमो भगवते आंजनेयाय महाबलाय स्वाहा ।।",
+                isPublished = true,
+                isHidden = false,
+                createdBy = "SUPER_ADMIN",
+                createdAt = now - 10000,
+                updatedAt = now - 10000
+            ),
+            SacredParcha(
+                parchaId = "CANONICAL_UTARA",
+                title = "मैया जी का उतारा, रक्षा विधान एवं सामग्री पर्चा",
+                category = ParchaCategory.UTARA,
+                subtitle = "नजर दोष, ऊपरी बाधा, असाध्य संकट व रोग निवारण हेतु मैया के उतारे की अचूक विधि",
+                samagriList = listOf(
+                    "पानी वाला जटा युक्त नारियल (1 पीस)",
+                    "नींबू (पीला, ताजा, बेदाग - 1 पीस)",
+                    "काले उड़द के साबुत दाने (मुट्ठी भर)",
+                    "कच्चा सूत (सफेद या पीला धागा) - मरीज के सिर से पैर तक 7 बार नापा हुआ",
+                    "काली सरसों (राई) व साबुत नमक (डली वाला)",
+                    "लाल सिंदूर, 7 सूखी लाल मिर्च (डंठल सहित)",
+                    "कपूर की टिकिया (5 पीस)",
+                    "मैया की चुनरी व 5 बताशे"
+                ),
+                vidhiSteps = listOf(
+                    "1. यह उतारा मंगलवार या शनिवार की संध्या/रात्रि अथवा गुरुदेव के आदेशानुसार करें।",
+                    "2. पीड़ित व्यक्ति को पूर्व दिशा की ओर मुख करके शांत भाव से बिठाएं।",
+                    "3. नारियल व नींबू पर सिंदूर का पावन टीका लगाएं।",
+                    "4. कच्चे सूत को मरीज के सिर से पैर तक 7 बार नापकर नारियल पर लपेटें।",
+                    "5. नारियल, नींबू, राई और मिर्च को पीड़ित के सिर से घड़ी की दिशा (Clockwise) में 7 बार घुमाएं (उतारा करें)।",
+                    "6. प्रत्येक फेरे के साथ 'जय माता दी! हे महामाई! इस बच्चे के सब संकट हरो' की भावपूर्ण प्रार्थना करें।",
+                    "7. उतारे के उपरांत सारी सामग्री को ले जाकर चौराहे, बहते जल अथवा निर्जन स्थान पर रखकर बिना पीछे मुड़े घर आएं।",
+                    "8. घर में प्रवेश करने से पूर्व हाथ-पैर धोएं और बालाजी महाराज की ज्योति के दर्शन करें।"
+                ),
+                precautions = listOf(
+                    "उतारा करते समय कोई टोके नहीं और न ही मरीज या उतारा करने वाला पीछे मुड़कर देखे।",
+                    "उतारे की सामग्री को घर के भीतर रातभर न रखें, तुरंत विसर्जित करें।",
+                    "मरीज को 3 दिन तक किसी अन्य व्यक्ति का जूठा भोजन न करने दें।"
+                ),
+                mantraText = "।। सर्वमंगल मांगल्ये शिवे सर्वार्थ साधिके। शरण्ये त्र्यम्बके गौरि नारायणि नमोऽस्तु ते ।।\n।। ॐ दुं दुर्गायै नमः ।।",
+                isPublished = true,
+                isHidden = false,
+                createdBy = "SUPER_ADMIN",
+                createdAt = now - 8000,
+                updatedAt = now - 8000
+            ),
+            SacredParcha(
+                parchaId = "CANONICAL_ARDAS",
+                title = "संकट मोचन अरदास एवं श्रीफल अर्जी पर्चा",
+                category = ParchaCategory.ARJI_ARDAS,
+                subtitle = "श्री बालाजी धाम में अर्जी लगाने, नारियल बांधने एवं मनोकामना पूर्ण करने का नियम",
+                samagriList = listOf(
+                    "पूजा वाला जटा युक्त नारियल (श्रीफल) - 1 पीस",
+                    "लाल सवा मीटर कपड़ा (अरदास हेतु)",
+                    "मौली (रक्षा सूत्र), रोली, अक्षत",
+                    "लड्डू या पेड़े का भोग (सवा पाव अथवा इच्छानुसार)",
+                    "लौंग का जोड़ा (2 पीस)"
+                ),
+                vidhiSteps = listOf(
+                    "1. नारियल को लाल वस्त्र में लपेटें और मौली से 7 बार लपेटकर गांठ बांधें।",
+                    "2. नारियल पर रोली से 'ॐ श्री हनुमते नमः' लिखें अथवा स्वास्तिक बनाएं।",
+                    "3. अपने मन की प्रार्थना (अर्जी) बालाजी महाराज व पूज्य गुरुदेव के चरणों में बोलें।",
+                    "4. नारियल को दरबार में अर्जी स्थल पर अर्पित करें अथवा घर के पूजा स्थल पर रखें।",
+                    "5. मनोकामना पूर्ण होने तक प्रत्येक मंगलवार/शनिवार सुंदरकांड या हनुमान चालीसा का पाठ करें।"
+                ),
+                precautions = listOf(
+                    "सच्चे मन और पूर्ण आस्था से अर्जी लगाएं; किसी का अहित न सोचें।",
+                    "अर्जी की मन्नत पूरी होने पर दरबार में आकर सवामणी या हाजिरी अवश्य लगाएं।"
+                ),
+                mantraText = "।। संकट कटै मिटै सब पीरा। जो सुमिरै हनुमत बलबीरा ।।\n।। ॐ कपिराजाय नमः ।।",
+                isPublished = true,
+                isHidden = false,
+                createdBy = "SUPER_ADMIN",
+                createdAt = now - 6000,
+                updatedAt = now - 6000
+            ),
+            SacredParcha(
+                parchaId = "CANONICAL_NIYAM",
+                title = "झाड़ा, रक्षा सूत्र एवं आश्रम नियम व परहेज पर्चा",
+                category = ParchaCategory.NIYAM_PARHEZ,
+                subtitle = "दरबार में झाड़ा लगवाने, अभिमंत्रित रक्षा सूत्र बांधने एवं विशेष नियमों की जानकारी",
+                samagriList = listOf(
+                    "अभिमंत्रित रक्षा सूत्र (कलावा / काला धागा)",
+                    "दरबार का पावन जल (चरणामृत)",
+                    "हनुमंत भभूत (पवित्र भस्म)"
+                ),
+                vidhiSteps = listOf(
+                    "1. रक्षा सूत्र को पुरुष व अविवाहित कन्याओं के दाएं हाथ में तथा सुहागिन महिलाओं के बाएं हाथ में बांधें।",
+                    "2. प्रतिदिन स्नान के बाद एक चुटकी भभूत मस्तक व कंठ पर लगाएं।",
+                    "3. आश्रम के पावन जल को घर के चारों कोनों में छिड़कें।"
+                ),
+                precautions = listOf(
+                    "रक्षा सूत्र बंधे रहने तक मांस, मछली, अंडा, शराब व किसी भी प्रकार के नशे का स्पर्श भी न करें।",
+                    "घर में नित्य संध्या को गूगल-कपूर की धूनी अवश्य दें।",
+                    "शवयात्रा अथवा सूतक के समय विशेष सतर्कता रखें व पुनः आकर रक्षा सूत्र बदलवाएं।"
+                ),
+                mantraText = "।। भूत पिशाच निकट नहिं आवै। महाबीर जब नाम सुनावै ।।\n।। नासै रोग हरै सब पीरा। जपत निरंतर हनुमत बीरा ।।",
+                isPublished = true,
+                isHidden = false,
+                createdBy = "SUPER_ADMIN",
+                createdAt = now - 4000,
+                updatedAt = now - 4000
+            )
+        )
+    }
+}

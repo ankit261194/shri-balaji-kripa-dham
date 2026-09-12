@@ -26,7 +26,8 @@ enum class AppScreen {
     YATRA,
     YATRA_EXPENSES,
     ADMIN,
-    ASHRAM_INFO
+    ASHRAM_INFO,
+    PARCHAS
 }
 
 @Composable
@@ -77,6 +78,7 @@ fun MainNavigation(
                 onNavigateToYatra = { navigateTo(AppScreen.YATRA) },
                 onNavigateToInfo = { navigateTo(AppScreen.ASHRAM_INFO) },
                 onNavigateToAdmin = { navigateTo(AppScreen.ADMIN) },
+                onNavigateToParchas = { navigateTo(AppScreen.PARCHAS) },
                 onToggleLanguage = { isHindi = !isHindi }
             )
 
@@ -113,6 +115,12 @@ fun MainNavigation(
 
             AppScreen.ASHRAM_INFO -> AshramInfoScreen(
                 isHindi = isHindi,
+                onBack = { navigateBack() }
+            )
+
+            AppScreen.PARCHAS -> com.example.shribalajikripadham.ui.parcha.SacredParchasScreen(
+                isHindi = isHindi,
+                currentAdmin = null,
                 onBack = { navigateBack() }
             )
         }

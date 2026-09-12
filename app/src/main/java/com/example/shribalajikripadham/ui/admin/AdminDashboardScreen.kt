@@ -609,6 +609,7 @@ fun AdminDashboardScreen(
             if (admin.canManageTokens) allowedTabs.add(if (isHindi) "टोकन कतार" else "Tokens")
             if (admin.canIssueManualTokens) allowedTabs.add(if (isHindi) "मैनुअल टोकन" else "Manual")
             if (admin.canScanPaperRegister || isSuper) allowedTabs.add(if (isHindi) "रजिस्टर स्कैन" else "Register Scan")
+            allowedTabs.add(if (isHindi) "आश्रम पर्चे" else "Sacred Parchas")
             if (isSuper) allowedTabs.add(if (isHindi) "सक्रिय फोन" else "Active Devices")
             if (admin.canChangeLocation || isSuper) allowedTabs.add(if (isHindi) "GPS लोकेशन" else "Location")
             if (admin.canSendNotifications || isSuper) allowedTabs.add(if (isHindi) "सूचना भेजें" else "Broadcast")
@@ -701,6 +702,7 @@ fun AdminDashboardScreen(
                             Triple("टोकन कतार", admin.canManageTokens || isSuper, "🎟️"),
                             Triple("मैनुअल टोकन", admin.canIssueManualTokens || isSuper, "✍️"),
                             Triple("रजिस्टर स्कैन", admin.canScanPaperRegister || isSuper, "📷"),
+                            Triple("आश्रम पर्चे", true, "📜"),
                             Triple("बालाजी यात्रा", admin.canManageYatra || isSuper, "🚌"),
                             Triple("आय-व्यय", admin.canManageExpenses || isSuper, "💰"),
                             Triple("GPS दायरा", admin.canChangeLocation || isSuper, "📍"),
@@ -838,6 +840,16 @@ fun AdminDashboardScreen(
                                 admin = admin,
                                 repository = repository,
                                 onTokensGenerated = { refreshData() }
+                            )
+                        }
+                        currentTabTitle == "आश्रम पर्चे" || currentTabTitle == "Sacred Parchas" -> {
+                            com.example.shribalajikripadham.ui.parcha.SacredParchasScreen(
+                                isHindi = isHindi,
+                                currentAdmin = admin,
+                                onBack = {
+                                    val idx = allowedTabs.indexOfFirst { it == "टोकन कतार" || it == "Tokens" }
+                                    selectedTab = if (idx >= 0) idx else 0
+                                }
                             )
                         }
                         currentTabTitle == "सक्रिय फोन" || currentTabTitle == "Active Devices" -> {

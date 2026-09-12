@@ -58,6 +58,7 @@ fun HomeScreen(
     onNavigateToYatra: () -> Unit,
     onNavigateToInfo: () -> Unit,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToParchas: () -> Unit = {},
     onToggleLanguage: () -> Unit
 ) {
     val context = LocalContext.current
@@ -416,6 +417,7 @@ fun HomeScreen(
                         onNavigateToYatra = onNavigateToYatra,
                         onNavigateToInfo = onNavigateToInfo,
                         onNavigateToAdmin = onNavigateToAdmin,
+                        onNavigateToParchas = onNavigateToParchas,
                         context = context
                     )
                     Spacer(modifier = Modifier.height(14.dp))
@@ -1370,6 +1372,7 @@ fun RenderClassicSection(
     onNavigateToYatra: () -> Unit,
     onNavigateToInfo: () -> Unit,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToParchas: () -> Unit = {},
     context: Context
 ) {
     when (sectionId) {
@@ -1802,6 +1805,18 @@ fun RenderClassicSection(
                             onClick = onNavigateToAdmin
                         )
                     }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        ActionTile(
+                            title = if (isHindi) "📜 आश्रम पर्चे व दस्तावेज" else "📜 Sacred Documents & Slips",
+                            subtitle = if (isHindi) "हवन पर्चा, मैया उतारा, अर्जी व A4 PDF डाउनलोड" else "Hawan, Maiya Utara, Arji & A4 PDF",
+                            iconBadge = "📜",
+                            badgeColor = Color(0xFF6A1B9A),
+                            isPopular = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = onNavigateToParchas
+                        )
+                    }
                 } else {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         ActionTile(
@@ -1830,8 +1845,18 @@ fun RenderClassicSection(
                             subtitle = if (isHindi) "व्यवस्थापक प्रवेश" else "Sevadar & Admin",
                             iconBadge = "🛡️",
                             badgeColor = MaroonAccent,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.weight(1f),
                             onClick = onNavigateToAdmin
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        ActionTile(
+                            title = if (isHindi) "📜 आश्रम पर्चे" else "📜 Sacred Parchas",
+                            subtitle = if (isHindi) "हवन, उतारा व A4 PDF" else "Hawan, Utara & PDF",
+                            iconBadge = "📜",
+                            badgeColor = Color(0xFF6A1B9A),
+                            isPopular = true,
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToParchas
                         )
                     }
                 }
