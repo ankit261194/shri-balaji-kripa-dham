@@ -10,7 +10,7 @@
   "location_config": {
     "latitude": 28.4089,
     "longitude": 77.3178,
-    "allowed_radius_meters": 500.0,
+    "allowed_radius_meters": 200.0,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
     "updated_at": 1726135000000
