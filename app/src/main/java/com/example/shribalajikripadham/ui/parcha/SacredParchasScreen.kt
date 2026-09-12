@@ -66,9 +66,12 @@ fun SacredParchasScreen(
     var adminPinInput by remember { mutableStateOf("") }
     var loginError by remember { mutableStateOf<String?>(null) }
 
-    val refreshParchas: () -> Unit = {
+    fun refreshParchas(forceCloudSync: Boolean = false) {
         scope.launch {
             try {
+                if (forceCloudSync) {
+                    repository.syncLiveParchasFromGitHub()
+                }
                 val list = if (hasParchaAccess) {
                     repository.getAllAdminParchas()
                 } else {
@@ -83,7 +86,18 @@ fun SacredParchasScreen(
     }
 
     LaunchedEffect(Unit) {
-        refreshParchas()
+        scope.launch {
+            val localList = if (hasParchaAccess) repository.getAllAdminParchas() else repository.getAllPublicParchas()
+            if (localList.isNotEmpty()) {
+                parchasList = localList
+            }
+            // Fetch live parchas from GitHub in background
+            val (synced, cloudList) = repository.syncLiveParchasFromGitHub()
+            if (synced || cloudList.isNotEmpty()) {
+                val updatedList = if (hasParchaAccess) repository.getAllAdminParchas() else repository.getAllPublicParchas()
+                parchasList = if (updatedList.isNotEmpty()) updatedList else cloudList
+            }
+        }
     }
 
     // Filtered Parchas
@@ -123,6 +137,21 @@ fun SacredParchasScreen(
                     }
                 },
                 actions = {
+                    var isSyncingCloud by remember { mutableStateOf(false) }
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                isSyncingCloud = true
+                                val (ok, list) = repository.syncLiveParchasFromGitHub()
+                                isSyncingCloud = false
+                                val updated = if (hasParchaAccess) repository.getAllAdminParchas() else repository.getAllPublicParchas()
+                                parchasList = if (updated.isNotEmpty()) updated else list
+                                Toast.makeText(context, if (ok) "✓ पर्चे क्लाउड से सिंक हो गए!" else "ऑफलाइन पर्चे लोड हैं", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        Text(if (isSyncingCloud) "⏳" else "🔄", fontSize = 18.sp)
+                    }
                     if (isSuperAdmin) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
@@ -297,13 +326,14 @@ fun SacredParchasScreen(
                             },
                             onToggleHidden = { isHidden ->
                                 scope.launch {
-                                    repository.toggleParchaHidden(parcha.parchaId, isHidden)
-                                    refreshParchas()
+                                    val (ok, resMsg) = repository.toggleParchaHiddenAndPublish(parcha.parchaId, isHidden)
+                                    val updated = if (hasParchaAccess) repository.getAllAdminParchas() else repository.getAllPublicParchas()
+                                    parchasList = updated
                                     val msg = if (isHidden)
-                                        (if (isHindi) "पर्चा भक्तों से छिपा दिया गया है।" else "Parcha hidden from users.")
+                                        (if (isHindi) "✓ पर्चा भक्तों से छिपा दिया गया व क्लाउड पर अपडेट हो गया!" else "Parcha hidden & synced to cloud!")
                                     else
-                                        (if (isHindi) "पर्चा सभी भक्तों के लिए लाइव कर दिया गया है!" else "Parcha is now live to all!")
-                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                        (if (isHindi) "✓ पर्चा सभी भक्तों के लिए लाइव कर दिया गया है!" else "Parcha is now live to all!")
+                                    Toast.makeText(context, if (ok) msg else "$msg ($resMsg)", Toast.LENGTH_SHORT).show()
                                 }
                             },
                             onEdit = { editingParcha = parcha },
@@ -323,10 +353,11 @@ fun SacredParchasScreen(
             onDismiss = { showCreateDialog = false },
             onSaveParcha = { newParcha ->
                 scope.launch {
-                    repository.upsertParcha(newParcha)
-                    refreshParchas()
+                    val (ok, resMsg) = repository.upsertParchaAndPublish(newParcha)
+                    val updated = if (hasParchaAccess) repository.getAllAdminParchas() else repository.getAllPublicParchas()
+                    parchasList = updated
                     showCreateDialog = false
-                    Toast.makeText(context, if (isHindi) "🎉 पर्चा सफलतापूर्वक ऐप पर लाइव हो गया!" else "Parcha published live!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (ok) (if (isHindi) "🎉 पर्चा सफलतापूर्वक ऐप व क्लाउड पर लाइव हो गया!" else "Parcha published live!") else "पर्चा सेव हुआ ($resMsg)", Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -339,10 +370,11 @@ fun SacredParchasScreen(
             onDismiss = { editingParcha = null },
             onSaveParcha = { updatedParcha ->
                 scope.launch {
-                    repository.upsertParcha(updatedParcha)
-                    refreshParchas()
+                    val (ok, resMsg) = repository.upsertParchaAndPublish(updatedParcha)
+                    val updated = if (hasParchaAccess) repository.getAllAdminParchas() else repository.getAllPublicParchas()
+                    parchasList = updated
                     editingParcha = null
-                    Toast.makeText(context, if (isHindi) "✓ पर्चा अपडेट कर दिया गया!" else "Parcha updated!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (ok) (if (isHindi) "✓ पर्चा अपडेट कर दिया गया व सभी भक्तों के फोन पर लाइव हो गया!" else "Parcha updated & published!") else "पर्चा अपडेट हुआ ($resMsg)", Toast.LENGTH_SHORT).show()
                 }
             }
         )
@@ -374,15 +406,16 @@ fun SacredParchasScreen(
         AlertDialog(
             onDismissRequest = { deleteConfirmParcha = null },
             title = { Text(if (isHindi) "पर्चा हटाएं?" else "Delete Parcha?") },
-            text = { Text(if (isHindi) "क्या आप '${deleteConfirmParcha!!.title}' को हटाना चाहते हैं?" else "Are you sure you want to delete this parcha?") },
+            text = { Text(if (isHindi) "क्या आप '${deleteConfirmParcha!!.title}' को हटाना चाहते हैं? यह सभी भक्तों के फोन से भी हट जाएगा।" else "Are you sure you want to delete this parcha? It will be removed from all users.") },
             confirmButton = {
                 Button(
                     onClick = {
                         scope.launch {
-                            repository.deleteParcha(deleteConfirmParcha!!.parchaId)
-                            refreshParchas()
+                            val (ok, resMsg) = repository.deleteParchaAndPublish(deleteConfirmParcha!!.parchaId)
+                            val updated = if (hasParchaAccess) repository.getAllAdminParchas() else repository.getAllPublicParchas()
+                            parchasList = updated
                             deleteConfirmParcha = null
-                            Toast.makeText(context, if (isHindi) "पर्चा हटा दिया गया।" else "Deleted.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, if (ok) (if (isHindi) "✓ पर्चा हटा दिया गया व सभी फोन से हट गया।" else "Parcha deleted & synced.") else "हटाया गया ($resMsg)", Toast.LENGTH_SHORT).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red)

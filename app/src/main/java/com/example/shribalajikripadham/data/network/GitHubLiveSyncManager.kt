@@ -29,6 +29,7 @@ object GitHubLiveSyncManager {
     private const val FILE_TOKENS = "live_tokens.json"
     private const val FILE_ADMINS = "live_admins.json"
     private const val FILE_DEVICES = "live_devices.json"
+    private const val FILE_PARCHAS = "live_parchas.json"
 
     // Raw CDN URLs for instantaneous unauthenticated reads
     private const val RAW_CONFIG_URL =
@@ -39,6 +40,8 @@ object GitHubLiveSyncManager {
         "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_ADMINS"
     private const val RAW_DEVICES_URL =
         "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_DEVICES"
+    private const val RAW_PARCHAS_URL =
+        "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_PARCHAS"
 
     // REST API Contents endpoints
     private const val API_CONFIG_URL =
@@ -49,6 +52,8 @@ object GitHubLiveSyncManager {
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_ADMINS"
     private const val API_DEVICES_URL =
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_DEVICES"
+    private const val API_PARCHAS_URL =
+        "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_PARCHAS"
 
     // Active PAT token
     private const val DEFAULT_TOKEN_PART_A = "ghp_xqbYU7Ugyp"
@@ -974,5 +979,161 @@ object GitHubLiveSyncManager {
         val oneDayAgo = now - 24 * 3600 * 1000L
         val activeToday = allList.count { it.lastSeenAt >= oneDayAgo }
         Triple(allList.size, if (activeToday == 0 && allList.isNotEmpty()) 1 else activeToday, allList)
+    }
+
+    // ========================================================================
+    // 5. LIVE PARCHAS & SACRED DOCUMENTS SYNC (live_parchas.json)
+    // ========================================================================
+
+    suspend fun fetchLiveParchas(): List<com.example.shribalajikripadham.data.model.SacredParcha>? = withContext(Dispatchers.IO) {
+        try {
+            val cacheBusterUrl = "$RAW_PARCHAS_URL?nocache=${System.currentTimeMillis()}"
+            val url = URL(cacheBusterUrl)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 4000
+            conn.readTimeout = 4000
+            conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.25")
+
+            if (conn.responseCode in 200..299) {
+                val jsonText = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(jsonText)
+                val arr = root.optJSONArray("parchas") ?: JSONArray()
+                val list = mutableListOf<com.example.shribalajikripadham.data.model.SacredParcha>()
+                for (i in 0 until arr.length()) {
+                    val o = arr.getJSONObject(i)
+                    val pid = o.optString("parcha_id")
+                    if (pid.isNotBlank()) {
+                        val catStr = o.optString("category", "OTHER")
+                        val cat = com.example.shribalajikripadham.data.model.ParchaCategory.fromString(catStr)
+                        list.add(
+                            com.example.shribalajikripadham.data.model.SacredParcha(
+                                parchaId = pid,
+                                title = o.optString("title", ""),
+                                category = cat,
+                                subtitle = o.optString("subtitle", ""),
+                                samagriList = com.example.shribalajikripadham.data.model.SacredParcha.parseJsonList(o.optJSONArray("samagri_list")?.toString()),
+                                vidhiSteps = com.example.shribalajikripadham.data.model.SacredParcha.parseJsonList(o.optJSONArray("vidhi_steps")?.toString()),
+                                precautions = com.example.shribalajikripadham.data.model.SacredParcha.parseJsonList(o.optJSONArray("precautions")?.toString()),
+                                mantraText = o.optString("mantra_text", ""),
+                                imageUri = o.optString("image_uri", ""),
+                                isPublished = o.optBoolean("is_published", true),
+                                isHidden = o.optBoolean("is_hidden", false),
+                                viewCount = o.optInt("view_count", 0),
+                                downloadCount = o.optInt("download_count", 0),
+                                createdBy = o.optString("created_by", "SUPER_ADMIN"),
+                                createdAt = o.optLong("created_at", System.currentTimeMillis()),
+                                updatedAt = o.optLong("updated_at", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                }
+                list
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun publishLiveParchas(
+        context: Context,
+        parchas: List<com.example.shribalajikripadham.data.model.SacredParcha>,
+        adminName: String = "Super Admin"
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val patToken = getActiveToken(context)
+        if (patToken.isBlank()) return@withContext Pair(false, "सिंक टोकन उपलब्ध नहीं")
+
+        try {
+            var existingSha: String? = null
+            try {
+                val getUrl = URL(API_PARCHAS_URL)
+                val conn = getUrl.openConnection() as HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.setRequestProperty("Authorization", "Bearer $patToken")
+                conn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.25")
+                conn.connectTimeout = 5000
+                conn.readTimeout = 5000
+
+                if (conn.responseCode in 200..299) {
+                    val respStr = conn.inputStream.bufferedReader().use { it.readText() }
+                    val jsonResp = JSONObject(respStr)
+                    existingSha = if (jsonResp.has("sha")) jsonResp.getString("sha") else null
+                }
+            } catch (e: Exception) {}
+
+            val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+
+            val root = JSONObject()
+            root.put("updated_at", isoFormat.format(Date()))
+            root.put("updated_by", adminName)
+            root.put("version", 1)
+
+            val arr = JSONArray()
+            for (p in parchas) {
+                val o = JSONObject()
+                o.put("parcha_id", p.parchaId)
+                o.put("title", p.title)
+                o.put("category", p.category.name)
+                o.put("subtitle", p.subtitle)
+                val sArr = JSONArray(); p.samagriList.forEach { sArr.put(it) }; o.put("samagri_list", sArr)
+                val vArr = JSONArray(); p.vidhiSteps.forEach { vArr.put(it) }; o.put("vidhi_steps", vArr)
+                val pArr = JSONArray(); p.precautions.forEach { pArr.put(it) }; o.put("precautions", pArr)
+                o.put("mantra_text", p.mantraText)
+                o.put("image_uri", p.imageUri)
+                o.put("is_published", p.isPublished)
+                o.put("is_hidden", p.isHidden)
+                o.put("view_count", p.viewCount)
+                o.put("download_count", p.downloadCount)
+                o.put("created_by", p.createdBy)
+                o.put("created_at", p.createdAt)
+                o.put("updated_at", p.updatedAt)
+                arr.put(o)
+            }
+            root.put("parchas", arr)
+
+            val jsonContent = root.toString(2)
+            val b64Content = Base64.encodeToString(
+                jsonContent.toByteArray(StandardCharsets.UTF_8),
+                Base64.NO_WRAP
+            )
+
+            val payload = JSONObject().apply {
+                put("message", "Sync sacred parchas via $adminName [live_parchas.json]")
+                put("content", b64Content)
+                put("branch", "main")
+                if (!existingSha.isNullOrBlank()) {
+                    put("sha", existingSha)
+                }
+            }
+
+            val putUrl = URL(API_PARCHAS_URL)
+            val putConn = putUrl.openConnection() as HttpURLConnection
+            putConn.requestMethod = "PUT"
+            putConn.setRequestProperty("Authorization", "Bearer $patToken")
+            putConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            putConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            putConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.25")
+            putConn.connectTimeout = 8000
+            putConn.readTimeout = 8000
+            putConn.doOutput = true
+
+            putConn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            val code = putConn.responseCode
+            if (code in 200..299) {
+                Pair(true, "पर्चे क्लाउड पर सफलतापूर्वक सिंक हो गए")
+            } else {
+                Pair(false, "पर्चा सिंक असफल: HTTP $code")
+            }
+        } catch (e: Exception) {
+            Pair(false, "पर्चा सिंक त्रुटि: ${e.localizedMessage}")
+        }
     }
 }

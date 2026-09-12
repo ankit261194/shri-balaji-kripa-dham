@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 27,
-  "latest_version_name": "2.24.0",
-  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.24.0): 1. स्थायी आश्रम लोकेशन फिक्स: आश्रम के अक्षांश-देशांतर (Latitude: 28.3972915, Longitude: 78.1460410) को स्थायी रूप से सेट कर दिया गया है ताकि इस सटीक लोकेशन पर टोकन आसानी से जनरेट हो सकें। 2. 'आश्रम परिसर से बाहर' वाला बैनर हटाया गया। 3. लाइव UI बॉक्स व सामग्री संपादक। 4. सुपर एडमिन रियल-टाइम फोन काउंटर।",
-  "update_notes_english": "Permanent Location Fix (v2.24.0): 1. Fixed Ashram location permanently to Lat: 28.3972915, Lng: 78.1460410 for accurate token generation. 2. Clean UI without outside geofence banner. 3. Live UI Box Editor. 4. Real-time active devices counter.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.24.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 28,
+  "latest_version_name": "2.25.0",
+  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.25.0): 1. सोशल मीडिया लिंक्स पूर्णतः सक्रिय: व्हाट्सएप्प (ग्रुप व नंबर), यूट्यूब, फेसबुक, इंस्टाग्राम व शेयर ऍप अब बिना किसी एरर के तुरंत खुलते हैं। 2. नियम पर्चे लाइव क्लाउड सिंक: सुपर एडमिन द्वारा पर्चा छिपाना (Hide), हटाना (Delete), नया जोड़ना या संपादन (Edit) अब सभी भक्तों के फोन पर तुरंत अपडेट हो जाता है। 3. आश्रम विवरण व सोशल लिंक्स का लाइव क्लाउड सिंक। 4. 30-सेकंड ऑटोमैटिक बैकग्राउंड सिंक।",
+  "update_notes_english": "Major Update (v2.25.0): 1. All social media links (WhatsApp, YouTube, Facebook, Instagram, Share App) now open reliably with automatic URL formatting and phone number support. 2. Sacred Rules/Parchas Live Cloud Sync: Hide, delete, create, and edit operations now instantly sync to all devotee phones. 3. Real-time ashram details & social links cloud sync. 4. 30-second background auto-sync.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.25.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

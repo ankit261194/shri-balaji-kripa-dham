@@ -97,7 +97,13 @@ class AshramRepository(context: Context) {
             put("free_disclaimer", freeDisclaimer)
             put("emergency_notice", emergencyNotice)
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try {
+                publishCurrentSettingsToGitHub()
+            } catch (e: Exception) {}
+        }
+        res
     }
 
     suspend fun updateGurujiPhoto(photoUri: String): Boolean = withContext(Dispatchers.IO) {
@@ -256,14 +262,20 @@ class AshramRepository(context: Context) {
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
-            put("whatsapp_group_url", whatsappGroupUrl)
-            put("whatsapp_number", whatsappNumber)
-            put("youtube_channel_url", youtubeUrl)
-            put("facebook_page_url", facebookUrl)
-            put("instagram_url", instagramUrl)
-            put("app_share_url", appShareUrl)
+            put("whatsapp_group_url", whatsappGroupUrl.trim())
+            put("whatsapp_number", whatsappNumber.trim())
+            put("youtube_channel_url", youtubeUrl.trim())
+            put("facebook_page_url", facebookUrl.trim())
+            put("instagram_url", instagramUrl.trim())
+            put("app_share_url", appShareUrl.trim())
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try {
+                publishCurrentSettingsToGitHub()
+            } catch (e: Exception) {}
+        }
+        res
     }
 
     suspend fun updateCurrentTheme(themeId: String): Boolean = withContext(Dispatchers.IO) {
@@ -1917,6 +1929,7 @@ class AshramRepository(context: Context) {
                 if (det.gurujiName.isNotBlank()) cv.put("guruji_name", det.gurujiName)
                 if (det.address.isNotBlank()) cv.put("address", det.address)
                 if (det.contactPhone.isNotBlank()) cv.put("contact_phone", det.contactPhone)
+                if (det.contactPhoneSecondary.isNotBlank()) cv.put("contact_phone_secondary", det.contactPhoneSecondary)
                 if (det.darbarTimings.isNotBlank()) cv.put("darbar_timings", det.darbarTimings)
                 if (det.freeDisclaimer.isNotBlank()) cv.put("free_disclaimer", det.freeDisclaimer)
                 if (det.whatsappNumber.isNotBlank()) cv.put("whatsapp_number", det.whatsappNumber)
@@ -1924,6 +1937,7 @@ class AshramRepository(context: Context) {
                 if (det.youtubeChannelUrl.isNotBlank()) cv.put("youtube_channel_url", det.youtubeChannelUrl)
                 if (det.facebookPageUrl.isNotBlank()) cv.put("facebook_page_url", det.facebookPageUrl)
                 if (det.instagramUrl.isNotBlank()) cv.put("instagram_url", det.instagramUrl)
+                if (det.appShareUrl.isNotBlank()) cv.put("app_share_url", det.appShareUrl)
 
                 // Synchronize Emergency Broadcast Notice
                 val em = remoteConfig.emergencyNotice
@@ -1990,13 +2004,15 @@ class AshramRepository(context: Context) {
                 gurujiName = currentSettings.gurujiName,
                 address = currentSettings.address,
                 contactPhone = currentSettings.contactPhone,
+                contactPhoneSecondary = "",
                 whatsappNumber = currentSettings.whatsappNumber,
                 darbarTimings = currentSettings.darbarTimings,
                 freeDisclaimer = currentSettings.freeDisclaimer,
                 whatsappGroupUrl = currentSettings.whatsappGroupUrl,
                 youtubeChannelUrl = currentSettings.youtubeChannelUrl,
                 facebookPageUrl = currentSettings.facebookPageUrl,
-                instagramUrl = currentSettings.instagramUrl
+                instagramUrl = currentSettings.instagramUrl,
+                appShareUrl = currentSettings.appShareUrl
             ),
             emergencyNotice = com.example.shribalajikripadham.data.model.EmergencyNoticeDto(
                 isEnabled = currentSettings.isEmergencyNoticeVisible,
@@ -2359,7 +2375,18 @@ class AshramRepository(context: Context) {
     // SACRED PARCHAS & DOCUMENTS REPOSITORY
     // ==========================================
 
+    private fun isParchasSeeded(): Boolean {
+        val prefs = appContext.getSharedPreferences("sbkd_parchas_sync_prefs", Context.MODE_PRIVATE)
+        return prefs.getBoolean("is_parchas_seeded", false)
+    }
+
+    private fun setParchasSeededFlag(seeded: Boolean) {
+        val prefs = appContext.getSharedPreferences("sbkd_parchas_sync_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("is_parchas_seeded", seeded).apply()
+    }
+
     fun seedDefaultParchasIfEmpty() {
+        if (isParchasSeeded()) return
         try {
             val db = dbHelper.writableDatabase
             val cursor = db.rawQuery("SELECT COUNT(*) FROM sacred_parchas", null)
@@ -2372,8 +2399,27 @@ class AshramRepository(context: Context) {
             if (count == 0) {
                 val canonicals = com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
                 for (p in canonicals) {
-                    upsertParcha(p)
+                    val cv = android.content.ContentValues().apply {
+                        put("parcha_id", p.parchaId)
+                        put("title", p.title)
+                        put("category", p.category.name)
+                        put("subtitle", p.subtitle)
+                        put("samagri_list", p.samagriListToJson())
+                        put("vidhi_text", p.vidhiStepsToJson())
+                        put("precautions", p.precautionsToJson())
+                        put("mantra_text", p.mantraText)
+                        put("image_uri", p.imageUri)
+                        put("is_published", if (p.isPublished) 1 else 0)
+                        put("is_hidden", if (p.isHidden) 1 else 0)
+                        put("view_count", p.viewCount)
+                        put("download_count", p.downloadCount)
+                        put("created_by", p.createdBy)
+                        put("created_at", p.createdAt)
+                        put("updated_at", System.currentTimeMillis())
+                    }
+                    db.insertWithOnConflict("sacred_parchas", null, cv, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
                 }
+                setParchasSeededFlag(true)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -2393,11 +2439,10 @@ class AshramRepository(context: Context) {
                 list.add(parseParchaCursor(cursor))
             }
             cursor.close()
-            if (list.isNotEmpty()) return list
+            if (list.isNotEmpty() || isParchasSeeded()) return list
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        // Fallback: If DB query fails for any reason, return canonical parchas!
         return com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas().filter { it.isPublished && !it.isHidden }
     }
 
@@ -2414,11 +2459,10 @@ class AshramRepository(context: Context) {
                 list.add(parseParchaCursor(cursor))
             }
             cursor.close()
-            if (list.isNotEmpty()) return list
+            if (list.isNotEmpty() || isParchasSeeded()) return list
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        // Fallback: Return all canonical parchas
         return com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
     }
 
@@ -2454,6 +2498,7 @@ class AshramRepository(context: Context) {
             put("updated_at", System.currentTimeMillis())
         }
         val rowId = db.insertWithOnConflict("sacred_parchas", null, cv, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+        setParchasSeededFlag(true)
         return rowId != -1L
     }
 
@@ -2471,6 +2516,106 @@ class AshramRepository(context: Context) {
         val db = dbHelper.writableDatabase
         val affected = db.delete("sacred_parchas", "parcha_id = ?", arrayOf(parchaId))
         return affected > 0
+    }
+
+    suspend fun upsertParchaAndPublish(
+        parcha: com.example.shribalajikripadham.data.model.SacredParcha,
+        adminName: String = "Super Admin"
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val localOk = upsertParcha(parcha)
+        if (localOk) {
+            val (pubOk, pubMsg) = publishAllParchasToGitHub(adminName)
+            Pair(pubOk, pubMsg)
+        } else {
+            Pair(false, "स्थानीय डेटाबेस में सुरक्षित नहीं हुआ")
+        }
+    }
+
+    suspend fun toggleParchaHiddenAndPublish(
+        parchaId: String,
+        isHidden: Boolean,
+        adminName: String = "Super Admin"
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val localOk = toggleParchaHidden(parchaId, isHidden)
+        if (localOk) {
+            val (pubOk, pubMsg) = publishAllParchasToGitHub(adminName)
+            Pair(pubOk, pubMsg)
+        } else {
+            Pair(false, "स्थिति अपडेट नहीं हो सकी")
+        }
+    }
+
+    suspend fun deleteParchaAndPublish(
+        parchaId: String,
+        adminName: String = "Super Admin"
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val localOk = deleteParcha(parchaId)
+        if (localOk) {
+            val (pubOk, pubMsg) = publishAllParchasToGitHub(adminName)
+            Pair(pubOk, pubMsg)
+        } else {
+            Pair(false, "पर्चा हटाया नहीं जा सका")
+        }
+    }
+
+    suspend fun syncLiveParchasFromGitHub(): Pair<Boolean, List<com.example.shribalajikripadham.data.model.SacredParcha>> = withContext(Dispatchers.IO) {
+        val remoteList = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveParchas()
+        if (remoteList != null) {
+            try {
+                val db = dbHelper.writableDatabase
+                val remoteIds = remoteList.map { it.parchaId }.toSet()
+
+                // Remove parchas from local DB that were deleted by Super Admin in the cloud
+                val localCursor = db.rawQuery("SELECT parcha_id FROM sacred_parchas", null)
+                val toDelete = mutableListOf<String>()
+                while (localCursor.moveToNext()) {
+                    val pid = localCursor.getString(0)
+                    if (!remoteIds.contains(pid)) {
+                        toDelete.add(pid)
+                    }
+                }
+                localCursor.close()
+
+                for (pid in toDelete) {
+                    db.delete("sacred_parchas", "parcha_id = ?", arrayOf(pid))
+                }
+
+                // Upsert all remote parchas with their updated state
+                for (p in remoteList) {
+                    val cv = android.content.ContentValues().apply {
+                        put("parcha_id", p.parchaId)
+                        put("title", p.title)
+                        put("category", p.category.name)
+                        put("subtitle", p.subtitle)
+                        put("samagri_list", p.samagriListToJson())
+                        put("vidhi_text", p.vidhiStepsToJson())
+                        put("precautions", p.precautionsToJson())
+                        put("mantra_text", p.mantraText)
+                        put("image_uri", p.imageUri)
+                        put("is_published", if (p.isPublished) 1 else 0)
+                        put("is_hidden", if (p.isHidden) 1 else 0)
+                        put("view_count", p.viewCount)
+                        put("download_count", p.downloadCount)
+                        put("created_by", p.createdBy)
+                        put("created_at", p.createdAt)
+                        put("updated_at", p.updatedAt)
+                    }
+                    db.insertWithOnConflict("sacred_parchas", null, cv, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+                }
+
+                setParchasSeededFlag(true)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            Pair(true, remoteList)
+        } else {
+            Pair(false, emptyList())
+        }
+    }
+
+    suspend fun publishAllParchasToGitHub(adminName: String = "Super Admin"): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val allParchas = getAllAdminParchas()
+        com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveParchas(appContext, allParchas, adminName)
     }
 
     fun incrementParchaDownload(parchaId: String) {

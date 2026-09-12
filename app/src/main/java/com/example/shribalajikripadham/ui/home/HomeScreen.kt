@@ -45,7 +45,74 @@ import android.widget.Toast
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import java.io.File
+
+fun openSocialMediaLink(
+    context: Context,
+    rawUrl: String?,
+    defaultUrl: String,
+    isWhatsApp: Boolean = false,
+    errorMessage: String = "लिंक या ऐप खोलने में असमर्थ"
+) {
+    val trimmed = (rawUrl ?: "").trim()
+    val finalUrl = when {
+        trimmed.isEmpty() -> defaultUrl
+        isWhatsApp -> {
+            val cleanDigits = trimmed.replace("+", "").replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
+            if (cleanDigits.all { it.isDigit() } && cleanDigits.length in 10..15) {
+                val fullNumber = if (cleanDigits.length == 10) "91$cleanDigits" else cleanDigits
+                "https://wa.me/$fullNumber"
+            } else if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+                "https://$trimmed"
+            } else {
+                trimmed
+            }
+        }
+        else -> {
+            if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+                "https://$trimmed"
+            } else {
+                trimmed
+            }
+        }
+    }
+
+    try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(finalUrl)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        try {
+            if (finalUrl != defaultUrl && defaultUrl.isNotBlank()) {
+                val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(defaultUrl)).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(fallbackIntent)
+                return
+            }
+        } catch (ignored: Exception) {}
+        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+    }
+}
+
+fun shareAppContent(context: Context, shareMessage: String, title: String) {
+    try {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, title)
+            putExtra(Intent.EXTRA_TEXT, shareMessage)
+        }
+        val chooser = Intent.createChooser(shareIntent, title).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(chooser)
+    } catch (e: Exception) {
+        Toast.makeText(context, "शेयर करने में असमर्थ", Toast.LENGTH_SHORT).show()
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,6 +181,28 @@ fun HomeScreen(
                 }
             } catch (e: Exception) {
                 // Smooth fallback to local SQLite cache
+            }
+            try {
+                repository.syncLiveParchasFromGitHub()
+            } catch (e: Exception) {}
+        }
+
+        // 🔄 Continuous live sync loop (every 30 seconds) while screen is open
+        scope.launch {
+            while (isActive) {
+                delay(30_000)
+                try {
+                    val (synced, liveConfig) = repository.syncLiveConfigFromGitHub()
+                    if (synced && liveConfig != null) {
+                        if (liveConfig.sections.isNotEmpty()) {
+                            uiSectionConfigs = liveConfig.sections
+                        }
+                        settings = repository.getSettings()
+                    }
+                } catch (e: Exception) {}
+                try {
+                    repository.syncLiveParchasFromGitHub()
+                } catch (e: Exception) {}
             }
         }
 
@@ -637,12 +726,13 @@ fun HomeScreen(
                         // WhatsApp Group
                         Button(
                             onClick = {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(settings.whatsappGroupUrl.ifEmpty { "https://chat.whatsapp.com/invite" }))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    // Fallback
-                                }
+                                openSocialMediaLink(
+                                    context = context,
+                                    rawUrl = settings.whatsappGroupUrl,
+                                    defaultUrl = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4",
+                                    isWhatsApp = true,
+                                    errorMessage = if (isHindi) "व्हाट्सएप्प लिंक या ऐप खोलने में असमर्थ" else "Unable to open WhatsApp"
+                                )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
                             shape = RoundedCornerShape(12.dp),
@@ -660,12 +750,13 @@ fun HomeScreen(
                         // YouTube Channel
                         Button(
                             onClick = {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(settings.youtubeChannelUrl.ifEmpty { "https://www.youtube.com/@ShriBalajiKripaDham" }))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    // Fallback
-                                }
+                                openSocialMediaLink(
+                                    context = context,
+                                    rawUrl = settings.youtubeChannelUrl,
+                                    defaultUrl = "https://www.youtube.com/@ShriBalajiKripaDham",
+                                    isWhatsApp = false,
+                                    errorMessage = if (isHindi) "यूट्यूब चैनल खोलने में असमर्थ" else "Unable to open YouTube"
+                                )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000)),
                             shape = RoundedCornerShape(12.dp),
@@ -690,12 +781,13 @@ fun HomeScreen(
                         // Facebook Page
                         Button(
                             onClick = {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(settings.facebookPageUrl.ifEmpty { "https://www.facebook.com/ShriBalajiKripaDham" }))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    // Fallback
-                                }
+                                openSocialMediaLink(
+                                    context = context,
+                                    rawUrl = settings.facebookPageUrl,
+                                    defaultUrl = "https://www.facebook.com/ShriBalajiKripaDham",
+                                    isWhatsApp = false,
+                                    errorMessage = if (isHindi) "फेसबुक पेज खोलने में असमर्थ" else "Unable to open Facebook"
+                                )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1877F2)),
                             shape = RoundedCornerShape(12.dp),
@@ -713,12 +805,13 @@ fun HomeScreen(
                         // Instagram
                         Button(
                             onClick = {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(settings.instagramUrl.ifEmpty { "https://www.instagram.com/shribalajikripadham" }))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    // Fallback
-                                }
+                                openSocialMediaLink(
+                                    context = context,
+                                    rawUrl = settings.instagramUrl,
+                                    defaultUrl = "https://www.instagram.com/shribalajikripadham",
+                                    isWhatsApp = false,
+                                    errorMessage = if (isHindi) "इंस्टाग्राम पेज खोलने में असमर्थ" else "Unable to open Instagram"
+                                )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE1306C)),
                             shape = RoundedCornerShape(12.dp),
@@ -739,6 +832,7 @@ fun HomeScreen(
                     // Master Share App Button with Pre-filled Devotional Message
                     Button(
                         onClick = {
+                            val shareUrl = settings.appShareUrl.ifBlank { "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest" }
                             val shareMessage = if (isHindi) {
                                 """
                                 🚩 श्री बालाजी कृपा धाम, डूँगरा जाट (बुलन्दशहर, उ.प्र.) 🚩
@@ -749,7 +843,7 @@ fun HomeScreen(
                                 ✨ आरती, दर्शन व आश्रम की सभी सेवाओं की अधिकृत जानकारी
                                 
                                 📲 अभी श्री बालाजी कृपा धाम ऍप डाउनलोड करें व परिजनों को शेयर करें:
-                                ${settings.appShareUrl.ifEmpty { "https://shribalajikripadham.org/app" }}
+                                $shareUrl
                                 
                                 ॥ जय श्री बालाजी महाराज ॥
                                 """.trimIndent()
@@ -763,18 +857,17 @@ fun HomeScreen(
                                 ✨ Live Aarti, Darshan & Ashram services
                                 
                                 📲 Download Shri Balaji Kripa Dham Official App:
-                                ${settings.appShareUrl.ifEmpty { "https://shribalajikripadham.org/app" }}
+                                $shareUrl
                                 
                                 || Jai Shri Balaji Maharaj ||
                                 """.trimIndent()
                             }
 
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_SUBJECT, if (isHindi) "श्री बालाजी कृपा धाम ऍप" else "Shri Balaji Kripa Dham App")
-                                putExtra(Intent.EXTRA_TEXT, shareMessage)
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, if (isHindi) "श्री बालाजी कृपा धाम ऍप शेयर करें" else "Share Ashram App"))
+                            shareAppContent(
+                                context = context,
+                                shareMessage = shareMessage,
+                                title = if (isHindi) "श्री बालाजी कृपा धाम ऍप शेयर करें" else "Share Ashram App"
+                            )
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
                         shape = RoundedCornerShape(14.dp),
@@ -2224,9 +2317,13 @@ fun RenderClassicSection(
                         // YouTube
                         Button(
                             onClick = {
-                                val url = settings.youtubeChannelUrl.ifEmpty { "https://youtube.com" }
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(intent)
+                                openSocialMediaLink(
+                                    context = context,
+                                    rawUrl = settings.youtubeChannelUrl,
+                                    defaultUrl = "https://www.youtube.com/@ShriBalajiKripaDham",
+                                    isWhatsApp = false,
+                                    errorMessage = if (isHindi) "यूट्यूब चैनल खोलने में असमर्थ" else "Unable to open YouTube"
+                                )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000)),
                             shape = RoundedCornerShape(12.dp),
@@ -2239,9 +2336,13 @@ fun RenderClassicSection(
                         // WhatsApp
                         Button(
                             onClick = {
-                                val url = settings.whatsappGroupUrl.ifEmpty { "https://chat.whatsapp.com" }
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(intent)
+                                openSocialMediaLink(
+                                    context = context,
+                                    rawUrl = settings.whatsappGroupUrl,
+                                    defaultUrl = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4",
+                                    isWhatsApp = true,
+                                    errorMessage = if (isHindi) "व्हाट्सएप्प लिंक या ऐप खोलने में असमर्थ" else "Unable to open WhatsApp"
+                                )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
                             shape = RoundedCornerShape(12.dp),
@@ -2254,9 +2355,13 @@ fun RenderClassicSection(
                         // Facebook
                         Button(
                             onClick = {
-                                val url = settings.facebookPageUrl.ifEmpty { "https://facebook.com" }
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(intent)
+                                openSocialMediaLink(
+                                    context = context,
+                                    rawUrl = settings.facebookPageUrl,
+                                    defaultUrl = "https://www.facebook.com/ShriBalajiKripaDham",
+                                    isWhatsApp = false,
+                                    errorMessage = if (isHindi) "फेसबुक पेज खोलने में असमर्थ" else "Unable to open Facebook"
+                                )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1877F2)),
                             shape = RoundedCornerShape(12.dp),
@@ -2269,9 +2374,13 @@ fun RenderClassicSection(
                         // Instagram
                         Button(
                             onClick = {
-                                val url = settings.instagramUrl.ifEmpty { "https://instagram.com" }
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(intent)
+                                openSocialMediaLink(
+                                    context = context,
+                                    rawUrl = settings.instagramUrl,
+                                    defaultUrl = "https://www.instagram.com/shribalajikripadham",
+                                    isWhatsApp = false,
+                                    errorMessage = if (isHindi) "इंस्टाग्राम पेज खोलने में असमर्थ" else "Unable to open Instagram"
+                                )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE4405F)),
                             shape = RoundedCornerShape(12.dp),
@@ -2287,6 +2396,7 @@ fun RenderClassicSection(
                     // Share App Button
                     Button(
                         onClick = {
+                            val shareUrl = settings.appShareUrl.ifBlank { "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest" }
                             val shareMessage = if (isHindi) {
                                 """
                                 🚩 श्री बालाजी कृपा धाम, डूँगरा जाट (बुलन्दशहर, उ.प्र.) 🚩
@@ -2297,7 +2407,7 @@ fun RenderClassicSection(
                                 ✨ आरती, दर्शन व आश्रम की सभी सेवाओं की अधिकृत जानकारी
                                 
                                 📲 अभी श्री बालाजी कृपा धाम ऍप डाउनलोड करें व परिजनों को शेयर करें:
-                                ${settings.appShareUrl.ifEmpty { "https://shribalajikripadham.org/app" }}
+                                $shareUrl
                                 
                                 ॥ जय श्री बालाजी महाराज ॥
                                 """.trimIndent()
@@ -2311,18 +2421,17 @@ fun RenderClassicSection(
                                 ✨ Live Aarti, Darshan & Ashram services
                                 
                                 📲 Download Shri Balaji Kripa Dham Official App:
-                                ${settings.appShareUrl.ifEmpty { "https://shribalajikripadham.org/app" }}
+                                $shareUrl
                                 
                                 || Jai Shri Balaji Maharaj ||
                                 """.trimIndent()
                             }
 
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_SUBJECT, if (isHindi) "श्री बालाजी कृपा धाम ऍप" else "Shri Balaji Kripa Dham App")
-                                putExtra(Intent.EXTRA_TEXT, shareMessage)
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, if (isHindi) "श्री बालाजी कृपा धाम ऍप शेयर करें" else "Share Ashram App"))
+                            shareAppContent(
+                                context = context,
+                                shareMessage = shareMessage,
+                                title = if (isHindi) "श्री बालाजी कृपा धाम ऍप शेयर करें" else "Share Ashram App"
+                            )
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
                         shape = RoundedCornerShape(14.dp),
