@@ -33,6 +33,18 @@ data class AshramDetailsConfigDto(
     val instagramUrl: String = "https://www.instagram.com/shribalajikripadham"
 )
 
+data class ServicesConfigDto(
+    val isTokenServiceEnabled: Boolean = true,
+    val isYatraServiceEnabled: Boolean = false,
+    val isLiveCounterVisible: Boolean = true,
+    val isEventsVisible: Boolean = true,
+    val isAartiTimingsVisible: Boolean = true,
+    val isGurujiInfoVisible: Boolean = true,
+    val isEmergencyNoticeVisible: Boolean = true,
+    val scheduledTokenOpenTimestamp: Long = 0L,
+    val maxDailyTokens: Int = 0
+)
+
 data class LiveUiConfigDto(
     val updatedAt: String = "",
     val updatedBy: String = "Super Admin",
@@ -41,6 +53,7 @@ data class LiveUiConfigDto(
     val ashramDetails: AshramDetailsConfigDto = AshramDetailsConfigDto(),
     val emergencyNotice: EmergencyNoticeDto = EmergencyNoticeDto(),
     val locationConfig: LocationConfigDto = LocationConfigDto(),
+    val servicesConfig: ServicesConfigDto = ServicesConfigDto(),
     val sections: List<UiSectionConfig> = UiSectionConfig.defaultSections()
 ) {
     fun toJsonString(): String {
@@ -79,6 +92,18 @@ data class LiveUiConfigDto(
         locObj.put("location_name", locationConfig.locationName)
         locObj.put("updated_at", locationConfig.updatedAt)
         root.put("location_config", locObj)
+
+        val srvObj = JSONObject()
+        srvObj.put("is_token_service_enabled", servicesConfig.isTokenServiceEnabled)
+        srvObj.put("is_yatra_service_enabled", servicesConfig.isYatraServiceEnabled)
+        srvObj.put("is_live_counter_visible", servicesConfig.isLiveCounterVisible)
+        srvObj.put("is_events_visible", servicesConfig.isEventsVisible)
+        srvObj.put("is_aarti_timings_visible", servicesConfig.isAartiTimingsVisible)
+        srvObj.put("is_guruji_info_visible", servicesConfig.isGurujiInfoVisible)
+        srvObj.put("is_emergency_notice_visible", servicesConfig.isEmergencyNoticeVisible)
+        srvObj.put("scheduled_token_open_timestamp", servicesConfig.scheduledTokenOpenTimestamp)
+        srvObj.put("max_daily_tokens", servicesConfig.maxDailyTokens)
+        root.put("services_config", srvObj)
 
         val secArr = JSONArray()
         sections.forEach { s ->
@@ -146,6 +171,21 @@ data class LiveUiConfigDto(
                     )
                 } else LocationConfigDto()
 
+                val srvObj = root.optJSONObject("services_config")
+                val servicesConfig = if (srvObj != null) {
+                    ServicesConfigDto(
+                        isTokenServiceEnabled = srvObj.optBoolean("is_token_service_enabled", true),
+                        isYatraServiceEnabled = srvObj.optBoolean("is_yatra_service_enabled", false),
+                        isLiveCounterVisible = srvObj.optBoolean("is_live_counter_visible", true),
+                        isEventsVisible = srvObj.optBoolean("is_events_visible", true),
+                        isAartiTimingsVisible = srvObj.optBoolean("is_aarti_timings_visible", true),
+                        isGurujiInfoVisible = srvObj.optBoolean("is_guruji_info_visible", true),
+                        isEmergencyNoticeVisible = srvObj.optBoolean("is_emergency_notice_visible", true),
+                        scheduledTokenOpenTimestamp = srvObj.optLong("scheduled_token_open_timestamp", 0L),
+                        maxDailyTokens = srvObj.optInt("max_daily_tokens", 0)
+                    )
+                } else ServicesConfigDto()
+
                 val secArr = root.optJSONArray("sections")
                 val sectionsList = mutableListOf<UiSectionConfig>()
                 if (secArr != null) {
@@ -171,6 +211,7 @@ data class LiveUiConfigDto(
                     ashramDetails = ashramDetails,
                     emergencyNotice = emergencyNotice,
                     locationConfig = locationConfig,
+                    servicesConfig = servicesConfig,
                     sections = if (sectionsList.isNotEmpty()) sectionsList else UiSectionConfig.defaultSections()
                 )
             } catch (e: Exception) {

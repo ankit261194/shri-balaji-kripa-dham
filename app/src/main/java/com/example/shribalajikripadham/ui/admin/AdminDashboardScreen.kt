@@ -49,6 +49,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.text.input.ImeAction
 
 import androidx.compose.ui.window.Dialog
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 data class CreatedSevadarShareData(
@@ -254,12 +256,21 @@ fun AdminDashboardScreen(
     LaunchedEffect(loggedInAdmin) {
         if (loggedInAdmin != null) {
             refreshData()
-            scope.launch {
+            try {
+                repository.syncLiveConfigFromGitHub()
+                repository.syncLiveTokensFromCloud()
+                repository.syncAdminsFromGitHub()
+                refreshData()
+            } catch (e: Exception) {}
+
+            // Auto-refresh token queue from cloud every 20 seconds while admin stays on dashboard
+            while (isActive) {
+                delay(20000)
                 try {
-                    repository.syncLiveConfigFromGitHub()
-                    repository.syncLiveTokensFromCloud()
-                    repository.syncAdminsFromGitHub()
-                    refreshData()
+                    val (hasNew, count) = repository.syncLiveTokensFromCloud()
+                    if (hasNew && count > 0) {
+                        todayTokens = repository.getAllTokensToday()
+                    }
                 } catch (e: Exception) {}
             }
         }
@@ -961,9 +972,11 @@ fun AdminDashboardScreen(
                                             return@launch
                                         }
                                         repository.saveBroadcastNotification(notifTitle, notifMsg, notifPriority, admin.name)
+                                        repository.updateEmergencyNotice("$notifTitle: $notifMsg")
+                                        try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                         // Trigger heads-up system alert
                                         NotificationHelper.showSystemNotification(context, notifTitle, notifMsg)
-                                        notifSuccessMsg = if (isHindi) "सूचना तुरंत प्रसारित कर दी गई!" else "Notification successfully broadcasted!"
+                                        notifSuccessMsg = if (isHindi) "सूचना प्रसारित व सभी भक्तों के फोन पर लाइव अपडेट कर दी गई!" else "Notification successfully broadcasted live to all devotees!"
                                         notifTitle = ""
                                         notifMsg = ""
                                         refreshData()
@@ -1040,12 +1053,14 @@ fun AdminDashboardScreen(
                                             canManageParchas = targetAdmin.canManageParchas,
                                             isActive = !targetAdmin.isActive
                                         )
+                                        try { repository.publishAdminsToGitHub() } catch (e: Exception) {}
                                         refreshData()
                                     }
                                 },
                                 onDelete = { targetAdmin ->
                                     scope.launch {
                                         repository.deleteAdmin(targetAdmin.id)
+                                        try { repository.publishAdminsToGitHub() } catch (e: Exception) {}
                                         refreshData()
                                     }
                                 }
@@ -1100,10 +1115,11 @@ fun AdminDashboardScreen(
                                             isGurujiInfoVisible = svcGurujiInfoVisible,
                                             isEmergencyNoticeVisible = svcEmergencyNoticeVisible
                                         )
+                                        try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                         svcSuccessMsg = if (isHindi)
-                                            "सेवाएं व टोकन समय-निर्धारण सफलतापूर्वक सुरक्षित हुआ!"
+                                            "सेवाएं व टोकन समय-निर्धारण सुरक्षित व सभी भक्तों के फोन पर लाइव अपडेट हुआ!"
                                         else
-                                            "Service visibility & scheduled opening saved successfully!"
+                                            "Service visibility & scheduled opening saved & broadcast to all devotees!"
                                         refreshData()
                                     }
                                 }
@@ -1214,12 +1230,14 @@ fun AdminDashboardScreen(
                                 onUpdateMaxDailyTokens = { maxTokens ->
                                     scope.launch {
                                         repository.updateMaxDailyTokens(maxTokens)
+                                        try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                         refreshData()
                                     }
                                 },
                                 onUpdateEnforcedLayout = { layoutKey, isEnforced ->
                                     scope.launch {
                                         repository.updateActiveUiLayoutEnforced(layoutKey, isEnforced)
+                                        try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                         refreshData()
                                     }
                                 },
@@ -1527,6 +1545,7 @@ fun AdminDashboardScreen(
                                 newSevCanAnywhere = false
                                 newSevCanScanRegister = false
                                 newSevCanParchas = false
+                                try { repository.publishAdminsToGitHub() } catch (e: Exception) {}
                                 refreshData()
                             }
                         }
@@ -1974,6 +1993,7 @@ fun AdminDashboardScreen(
                                 isActive = target.isActive
                             )
                             repository.updateAdminPhoto(target.id, editSevPhotoUri)
+                            try { repository.publishAdminsToGitHub() } catch (e: Exception) {}
                             editingAdmin = null
                             refreshData()
                         }

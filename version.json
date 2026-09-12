@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 23,
-  "latest_version_name": "2.20.0",
-  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.20.0): 1. आश्रम परिसर 100m से 200m अति-सख्त भू-घेरा (Strict 100m-200m Geofence): अब भक्त केवल आश्रम के 100 से 200 मीटर के निकटतम परिसर में उपस्थित होने पर ही टोकन बना सकते हैं (अधिकतम सीमा: 200m)। 2. मीटर-स्तरीय सटीक दूरी संकेतक। 3. एडमिन पैनल में 100m, 150m, 200m क्विक प्रीसेट। 4. 100% ऑनलाइन रियल-टाइम क्लाउड टोकन सिंक व 16 अनुमतियों की सुपर एडमिन लिस्ट।",
-  "update_notes_english": "Strict 100m-200m Ashram Geofence Release (v2.20.0): 1. Ultra-strict 100m - 200m Ashram geofence enforcement: Token generation is strictly confined to 100m to 200m of the Ashram premises (Hard ceiling: 200m). 2. Meter-level precise distance indicators. 3. Quick 100m, 150m, 200m presets in Admin Location settings. 4. Universal real-time cloud token sync & 16-permission management matrix.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.20.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 24,
+  "latest_version_name": "2.21.0",
+  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.21.0): 1. पूर्णतः ऑनलाइन क्लाउड सिंक: सेवाएं ऑन/ऑफ, टोकन समय, और दिव्य घोषणाएं अब सीधे सभी भक्तों के फोन पर लाइव अपडेट होती हैं। 2. एडमिन डैशबोर्ड पर 20-सेकंड ऑटो-रिफ्रेश: भक्तों द्वारा आश्रम में बनाए गए टोकन बिना किसी बटन दबाए स्वतः स्क्रीन पर जुड़ जाते हैं। 3. आश्रम परिसर 100m-200m सख्त भू-घेरा (कड़ा पहरा): 200m से बाहर टोकन बनना नामुमकिन। 4. 16 अनुमतियों की सुपर एडमिन लिस्ट लाइव सिंक।",
+  "update_notes_english": "Universal Real-time Synchronization (v2.21.0): 1. Comprehensive Cloud Sync: Service toggles, scheduled timings, and broadcasts now sync live to all devotees. 2. 20-Second Dashboard Auto-Refresh: Devotee tokens appear on Admin screen automatically. 3. Ultra-strict 100m-200m Ashram geofence with hard 200m ceiling. 4. Real-time Sevadar Permissions synchronization.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.21.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

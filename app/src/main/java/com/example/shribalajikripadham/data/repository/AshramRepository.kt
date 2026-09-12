@@ -139,6 +139,14 @@ class AshramRepository(context: Context) {
         db.update("ashram_settings", cv, "id = 1", null) > 0
     }
 
+    suspend fun updateEmergencyNotice(emergencyNotice: String): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("emergency_notice", emergencyNotice)
+        }
+        db.update("ashram_settings", cv, "id = 1", null) > 0
+    }
+
     suspend fun updateAshramLocation(
         requestingAdmin: Admin,
         newLat: Double,
@@ -1902,6 +1910,17 @@ class AshramRepository(context: Context) {
                     cv.put("active_ui_layout", remoteConfig.activeUiLayout)
                 }
 
+                val sc = remoteConfig.servicesConfig
+                cv.put("is_token_service_enabled", if (sc.isTokenServiceEnabled) 1 else 0)
+                cv.put("is_yatra_service_enabled", if (sc.isYatraServiceEnabled) 1 else 0)
+                cv.put("is_live_counter_visible", if (sc.isLiveCounterVisible) 1 else 0)
+                cv.put("is_events_visible", if (sc.isEventsVisible) 1 else 0)
+                cv.put("is_aarti_timings_visible", if (sc.isAartiTimingsVisible) 1 else 0)
+                cv.put("is_guruji_info_visible", if (sc.isGurujiInfoVisible) 1 else 0)
+                cv.put("is_emergency_notice_visible", if (sc.isEmergencyNoticeVisible) 1 else 0)
+                cv.put("scheduled_token_open_timestamp", sc.scheduledTokenOpenTimestamp)
+                cv.put("max_daily_tokens", sc.maxDailyTokens)
+
                 if (cv.size() > 0) {
                     db.update("ashram_settings", cv, "id = 1", null)
                 }
@@ -1953,6 +1972,17 @@ class AshramRepository(context: Context) {
                 isGeofenceEnforced = currentSettings.isGeofenceEnforced,
                 locationName = currentSettings.ashramName,
                 updatedAt = System.currentTimeMillis()
+            ),
+            servicesConfig = com.example.shribalajikripadham.data.model.ServicesConfigDto(
+                isTokenServiceEnabled = currentSettings.isTokenServiceEnabled,
+                isYatraServiceEnabled = currentSettings.isYatraServiceEnabled,
+                isLiveCounterVisible = currentSettings.isLiveCounterVisible,
+                isEventsVisible = currentSettings.isEventsVisible,
+                isAartiTimingsVisible = currentSettings.isAartiTimingsVisible,
+                isGurujiInfoVisible = currentSettings.isGurujiInfoVisible,
+                isEmergencyNoticeVisible = currentSettings.isEmergencyNoticeVisible,
+                scheduledTokenOpenTimestamp = currentSettings.scheduledTokenOpenTimestamp,
+                maxDailyTokens = currentSettings.maxDailyTokens
             ),
             sections = sections
         )
