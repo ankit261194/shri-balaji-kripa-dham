@@ -86,7 +86,8 @@ fun PaperRegisterScanTab(
         contract = TakeAnyPicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
-            capturedBitmap = bitmap
+            val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+            capturedBitmap = safeBmp
             // Automatically pre-populate default sequential parsing lines for instant review
             if (rawTextInput.isBlank()) {
                 rawTextInput = "1. \n2. \n3. "
@@ -102,7 +103,8 @@ fun PaperRegisterScanTab(
         if (uri != null) {
             val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
             if (bmp != null) {
-                capturedBitmap = bmp
+                val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bmp)
+                capturedBitmap = safeBmp
                 Toast.makeText(context, if (isHindi) "📁 फोटो लोड हो गई!" else "📁 Photo loaded!", Toast.LENGTH_SHORT).show()
             }
         }

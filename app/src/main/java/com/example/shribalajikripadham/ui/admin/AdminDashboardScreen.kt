@@ -2894,8 +2894,9 @@ fun ManualTokenTab(
         contract = TakeAnyPicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
-            formCapturedBitmap = bitmap
-            formPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "desk_manual")
+            val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+            formCapturedBitmap = safeBmp
+            formPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, safeBmp, "desk_manual")
         }
     }
 

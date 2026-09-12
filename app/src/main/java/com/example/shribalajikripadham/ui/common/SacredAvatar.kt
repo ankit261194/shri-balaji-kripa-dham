@@ -63,6 +63,10 @@ fun SacredAvatar(
         }
     }
 
+    val safeBitmap = remember(bitmap) {
+        bitmap?.let { com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(it) }
+    }
+
     Box(
         modifier = modifier
             .size(size)
@@ -75,9 +79,9 @@ fun SacredAvatar(
             ),
         contentAlignment = Alignment.Center
     ) {
-        if (bitmap != null) {
+        if (safeBitmap != null) {
             Image(
-                bitmap = bitmap.asImageBitmap(),
+                bitmap = safeBitmap.asImageBitmap(),
                 contentDescription = effectiveText,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

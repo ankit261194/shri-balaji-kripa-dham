@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 19,
-  "latest_version_name": "2.16.0",
-  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.16.0): 1. सेवादार/व्यवस्थापक क्रेडेंशियल्स सीधा व्हाट्सएप शेयरिंग - सुपर एडमिन द्वारा नया सेवादार बनाते ही एक-क्लिक में यूजरनेम, पासवर्ड व पिन का शाही भक्तिमय बैनर कार्ड सीधे सेवादार के व्हाट्सएप पर भेजने की सुविधा। 2. सेवादार सूची से कभी भी पुनः क्रेडेंशियल बैनर भेजने का विकल्प।",
-  "update_notes_english": "Feature Update (v2.16.0): 1. Direct WhatsApp Sevadar Credential Sharing - Instantly send royal credential banner card with username, password and PIN to newly created sevadars on WhatsApp. 2. Resend credential card option directly from Sevadar management list.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.16.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 20,
+  "latest_version_name": "2.17.0",
+  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.17.0): 1. कैमरा फोटो क्रैश का 100% स्थायी समाधान - हार्डवेयर बिटमैप व गेट-पिक्सल्स एरर को जड़ से ठीक किया गया, अब फोटो खींचने पर ऐप कभी बंद नहीं होगी। 2. रनटाइम कैमरा परमिशन चेकिंग जोड़ी गई। 3. गैलरी से फोटो चुनने का नया विकल्प (Gallery Photo Fallback) रविवार टोकन व स्मार्ट चेहरा दोनों में उपलब्ध। 4. संपूर्ण ऐप के सभी बटनों और सुविधाओं का गहन स्थायित्व ऑडिट पूर्ण।",
+  "update_notes_english": "Critical Stability Update (v2.17.0): 1. Fixed camera photo capture crash - Resolved Hardware Bitmap getPixels exception, ensuring crash-proof photo capturing across all Android devices. 2. Added runtime camera permission handling. 3. Added Gallery Photo Fallback picker for tokens. 4. Complete app-wide stability and button audit.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.17.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

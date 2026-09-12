@@ -79,9 +79,63 @@ fun TokenRegistrationScreen(
         contract = TakeFrontPicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
-            capturedBitmap = bitmap
-            capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "devotee_selfie")
+            val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+            capturedBitmap = safeBmp
+            capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, safeBmp, "devotee_selfie")
             errorMessage = null
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            try {
+                cameraLauncher.launch(null)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage = if (isHindi) "कैमरा खोलने में त्रुटि हुई।" else "Error opening camera."
+            }
+        } else {
+            errorMessage = if (isHindi)
+                "कैमरा अनुमति अस्वीकृत: कृपया सेटिंग्स से अनुमति दें या नीचे गैलरी से फोटो चुनें।"
+            else
+                "Camera permission denied. Please allow camera in settings or pick from gallery."
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val loaded = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+                if (loaded != null) {
+                    val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(loaded)
+                    capturedBitmap = safeBmp
+                    capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, safeBmp, "devotee_gallery")
+                    errorMessage = null
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun launchCameraSafely() {
+        val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.CAMERA
+        )
+        if (permissionCheck == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            try {
+                cameraLauncher.launch(null)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage = if (isHindi) "कैमरा खोलने में समस्या: ${e.message}" else "Camera error: ${e.message}"
+            }
+        } else {
+            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
         }
     }
 
@@ -718,18 +772,49 @@ fun TokenRegistrationScreen(
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    OutlinedButton(
-                                        onClick = { cameraLauncher.launch(null) },
-                                        shape = RoundedCornerShape(20.dp),
-                                        border = BorderStroke(1.dp, SaffronPrimary),
-                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            text = if (isHindi) "🔄 पुनः फोटो खींचें (Retake)" else "🔄 Retake Photo",
-                                            fontSize = 11.sp,
-                                            color = SaffronPrimary,
-                                            fontWeight = FontWeight.Bold
-                                        )
+                                        OutlinedButton(
+                                            onClick = { launchCameraSafely() },
+                                            shape = RoundedCornerShape(20.dp),
+                                            border = BorderStroke(1.dp, SaffronPrimary),
+                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = if (isHindi) "🔄 पुनः खींचें" else "🔄 Retake",
+                                                fontSize = 11.sp,
+                                                color = SaffronPrimary,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        OutlinedButton(
+                                            onClick = { galleryLauncher.launch("image/*") },
+                                            shape = RoundedCornerShape(20.dp),
+                                            border = BorderStroke(1.dp, Color(0xFF1976D2)),
+                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = if (isHindi) "🖼️ गैलरी से बदलें" else "🖼️ From Gallery",
+                                                fontSize = 11.sp,
+                                                color = Color(0xFF1976D2),
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        TextButton(
+                                            onClick = {
+                                                capturedBitmap = null
+                                                capturedPhotoUri = ""
+                                            },
+                                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = if (isHindi) "❌ हटाएं" else "❌ Remove",
+                                                fontSize = 11.sp,
+                                                color = Color.Red
+                                            )
+                                        }
                                     }
                                 } else {
                                     Column(
@@ -737,24 +822,42 @@ fun TokenRegistrationScreen(
                                         modifier = Modifier.padding(vertical = 6.dp)
                                     ) {
                                         Text(
-                                            text = if (isHindi) "फोटो वैकल्पिक है - आप चाहें तो सेल्फी जोड़ सकते हैं" else "Photo is optional - capture if you want face recognition",
+                                            text = if (isHindi) "फोटो वैकल्पिक है - आप चाहें तो सेल्फी या गैलरी से फोटो जोड़ सकते हैं" else "Photo is optional - take selfie or choose from gallery",
                                             fontSize = 11.sp,
                                             color = Color.Gray,
                                             fontWeight = FontWeight.Medium
                                         )
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        OutlinedButton(
-                                            onClick = { cameraLauncher.launch(null) },
-                                            border = BorderStroke(1.dp, SaffronPrimary),
-                                            shape = RoundedCornerShape(20.dp),
-                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(
-                                                text = if (isHindi) "📷 सेल्फी फोटो जोड़ें (वैकल्पिक)" else "📷 Add Selfie Photo (Optional)",
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 12.sp,
-                                                color = MaroonAccent
-                                            )
+                                            OutlinedButton(
+                                                onClick = { launchCameraSafely() },
+                                                border = BorderStroke(1.dp, SaffronPrimary),
+                                                shape = RoundedCornerShape(20.dp),
+                                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                                            ) {
+                                                Text(
+                                                    text = if (isHindi) "📷 सेल्फी फोटो लें" else "📷 Take Selfie",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp,
+                                                    color = MaroonAccent
+                                                )
+                                            }
+                                            OutlinedButton(
+                                                onClick = { galleryLauncher.launch("image/*") },
+                                                border = BorderStroke(1.dp, Color(0xFF1976D2)),
+                                                shape = RoundedCornerShape(20.dp),
+                                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                                            ) {
+                                                Text(
+                                                    text = if (isHindi) "🖼️ गैलरी से चुनें" else "🖼️ Choose Gallery",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 12.sp,
+                                                    color = Color(0xFF1976D2)
+                                                )
+                                            }
                                         }
                                     }
                                 }

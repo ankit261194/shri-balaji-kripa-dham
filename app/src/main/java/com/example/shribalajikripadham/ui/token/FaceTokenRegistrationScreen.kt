@@ -111,7 +111,7 @@ fun FaceTokenRegistrationScreen(
         distanceMeters <= settings.allowedRadiusMeters
     }
 
-    // Process photo captured from real camera
+    // Process photo captured from real camera or gallery
     fun processCapturedFace(bitmap: Bitmap) {
         if (settings.isTokenServiceEnabled && settings.scheduledTokenOpenTimestamp > System.currentTimeMillis()) {
             val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
@@ -124,28 +124,46 @@ fun FaceTokenRegistrationScreen(
         }
 
         scope.launch {
-            scanState = FaceScanState.PROCESSING
-            errorMessage = null
-            val startTime = System.currentTimeMillis()
+            try {
+                scanState = FaceScanState.PROCESSING
+                errorMessage = null
+                val startTime = System.currentTimeMillis()
 
-            val (vector, match) = withContext(Dispatchers.Default) {
-                // 1. Extract 128-d invariant feature vector from captured bitmap
-                val v = FaceEmbeddingEngine.extractVectorFromBitmap(bitmap)
-                // 2. Query database with strict >= 95% SLA (Zero Cross-Match Policy)
-                val m = repository.matchFaceVector(v, threshold = FaceEmbeddingEngine.MINIMUM_CONFIDENCE_THRESHOLD)
-                Pair(v, m)
-            }
+                // Guaranteed conversion to software ARGB_8888 bitmap to prevent Config.HARDWARE getPixels() crash
+                val safeBitmap = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+                capturedBitmap = safeBitmap
 
-            processingDurationMs = System.currentTimeMillis() - startTime
-            candidateVector = vector
+                val (vector, match) = withContext(Dispatchers.Default) {
+                    // 1. Extract 128-d invariant feature vector from captured bitmap safely
+                    val v = FaceEmbeddingEngine.extractVectorFromBitmap(safeBitmap)
+                    // 2. Query database with strict >= 95% SLA (Zero Cross-Match Policy)
+                    val m = try {
+                        repository.matchFaceVector(v, threshold = FaceEmbeddingEngine.MINIMUM_CONFIDENCE_THRESHOLD)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        null
+                    }
+                    Pair(v, m)
+                }
 
-            // Gating: Only returning devotees with saved profile in DB see confirmation
-            if (match != null && match.confidence >= FaceEmbeddingEngine.MINIMUM_CONFIDENCE_THRESHOLD) {
-                matchResult = match
-                scanState = FaceScanState.CONFIRMATION_SCREEN
-            } else {
-                // New devotee / no matching profile found in database
-                matchResult = null
+                processingDurationMs = System.currentTimeMillis() - startTime
+                candidateVector = vector
+
+                // Gating: Only returning devotees with saved profile in DB see confirmation
+                if (match != null && match.confidence >= FaceEmbeddingEngine.MINIMUM_CONFIDENCE_THRESHOLD) {
+                    matchResult = match
+                    scanState = FaceScanState.CONFIRMATION_SCREEN
+                } else {
+                    // New devotee / no matching profile found in database
+                    matchResult = null
+                    scanState = FaceScanState.MANUAL_ENTRY
+                }
+            } catch (t: Throwable) {
+                t.printStackTrace()
+                errorMessage = if (isHindi)
+                    "फोटो प्रोसेस करने में समस्या आई। कृपया नीचे विवरण भरकर आगे बढ़ें।"
+                else
+                    "Error processing photo. Please enter details below."
                 scanState = FaceScanState.MANUAL_ENTRY
             }
         }
@@ -156,9 +174,63 @@ fun FaceTokenRegistrationScreen(
         contract = TakeFrontPicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
-            capturedBitmap = bitmap
-            capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "face_token")
-            processCapturedFace(bitmap)
+            val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+            capturedBitmap = safeBmp
+            capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, safeBmp, "face_token")
+            processCapturedFace(safeBmp)
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            try {
+                cameraLauncher.launch(null)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage = if (isHindi) "कैमरा खोलने में त्रुटि: ${e.message}" else "Camera error: ${e.message}"
+            }
+        } else {
+            errorMessage = if (isHindi)
+                "कैमरा अनुमति अस्वीकृत: कृपया सेटिंग्स से अनुमति दें या नीचे 'गैलरी से फोटो चुनें' बटन दबाएं।"
+            else
+                "Camera permission denied. Please allow camera in settings or choose from gallery."
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val loaded = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+                if (loaded != null) {
+                    val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(loaded)
+                    capturedBitmap = safeBmp
+                    capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, safeBmp, "face_gallery")
+                    processCapturedFace(safeBmp)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun launchCameraSafely() {
+        val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.CAMERA
+        )
+        if (permissionCheck == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            try {
+                cameraLauncher.launch(null)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage = if (isHindi) "कैमरा खोलने में समस्या: ${e.message}" else "Camera error: ${e.message}"
+            }
+        } else {
+            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
         }
     }
 
@@ -447,7 +519,7 @@ fun FaceTokenRegistrationScreen(
 
                             // Camera Photo Capture Button
                             Button(
-                                onClick = { cameraLauncher.launch(null) },
+                                onClick = { launchCameraSafely() },
                                 enabled = isInsideGeofence && !isBeforeSchedule,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -462,6 +534,26 @@ fun FaceTokenRegistrationScreen(
                                         (if (isHindi) "🤳 सेल्फी फोटो लें (फ्रंट कैमरा)" else "🤳 Take Selfie (Front Camera)"),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Gallery Option Fallback
+                            OutlinedButton(
+                                onClick = { galleryLauncher.launch("image/*") },
+                                enabled = isInsideGeofence && !isBeforeSchedule,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                border = BorderStroke(1.5.dp, Color(0xFF1976D2)),
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Text(
+                                    text = if (isHindi) "🖼️ गैलरी से फोटो चुनें (Gallery)" else "🖼️ Choose Photo from Gallery",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1976D2)
                                 )
                             }
 

@@ -1175,28 +1175,48 @@ class AshramRepository(context: Context) {
     // --- Facial Recognition & Devotee Face Profiles ---
 
     suspend fun getAllFaceProfiles(): List<DevoteeFaceProfile> = withContext(Dispatchers.IO) {
-        val db = dbHelper.readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM devotee_face_profiles ORDER BY last_verified_at DESC", null)
         val list = mutableListOf<DevoteeFaceProfile>()
-        while (cursor.moveToNext()) {
-            val blob = cursor.getBlob(cursor.getColumnIndexOrThrow("face_vector"))
-            val vector = FaceEmbeddingEngine.blobToVector(blob)
-            list.add(
-                DevoteeFaceProfile(
-                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
-                    patientName = cursor.getString(cursor.getColumnIndexOrThrow("patient_name")),
-                    phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow("phone_number")),
-                    city = try { cursor.getString(cursor.getColumnIndexOrThrow("city")) } catch (e: Exception) { "डूँगरा जाट (स्थानीय)" },
-                    faceVector = vector,
-                    photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) ?: "",
-                    visitCount = cursor.getInt(cursor.getColumnIndexOrThrow("visit_count")),
-                    lastConfidence = cursor.getFloat(cursor.getColumnIndexOrThrow("last_confidence")),
-                    lastVerifiedAt = cursor.getLong(cursor.getColumnIndexOrThrow("last_verified_at")),
-                    createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
-                )
-            )
+        try {
+            val db = dbHelper.readableDatabase
+            val cursor = db.rawQuery("SELECT * FROM devotee_face_profiles ORDER BY last_verified_at DESC", null)
+            while (cursor.moveToNext()) {
+                try {
+                    val blobIdx = cursor.getColumnIndex("face_vector")
+                    val blob = if (blobIdx >= 0) cursor.getBlob(blobIdx) else null
+                    val vector = FaceEmbeddingEngine.blobToVector(blob)
+
+                    val idIdx = cursor.getColumnIndex("id")
+                    val nameIdx = cursor.getColumnIndex("patient_name")
+                    val phoneIdx = cursor.getColumnIndex("phone_number")
+                    val cityIdx = cursor.getColumnIndex("city")
+                    val photoIdx = cursor.getColumnIndex("photo_uri")
+                    val visitIdx = cursor.getColumnIndex("visit_count")
+                    val confIdx = cursor.getColumnIndex("last_confidence")
+                    val verIdx = cursor.getColumnIndex("last_verified_at")
+                    val createdIdx = cursor.getColumnIndex("created_at")
+
+                    list.add(
+                        DevoteeFaceProfile(
+                            id = if (idIdx >= 0) cursor.getLong(idIdx) else 0L,
+                            patientName = if (nameIdx >= 0) (cursor.getString(nameIdx) ?: "") else "",
+                            phoneNumber = if (phoneIdx >= 0) (cursor.getString(phoneIdx) ?: "") else "",
+                            city = if (cityIdx >= 0) (cursor.getString(cityIdx) ?: "डूँगरा जाट (स्थानीय)") else "डूँगरा जाट (स्थानीय)",
+                            faceVector = vector,
+                            photoUri = if (photoIdx >= 0) (cursor.getString(photoIdx) ?: "") else "",
+                            visitCount = if (visitIdx >= 0) cursor.getInt(visitIdx) else 1,
+                            lastConfidence = if (confIdx >= 0) cursor.getFloat(confIdx) else 1.0f,
+                            lastVerifiedAt = if (verIdx >= 0) cursor.getLong(verIdx) else System.currentTimeMillis(),
+                            createdAt = if (createdIdx >= 0) cursor.getLong(createdIdx) else System.currentTimeMillis()
+                        )
+                    )
+                } catch (rowEx: Exception) {
+                    rowEx.printStackTrace()
+                }
+            }
+            cursor.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        cursor.close()
         list
     }
 
@@ -1204,8 +1224,13 @@ class AshramRepository(context: Context) {
         candidateVector: FloatArray,
         threshold: Float = FaceEmbeddingEngine.MINIMUM_CONFIDENCE_THRESHOLD
     ): FaceMatchResult? = withContext(Dispatchers.Default) {
-        val profiles = getAllFaceProfiles()
-        FaceEmbeddingEngine.findBestMatch(candidateVector, profiles, threshold)
+        try {
+            val profiles = getAllFaceProfiles()
+            FaceEmbeddingEngine.findBestMatch(candidateVector, profiles, threshold)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
     suspend fun enrollFaceProfile(

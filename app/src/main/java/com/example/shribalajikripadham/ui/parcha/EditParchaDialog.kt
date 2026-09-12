@@ -58,7 +58,8 @@ fun EditParchaDialog(
         contract = TakeAnyPicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
-            capturedBitmap = bitmap
+            val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+            capturedBitmap = safeBmp
             isScanMode = true
             Toast.makeText(context, if (isHindi) "📸 फोटो लोड हो गई! नीचे टेक्स्ट दर्ज/सत्यापित करें" else "Photo loaded! Verify details below", Toast.LENGTH_SHORT).show()
         }
@@ -71,7 +72,8 @@ fun EditParchaDialog(
         if (uri != null) {
             val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
             if (bmp != null) {
-                capturedBitmap = bmp
+                val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bmp)
+                capturedBitmap = safeBmp
                 isScanMode = true
                 Toast.makeText(context, if (isHindi) "📁 गैलरी से फोटो चुनी गई!" else "Photo picked from gallery!", Toast.LENGTH_SHORT).show()
             }
