@@ -77,10 +77,9 @@ fun FaceTokenRegistrationScreen(
     var existingToken by remember { mutableStateOf<Token?>(null) }
     var savedImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // Geofencing background pre-warming state (no loading screens)
-    var userLatitude by remember { mutableDoubleStateOf(28.4089) }
-    var userLongitude by remember { mutableDoubleStateOf(77.8789) }
-    var simulateInsideAshram by remember { mutableStateOf(true) }
+    // Geofencing background pre-warming state (Strict real GPS enforcement)
+    var userLatitude by remember { mutableDoubleStateOf(0.0) }
+    var userLongitude by remember { mutableDoubleStateOf(0.0) }
 
     // Real Camera Captured Photo & Face Recognition State
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -99,13 +98,17 @@ fun FaceTokenRegistrationScreen(
     var enrollFaceForFuture by remember { mutableStateOf(true) }
 
     val distanceMeters = remember(userLatitude, userLongitude, settings) {
-        GeofenceLocationManager.calculateDistanceMeters(
-            userLatitude, userLongitude,
-            settings.latitude, settings.longitude
-        )
+        if (userLatitude == 0.0 && userLongitude == 0.0) {
+            999999.0
+        } else {
+            GeofenceLocationManager.calculateDistanceMeters(
+                userLatitude, userLongitude,
+                settings.latitude, settings.longitude
+            )
+        }
     }
-    val isInsideGeofence = remember(distanceMeters, settings, simulateInsideAshram) {
-        if (simulateInsideAshram) true else distanceMeters <= settings.allowedRadiusMeters
+    val isInsideGeofence = remember(distanceMeters, settings) {
+        distanceMeters <= settings.allowedRadiusMeters
     }
 
     // Process photo captured from real camera
@@ -284,15 +287,6 @@ fun FaceTokenRegistrationScreen(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = if (isInsideGeofence) StatusInsideAshram else StatusOutsideAshram
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "Test GPS:", fontSize = 11.sp, color = TextSecondaryDark)
-                    Switch(
-                        checked = simulateInsideAshram,
-                        onCheckedChange = { simulateInsideAshram = it },
-                        modifier = Modifier.height(24.dp)
                     )
                 }
             }

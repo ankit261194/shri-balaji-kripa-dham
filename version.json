@@ -1,8 +1,9 @@
 {
-  "latest_version_code": 12,
-  "latest_version_name": "2.11.0",
-  "update_notes_hindi": "महत्वपूर्ण बग फिक्स व सुधार (v2.11.0): 1. कैमरा व फोटो परमिशन फिक्स। 2. गूगल शीट्स वेबहुक सेटिंग्स डायलॉग फिक्स। 3. इन-ऐप अपडेट डाउनलोड लिंक शुद्धिकरण। 4. सभी फ़ोनों पर क्लाउड भक्त सिंक ऑटोमेशन।",
-  "update_notes_english": "Critical Bug Fixes & Stability Update (v2.11.0): 1. Camera & Media Permissions configured. 2. Google Sheets Webhook Dialog restored. 3. In-App Auto-Update URL resolution fixed. 4. Cloud Devotee Sync automated across all devices.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.11.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 13,
+  "latest_version_name": "2.12.0",
+  "update_notes_hindi": "मजबूत सुरक्षा व एंटी-बायपास अपडेट (v2.12.0): 1. अनइंस्टॉल व री-इंस्टॉल बायपास पूरी तरह बंद - पुराना टोकन स्वतः रीस्टोर होगा। 2. लोकेशन सिम्युलेटर बायपास हटाया गया - वास्तविक GPS अनिवार्य। 3. सभी फ़ोनों पर गूगल शीट्स ऑटो-सिंक वितरण।",
+  "update_notes_english": "Security & Anti-Bypass Enforcement (v2.12.0): 1. Reinstall bypass permanently blocked - previous token auto-restores. 2. GPS simulation debug switches removed - strict physical location enforced. 3. Universal Webhook distribution to all devotees.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.12.0/ShriBalajiKripaDham-release.apk",
+  "webhook_url": "",
   "is_force_update": false
 }

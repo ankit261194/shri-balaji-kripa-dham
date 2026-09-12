@@ -87,10 +87,9 @@ fun TokenRegistrationScreen(
 
     var todayActiveTokens by remember { mutableIntStateOf(0) }
 
-    // Geofencing Simulation / Live State
-    var simulateInsideAshram by remember { mutableStateOf(true) }
-    var userLatitude by remember { mutableDoubleStateOf(28.4089) }
-    var userLongitude by remember { mutableDoubleStateOf(77.8789) }
+    // Geofencing Live Location State (Strictly enforced real GPS)
+    var userLatitude by remember { mutableDoubleStateOf(0.0) }
+    var userLongitude by remember { mutableDoubleStateOf(0.0) }
 
     // Live road distance calculation to Shri Balaji Kripa Dham, Dungra Jaat
     LaunchedEffect(city, originAddress, userLatitude, userLongitude) {
@@ -99,8 +98,8 @@ fun TokenRegistrationScreen(
             isCalculatingDistance = true
             val res = DistanceCalculatorService.resolveDrivingDistance(
                 origin = query,
-                deviceLat = userLatitude,
-                deviceLng = userLongitude
+                deviceLat = if (userLatitude != 0.0) userLatitude else 28.4089,
+                deviceLng = if (userLongitude != 0.0) userLongitude else 77.8789
             )
             estimatedDistanceKm = res.distanceKm
             isCalculatingDistance = false
@@ -110,13 +109,17 @@ fun TokenRegistrationScreen(
     }
 
     val distanceMeters = remember(userLatitude, userLongitude, settings) {
-        GeofenceLocationManager.calculateDistanceMeters(
-            userLatitude, userLongitude,
-            settings.latitude, settings.longitude
-        )
+        if (userLatitude == 0.0 && userLongitude == 0.0) {
+            999999.0 // Default to outside until actual GPS fix is obtained
+        } else {
+            GeofenceLocationManager.calculateDistanceMeters(
+                userLatitude, userLongitude,
+                settings.latitude, settings.longitude
+            )
+        }
     }
-    val isInsideGeofence = remember(distanceMeters, settings, simulateInsideAshram) {
-        if (simulateInsideAshram) true else distanceMeters <= settings.allowedRadiusMeters
+    val isInsideGeofence = remember(distanceMeters, settings) {
+        distanceMeters <= settings.allowedRadiusMeters
     }
     val isQuotaExceeded = remember(settings.maxDailyTokens, todayActiveTokens) {
         settings.maxDailyTokens > 0 && todayActiveTokens >= settings.maxDailyTokens
@@ -372,26 +375,6 @@ fun TokenRegistrationScreen(
                         fontSize = 12.sp,
                         color = TextPrimaryDark
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Demo Toggle for Simulation
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (isHindi) "लोकेशन सिम्युलेटर (परीक्षण हेतु):" else "GPS Simulation Toggle:",
-                            fontSize = 11.sp,
-                            color = TextSecondaryDark
-                        )
-                        Switch(
-                            checked = simulateInsideAshram,
-                            onCheckedChange = { simulateInsideAshram = it },
-                            colors = SwitchDefaults.colors(checkedThumbColor = SaffronPrimary)
-                        )
-                    }
                 }
             }
 
@@ -860,8 +843,8 @@ fun TokenRegistrationScreen(
                                 scope.launch {
                                     try {
                                         val loc = GeofenceLocationManager.getLastKnownLocation(context)
-                                        val isMock = if (simulateInsideAshram) false else GeofenceLocationManager.isMockLocation(loc, context)
-                                        val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else (if (simulateInsideAshram) 5.0f else 200.0f)
+                                        val isMock = GeofenceLocationManager.isMockLocation(loc, context)
+                                        val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
 
                                         val created = repository.registerToken(
                                             patientName = patientName.trim(),

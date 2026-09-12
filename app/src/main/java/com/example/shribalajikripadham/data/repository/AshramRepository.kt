@@ -304,6 +304,37 @@ class AshramRepository(context: Context) {
             )
         }
         cursor.close()
+
+        // 🛡️ ANTI-BYPASS: If app was uninstalled & reinstalled, local SQLite is empty!
+        // Check persistent hardware receipt stored in public device storage:
+        if (token == null) {
+            val persistent = com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(deviceId, today)
+            if (persistent != null) {
+                val cv = ContentValues().apply {
+                    put("token_number", persistent.tokenNumber)
+                    put("darbar_date", persistent.darbarDate)
+                    put("patient_name", persistent.patientName)
+                    put("phone_number", persistent.phoneNumber)
+                    put("city", persistent.city)
+                    put("device_id", persistent.deviceId)
+                    put("latitude", persistent.latitude)
+                    put("longitude", persistent.longitude)
+                    put("status", persistent.status.name)
+                    put("registered_by", persistent.registeredBy)
+                    put("photo_uri", persistent.photoUri)
+                    put("is_darshan_completed", if (persistent.isDarshanCompleted) 1 else 0)
+                    put("darshan_completed_at", persistent.darshanCompletedAt)
+                    put("origin_address", persistent.originAddress)
+                    put("destination_address", persistent.destinationAddress)
+                    put("distance_km", persistent.distanceKm)
+                    put("created_at", persistent.createdAt)
+                }
+                val wDb = dbHelper.writableDatabase
+                wDb.insertWithOnConflict("tokens", null, cv, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+                token = persistent
+            }
+        }
+
         token
     }
 
@@ -496,6 +527,11 @@ class AshramRepository(context: Context) {
                     registeredBy = registeredBy
                 )
             }
+        } catch (e: Exception) {}
+
+        // 🛡️ ANTI-BYPASS: Save hardware-bound persistent receipt into public device storage
+        try {
+            com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.savePersistentReceipt(createdToken)
         } catch (e: Exception) {}
 
         createdToken

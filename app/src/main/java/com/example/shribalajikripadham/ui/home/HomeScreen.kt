@@ -118,22 +118,28 @@ fun HomeScreen(
             scope.launch {
                 try {
                     val onlineInfo = AppUpdateManager.fetchLatestUpdateFromOnline()
-                    if (onlineInfo != null && onlineInfo.versionCode > currentCode) {
-                        repository.updateAppUpdateConfig(
-                            latestVersionCode = onlineInfo.versionCode,
-                            latestVersionName = onlineInfo.versionName,
-                            updateNotes = if (isHindi) onlineInfo.updateNotesHindi else onlineInfo.updateNotesEnglish,
-                            apkDownloadUrl = onlineInfo.apkUrl,
-                            isForceUpdate = onlineInfo.isForce
-                        )
-                        settings = settings.copy(
-                            latestVersionCode = onlineInfo.versionCode,
-                            latestVersionName = onlineInfo.versionName,
-                            updateNotes = if (isHindi) onlineInfo.updateNotesHindi else onlineInfo.updateNotesEnglish,
-                            apkDownloadUrl = onlineInfo.apkUrl,
-                            isForceUpdate = onlineInfo.isForce
-                        )
-                        showUpdatePopup = true
+                    if (onlineInfo != null) {
+                        // 🌐 Auto-distribute Google Sheet Webhook URL to all devices
+                        if (onlineInfo.webhookUrl.isNotBlank()) {
+                            com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.saveWebhookUrl(context, onlineInfo.webhookUrl)
+                        }
+                        if (onlineInfo.versionCode > currentCode) {
+                            repository.updateAppUpdateConfig(
+                                latestVersionCode = onlineInfo.versionCode,
+                                latestVersionName = onlineInfo.versionName,
+                                updateNotes = if (isHindi) onlineInfo.updateNotesHindi else onlineInfo.updateNotesEnglish,
+                                apkDownloadUrl = onlineInfo.apkUrl,
+                                isForceUpdate = onlineInfo.isForce
+                            )
+                            settings = settings.copy(
+                                latestVersionCode = onlineInfo.versionCode,
+                                latestVersionName = onlineInfo.versionName,
+                                updateNotes = if (isHindi) onlineInfo.updateNotesHindi else onlineInfo.updateNotesEnglish,
+                                apkDownloadUrl = onlineInfo.apkUrl,
+                                isForceUpdate = onlineInfo.isForce
+                            )
+                            showUpdatePopup = true
+                        }
                     }
                 } catch (e: Exception) {
                     // Fallback to offline local check

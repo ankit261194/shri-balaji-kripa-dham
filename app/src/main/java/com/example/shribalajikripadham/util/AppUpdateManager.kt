@@ -33,7 +33,8 @@ object AppUpdateManager {
         val updateNotesHindi: String,
         val updateNotesEnglish: String,
         val apkUrl: String,
-        val isForce: Boolean
+        val isForce: Boolean,
+        val webhookUrl: String = ""
     )
 
     suspend fun fetchLatestUpdateFromOnline(urlStr: String = DEFAULT_VERSION_JSON_URL): OnlineUpdateInfo? {
@@ -62,7 +63,8 @@ object AppUpdateManager {
                         updateNotesHindi = json.optString("update_notes_hindi", ""),
                         updateNotesEnglish = json.optString("update_notes_english", ""),
                         apkUrl = parsedApkUrl,
-                        isForce = json.optBoolean("is_force_update", false)
+                        isForce = json.optBoolean("is_force_update", false),
+                        webhookUrl = json.optString("webhook_url", "")
                     )
                 } else {
                     null
