@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-12T13:52:19Z",
+  "updated_at": "2026-09-12T14:43:29Z",
   "updated_by": "Ankit Chaudhary (Super Admin)",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -28,7 +28,21 @@
     "allowed_radius_meters": 200,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789221139382
+    "updated_at": 1789224209978
+  },
+  "services_config": {
+    "is_token_service_enabled": true,
+    "is_yatra_service_enabled": false,
+    "is_live_counter_visible": true,
+    "is_events_visible": true,
+    "is_aarti_timings_visible": true,
+    "is_guruji_info_visible": true,
+    "is_emergency_notice_visible": true,
+    "scheduled_token_open_timestamp": 1789268400000,
+    "max_daily_tokens": 0,
+    "sunday_token_banner_title": "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन",
+    "sunday_token_banner_text": "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।",
+    "sunday_token_custom_notice": ""
   },
   "sections": [
     {
@@ -37,7 +51,11 @@
       "title_english": "Guruji Banner & Ashram Header",
       "icon": "👑",
       "is_visible": true,
-      "order_index": 0
+      "order_index": 0,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     },
     {
       "section_id": "EMERGENCY_NOTICE",
@@ -45,7 +63,11 @@
       "title_english": "Emergency Broadcast Notice",
       "icon": "📢",
       "is_visible": true,
-      "order_index": 1
+      "order_index": 1,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     },
     {
       "section_id": "FREE_TREATMENT_BOX",
@@ -53,7 +75,11 @@
       "title_english": "100% Free Treatment Notice",
       "icon": "🕊️",
       "is_visible": true,
-      "order_index": 2
+      "order_index": 2,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     },
     {
       "section_id": "TOKEN_COUNTDOWN",
@@ -61,7 +87,11 @@
       "title_english": "Token Schedule Countdown",
       "icon": "⏳",
       "is_visible": true,
-      "order_index": 3
+      "order_index": 3,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     },
     {
       "section_id": "SMART_FACE_TOKEN",
@@ -69,7 +99,11 @@
       "title_english": "Smart Face Token Card",
       "icon": "⚡",
       "is_visible": true,
-      "order_index": 4
+      "order_index": 4,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     },
     {
       "section_id": "QUICK_SERVICES",
@@ -77,7 +111,11 @@
       "title_english": "Quick Services Grid",
       "icon": "📱",
       "is_visible": true,
-      "order_index": 5
+      "order_index": 5,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     },
     {
       "section_id": "DARBAR_STATUS",
@@ -85,7 +123,11 @@
       "title_english": "Darbar Status & Token Counter",
       "icon": "🔢",
       "is_visible": true,
-      "order_index": 6
+      "order_index": 6,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     },
     {
       "section_id": "SEVADAR_TEAM",
@@ -93,7 +135,11 @@
       "title_english": "Sevadar Team Showcase",
       "icon": "🤝",
       "is_visible": true,
-      "order_index": 7
+      "order_index": 7,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     },
     {
       "section_id": "DYNAMIC_EVENTS",
@@ -101,7 +147,11 @@
       "title_english": "Upcoming Ashram Events",
       "icon": "🚩",
       "is_visible": true,
-      "order_index": 8
+      "order_index": 8,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     },
     {
       "section_id": "AARTI_TIMINGS",
@@ -109,7 +159,11 @@
       "title_english": "Aarti & Darbar Timings",
       "icon": "🪔",
       "is_visible": true,
-      "order_index": 9
+      "order_index": 9,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     },
     {
       "section_id": "SOCIAL_MEDIA_HUB",
@@ -117,7 +171,11 @@
       "title_english": "Social Media Hub",
       "icon": "🌐",
       "is_visible": true,
-      "order_index": 10
+      "order_index": 10,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     },
     {
       "section_id": "CONTACT_FOOTER",
@@ -125,7 +183,11 @@
       "title_english": "Ashram Contact & Location",
       "icon": "📍",
       "is_visible": true,
-      "order_index": 11
+      "order_index": 11,
+      "custom_subtitle_hindi": "",
+      "custom_subtitle_english": "",
+      "custom_content_hindi": "",
+      "custom_content_english": ""
     }
   ]
 }
