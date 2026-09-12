@@ -1,0 +1,16 @@
+{
+  "total_devices": 1,
+  "updated_at": 1789223793956,
+  "devices": [
+    {
+      "device_id": "2b01861028f80b2cdbb506932fe1ec27a8f041d05d01534805212b64de18d93a",
+      "device_model": "motorola edge 40 neo",
+      "user_name": "",
+      "phone_number": "",
+      "city": "",
+      "app_version": "2.23.0",
+      "last_seen_at": 1789223793956,
+      "open_count": 1
+    }
+  ]
+}
