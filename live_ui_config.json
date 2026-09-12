@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-12T14:57:35Z",
+  "updated_at": "2026-09-12T14:57:36Z",
   "updated_by": "Ankit Chaudhary (Super Admin)",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -28,7 +28,7 @@
     "allowed_radius_meters": 200,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789225055294
+    "updated_at": 1789225056566
   },
   "services_config": {
     "is_token_service_enabled": true,
