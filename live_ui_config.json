@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-12T14:57:36Z",
-  "updated_by": "Ankit Chaudhary (Super Admin)",
+  "updated_at": "2026-09-12T15:06:25Z",
+  "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
   "ashram_details": {
@@ -12,7 +12,7 @@
     "whatsapp_number": "8171064598",
     "darbar_timings": "प्रत्येक रविवार प्रातः 8:30 बजे से प्रभु इच्छा तक",
     "free_disclaimer": "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।",
-    "whatsapp_group_url": "https:\/\/chat.whatsapp.com\/invite",
+    "whatsapp_group_url": "https:\/\/chat.whatsapp.com\/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4",
     "youtube_channel_url": "https:\/\/www.youtube.com\/@ShriBalajiKripaDham",
     "facebook_page_url": "https:\/\/www.facebook.com\/ShriBalajiKripaDham",
     "instagram_url": "https:\/\/www.instagram.com\/shribalajikripadham"
@@ -28,7 +28,7 @@
     "allowed_radius_meters": 200,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789225056566
+    "updated_at": 1789225585064
   },
   "services_config": {
     "is_token_service_enabled": true,
