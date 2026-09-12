@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 14,
-  "latest_version_name": "2.13.0",
-  "update_notes_hindi": "पूर्ण 360° डायनेमिक विज़ुअल थीम सिस्टम (v2.13.0): 1. थीम बदलते ही फॉन्ट (सेरिफ / सांस-सेरिफ), कार्ड्स व बॉक्सेस के कोने (मंदिर मेहराब, गोपुरम, डायमंड कट, स्मूथ स्क्वर्कर, तुलसी पर्ण, ग्लास लुक) स्वतः बदलेंगे। 2. थीम पिकर में विज़ुअल स्टाइल बैज व लाइव प्रिव्यू।",
-  "update_notes_english": "360-Degree Dynamic Visual Theming Engine (v2.13.0): 1. Seamless transformation of typography (Serif/Sans-Serif), box shapes (Mandir Jharokha, Gopuram Arch, Diamond Cut, Smooth Squircle, Tulsi Leaf, Floating Glass), borders and elevations. 2. Visual style badges and live shape previews.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.13.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 15,
+  "latest_version_name": "2.13.1",
+  "update_notes_hindi": "अति महत्वपूर्ण क्रैश निवारण अपडेट (v2.13.1): 1. ऐप खुलते ही बंद होने की समस्या का 100% स्थायी समाधान। 2. सभी फोनों पर सुचारू रूप से कार्यशील 360° विज़ुअल थीम सिस्टम। 3. सुरक्षित व स्थिर प्रदर्शन।",
+  "update_notes_english": "Critical Stability & Crash Fix (v2.13.1): 1. Permanently resolved app launch crash on all devices. 2. 100% stable 360-degree dynamic visual theming engine. 3. Fast and seamless performance.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.13.1/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
-  "is_force_update": false
+  "is_force_update": true
 }

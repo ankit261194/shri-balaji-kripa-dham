@@ -531,7 +531,7 @@ fun HomeScreen(
                                     if (isSelected) theme.cardBorderWidth + 0.5.dp else 1.dp,
                                     if (isSelected) theme.primaryColor else Color(0xFFE0E0E0)
                                 ),
-                                shadowElevation = if (isSelected) theme.cardElevation else 1.dp,
+                                tonalElevation = if (isSelected) 2.dp else 0.dp,
                                 modifier = Modifier.width(155.dp)
                             ) {
                                 Column(

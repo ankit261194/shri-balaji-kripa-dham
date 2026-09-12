@@ -1,7 +1,6 @@
 package com.example.shribalajikripadham.theme
 
 import androidx.compose.foundation.shape.CornerBasedShape
-import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
@@ -23,14 +22,14 @@ enum class SacredTheme(
     val cardBorderColor: Color,
     val isDark: Boolean = false,
     val fontFamily: FontFamily = FontFamily.Serif,
-    val cardShape: CornerBasedShape = RoundedCornerShape(16.dp),
+    val cardShape: CornerBasedShape = RoundedCornerShape(18.dp),
     val buttonShape: CornerBasedShape = RoundedCornerShape(12.dp),
     val cardBorderWidth: Dp = 1.5.dp,
     val cardElevation: Dp = 4.dp,
     val styleNameHindi: String = "शाही राजसी धरोहर",
-    val styleBadge: String = "👑 सेरिफ • मेहराब"
+    val styleBadge: String = "👑 सेरिफ • राजसी 18dp"
 ) {
-    // 1. Royal Mandir Maroon - Vedic Heritage & Temple Jharokha
+    // 1. Royal Mandir Maroon - Vedic Heritage & Temple Arch
     ROYAL_MAROON(
         id = "maroon",
         nameHindi = "शाही महरून",
@@ -45,12 +44,12 @@ enum class SacredTheme(
         cardBorderColor = Color(0xFFFFB300),
         isDark = false,
         fontFamily = FontFamily.Serif,
-        cardShape = RoundedCornerShape(topStart = 22.dp, topEnd = 6.dp, bottomEnd = 22.dp, bottomStart = 6.dp),
+        cardShape = RoundedCornerShape(18.dp),
         buttonShape = RoundedCornerShape(12.dp),
         cardBorderWidth = 1.5.dp,
         cardElevation = 4.dp,
         styleNameHindi = "शाही राजसी धरोहर",
-        styleBadge = "👑 सेरिफ • मेहराब"
+        styleBadge = "👑 सेरिफ • राजसी 18dp"
     ),
 
     // 2. Sacred Mandir Saffron / Bhagwa - Devotional Temple Gopuram
@@ -68,15 +67,15 @@ enum class SacredTheme(
         cardBorderColor = Color(0xFFFFB300),
         isDark = false,
         fontFamily = FontFamily.Serif,
-        cardShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 10.dp, bottomEnd = 10.dp),
+        cardShape = RoundedCornerShape(22.dp),
         buttonShape = RoundedCornerShape(16.dp),
         cardBorderWidth = 1.5.dp,
-        cardElevation = 5.dp,
+        cardElevation = 4.dp,
         styleNameHindi = "मंदिर गोपुरम मेहराब",
-        styleBadge = "🚩 सेरिफ • गोपुरम"
+        styleBadge = "🚩 सेरिफ • गोपुरम 22dp"
     ),
 
-    // 3. Pitambar Gold - Ornate Diamond Cut Regal Palace
+    // 3. Pitambar Gold - Ornate Regal Palace
     PITAMBAR_GOLD(
         id = "gold",
         nameHindi = "पीताम्बर स्वर्ण",
@@ -91,12 +90,12 @@ enum class SacredTheme(
         cardBorderColor = Color(0xFFFFD54F),
         isDark = false,
         fontFamily = FontFamily.Serif,
-        cardShape = CutCornerShape(12.dp),
-        buttonShape = CutCornerShape(8.dp),
+        cardShape = RoundedCornerShape(14.dp),
+        buttonShape = RoundedCornerShape(10.dp),
         cardBorderWidth = 2.dp,
-        cardElevation = 6.dp,
+        cardElevation = 4.dp,
         styleNameHindi = "स्वर्ण रत्न कट",
-        styleBadge = "🪔 सेरिफ • डायमंड कट"
+        styleBadge = "🪔 सेरिफ • क्लासिक 14dp"
     ),
 
     // 4. Shyamal / Divine Peacock Blue - Ultra Modern Squircle
@@ -119,10 +118,10 @@ enum class SacredTheme(
         cardBorderWidth = 1.dp,
         cardElevation = 3.dp,
         styleNameHindi = "आधुनिक मयूर स्क्वर्कर",
-        styleBadge = "🦚 सांस-सेरिफ • स्क्वर्कर"
+        styleBadge = "🦚 सांस-सेरिफ • 26dp"
     ),
 
-    // 5. Vedic Tulsi Forest Green - Organic Tulsi Leaf Curve
+    // 5. Vedic Tulsi Forest Green - Organic Smooth Leaf Curve
     TULSI_GREEN(
         id = "green",
         nameHindi = "तुलसी हरित",
@@ -137,15 +136,15 @@ enum class SacredTheme(
         cardBorderColor = Color(0xFFFFB300),
         isDark = false,
         fontFamily = FontFamily.Default,
-        cardShape = RoundedCornerShape(topStart = 26.dp, bottomEnd = 26.dp, topEnd = 8.dp, bottomStart = 8.dp),
+        cardShape = RoundedCornerShape(20.dp),
         buttonShape = RoundedCornerShape(14.dp),
         cardBorderWidth = 1.dp,
         cardElevation = 3.dp,
         styleNameHindi = "सात्विक तुलसी पर्ण",
-        styleBadge = "🌿 सात्विक • तुलसी पर्ण"
+        styleBadge = "🌿 सात्विक • स्मूथ 20dp"
     ),
 
-    // 6. Devotional Midnight Dark - Cyber Neon Gold & Floating Glass
+    // 6. Devotional Midnight Dark - Cyber Neon Gold & Modern Glass
     MIDNIGHT_DARK(
         id = "dark",
         nameHindi = "दिव्य रात्रि (Dark)",
@@ -160,12 +159,12 @@ enum class SacredTheme(
         cardBorderColor = Color(0xFFFFB300),
         isDark = true,
         fontFamily = FontFamily.SansSerif,
-        cardShape = RoundedCornerShape(20.dp),
-        buttonShape = RoundedCornerShape(16.dp),
+        cardShape = RoundedCornerShape(16.dp),
+        buttonShape = RoundedCornerShape(14.dp),
         cardBorderWidth = 1.5.dp,
-        cardElevation = 8.dp,
+        cardElevation = 4.dp,
         styleNameHindi = "नियॉन गोल्ड ग्लास",
-        styleBadge = "🌌 नियॉन • ग्लास लुक"
+        styleBadge = "🌌 नियॉन • डार्क 16dp"
     );
 
     companion object {
@@ -175,9 +174,6 @@ enum class SacredTheme(
     }
 }
 
-/**
- * Direct access to the active style parameters anywhere in the Compose tree
- */
 data class SacredStyle(
     val theme: SacredTheme,
     val fontFamily: FontFamily,

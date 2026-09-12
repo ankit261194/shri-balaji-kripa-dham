@@ -32,12 +32,29 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Set global crash handler to prevent abrupt crash & log diagnostic
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            android.util.Log.e("ShriBalajiCrash", "Caught uncaught exception on thread ${thread.name}", throwable)
+        }
+
         // Create notification channel on app launch
-        NotificationHelper.createNotificationChannel(this)
+        try {
+            NotificationHelper.createNotificationChannel(this)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
         setContent {
             val context = LocalContext.current
-            var currentSacredTheme by remember { mutableStateOf(com.example.shribalajikripadham.theme.ThemePreferences.getSelectedTheme(context)) }
+            var currentSacredTheme by remember {
+                mutableStateOf(
+                    try {
+                        com.example.shribalajikripadham.theme.ThemePreferences.getSelectedTheme(context)
+                    } catch (e: Exception) {
+                        com.example.shribalajikripadham.theme.SacredTheme.ROYAL_MAROON
+                    }
+                )
+            }
 
             ShriBalajiKripaDhamTheme(sacredTheme = currentSacredTheme) {
 

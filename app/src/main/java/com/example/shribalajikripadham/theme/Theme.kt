@@ -76,15 +76,19 @@ fun ShriBalajiKripaDhamTheme(
     }
 
     // Dynamic 360-degree typography adapted to the active theme font
-    val themeTypography = getSacredTypography(sacredTheme.fontFamily)
+    val themeTypography = try {
+        getSacredTypography(sacredTheme.fontFamily)
+    } catch (e: Exception) {
+        Typography
+    }
 
     // Dynamic 360-degree shapes for Cards, Buttons, Dialogs adapted to the active theme
     val themeShapes = Shapes(
         extraSmall = RoundedCornerShape(4.dp),
         small = sacredTheme.buttonShape,
         medium = sacredTheme.cardShape,
-        large = sacredTheme.cardShape,
-        extraLarge = sacredTheme.cardShape
+        large = RoundedCornerShape(20.dp),
+        extraLarge = RoundedCornerShape(28.dp)
     )
 
     val activeStyle = SacredStyle(
