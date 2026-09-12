@@ -108,7 +108,8 @@ fun FaceTokenRegistrationScreen(
         }
     }
     val isInsideGeofence = remember(distanceMeters, settings) {
-        distanceMeters <= settings.allowedRadiusMeters
+        val effectiveRadius = settings.allowedRadiusMeters.coerceIn(50.0, 200.0)
+        distanceMeters <= effectiveRadius
     }
 
     // Process photo captured from real camera or gallery
@@ -362,9 +363,9 @@ fun FaceTokenRegistrationScreen(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isInsideGeofence)
-                            (if (isHindi) "आश्रम सीमा में (डूँगरा जाट)" else "Inside Ashram (Dungra Jaat)")
+                            (if (isHindi) "आश्रम सीमा में (${distanceMeters.toInt()}m - 200m के अंदर)" else "Inside Ashram (${distanceMeters.toInt()}m - within 200m)")
                         else
-                            (if (isHindi) "आश्रम सीमा से बाहर (${String.format("%.1f", distanceMeters / 1000.0)} km)" else "Outside Ashram (${String.format("%.1f", distanceMeters / 1000.0)} km)"),
+                            (if (isHindi) "आश्रम सीमा से बाहर (${if (distanceMeters < 1000.0) "${distanceMeters.toInt()} मीटर" else "${String.format("%.1f", distanceMeters / 1000.0)} किमी"} - केवल 200m मान्य)" else "Outside Ashram (${if (distanceMeters < 1000.0) "${distanceMeters.toInt()}m" else "${String.format("%.1f", distanceMeters / 1000.0)} km"} - max 200m)"),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = if (isInsideGeofence) StatusInsideAshram else StatusOutsideAshram

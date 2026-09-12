@@ -173,7 +173,8 @@ fun TokenRegistrationScreen(
         }
     }
     val isInsideGeofence = remember(distanceMeters, settings) {
-        distanceMeters <= settings.allowedRadiusMeters
+        val effectiveRadius = settings.allowedRadiusMeters.coerceIn(50.0, 200.0)
+        distanceMeters <= effectiveRadius
     }
     val isQuotaExceeded = remember(settings.maxDailyTokens, todayActiveTokens) {
         settings.maxDailyTokens > 0 && todayActiveTokens >= settings.maxDailyTokens
@@ -427,14 +428,14 @@ fun TokenRegistrationScreen(
                     Text(
                         text = if (isInsideGeofence)
                             if (isHindi)
-                                "आप आश्रम की 200m परिधि के अंदर हैं। टोकन पंजीकरण की अनुमति है।"
+                                "आप आश्रम परिसर के अंदर हैं (${distanceMeters.toInt()}m)। स्वीकृत सीमा (${settings.allowedRadiusMeters.coerceIn(50.0, 200.0).toInt()}m) में टोकन पंजीकरण मान्य है।"
                             else
-                                "You are inside the 200m Ashram perimeter. Token issuance is allowed."
+                                "You are inside Ashram premises (${distanceMeters.toInt()}m). Token issuance is allowed within ${settings.allowedRadiusMeters.coerceIn(50.0, 200.0).toInt()}m."
                         else
                             if (isHindi)
-                                "दूरी: ${(distanceMeters / 1000.0).let { "%.1f".format(it) }} किमी। टोकन केवल आश्रम में उपस्थित होने पर ही जारी होगा।"
+                                "दूरी: ${if (distanceMeters < 1000.0) "${distanceMeters.toInt()} मीटर" else "${(distanceMeters / 1000.0).let { "%.1f".format(it) }} किमी"}। टोकन केवल आश्रम के ${settings.allowedRadiusMeters.coerceIn(50.0, 200.0).toInt()}m परिसर में उपस्थित होने पर ही जारी होगा।"
                             else
-                                "Distance: ${(distanceMeters / 1000.0).let { "%.1f".format(it) }} km. Tokens can only be issued upon physical presence at the Ashram.",
+                                "Distance: ${if (distanceMeters < 1000.0) "${distanceMeters.toInt()}m" else "${(distanceMeters / 1000.0).let { "%.1f".format(it) }} km"}. Tokens can only be issued within ${settings.allowedRadiusMeters.coerceIn(50.0, 200.0).toInt()}m of Ashram.",
                         fontSize = 12.sp,
                         color = TextPrimaryDark
                     )

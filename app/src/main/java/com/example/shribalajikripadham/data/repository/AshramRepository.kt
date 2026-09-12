@@ -150,10 +150,11 @@ class AshramRepository(context: Context) {
             throw SecurityException("Unauthorized: Admin lacks 'can_change_location' permission.")
         }
         val db = dbHelper.writableDatabase
+        val clampedRadius = newRadius.coerceIn(50.0, 200.0)
         val cv = ContentValues().apply {
             put("latitude", newLat)
             put("longitude", newLong)
-            put("allowed_radius_meters", newRadius)
+            put("allowed_radius_meters", clampedRadius)
             put("is_geofence_enforced", if (isGeofenceEnforced) 1 else 0)
         }
         val updated = db.update("ashram_settings", cv, "id = 1", null) > 0
@@ -171,7 +172,7 @@ class AshramRepository(context: Context) {
                     locationConfig = com.example.shribalajikripadham.data.model.LocationConfigDto(
                         latitude = newLat,
                         longitude = newLong,
-                        allowedRadiusMeters = newRadius,
+                        allowedRadiusMeters = clampedRadius,
                         isGeofenceEnforced = isGeofenceEnforced,
                         updatedAt = System.currentTimeMillis()
                     )
@@ -409,11 +410,12 @@ class AshramRepository(context: Context) {
             }
 
             if (settings.isGeofenceEnforced) {
+                val effectiveRadius = settings.allowedRadiusMeters.coerceIn(50.0, 200.0)
                 val distance = GeofenceLocationManager.calculateDistanceMeters(
                     latitude, longitude,
                     settings.latitude, settings.longitude
                 )
-                if (distance > settings.allowedRadiusMeters) {
+                if (distance > effectiveRadius) {
                     throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
                 }
             }
@@ -1892,7 +1894,7 @@ class AshramRepository(context: Context) {
                 if (loc.latitude != 0.0 && loc.longitude != 0.0) {
                     cv.put("latitude", loc.latitude)
                     cv.put("longitude", loc.longitude)
-                    cv.put("allowed_radius_meters", loc.allowedRadiusMeters)
+                    cv.put("allowed_radius_meters", loc.allowedRadiusMeters.coerceIn(50.0, 200.0))
                     cv.put("is_geofence_enforced", if (loc.isGeofenceEnforced) 1 else 0)
                 }
 

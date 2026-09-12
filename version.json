@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 22,
-  "latest_version_name": "2.19.0",
-  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.19.0): 1. संपूर्ण ऑनलाइन क्लाउड सिंक: भक्तों द्वारा आश्रम से जनरेट किया गया टोकन तुरंत क्लाउड पर सिंक होकर एडमिन व सुपर एडमिन डैशबोर्ड पर दिखेगा। 2. आश्रम भू-घेरा (Strict Geofence): भक्त केवल आश्रम परिसर के अंदर उपस्थित होने पर ही टोकन बना सकते हैं, बाहर से कदापि नहीं। 3. आश्रम कस्टमाइज़र लाइव अपडेट: सुपर एडमिन द्वारा नाम, संपर्क, सूचना, लोकेशन या लिंक्स बदलने पर सभी भक्तों के फोन में बिना ऐप अपडेट स्वतः लाइव अपडेट। 4. सुपर एडमिन A to Z एडमिन परमिशन लिस्ट: 16 अनुमतियों द्वारा सेवादारों के अधिकारों का पूर्ण लाइव नियंत्रण। 5. टोकन कैंसिल, डिलीट, कस्टम टोकन नंबर एवं आज की टोकन सूची PDF में सटीक किलोमीटर दूरी।",
-  "update_notes_english": "Universal Cloud Sync & Strict Geofence Release (v2.19.0): 1. 100% Real-time Cloud Token Sync directly to GitHub Cloud repository. 2. Strict Ashram Geofence Enforcement: Devotees can ONLY generate tokens while physically present at the Ashram. 3. Live Ashram Customizer: Any details, notices, contact, or location changes by Super Admin reflect live on all devotee phones without app update. 4. Complete A-to-Z 16 Permissions Matrix for Admins/Sevadars managed by Super Admin. 5. Token Cancel, Delete, Custom Token # controls, and accurate road KM calculation.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.19.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 23,
+  "latest_version_name": "2.20.0",
+  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.20.0): 1. आश्रम परिसर 100m से 200m अति-सख्त भू-घेरा (Strict 100m-200m Geofence): अब भक्त केवल आश्रम के 100 से 200 मीटर के निकटतम परिसर में उपस्थित होने पर ही टोकन बना सकते हैं (अधिकतम सीमा: 200m)। 2. मीटर-स्तरीय सटीक दूरी संकेतक। 3. एडमिन पैनल में 100m, 150m, 200m क्विक प्रीसेट। 4. 100% ऑनलाइन रियल-टाइम क्लाउड टोकन सिंक व 16 अनुमतियों की सुपर एडमिन लिस्ट।",
+  "update_notes_english": "Strict 100m-200m Ashram Geofence Release (v2.20.0): 1. Ultra-strict 100m - 200m Ashram geofence enforcement: Token generation is strictly confined to 100m to 200m of the Ashram premises (Hard ceiling: 200m). 2. Meter-level precise distance indicators. 3. Quick 100m, 150m, 200m presets in Admin Location settings. 4. Universal real-time cloud token sync & 16-permission management matrix.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.20.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

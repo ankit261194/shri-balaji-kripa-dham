@@ -930,7 +930,7 @@ fun AdminDashboardScreen(
                                         try {
                                             val latVal = latInput.toDouble()
                                             val longVal = longInput.toDouble()
-                                            val radVal = radiusInput.toDouble()
+                                            val radVal = radiusInput.toDouble().coerceIn(50.0, 200.0)
                                             repository.updateAshramLocation(admin, latVal, longVal, radVal, geofenceEnforced)
                                             try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                             locationSuccessMsg = if (isHindi) "✓ नई GPS लोकेशन सुरक्षित व क्लाउड द्वारा सभी भक्तों के फोन पर लाइव अपडेट हो गई!" else "GPS coordinates updated & broadcast to all users live!"
@@ -3836,11 +3836,56 @@ fun LocationConfigTab(
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = radius,
-                    onValueChange = onRadiusChange,
-                    label = { Text(if (isHindi) "स्वीकृत परिधि (मीटर में)" else "Allowed Radius (Meters)") },
+                    onValueChange = { input ->
+                        val clean = input.filter { it.isDigit() || it == '.' }
+                        val num = clean.toDoubleOrNull()
+                        if (num != null && num > 200.0) {
+                            onRadiusChange("200.0")
+                        } else {
+                            onRadiusChange(clean)
+                        }
+                    },
+                    label = { Text(if (isHindi) "स्वीकृत परिधि (100m - 200m)" else "Allowed Radius (100m - 200m)") },
+                    supportingText = {
+                        Text(
+                            text = if (isHindi)
+                                "नियम: भक्त केवल आश्रम के 100m से 200m के दायरे में ही टोकन बना सकते हैं (अधिकतम सीमा: 200m)।"
+                            else
+                                "Rule: Devotees can only generate tokens within 100m - 200m of Ashram (Max: 200m).",
+                            fontSize = 11.sp,
+                            color = MaroonAccent
+                        )
+                    },
                     enabled = canChangeLocation,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                if (canChangeLocation) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { onRadiusChange("100.0") },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("100m (सख्त)", fontSize = 11.sp)
+                        }
+                        OutlinedButton(
+                            onClick = { onRadiusChange("150.0") },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("150m", fontSize = 11.sp)
+                        }
+                        OutlinedButton(
+                            onClick = { onRadiusChange("200.0") },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("200m (मानक)", fontSize = 11.sp)
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {

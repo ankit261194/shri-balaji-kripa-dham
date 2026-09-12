@@ -385,6 +385,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         try {
             db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1 WHERE role = 'SUPER_ADMIN'")
+            db.execSQL("UPDATE ashram_settings SET allowed_radius_meters = 200.0 WHERE allowed_radius_meters > 200.0")
         } catch (ignored: Exception) {}
     }
 
