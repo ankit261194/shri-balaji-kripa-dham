@@ -501,6 +501,116 @@ class AshramRepository(context: Context) {
         createdToken
     }
 
+    /**
+     * Sequential Batch Token Issuance for Paper Register OCR / Scanned Notebook.
+     * Strict Sequencing: Starts immediately after today's existing MAX(token_number).
+     * e.g., If app already generated #1, #2, #3, register tokens get #4, #5, #6... in exact serial order!
+     * Subsequent tokens generated anywhere will continue sequentially after the register tokens (#7...).
+     */
+    suspend fun registerBatchTokens(
+        entries: List<com.example.shribalajikripadham.data.model.RegisterEntry>,
+        registeredBy: String
+    ): List<Token> = withContext(Dispatchers.IO) {
+        if (entries.isEmpty()) return@withContext emptyList()
+
+        val db = dbHelper.writableDatabase
+        val today = DatabaseHelper.getTodayDateString()
+
+        // 1. Determine the current MAX(token_number) for today
+        val maxCursor = db.rawQuery(
+            "SELECT MAX(token_number) FROM tokens WHERE darbar_date = ?",
+            arrayOf(today)
+        )
+        var currentMax = 0
+        if (maxCursor.moveToFirst() && !maxCursor.isNull(0)) {
+            currentMax = maxCursor.getInt(0)
+        }
+        maxCursor.close()
+
+        val createdTokens = mutableListOf<Token>()
+        val now = System.currentTimeMillis()
+
+        db.beginTransaction()
+        try {
+            for ((index, entry) in entries.withIndex()) {
+                val nextTokenNum = currentMax + 1 + index
+                val safeCity = if (entry.city.isBlank()) "डूँगरा जाट (स्थानीय)" else entry.city.trim()
+                val safeName = entry.patientName.trim()
+                val safePhone = entry.phoneNumber.trim()
+
+                val cv = ContentValues().apply {
+                    put("token_number", nextTokenNum)
+                    put("darbar_date", today)
+                    put("patient_name", safeName)
+                    put("phone_number", safePhone)
+                    put("city", safeCity)
+                    put("device_id", "REGISTER_SCAN_${now}_$index")
+                    put("latitude", 28.4089)
+                    put("longitude", 77.8789)
+                    put("status", TokenStatus.WAITING.name)
+                    put("registered_by", registeredBy)
+                    put("photo_uri", "")
+                    put("is_darshan_completed", 0)
+                    put("darshan_completed_at", 0L)
+                    put("origin_address", safeCity)
+                    put("destination_address", "श्री बालाजी कृपा धाम, डुंगरा जाट")
+                    put("distance_km", 0.0)
+                    put("created_at", now + index)
+                }
+
+                val insertedId = db.insertOrThrow("tokens", null, cv)
+
+                val token = Token(
+                    id = insertedId,
+                    tokenNumber = nextTokenNum,
+                    darbarDate = today,
+                    patientName = safeName,
+                    phoneNumber = safePhone,
+                    city = safeCity,
+                    deviceId = "REGISTER_SCAN",
+                    latitude = 28.4089,
+                    longitude = 77.8789,
+                    status = TokenStatus.WAITING,
+                    registeredBy = registeredBy,
+                    photoUri = "",
+                    isDarshanCompleted = false,
+                    darshanCompletedAt = 0L,
+                    originAddress = safeCity,
+                    destinationAddress = "श्री बालाजी कृपा धाम, डुंगरा जाट",
+                    distanceKm = 0.0f,
+                    createdAt = now + index
+                )
+                createdTokens.add(token)
+
+                // Central Devotee Profile Sync if phone and name are present
+                if (safePhone.isNotBlank() && safeName.isNotBlank()) {
+                    try {
+                        upsertDevoteeProfile(
+                            name = safeName,
+                            phone = safePhone,
+                            city = safeCity,
+                            faceVector = null,
+                            photoUri = "",
+                            registeredBy = registeredBy
+                        )
+                    } catch (e: Exception) {}
+                }
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+
+        // 2. Batch Google Sheets Sync in background
+        try {
+            com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.postBatchTokensToSheet(appContext, createdTokens)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        createdTokens
+    }
+
     suspend fun getAllTokensToday(): List<Token> = withContext(Dispatchers.IO) {
         val db = dbHelper.readableDatabase
         val today = DatabaseHelper.getTodayDateString()
@@ -766,6 +876,7 @@ class AshramRepository(context: Context) {
             canManageAdmins = cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_admins")) == 1,
             canViewDevoteePhotos = cursor.getInt(cursor.getColumnIndexOrThrow("can_view_devotee_photos")) == 1,
             canIssueTokensAnywhere = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_issue_tokens_anywhere")) == 1 } catch (e: Exception) { false },
+            canScanPaperRegister = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_scan_paper_register")) == 1 } catch (e: Exception) { false },
             photoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) } catch (e: Exception) { "" } ?: "",
             isActive = cursor.getInt(cursor.getColumnIndexOrThrow("is_active")) == 1,
             createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
@@ -799,6 +910,7 @@ class AshramRepository(context: Context) {
         canEditAshramInfo: Boolean,
         canViewDevoteePhotos: Boolean = false,
         canIssueTokensAnywhere: Boolean = false,
+        canScanPaperRegister: Boolean = false,
         photoUri: String = ""
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
@@ -819,6 +931,7 @@ class AshramRepository(context: Context) {
             put("can_manage_admins", if (role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_view_devotee_photos", if (canViewDevoteePhotos || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_issue_tokens_anywhere", if (canIssueTokensAnywhere || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_scan_paper_register", if (canScanPaperRegister || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("photo_uri", photoUri.trim())
             put("is_active", 1)
             put("created_at", System.currentTimeMillis())
@@ -845,6 +958,7 @@ class AshramRepository(context: Context) {
         canEditAshramInfo: Boolean,
         canViewDevoteePhotos: Boolean,
         canIssueTokensAnywhere: Boolean = false,
+        canScanPaperRegister: Boolean = false,
         isActive: Boolean
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
@@ -858,6 +972,7 @@ class AshramRepository(context: Context) {
             put("can_edit_ashram_info", if (canEditAshramInfo) 1 else 0)
             put("can_view_devotee_photos", if (canViewDevoteePhotos) 1 else 0)
             put("can_issue_tokens_anywhere", if (canIssueTokensAnywhere) 1 else 0)
+            put("can_scan_paper_register", if (canScanPaperRegister) 1 else 0)
             put("is_active", if (isActive) 1 else 0)
         }
         db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
@@ -867,6 +982,14 @@ class AshramRepository(context: Context) {
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
             put("can_issue_tokens_anywhere", if (canIssueAnywhere) 1 else 0)
+        }
+        db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
+    }
+
+    suspend fun updateAdminScanRegisterPermission(adminId: Long, canScan: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("can_scan_paper_register", if (canScan) 1 else 0)
         }
         db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
     }
@@ -1768,6 +1891,14 @@ class AshramRepository(context: Context) {
 
     suspend fun syncDevoteesFromCloud(): Pair<Int, String> = withContext(Dispatchers.IO) {
         com.example.shribalajikripadham.data.network.CentralDevoteeSyncManager.syncAllDevoteesFromCloud(appContext, dbHelper)
+    }
+
+    suspend fun getActiveDevicesTelemetry(): Triple<Int, Int, List<com.example.shribalajikripadham.data.model.DevicePresence>> {
+        return com.example.shribalajikripadham.data.network.AppTelemetryManager.fetchActiveDevicesFromSheet(appContext)
+    }
+
+    fun getLocalActiveDevices(): List<com.example.shribalajikripadham.data.model.DevicePresence> {
+        return com.example.shribalajikripadham.data.network.AppTelemetryManager.getLocalDevices(appContext)
     }
 
 }

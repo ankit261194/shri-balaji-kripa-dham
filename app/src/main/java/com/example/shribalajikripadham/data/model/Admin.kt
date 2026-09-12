@@ -24,6 +24,7 @@ data class Admin(
     val canManageAdmins: Boolean = false,
     val canViewDevoteePhotos: Boolean = false,
     val canIssueTokensAnywhere: Boolean = false,
+    val canScanPaperRegister: Boolean = false,
     val photoUri: String = "",
     val isActive: Boolean = true,
     val createdAt: Long = System.currentTimeMillis()

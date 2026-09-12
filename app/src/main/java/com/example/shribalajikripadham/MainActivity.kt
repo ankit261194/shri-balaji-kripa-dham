@@ -57,6 +57,11 @@ class MainActivity : ComponentActivity() {
                             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         }
                     }
+
+                    // Background telemetry heartbeat (installed devices tracking for Super Admin)
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        com.example.shribalajikripadham.data.network.AppTelemetryManager.recordAppHeartbeat(context)
+                    }
                 }
 
                 Surface(

@@ -14,7 +14,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
-        const val DATABASE_VERSION = 18
+        const val DATABASE_VERSION = 19
 
         fun hashPin(pin: String): String {
             val md = MessageDigest.getInstance("SHA-256")
@@ -103,6 +103,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 can_manage_admins INTEGER NOT NULL,
                 can_view_devotee_photos INTEGER NOT NULL,
                 can_issue_tokens_anywhere INTEGER NOT NULL DEFAULT 0,
+                can_scan_paper_register INTEGER NOT NULL DEFAULT 0,
                 photo_uri TEXT NOT NULL DEFAULT '',
                 is_active INTEGER NOT NULL,
                 created_at INTEGER NOT NULL
@@ -245,6 +246,20 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 icon TEXT NOT NULL,
                 is_visible INTEGER NOT NULL DEFAULT 1,
                 order_index INTEGER NOT NULL DEFAULT 0
+            )
+        """.trimIndent())
+
+        // 12. Active Devices & Live Presence Telemetry Table (Super Admin Tracking)
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS active_device_telemetry (
+                device_id TEXT PRIMARY KEY,
+                device_model TEXT NOT NULL,
+                user_name TEXT NOT NULL DEFAULT '',
+                phone_number TEXT NOT NULL DEFAULT '',
+                city TEXT NOT NULL DEFAULT '',
+                app_version TEXT NOT NULL DEFAULT '',
+                last_seen_at INTEGER NOT NULL DEFAULT 0,
+                open_count INTEGER NOT NULL DEFAULT 1
             )
         """.trimIndent())
 
@@ -438,6 +453,34 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 WHERE id = 1
             """.trimIndent())
         }
+        if (oldVersion < 19) {
+            try {
+                db.execSQL("ALTER TABLE admins ADD COLUMN can_scan_paper_register INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE admins SET can_scan_paper_register = 1 WHERE role = 'SUPER_ADMIN'")
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS active_device_telemetry (
+                        device_id TEXT PRIMARY KEY,
+                        device_model TEXT NOT NULL,
+                        user_name TEXT NOT NULL DEFAULT '',
+                        phone_number TEXT NOT NULL DEFAULT '',
+                        city TEXT NOT NULL DEFAULT '',
+                        app_version TEXT NOT NULL DEFAULT '',
+                        last_seen_at INTEGER NOT NULL DEFAULT 0,
+                        open_count INTEGER NOT NULL DEFAULT 1
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    UPDATE ashram_settings 
+                    SET latest_version_code = 10,
+                        latest_version_name = '2.9.0',
+                        update_notes = 'नया भव्य अपडेट (v2.9.0): सुपर एडमिन लाइव डिवाइस व उपस्थिति ट्रैकिंग, रजिस्टर/कॉपी फोटो स्कैन द्वारा स्वचालित क्रमबद्ध टोकन निर्माण एवं अधिकार नियंत्रण।',
+                        apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.9.0/ShriBalajiKripaDham-release.apk'
+                    WHERE id = 1
+                """.trimIndent())
+            } catch (e: Exception) {
+                // Ignore if exists
+            }
+        }
         if (oldVersion < 18) {
             try {
                 db.execSQL("ALTER TABLE admins ADD COLUMN can_issue_tokens_anywhere INTEGER NOT NULL DEFAULT 0")
@@ -545,6 +588,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             put("can_manage_admins", 1)
             put("can_view_devotee_photos", 1)
             put("can_issue_tokens_anywhere", 1)
+            put("can_scan_paper_register", 1)
             put("photo_uri", "")
             put("is_active", 1)
             put("created_at", System.currentTimeMillis())

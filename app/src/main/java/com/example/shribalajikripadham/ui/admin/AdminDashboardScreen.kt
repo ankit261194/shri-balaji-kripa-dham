@@ -164,6 +164,8 @@ fun AdminDashboardScreen(
     var editSevCanPhotos by remember { mutableStateOf(false) }
     var editSevCanAnywhere by remember { mutableStateOf(false) }
     var newSevCanAnywhere by remember { mutableStateOf(false) }
+    var newSevCanScanRegister by remember { mutableStateOf(false) }
+    var editSevCanScanRegister by remember { mutableStateOf(false) }
     var customDistancesList by remember { mutableStateOf<List<CustomCityDistance>>(emptyList()) }
     var uiSectionsList by remember { mutableStateOf<List<UiSectionConfig>>(emptyList()) }
 
@@ -606,6 +608,8 @@ fun AdminDashboardScreen(
             val allowedTabs = mutableListOf<String>()
             if (admin.canManageTokens) allowedTabs.add(if (isHindi) "टोकन कतार" else "Tokens")
             if (admin.canIssueManualTokens) allowedTabs.add(if (isHindi) "मैनुअल टोकन" else "Manual")
+            if (admin.canScanPaperRegister || isSuper) allowedTabs.add(if (isHindi) "रजिस्टर स्कैन" else "Register Scan")
+            if (isSuper) allowedTabs.add(if (isHindi) "सक्रिय फोन" else "Active Devices")
             if (admin.canChangeLocation || isSuper) allowedTabs.add(if (isHindi) "GPS लोकेशन" else "Location")
             if (admin.canSendNotifications || isSuper) allowedTabs.add(if (isHindi) "सूचना भेजें" else "Broadcast")
             if (isSuper || admin.canEditAshramInfo) {
@@ -696,6 +700,7 @@ fun AdminDashboardScreen(
                         val rbacBadges = listOf(
                             Triple("टोकन कतार", admin.canManageTokens || isSuper, "🎟️"),
                             Triple("मैनुअल टोकन", admin.canIssueManualTokens || isSuper, "✍️"),
+                            Triple("रजिस्टर स्कैन", admin.canScanPaperRegister || isSuper, "📷"),
                             Triple("बालाजी यात्रा", admin.canManageYatra || isSuper, "🚌"),
                             Triple("आय-व्यय", admin.canManageExpenses || isSuper, "💰"),
                             Triple("GPS दायरा", admin.canChangeLocation || isSuper, "📍"),
@@ -820,7 +825,25 @@ fun AdminDashboardScreen(
                                 repository = repository,
                                 canBypassGeofence = canBypass,
                                 attribution = attribution,
-                                onTokenIssued = { refreshData() }
+                                onTokenIssued = { refreshData() },
+                                onNavigateToScanRegister = {
+                                    val idx = allowedTabs.indexOfFirst { it == "रजिस्टर स्कैन" || it == "Register Scan" }
+                                    if (idx >= 0) selectedTab = idx
+                                }
+                            )
+                        }
+                        currentTabTitle == "रजिस्टर स्कैन" || currentTabTitle == "Register Scan" -> {
+                            PaperRegisterScanTab(
+                                isHindi = isHindi,
+                                admin = admin,
+                                repository = repository,
+                                onTokensGenerated = { refreshData() }
+                            )
+                        }
+                        currentTabTitle == "सक्रिय फोन" || currentTabTitle == "Active Devices" -> {
+                            ActiveDevicesTab(
+                                isHindi = isHindi,
+                                repository = repository
                             )
                         }
                         currentTabTitle == "GPS लोकेशन" || currentTabTitle == "Location" -> {
@@ -893,6 +916,12 @@ fun AdminDashboardScreen(
                                         refreshData()
                                     }
                                 },
+                                onToggleScanRegister = { targetAdmin, isEnabled ->
+                                    scope.launch {
+                                        repository.updateAdminScanRegisterPermission(targetAdmin.id, isEnabled)
+                                        refreshData()
+                                    }
+                                },
                                 onOpenEdit = { targetAdmin ->
                                     editingAdmin = targetAdmin
                                     editSevPhotoUri = targetAdmin.photoUri
@@ -905,6 +934,7 @@ fun AdminDashboardScreen(
                                     editSevCanContent = targetAdmin.canEditAshramInfo
                                     editSevCanPhotos = targetAdmin.canViewDevoteePhotos
                                     editSevCanAnywhere = targetAdmin.canIssueTokensAnywhere
+                                    editSevCanScanRegister = targetAdmin.canScanPaperRegister
                                 },
                                 onToggleActive = { targetAdmin ->
                                     scope.launch {
@@ -919,6 +949,7 @@ fun AdminDashboardScreen(
                                             canEditAshramInfo = targetAdmin.canEditAshramInfo,
                                             canViewDevoteePhotos = targetAdmin.canViewDevoteePhotos,
                                             canIssueTokensAnywhere = targetAdmin.canIssueTokensAnywhere,
+                                            canScanPaperRegister = targetAdmin.canScanPaperRegister,
                                             isActive = !targetAdmin.isActive
                                         )
                                         refreshData()
@@ -1306,6 +1337,15 @@ fun AdminDashboardScreen(
                             color = MaroonAccent
                         )
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = newSevCanScanRegister, onCheckedChange = { newSevCanScanRegister = it })
+                        Text(
+                            text = if (isHindi) "📝 रजिस्टर कॉपी स्कैन व टोकन जारी अधिकार" else "Scan Paper Register Permission",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0D47A1)
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -1329,6 +1369,7 @@ fun AdminDashboardScreen(
                                     canEditAshramInfo = newSevCanContent,
                                     canViewDevoteePhotos = newSevCanPhotos,
                                     canIssueTokensAnywhere = newSevCanAnywhere,
+                                    canScanPaperRegister = newSevCanScanRegister,
                                     photoUri = newSevPhotoUri
                                 )
                                 showCreateSevadarDialog = false
@@ -1339,6 +1380,8 @@ fun AdminDashboardScreen(
                                 newSevPin = ""
                                 newSevPhotoUri = ""
                                 newSevCanPhotos = false
+                                newSevCanAnywhere = false
+                                newSevCanScanRegister = false
                                 refreshData()
                             }
                         }
@@ -1435,6 +1478,15 @@ fun AdminDashboardScreen(
                             color = MaroonAccent
                         )
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = editSevCanScanRegister, onCheckedChange = { editSevCanScanRegister = it })
+                        Text(
+                            text = if (isHindi) "📝 रजिस्टर कॉपी स्कैन व टोकन जारी अधिकार" else "Scan Paper Register Permission",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0D47A1)
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -1452,6 +1504,7 @@ fun AdminDashboardScreen(
                                 canEditAshramInfo = editSevCanContent,
                                 canViewDevoteePhotos = editSevCanPhotos,
                                 canIssueTokensAnywhere = editSevCanAnywhere,
+                                canScanPaperRegister = editSevCanScanRegister,
                                 isActive = target.isActive
                             )
                             repository.updateAdminPhoto(target.id, editSevPhotoUri)
@@ -2348,7 +2401,8 @@ fun ManualTokenTab(
     repository: AshramRepository,
     canBypassGeofence: Boolean,
     attribution: String,
-    onTokenIssued: () -> Unit
+    onTokenIssued: () -> Unit,
+    onNavigateToScanRegister: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -2503,6 +2557,44 @@ fun ManualTokenTab(
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Register Scan Shortcut Banner
+        if (onNavigateToScanRegister != null && (admin.canScanPaperRegister || admin.role == AdminRole.SUPER_ADMIN)) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToScanRegister() },
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                border = BorderStroke(1.5.dp, AmberGold),
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Text("📷", fontSize = 24.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "रजिस्टर / कॉपी का फोटो खींचकर टोकन बनाएं" else "Scan Paper Register for Batch Tokens",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = MaroonPrimary
+                            )
+                            Text(
+                                text = if (isHindi) "कॉपी पर लिखे क्रम में स्वतः क्रमबद्ध टोकन बनेंगे ➔" else "Auto-issue sequential tokens from notebook page ➔",
+                                fontSize = 11.sp,
+                                color = Color.DarkGray
+                            )
+                        }
+                    }
+                    Text("➔", fontWeight = FontWeight.Bold, color = MaroonAccent, fontSize = 16.sp)
+                }
+            }
+        }
+
         // Issuance Authority Badge
         Surface(
             color = if (canBypassGeofence) Color(0xFFE8F5E9) else Color(0xFFFFF8E1),
@@ -3050,6 +3142,7 @@ fun SevadarManagementTab(
     onOpenEdit: (Admin) -> Unit,
     onToggleActive: (Admin) -> Unit,
     onToggleAnywhere: (Admin, Boolean) -> Unit,
+    onToggleScanRegister: (Admin, Boolean) -> Unit,
     onDelete: (Admin) -> Unit
 ) {
     LazyColumn(
@@ -3122,7 +3215,8 @@ fun SevadarManagementTab(
                             if (a.canChangeLocation) "GPS" else null,
                             if (a.canSendNotifications) "नोटिफिकेशन" else null,
                             if (a.canEditAshramInfo) "कंटेंट" else null,
-                            if (a.canViewDevoteePhotos) "भक्त फोटो" else null
+                            if (a.canViewDevoteePhotos) "भक्त फोटो" else null,
+                            if (a.canScanPaperRegister) "रजिस्टर स्कैन" else null
                         ).joinToString(", "),
                         fontSize = 12.sp,
                         color = Color.DarkGray
@@ -3162,6 +3256,44 @@ fun SevadarManagementTab(
                                     checked = a.canIssueTokensAnywhere,
                                     onCheckedChange = { isChecked ->
                                         onToggleAnywhere(a, isChecked)
+                                    }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+                        // Paper Register Scan Quick Switch
+                        Surface(
+                            color = if (a.canScanPaperRegister) Color(0xFFEDE7F6) else Color(0xFFFFF3E0),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (a.canScanPaperRegister) Color(0xFFB39DDB) else Color(0xFFFFB74D)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isHindi) "📝 रजिस्टर कॉपी स्कैन व क्रमबद्ध टोकन अधिकार" else "📝 Scan Paper Register Permission",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = if (a.canScanPaperRegister) Color(0xFF4A148C) else MaroonAccent
+                                    )
+                                    Text(
+                                        text = if (a.canScanPaperRegister)
+                                            (if (isHindi) "सक्रिय: डायरी/कॉपी फोटो खींचकर क्रमबद्ध टोकन जारी कर सकते हैं।" else "Active: Can scan paper register & issue sequential tokens.")
+                                        else
+                                            (if (isHindi) "अक्रिय: रजिस्टर स्कैन करने की अनुमति नहीं है।" else "Inactive: Not authorized to scan register."),
+                                        fontSize = 10.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                                Switch(
+                                    checked = a.canScanPaperRegister,
+                                    onCheckedChange = { isChecked ->
+                                        onToggleScanRegister(a, isChecked)
                                     }
                                 )
                             }

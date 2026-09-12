@@ -1,8 +1,8 @@
 {
-  "latest_version_code": 9,
-  "latest_version_name": "2.8.0",
-  "update_notes_hindi": "नया भव्य अपडेट (v2.8.0): यूनिवर्सल फेस रिकग्निशन (किसी भी फोन से पहचान), मोबाइल नंबर सर्च व ऑटो-फिल, नाम सुझाव (Name Suggestions), वैकल्पिक फोटो (बिना फोटो के भी टोकन), सुपर एडमिन (अंकित चौधरी) एवं अधिकृत सेवादारों हेतु कहीं से भी टोकन जारी करने की सुविधा व स्पष्ट पंजीकरण सत्यापन।",
-  "update_notes_english": "New Release (v2.8.0): Universal Cross-Phone Face Recognition, Mobile Auto-Fill & Search, Name Suggestions Chips, Optional Photo for all, Anywhere Token Issuance for Super Admin (Ankit Chaudhary) & Authorized Sevadars, and Clear Registration Attribution.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.8.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 10,
+  "latest_version_name": "2.9.0",
+  "update_notes_hindi": "नया ऐतिहासिक अपडेट (v2.9.0): 1. सुपर एडमिन (अंकित चौधरी) हेतु लाइव फोन टेलीमेट्री (सक्रिय फोन व उपयोगकर्ता मॉनिटरिंग)। 2. डायरी / रजिस्टर पेज फोटो स्कैन (OCR) व क्रमबद्ध बैच टोकन जनरेशन (Strict Sequence Preservation)। 3. सुपर एडमिन द्वारा सेवादारों को रजिस्टर स्कैन अधिकार प्रदान/वापस लेने की सुविधा।",
+  "update_notes_english": "Major Release (v2.9.0): 1. Live Handset & Presence Telemetry for Super Admin (Ankit Chaudhary). 2. Physical Paper Register / Notebook Photo OCR & Strict Sequential Batch Token Issuance. 3. Permission Delegation for Sevadars to scan register copies.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.9.0/ShriBalajiKripaDham-release.apk",
   "is_force_update": false
 }

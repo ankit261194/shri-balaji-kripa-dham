@@ -110,6 +110,92 @@ object GoogleSheetTokenSyncManager {
     }
 
     /**
+     * Post a batch of tokens (e.g. from Paper Register Scan) to Google Spreadsheet.
+     */
+    suspend fun postBatchTokensToSheet(
+        context: Context,
+        tokens: List<Token>
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val webhookUrl = getWebhookUrl(context)
+        if (webhookUrl.isBlank() || !webhookUrl.startsWith("https://script.google.com/")) {
+            return@withContext Pair(false, "Google Sheet वेबहुक लिंक कॉन्फ़िगर नहीं है")
+        }
+        if (tokens.isEmpty()) return@withContext Pair(true, "कोई टोकन नहीं")
+
+        try {
+            val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
+            val tokenArray = org.json.JSONArray()
+
+            for (token in tokens) {
+                val timeStr = timeFormatter.format(Date(token.createdAt))
+                val item = JSONObject().apply {
+                    put("token_number", token.tokenNumber)
+                    put("darbar_date", token.darbarDate)
+                    put("time_str", timeStr)
+                    put("patient_name", token.patientName)
+                    put("phone_number", token.phoneNumber)
+                    put("city", token.city)
+                    put("registered_by", token.registeredBy)
+                    put("distance_km", token.distanceKm)
+                    put("status", token.status.name)
+                    put("has_photo", token.photoUri.isNotBlank())
+                    put("photo_uri", token.photoUri)
+                }
+                tokenArray.put(item)
+            }
+
+            val payload = JSONObject().apply {
+                put("action", "BATCH_TOKENS")
+                put("tokens", tokenArray)
+            }
+
+            var currentUrl = webhookUrl
+            var redirectCount = 0
+            var finalCode = -1
+
+            while (redirectCount < 4) {
+                val url = URL(currentUrl)
+                val conn = url.openConnection() as HttpURLConnection
+                conn.connectTimeout = 12000
+                conn.readTimeout = 12000
+                conn.instanceFollowRedirects = true
+                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.9")
+
+                if (redirectCount == 0) {
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    conn.doOutput = true
+                    conn.outputStream.use { os ->
+                        os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+                    }
+                } else {
+                    conn.requestMethod = "GET"
+                }
+
+                finalCode = conn.responseCode
+                if (finalCode in 300..399) {
+                    val newLocation = conn.getHeaderField("Location")
+                    if (!newLocation.isNullOrBlank()) {
+                        currentUrl = newLocation
+                        redirectCount++
+                        continue
+                    }
+                }
+
+                if (finalCode in 200..299) {
+                    return@withContext Pair(true, "${tokens.size} टोकन Google Sheet में सफलतापूर्वक दर्ज हुए!")
+                } else {
+                    break
+                }
+            }
+
+            Pair(false, "Google Sheet सर्वर रिस्पॉन्स: HTTP $finalCode")
+        } catch (e: Exception) {
+            Pair(false, "सिंक त्रुटि: ${e.localizedMessage ?: "नेटवर्क उपलब्ध नहीं"}")
+        }
+    }
+
+    /**
      * Fetch all tokens from Google Spreadsheet for today.
      * Allows Admin to sync all devotee submissions into Admin app.
      */
