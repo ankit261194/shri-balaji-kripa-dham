@@ -55,12 +55,17 @@ fun SacredParchasScreen(
 
     val refreshParchas: () -> Unit = {
         scope.launch {
-            val list = if (currentAdmin != null) {
-                repository.getAllAdminParchas()
-            } else {
-                repository.getAllPublicParchas()
+            try {
+                val list = if (currentAdmin != null) {
+                    repository.getAllAdminParchas()
+                } else {
+                    repository.getAllPublicParchas()
+                }
+                parchasList = if (list.isNotEmpty()) list else com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                parchasList = com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
             }
-            parchasList = list
         }
     }
 

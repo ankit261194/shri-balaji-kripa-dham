@@ -164,17 +164,21 @@ fun FaceTokenRegistrationScreen(
 
     // Initialize background services instantly
     LaunchedEffect(Unit) {
-        val id = DeviceFingerprintManager.getDeviceId(context)
-        deviceId = id
-        settings = repository.getSettings()
-        existingToken = repository.checkDeviceRegisteredToday(id)
+        try {
+            val id = DeviceFingerprintManager.getDeviceId(context)
+            deviceId = id
+            settings = repository.getSettings()
+            existingToken = repository.checkDeviceRegisteredToday(id)
 
-        val loc = GeofenceLocationManager.getLastKnownLocation(context)
-        if (loc != null) {
-            userLatitude = loc.latitude
-            userLongitude = loc.longitude
+            val loc = GeofenceLocationManager.getLastKnownLocation(context)
+            if (loc != null) {
+                userLatitude = loc.latitude
+                userLongitude = loc.longitude
+            }
+            try { repository.syncDevoteesFromCloud() } catch (e: Exception) {}
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        repository.syncDevoteesFromCloud()
     }
 
     // Auto-save Token Card to Photo Gallery whenever token is issued

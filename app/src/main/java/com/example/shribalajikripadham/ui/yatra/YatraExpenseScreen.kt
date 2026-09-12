@@ -1,4 +1,4 @@
-﻿package com.example.shribalajikripadham.ui.yatra
+package com.example.shribalajikripadham.ui.yatra
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -43,8 +43,12 @@ fun YatraExpenseScreen(
 
     fun refreshData() {
         scope.launch {
-            expenses = repository.getAllYatraExpenses()
-            financialSummary = repository.getYatraFinancialSummary()
+            try {
+                expenses = repository.getAllYatraExpenses()
+                financialSummary = repository.getYatraFinancialSummary()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

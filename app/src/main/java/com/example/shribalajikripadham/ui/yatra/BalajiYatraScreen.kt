@@ -1,4 +1,4 @@
-﻿package com.example.shribalajikripadham.ui.yatra
+package com.example.shribalajikripadham.ui.yatra
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,7 +47,11 @@ fun BalajiYatraScreen(
 
     fun refreshSeats() {
         scope.launch {
-            seats = repository.getAllBusSeats()
+            try {
+                seats = repository.getAllBusSeats()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

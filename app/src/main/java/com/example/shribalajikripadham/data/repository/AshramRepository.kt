@@ -1943,50 +1943,66 @@ class AshramRepository(context: Context) {
     // ==========================================
 
     fun seedDefaultParchasIfEmpty() {
-        val db = dbHelper.writableDatabase
-        val cursor = db.rawQuery("SELECT COUNT(*) FROM sacred_parchas", null)
-        var count = 0
-        if (cursor.moveToFirst()) {
-            count = cursor.getInt(0)
-        }
-        cursor.close()
-
-        if (count == 0) {
-            val canonicals = com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
-            for (p in canonicals) {
-                upsertParcha(p)
+        try {
+            val db = dbHelper.writableDatabase
+            val cursor = db.rawQuery("SELECT COUNT(*) FROM sacred_parchas", null)
+            var count = 0
+            if (cursor.moveToFirst()) {
+                count = cursor.getInt(0)
             }
+            cursor.close()
+
+            if (count == 0) {
+                val canonicals = com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
+                for (p in canonicals) {
+                    upsertParcha(p)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
     fun getAllPublicParchas(): List<com.example.shribalajikripadham.data.model.SacredParcha> {
-        seedDefaultParchasIfEmpty()
-        val db = dbHelper.readableDatabase
-        val list = mutableListOf<com.example.shribalajikripadham.data.model.SacredParcha>()
-        val cursor = db.rawQuery(
-            "SELECT * FROM sacred_parchas WHERE is_published = 1 AND is_hidden = 0 ORDER BY id ASC",
-            null
-        )
-        while (cursor.moveToNext()) {
-            list.add(parseParchaCursor(cursor))
+        try {
+            seedDefaultParchasIfEmpty()
+            val db = dbHelper.readableDatabase
+            val list = mutableListOf<com.example.shribalajikripadham.data.model.SacredParcha>()
+            val cursor = db.rawQuery(
+                "SELECT * FROM sacred_parchas WHERE is_published = 1 AND is_hidden = 0 ORDER BY id ASC",
+                null
+            )
+            while (cursor.moveToNext()) {
+                list.add(parseParchaCursor(cursor))
+            }
+            cursor.close()
+            if (list.isNotEmpty()) return list
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        cursor.close()
-        return list
+        // Fallback: If DB query fails for any reason, return canonical parchas!
+        return com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas().filter { it.isPublished && !it.isHidden }
     }
 
     fun getAllAdminParchas(): List<com.example.shribalajikripadham.data.model.SacredParcha> {
-        seedDefaultParchasIfEmpty()
-        val db = dbHelper.readableDatabase
-        val list = mutableListOf<com.example.shribalajikripadham.data.model.SacredParcha>()
-        val cursor = db.rawQuery(
-            "SELECT * FROM sacred_parchas ORDER BY id ASC",
-            null
-        )
-        while (cursor.moveToNext()) {
-            list.add(parseParchaCursor(cursor))
+        try {
+            seedDefaultParchasIfEmpty()
+            val db = dbHelper.readableDatabase
+            val list = mutableListOf<com.example.shribalajikripadham.data.model.SacredParcha>()
+            val cursor = db.rawQuery(
+                "SELECT * FROM sacred_parchas ORDER BY id ASC",
+                null
+            )
+            while (cursor.moveToNext()) {
+                list.add(parseParchaCursor(cursor))
+            }
+            cursor.close()
+            if (list.isNotEmpty()) return list
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        cursor.close()
-        return list
+        // Fallback: Return all canonical parchas
+        return com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
     }
 
     fun getParchaById(parchaId: String): com.example.shribalajikripadham.data.model.SacredParcha? {

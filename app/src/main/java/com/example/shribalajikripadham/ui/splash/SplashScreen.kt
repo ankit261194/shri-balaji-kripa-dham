@@ -448,33 +448,7 @@ fun SplashScreen(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Secondary instant skip button so user is never trapped on welcome screen
-            Surface(
-                onClick = onEnterDarbar,
-                shape = RoundedCornerShape(12.dp),
-                color = Color.White.copy(alpha = 0.12f),
-                border = BorderStroke(0.8.dp, Color.White.copy(alpha = 0.25f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (isHindi) "⚡ सीधे मुख्य पृष्ठ पर जाएं (Skip)" else "⚡ Skip directly to Darbar",
-                        color = Color.White.copy(alpha = 0.90f),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // DEVELOPER / CREATOR SIGNATURE
             Text(

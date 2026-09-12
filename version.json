@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 16,
-  "latest_version_name": "2.13.2",
-  "update_notes_hindi": "अति महत्वपूर्ण स्थाई समाधान अपडेट (v2.13.2): 1. वेलकम स्क्रीन पर अटकने की समस्या का 100% स्थायी समाधान। 2. 'श्री दरबार में प्रवेश करें' बटन अब पूरी तरह क्लिक-प्रूफ़ व तीव्र है। 3. एक बार प्रवेश के बाद ऐप सीधे दरबार होम स्क्रीन पर खुलेगी।",
-  "update_notes_english": "Critical Welcome Screen & Navigation Fix (v2.13.2): 1. Permanently resolved Welcome screen freeze issue. 2. Enter Holy Darbar button is now 100% click-proof and ultra responsive. 3. Direct entrance to Holy Darbar on subsequent launches.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.13.2/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 17,
+  "latest_version_name": "2.14.0",
+  "update_notes_hindi": "अति महत्वपूर्ण महा-स्थिरीकरण अपडेट (v2.14.0): 1. वेलकम स्क्रीन पर केवल एक भव्य 'श्री दरबार में प्रवेश करें' बटन। 2. रविवार टोकन एवं आश्रम पर्चे पर क्लिक करने पर क्रैश होने की समस्या का स्थायी समाधान। 3. स्व-सुधारकारी डेटाबेस (Self-healing DB v21) एवं सम्पूर्ण ऐप के सभी बटनों व स्क्रीन का गहन स्थिरीकरण।",
+  "update_notes_english": "Critical App-Wide Stabilization Update (v2.14.0): 1. Single Grand 'Enter Holy Darbar' button on Welcome Screen. 2. Fixed crashes when opening Sunday Token and Sacred Ashram Parchas. 3. Self-healing SQLite schema v21 and complete stability overhaul across all features.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.14.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

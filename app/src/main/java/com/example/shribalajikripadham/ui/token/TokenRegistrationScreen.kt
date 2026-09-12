@@ -127,22 +127,26 @@ fun TokenRegistrationScreen(
 
     // Load initial data and sync cloud devotee registry
     LaunchedEffect(Unit) {
-        val id = DeviceFingerprintManager.getDeviceId(context)
-        deviceId = id
-        settings = repository.getSettings()
-        existingToken = repository.checkDeviceRegisteredToday(id)
-        todayActiveTokens = repository.getTodayActiveTokenCount()
+        try {
+            val id = DeviceFingerprintManager.getDeviceId(context)
+            deviceId = id
+            settings = repository.getSettings()
+            existingToken = repository.checkDeviceRegisteredToday(id)
+            todayActiveTokens = repository.getTodayActiveTokenCount()
 
-        // Try getting actual location
-        val loc = GeofenceLocationManager.getLastKnownLocation(context)
-        if (loc != null) {
-            userLatitude = loc.latitude
-            userLongitude = loc.longitude
-        }
+            // Try getting actual location
+            val loc = GeofenceLocationManager.getLastKnownLocation(context)
+            if (loc != null) {
+                userLatitude = loc.latitude
+                userLongitude = loc.longitude
+            }
 
-        // Background cloud sync to pull all devotee profiles from any phone
-        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            try { repository.syncDevoteesFromCloud() } catch (e: Exception) {}
+            // Background cloud sync to pull all devotee profiles from any phone
+            scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                try { repository.syncDevoteesFromCloud() } catch (e: Exception) {}
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -886,7 +890,7 @@ fun TokenRegistrationScreen(
                                     }
                                 }
                             },
-                            enabled = isInsideGeofence && !isSubmitting && !isBeforeSchedule && !isQuotaExceeded && capturedBitmap != null,
+                            enabled = isInsideGeofence && !isSubmitting && !isBeforeSchedule && !isQuotaExceeded,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(50.dp),
@@ -903,7 +907,7 @@ fun TokenRegistrationScreen(
                                     text = when {
                                         isQuotaExceeded -> if (isHindi) "⛔ आज की सीमा समाप्त" else "⛔ Quota Full"
                                         isBeforeSchedule -> if (isHindi) "🔒 पंजीकरण अभी बंद है" else "🔒 Registration Locked"
-                                        capturedBitmap == null -> if (isHindi) "🔒 पहले फोटो खींचें (टोकन अनलॉक होगा)" else "🔒 Capture Photo to Unlock"
+                                        !isInsideGeofence -> if (isHindi) "📍 आश्रम परिसर में आएं" else "📍 Must be at Ashram"
                                         else -> if (isHindi) "टोकन प्राप्त करें  ➔" else "Generate Sunday Token  ➔"
                                     },
                                     fontSize = 16.sp,
