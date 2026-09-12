@@ -406,8 +406,8 @@ object TokenPdfExporter {
                 isAntiAlias = true
             }
 
-            var startY = 215f
-            val lineSpacing = 32f
+            var startY = 205f
+            val lineSpacing = 28f
             val col1X = 40f
             val col2X = 180f
 
@@ -439,6 +439,14 @@ object TokenPdfExporter {
 
             val darshanStatusText = if (token.isDarshanCompleted) "✓ दर्शन संपन्न (COMPLETED)" else "⏳ कतार में सक्रिय (WAITING)"
             drawRow("Darshan Status:", darshanStatusText)
+
+            val issuedByText = when {
+                token.registeredBy.startsWith("SUPER_ADMIN") -> "सुपर एडमिन (अंकित चौधरी)"
+                token.registeredBy.startsWith("ADMIN") -> "एडमिन (${token.registeredBy.removePrefix("ADMIN").trim('(', ')', ' ')})"
+                token.registeredBy.startsWith("DESK") -> "एडमिन डेस्क (${token.registeredBy.removePrefix("DESK_")})"
+                else -> "स्वयं (Self App)"
+            }
+            drawRow("Issued By (पंजीकरण):", issuedByText, token.registeredBy.startsWith("SUPER_ADMIN"))
 
             // Disclaimer Box
             val discRect = RectF(30f, 480f, 390f, 555f)

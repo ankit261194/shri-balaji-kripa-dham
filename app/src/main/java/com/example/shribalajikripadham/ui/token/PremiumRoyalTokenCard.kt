@@ -303,6 +303,27 @@ fun PremiumRoyalTokenCard(
                         value = token.darbarDate.ifEmpty { "Upcoming Sunday" },
                         valueColor = Color(0xFF2E7D32)
                     )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp), color = Color(0xFFF0F0F0))
+
+                    val issuedByText = when {
+                        token.registeredBy.startsWith("SUPER_ADMIN") -> if (isHindi) "सुपर एडमिन (अंकित चौधरी) 👑" else "Super Admin (Ankit Chaudhary) 👑"
+                        token.registeredBy.startsWith("ADMIN") -> if (isHindi) "एडमिन (${token.registeredBy.removePrefix("ADMIN").trim('(', ')', ' ')}) 🏢" else token.registeredBy
+                        token.registeredBy.startsWith("DESK") -> if (isHindi) "एडमिन डेस्क (${token.registeredBy.removePrefix("DESK_")}) 🏢" else token.registeredBy
+                        else -> if (isHindi) "स्वयं (Self App) 📱" else "Self Registration 📱"
+                    }
+                    val issuedByColor = when {
+                        token.registeredBy.startsWith("SUPER_ADMIN") -> Color(0xFFE65100)
+                        token.registeredBy.startsWith("ADMIN") || token.registeredBy.startsWith("DESK") -> Color(0xFF1565C0)
+                        else -> Color(0xFF2E7D32)
+                    }
+
+                    TokenDetailRow(
+                        label = if (isHindi) "पंजीकरणकर्ता (Issued By):" else "Issued By:",
+                        value = issuedByText,
+                        isBold = true,
+                        valueColor = issuedByColor
+                    )
                 }
             }
 

@@ -314,27 +314,36 @@ class AshramRepository(context: Context) {
         latitude: Double,
         longitude: Double,
         city: String = "डूँगरा जाट (स्थानीय)",
-        registeredBy: String = "USER_APP",
+        registeredBy: String = "SELF",
         photoUri: String = "",
         isMockLocation: Boolean = false,
         locationAccuracy: Float = 10.0f,
         originAddress: String = city,
         destinationAddress: String = "श्री बालाजी कृपा धाम, डुंगरा जाट",
-        distanceKm: Float = -1f
+        distanceKm: Float = -1f,
+        bypassGeofence: Boolean = false
     ): Token = withContext(Dispatchers.IO) {
         val today = DatabaseHelper.getTodayDateString()
         val db = dbHelper.writableDatabase
 
-        val isDevoteeRequest = registeredBy != "SUPER_ADMIN" && registeredBy != "SEVADAR_DESK"
+        val isSuperAdmin = registeredBy.startsWith("SUPER_ADMIN")
+        val isAdminDesk = registeredBy.startsWith("ADMIN") || registeredBy == "SEVADAR_DESK"
+        val isDevoteeRequest = !isSuperAdmin && !isAdminDesk
 
-        // 0. PRE-SCHEDULED TOKEN OPENING CHECK
+        // Geofence & Anti-Spoof bypass: Super Admin ALWAYS bypasses; Admins bypass IF bypassGeofence is granted
+        val shouldBypassGeofence = isSuperAdmin || (isAdminDesk && bypassGeofence)
+
+        // 0. PRE-SCHEDULED TOKEN OPENING CHECK (Devotees only)
         if (isDevoteeRequest) {
             val settings = getSettings()
             if (settings.scheduledTokenOpenTimestamp > System.currentTimeMillis()) {
                 throw IllegalStateException("टोकन पंजीकरण अभी शुरू नहीं हुआ है। यह पूर्व निर्धारित समय पर स्वतः खुलेगा।")
             }
+        }
 
-            // 1. FAKE GPS & MOCK LOCATION BLOCKING (Mandatory Anti-Fraud)
+        // 1. LOCATION & GEOFENCE CHECKS (Enforced for devotees and non-exempt admins)
+        if (!shouldBypassGeofence) {
+            val settings = getSettings()
             if (isMockLocation) {
                 throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
             }
@@ -343,7 +352,6 @@ class AshramRepository(context: Context) {
                 throw SecurityException("Security Exception: Inaccurate GPS signal (${String.format("%.1f", locationAccuracy)}m). Please stand in open area.")
             }
 
-            // 2. SERVER-SIDE GEOFENCE VALIDATION
             if (settings.isGeofenceEnforced) {
                 val distance = GeofenceLocationManager.calculateDistanceMeters(
                     latitude, longitude,
@@ -353,8 +361,10 @@ class AshramRepository(context: Context) {
                     throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
                 }
             }
+        }
 
-            // 3. HARDWARE-LEVEL DEVICE LOCKING (1 Device = 1 Token per Sunday)
+        // 2. HARDWARE-LEVEL DEVICE LOCKING (Strict 1 Device = 1 Token per Sunday for devotees)
+        if (isDevoteeRequest) {
             val checkCursor = db.rawQuery(
                 "SELECT token_number FROM device_registrations WHERE device_id = ? AND darbar_date = ?",
                 arrayOf(deviceId, today)
@@ -472,6 +482,20 @@ class AshramRepository(context: Context) {
         // 📊 Universal Real-Time Google Sheets Sync for ALL tokens (Devotees + Admin + Sevadar)
         try {
             com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.postTokenToSheet(appContext, createdToken)
+        } catch (e: Exception) {}
+
+        // 🌐 Central Devotee Profile Sync (Saves contact to registry for cross-device lookup)
+        try {
+            if (phoneNumber.isNotBlank() && patientName.isNotBlank()) {
+                upsertDevoteeProfile(
+                    name = patientName,
+                    phone = phoneNumber,
+                    city = safeCity,
+                    faceVector = null,
+                    photoUri = photoUri,
+                    registeredBy = registeredBy
+                )
+            }
         } catch (e: Exception) {}
 
         createdToken
@@ -741,6 +765,7 @@ class AshramRepository(context: Context) {
             canEditAshramInfo = cursor.getInt(cursor.getColumnIndexOrThrow("can_edit_ashram_info")) == 1,
             canManageAdmins = cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_admins")) == 1,
             canViewDevoteePhotos = cursor.getInt(cursor.getColumnIndexOrThrow("can_view_devotee_photos")) == 1,
+            canIssueTokensAnywhere = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_issue_tokens_anywhere")) == 1 } catch (e: Exception) { false },
             photoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) } catch (e: Exception) { "" } ?: "",
             isActive = cursor.getInt(cursor.getColumnIndexOrThrow("is_active")) == 1,
             createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
@@ -773,6 +798,7 @@ class AshramRepository(context: Context) {
         canSendNotifications: Boolean,
         canEditAshramInfo: Boolean,
         canViewDevoteePhotos: Boolean = false,
+        canIssueTokensAnywhere: Boolean = false,
         photoUri: String = ""
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
@@ -792,6 +818,7 @@ class AshramRepository(context: Context) {
             put("can_edit_ashram_info", if (canEditAshramInfo) 1 else 0)
             put("can_manage_admins", if (role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_view_devotee_photos", if (canViewDevoteePhotos || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_issue_tokens_anywhere", if (canIssueTokensAnywhere || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("photo_uri", photoUri.trim())
             put("is_active", 1)
             put("created_at", System.currentTimeMillis())
@@ -817,6 +844,7 @@ class AshramRepository(context: Context) {
         canSendNotifications: Boolean,
         canEditAshramInfo: Boolean,
         canViewDevoteePhotos: Boolean,
+        canIssueTokensAnywhere: Boolean = false,
         isActive: Boolean
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
@@ -829,7 +857,16 @@ class AshramRepository(context: Context) {
             put("can_send_notifications", if (canSendNotifications) 1 else 0)
             put("can_edit_ashram_info", if (canEditAshramInfo) 1 else 0)
             put("can_view_devotee_photos", if (canViewDevoteePhotos) 1 else 0)
+            put("can_issue_tokens_anywhere", if (canIssueTokensAnywhere) 1 else 0)
             put("is_active", if (isActive) 1 else 0)
+        }
+        db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
+    }
+
+    suspend fun updateAdminAnywhereTokenPermission(adminId: Long, canIssueAnywhere: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("can_issue_tokens_anywhere", if (canIssueAnywhere) 1 else 0)
         }
         db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
     }
@@ -1601,4 +1638,136 @@ class AshramRepository(context: Context) {
             Pair(false, 0)
         }
     }
+
+    // --- Devotee Registry & Cross-Device Auto-Fill ---
+
+    suspend fun searchDevoteeByPhone(phone: String): DevoteeFaceProfile? = withContext(Dispatchers.IO) {
+        val cleanPhone = phone.trim().replace("+91", "").replace(" ", "").replace("-", "")
+        if (cleanPhone.length < 10) return@withContext null
+        val db = dbHelper.readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT * FROM devotee_face_profiles WHERE phone_number LIKE ? ORDER BY last_verified_at DESC LIMIT 1",
+            arrayOf("%$cleanPhone%")
+        )
+        var profile: DevoteeFaceProfile? = null
+        if (cursor.moveToFirst()) {
+            val blob = cursor.getBlob(cursor.getColumnIndexOrThrow("face_vector"))
+            val vector = FaceEmbeddingEngine.blobToVector(blob)
+            profile = DevoteeFaceProfile(
+                id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                patientName = cursor.getString(cursor.getColumnIndexOrThrow("patient_name")),
+                phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow("phone_number")),
+                city = try { cursor.getString(cursor.getColumnIndexOrThrow("city")) } catch (e: Exception) { "डूँगरा जाट (स्थानीय)" },
+                faceVector = vector,
+                photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) ?: "",
+                visitCount = cursor.getInt(cursor.getColumnIndexOrThrow("visit_count")),
+                lastConfidence = cursor.getFloat(cursor.getColumnIndexOrThrow("last_confidence")),
+                lastVerifiedAt = cursor.getLong(cursor.getColumnIndexOrThrow("last_verified_at")),
+                createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
+            )
+        }
+        cursor.close()
+        profile
+    }
+
+    suspend fun searchDevoteesByName(query: String, limit: Int = 6): List<DevoteeFaceProfile> = withContext(Dispatchers.IO) {
+        val trimmed = query.trim()
+        if (trimmed.length < 2) return@withContext emptyList()
+        val db = dbHelper.readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT * FROM devotee_face_profiles WHERE patient_name LIKE ? ORDER BY last_verified_at DESC LIMIT ?",
+            arrayOf("%$trimmed%", limit.toString())
+        )
+        val list = mutableListOf<DevoteeFaceProfile>()
+        while (cursor.moveToNext()) {
+            val blob = cursor.getBlob(cursor.getColumnIndexOrThrow("face_vector"))
+            val vector = FaceEmbeddingEngine.blobToVector(blob)
+            list.add(
+                DevoteeFaceProfile(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    patientName = cursor.getString(cursor.getColumnIndexOrThrow("patient_name")),
+                    phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow("phone_number")),
+                    city = try { cursor.getString(cursor.getColumnIndexOrThrow("city")) } catch (e: Exception) { "डूँगरा जाट (स्थानीय)" },
+                    faceVector = vector,
+                    photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) ?: "",
+                    visitCount = cursor.getInt(cursor.getColumnIndexOrThrow("visit_count")),
+                    lastConfidence = cursor.getFloat(cursor.getColumnIndexOrThrow("last_confidence")),
+                    lastVerifiedAt = cursor.getLong(cursor.getColumnIndexOrThrow("last_verified_at")),
+                    createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
+                )
+            )
+        }
+        cursor.close()
+        list
+    }
+
+    suspend fun upsertDevoteeProfile(
+        name: String,
+        phone: String,
+        city: String = "डूँगरा जाट (स्थानीय)",
+        faceVector: FloatArray? = null,
+        photoUri: String = "",
+        registeredBy: String = "APP"
+    ): Long = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cleanPhone = phone.trim().replace("+91", "").replace(" ", "").replace("-", "")
+        val safeCity = if (city.isBlank()) "डूँगरा जाट (स्थानीय)" else city.trim()
+        val safeName = name.trim()
+
+        val cursor = db.rawQuery("SELECT id, face_vector FROM devotee_face_profiles WHERE phone_number = ? LIMIT 1", arrayOf(cleanPhone))
+        val exists = cursor.moveToFirst()
+        val existingId = if (exists) cursor.getLong(0) else -1L
+        val existingBlob = if (exists) cursor.getBlob(1) else null
+        cursor.close()
+
+        val vector = when {
+            faceVector != null && faceVector.isNotEmpty() -> FaceEmbeddingEngine.l2Normalize(faceVector)
+            existingBlob != null -> FaceEmbeddingEngine.blobToVector(existingBlob)
+            else -> FloatArray(128)
+        }
+        val blob = FaceEmbeddingEngine.vectorToBlob(vector)
+
+        val cv = ContentValues().apply {
+            put("patient_name", safeName)
+            put("phone_number", cleanPhone)
+            put("city", safeCity)
+            put("face_vector", blob)
+            if (photoUri.isNotBlank()) put("photo_uri", photoUri)
+            put("last_verified_at", System.currentTimeMillis())
+        }
+
+        val resultId = if (exists && existingId > 0) {
+            db.update("devotee_face_profiles", cv, "id = ?", arrayOf(existingId.toString()))
+            existingId
+        } else {
+            cv.put("visit_count", 1)
+            cv.put("last_confidence", 1.0f)
+            cv.put("created_at", System.currentTimeMillis())
+            db.insert("devotee_face_profiles", null, cv)
+        }
+
+        // Background Cloud Upload to Google Sheets Universal Devotee Registry
+        try {
+            val profile = DevoteeFaceProfile(
+                id = resultId,
+                patientName = safeName,
+                phoneNumber = cleanPhone,
+                city = safeCity,
+                faceVector = vector,
+                photoUri = photoUri
+            )
+            com.example.shribalajikripadham.data.network.CentralDevoteeSyncManager.uploadDevoteeProfile(
+                appContext,
+                profile,
+                registeredBy
+            )
+        } catch (e: Exception) {}
+
+        resultId
+    }
+
+    suspend fun syncDevoteesFromCloud(): Pair<Int, String> = withContext(Dispatchers.IO) {
+        com.example.shribalajikripadham.data.network.CentralDevoteeSyncManager.syncAllDevoteesFromCloud(appContext, dbHelper)
+    }
+
 }

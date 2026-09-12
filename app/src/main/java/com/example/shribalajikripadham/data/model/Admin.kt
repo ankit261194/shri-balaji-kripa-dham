@@ -23,6 +23,7 @@ data class Admin(
     val canEditAshramInfo: Boolean = false,
     val canManageAdmins: Boolean = false,
     val canViewDevoteePhotos: Boolean = false,
+    val canIssueTokensAnywhere: Boolean = false,
     val photoUri: String = "",
     val isActive: Boolean = true,
     val createdAt: Long = System.currentTimeMillis()

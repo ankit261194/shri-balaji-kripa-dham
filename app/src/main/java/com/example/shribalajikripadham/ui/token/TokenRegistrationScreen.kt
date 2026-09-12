@@ -23,6 +23,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.shribalajikripadham.ai.FaceEmbeddingEngine
+import com.example.shribalajikripadham.data.model.DevoteeFaceProfile
 import com.example.shribalajikripadham.data.model.AshramSettings
 import com.example.shribalajikripadham.data.model.Token
 import com.example.shribalajikripadham.data.repository.AshramRepository
@@ -67,9 +69,11 @@ fun TokenRegistrationScreen(
     var isCalculatingDistance by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSubmitting by remember { mutableStateOf(false) }
-    // Compulsory Devotee Photo State (Mandatory Selfie)
+    // Devotee Photo State (Optional Selfie)
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var capturedPhotoUri by remember { mutableStateOf("") }
+    var nameSuggestions by remember { mutableStateOf<List<DevoteeFaceProfile>>(emptyList()) }
+    var autoFillBanner by remember { mutableStateOf<String?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = TakeFrontPicturePreview()
@@ -118,7 +122,7 @@ fun TokenRegistrationScreen(
         settings.maxDailyTokens > 0 && todayActiveTokens >= settings.maxDailyTokens
     }
 
-    // Load initial data
+    // Load initial data and sync cloud devotee registry
     LaunchedEffect(Unit) {
         val id = DeviceFingerprintManager.getDeviceId(context)
         deviceId = id
@@ -131,6 +135,45 @@ fun TokenRegistrationScreen(
         if (loc != null) {
             userLatitude = loc.latitude
             userLongitude = loc.longitude
+        }
+
+        // Background cloud sync to pull all devotee profiles from any phone
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try { repository.syncDevoteesFromCloud() } catch (e: Exception) {}
+        }
+    }
+
+    // Auto-search devotee when 10-digit phone number is entered
+    LaunchedEffect(phoneNumber) {
+        val clean = phoneNumber.trim().replace("+91", "").replace(" ", "").replace("-", "")
+        if (clean.length == 10) {
+            val devotee = repository.searchDevoteeByPhone(clean)
+            if (devotee != null) {
+                if (patientName.isBlank()) patientName = devotee.patientName
+                if (city.isBlank() || city == "डूँगरा जाट (स्थानीय)") {
+                    city = devotee.city
+                    originAddress = devotee.city
+                }
+                if (capturedPhotoUri.isBlank() && devotee.photoUri.isNotBlank()) {
+                    capturedPhotoUri = devotee.photoUri
+                }
+                autoFillBanner = if (isHindi)
+                    "पूर्व पंजीकृत भक्त: ${devotee.patientName} (${devotee.city}) का विवरण स्वतः भरा गया!"
+                else
+                    "Found record: ${devotee.patientName} (${devotee.city}) auto-filled!"
+            }
+        } else {
+            autoFillBanner = null
+        }
+    }
+
+    // Name suggestions when typing name
+    LaunchedEffect(patientName) {
+        val q = patientName.trim()
+        if (q.length >= 2) {
+            nameSuggestions = repository.searchDevoteesByName(q, limit = 5)
+        } else {
+            nameSuggestions = emptyList()
         }
     }
 
@@ -461,6 +504,64 @@ fun TokenRegistrationScreen(
                             shape = RoundedCornerShape(12.dp)
                         )
 
+                        // Name Auto-Suggestion Chips
+                        if (nameSuggestions.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isHindi) "सुझाव (Tap to Auto-fill):" else "Suggestions (Tap to fill):",
+                                fontSize = 11.sp,
+                                color = MaroonAccent,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                nameSuggestions.forEach { sugg ->
+                                    SuggestionChip(
+                                        onClick = {
+                                            patientName = sugg.patientName
+                                            phoneNumber = sugg.phoneNumber
+                                            city = sugg.city
+                                            originAddress = sugg.city
+                                            if (sugg.photoUri.isNotBlank()) capturedPhotoUri = sugg.photoUri
+                                            nameSuggestions = emptyList()
+                                        },
+                                        label = {
+                                            Text("${sugg.patientName} (${sugg.city})", fontSize = 11.sp)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
+                        if (autoFillBanner != null) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Surface(
+                                color = Color(0xFFE8F5E9),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, Color(0xFF81C784)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("✓", color = Color(0xFF1B5E20), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = autoFillBanner!!,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF1B5E20)
+                                    )
+                                }
+                            }
+                        }
+
                         Spacer(modifier = Modifier.height(12.dp))
 
                         OutlinedTextField(
@@ -581,16 +682,16 @@ fun TokenRegistrationScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = if (isHindi) "भक्त का फोटो (अनिवार्य / Mandatory) *" else "Devotee Photo (Mandatory) *",
+                                            text = if (isHindi) "भक्त का फोटो (वैकल्पिक / Optional) 📸" else "Devotee Photo (Optional) 📸",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 14.sp,
                                             color = if (capturedBitmap != null) Color(0xFF1B5E20) else MaroonAccent
                                         )
                                         Text(
                                             text = if (isHindi)
-                                                "दरबार गेट सत्यापन हेतु मरीज/भक्त की सेल्फी फोटो अनिवार्य है।"
+                                                "फोटो खींचने पर अगली बार किसी भी फोन से चेहरा पहचान स्वतः हो जाएगी। बिना फोटो के भी टोकन ले सकते हैं।"
                                             else
-                                                "Mandatory live selfie of devotee for temple gate verification.",
+                                                "Capturing photo enables cross-phone face recognition. Token can also be generated without photo.",
                                             fontSize = 11.sp,
                                             color = TextSecondaryDark
                                         )
@@ -644,23 +745,23 @@ fun TokenRegistrationScreen(
                                         modifier = Modifier.padding(vertical = 6.dp)
                                     ) {
                                         Text(
-                                            text = if (isHindi) "⚠️ बिना फोटो के टोकन जारी नहीं होगा" else "⚠️ Photo is compulsory to get token",
-                                            fontSize = 12.sp,
-                                            color = Color(0xFFC62828),
-                                            fontWeight = FontWeight.Bold
+                                            text = if (isHindi) "फोटो वैकल्पिक है - आप चाहें तो सेल्फी जोड़ सकते हैं" else "Photo is optional - capture if you want face recognition",
+                                            fontSize = 11.sp,
+                                            color = Color.Gray,
+                                            fontWeight = FontWeight.Medium
                                         )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Button(
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        OutlinedButton(
                                             onClick = { cameraLauncher.launch(null) },
-                                            colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                                            border = BorderStroke(1.dp, SaffronPrimary),
                                             shape = RoundedCornerShape(20.dp),
-                                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
+                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                                         ) {
                                             Text(
-                                                text = if (isHindi) "📷 सेल्फी कैमरा खोलें (फोटो लें)" else "📷 Open Selfie Camera",
+                                                text = if (isHindi) "📷 सेल्फी फोटो जोड़ें (वैकल्पिक)" else "📷 Add Selfie Photo (Optional)",
                                                 fontWeight = FontWeight.Bold,
-                                                fontSize = 13.sp,
-                                                color = Color.White
+                                                fontSize = 12.sp,
+                                                color = MaroonAccent
                                             )
                                         }
                                     }
@@ -729,10 +830,7 @@ fun TokenRegistrationScreen(
                                     errorMessage = if (isHindi) "कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।" else "Please enter valid 10-digit mobile number."
                                     return@Button
                                 }
-                                if (capturedBitmap == null || capturedPhotoUri.isBlank()) {
-                                    errorMessage = if (isHindi) "कृपया टोकन प्राप्त करने के लिए अपनी फोटो अवश्य खींचें (अनिवार्य है)।" else "Devotee photo is mandatory. Please capture your photo first."
-                                    return@Button
-                                }
+// Photo is now optional for everyone
                                 if (isBeforeSchedule) {
                                     val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
                                     val scheduledTimeStr = sdf.format(Date(settings.scheduledTokenOpenTimestamp))
@@ -772,7 +870,7 @@ fun TokenRegistrationScreen(
                                             latitude = userLatitude,
                                             longitude = userLongitude,
                                             city = city.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
-                                            registeredBy = "USER_APP",
+                                            registeredBy = "SELF",
                                             photoUri = capturedPhotoUri,
                                             isMockLocation = isMock,
                                             locationAccuracy = accuracy,
@@ -780,6 +878,21 @@ fun TokenRegistrationScreen(
                                             destinationAddress = "श्री बालाजी कृपा धाम, डुंगरा जाट",
                                             distanceKm = estimatedDistanceKm
                                         )
+
+                                        // If devotee captured a photo, extract invariant vector & enroll to universal registry
+                                        if (capturedBitmap != null) {
+                                            try {
+                                                val vector = FaceEmbeddingEngine.extractVectorFromBitmap(capturedBitmap!!)
+                                                repository.upsertDevoteeProfile(
+                                                    name = patientName.trim(),
+                                                    phone = phoneNumber.trim(),
+                                                    city = city.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                                                    faceVector = vector,
+                                                    photoUri = capturedPhotoUri,
+                                                    registeredBy = "SELF"
+                                                )
+                                            } catch (e: Exception) {}
+                                        }
                                         existingToken = created
                                     } catch (e: SecurityException) {
                                         errorMessage = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."

@@ -14,7 +14,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
-        const val DATABASE_VERSION = 17
+        const val DATABASE_VERSION = 18
 
         fun hashPin(pin: String): String {
             val md = MessageDigest.getInstance("SHA-256")
@@ -102,6 +102,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 can_edit_ashram_info INTEGER NOT NULL,
                 can_manage_admins INTEGER NOT NULL,
                 can_view_devotee_photos INTEGER NOT NULL,
+                can_issue_tokens_anywhere INTEGER NOT NULL DEFAULT 0,
                 photo_uri TEXT NOT NULL DEFAULT '',
                 is_active INTEGER NOT NULL,
                 created_at INTEGER NOT NULL
@@ -145,6 +146,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         """.trimIndent())
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_device_darbar ON device_registrations (device_id, darbar_date)")
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_device_darbar ON tokens (device_id, darbar_date) WHERE registered_by NOT IN ('SUPER_ADMIN', 'SEVADAR_DESK')")
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_devotee_phone ON devotee_face_profiles (phone_number)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_devotee_name ON devotee_face_profiles (patient_name)")
 
         // 5. Bus Seats Table
         db.execSQL("""
@@ -435,13 +438,31 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 WHERE id = 1
             """.trimIndent())
         }
+        if (oldVersion < 18) {
+            try {
+                db.execSQL("ALTER TABLE admins ADD COLUMN can_issue_tokens_anywhere INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE admins SET name = 'Ankit Chaudhary (Super Admin)', can_issue_tokens_anywhere = 1 WHERE role = 'SUPER_ADMIN'")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_devotee_phone ON devotee_face_profiles (phone_number)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS idx_devotee_name ON devotee_face_profiles (patient_name)")
+                db.execSQL("""
+                    UPDATE ashram_settings 
+                    SET latest_version_code = 9,
+                        latest_version_name = '2.8.0',
+                        update_notes = 'नया भव्य अपडेट (v2.8.0): मोबाइल नंबर खोज व स्वतः भरण, नाम के सुझाव, सुपर एडमिन (अंकित चौधरी) एवं अधिकृत एडमिन हेतु कहीं से भी टोकन बनाने की छूट, टोकन पर स्पष्ट पंजीकरणकर्ता पहचान (स्वयं / सुपर एडमिन / एडमिन), व सार्वभौमिक फेस सिंक।',
+                        apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.8.0/ShriBalajiKripaDham-release.apk'
+                    WHERE id = 1
+                """.trimIndent())
+            } catch (e: Exception) {
+                // Ignore if exists
+            }
+        }
         if (oldVersion < 17) {
             db.execSQL("""
                 UPDATE ashram_settings 
                 SET latest_version_code = 8,
                     latest_version_name = '2.7.0',
                     update_notes = 'नया भव्य अपडेट (v2.7.0): भक्त टोकन हेतु अनिवार्य सेल्फी फोटो सत्यापन, एडमिन टोकन डेस्क पर वैकल्पिक फोटो सुविधा, टोकन कतार में फुल-स्क्रीन फोटो ज़ूम एवं डुअल v1+v2 साइनिंग फिक्स।',
-                    apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.7.0/ShriBalajiKripaDham-release.apk'
+                    apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.8.0/ShriBalajiKripaDham-release.apk'
                 WHERE id = 1
             """.trimIndent())
         }
@@ -451,7 +472,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 SET latest_version_code = 7,
                     latest_version_name = '2.6.0',
                     update_notes = 'नया भव्य अपडेट (v2.6.0): सेंट्रल Google Sheets टोकन रियल-टाइम सिंक — भक्तों व एडमिन द्वारा जनरेट किए गए सभी टोकन एक ही गूगल शीट में लाइव सिंक।',
-                    apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.7.0/ShriBalajiKripaDham-release.apk'
+                    apk_download_url = 'https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.8.0/ShriBalajiKripaDham-release.apk'
                 WHERE id = 1
             """.trimIndent())
         }
@@ -508,7 +529,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
         // 2. Seed Super Admin (Username: admin, Password: admin123, PIN: 7777)
         val superAdmin = ContentValues().apply {
-            put("name", "Guruji Tejveer Singh Ji (Super Admin)")
+            put("name", "Ankit Chaudhary (Super Admin)")
             put("username", "admin")
             put("phone", "+91 98765 00000")
             put("role", AdminRole.SUPER_ADMIN.name)
@@ -523,6 +544,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             put("can_edit_ashram_info", 1)
             put("can_manage_admins", 1)
             put("can_view_devotee_photos", 1)
+            put("can_issue_tokens_anywhere", 1)
             put("photo_uri", "")
             put("is_active", 1)
             put("created_at", System.currentTimeMillis())

@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import android.content.Intent
 import android.widget.Toast
 import com.example.shribalajikripadham.data.local.DatabaseHelper
+import com.example.shribalajikripadham.ai.FaceEmbeddingEngine
 import com.example.shribalajikripadham.data.model.*
 import com.example.shribalajikripadham.data.repository.AshramRepository
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
@@ -160,6 +162,8 @@ fun AdminDashboardScreen(
     var editSevCanNotif by remember { mutableStateOf(false) }
     var editSevCanContent by remember { mutableStateOf(false) }
     var editSevCanPhotos by remember { mutableStateOf(false) }
+    var editSevCanAnywhere by remember { mutableStateOf(false) }
+    var newSevCanAnywhere by remember { mutableStateOf(false) }
     var customDistancesList by remember { mutableStateOf<List<CustomCityDistance>>(emptyList()) }
     var uiSectionsList by remember { mutableStateOf<List<UiSectionConfig>>(emptyList()) }
 
@@ -293,7 +297,7 @@ fun AdminDashboardScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = if (isHindi) "👑 मुख्य व्यवस्थापक" else "👑 Super Admin",
+                            text = if (isHindi) "👑 मुख्य व्यवस्थापक (अंकित चौधरी)" else "👑 Super Admin (Ankit Chaudhary)",
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
                         )
@@ -348,7 +352,7 @@ fun AdminDashboardScreen(
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = if (isHindi) "मुख्य व्यवस्थापक प्रवेश" else "Super Admin Portal",
+                                text = if (isHindi) "मुख्य व्यवस्थापक (अंकित चौधरी) प्रवेश" else "Super Admin (Ankit Chaudhary) Portal",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 19.sp,
                                 color = MaroonAccent
@@ -416,7 +420,7 @@ fun AdminDashboardScreen(
                                 colors = ButtonDefaults.buttonColors(containerColor = MaroonAccent)
                             ) {
                                 Text(
-                                    text = if (isHindi) "👑 मुख्य व्यवस्थापक लॉगिन" else "👑 Login as Super Admin",
+                                    text = if (isHindi) "👑 सुपर एडमिन (अंकित चौधरी) लॉगिन" else "👑 Login as Super Admin (Ankit Chaudhary)",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = AmberGold
@@ -649,7 +653,7 @@ fun AdminDashboardScreen(
                             Spacer(modifier = Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = admin.name,
+                                    text = if (isSuper) (if (isHindi) "अंकित चौधरी (Super Admin) 👑" else "Ankit Chaudhary (Super Admin) 👑") else admin.name,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontSize = 16.sp,
                                     color = MaroonPrimary
@@ -806,38 +810,17 @@ fun AdminDashboardScreen(
                             )
                         }
                         currentTabTitle == "मैनुअल टोकन" || currentTabTitle == "Manual" -> {
+                            val canBypass = isSuper || admin.canIssueTokensAnywhere
+                            val attribution = if (isSuper) "SUPER_ADMIN (अंकित चौधरी)" else "ADMIN (${admin.name})"
+
                             ManualTokenTab(
                                 isHindi = isHindi,
-                                adminName = admin.name,
-                                name = manualName,
-                                onNameChange = { manualName = it },
-                                phone = manualPhone,
-                                onPhoneChange = { manualPhone = it },
-                                successMsg = manualSuccessMsg,
-                                onSubmit = { photoUri ->
-                                    scope.launch {
-                                        try {
-                                            val t = repository.registerToken(
-                                                patientName = manualName,
-                                                phoneNumber = manualPhone,
-                                                deviceId = "MANUAL_BY_${admin.id}_${System.currentTimeMillis()}",
-                                                latitude = settings.latitude,
-                                                longitude = settings.longitude,
-                                                registeredBy = "DESK_${admin.name}",
-                                                photoUri = photoUri
-                                            )
-                                            manualSuccessMsg = if (isHindi)
-                                                "सफलतापूर्वक टोकन #${t.tokenNumber} जारी किया गया!"
-                                            else
-                                                "Successfully issued Token #${t.tokenNumber}!"
-                                            manualName = ""
-                                            manualPhone = ""
-                                            refreshData()
-                                        } catch (e: Exception) {
-                                            manualSuccessMsg = "त्रुटि: ${e.localizedMessage}"
-                                        }
-                                    }
-                                }
+                                admin = admin,
+                                settings = settings,
+                                repository = repository,
+                                canBypassGeofence = canBypass,
+                                attribution = attribution,
+                                onTokenIssued = { refreshData() }
                             )
                         }
                         currentTabTitle == "GPS लोकेशन" || currentTabTitle == "Location" -> {
@@ -904,6 +887,12 @@ fun AdminDashboardScreen(
                                 isHindi = isHindi,
                                 admins = adminsList,
                                 onOpenCreate = { showCreateSevadarDialog = true },
+                                onToggleAnywhere = { targetAdmin, isEnabled ->
+                                    scope.launch {
+                                        repository.updateAdminAnywhereTokenPermission(targetAdmin.id, isEnabled)
+                                        refreshData()
+                                    }
+                                },
                                 onOpenEdit = { targetAdmin ->
                                     editingAdmin = targetAdmin
                                     editSevPhotoUri = targetAdmin.photoUri
@@ -915,6 +904,7 @@ fun AdminDashboardScreen(
                                     editSevCanNotif = targetAdmin.canSendNotifications
                                     editSevCanContent = targetAdmin.canEditAshramInfo
                                     editSevCanPhotos = targetAdmin.canViewDevoteePhotos
+                                    editSevCanAnywhere = targetAdmin.canIssueTokensAnywhere
                                 },
                                 onToggleActive = { targetAdmin ->
                                     scope.launch {
@@ -926,9 +916,10 @@ fun AdminDashboardScreen(
                                             targetAdmin.canManageExpenses,
                                             targetAdmin.canChangeLocation,
                                             targetAdmin.canSendNotifications,
-                                            targetAdmin.canEditAshramInfo,
-                                            targetAdmin.canViewDevoteePhotos,
-                                            !targetAdmin.isActive
+                                            canEditAshramInfo = targetAdmin.canEditAshramInfo,
+                                            canViewDevoteePhotos = targetAdmin.canViewDevoteePhotos,
+                                            canIssueTokensAnywhere = targetAdmin.canIssueTokensAnywhere,
+                                            isActive = !targetAdmin.isActive
                                         )
                                         refreshData()
                                     }
@@ -1306,6 +1297,15 @@ fun AdminDashboardScreen(
                         Checkbox(checked = newSevCanPhotos, onCheckedChange = { newSevCanPhotos = it })
                         Text(if (isHindi) "भक्तों की फोटो देखने की अनुमति" else "Allow Viewing Devotee Photos", fontSize = 13.sp)
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = newSevCanAnywhere, onCheckedChange = { newSevCanAnywhere = it })
+                        Text(
+                            text = if (isHindi) "कहीं से भी टोकन जारी करने की अनुमति (Anywhere)" else "Allow Issuing Tokens Anywhere",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonAccent
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -1328,6 +1328,7 @@ fun AdminDashboardScreen(
                                     canSendNotifications = newSevCanNotif,
                                     canEditAshramInfo = newSevCanContent,
                                     canViewDevoteePhotos = newSevCanPhotos,
+                                    canIssueTokensAnywhere = newSevCanAnywhere,
                                     photoUri = newSevPhotoUri
                                 )
                                 showCreateSevadarDialog = false
@@ -1425,6 +1426,15 @@ fun AdminDashboardScreen(
                         Checkbox(checked = editSevCanPhotos, onCheckedChange = { editSevCanPhotos = it })
                         Text(if (isHindi) "भक्तों की फोटो देखने की अनुमति" else "Allow Viewing Devotee Photos", fontSize = 13.sp)
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = editSevCanAnywhere, onCheckedChange = { editSevCanAnywhere = it })
+                        Text(
+                            text = if (isHindi) "कहीं से भी टोकन जारी करने की अनुमति (Anywhere)" else "Allow Issuing Tokens Anywhere",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonAccent
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -1441,6 +1451,7 @@ fun AdminDashboardScreen(
                                 canSendNotifications = editSevCanNotif,
                                 canEditAshramInfo = editSevCanContent,
                                 canViewDevoteePhotos = editSevCanPhotos,
+                                canIssueTokensAnywhere = editSevCanAnywhere,
                                 isActive = target.isActive
                             )
                             repository.updateAdminPhoto(target.id, editSevPhotoUri)
@@ -2040,6 +2051,33 @@ fun TokenQueueTab(
                         color = Color.DarkGray
                     )
 
+                    // Registration Attribution Badge
+                    val regBadgeText = when {
+                        token.registeredBy.startsWith("SUPER_ADMIN") -> "👑 सुपर एडमिन (अंकित चौधरी)"
+                        token.registeredBy.startsWith("ADMIN") -> "🏢 एडमिन (${token.registeredBy.removePrefix("ADMIN").trim('(', ')', ' ')})"
+                        token.registeredBy.startsWith("DESK") -> "🏢 एडमिन (${token.registeredBy.removePrefix("DESK_")})"
+                        else -> "📱 स्वयं (Self)"
+                    }
+                    val regBadgeColor = when {
+                        token.registeredBy.startsWith("SUPER_ADMIN") -> Color(0xFFE65100)
+                        token.registeredBy.startsWith("ADMIN") || token.registeredBy.startsWith("DESK") -> Color(0xFF1565C0)
+                        else -> Color(0xFF2E7D32)
+                    }
+                    Surface(
+                        color = regBadgeColor.copy(alpha = 0.10f),
+                        shape = RoundedCornerShape(6.dp),
+                        border = BorderStroke(1.dp, regBadgeColor.copy(alpha = 0.35f)),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Text(
+                            text = "पंजीकरण: $regBadgeText",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = regBadgeColor,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+
                     // Devotee Photo with tap-to-zoom
                     if (token.photoUri.isNotBlank()) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -2305,24 +2343,156 @@ fun TokenQueueTab(
 @Composable
 fun ManualTokenTab(
     isHindi: Boolean,
-    adminName: String,
-    name: String,
-    onNameChange: (String) -> Unit,
-    phone: String,
-    onPhoneChange: (String) -> Unit,
-    successMsg: String?,
-    onSubmit: (String) -> Unit
+    admin: Admin,
+    settings: AshramSettings,
+    repository: AshramRepository,
+    canBypassGeofence: Boolean,
+    attribution: String,
+    onTokenIssued: () -> Unit
 ) {
     val context = LocalContext.current
-    var manualPhotoUri by remember { mutableStateOf("") }
-    var manualCapturedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val scope = rememberCoroutineScope()
+
+    var searchInput by remember { mutableStateOf("") }
+    var searchResults by remember { mutableStateOf<List<DevoteeFaceProfile>>(emptyList()) }
+
+    var formName by remember { mutableStateOf("") }
+    var formPhone by remember { mutableStateOf("") }
+    var formCity by remember { mutableStateOf("डूँगरा जाट (स्थानीय)") }
+    var formPhotoUri by remember { mutableStateOf("") }
+    var formCapturedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var nameSuggestions by remember { mutableStateOf<List<DevoteeFaceProfile>>(emptyList()) }
+
+    var successMessage by remember { mutableStateOf<String?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isIssuing by remember { mutableStateOf(false) }
+
+    // Live geofence check for location-restricted admins
+    var userLat by remember { mutableDoubleStateOf(settings.latitude) }
+    var userLng by remember { mutableDoubleStateOf(settings.longitude) }
+
+    LaunchedEffect(Unit) {
+        val loc = GeofenceLocationManager.getLastKnownLocation(context)
+        if (loc != null) {
+            userLat = loc.latitude
+            userLng = loc.longitude
+        }
+    }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = TakeAnyPicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
-            manualCapturedBitmap = bitmap
-            manualPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "desk_manual")
+            formCapturedBitmap = bitmap
+            formPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "desk_manual")
+        }
+    }
+
+    // Top Search Bar query
+    LaunchedEffect(searchInput) {
+        val q = searchInput.trim()
+        if (q.length >= 2) {
+            val byName = repository.searchDevoteesByName(q, limit = 6)
+            val byPhone = if (q.all { it.isDigit() } && q.length >= 4) {
+                val p = repository.searchDevoteeByPhone(q)
+                if (p != null) listOf(p) else emptyList()
+            } else emptyList()
+            searchResults = (byName + byPhone).distinctBy { it.phoneNumber }
+        } else {
+            searchResults = emptyList()
+        }
+    }
+
+    // Phone 10-digit auto-fill
+    LaunchedEffect(formPhone) {
+        val clean = formPhone.trim().replace("+91", "").replace(" ", "").replace("-", "")
+        if (clean.length == 10) {
+            val found = repository.searchDevoteeByPhone(clean)
+            if (found != null) {
+                if (formName.isBlank()) formName = found.patientName
+                if (formCity == "डूँगरा जाट (स्थानीय)" || formCity.isBlank()) formCity = found.city
+                if (formPhotoUri.isBlank() && found.photoUri.isNotBlank()) formPhotoUri = found.photoUri
+            }
+        }
+    }
+
+    // Name suggestions while typing
+    LaunchedEffect(formName) {
+        val q = formName.trim()
+        if (q.length >= 2) {
+            nameSuggestions = repository.searchDevoteesByName(q, limit = 5)
+        } else {
+            nameSuggestions = emptyList()
+        }
+    }
+
+    fun issueTokenForDevotee(pName: String, pPhone: String, pCity: String, pPhotoUri: String, bitmap: android.graphics.Bitmap?) {
+        scope.launch {
+            isIssuing = true
+            errorMessage = null
+            successMessage = null
+            try {
+                // Check geofence if not bypass-permitted
+                if (!canBypassGeofence) {
+                    val dist = GeofenceLocationManager.calculateDistanceMeters(
+                        userLat, userLng,
+                        settings.latitude, settings.longitude
+                    )
+                    if (dist > settings.allowedRadiusMeters) {
+                        errorMessage = if (isHindi)
+                            "⚠️ आप आश्रम GPS सीमा से बाहर हैं (${String.format("%.1f", dist / 1000.0)} km)। टोकन केवल आश्रम में उपस्थित होकर या सुपर एडमिन की अनुमति से जारी हो सकता है।"
+                        else
+                            "⚠️ Outside Ashram GPS boundary. Token can only be issued inside Ashram premises or with Super Admin permission."
+                        isIssuing = false
+                        return@launch
+                    }
+                }
+
+                val token = repository.registerToken(
+                    patientName = pName.trim(),
+                    phoneNumber = pPhone.trim(),
+                    deviceId = "ADMIN_${admin.id}_${System.currentTimeMillis()}",
+                    latitude = if (canBypassGeofence) settings.latitude else userLat,
+                    longitude = if (canBypassGeofence) settings.longitude else userLng,
+                    city = pCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                    registeredBy = attribution,
+                    photoUri = pPhotoUri,
+                    bypassGeofence = canBypassGeofence
+                )
+
+                // If photo was captured, enroll face vector in universal registry
+                if (bitmap != null) {
+                    try {
+                        val v = FaceEmbeddingEngine.extractVectorFromBitmap(bitmap)
+                        repository.upsertDevoteeProfile(
+                            name = pName.trim(),
+                            phone = pPhone.trim(),
+                            city = pCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                            faceVector = v,
+                            photoUri = pPhotoUri,
+                            registeredBy = attribution
+                        )
+                    } catch (e: Exception) {}
+                }
+
+                successMessage = if (isHindi)
+                    "✅ टोकन #${token.tokenNumber} सफलतापूर्वक जारी हुआ! (${token.patientName})"
+                else
+                    "✅ Token #${token.tokenNumber} successfully issued for ${token.patientName}!"
+
+                formName = ""
+                formPhone = ""
+                formCity = "डूँगरा जाट (स्थानीय)"
+                formPhotoUri = ""
+                formCapturedBitmap = null
+                searchInput = ""
+                searchResults = emptyList()
+                onTokenIssued()
+            } catch (e: Exception) {
+                errorMessage = "त्रुटि: ${e.localizedMessage ?: "अज्ञात समस्या"}"
+            } finally {
+                isIssuing = false
+            }
         }
     }
 
@@ -2333,60 +2503,241 @@ fun ManualTokenTab(
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Issuance Authority Badge
+        Surface(
+            color = if (canBypassGeofence) Color(0xFFE8F5E9) else Color(0xFFFFF8E1),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, if (canBypassGeofence) Color(0xFF81C784) else Color(0xFFFFB74D)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(if (canBypassGeofence) "🌐" else "📍", fontSize = 22.sp)
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = if (canBypassGeofence)
+                            (if (isHindi) "टोकन अधिकार: कहीं से भी जारी करने की अनुमति (Anywhere Authorized)" else "Authority: Can Issue Tokens Anywhere")
+                        else
+                            (if (isHindi) "टोकन अधिकार: आश्रम GPS सीमा में जारी करने की अनुमति" else "Authority: Ashram GPS Enforced"),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = if (canBypassGeofence) Color(0xFF1B5E20) else Color(0xFFE65100)
+                    )
+                    Text(
+                        text = "पंजीकरणकर्ता: $attribution",
+                        fontSize = 11.sp,
+                        color = Color.DarkGray,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+
+        // 1. FAST SEARCH BAR (Search by Name or Phone)
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            shape = RoundedCornerShape(14.dp),
+            elevation = CardDefaults.cardElevation(2.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🔍", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "भक्त का नाम या मोबाइल नंबर खोजें" else "Search Devotee by Name or Mobile",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaroonPrimary
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = searchInput,
+                    onValueChange = { searchInput = it },
+                    placeholder = { Text(if (isHindi) "उदा. राजेश, 9876543210..." else "e.g. Ramesh, 9876543210...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    trailingIcon = {
+                        if (searchInput.isNotEmpty()) {
+                            IconButton(onClick = { searchInput = "" }) {
+                                Text("✕", color = Color.Gray)
+                            }
+                        }
+                    }
+                )
+
+                // Search Results Dropdown Cards
+                if (searchResults.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = if (isHindi) "मिले भक्त (${searchResults.size}):" else "Matching Devotees (${searchResults.size}):",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonAccent
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        searchResults.forEach { devotee ->
+                            Surface(
+                                color = Color(0xFFF8F9FA),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                        Text("👤", fontSize = 20.sp)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Text(devotee.patientName, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                            Text("📞 ${devotee.phoneNumber} | 🏠 ${devotee.city}", fontSize = 11.sp, color = Color.DarkGray)
+                                        }
+                                    }
+                                    Button(
+                                        onClick = {
+                                            issueTokenForDevotee(
+                                                devotee.patientName,
+                                                devotee.phoneNumber,
+                                                devotee.city,
+                                                devotee.photoUri,
+                                                null
+                                            )
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(if (isHindi) "⚡ टोकन दें" else "⚡ Issue", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. REGISTRATION / WALK-IN FORM
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = if (isHindi) "मैनुअल टोकन डेस्क (बुजुर्ग/अशिक्षित भक्तों हेतु)" else "Manual Desk Registration (Walk-ins/Elderly)",
+                    text = if (isHindi) "नया टोकन विवरण दर्ज करें" else "Enter New Token Details",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     color = MaroonPrimary
                 )
                 Text(
                     text = if (isHindi)
-                        "जिनके पास स्मार्टफोन नहीं है, सेवादार उनका विवरण दर्ज करके टोकन जारी कर सकते हैं। फोटो वैकल्पिक (Optional) है।"
+                        "मोबाइल नंबर डालते ही पुराना विवरण स्वतः आ जाएगा। फोटो पूर्णतः वैकल्पिक है।"
                     else
-                        "Issue a token for elderly or visitors without smartphones directly. Photo capture is optional.",
-                    fontSize = 13.sp,
+                        "Entering phone auto-fills details. Photo is completely optional.",
+                    fontSize = 12.sp,
                     color = Color.Gray
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
+
+                // Patient Name with suggestions
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = onNameChange,
+                    value = formName,
+                    onValueChange = { formName = it },
                     label = { Text(if (isHindi) "भक्त / मरीज का नाम *" else "Devotee / Patient Name *") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+
+                if (nameSuggestions.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        nameSuggestions.forEach { s ->
+                            SuggestionChip(
+                                onClick = {
+                                    formName = s.patientName
+                                    formPhone = s.phoneNumber
+                                    formCity = s.city
+                                    if (s.photoUri.isNotBlank()) formPhotoUri = s.photoUri
+                                    nameSuggestions = emptyList()
+                                },
+                                label = { Text("${s.patientName} (${s.city})", fontSize = 11.sp) }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
                 OutlinedTextField(
-                    value = phone,
-                    onValueChange = onPhoneChange,
+                    value = formPhone,
+                    onValueChange = { if (it.length <= 10) formPhone = it },
                     label = { Text(if (isHindi) "संपर्क फोन नंबर *" else "Mobile Number *") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Optional Photo Capture Row for Admin
+                OutlinedTextField(
+                    value = formCity,
+                    onValueChange = { formCity = it },
+                    label = { Text(if (isHindi) "कहाँ के निवासी हैं / शहर / गाँव *" else "City / Village *") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // City Chips
+                val quickCities = listOf("डूँगरा जाट (स्थानीय)", "बुलन्दशहर", "खुर्जा", "नोएडा", "दिल्ली", "मेरठ", "अलीगढ़")
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    quickCities.forEach { c ->
+                        SuggestionChip(
+                            onClick = { formCity = c },
+                            label = { Text(c, fontSize = 11.sp) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Optional Photo Capture Row
                 Surface(
-                    color = if (manualCapturedBitmap != null) Color(0xFFF1F8E9) else Color(0xFFF8F9FA),
+                    color = if (formCapturedBitmap != null) Color(0xFFF1F8E9) else Color(0xFFF8F9FA),
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, if (manualCapturedBitmap != null) Color(0xFF2E7D32) else Color(0xFFE0E0E0)),
+                    border = BorderStroke(1.dp, if (formCapturedBitmap != null) Color(0xFF2E7D32) else Color(0xFFE0E0E0)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
+                            .padding(10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            if (manualCapturedBitmap != null) {
+                            if (formCapturedBitmap != null) {
                                 Box(
                                     modifier = Modifier
                                         .size(46.dp)
@@ -2394,7 +2745,7 @@ fun ManualTokenTab(
                                         .border(1.dp, Color(0xFF2E7D32), RoundedCornerShape(8.dp))
                                 ) {
                                     Image(
-                                        bitmap = manualCapturedBitmap!!.asImageBitmap(),
+                                        bitmap = formCapturedBitmap!!.asImageBitmap(),
                                         contentDescription = "Devotee Photo",
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop
@@ -2409,7 +2760,7 @@ fun ManualTokenTab(
                                         color = Color(0xFF2E7D32)
                                     )
                                     Text(
-                                        text = if (isHindi) "वैकल्पिक फोटो जोड़ी गई" else "Optional photo captured",
+                                        text = if (isHindi) "सभी फोन से चेहरा पहचान सक्रिय होगी" else "Enables cross-phone face recognition",
                                         fontSize = 10.sp,
                                         color = Color.Gray
                                     )
@@ -2425,7 +2776,7 @@ fun ManualTokenTab(
                                         color = Color(0xFF333333)
                                     )
                                     Text(
-                                        text = if (isHindi) "बिना फोटो के भी 3 सेकंड में टोकन जारी कर सकते हैं" else "Fast 3-sec issuance with or without photo",
+                                        text = if (isHindi) "बिना फोटो के भी टोकन तुरंत जारी हो जाएगा" else "Token issues immediately without photo",
                                         fontSize = 10.sp,
                                         color = Color.Gray
                                     )
@@ -2433,10 +2784,10 @@ fun ManualTokenTab(
                             }
                         }
 
-                        if (manualCapturedBitmap != null) {
+                        if (formCapturedBitmap != null) {
                             IconButton(onClick = {
-                                manualCapturedBitmap = null
-                                manualPhotoUri = ""
+                                formCapturedBitmap = null
+                                formPhotoUri = ""
                             }) {
                                 Text("✕", color = Color.Red, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
@@ -2452,22 +2803,40 @@ fun ManualTokenTab(
                     }
                 }
 
-                if (successMsg != null) {
+                if (errorMessage != null) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(successMsg, color = if (successMsg.startsWith("त्रुटि")) Color.Red else Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
+                    Text(errorMessage!!, color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
+                if (successMessage != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(successMessage!!, color = Color(0xFF2E7D32), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
                 Button(
                     onClick = {
-                        onSubmit(manualPhotoUri)
-                        manualCapturedBitmap = null
-                        manualPhotoUri = ""
+                        if (formName.isBlank()) {
+                            errorMessage = if (isHindi) "कृपया भक्त का नाम दर्ज करें" else "Please enter devotee name"
+                            return@Button
+                        }
+                        if (formPhone.length < 10) {
+                            errorMessage = if (isHindi) "कृपया 10 अंकों का फोन नंबर दर्ज करें" else "Please enter 10-digit phone number"
+                            return@Button
+                        }
+                        issueTokenForDevotee(formName, formPhone, formCity, formPhotoUri, formCapturedBitmap)
                     },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
+                    enabled = !isIssuing,
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(if (isHindi) "टोकन पर्ची जारी करें" else "Issue Token Pass", fontWeight = FontWeight.Bold)
+                    if (isIssuing) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(if (isHindi) "🎟️ टोकन पर्ची जारी करें" else "🎟️ Issue Token Pass", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
                 }
             }
         }
@@ -2680,6 +3049,7 @@ fun SevadarManagementTab(
     onOpenCreate: () -> Unit,
     onOpenEdit: (Admin) -> Unit,
     onToggleActive: (Admin) -> Unit,
+    onToggleAnywhere: (Admin, Boolean) -> Unit,
     onDelete: (Admin) -> Unit
 ) {
     LazyColumn(
@@ -2759,6 +3129,44 @@ fun SevadarManagementTab(
                     )
 
                     if (a.role != AdminRole.SUPER_ADMIN) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        // Anywhere Token Issuance Quick Switch
+                        Surface(
+                            color = if (a.canIssueTokensAnywhere) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (a.canIssueTokensAnywhere) Color(0xFF81C784) else Color(0xFFFFB74D)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isHindi) "🌐 कहीं से भी टोकन जारी करने की अनुमति" else "🌐 Issue Tokens Anywhere",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = if (a.canIssueTokensAnywhere) Color(0xFF1B5E20) else MaroonAccent
+                                    )
+                                    Text(
+                                        text = if (a.canIssueTokensAnywhere)
+                                            (if (isHindi) "सक्रिय: बिना आश्रम GPS सीमा के टोकन बना सकते हैं।" else "Active: Can issue tokens outside Ashram GPS.")
+                                        else
+                                            (if (isHindi) "अक्रिय: केवल आश्रम GPS सीमा में ही टोकन जारी होंगे।" else "Inactive: Restricted to Ashram GPS boundary."),
+                                        fontSize = 10.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                                Switch(
+                                    checked = a.canIssueTokensAnywhere,
+                                    onCheckedChange = { isChecked ->
+                                        onToggleAnywhere(a, isChecked)
+                                    }
+                                )
+                            }
+                        }
+
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
