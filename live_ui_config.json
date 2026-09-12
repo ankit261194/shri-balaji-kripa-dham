@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-12T14:43:29Z",
+  "updated_at": "2026-09-12T14:57:35Z",
   "updated_by": "Ankit Chaudhary (Super Admin)",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -23,12 +23,12 @@
     "notice_english": "श्री बालाजी कृपा धाम में आपका स्वागत है। आगामी रविवार दिव्य दरबार प्रातः 9:00 बजे से प्रारंभ होगा। 100% निःशुल्क सेवा व इलाज।"
   },
   "location_config": {
-    "latitude": 28.4089,
-    "longitude": 77.3178,
+    "latitude": 28.3972915,
+    "longitude": 78.146041,
     "allowed_radius_meters": 200,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789224209978
+    "updated_at": 1789225055294
   },
   "services_config": {
     "is_token_service_enabled": true,
