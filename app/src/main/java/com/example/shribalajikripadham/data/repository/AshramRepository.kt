@@ -156,8 +156,32 @@ class AshramRepository(context: Context) {
             put("allowed_radius_meters", newRadius)
             put("is_geofence_enforced", if (isGeofenceEnforced) 1 else 0)
         }
-        val updated = db.update("ashram_settings", cv, "id = 1", null)
-        updated > 0
+        val updated = db.update("ashram_settings", cv, "id = 1", null) > 0
+
+        // Broadcast to cloud (GitHub Live Sync) so all users' apps automatically receive the new coordinates
+        if (updated) {
+            try {
+                val existing = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveConfig()
+                val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }
+                val updatedConfig = (existing ?: com.example.shribalajikripadham.data.model.LiveUiConfigDto()).copy(
+                    updatedAt = isoFormat.format(Date()),
+                    updatedBy = requestingAdmin.name,
+                    locationConfig = com.example.shribalajikripadham.data.model.LocationConfigDto(
+                        latitude = newLat,
+                        longitude = newLong,
+                        allowedRadiusMeters = newRadius,
+                        isGeofenceEnforced = isGeofenceEnforced,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                )
+                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveConfig(appContext, updatedConfig)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        updated
     }
 
     suspend fun updateScheduledTokenOpenTime(timestamp: Long): Boolean = withContext(Dispatchers.IO) {
@@ -913,6 +937,7 @@ class AshramRepository(context: Context) {
             canViewDevoteePhotos = cursor.getInt(cursor.getColumnIndexOrThrow("can_view_devotee_photos")) == 1,
             canIssueTokensAnywhere = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_issue_tokens_anywhere")) == 1 } catch (e: Exception) { false },
             canScanPaperRegister = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_scan_paper_register")) == 1 } catch (e: Exception) { false },
+            canManageParchas = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_parchas")) == 1 } catch (e: Exception) { false },
             photoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) } catch (e: Exception) { "" } ?: "",
             isActive = cursor.getInt(cursor.getColumnIndexOrThrow("is_active")) == 1,
             createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
@@ -947,6 +972,7 @@ class AshramRepository(context: Context) {
         canViewDevoteePhotos: Boolean = false,
         canIssueTokensAnywhere: Boolean = false,
         canScanPaperRegister: Boolean = false,
+        canManageParchas: Boolean = false,
         photoUri: String = ""
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
@@ -968,6 +994,7 @@ class AshramRepository(context: Context) {
             put("can_view_devotee_photos", if (canViewDevoteePhotos || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_issue_tokens_anywhere", if (canIssueTokensAnywhere || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_scan_paper_register", if (canScanPaperRegister || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_parchas", if (canManageParchas || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("photo_uri", photoUri.trim())
             put("is_active", 1)
             put("created_at", System.currentTimeMillis())
@@ -995,6 +1022,7 @@ class AshramRepository(context: Context) {
         canViewDevoteePhotos: Boolean,
         canIssueTokensAnywhere: Boolean = false,
         canScanPaperRegister: Boolean = false,
+        canManageParchas: Boolean = false,
         isActive: Boolean
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
@@ -1009,7 +1037,16 @@ class AshramRepository(context: Context) {
             put("can_view_devotee_photos", if (canViewDevoteePhotos) 1 else 0)
             put("can_issue_tokens_anywhere", if (canIssueTokensAnywhere) 1 else 0)
             put("can_scan_paper_register", if (canScanPaperRegister) 1 else 0)
+            put("can_manage_parchas", if (canManageParchas) 1 else 0)
             put("is_active", if (isActive) 1 else 0)
+        }
+        db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
+    }
+
+    suspend fun updateAdminParchaPermission(adminId: Long, canManageParchas: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("can_manage_parchas", if (canManageParchas) 1 else 0)
         }
         db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
     }
@@ -1718,8 +1755,26 @@ class AshramRepository(context: Context) {
     // --- Central GitHub Live Sync Methods ---
     suspend fun syncLiveConfigFromGitHub(): Pair<Boolean, LiveUiConfigDto?> = withContext(Dispatchers.IO) {
         val remoteConfig = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveConfig()
-        if (remoteConfig != null && remoteConfig.sections.isNotEmpty()) {
-            saveUiSectionConfigs(remoteConfig.sections)
+        if (remoteConfig != null) {
+            if (remoteConfig.sections.isNotEmpty()) {
+                saveUiSectionConfigs(remoteConfig.sections)
+            }
+            // Automatically synchronize coordinates from cloud to local SQLite
+            val loc = remoteConfig.locationConfig
+            if (loc.latitude != 0.0 && loc.longitude != 0.0) {
+                try {
+                    val db = dbHelper.writableDatabase
+                    val cv = ContentValues().apply {
+                        put("latitude", loc.latitude)
+                        put("longitude", loc.longitude)
+                        put("allowed_radius_meters", loc.allowedRadiusMeters)
+                        put("is_geofence_enforced", if (loc.isGeofenceEnforced) 1 else 0)
+                    }
+                    db.update("ashram_settings", cv, "id = 1", null)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
             Pair(true, remoteConfig)
         } else {
             Pair(false, null)

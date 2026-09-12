@@ -9,12 +9,22 @@ data class EmergencyNoticeDto(
     val noticeEnglish: String = ""
 )
 
+data class LocationConfigDto(
+    val latitude: Double = 28.4089,
+    val longitude: Double = 77.3178,
+    val allowedRadiusMeters: Double = 500.0,
+    val isGeofenceEnforced: Boolean = true,
+    val locationName: String = "श्री बालाजी कृपा धाम",
+    val updatedAt: Long = System.currentTimeMillis()
+)
+
 data class LiveUiConfigDto(
     val updatedAt: String = "",
     val updatedBy: String = "Super Admin",
     val version: Int = 1,
     val activeUiLayout: String = "CLASSIC_DARBAR",
     val emergencyNotice: EmergencyNoticeDto = EmergencyNoticeDto(),
+    val locationConfig: LocationConfigDto = LocationConfigDto(),
     val sections: List<UiSectionConfig> = UiSectionConfig.defaultSections()
 ) {
     fun toJsonString(): String {
@@ -29,6 +39,15 @@ data class LiveUiConfigDto(
         emObj.put("notice_hindi", emergencyNotice.noticeHindi)
         emObj.put("notice_english", emergencyNotice.noticeEnglish)
         root.put("emergency_notice", emObj)
+
+        val locObj = JSONObject()
+        locObj.put("latitude", locationConfig.latitude)
+        locObj.put("longitude", locationConfig.longitude)
+        locObj.put("allowed_radius_meters", locationConfig.allowedRadiusMeters)
+        locObj.put("is_geofence_enforced", locationConfig.isGeofenceEnforced)
+        locObj.put("location_name", locationConfig.locationName)
+        locObj.put("updated_at", locationConfig.updatedAt)
+        root.put("location_config", locObj)
 
         val secArr = JSONArray()
         sections.forEach { s ->
@@ -64,6 +83,18 @@ data class LiveUiConfigDto(
                     )
                 } else EmergencyNoticeDto()
 
+                val locObj = root.optJSONObject("location_config")
+                val locationConfig = if (locObj != null) {
+                    LocationConfigDto(
+                        latitude = locObj.optDouble("latitude", 28.4089),
+                        longitude = locObj.optDouble("longitude", 77.3178),
+                        allowedRadiusMeters = locObj.optDouble("allowed_radius_meters", 500.0),
+                        isGeofenceEnforced = locObj.optBoolean("is_geofence_enforced", true),
+                        locationName = locObj.optString("location_name", "श्री बालाजी कृपा धाम"),
+                        updatedAt = locObj.optLong("updated_at", 0L)
+                    )
+                } else LocationConfigDto()
+
                 val secArr = root.optJSONArray("sections")
                 val sectionsList = mutableListOf<UiSectionConfig>()
                 if (secArr != null) {
@@ -87,6 +118,7 @@ data class LiveUiConfigDto(
                     version = version,
                     activeUiLayout = activeLayout,
                     emergencyNotice = emergencyNotice,
+                    locationConfig = locationConfig,
                     sections = if (sectionsList.isNotEmpty()) sectionsList else UiSectionConfig.defaultSections()
                 )
             } catch (e: Exception) {

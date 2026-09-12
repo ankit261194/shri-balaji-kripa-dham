@@ -167,6 +167,11 @@ fun FaceTokenRegistrationScreen(
         try {
             val id = DeviceFingerprintManager.getDeviceId(context)
             deviceId = id
+            try {
+                repository.syncLiveConfigFromGitHub()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             settings = repository.getSettings()
             existingToken = repository.checkDeviceRegisteredToday(id)
 

@@ -14,7 +14,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
-        const val DATABASE_VERSION = 21
+        const val DATABASE_VERSION = 22
 
         fun hashPin(pin: String): String {
             val md = MessageDigest.getInstance("SHA-256")
@@ -150,6 +150,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     can_view_devotee_photos INTEGER NOT NULL,
                     can_issue_tokens_anywhere INTEGER NOT NULL DEFAULT 0,
                     can_scan_paper_register INTEGER NOT NULL DEFAULT 0,
+                    can_manage_parchas INTEGER NOT NULL DEFAULT 0,
                     photo_uri TEXT NOT NULL DEFAULT '',
                     is_active INTEGER NOT NULL,
                     created_at INTEGER NOT NULL
@@ -366,6 +367,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             "ALTER TABLE tokens ADD COLUMN city TEXT NOT NULL DEFAULT 'डूँगरा जाट (स्थानीय)'",
             "ALTER TABLE admins ADD COLUMN can_issue_tokens_anywhere INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE admins ADD COLUMN can_scan_paper_register INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_parchas INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE admins ADD COLUMN photo_uri TEXT NOT NULL DEFAULT ''"
         )
         for (sql in alterStatements) {
@@ -373,6 +375,9 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 db.execSQL(sql)
             } catch (ignored: Exception) {}
         }
+        try {
+            db.execSQL("UPDATE admins SET can_manage_parchas = 1 WHERE role = 'SUPER_ADMIN'")
+        } catch (ignored: Exception) {}
     }
 
     private fun seedInitialDataIfEmpty(db: SQLiteDatabase) {
@@ -410,10 +415,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     put("is_emergency_notice_visible", 1)
                     put("scheduled_token_open_timestamp", 0L)
                     put("is_geofence_enforced", 1)
-                    put("latest_version_code", 17)
-                    put("latest_version_name", "2.14.0")
-                    put("update_notes", "नया अपडेट v2.14.0: रविवार टोकन व आश्रम पर्चे 100% स्थायी क्रैश-फ्री, सिंगल बटन वेलकम स्क्रीन एवं सम्पूर्ण ऐप स्थिरीकरण।")
-                    put("apk_download_url", "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.14.0/ShriBalajiKripaDham-release.apk")
+                    put("latest_version_code", 18)
+                    put("latest_version_name", "2.15.0")
+                    put("update_notes", "नया अपडेट v2.15.0: सुपर एडमिन आश्रम पर्चा नियंत्रण, सेवादार एक्सेस डेलिगेशन एवं क्लाउड आधारित डायनामिक लोकेशन सिंक।")
+                    put("apk_download_url", "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.15.0/ShriBalajiKripaDham-release.apk")
                     put("is_force_update", 0)
                     put("whatsapp_group_url", "https://chat.whatsapp.com/invite")
                     put("whatsapp_number", "+919876543210")
@@ -459,6 +464,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     put("can_view_devotee_photos", 1)
                     put("can_issue_tokens_anywhere", 1)
                     put("can_scan_paper_register", 1)
+                    put("can_manage_parchas", 1)
                     put("photo_uri", "")
                     put("is_active", 1)
                     put("created_at", System.currentTimeMillis())

@@ -166,6 +166,8 @@ fun AdminDashboardScreen(
     var newSevCanAnywhere by remember { mutableStateOf(false) }
     var newSevCanScanRegister by remember { mutableStateOf(false) }
     var editSevCanScanRegister by remember { mutableStateOf(false) }
+    var newSevCanParchas by remember { mutableStateOf(false) }
+    var editSevCanParchas by remember { mutableStateOf(false) }
     var customDistancesList by remember { mutableStateOf<List<CustomCityDistance>>(emptyList()) }
     var uiSectionsList by remember { mutableStateOf<List<UiSectionConfig>>(emptyList()) }
 
@@ -609,7 +611,9 @@ fun AdminDashboardScreen(
             if (admin.canManageTokens) allowedTabs.add(if (isHindi) "टोकन कतार" else "Tokens")
             if (admin.canIssueManualTokens) allowedTabs.add(if (isHindi) "मैनुअल टोकन" else "Manual")
             if (admin.canScanPaperRegister || isSuper) allowedTabs.add(if (isHindi) "रजिस्टर स्कैन" else "Register Scan")
-            allowedTabs.add(if (isHindi) "आश्रम पर्चे" else "Sacred Parchas")
+            if (isSuper || admin.canManageParchas) {
+                allowedTabs.add(if (isHindi) "आश्रम पर्चे" else "Sacred Parchas")
+            }
             if (isSuper) allowedTabs.add(if (isHindi) "सक्रिय फोन" else "Active Devices")
             if (admin.canChangeLocation || isSuper) allowedTabs.add(if (isHindi) "GPS लोकेशन" else "Location")
             if (admin.canSendNotifications || isSuper) allowedTabs.add(if (isHindi) "सूचना भेजें" else "Broadcast")
@@ -702,7 +706,7 @@ fun AdminDashboardScreen(
                             Triple("टोकन कतार", admin.canManageTokens || isSuper, "🎟️"),
                             Triple("मैनुअल टोकन", admin.canIssueManualTokens || isSuper, "✍️"),
                             Triple("रजिस्टर स्कैन", admin.canScanPaperRegister || isSuper, "📷"),
-                            Triple("आश्रम पर्चे", true, "📜"),
+                            Triple("आश्रम पर्चे", admin.canManageParchas || isSuper, "📜"),
                             Triple("बालाजी यात्रा", admin.canManageYatra || isSuper, "🚌"),
                             Triple("आय-व्यय", admin.canManageExpenses || isSuper, "💰"),
                             Triple("GPS दायरा", admin.canChangeLocation || isSuper, "📍"),
@@ -879,7 +883,7 @@ fun AdminDashboardScreen(
                                             val longVal = longInput.toDouble()
                                             val radVal = radiusInput.toDouble()
                                             repository.updateAshramLocation(admin, latVal, longVal, radVal, geofenceEnforced)
-                                            locationSuccessMsg = if (isHindi) "लोकेशन व परिधि सुरक्षित की गई!" else "GPS coordinates and radius updated!"
+                                            locationSuccessMsg = if (isHindi) "✓ नई GPS लोकेशन सुरक्षित व क्लाउड द्वारा सभी भक्तों के फोन पर लाइव अपडेट हो गई!" else "GPS coordinates updated & broadcast to all users live!"
                                             locationErrorMsg = null
                                             refreshData()
                                         } catch (e: Exception) {
@@ -934,6 +938,17 @@ fun AdminDashboardScreen(
                                         refreshData()
                                     }
                                 },
+                                onToggleParchas = { targetAdmin, isEnabled ->
+                                    scope.launch {
+                                        repository.updateAdminParchaPermission(targetAdmin.id, isEnabled)
+                                        refreshData()
+                                        val msg = if (isEnabled)
+                                            (if (isHindi) "✓ ${targetAdmin.name} को पर्चा प्रबंधन अधिकार दे दिया गया।" else "Parcha permission granted.")
+                                        else
+                                            (if (isHindi) "🔒 ${targetAdmin.name} से पर्चा प्रबंधन अधिकार वापस लिया गया।" else "Parcha permission revoked.")
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    }
+                                },
                                 onOpenEdit = { targetAdmin ->
                                     editingAdmin = targetAdmin
                                     editSevPhotoUri = targetAdmin.photoUri
@@ -947,6 +962,7 @@ fun AdminDashboardScreen(
                                     editSevCanPhotos = targetAdmin.canViewDevoteePhotos
                                     editSevCanAnywhere = targetAdmin.canIssueTokensAnywhere
                                     editSevCanScanRegister = targetAdmin.canScanPaperRegister
+                                    editSevCanParchas = targetAdmin.canManageParchas
                                 },
                                 onToggleActive = { targetAdmin ->
                                     scope.launch {
@@ -962,6 +978,7 @@ fun AdminDashboardScreen(
                                             canViewDevoteePhotos = targetAdmin.canViewDevoteePhotos,
                                             canIssueTokensAnywhere = targetAdmin.canIssueTokensAnywhere,
                                             canScanPaperRegister = targetAdmin.canScanPaperRegister,
+                                            canManageParchas = targetAdmin.canManageParchas,
                                             isActive = !targetAdmin.isActive
                                         )
                                         refreshData()
@@ -1358,6 +1375,15 @@ fun AdminDashboardScreen(
                             color = Color(0xFF0D47A1)
                         )
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = newSevCanParchas, onCheckedChange = { newSevCanParchas = it })
+                        Text(
+                            text = if (isHindi) "📜 आश्रम पर्चे प्रबंधन (Super Admin Delegation)" else "Manage Sacred Parchas (Delegation)",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE65100)
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -1382,6 +1408,7 @@ fun AdminDashboardScreen(
                                     canViewDevoteePhotos = newSevCanPhotos,
                                     canIssueTokensAnywhere = newSevCanAnywhere,
                                     canScanPaperRegister = newSevCanScanRegister,
+                                    canManageParchas = newSevCanParchas,
                                     photoUri = newSevPhotoUri
                                 )
                                 showCreateSevadarDialog = false
@@ -1394,6 +1421,7 @@ fun AdminDashboardScreen(
                                 newSevCanPhotos = false
                                 newSevCanAnywhere = false
                                 newSevCanScanRegister = false
+                                newSevCanParchas = false
                                 refreshData()
                             }
                         }
@@ -1499,6 +1527,15 @@ fun AdminDashboardScreen(
                             color = Color(0xFF0D47A1)
                         )
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = editSevCanParchas, onCheckedChange = { editSevCanParchas = it })
+                        Text(
+                            text = if (isHindi) "📜 आश्रम पर्चे प्रबंधन (Super Admin Delegation)" else "Manage Sacred Parchas (Delegation)",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE65100)
+                        )
+                    }
                 }
             },
             confirmButton = {
@@ -1517,6 +1554,7 @@ fun AdminDashboardScreen(
                                 canViewDevoteePhotos = editSevCanPhotos,
                                 canIssueTokensAnywhere = editSevCanAnywhere,
                                 canScanPaperRegister = editSevCanScanRegister,
+                                canManageParchas = editSevCanParchas,
                                 isActive = target.isActive
                             )
                             repository.updateAdminPhoto(target.id, editSevPhotoUri)
@@ -3060,6 +3098,30 @@ fun LocationConfigTab(
                     color = Color.Gray
                 )
 
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Cloud Broadcast Info Card
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFFE8F5E9),
+                    border = BorderStroke(1.dp, Color(0xFF81C784)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("🌐", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isHindi)
+                                "सुपर एडमिन ग्लोबल कंट्रोल: यहाँ दर्ज किया गया अक्षांश (Lat) व देशांतर (Long) सीधे क्लाउड पर ब्रॉडकास्ट होगा और सभी भक्तों के फोन में बैकग्राउंड में तुरंत अपडेट हो जाएगा। भक्त इसी नई लोकेशन पर आकर ही टोकन जनरेट कर सकेंगे।"
+                            else
+                                "Super Admin Universal Control: Coordinates saved here will immediately broadcast to the cloud and sync across all devotees' devices.",
+                            fontSize = 11.sp,
+                            color = Color(0xFF1B5E20),
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(14.dp))
                 OutlinedTextField(
                     value = lat,
@@ -3076,6 +3138,47 @@ fun LocationConfigTab(
                     enabled = canChangeLocation,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(6.dp))
+                // Quick Location Helper Buttons
+                if (canChangeLocation) {
+                    val scope = rememberCoroutineScope()
+                    val context = LocalContext.current
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    val loc = GeofenceLocationManager.getLastKnownLocation(context)
+                                    if (loc != null) {
+                                        onLatChange(loc.latitude.toString())
+                                        onLongChange(loc.longitude.toString())
+                                        Toast.makeText(context, if (isHindi) "✓ वर्तमान डिवाइस GPS लोकेशन भर दी गई!" else "Current GPS coordinates filled!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, if (isHindi) "GPS लोकेशन प्राप्त करने में असमर्थ" else "Failed to get GPS location", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(if (isHindi) "📍 मेरी GPS लोकेशन लें" else "📍 Use My GPS", fontSize = 11.sp)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                onLatChange("28.4089")
+                                onLongChange("77.8789")
+                                Toast.makeText(context, if (isHindi) "डूँगरा जाट आश्रम कोऑर्डिनेट्स सेट" else "Default Dungra Jaat set", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(if (isHindi) "🚩 मूल धाम डूँगरा जाट" else "🚩 Dungra Jaat", fontSize = 11.sp)
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = radius,
@@ -3094,7 +3197,7 @@ fun LocationConfigTab(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        if (isHindi) "सख्त जिओफेंसिंग लागू रखें (200m के अंदर ही टोकन)" else "Strict Geofencing Enforced (Inside 200m only)",
+                        if (isHindi) "सख्त जिओफेंसिंग लागू रखें (तय परिधि के अंदर ही टोकन जारी होंगे)" else "Strict Geofencing Enforced (Inside radius only)",
                         fontSize = 13.sp
                     )
                 }
@@ -3112,10 +3215,10 @@ fun LocationConfigTab(
                 Button(
                     onClick = onSave,
                     enabled = canChangeLocation,
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
                 ) {
-                    Text(if (isHindi) "कोऑर्डिनेट्स सुरक्षित करें" else "Save Coordinates", fontWeight = FontWeight.Bold)
+                    Text(if (isHindi) "🌐 लोकेशन सुरक्षित करें व सभी भक्तों के फोन पर लाइव भेजें" else "🌐 Save & Broadcast Coordinates Live", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -3228,6 +3331,7 @@ fun SevadarManagementTab(
     onToggleActive: (Admin) -> Unit,
     onToggleAnywhere: (Admin, Boolean) -> Unit,
     onToggleScanRegister: (Admin, Boolean) -> Unit,
+    onToggleParchas: (Admin, Boolean) -> Unit,
     onDelete: (Admin) -> Unit
 ) {
     LazyColumn(
@@ -3301,7 +3405,8 @@ fun SevadarManagementTab(
                             if (a.canSendNotifications) "नोटिफिकेशन" else null,
                             if (a.canEditAshramInfo) "कंटेंट" else null,
                             if (a.canViewDevoteePhotos) "भक्त फोटो" else null,
-                            if (a.canScanPaperRegister) "रजिस्टर स्कैन" else null
+                            if (a.canScanPaperRegister) "रजिस्टर स्कैन" else null,
+                            if (a.canManageParchas) "आश्रम पर्चे" else null
                         ).joinToString(", "),
                         fontSize = 12.sp,
                         color = Color.DarkGray
@@ -3379,6 +3484,44 @@ fun SevadarManagementTab(
                                     checked = a.canScanPaperRegister,
                                     onCheckedChange = { isChecked ->
                                         onToggleScanRegister(a, isChecked)
+                                    }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+                        // Sacred Parchas Management Quick Switch (Super Admin Control)
+                        Surface(
+                            color = if (a.canManageParchas) Color(0xFFFFF8E1) else Color(0xFFFAFAFA),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (a.canManageParchas) Color(0xFFFFD54F) else Color(0xFFE0E0E0)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isHindi) "📜 आश्रम पर्चे प्रबंधन अधिकार (Super Admin Control)" else "📜 Sacred Parchas Management Access",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = if (a.canManageParchas) Color(0xFFE65100) else Color.DarkGray
+                                    )
+                                    Text(
+                                        text = if (a.canManageParchas)
+                                            (if (isHindi) "सक्रिय: नया पर्चा जोड़ने, एडिट, डिलीट व हाइड/लाइव करने की अनुमति है।" else "Active: Can create, edit & hide parchas.")
+                                        else
+                                            (if (isHindi) "अक्रिय: केवल सुपर एडमिन ही पर्चों का संपादन कर सकते हैं।" else "Inactive: Restricted to Super Admin."),
+                                        fontSize = 10.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                                Switch(
+                                    checked = a.canManageParchas,
+                                    onCheckedChange = { isChecked ->
+                                        onToggleParchas(a, isChecked)
                                     }
                                 )
                             }

@@ -26,6 +26,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.shribalajikripadham.data.model.Admin
+import com.example.shribalajikripadham.data.model.AdminRole
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import com.example.shribalajikripadham.data.model.ParchaCategory
 import com.example.shribalajikripadham.data.model.SacredParcha
 import com.example.shribalajikripadham.data.repository.AshramRepository
@@ -44,6 +48,10 @@ fun SacredParchasScreen(
     val repository = remember { AshramRepository(context) }
     val scope = rememberCoroutineScope()
 
+    var activeAdmin by remember { mutableStateOf(currentAdmin) }
+    val isSuperAdmin = activeAdmin?.role == AdminRole.SUPER_ADMIN
+    val hasParchaAccess = isSuperAdmin || (activeAdmin?.canManageParchas == true)
+
     var parchasList by remember { mutableStateOf<List<SacredParcha>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryFilter by remember { mutableStateOf<ParchaCategory?>(null) }
@@ -52,11 +60,16 @@ fun SacredParchasScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var deleteConfirmParcha by remember { mutableStateOf<SacredParcha?>(null) }
     var isGeneratingPdf by remember { mutableStateOf(false) }
+    var showSevadarDelegationDialog by remember { mutableStateOf(false) }
+    var showAdminLoginDialog by remember { mutableStateOf(false) }
+    var sevadarList by remember { mutableStateOf<List<Admin>>(emptyList()) }
+    var adminPinInput by remember { mutableStateOf("") }
+    var loginError by remember { mutableStateOf<String?>(null) }
 
     val refreshParchas: () -> Unit = {
         scope.launch {
             try {
-                val list = if (currentAdmin != null) {
+                val list = if (hasParchaAccess) {
                     repository.getAllAdminParchas()
                 } else {
                     repository.getAllPublicParchas()
@@ -110,19 +123,50 @@ fun SacredParchasScreen(
                     }
                 },
                 actions = {
-                    if (currentAdmin != null) {
+                    if (isSuperAdmin) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = SaffronPrimary,
+                            modifier = Modifier.padding(end = 4.dp)
+                        ) {
+                            Text(
+                                text = "👑 सुपर एडमिन",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    sevadarList = repository.getAllAdmins().filter { it.role != AdminRole.SUPER_ADMIN }
+                                    showSevadarDelegationDialog = true
+                                }
+                            }
+                        ) {
+                            Text("👥", fontSize = 18.sp)
+                        }
+                    } else if (hasParchaAccess) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = SaffronPrimary,
                             modifier = Modifier.padding(end = 8.dp)
                         ) {
                             Text(
-                                text = "🛡️ एडमिन मोड",
+                                text = "🛡️ अधिकृत व्यवस्थापक",
                                 color = Color.White,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
+                        }
+                    } else if (activeAdmin == null) {
+                        TextButton(
+                            onClick = { showAdminLoginDialog = true },
+                            colors = ButtonDefaults.textButtonColors(contentColor = GoldSecondary)
+                        ) {
+                            Text("🔐 एडमिन लॉगिन", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 },
@@ -130,7 +174,7 @@ fun SacredParchasScreen(
             )
         },
         floatingActionButton = {
-            if (currentAdmin != null) {
+            if (hasParchaAccess) {
                 ExtendedFloatingActionButton(
                     onClick = { showCreateDialog = true },
                     containerColor = SaffronPrimary,
@@ -206,7 +250,7 @@ fun SacredParchasScreen(
                             fontWeight = FontWeight.Bold,
                             color = Color.Gray
                         )
-                        if (currentAdmin != null) {
+                        if (hasParchaAccess) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(
                                 onClick = { showCreateDialog = true },
@@ -226,7 +270,7 @@ fun SacredParchasScreen(
                         ParchaCard(
                             isHindi = isHindi,
                             parcha = parcha,
-                            isAdmin = (currentAdmin != null),
+                            isAdmin = hasParchaAccess,
                             onViewDetails = { activeReaderParcha = parcha },
                             onDownloadPdf = {
                                 isGeneratingPdf = true
@@ -348,6 +392,180 @@ fun SacredParchasScreen(
             },
             dismissButton = {
                 OutlinedButton(onClick = { deleteConfirmParcha = null }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // Super Admin: Sevadar Delegation Dialog
+    if (showSevadarDelegationDialog) {
+        AlertDialog(
+            onDismissRequest = { showSevadarDelegationDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("📜", fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isHindi) "सेवादर पर्चा अधिकार (Super Admin)" else "Sevadar Parcha Access",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
+                    Text(
+                        text = if (isHindi) 
+                            "जिस सेवादर को आप पर्चा प्रबंधन (नया जोड़ना, बदलना, हटाना) का अधिकार देना चाहते हैं, उसका स्विच ऑन करें:" 
+                        else 
+                            "Toggle access for sevadars allowed to manage sacred parchas:",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    if (sevadarList.isEmpty()) {
+                        Text(
+                            text = if (isHindi) "कोई अन्य सेवादर पंजीकृत नहीं है। एडमिन डैशबोर्ड से सेवादर जोड़ें।" else "No other sevadars found.",
+                            color = Color.Gray,
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(vertical = 16.dp)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(sevadarList, key = { it.id }) { sevadar ->
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (sevadar.canManageParchas) Color(0xFFF1F8E9) else Color(0xFFFAFAFA)
+                                    ),
+                                    shape = RoundedCornerShape(10.dp),
+                                    border = BorderStroke(1.dp, if (sevadar.canManageParchas) Color(0xFF81C784) else Color(0xFFE0E0E0))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(sevadar.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                            Text("📞 ${sevadar.phoneNumber}", fontSize = 11.sp, color = Color.Gray)
+                                            Text(
+                                                text = if (sevadar.canManageParchas) "✓ पर्चा प्रबंधन अधिकृत" else "✕ कोई अधिकार नहीं",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = if (sevadar.canManageParchas) Color(0xFF2E7D32) else Color(0xFF757575)
+                                            )
+                                        }
+                                        Switch(
+                                            checked = sevadar.canManageParchas,
+                                            onCheckedChange = { isChecked ->
+                                                scope.launch {
+                                                    repository.updateAdminParchaPermission(sevadar.id, isChecked)
+                                                    sevadarList = repository.getAllAdmins().filter { it.role != AdminRole.SUPER_ADMIN }
+                                                    val msg = if (isChecked)
+                                                        "✓ ${sevadar.name} को पर्चा प्रबंधन अधिकार दिया गया"
+                                                    else
+                                                        "✓ ${sevadar.name} से पर्चा अधिकार हटाया गया"
+                                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showSevadarDelegationDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                ) {
+                    Text(if (isHindi) "पूर्ण (Done)" else "Done")
+                }
+            }
+        )
+    }
+
+    // Quick Admin Login Dialog for direct parcha management access
+    if (showAdminLoginDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showAdminLoginDialog = false
+                adminPinInput = ""
+                loginError = null
+            },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🔐", fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isHindi) "एडमिन सत्यापन" else "Admin Authentication",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = if (isHindi) "पर्चा प्रबंधन हेतु अपना सुरक्षा पिन दर्ज करें:" else "Enter your security PIN to manage parchas:",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = adminPinInput,
+                        onValueChange = { if (it.length <= 6) adminPinInput = it },
+                        label = { Text(if (isHindi) "सुरक्षा पिन" else "Security PIN") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (loginError != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(loginError!!, color = Color.Red, fontSize = 11.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (adminPinInput.isBlank()) return@Button
+                        scope.launch {
+                            val authenticated = repository.authenticateAdmin(adminPinInput)
+                            if (authenticated != null) {
+                                if (authenticated.role == AdminRole.SUPER_ADMIN || authenticated.canManageParchas) {
+                                    activeAdmin = authenticated
+                                    showAdminLoginDialog = false
+                                    adminPinInput = ""
+                                    loginError = null
+                                    refreshParchas()
+                                    Toast.makeText(context, "✓ स्वागत है, ${authenticated.name}! पर्चा संपादन सक्रिय किया गया।", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    loginError = if (isHindi) "⚠️ आपके पास पर्चा प्रबंधन अधिकार नहीं है। कृपया सुपर एडमिन से संपर्क करें।" else "No parcha permission. Contact Super Admin."
+                                }
+                            } else {
+                                loginError = if (isHindi) "❌ गलत पिन दर्ज किया गया।" else "Incorrect PIN."
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                ) {
+                    Text(if (isHindi) "सत्यापित करें" else "Verify")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = {
+                    showAdminLoginDialog = false
+                    adminPinInput = ""
+                    loginError = null
+                }) {
                     Text(if (isHindi) "रद्द करें" else "Cancel")
                 }
             }
