@@ -31,8 +31,8 @@ object DistanceCalculatorService {
     private const val TAG = "DistanceCalculator"
 
     const val DESTINATION_NAME = "श्री बालाजी कृपा धाम, डुंगरा जाट (बुलंदशहर)"
-    const val DESTINATION_LAT = 28.4089
-    const val DESTINATION_LNG = 77.8789
+    const val DESTINATION_LAT = 28.3972915
+    const val DESTINATION_LNG = 78.1460410
 
     // Pre-mapped driving distances (km) for instant offline calculation and fallback
     // Pre-mapped driving distances (km) for instant offline calculation and fallback

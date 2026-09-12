@@ -157,7 +157,7 @@ fun AshramInfoScreen(
 
                     Button(
                         onClick = {
-                            val uri = Uri.parse("geo:28.4089,77.8789?q=Gram+Dungra+Jaat+Bulandshahr")
+                            val uri = Uri.parse("geo:28.3972915,78.1460410?q=28.3972915,78.1460410(Shri+Balaji+Kripa+Dham)")
                             val intent = Intent(Intent.ACTION_VIEW, uri)
                             context.startActivity(intent)
                         },

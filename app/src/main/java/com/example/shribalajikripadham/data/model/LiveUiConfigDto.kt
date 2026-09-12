@@ -10,8 +10,8 @@ data class EmergencyNoticeDto(
 )
 
 data class LocationConfigDto(
-    val latitude: Double = 28.4089,
-    val longitude: Double = 77.3178,
+    val latitude: Double = 28.3972915,
+    val longitude: Double = 78.1460410,
     val allowedRadiusMeters: Double = 200.0,
     val isGeofenceEnforced: Boolean = true,
     val locationName: String = "श्री बालाजी कृपा धाम",
@@ -172,8 +172,8 @@ data class LiveUiConfigDto(
                 val locObj = root.optJSONObject("location_config")
                 val locationConfig = if (locObj != null) {
                     LocationConfigDto(
-                        latitude = locObj.optDouble("latitude", 28.4089),
-                        longitude = locObj.optDouble("longitude", 77.3178),
+                        latitude = locObj.optDouble("latitude", 28.3972915),
+                        longitude = locObj.optDouble("longitude", 78.1460410),
                         allowedRadiusMeters = locObj.optDouble("allowed_radius_meters", 200.0).coerceIn(50.0, 200.0),
                         isGeofenceEnforced = locObj.optBoolean("is_geofence_enforced", true),
                         locationName = locObj.optString("location_name", "श्री बालाजी कृपा धाम"),

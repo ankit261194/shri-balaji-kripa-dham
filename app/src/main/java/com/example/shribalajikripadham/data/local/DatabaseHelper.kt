@@ -400,6 +400,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         try {
             db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1 WHERE role = 'SUPER_ADMIN'")
             db.execSQL("UPDATE ashram_settings SET allowed_radius_meters = 200.0 WHERE allowed_radius_meters > 200.0")
+            db.execSQL("UPDATE ashram_settings SET latitude = 28.3972915, longitude = 78.1460410 WHERE id = 1")
         } catch (ignored: Exception) {}
     }
 
@@ -419,8 +420,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     put("ashram_name", "Shri Balaji Kripa Dham")
                     put("guruji_name", "Guruji Tejveer Singh Ji")
                     put("address", "Gram Dungra Jaat, Bulandshahr, UP")
-                    put("latitude", 28.4089)
-                    put("longitude", 77.8789)
+                    put("latitude", 28.3972915)
+                    put("longitude", 78.1460410)
                     put("allowed_radius_meters", 200.0)
                     put("running_token_number", 1)
                     put("is_darbar_active", 1)

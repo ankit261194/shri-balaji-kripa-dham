@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 26,
-  "latest_version_name": "2.23.0",
-  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.23.0): 1. 'आश्रम परिसर से बाहर' वाला बैनर पूर्णतः हटा दिया गया है। 2. होम स्क्रीन UI बॉक्स व सामग्री संपादक (शीर्षक, आइकन, सब-टाइटल व विशेष सूचना लाइव एडिट)। 3. सुपर एडमिन फोन काउंटर (सक्रिय फोन व आज की लाइव गिनती)। 4. रविवार टोकन बैनर व दिशा-निर्देश संपादक।",
-  "update_notes_english": "Clean UI Release (v2.23.0): 1. Removed outside ashram premises banner for clean UI experience. 2. Live UI Box Editor. 3. Real-time active devices counter on Super Admin dashboard. 4. Sunday Token Banner & Rules Customizer.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.23.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 27,
+  "latest_version_name": "2.24.0",
+  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.24.0): 1. स्थायी आश्रम लोकेशन फिक्स: आश्रम के अक्षांश-देशांतर (Latitude: 28.3972915, Longitude: 78.1460410) को स्थायी रूप से सेट कर दिया गया है ताकि इस सटीक लोकेशन पर टोकन आसानी से जनरेट हो सकें। 2. 'आश्रम परिसर से बाहर' वाला बैनर हटाया गया। 3. लाइव UI बॉक्स व सामग्री संपादक। 4. सुपर एडमिन रियल-टाइम फोन काउंटर।",
+  "update_notes_english": "Permanent Location Fix (v2.24.0): 1. Fixed Ashram location permanently to Lat: 28.3972915, Lng: 78.1460410 for accurate token generation. 2. Clean UI without outside geofence banner. 3. Live UI Box Editor. 4. Real-time active devices counter.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.24.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

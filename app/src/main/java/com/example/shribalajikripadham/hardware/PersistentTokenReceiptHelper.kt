@@ -96,8 +96,8 @@ object PersistentTokenReceiptHelper {
                 phoneNumber = json.optString("phone_number", ""),
                 city = json.optString("city", "डूँगरा जाट (स्थानीय)"),
                 deviceId = savedDeviceId,
-                latitude = json.optDouble("latitude", 28.4089),
-                longitude = json.optDouble("longitude", 77.8789),
+                latitude = json.optDouble("latitude", 28.3972915),
+                longitude = json.optDouble("longitude", 78.1460410),
                 status = try {
                     TokenStatus.valueOf(json.optString("status", "WAITING"))
                 } catch (e: Exception) {

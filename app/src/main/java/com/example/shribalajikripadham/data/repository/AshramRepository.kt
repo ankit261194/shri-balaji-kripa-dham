@@ -653,8 +653,8 @@ class AshramRepository(context: Context) {
                     put("phone_number", safePhone)
                     put("city", safeCity)
                     put("device_id", "REGISTER_SCAN_${now}_$index")
-                    put("latitude", 28.4089)
-                    put("longitude", 77.8789)
+                    put("latitude", 28.3972915)
+                    put("longitude", 78.1460410)
                     put("status", TokenStatus.WAITING.name)
                     put("registered_by", registeredBy)
                     put("photo_uri", "")
@@ -676,8 +676,8 @@ class AshramRepository(context: Context) {
                     phoneNumber = safePhone,
                     city = safeCity,
                     deviceId = "REGISTER_SCAN",
-                    latitude = 28.4089,
-                    longitude = 77.8789,
+                    latitude = 28.3972915,
+                    longitude = 78.1460410,
                     status = TokenStatus.WAITING,
                     registeredBy = registeredBy,
                     photoUri = "",
@@ -1710,8 +1710,8 @@ class AshramRepository(context: Context) {
                         put("destination_address", t.optString("destination_address", "श्री बालाजी कृपा धाम, डुंगरा जाट"))
                         put("distance_km", t.optDouble("distance_km", -1.0).toFloat())
                         put("device_id", t.optString("device_id", "RESTORED"))
-                        put("latitude", t.optDouble("latitude", 28.4089))
-                        put("longitude", t.optDouble("longitude", 77.8789))
+                        put("latitude", t.optDouble("latitude", 28.3972915))
+                        put("longitude", t.optDouble("longitude", 78.1460410))
                         put("status", t.optString("status", "WAITING"))
                         put("registered_by", t.optString("registered_by", "RESTORE"))
                         put("is_darshan_completed", t.optInt("is_darshan_completed", 0))

@@ -20,13 +20,13 @@ class SecurityAndAntiFraudTest {
 
     @Test
     fun testServerSideGeofenceBoundaryValidation() {
-        val ashramLat = 28.4089
-        val ashramLon = 77.8789
+        val ashramLat = 28.3972915
+        val ashramLon = 78.1460410
         val allowedRadius = 200.0 // 200 meters
 
         // 1. Point 50m away inside Ashram
         val insideLat = 28.4092
-        val insideLon = 77.8789
+        val insideLon = 78.1460410
         val distInside = GeofenceLocationManager.calculateDistanceMeters(insideLat, insideLon, ashramLat, ashramLon)
         assertTrue("Distance should be within 200m (Actual: $distInside)", distInside <= allowedRadius)
 

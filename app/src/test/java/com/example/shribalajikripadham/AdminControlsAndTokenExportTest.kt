@@ -78,8 +78,8 @@ class AdminControlsAndTokenExportTest {
             darbarDate = "2026-09-13",
             city = "बुलन्दशहर",
             deviceId = "DEVICE_HW_001",
-            latitude = 28.4089,
-            longitude = 77.8789,
+            latitude = 28.3972915,
+            longitude = 78.1460410,
             createdAt = System.currentTimeMillis()
         )
 
@@ -96,8 +96,8 @@ class AdminControlsAndTokenExportTest {
             phoneNumber = "9812345678",
             darbarDate = "2026-09-13",
             deviceId = "DEVICE_HW_002",
-            latitude = 28.4089,
-            longitude = 77.8789
+            latitude = 28.3972915,
+            longitude = 78.1460410
         )
         assertEquals("Default city must be local Ashram village", "डूँगरा जाट (स्थानीय)", defaultToken.city)
     }
@@ -127,8 +127,8 @@ class AdminControlsAndTokenExportTest {
             darbarDate = "2026-09-13",
             city = "मेरठ",
             deviceId = "DEVICE_HW_005",
-            latitude = 28.4089,
-            longitude = 77.8789,
+            latitude = 28.3972915,
+            longitude = 78.1460410,
             createdAt = 1789200000000L
         )
 

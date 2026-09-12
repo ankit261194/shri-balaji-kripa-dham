@@ -152,8 +152,8 @@ fun TokenRegistrationScreen(
             isCalculatingDistance = true
             val res = DistanceCalculatorService.resolveDrivingDistance(
                 origin = query,
-                deviceLat = if (userLatitude != 0.0) userLatitude else 28.4089,
-                deviceLng = if (userLongitude != 0.0) userLongitude else 77.8789
+                deviceLat = if (userLatitude != 0.0) userLatitude else 28.3972915,
+                deviceLng = if (userLongitude != 0.0) userLongitude else 78.1460410
             )
             estimatedDistanceKm = res.distanceKm
             isCalculatingDistance = false

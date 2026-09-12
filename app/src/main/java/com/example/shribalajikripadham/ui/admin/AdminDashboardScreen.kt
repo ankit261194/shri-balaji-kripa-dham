@@ -3890,8 +3890,8 @@ fun LocationConfigTab(
 
                         OutlinedButton(
                             onClick = {
-                                onLatChange("28.4089")
-                                onLongChange("77.8789")
+                                onLatChange("28.3972915")
+                                onLongChange("78.1460410")
                                 Toast.makeText(context, if (isHindi) "डूँगरा जाट आश्रम कोऑर्डिनेट्स सेट" else "Default Dungra Jaat set", Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.weight(1f)

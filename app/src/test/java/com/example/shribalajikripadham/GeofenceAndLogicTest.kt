@@ -12,16 +12,16 @@ class GeofenceAndLogicTest {
 
     @Test
     fun testHaversineDistanceZeroForIdenticalCoords() {
-        val lat = 28.4089
-        val lon = 77.8789
+        val lat = 28.3972915
+        val lon = 78.1460410
         val distance = GeofenceLocationManager.calculateDistanceMeters(lat, lon, lat, lon)
         assertEquals(0.0, distance, 0.001)
     }
 
     @Test
     fun testGeofenceInsideBoundary() {
-        val ashramLat = 28.4089
-        val ashramLon = 77.8789
+        val ashramLat = 28.3972915
+        val ashramLon = 78.1460410
         // A point ~50m away
         val userLat = 28.4092
         val userLon = 77.8791
@@ -36,8 +36,8 @@ class GeofenceAndLogicTest {
 
     @Test
     fun testGeofenceOutsideBoundary() {
-        val ashramLat = 28.4089
-        val ashramLon = 77.8789
+        val ashramLat = 28.3972915
+        val ashramLon = 78.1460410
         // Delhi / Bulandshahr city center ~30km away
         val userLat = 28.4069
         val userLon = 77.5000
