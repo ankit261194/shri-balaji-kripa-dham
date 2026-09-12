@@ -346,34 +346,7 @@ fun FaceTokenRegistrationScreen(
                 return@Scaffold
             }
 
-            // Geofence status strip
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = if (isInsideGeofence) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (isInsideGeofence) "📍" else "⚠️", fontSize = 14.sp)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (isInsideGeofence)
-                            (if (isHindi) "आश्रम सीमा में (${distanceMeters.toInt()}m - 200m के अंदर)" else "Inside Ashram (${distanceMeters.toInt()}m - within 200m)")
-                        else
-                            (if (isHindi) "आश्रम सीमा से बाहर (${if (distanceMeters < 1000.0) "${distanceMeters.toInt()} मीटर" else "${String.format("%.1f", distanceMeters / 1000.0)} किमी"} - केवल 200m मान्य)" else "Outside Ashram (${if (distanceMeters < 1000.0) "${distanceMeters.toInt()}m" else "${String.format("%.1f", distanceMeters / 1000.0)} km"} - max 200m)"),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (isInsideGeofence) StatusInsideAshram else StatusOutsideAshram
-                    )
-                }
-            }
 
-            Spacer(modifier = Modifier.height(14.dp))
 
             // Custom live notice if configured
             if (settings.sundayTokenCustomNotice.isNotBlank()) {

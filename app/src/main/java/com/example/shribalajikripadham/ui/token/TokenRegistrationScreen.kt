@@ -396,53 +396,6 @@ fun TokenRegistrationScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 2. GEOFENCING STATUS BADGE
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isInsideGeofence) Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
-                ),
-                shape = RoundedCornerShape(14.dp),
-                elevation = CardDefaults.cardElevation(2.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(14.dp)
-                                .clip(CircleShape)
-                                .background(if (isInsideGeofence) StatusInsideAshram else StatusOutsideAshram)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = if (isInsideGeofence)
-                                if (isHindi) "✓ आश्रम परिसर के अंदर (उपस्थित)" else "✓ Inside Ashram Premises (Present)"
-                            else
-                                if (isHindi) "✗ आश्रम परिसर से बाहर" else "✗ Outside Ashram Geofence",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isInsideGeofence) StatusInsideAshram else StatusOutsideAshram
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = if (isInsideGeofence)
-                            if (isHindi)
-                                "आप आश्रम परिसर के अंदर हैं (${distanceMeters.toInt()}m)। स्वीकृत सीमा (${settings.allowedRadiusMeters.coerceIn(50.0, 200.0).toInt()}m) में टोकन पंजीकरण मान्य है।"
-                            else
-                                "You are inside Ashram premises (${distanceMeters.toInt()}m). Token issuance is allowed within ${settings.allowedRadiusMeters.coerceIn(50.0, 200.0).toInt()}m."
-                        else
-                            if (isHindi)
-                                "दूरी: ${if (distanceMeters < 1000.0) "${distanceMeters.toInt()} मीटर" else "${(distanceMeters / 1000.0).let { "%.1f".format(it) }} किमी"}। टोकन केवल आश्रम के ${settings.allowedRadiusMeters.coerceIn(50.0, 200.0).toInt()}m परिसर में उपस्थित होने पर ही जारी होगा।"
-                            else
-                                "Distance: ${if (distanceMeters < 1000.0) "${distanceMeters.toInt()}m" else "${(distanceMeters / 1000.0).let { "%.1f".format(it) }} km"}. Tokens can only be issued within ${settings.allowedRadiusMeters.coerceIn(50.0, 200.0).toInt()}m of Ashram.",
-                        fontSize = 12.sp,
-                        color = TextPrimaryDark
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
 
             // 3. HARDWARE FINGERPRINT & STRICT RULE BANNER / CUSTOM NOTICE
             if (settings.sundayTokenCustomNotice.isNotBlank()) {

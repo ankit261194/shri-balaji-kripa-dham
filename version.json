@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 25,
-  "latest_version_name": "2.22.0",
-  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.22.0): 1. होम स्क्रीन UI बॉक्स संपादक: सुपर एडमिन प्रत्येक बॉक्स का नाम, आइकन, उप-शीर्षक व विशेष सामग्री सीधे बदल सकते हैं और यह सभी भक्तों के फोन में लाइव अपडेट होगा। 2. सुपर एडमिन फोन काउंटर: सुपर एडमिन के डैशबोर्ड पर कितने फोन में ऐप सक्रिय है (कुल व आज) की रियल-टाइम लाइव गिनती। 3. रविवार टोकन बैनर व नियम संपादक: रविवार टोकन स्क्रीन का बैनर, 1 फोन = 1 टोकन नियम व विशेष सूचना पट्टी सुपर एडमिन सीधे बदल सकते हैं।",
-  "update_notes_english": "Customizer & Telemetry Super-Release (v2.22.0): 1. Full Home Screen UI Box Editing: Super Admin can edit title, icon, subtitle & custom announcements for all boxes with live devotee sync. 2. Active Devices Telemetry: Real-time counter showing active phones on Super Admin dashboard. 3. Sunday Token Banner & Rules Customizer: Live editable Sunday banners, hardware rules and notice ticker.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.22.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 26,
+  "latest_version_name": "2.23.0",
+  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.23.0): 1. 'आश्रम परिसर से बाहर' वाला बैनर पूर्णतः हटा दिया गया है। 2. होम स्क्रीन UI बॉक्स व सामग्री संपादक (शीर्षक, आइकन, सब-टाइटल व विशेष सूचना लाइव एडिट)। 3. सुपर एडमिन फोन काउंटर (सक्रिय फोन व आज की लाइव गिनती)। 4. रविवार टोकन बैनर व दिशा-निर्देश संपादक।",
+  "update_notes_english": "Clean UI Release (v2.23.0): 1. Removed outside ashram premises banner for clean UI experience. 2. Live UI Box Editor. 3. Real-time active devices counter on Super Admin dashboard. 4. Sunday Token Banner & Rules Customizer.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.23.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }
