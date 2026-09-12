@@ -53,15 +53,15 @@ fun ModernCardsLayout(
         // 1. Hero Token Card with Saffron / Theme Gradient
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-            shape = RoundedCornerShape(22.dp),
-            elevation = CardDefaults.cardElevation(6.dp),
+            shape = currentTheme.cardShape,
+            elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
                     Brush.horizontalGradient(
                         colors = listOf(currentTheme.primaryColor, currentTheme.secondaryColor)
                     ),
-                    shape = RoundedCornerShape(22.dp)
+                    shape = currentTheme.cardShape
                 )
         ) {
             Column(

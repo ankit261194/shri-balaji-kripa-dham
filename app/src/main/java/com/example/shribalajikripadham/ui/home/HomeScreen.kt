@@ -488,12 +488,12 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 6. SACRED THEMES & COLOR CHOOSER
+            // 6. SACRED THEMES & 360-DEGREE VISUAL STYLE CHOOSER
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(4.dp),
-                border = BorderStroke(1.5.dp, currentTheme.secondaryColor.copy(alpha = 0.6f)),
+                shape = currentTheme.cardShape,
+                elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+                border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.secondaryColor.copy(alpha = 0.6f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -502,13 +502,13 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = if (isHindi) "ऍप का रंग व थीम बदलें" else "Choose App Color Theme",
+                                text = if (isHindi) "ऍप थीम व विज़ुअल स्टाइल बदलें" else "Choose Theme & Visual Style",
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = currentTheme.primaryColor
                             )
                             Text(
-                                text = if (isHindi) "अपनी पसंद का आध्यात्मिक रंग चुनें" else "Select your preferred spiritual color palette",
+                                text = if (isHindi) "फॉन्ट, कार्ड्स के कोने व रंग सब कुछ बदलें" else "Customize fonts, card shapes & spiritual colors",
                                 fontSize = 12.sp,
                                 color = TextSecondaryDark
                             )
@@ -525,13 +525,14 @@ fun HomeScreen(
                             val isSelected = theme == currentTheme
                             Surface(
                                 onClick = { onThemeChanged(theme) },
-                                shape = RoundedCornerShape(14.dp),
+                                shape = theme.cardShape,
                                 color = if (isSelected) theme.primaryColor.copy(alpha = 0.12f) else Color(0xFFF7F7F7),
                                 border = BorderStroke(
-                                    if (isSelected) 2.dp else 1.dp,
+                                    if (isSelected) theme.cardBorderWidth + 0.5.dp else 1.dp,
                                     if (isSelected) theme.primaryColor else Color(0xFFE0E0E0)
                                 ),
-                                modifier = Modifier.width(135.dp)
+                                shadowElevation = if (isSelected) theme.cardElevation else 1.dp,
+                                modifier = Modifier.width(155.dp)
                             ) {
                                 Column(
                                     modifier = Modifier.padding(10.dp),
@@ -539,29 +540,45 @@ fun HomeScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(38.dp)
-                                            .clip(CircleShape)
+                                            .size(40.dp)
+                                            .clip(theme.buttonShape)
                                             .background(theme.primaryColor)
-                                            .border(2.dp, theme.secondaryColor, CircleShape),
+                                            .border(2.dp, theme.secondaryColor, theme.buttonShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(theme.icon, fontSize = 16.sp)
+                                        Text(theme.icon, fontSize = 18.sp)
                                     }
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Text(
                                         text = if (isHindi) theme.nameHindi else theme.nameEnglish,
-                                        fontSize = 11.sp,
+                                        fontSize = 12.sp,
+                                        fontFamily = theme.fontFamily,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                         color = if (isSelected) theme.primaryColor else TextPrimaryDark,
                                         textAlign = TextAlign.Center,
                                         maxLines = 1
                                     )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = if (isSelected) theme.primaryColor.copy(alpha = 0.14f) else Color(0xFFEEEEEE)
+                                    ) {
+                                        Text(
+                                            text = theme.styleBadge,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            fontFamily = theme.fontFamily,
+                                            color = if (isSelected) theme.primaryColor else Color(0xFF616161),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
                                     if (isSelected) {
-                                        Spacer(modifier = Modifier.height(3.dp))
+                                        Spacer(modifier = Modifier.height(4.dp))
                                         Text(
                                             text = "✓ " + if (isHindi) "सक्रिय" else "Active",
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
+                                            fontFamily = theme.fontFamily,
                                             color = theme.primaryColor
                                         )
                                     }
@@ -578,9 +595,9 @@ fun HomeScreen(
             if (activeLayout != AppUiLayout.CLASSIC_DARBAR) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(4.dp),
-                border = BorderStroke(1.5.dp, currentTheme.secondaryColor),
+                shape = currentTheme.cardShape,
+                elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+                border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.secondaryColor),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -1386,9 +1403,9 @@ fun RenderClassicSection(
             // GRAND ROYAL ASHRAM HEADER CARD
             Card(
                 colors = CardDefaults.cardColors(containerColor = currentTheme.primaryColor),
-                shape = RoundedCornerShape(22.dp),
-                elevation = CardDefaults.cardElevation(8.dp),
-                border = BorderStroke(2.dp, currentTheme.secondaryColor),
+                shape = currentTheme.cardShape,
+                elevation = CardDefaults.cardElevation(currentTheme.cardElevation + 4.dp),
+                border = BorderStroke(currentTheme.cardBorderWidth + 0.5.dp, currentTheme.secondaryColor),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Box(

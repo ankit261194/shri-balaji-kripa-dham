@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 13,
-  "latest_version_name": "2.12.0",
-  "update_notes_hindi": "मजबूत सुरक्षा व एंटी-बायपास अपडेट (v2.12.0): 1. अनइंस्टॉल व री-इंस्टॉल बायपास पूरी तरह बंद - पुराना टोकन स्वतः रीस्टोर होगा। 2. लोकेशन सिम्युलेटर बायपास हटाया गया - वास्तविक GPS अनिवार्य। 3. सभी फ़ोनों पर गूगल शीट्स ऑटो-सिंक वितरण।",
-  "update_notes_english": "Security & Anti-Bypass Enforcement (v2.12.0): 1. Reinstall bypass permanently blocked - previous token auto-restores. 2. GPS simulation debug switches removed - strict physical location enforced. 3. Universal Webhook distribution to all devotees.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.12.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 14,
+  "latest_version_name": "2.13.0",
+  "update_notes_hindi": "पूर्ण 360° डायनेमिक विज़ुअल थीम सिस्टम (v2.13.0): 1. थीम बदलते ही फॉन्ट (सेरिफ / सांस-सेरिफ), कार्ड्स व बॉक्सेस के कोने (मंदिर मेहराब, गोपुरम, डायमंड कट, स्मूथ स्क्वर्कर, तुलसी पर्ण, ग्लास लुक) स्वतः बदलेंगे। 2. थीम पिकर में विज़ुअल स्टाइल बैज व लाइव प्रिव्यू।",
+  "update_notes_english": "360-Degree Dynamic Visual Theming Engine (v2.13.0): 1. Seamless transformation of typography (Serif/Sans-Serif), box shapes (Mandir Jharokha, Gopuram Arch, Diamond Cut, Smooth Squircle, Tulsi Leaf, Floating Glass), borders and elevations. 2. Visual style badges and live shape previews.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.13.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": false
 }
