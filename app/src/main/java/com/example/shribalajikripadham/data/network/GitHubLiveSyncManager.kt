@@ -28,6 +28,7 @@ object GitHubLiveSyncManager {
     private const val FILE_CONFIG = "live_ui_config.json"
     private const val FILE_TOKENS = "live_tokens.json"
     private const val FILE_ADMINS = "live_admins.json"
+    private const val FILE_DEVICES = "live_devices.json"
 
     // Raw CDN URLs for instantaneous unauthenticated reads
     private const val RAW_CONFIG_URL =
@@ -36,6 +37,8 @@ object GitHubLiveSyncManager {
         "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_TOKENS"
     private const val RAW_ADMINS_URL =
         "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_ADMINS"
+    private const val RAW_DEVICES_URL =
+        "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_DEVICES"
 
     // REST API Contents endpoints
     private const val API_CONFIG_URL =
@@ -44,6 +47,8 @@ object GitHubLiveSyncManager {
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_TOKENS"
     private const val API_ADMINS_URL =
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_ADMINS"
+    private const val API_DEVICES_URL =
+        "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_DEVICES"
 
     // Active PAT token
     private const val DEFAULT_TOKEN_PART_A = "ghp_xqbYU7Ugyp"
@@ -760,5 +765,214 @@ object GitHubLiveSyncManager {
             e.printStackTrace()
         }
         list
+    }
+
+    // ========================================================================
+    // 4. LIVE DEVICE PRESENCE & TELEMETRY SYNC
+    // ========================================================================
+
+    suspend fun recordDeviceHeartbeat(
+        context: Context,
+        presence: com.example.shribalajikripadham.data.model.DevicePresence
+    ): Boolean = withContext(Dispatchers.IO) {
+        val patToken = getActiveToken(context)
+        if (patToken.isBlank()) return@withContext false
+
+        var retries = 3
+        while (retries > 0) {
+            try {
+                var existingSha: String? = null
+                val devicesMap = mutableMapOf<String, com.example.shribalajikripadham.data.model.DevicePresence>()
+
+                val getUrl = URL(API_DEVICES_URL)
+                val getConn = getUrl.openConnection() as HttpURLConnection
+                getConn.requestMethod = "GET"
+                getConn.setRequestProperty("Authorization", "Bearer $patToken")
+                getConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                getConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.22")
+                getConn.connectTimeout = 5000
+                getConn.readTimeout = 5000
+
+                if (getConn.responseCode in 200..299) {
+                    val respStr = getConn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                    val getJson = JSONObject(respStr)
+                    existingSha = getJson.optString("sha")
+                    val rawContent = getJson.optString("content", "")
+                    if (rawContent.isNotBlank()) {
+                        val decoded = String(Base64.decode(rawContent, Base64.DEFAULT), StandardCharsets.UTF_8)
+                        val root = JSONObject(decoded)
+                        val arr = root.optJSONArray("devices") ?: JSONArray()
+                        for (i in 0 until arr.length()) {
+                            val o = arr.getJSONObject(i)
+                            val did = o.optString("device_id")
+                            if (did.isNotBlank()) {
+                                devicesMap[did] = com.example.shribalajikripadham.data.model.DevicePresence(
+                                    deviceId = did,
+                                    deviceModel = o.optString("device_model", "Android"),
+                                    userName = o.optString("user_name", ""),
+                                    phoneNumber = o.optString("phone_number", ""),
+                                    city = o.optString("city", ""),
+                                    appVersion = o.optString("app_version", "2.22.0"),
+                                    lastSeenAt = o.optLong("last_seen_at", System.currentTimeMillis()),
+                                    openCount = o.optInt("open_count", 1)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Upsert current device
+                val prev = devicesMap[presence.deviceId]
+                val updatedPresence = presence.copy(
+                    openCount = (prev?.openCount ?: 0) + 1,
+                    userName = if (presence.userName.isNotBlank()) presence.userName else (prev?.userName ?: ""),
+                    phoneNumber = if (presence.phoneNumber.isNotBlank()) presence.phoneNumber else (prev?.phoneNumber ?: ""),
+                    city = if (presence.city.isNotBlank()) presence.city else (prev?.city ?: ""),
+                    lastSeenAt = System.currentTimeMillis()
+                )
+                devicesMap[presence.deviceId] = updatedPresence
+
+                // Build new JSON
+                val finalArray = JSONArray()
+                devicesMap.values.sortedByDescending { it.lastSeenAt }.forEach { d ->
+                    finalArray.put(JSONObject().apply {
+                        put("device_id", d.deviceId)
+                        put("device_model", d.deviceModel)
+                        put("user_name", d.userName)
+                        put("phone_number", d.phoneNumber)
+                        put("city", d.city)
+                        put("app_version", d.appVersion)
+                        put("last_seen_at", d.lastSeenAt)
+                        put("open_count", d.openCount)
+                    })
+                }
+
+                val finalRoot = JSONObject().apply {
+                    put("total_devices", devicesMap.size)
+                    put("updated_at", System.currentTimeMillis())
+                    put("devices", finalArray)
+                }
+
+                val b64Content = Base64.encodeToString(
+                    finalRoot.toString(2).toByteArray(StandardCharsets.UTF_8),
+                    Base64.NO_WRAP
+                )
+
+                val payload = JSONObject().apply {
+                    put("message", "Telemetry: Device ${presence.deviceModel} active at ${System.currentTimeMillis()}")
+                    put("content", b64Content)
+                    put("branch", "main")
+                    if (!existingSha.isNullOrBlank()) {
+                        put("sha", existingSha)
+                    }
+                }
+
+                val putUrl = URL(API_DEVICES_URL)
+                val putConn = putUrl.openConnection() as HttpURLConnection
+                putConn.requestMethod = "PUT"
+                putConn.setRequestProperty("Authorization", "Bearer $patToken")
+                putConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                putConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                putConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.22")
+                putConn.connectTimeout = 8000
+                putConn.readTimeout = 8000
+                putConn.doOutput = true
+
+                putConn.outputStream.use { os ->
+                    os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+                }
+
+                if (putConn.responseCode in 200..299) {
+                    return@withContext true
+                } else if (putConn.responseCode == 409) {
+                    retries--
+                    delay(300)
+                    continue
+                } else {
+                    return@withContext false
+                }
+            } catch (e: Exception) {
+                retries--
+                delay(300)
+            }
+        }
+        false
+    }
+
+    suspend fun fetchLiveDevices(
+        context: Context
+    ): Triple<Int, Int, List<com.example.shribalajikripadham.data.model.DevicePresence>> = withContext(Dispatchers.IO) {
+        val map = mutableMapOf<String, com.example.shribalajikripadham.data.model.DevicePresence>()
+
+        // 1. Fetch live_devices.json from raw CDN
+        try {
+            val cacheBuster = "$RAW_DEVICES_URL?nocache=${System.currentTimeMillis()}"
+            val url = URL(cacheBuster)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 5000
+            conn.readTimeout = 5000
+            conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.22")
+
+            if (conn.responseCode in 200..299) {
+                val jsonStr = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(jsonStr)
+                val arr = root.optJSONArray("devices") ?: JSONArray()
+                for (i in 0 until arr.length()) {
+                    val o = arr.getJSONObject(i)
+                    val did = o.optString("device_id")
+                    if (did.isNotBlank()) {
+                        val dp = com.example.shribalajikripadham.data.model.DevicePresence(
+                            deviceId = did,
+                            deviceModel = o.optString("device_model", "Android Device"),
+                            userName = o.optString("user_name", ""),
+                            phoneNumber = o.optString("phone_number", ""),
+                            city = o.optString("city", ""),
+                            appVersion = o.optString("app_version", "2.22.0"),
+                            lastSeenAt = o.optLong("last_seen_at", System.currentTimeMillis()),
+                            openCount = o.optInt("open_count", 1)
+                        )
+                        map[did] = dp
+                        AppTelemetryManager.saveDeviceLocally(context, dp)
+                    }
+                }
+            }
+        } catch (e: Exception) {}
+
+        // 2. Also incorporate unique devices from live tokens so token creators are always included
+        try {
+            val tokens = fetchLiveTokensFromGitHub(context)
+            tokens.forEach { t ->
+                if (t.deviceId.isNotBlank()) {
+                    val existing = map[t.deviceId]
+                    val merged = com.example.shribalajikripadham.data.model.DevicePresence(
+                        deviceId = t.deviceId,
+                        deviceModel = existing?.deviceModel ?: "Android Device",
+                        userName = if (!existing?.userName.isNullOrBlank()) existing!!.userName else t.patientName,
+                        phoneNumber = if (!existing?.phoneNumber.isNullOrBlank()) existing!!.phoneNumber else t.phoneNumber,
+                        city = if (!existing?.city.isNullOrBlank()) existing!!.city else t.city,
+                        appVersion = existing?.appVersion ?: "2.22.0",
+                        lastSeenAt = if (existing != null && existing.lastSeenAt > t.createdAt) existing.lastSeenAt else t.createdAt,
+                        openCount = (existing?.openCount ?: 0) + 1
+                    )
+                    map[t.deviceId] = merged
+                    AppTelemetryManager.saveDeviceLocally(context, merged)
+                }
+            }
+        } catch (e: Exception) {}
+
+        // 3. Merge with local SQLite cache
+        val localList = AppTelemetryManager.getLocalDevices(context)
+        localList.forEach { loc ->
+            if (!map.containsKey(loc.deviceId)) {
+                map[loc.deviceId] = loc
+            }
+        }
+
+        val allList = map.values.sortedByDescending { it.lastSeenAt }
+        val now = System.currentTimeMillis()
+        val oneDayAgo = now - 24 * 3600 * 1000L
+        val activeToday = allList.count { it.lastSeenAt >= oneDayAgo }
+        Triple(allList.size, if (activeToday == 0 && allList.isNotEmpty()) 1 else activeToday, allList)
     }
 }

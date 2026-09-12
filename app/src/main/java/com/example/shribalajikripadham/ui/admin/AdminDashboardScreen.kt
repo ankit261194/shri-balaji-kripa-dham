@@ -130,6 +130,11 @@ fun AdminDashboardScreen(
     var customFacebookPage by remember { mutableStateOf("") }
     var customInstagramPage by remember { mutableStateOf("") }
     var customAppShareUrl by remember { mutableStateOf("") }
+    var customSundayTokenBannerTitle by remember { mutableStateOf("") }
+    var customSundayTokenBannerText by remember { mutableStateOf("") }
+    var customSundayTokenCustomNotice by remember { mutableStateOf("") }
+    var telemetryTotalDevices by remember { mutableIntStateOf(0) }
+    var telemetryActiveToday by remember { mutableIntStateOf(0) }
     var customizerSuccessMsg by remember { mutableStateOf<String?>(null) }
 
     // Service Toggles & Master Visibility
@@ -222,6 +227,17 @@ fun AdminDashboardScreen(
             customFacebookPage = s.facebookPageUrl
             customInstagramPage = s.instagramUrl
             customAppShareUrl = s.appShareUrl
+            customSundayTokenBannerTitle = s.sundayTokenBannerTitle
+            customSundayTokenBannerText = s.sundayTokenBannerText
+            customSundayTokenCustomNotice = s.sundayTokenCustomNotice
+
+            try {
+                val telemetry = repository.getActiveDevicesTelemetry()
+                telemetryTotalDevices = telemetry.first
+                telemetryActiveToday = telemetry.second
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
 
             svcTokenEnabled = s.isTokenServiceEnabled
             svcYatraEnabled = s.isYatraServiceEnabled
@@ -718,6 +734,27 @@ fun AdminDashboardScreen(
                                     fontSize = 12.sp,
                                     color = Color.DarkGray
                                 )
+                                if (isSuper) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Surface(
+                                        color = Color(0xFFE8F5E9),
+                                        shape = RoundedCornerShape(6.dp),
+                                        border = BorderStroke(1.dp, Color(0xFF81C784))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text("📱 ", fontSize = 11.sp)
+                                            Text(
+                                                text = if (isHindi) "सक्रिय फोन: $telemetryTotalDevices (आज सक्रिय: $telemetryActiveToday)" else "Active Handsets: $telemetryTotalDevices (Today: $telemetryActiveToday)",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF1B5E20)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
@@ -1154,6 +1191,12 @@ fun AdminDashboardScreen(
                                 onInstagramPageChange = { customInstagramPage = it },
                                 appShareUrl = customAppShareUrl,
                                 onAppShareUrlChange = { customAppShareUrl = it },
+                                sundayTokenBannerTitle = customSundayTokenBannerTitle,
+                                onSundayTokenBannerTitleChange = { customSundayTokenBannerTitle = it },
+                                sundayTokenBannerText = customSundayTokenBannerText,
+                                onSundayTokenBannerTextChange = { customSundayTokenBannerText = it },
+                                sundayTokenCustomNotice = customSundayTokenCustomNotice,
+                                onSundayTokenCustomNoticeChange = { customSundayTokenCustomNotice = it },
                                 successMsg = customizerSuccessMsg,
                                 events = eventsList,
                                 onOpenAddEvent = { showAddEventDialog = true },
@@ -1182,6 +1225,11 @@ fun AdminDashboardScreen(
                                             customFacebookPage,
                                             customInstagramPage,
                                             customAppShareUrl
+                                        )
+                                        repository.updateSundayTokenBanner(
+                                            customSundayTokenBannerTitle,
+                                            customSundayTokenBannerText,
+                                            customSundayTokenCustomNotice
                                         )
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                         customizerSuccessMsg = if (isHindi) "✓ आश्रम विवरण, फोटो व सोशल लिंक्स सुरक्षित व सभी भक्तों के फोन पर लाइव अपडेट हो गए!" else "Ashram details saved & published live to all users!"
@@ -4574,6 +4622,12 @@ fun AppCustomizerTab(
     onInstagramPageChange: (String) -> Unit,
     appShareUrl: String,
     onAppShareUrlChange: (String) -> Unit,
+    sundayTokenBannerTitle: String = "",
+    onSundayTokenBannerTitleChange: (String) -> Unit = {},
+    sundayTokenBannerText: String = "",
+    onSundayTokenBannerTextChange: (String) -> Unit = {},
+    sundayTokenCustomNotice: String = "",
+    onSundayTokenCustomNoticeChange: (String) -> Unit = {},
     successMsg: String?,
     events: List<AshramEvent>,
     onOpenAddEvent: () -> Unit,
@@ -4734,6 +4788,76 @@ fun AppCustomizerTab(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
                     ) {
                         Text(if (isHindi) "सोशल लिंक्स सुरक्षित करें" else "Save Social Links", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(14.dp),
+                elevation = CardDefaults.cardElevation(3.dp),
+                border = BorderStroke(1.2.dp, SaffronPrimary.copy(alpha = 0.6f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🎟️", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isHindi) "रविवार टोकन बैनर व दिशा-निर्देश संपादक" else "Sunday Token Banner & Guidelines",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaroonPrimary
+                        )
+                    }
+                    Text(
+                        text = if (isHindi)
+                            "यहाँ से रविवार टोकन स्क्रीन पर प्रदर्शित होने वाला मुख्य बैनर, 1 फोन = 1 टोकन नियम व विशेष सूचना पट्टी बदलें। यह तुरंत सभी भक्तों के फोन में लाइव अपडेट होगा।"
+                        else
+                            "Customize the Sunday Token banner, hardware restriction rules and live announcement ticker displayed on all devotee phones.",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = sundayTokenBannerTitle,
+                        onValueChange = onSundayTokenBannerTitleChange,
+                        label = { Text(if (isHindi) "टोकन बैनर मुख्य शीर्षक" else "Sunday Token Banner Title") },
+                        placeholder = { Text("हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = sundayTokenBannerText,
+                        onValueChange = onSundayTokenBannerTextChange,
+                        label = { Text(if (isHindi) "टोकन बैनर नियम विवरण" else "Sunday Token Banner Details") },
+                        placeholder = { Text("एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 टोकन लिया जा सकता है।") },
+                        minLines = 2,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = sundayTokenCustomNotice,
+                        onValueChange = onSundayTokenCustomNoticeChange,
+                        label = { Text(if (isHindi) "विशेष लाइव सूचना पट्टी (Notice Ticker)" else "Sunday Token Live Notice") },
+                        placeholder = { Text("विशेष सूचना: कृपया आश्रम पहुंचकर ही टोकन प्राप्त करें।") },
+                        minLines = 2,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Button(
+                        onClick = onSave,
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
+                    ) {
+                        Text(
+                            if (isHindi) "💾 रविवार टोकन बैनर सुरक्षित व लाइव करें" else "Save & Publish Sunday Banner",
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
@@ -5668,6 +5792,16 @@ fun UiBoxControlTab(
     var publishResult by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
     var showPublishResultDialog by remember { mutableStateOf(false) }
 
+    // Section Edit Dialog State
+    var editingSection by remember { mutableStateOf<UiSectionConfig?>(null) }
+    var editTitleHi by remember { mutableStateOf("") }
+    var editTitleEn by remember { mutableStateOf("") }
+    var editIcon by remember { mutableStateOf("") }
+    var editSubtitleHi by remember { mutableStateOf("") }
+    var editSubtitleEn by remember { mutableStateOf("") }
+    var editContentHi by remember { mutableStateOf("") }
+    var editContentEn by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -5931,20 +6065,37 @@ fun UiBoxControlTab(
                             color = Color.DarkGray
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = if (section.isVisible) Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
-                        ) {
-                            Text(
-                                text = if (section.isVisible)
-                                    (if (isHindi) "● दिखाई देगा" else "● Visible")
-                                else
-                                    (if (isHindi) "○ छिपा हुआ" else "○ Hidden"),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (section.isVisible) Color(0xFF2E7D32) else Color(0xFFC62828)
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (section.isVisible) Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
+                            ) {
+                                Text(
+                                    text = if (section.isVisible)
+                                        (if (isHindi) "● दिखाई देगा" else "● Visible")
+                                    else
+                                        (if (isHindi) "○ छिपा हुआ" else "○ Hidden"),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (section.isVisible) Color(0xFF2E7D32) else Color(0xFFC62828)
+                                )
+                            }
+                            if (section.customSubtitleHindi.isNotBlank() || section.customContentHindi.isNotBlank()) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFFFF3E0)
+                                ) {
+                                    Text(
+                                        text = "✏️ " + (if (isHindi) "संपादित" else "Edited"),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFE65100)
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -5988,6 +6139,23 @@ fun UiBoxControlTab(
                             modifier = Modifier.size(36.dp)
                         ) {
                             Text("⬇️", fontSize = 16.sp)
+                        }
+
+                        // Edit Button (✏️)
+                        IconButton(
+                            onClick = {
+                                editingSection = section
+                                editTitleHi = section.titleHindi
+                                editTitleEn = section.titleEnglish
+                                editIcon = section.icon
+                                editSubtitleHi = section.customSubtitleHindi
+                                editSubtitleEn = section.customSubtitleEnglish
+                                editContentHi = section.customContentHindi
+                                editContentEn = section.customContentEnglish
+                            },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Text("✏️", fontSize = 16.sp)
                         }
 
                         // Visibility Toggle (Eye / Eye-off)
@@ -6063,6 +6231,131 @@ fun UiBoxControlTab(
             },
             dismissButton = {
                 TextButton(onClick = { showConfirmResetDialog = false }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // Section Edit Dialog
+    if (editingSection != null) {
+        val target = editingSection!!
+        AlertDialog(
+            onDismissRequest = { editingSection = null },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(editIcon.ifEmpty { target.icon }, fontSize = 24.sp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = if (isHindi) "बॉक्स सामग्री संपादित करें" else "Edit Box Content",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaroonPrimary
+                        )
+                        Text(
+                            text = "ID: ${target.sectionId}",
+                            fontSize = 11.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = if (isHindi)
+                            "सुपर एडमिन इस बॉक्स का नाम, आइकन, सब-टाइटल व विशेष सूचना/नियम बदल सकते हैं। सेव करने पर यह सभी भक्तों के फोन में तुरंत लाइव अपडेट हो जाएगा।"
+                        else
+                            "Edit title, icon, subtitle & custom announcements/rules for this box. Live syncs to all devotee handsets.",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+
+                    OutlinedTextField(
+                        value = editTitleHi,
+                        onValueChange = { editTitleHi = it },
+                        label = { Text(if (isHindi) "शीर्षक (हिंदी)" else "Title (Hindi)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = editTitleEn,
+                        onValueChange = { editTitleEn = it },
+                        label = { Text(if (isHindi) "शीर्षक (अंग्रेज़ी)" else "Title (English)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = editIcon,
+                        onValueChange = { editIcon = it },
+                        label = { Text(if (isHindi) "आइकन / इमोजी" else "Icon / Emoji") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = editSubtitleHi,
+                        onValueChange = { editSubtitleHi = it },
+                        label = { Text(if (isHindi) "उप-शीर्षक (हिंदी) (वैकल्पिक)" else "Subtitle (Hindi) (Optional)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = editSubtitleEn,
+                        onValueChange = { editSubtitleEn = it },
+                        label = { Text(if (isHindi) "उप-शीर्षक (अंग्रेज़ी) (वैकल्पिक)" else "Subtitle (English) (Optional)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = editContentHi,
+                        onValueChange = { editContentHi = it },
+                        label = { Text(if (isHindi) "विशेष घोषणा / नियम / सामग्री (हिंदी)" else "Custom Content / Rules (Hindi)") },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = editContentEn,
+                        onValueChange = { editContentEn = it },
+                        label = { Text(if (isHindi) "विशेष घोषणा / सामग्री (अंग्रेज़ी)" else "Custom Content (English)") },
+                        minLines = 2,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val list = localSections.toMutableList()
+                        val idx = list.indexOfFirst { it.sectionId == target.sectionId }
+                        if (idx >= 0) {
+                            list[idx] = list[idx].copy(
+                                titleHindi = editTitleHi.trim().ifEmpty { target.titleHindi },
+                                titleEnglish = editTitleEn.trim().ifEmpty { target.titleEnglish },
+                                icon = editIcon.trim().ifEmpty { target.icon },
+                                customSubtitleHindi = editSubtitleHi.trim(),
+                                customSubtitleEnglish = editSubtitleEn.trim(),
+                                customContentHindi = editContentHi.trim(),
+                                customContentEnglish = editContentEn.trim()
+                            )
+                            localSections = list
+                            hasUnsavedChanges = true
+                        }
+                        editingSection = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                ) {
+                    Text(if (isHindi) "लागू करें (Apply)" else "Apply", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingSection = null }) {
                     Text(if (isHindi) "रद्द करें" else "Cancel")
                 }
             }

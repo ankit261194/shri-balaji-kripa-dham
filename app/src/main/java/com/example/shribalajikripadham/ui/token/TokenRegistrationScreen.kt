@@ -444,7 +444,31 @@ fun TokenRegistrationScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 3. HARDWARE FINGERPRINT & STRICT RULE BANNER
+            // 3. HARDWARE FINGERPRINT & STRICT RULE BANNER / CUSTOM NOTICE
+            if (settings.sundayTokenCustomNotice.isNotBlank()) {
+                Surface(
+                    color = Color(0xFFFFF3E0),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, Color(0xFFFFB74D)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "📢", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = settings.sundayTokenCustomNotice,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE65100)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
             Surface(
                 color = Color(0xFFFFF8E1),
                 shape = RoundedCornerShape(10.dp),
@@ -458,16 +482,20 @@ fun TokenRegistrationScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = if (isHindi) "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन" else "Hardware Rule: 1 Device = 1 Sunday Token",
+                            text = settings.sundayTokenBannerTitle.ifBlank {
+                                if (isHindi) "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन" else "Hardware Rule: 1 Device = 1 Sunday Token"
+                            },
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = SaffronDark
                         )
                         Text(
-                            text = if (isHindi)
-                                "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 टोकन लिया जा सकता है।"
-                            else
-                                "Each physical handset is strictly restricted to 1 token per Sunday.",
+                            text = settings.sundayTokenBannerText.ifBlank {
+                                if (isHindi)
+                                    "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 टोकन लिया जा सकता है।"
+                                else
+                                    "Each physical handset is strictly restricted to 1 token per Sunday."
+                            },
                             fontSize = 11.sp,
                             color = TextSecondaryDark
                         )

@@ -9,7 +9,11 @@ data class UiSectionConfig(
     val titleEnglish: String,
     val icon: String,
     val isVisible: Boolean = true,
-    val orderIndex: Int = 0
+    val orderIndex: Int = 0,
+    val customSubtitleHindi: String = "",
+    val customSubtitleEnglish: String = "",
+    val customContentHindi: String = "",
+    val customContentEnglish: String = ""
 ) {
     companion object {
         const val ID_GURUJI_BANNER = "GURUJI_BANNER"
@@ -134,6 +138,10 @@ data class UiSectionConfig(
                     put("icon", item.icon)
                     put("is_visible", item.isVisible)
                     put("order_index", item.orderIndex)
+                    put("custom_subtitle_hindi", item.customSubtitleHindi)
+                    put("custom_subtitle_english", item.customSubtitleEnglish)
+                    put("custom_content_hindi", item.customContentHindi)
+                    put("custom_content_english", item.customContentEnglish)
                 }
                 arr.put(obj)
             }
@@ -154,7 +162,11 @@ data class UiSectionConfig(
                             titleEnglish = obj.optString("title_english", ""),
                             icon = obj.optString("icon", "📌"),
                             isVisible = obj.optBoolean("is_visible", true),
-                            orderIndex = obj.optInt("order_index", i)
+                            orderIndex = obj.optInt("order_index", i),
+                            customSubtitleHindi = obj.optString("custom_subtitle_hindi", ""),
+                            customSubtitleEnglish = obj.optString("custom_subtitle_english", ""),
+                            customContentHindi = obj.optString("custom_content_hindi", ""),
+                            customContentEnglish = obj.optString("custom_content_english", "")
                         )
                     )
                 }

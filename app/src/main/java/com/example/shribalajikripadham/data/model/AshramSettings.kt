@@ -47,7 +47,11 @@ data class AshramSettings(
     val isUiLayoutEnforced: Boolean = false,
     // Cloud Sync Server Endpoint
     val cloudSyncUrl: String = "",
-    val isCloudSyncEnabled: Boolean = false
+    val isCloudSyncEnabled: Boolean = false,
+    // Sunday Token Screen Dynamic Banner & Custom Notice
+    val sundayTokenBannerTitle: String = "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन",
+    val sundayTokenBannerText: String = "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।",
+    val sundayTokenCustomNotice: String = ""
 )
 
 data class CustomCityDistance(

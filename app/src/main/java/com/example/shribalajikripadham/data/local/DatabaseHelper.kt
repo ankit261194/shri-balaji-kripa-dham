@@ -123,7 +123,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     max_daily_tokens INTEGER NOT NULL DEFAULT 0,
                     is_ui_layout_enforced INTEGER NOT NULL DEFAULT 0,
                     cloud_sync_url TEXT NOT NULL DEFAULT '',
-                    is_cloud_sync_enabled INTEGER NOT NULL DEFAULT 0
+                    is_cloud_sync_enabled INTEGER NOT NULL DEFAULT 0,
+                    sunday_token_banner_title TEXT NOT NULL DEFAULT 'हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन',
+                    sunday_token_banner_text TEXT NOT NULL DEFAULT 'एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।',
+                    sunday_token_custom_notice TEXT NOT NULL DEFAULT ''
                 )
             """.trimIndent())
         } catch (e: Exception) { e.printStackTrace() }
@@ -310,7 +313,11 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     title_english TEXT NOT NULL,
                     icon TEXT NOT NULL,
                     is_visible INTEGER NOT NULL DEFAULT 1,
-                    order_index INTEGER NOT NULL DEFAULT 0
+                    order_index INTEGER NOT NULL DEFAULT 0,
+                    custom_subtitle_hindi TEXT NOT NULL DEFAULT '',
+                    custom_subtitle_english TEXT NOT NULL DEFAULT '',
+                    custom_content_hindi TEXT NOT NULL DEFAULT '',
+                    custom_content_english TEXT NOT NULL DEFAULT ''
                 )
             """.trimIndent())
         } catch (e: Exception) { e.printStackTrace() }
@@ -363,6 +370,13 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             "ALTER TABLE ashram_settings ADD COLUMN is_ui_layout_enforced INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN cloud_sync_url TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN is_cloud_sync_enabled INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN sunday_token_banner_title TEXT NOT NULL DEFAULT 'हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन'",
+            "ALTER TABLE ashram_settings ADD COLUMN sunday_token_banner_text TEXT NOT NULL DEFAULT 'एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।'",
+            "ALTER TABLE ashram_settings ADD COLUMN sunday_token_custom_notice TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ui_section_configs ADD COLUMN custom_subtitle_hindi TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ui_section_configs ADD COLUMN custom_subtitle_english TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ui_section_configs ADD COLUMN custom_content_hindi TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ui_section_configs ADD COLUMN custom_content_english TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE tokens ADD COLUMN is_darshan_completed INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE tokens ADD COLUMN darshan_completed_at INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE tokens ADD COLUMN origin_address TEXT NOT NULL DEFAULT ''",

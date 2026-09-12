@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 24,
-  "latest_version_name": "2.21.0",
-  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.21.0): 1. पूर्णतः ऑनलाइन क्लाउड सिंक: सेवाएं ऑन/ऑफ, टोकन समय, और दिव्य घोषणाएं अब सीधे सभी भक्तों के फोन पर लाइव अपडेट होती हैं। 2. एडमिन डैशबोर्ड पर 20-सेकंड ऑटो-रिफ्रेश: भक्तों द्वारा आश्रम में बनाए गए टोकन बिना किसी बटन दबाए स्वतः स्क्रीन पर जुड़ जाते हैं। 3. आश्रम परिसर 100m-200m सख्त भू-घेरा (कड़ा पहरा): 200m से बाहर टोकन बनना नामुमकिन। 4. 16 अनुमतियों की सुपर एडमिन लिस्ट लाइव सिंक।",
-  "update_notes_english": "Universal Real-time Synchronization (v2.21.0): 1. Comprehensive Cloud Sync: Service toggles, scheduled timings, and broadcasts now sync live to all devotees. 2. 20-Second Dashboard Auto-Refresh: Devotee tokens appear on Admin screen automatically. 3. Ultra-strict 100m-200m Ashram geofence with hard 200m ceiling. 4. Real-time Sevadar Permissions synchronization.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.21.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 25,
+  "latest_version_name": "2.22.0",
+  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.22.0): 1. होम स्क्रीन UI बॉक्स संपादक: सुपर एडमिन प्रत्येक बॉक्स का नाम, आइकन, उप-शीर्षक व विशेष सामग्री सीधे बदल सकते हैं और यह सभी भक्तों के फोन में लाइव अपडेट होगा। 2. सुपर एडमिन फोन काउंटर: सुपर एडमिन के डैशबोर्ड पर कितने फोन में ऐप सक्रिय है (कुल व आज) की रियल-टाइम लाइव गिनती। 3. रविवार टोकन बैनर व नियम संपादक: रविवार टोकन स्क्रीन का बैनर, 1 फोन = 1 टोकन नियम व विशेष सूचना पट्टी सुपर एडमिन सीधे बदल सकते हैं।",
+  "update_notes_english": "Customizer & Telemetry Super-Release (v2.22.0): 1. Full Home Screen UI Box Editing: Super Admin can edit title, icon, subtitle & custom announcements for all boxes with live devotee sync. 2. Active Devices Telemetry: Real-time counter showing active phones on Super Admin dashboard. 3. Sunday Token Banner & Rules Customizer: Live editable Sunday banners, hardware rules and notice ticker.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.22.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

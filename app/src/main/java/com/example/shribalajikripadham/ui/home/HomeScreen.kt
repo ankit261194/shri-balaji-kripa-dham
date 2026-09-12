@@ -421,6 +421,7 @@ fun HomeScreen(
                 for (section in sortedVisibleSections) {
                     RenderClassicSection(
                         sectionId = section.sectionId,
+                        sectionConfig = section,
                         settings = settings,
                         isHindi = isHindi,
                         currentTheme = currentTheme,
@@ -1393,6 +1394,7 @@ fun EventCard(title: String, subtitle: String, icon: String, badge: String) {
 @Composable
 fun RenderClassicSection(
     sectionId: String,
+    sectionConfig: UiSectionConfig? = null,
     settings: AshramSettings,
     isHindi: Boolean,
     currentTheme: SacredTheme,
@@ -1406,6 +1408,49 @@ fun RenderClassicSection(
     onNavigateToParchas: () -> Unit = {},
     context: Context
 ) {
+    // Custom announcement / guideline banner customized by Super Admin
+    if (sectionConfig != null && (sectionConfig.customContentHindi.isNotBlank() || sectionConfig.customSubtitleHindi.isNotBlank())) {
+        val subtitleText = if (isHindi) sectionConfig.customSubtitleHindi.ifEmpty { sectionConfig.customSubtitleEnglish } else sectionConfig.customSubtitleEnglish.ifEmpty { sectionConfig.customSubtitleHindi }
+        val contentText = if (isHindi) sectionConfig.customContentHindi.ifEmpty { sectionConfig.customContentEnglish } else sectionConfig.customContentEnglish.ifEmpty { sectionConfig.customContentHindi }
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9EE)),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.6f)),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(sectionConfig.icon, fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isHindi) sectionConfig.titleHindi else sectionConfig.titleEnglish,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = MaroonPrimary
+                    )
+                    if (subtitleText.isNotBlank()) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "• $subtitleText",
+                            fontSize = 11.sp,
+                            color = Color.DarkGray
+                        )
+                    }
+                }
+                if (contentText.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = contentText,
+                        fontSize = 12.sp,
+                        color = Color(0xFF3E2723),
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+        }
+    }
+
     when (sectionId) {
         UiSectionConfig.ID_GURUJI_BANNER -> {
             // GRAND ROYAL ASHRAM HEADER CARD

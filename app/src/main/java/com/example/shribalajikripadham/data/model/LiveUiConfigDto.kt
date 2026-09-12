@@ -42,7 +42,10 @@ data class ServicesConfigDto(
     val isGurujiInfoVisible: Boolean = true,
     val isEmergencyNoticeVisible: Boolean = true,
     val scheduledTokenOpenTimestamp: Long = 0L,
-    val maxDailyTokens: Int = 0
+    val maxDailyTokens: Int = 0,
+    val sundayTokenBannerTitle: String = "",
+    val sundayTokenBannerText: String = "",
+    val sundayTokenCustomNotice: String = ""
 )
 
 data class LiveUiConfigDto(
@@ -103,6 +106,9 @@ data class LiveUiConfigDto(
         srvObj.put("is_emergency_notice_visible", servicesConfig.isEmergencyNoticeVisible)
         srvObj.put("scheduled_token_open_timestamp", servicesConfig.scheduledTokenOpenTimestamp)
         srvObj.put("max_daily_tokens", servicesConfig.maxDailyTokens)
+        srvObj.put("sunday_token_banner_title", servicesConfig.sundayTokenBannerTitle)
+        srvObj.put("sunday_token_banner_text", servicesConfig.sundayTokenBannerText)
+        srvObj.put("sunday_token_custom_notice", servicesConfig.sundayTokenCustomNotice)
         root.put("services_config", srvObj)
 
         val secArr = JSONArray()
@@ -114,6 +120,10 @@ data class LiveUiConfigDto(
             sObj.put("icon", s.icon)
             sObj.put("is_visible", s.isVisible)
             sObj.put("order_index", s.orderIndex)
+            sObj.put("custom_subtitle_hindi", s.customSubtitleHindi)
+            sObj.put("custom_subtitle_english", s.customSubtitleEnglish)
+            sObj.put("custom_content_hindi", s.customContentHindi)
+            sObj.put("custom_content_english", s.customContentEnglish)
             secArr.put(sObj)
         }
         root.put("sections", secArr)
@@ -182,7 +192,10 @@ data class LiveUiConfigDto(
                         isGurujiInfoVisible = srvObj.optBoolean("is_guruji_info_visible", true),
                         isEmergencyNoticeVisible = srvObj.optBoolean("is_emergency_notice_visible", true),
                         scheduledTokenOpenTimestamp = srvObj.optLong("scheduled_token_open_timestamp", 0L),
-                        maxDailyTokens = srvObj.optInt("max_daily_tokens", 0)
+                        maxDailyTokens = srvObj.optInt("max_daily_tokens", 0),
+                        sundayTokenBannerTitle = srvObj.optString("sunday_token_banner_title", ""),
+                        sundayTokenBannerText = srvObj.optString("sunday_token_banner_text", ""),
+                        sundayTokenCustomNotice = srvObj.optString("sunday_token_custom_notice", "")
                     )
                 } else ServicesConfigDto()
 
@@ -198,7 +211,11 @@ data class LiveUiConfigDto(
                                 titleEnglish = obj.optString("title_english", ""),
                                 icon = obj.optString("icon", "📌"),
                                 isVisible = obj.optBoolean("is_visible", true),
-                                orderIndex = obj.optInt("order_index", i)
+                                orderIndex = obj.optInt("order_index", i),
+                                customSubtitleHindi = obj.optString("custom_subtitle_hindi", ""),
+                                customSubtitleEnglish = obj.optString("custom_subtitle_english", ""),
+                                customContentHindi = obj.optString("custom_content_hindi", ""),
+                                customContentEnglish = obj.optString("custom_content_english", "")
                             )
                         )
                     }

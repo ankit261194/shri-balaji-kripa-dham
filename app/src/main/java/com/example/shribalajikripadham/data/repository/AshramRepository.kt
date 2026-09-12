@@ -68,7 +68,10 @@ class AshramRepository(context: Context) {
                 maxDailyTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("max_daily_tokens")) } catch (e: Exception) { 0 },
                 isUiLayoutEnforced = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_ui_layout_enforced")) == 1 } catch (e: Exception) { false },
                 cloudSyncUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("cloud_sync_url")) } catch (e: Exception) { "" } ?: "",
-                isCloudSyncEnabled = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_cloud_sync_enabled")) == 1 } catch (e: Exception) { false }
+                isCloudSyncEnabled = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_cloud_sync_enabled")) == 1 } catch (e: Exception) { false },
+                sundayTokenBannerTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_banner_title")) } catch (e: Exception) { "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन" } ?: "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन",
+                sundayTokenBannerText = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_banner_text")) } catch (e: Exception) { "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।" } ?: "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।",
+                sundayTokenCustomNotice = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_custom_notice")) } catch (e: Exception) { "" } ?: ""
             )
         }
         cursor.close()
@@ -145,6 +148,26 @@ class AshramRepository(context: Context) {
             put("emergency_notice", emergencyNotice)
         }
         db.update("ashram_settings", cv, "id = 1", null) > 0
+    }
+
+    suspend fun updateSundayTokenBanner(
+        title: String,
+        text: String,
+        notice: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("sunday_token_banner_title", title.trim())
+            put("sunday_token_banner_text", text.trim())
+            put("sunday_token_custom_notice", notice.trim())
+        }
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try {
+                publishCurrentSettingsToGitHub()
+            } catch (e: Exception) {}
+        }
+        res
     }
 
     suspend fun updateAshramLocation(
@@ -1802,6 +1825,10 @@ class AshramRepository(context: Context) {
                 val iconIdx = c.getColumnIndexOrThrow("icon")
                 val visibleIdx = c.getColumnIndexOrThrow("is_visible")
                 val orderIdx = c.getColumnIndexOrThrow("order_index")
+                val subHiIdx = try { c.getColumnIndex("custom_subtitle_hindi") } catch (e: Exception) { -1 }
+                val subEnIdx = try { c.getColumnIndex("custom_subtitle_english") } catch (e: Exception) { -1 }
+                val cntHiIdx = try { c.getColumnIndex("custom_content_hindi") } catch (e: Exception) { -1 }
+                val cntEnIdx = try { c.getColumnIndex("custom_content_english") } catch (e: Exception) { -1 }
 
                 while (c.moveToNext()) {
                     list.add(
@@ -1811,7 +1838,11 @@ class AshramRepository(context: Context) {
                             titleEnglish = c.getString(titleEnIdx),
                             icon = c.getString(iconIdx),
                             isVisible = c.getInt(visibleIdx) == 1,
-                            orderIndex = c.getInt(orderIdx)
+                            orderIndex = c.getInt(orderIdx),
+                            customSubtitleHindi = if (subHiIdx >= 0 && !c.isNull(subHiIdx)) c.getString(subHiIdx) else "",
+                            customSubtitleEnglish = if (subEnIdx >= 0 && !c.isNull(subEnIdx)) c.getString(subEnIdx) else "",
+                            customContentHindi = if (cntHiIdx >= 0 && !c.isNull(cntHiIdx)) c.getString(cntHiIdx) else "",
+                            customContentEnglish = if (cntEnIdx >= 0 && !c.isNull(cntEnIdx)) c.getString(cntEnIdx) else ""
                         )
                     )
                 }
@@ -1841,6 +1872,10 @@ class AshramRepository(context: Context) {
                     put("icon", item.icon)
                     put("is_visible", if (item.isVisible) 1 else 0)
                     put("order_index", index)
+                    put("custom_subtitle_hindi", item.customSubtitleHindi)
+                    put("custom_subtitle_english", item.customSubtitleEnglish)
+                    put("custom_content_hindi", item.customContentHindi)
+                    put("custom_content_english", item.customContentEnglish)
                 }
                 db.insertWithOnConflict("ui_section_configs", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
             }
@@ -1920,6 +1955,9 @@ class AshramRepository(context: Context) {
                 cv.put("is_emergency_notice_visible", if (sc.isEmergencyNoticeVisible) 1 else 0)
                 cv.put("scheduled_token_open_timestamp", sc.scheduledTokenOpenTimestamp)
                 cv.put("max_daily_tokens", sc.maxDailyTokens)
+                if (sc.sundayTokenBannerTitle.isNotBlank()) cv.put("sunday_token_banner_title", sc.sundayTokenBannerTitle)
+                if (sc.sundayTokenBannerText.isNotBlank()) cv.put("sunday_token_banner_text", sc.sundayTokenBannerText)
+                if (sc.sundayTokenCustomNotice.isNotBlank()) cv.put("sunday_token_custom_notice", sc.sundayTokenCustomNotice)
 
                 if (cv.size() > 0) {
                     db.update("ashram_settings", cv, "id = 1", null)
@@ -1982,7 +2020,10 @@ class AshramRepository(context: Context) {
                 isGurujiInfoVisible = currentSettings.isGurujiInfoVisible,
                 isEmergencyNoticeVisible = currentSettings.isEmergencyNoticeVisible,
                 scheduledTokenOpenTimestamp = currentSettings.scheduledTokenOpenTimestamp,
-                maxDailyTokens = currentSettings.maxDailyTokens
+                maxDailyTokens = currentSettings.maxDailyTokens,
+                sundayTokenBannerTitle = currentSettings.sundayTokenBannerTitle,
+                sundayTokenBannerText = currentSettings.sundayTokenBannerText,
+                sundayTokenCustomNotice = currentSettings.sundayTokenCustomNotice
             ),
             sections = sections
         )

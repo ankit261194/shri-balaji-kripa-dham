@@ -47,19 +47,26 @@ object AppTelemetryManager {
                 "2.9.0"
             }
 
+            val presence = DevicePresence(
+                deviceId = deviceId,
+                deviceModel = deviceModel,
+                userName = devoteeName,
+                phoneNumber = devoteePhone,
+                city = city,
+                appVersion = appVersion,
+                lastSeenAt = System.currentTimeMillis()
+            )
+
             // 1. Cache to local SQLite database
             saveDeviceLocally(
                 context = context,
-                presence = DevicePresence(
-                    deviceId = deviceId,
-                    deviceModel = deviceModel,
-                    userName = devoteeName,
-                    phoneNumber = devoteePhone,
-                    city = city,
-                    appVersion = appVersion,
-                    lastSeenAt = System.currentTimeMillis()
-                )
+                presence = presence
             )
+
+            // 2. Post to GitHub Live Sync repo
+            try {
+                GitHubLiveSyncManager.recordDeviceHeartbeat(context, presence)
+            } catch (e: Exception) {}
 
             // 2. Post to central Google Sheet Webhook if configured
             val webhookUrl = GoogleSheetTokenSyncManager.getWebhookUrl(context)
@@ -148,10 +155,21 @@ object AppTelemetryManager {
     suspend fun fetchActiveDevicesFromSheet(
         context: Context
     ): Triple<Int, Int, List<DevicePresence>> = withContext(Dispatchers.IO) {
+        // 1. Primary Source: Fetch real-time active devices from GitHub Live Cloud
+        try {
+            val ghResult = GitHubLiveSyncManager.fetchLiveDevices(context)
+            if (ghResult.first > 0) {
+                return@withContext ghResult
+            }
+        } catch (e: Exception) {}
+
+        // 2. Secondary Source: Google Sheet Webhook (if configured)
         val webhookUrl = GoogleSheetTokenSyncManager.getWebhookUrl(context)
         if (webhookUrl.isBlank() || !webhookUrl.startsWith("https://script.google.com/")) {
             val localList = getLocalDevices(context)
-            return@withContext Triple(localList.size, localList.size, localList)
+            val now = System.currentTimeMillis()
+            val activeToday = localList.count { it.lastSeenAt >= now - 24 * 3600 * 1000L }
+            return@withContext Triple(localList.size, if (activeToday == 0 && localList.isNotEmpty()) 1 else activeToday, localList)
         }
 
         try {
