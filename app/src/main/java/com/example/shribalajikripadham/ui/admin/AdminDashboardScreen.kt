@@ -46,6 +46,15 @@ import com.example.shribalajikripadham.util.TakeAnyPicturePreview
 import androidx.compose.ui.window.Dialog
 import kotlinx.coroutines.launch
 
+data class CreatedSevadarShareData(
+    val name: String,
+    val username: String,
+    val phone: String,
+    val password: String,
+    val pin: String,
+    val permissions: List<String>
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminDashboardScreen(
@@ -167,6 +176,11 @@ fun AdminDashboardScreen(
     var newSevCanScanRegister by remember { mutableStateOf(false) }
     var editSevCanScanRegister by remember { mutableStateOf(false) }
     var newSevCanParchas by remember { mutableStateOf(false) }
+    var createdSevadarShareData by remember { mutableStateOf<CreatedSevadarShareData?>(null) }
+    var sevadarToShareViaWhatsApp by remember { mutableStateOf<Admin?>(null) }
+    var customSharePassword by remember { mutableStateOf("") }
+    var customSharePin by remember { mutableStateOf("") }
+    var isSharingBanner by remember { mutableStateOf(false) }
     var editSevCanParchas by remember { mutableStateOf(false) }
     var customDistancesList by remember { mutableStateOf<List<CustomCityDistance>>(emptyList()) }
     var uiSectionsList by remember { mutableStateOf<List<UiSectionConfig>>(emptyList()) }
@@ -949,6 +963,11 @@ fun AdminDashboardScreen(
                                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                     }
                                 },
+                                onSendWhatsApp = { targetAdmin ->
+                                    sevadarToShareViaWhatsApp = targetAdmin
+                                    customSharePassword = ""
+                                    customSharePin = ""
+                                },
                                 onOpenEdit = { targetAdmin ->
                                     editingAdmin = targetAdmin
                                     editSevPhotoUri = targetAdmin.photoUri
@@ -1391,6 +1410,19 @@ fun AdminDashboardScreen(
                     onClick = {
                         scope.launch {
                             if (newSevName.isNotBlank() && newSevUsername.isNotBlank() && newSevPassword.isNotBlank()) {
+                                val perms = mutableListOf<String>()
+                                if (newSevCanTokens) perms.add("रविवार टोकन कतार")
+                                if (newSevCanManualTokens) perms.add("मैनुअल टोकन जारी करना")
+                                if (newSevCanYatra) perms.add("श्री बालाजी यात्रा सेवा")
+                                if (newSevCanExpenses) perms.add("धाम व्यय (खर्च) प्रबंधन")
+                                if (newSevCanLocation) perms.add("GPS व लोकेशन सेटिंग")
+                                if (newSevCanNotif) perms.add("सूचना व घोषणाएं")
+                                if (newSevCanContent) perms.add("आश्रम जानकारी संपादन")
+                                if (newSevCanPhotos) perms.add("भक्त फोटो व बायोमेट्रिक")
+                                if (newSevCanAnywhere) perms.add("कहीं से भी टोकन जारी करना")
+                                if (newSevCanScanRegister) perms.add("रजिस्टर कॉपी स्कैन")
+                                if (newSevCanParchas) perms.add("आश्रम पावन पर्चे")
+
                                 repository.createSevadarAdmin(
                                     name = newSevName,
                                     username = newSevUsername,
@@ -1411,6 +1443,17 @@ fun AdminDashboardScreen(
                                     canManageParchas = newSevCanParchas,
                                     photoUri = newSevPhotoUri
                                 )
+
+                                // Capture credentials for instant WhatsApp banner sharing
+                                createdSevadarShareData = CreatedSevadarShareData(
+                                    name = newSevName,
+                                    username = newSevUsername,
+                                    phone = newSevPhone,
+                                    password = newSevPassword,
+                                    pin = newSevPin,
+                                    permissions = perms
+                                )
+
                                 showCreateSevadarDialog = false
                                 newSevName = ""
                                 newSevUsername = ""
@@ -1433,6 +1476,297 @@ fun AdminDashboardScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showCreateSevadarDialog = false }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // --- SHARE CREATED SEVADAR CREDENTIALS TO WHATSAPP DIALOG ---
+    if (createdSevadarShareData != null) {
+        val shareData = createdSevadarShareData!!
+        AlertDialog(
+            onDismissRequest = { createdSevadarShareData = null },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🎉", fontSize = 24.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "नया सेवादार खाता तैयार!" else "Sevadar Account Created!",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = MaroonPrimary
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = if (isHindi)
+                            "नया खाता बन गया है। आप सीधे सेवादार के व्हाट्सएप पर यूजरनेम, पासवर्ड व पिन का आकर्षक बैनर कार्ड भेज सकते हैं:"
+                        else
+                            "Account created! Send username, password & PIN banner card directly to WhatsApp:",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDE7)),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFFD54F)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("👤 नाम: ${shareData.name}", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaroonPrimary)
+                            Text("📱 मोबाइल: ${shareData.phone}", fontSize = 12.sp, color = Color.Black)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text("🆔 यूजरनेम: ${shareData.username}", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                            Text("🔑 पासवर्ड: ${shareData.password}", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFC62828))
+                            Text("🔢 सुरक्षा पिन: ${shareData.pin}", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = Color(0xFFE65100))
+                        }
+                    }
+
+                    // 1. Send Banner Image + Text to WhatsApp
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                isSharingBanner = true
+                                try {
+                                    val msgText = AdminCredentialBannerHelper.formatWhatsAppMessage(
+                                        name = shareData.name,
+                                        username = shareData.username,
+                                        password = shareData.password,
+                                        pin = shareData.pin,
+                                        phone = shareData.phone,
+                                        permissions = shareData.permissions
+                                    )
+                                    val bmp = AdminCredentialBannerHelper.renderCredentialBannerBitmap(
+                                        name = shareData.name,
+                                        username = shareData.username,
+                                        password = shareData.password,
+                                        pin = shareData.pin,
+                                        phone = shareData.phone,
+                                        permissions = shareData.permissions
+                                    )
+                                    val file = AdminCredentialBannerHelper.saveBannerBitmapToFile(
+                                        context = context,
+                                        bitmap = bmp,
+                                        username = shareData.username
+                                    )
+                                    AdminCredentialBannerHelper.sendToWhatsApp(
+                                        context = context,
+                                        phone = shareData.phone,
+                                        messageText = msgText,
+                                        bannerFile = file
+                                    )
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    Toast.makeText(context, "त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
+                                } finally {
+                                    isSharingBanner = false
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(
+                            text = if (isSharingBanner) "बैनर तैयार हो रहा है..." else "📲 व्हाट्सएप पर बैनर व विवरण भेजें",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    // 2. Direct text on WhatsApp
+                    OutlinedButton(
+                        onClick = {
+                            val msgText = AdminCredentialBannerHelper.formatWhatsAppMessage(
+                                name = shareData.name,
+                                username = shareData.username,
+                                password = shareData.password,
+                                pin = shareData.pin,
+                                phone = shareData.phone,
+                                permissions = shareData.permissions
+                            )
+                            AdminCredentialBannerHelper.sendToWhatsApp(
+                                context = context,
+                                phone = shareData.phone,
+                                messageText = msgText,
+                                bannerFile = null
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("💬 केवल टेक्स्ट मैसेज भेजें (Text Only)", fontSize = 12.sp, color = Color(0xFF1B5E20), fontWeight = FontWeight.SemiBold)
+                    }
+
+                    // 3. Copy Details
+                    OutlinedButton(
+                        onClick = {
+                            val msgText = AdminCredentialBannerHelper.formatWhatsAppMessage(
+                                name = shareData.name,
+                                username = shareData.username,
+                                password = shareData.password,
+                                pin = shareData.pin,
+                                phone = shareData.phone,
+                                permissions = shareData.permissions
+                            )
+                            AdminCredentialBannerHelper.copyToClipboard(context, msgText)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("📋 विवरण कॉपी करें (Copy Details)", fontSize = 12.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { createdSevadarShareData = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                ) {
+                    Text(if (isHindi) "पूर्ण (Done)" else "Done")
+                }
+            }
+        )
+    }
+
+    // --- RESEND / SHARE WHATSAPP DIALOG FOR EXISTING SEVADAR ---
+    if (sevadarToShareViaWhatsApp != null) {
+        val target = sevadarToShareViaWhatsApp!!
+        AlertDialog(
+            onDismissRequest = { sevadarToShareViaWhatsApp = null },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("📲", fontSize = 22.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "व्हाट्सएप पर क्रेडेंशियल्स भेजें" else "Send Credentials to WhatsApp",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaroonPrimary
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "सेवादार: ${target.name} (${target.phoneNumber})",
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonPrimary
+                    )
+                    Text(
+                        text = "यूजरनेम: ${target.username}",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+
+                    OutlinedTextField(
+                        value = customSharePassword,
+                        onValueChange = { customSharePassword = it },
+                        label = { Text(if (isHindi) "पासवर्ड (यदि नया/ज्ञात हो)" else "Password (if known)") },
+                        placeholder = { Text("उदा. 123456") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = customSharePin,
+                        onValueChange = { if (it.length <= 6) customSharePin = it },
+                        label = { Text(if (isHindi) "सुरक्षा पिन (PIN)" else "Security PIN") },
+                        placeholder = { Text("उदा. 1234") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                isSharingBanner = true
+                                try {
+                                    val perms = mutableListOf<String>()
+                                    if (target.canManageTokens) perms.add("रविवार टोकन कतार")
+                                    if (target.canIssueManualTokens) perms.add("मैनुअल टोकन जारी करना")
+                                    if (target.canManageYatra) perms.add("श्री बालाजी यात्रा सेवा")
+                                    if (target.canManageExpenses) perms.add("धाम व्यय (खर्च) प्रबंधन")
+                                    if (target.canChangeLocation) perms.add("GPS व लोकेशन सेटिंग")
+                                    if (target.canSendNotifications) perms.add("सूचना व घोषणाएं")
+                                    if (target.canEditAshramInfo) perms.add("आश्रम जानकारी संपादन")
+                                    if (target.canViewDevoteePhotos) perms.add("भक्त फोटो व बायोमेट्रिक")
+                                    if (target.canIssueTokensAnywhere) perms.add("कहीं से भी टोकन जारी करना")
+                                    if (target.canScanPaperRegister) perms.add("रजिस्टर कॉपी स्कैन")
+                                    if (target.canManageParchas) perms.add("आश्रम पावन पर्चे")
+
+                                    val pwd = customSharePassword.ifBlank { "(सुरक्षा कारणों से गोपनीय / पूर्व निर्धारित)" }
+                                    val pn = customSharePin.ifBlank { "(पूर्व निर्धारित पिन)" }
+
+                                    val msgText = AdminCredentialBannerHelper.formatWhatsAppMessage(
+                                        name = target.name,
+                                        username = target.username,
+                                        password = pwd,
+                                        pin = pn,
+                                        phone = target.phoneNumber,
+                                        permissions = perms
+                                    )
+                                    val bmp = AdminCredentialBannerHelper.renderCredentialBannerBitmap(
+                                        name = target.name,
+                                        username = target.username,
+                                        password = pwd,
+                                        pin = pn,
+                                        phone = target.phoneNumber,
+                                        permissions = perms
+                                    )
+                                    val file = AdminCredentialBannerHelper.saveBannerBitmapToFile(
+                                        context = context,
+                                        bitmap = bmp,
+                                        username = target.username
+                                    )
+                                    AdminCredentialBannerHelper.sendToWhatsApp(
+                                        context = context,
+                                        phone = target.phoneNumber,
+                                        messageText = msgText,
+                                        bannerFile = file
+                                    )
+                                    sevadarToShareViaWhatsApp = null
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    Toast.makeText(context, "त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
+                                } finally {
+                                    isSharingBanner = false
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(
+                            text = if (isSharingBanner) "बैनर तैयार हो रहा है..." else "📲 व्हाट्सएप पर बैनर व विवरण भेजें",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { sevadarToShareViaWhatsApp = null }) {
                     Text(if (isHindi) "रद्द करें" else "Cancel")
                 }
             }
@@ -3332,6 +3666,7 @@ fun SevadarManagementTab(
     onToggleAnywhere: (Admin, Boolean) -> Unit,
     onToggleScanRegister: (Admin, Boolean) -> Unit,
     onToggleParchas: (Admin, Boolean) -> Unit,
+    onSendWhatsApp: (Admin) -> Unit,
     onDelete: (Admin) -> Unit
 ) {
     LazyColumn(
@@ -3528,7 +3863,13 @@ fun SevadarManagementTab(
                         }
 
                         Spacer(modifier = Modifier.height(10.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                            Button(
+                                onClick = { onSendWhatsApp(a) },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
+                            ) {
+                                Text(if (isHindi) "📲 व्हाट्सएप पर भेजें" else "📲 WhatsApp", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
                             Button(
                                 onClick = { onOpenEdit(a) },
                                 colors = ButtonDefaults.buttonColors(containerColor = MaroonAccent)

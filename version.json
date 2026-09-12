@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 18,
-  "latest_version_name": "2.15.0",
-  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.15.0): 1. आश्रम पर्चे पूर्णतः सुपर एडमिन के नियंत्रण में - सुपर एडमिन अपनी इच्छा अनुसार किसी भी व्यवस्थापक/सेवादर को एक क्लिक में पर्चा अधिकार सौंप या हटा सकते हैं। 2. गतिशील लोकेशन व सार्वभौमिक लाइव सिंक - सुपर एडमिन कहीं से भी अक्षांश (Lat) व देशांतर (Long) अपडेट कर सकते हैं, जो तुरंत पूरे ऐप और सभी भक्तों के फोन पर लाइव अपडेट होगा और उसी स्थान पर टोकन जनरेट होगा।",
-  "update_notes_english": "Major Feature Update (v2.15.0): 1. Sacred Parchas under exclusive Super Admin control with one-tap delegation to admins/sevadars. 2. Dynamic Ashram Location with universal instant cloud broadcast - Super Admin can set custom coordinates from anywhere, enforcing token geofence across all user devices.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.15.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 19,
+  "latest_version_name": "2.16.0",
+  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.16.0): 1. सेवादार/व्यवस्थापक क्रेडेंशियल्स सीधा व्हाट्सएप शेयरिंग - सुपर एडमिन द्वारा नया सेवादार बनाते ही एक-क्लिक में यूजरनेम, पासवर्ड व पिन का शाही भक्तिमय बैनर कार्ड सीधे सेवादार के व्हाट्सएप पर भेजने की सुविधा। 2. सेवादार सूची से कभी भी पुनः क्रेडेंशियल बैनर भेजने का विकल्प।",
+  "update_notes_english": "Feature Update (v2.16.0): 1. Direct WhatsApp Sevadar Credential Sharing - Instantly send royal credential banner card with username, password and PIN to newly created sevadars on WhatsApp. 2. Resend credential card option directly from Sevadar management list.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.16.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }
