@@ -1,17 +1,17 @@
 {
   "total_devices": 2,
-  "updated_at": 1789310380177,
+  "updated_at": 1789310429827,
   "devices": [
     {
       "device_id": "2b01861028f80b2cdbb506932fe1ec27a8f041d05d01534805212b64de18d93a",
       "device_model": "motorola edge 40 neo",
-      "user_name": "",
-      "phone_number": "",
+      "user_name": "Ankit Chaudhary (Super Admin)",
+      "phone_number": "+91 98765 00000",
       "city": "",
       "app_version": "2.27.0",
-      "last_seen_at": 1789310380177,
-      "open_count": 8,
-      "role": "USER"
+      "last_seen_at": 1789310429827,
+      "open_count": 9,
+      "role": "ADMIN"
     },
     {
       "device_id": "dc672a70b799db25e71d9f0dba57bffb8de13aab787448bb2738322b243fc66c",
