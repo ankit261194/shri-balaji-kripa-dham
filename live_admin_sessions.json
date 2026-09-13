@@ -1,0 +1,13 @@
+{
+  "sessions": {
+    "1": {
+      "admin_id": "1",
+      "role": "SUPER_ADMIN",
+      "device_id": "2b01861028f80b2cdbb506932fe1ec27a8f041d05d01534805212b64de18d93a",
+      "device_model": "motorola edge 40 neo",
+      "session_id": "55da8b4f-fce4-4203-ad62-7c4d6244809e",
+      "logged_in_at": 1789310427449
+    }
+  },
+  "last_updated_at": 1789310427449
+}
