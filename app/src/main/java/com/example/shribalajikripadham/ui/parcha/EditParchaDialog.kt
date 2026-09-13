@@ -82,16 +82,20 @@ fun EditParchaDialog(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.92f),
+                .fillMaxWidth(0.96f)
+                .fillMaxHeight(0.95f)
+                .imePadding(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(modifier = Modifier.fillMaxSize().padding(14.dp)) {
                 // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -354,6 +358,8 @@ fun EditParchaDialog(
                             )
                         }
                     }
+                    // Bottom scroll clearance so keyboard never covers last inputs
+                    Spacer(modifier = Modifier.height(48.dp))
                 }
 
                 // Action Buttons

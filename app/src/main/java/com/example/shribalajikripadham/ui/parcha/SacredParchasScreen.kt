@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 fun SacredParchasScreen(
     isHindi: Boolean,
     currentAdmin: Admin? = null,
+    isEmbedded: Boolean = false,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -115,7 +116,8 @@ fun SacredParchasScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            if (!isEmbedded) {
+                TopAppBar(
                 title = {
                     Column {
                         Text(
@@ -201,9 +203,10 @@ fun SacredParchasScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaroonPrimary)
             )
+            }
         },
         floatingActionButton = {
-            if (hasParchaAccess) {
+            if (hasParchaAccess && !isEmbedded) {
                 ExtendedFloatingActionButton(
                     onClick = { showCreateDialog = true },
                     containerColor = SaffronPrimary,
@@ -217,10 +220,45 @@ fun SacredParchasScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(if (isEmbedded) PaddingValues(0.dp) else innerPadding)
                 .background(Color(0xFFFFFDF9))
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .padding(horizontal = if (isEmbedded) 4.dp else 14.dp, vertical = 6.dp)
         ) {
+            if (isEmbedded) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isHindi) "📜 आश्रम पर्चे (लाइव क्लाउड सिंक)" else "📜 Sacred Parchas",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaroonPrimary
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        IconButton(
+                            onClick = { refreshParchas(forceCloudSync = true) },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Text("🔄", fontSize = 16.sp)
+                        }
+                        if (hasParchaAccess) {
+                            Button(
+                                onClick = { showCreateDialog = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.height(34.dp)
+                            ) {
+                                Text(if (isHindi) "+ नया पर्चा" else "+ New", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
             // Search Bar
             OutlinedTextField(
                 value = searchQuery,
@@ -293,6 +331,7 @@ fun SacredParchasScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 88.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(displayedParchas, key = { it.parchaId }) { parcha ->
@@ -810,16 +849,20 @@ fun ParchaReaderDialog(
 ) {
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
     ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.92f),
+                .fillMaxWidth(0.96f)
+                .fillMaxHeight(0.95f)
+                .imePadding(),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(modifier = Modifier.fillMaxSize().padding(14.dp)) {
                 // Header
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -970,6 +1013,8 @@ fun ParchaReaderDialog(
                             }
                         }
                     }
+                    // Bottom scroll clearance so footer never blocks content
+                    Spacer(modifier = Modifier.height(48.dp))
                 }
 
                 // Footer Buttons

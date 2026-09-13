@@ -2654,5 +2654,46 @@ class AshramRepository(context: Context) {
             updatedAt = cursor.getLong(cursor.getColumnIndexOrThrow("updated_at"))
         )
     }
+
+    // --- Admin Single-Device Session Management ---
+    suspend fun registerAdminSession(
+        adminId: String,
+        role: String,
+        deviceId: String,
+        deviceModel: String
+    ): Pair<Boolean, String> {
+        return com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.registerAdminSession(
+            context = appContext,
+            adminId = adminId,
+            role = role,
+            deviceId = deviceId,
+            deviceModel = deviceModel
+        )
+    }
+
+    suspend fun checkAdminSessionActive(
+        adminId: String,
+        currentSessionId: String,
+        currentDeviceId: String
+    ): Pair<Boolean, String?> {
+        val sessions = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveAdminSessions()
+        val sess = sessions[adminId] ?: return Pair(true, null)
+        if (sess.sessionId.isNotBlank() && currentSessionId.isNotBlank() && sess.sessionId != currentSessionId) {
+            return Pair(false, "खाता किसी अन्य फोन (${sess.deviceModel}) पर लॉगिन हो चुका है!")
+        }
+        return Pair(true, null)
+    }
+
+    suspend fun clearAdminSession(
+        adminId: String,
+        sessionId: String? = null
+    ): Pair<Boolean, String> {
+        return com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.clearAdminSession(
+            context = appContext,
+            adminId = adminId,
+            sessionId = sessionId
+        )
+    }
 }
+
 

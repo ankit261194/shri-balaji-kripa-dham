@@ -36,6 +36,7 @@ import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.ui.common.SacredAvatar
 import com.example.shribalajikripadham.util.*
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.asImageBitmap
@@ -73,6 +74,15 @@ fun AdminDashboardScreen(
     val scope = rememberCoroutineScope()
 
     var loggedInAdmin by remember { mutableStateOf<Admin?>(null) }
+    var currentSessionId by remember { mutableStateOf("") }
+    var forceLogoutMessage by remember { mutableStateOf<String?>(null) }
+    var showLogoutExitDialog by remember { mutableStateOf(false) }
+
+    // Intercept back button when admin is logged in: must confirm logout before exiting
+    BackHandler(enabled = loggedInAdmin != null) {
+        showLogoutExitDialog = true
+    }
+
     var loginWithCreds by remember { mutableStateOf(true) }
     var usernameInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
@@ -291,10 +301,31 @@ fun AdminDashboardScreen(
                 } catch (e: Exception) {}
             }
 
-            // Auto-refresh token queue from cloud every 20 seconds while admin stays on dashboard
+            val currentDevId = com.example.shribalajikripadham.hardware.DeviceFingerprintManager.getDeviceId(context)
+            val adminId = loggedInAdmin!!.id.toString()
+
+            // Auto-refresh token queue and monitor single-device session from cloud
             while (isActive) {
-                delay(20000)
+                delay(12000)
                 try {
+                    // Check if another phone logged in with this admin account
+                    if (currentSessionId.isNotBlank()) {
+                        val (isSessValid, errDetail) = repository.checkAdminSessionActive(
+                            adminId = adminId,
+                            currentSessionId = currentSessionId,
+                            currentDeviceId = currentDevId
+                        )
+                        if (!isSessValid) {
+                            forceLogoutMessage = if (isHindi)
+                                "⚠️ आपका एडमिन खाता किसी अन्य फोन पर लॉगिन किया गया है!\n\nसुरक्षा नियमों के अनुसार एक समय पर केवल एक ही फोन में एडमिन लॉगिन की अनुमति है। यह सत्र स्वतः समाप्त कर दिया गया है।"
+                            else
+                                "⚠️ Your admin account was logged into from another device!\n\nOnly one device can be logged in at a time. This session has been terminated."
+                            loggedInAdmin = null
+                            currentSessionId = ""
+                            break
+                        }
+                    }
+
                     val (hasNew, count) = repository.syncLiveTokensFromCloud()
                     if (hasNew && count > 0) {
                         todayTokens = repository.getAllTokensToday()
@@ -302,6 +333,95 @@ fun AdminDashboardScreen(
                 } catch (e: Exception) {}
             }
         }
+    }
+
+    // Logout Confirmation Dialog on Back Press or Logout Button
+    if (showLogoutExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutExitDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🔒", fontSize = 22.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "लॉगआउट व बाहर निकलें" else "Confirm Logout & Exit",
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonPrimary
+                    )
+                }
+            },
+            text = {
+                Text(
+                    text = if (isHindi)
+                        "सुरक्षा चेतावनी: क्या आप एडमिन पैनल से लॉगआउट करके बाहर निकलना चाहते हैं?\n\nएडमिन पैनल छोड़ने के लिए लॉगआउट होना अनिवार्य है ताकि आपका सत्र सुरक्षित रहे।"
+                    else
+                        "Security Warning: Do you want to log out and exit the Admin Panel?\n\nLogging out is required to protect your session.",
+                    fontSize = 14.sp,
+                    color = Color.DarkGray
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showLogoutExitDialog = false
+                        val adminToLogout = loggedInAdmin
+                        val sessId = currentSessionId
+                        loggedInAdmin = null
+                        currentSessionId = ""
+                        usernameInput = ""
+                        passwordInput = ""
+                        pinInput = ""
+                        scope.launch {
+                            if (adminToLogout != null) {
+                                repository.clearAdminSession(adminToLogout.id.toString(), sessId)
+                            }
+                        }
+                        onBack()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                ) {
+                    Text(if (isHindi) "लॉगआउट करें व निकलें" else "Logout & Exit", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showLogoutExitDialog = false }) {
+                    Text(if (isHindi) "रहें (रद्द करें)" else "Stay / Cancel")
+                }
+            }
+        )
+    }
+
+    // Forced Logout Notification Dialog
+    if (forceLogoutMessage != null) {
+        AlertDialog(
+            onDismissRequest = { forceLogoutMessage = null },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("⚠️", fontSize = 24.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "सुरक्षा सूचना: सत्र समाप्त" else "Session Terminated",
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFD32F2F)
+                    )
+                }
+            },
+            text = {
+                Text(
+                    text = forceLogoutMessage!!,
+                    fontSize = 14.sp,
+                    color = Color.Black
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { forceLogoutMessage = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                ) {
+                    Text(if (isHindi) "समझ गया (लॉगिन करें)" else "OK (Login Again)", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -319,17 +439,20 @@ fun AdminDashboardScreen(
                     )
                 },
                 navigationIcon = {
-                    TextButton(onClick = onBack) {
+                    TextButton(onClick = {
+                        if (loggedInAdmin != null) {
+                            showLogoutExitDialog = true
+                        } else {
+                            onBack()
+                        }
+                    }) {
                         Text(if (isHindi) "← वापस" else "← Back", color = SaffronLight, fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
                     if (loggedInAdmin != null) {
                         TextButton(onClick = {
-                            loggedInAdmin = null
-                            usernameInput = ""
-                            passwordInput = ""
-                            pinInput = ""
+                            showLogoutExitDialog = true
                         }) {
                             Text(if (isHindi) "लॉगआउट" else "Logout", color = Color.White)
                         }
@@ -485,6 +608,15 @@ fun AdminDashboardScreen(
                                         }
                                         val admin = repository.authenticateSuperAdminByPasswordOnly(pass)
                                         if (admin != null) {
+                                            val devId = com.example.shribalajikripadham.hardware.DeviceFingerprintManager.getDeviceId(context)
+                                            val devModel = com.example.shribalajikripadham.data.network.AppTelemetryManager.getDeviceModelName()
+                                            val sessResult = repository.registerAdminSession(
+                                                adminId = admin.id.toString(),
+                                                role = admin.role.name,
+                                                deviceId = devId,
+                                                deviceModel = devModel
+                                            )
+                                            currentSessionId = sessResult.second
                                             loggedInAdmin = admin
                                         } else {
                                             loginError = if (isHindi) "गलत पासवर्ड! कृपया सही सुपर एडमिन पासवर्ड दर्ज करें।" else "Incorrect password! Please enter the valid Super Admin password."
@@ -653,6 +785,15 @@ fun AdminDashboardScreen(
                                         }
 
                                         if (admin != null) {
+                                            val devId = com.example.shribalajikripadham.hardware.DeviceFingerprintManager.getDeviceId(context)
+                                            val devModel = com.example.shribalajikripadham.data.network.AppTelemetryManager.getDeviceModelName()
+                                            val sessResult = repository.registerAdminSession(
+                                                adminId = admin.id.toString(),
+                                                role = admin.role.name,
+                                                deviceId = devId,
+                                                deviceModel = devModel
+                                            )
+                                            currentSessionId = sessResult.second
                                             loggedInAdmin = admin
                                         } else {
                                             loginError = if (isHindi) "गलत क्रेडेंशियल्स अथवा सेवादार खाता निष्क्रिय है!" else "Invalid credentials or account is inactive!"
@@ -959,6 +1100,7 @@ fun AdminDashboardScreen(
                             com.example.shribalajikripadham.ui.parcha.SacredParchasScreen(
                                 isHindi = isHindi,
                                 currentAdmin = admin,
+                                isEmbedded = true,
                                 onBack = {
                                     val idx = allowedTabs.indexOfFirst { it == "टोकन कतार" || it == "Tokens" }
                                     selectedTab = if (idx >= 0) idx else 0

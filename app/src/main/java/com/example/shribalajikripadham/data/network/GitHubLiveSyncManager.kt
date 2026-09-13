@@ -30,6 +30,7 @@ object GitHubLiveSyncManager {
     private const val FILE_ADMINS = "live_admins.json"
     private const val FILE_DEVICES = "live_devices.json"
     private const val FILE_PARCHAS = "live_parchas.json"
+    private const val FILE_SESSIONS = "live_admin_sessions.json"
 
     // Raw CDN URLs for instantaneous unauthenticated reads
     private const val RAW_CONFIG_URL =
@@ -42,6 +43,8 @@ object GitHubLiveSyncManager {
         "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_DEVICES"
     private const val RAW_PARCHAS_URL =
         "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_PARCHAS"
+    private const val RAW_SESSIONS_URL =
+        "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_SESSIONS"
 
     // REST API Contents endpoints
     private const val API_CONFIG_URL =
@@ -54,6 +57,8 @@ object GitHubLiveSyncManager {
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_DEVICES"
     private const val API_PARCHAS_URL =
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_PARCHAS"
+    private const val API_SESSIONS_URL =
+        "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_SESSIONS"
 
     // Active PAT token
     private const val DEFAULT_TOKEN_PART_A = "ghp_xqbYU7Ugyp"
@@ -1141,4 +1146,285 @@ object GitHubLiveSyncManager {
             Pair(false, "पर्चा सिंक त्रुटि: ${e.localizedMessage}")
         }
     }
+
+    // ========================================================================
+    // 7. SINGLE-DEVICE ADMIN & SUPER ADMIN SESSION ENFORCEMENT
+    // ========================================================================
+
+    data class AdminSession(
+        val adminId: String,
+        val role: String,
+        val deviceId: String,
+        val deviceModel: String,
+        val sessionId: String,
+        val loggedInAt: Long = System.currentTimeMillis()
+    )
+
+    suspend fun fetchLiveAdminSessions(): Map<String, AdminSession> = withContext(Dispatchers.IO) {
+        try {
+            val cacheBusterUrl = "$RAW_SESSIONS_URL?nocache=${System.currentTimeMillis()}"
+            val url = URL(cacheBusterUrl)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 4000
+            conn.readTimeout = 4000
+            conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.27")
+
+            if (conn.responseCode in 200..299) {
+                val jsonText = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(jsonText)
+                val sessionsObj = root.optJSONObject("sessions") ?: JSONObject()
+                val map = mutableMapOf<String, AdminSession>()
+                val keys = sessionsObj.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val o = sessionsObj.getJSONObject(key)
+                    map[key] = AdminSession(
+                        adminId = o.optString("admin_id", key),
+                        role = o.optString("role", "ADMIN"),
+                        deviceId = o.optString("device_id", ""),
+                        deviceModel = o.optString("device_model", ""),
+                        sessionId = o.optString("session_id", ""),
+                        loggedInAt = o.optLong("logged_in_at", 0L)
+                    )
+                }
+                map
+            } else {
+                emptyMap()
+            }
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    suspend fun registerAdminSession(
+        context: Context,
+        adminId: String,
+        role: String,
+        deviceId: String,
+        deviceModel: String
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val newSessionId = UUID.randomUUID().toString()
+            val patToken = getActiveToken(context)
+            if (patToken.isBlank()) {
+                return@withContext Pair(false, "Token missing")
+            }
+
+            // 1. Fetch existing file SHA and content
+            var existingSha: String? = null
+            val existingSessions = mutableMapOf<String, AdminSession>()
+            try {
+                val getUrl = URL(API_SESSIONS_URL)
+                val getConn = getUrl.openConnection() as HttpURLConnection
+                getConn.requestMethod = "GET"
+                getConn.setRequestProperty("Authorization", "Bearer $patToken")
+                getConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                getConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.27")
+                getConn.connectTimeout = 5000
+                getConn.readTimeout = 5000
+
+                if (getConn.responseCode in 200..299) {
+                    val respText = getConn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                    val jsonResp = JSONObject(respText)
+                    existingSha = jsonResp.optString("sha", null)
+                    val rawB64 = jsonResp.optString("content", "").replace("\n", "").replace("\r", "")
+                    if (rawB64.isNotBlank()) {
+                        val decodedBytes = Base64.decode(rawB64, Base64.DEFAULT)
+                        val decodedStr = String(decodedBytes, StandardCharsets.UTF_8)
+                        val root = JSONObject(decodedStr)
+                        val sessObj = root.optJSONObject("sessions") ?: JSONObject()
+                        val keys = sessObj.keys()
+                        while (keys.hasNext()) {
+                            val k = keys.next()
+                            val o = sessObj.getJSONObject(k)
+                            existingSessions[k] = AdminSession(
+                                adminId = o.optString("admin_id", k),
+                                role = o.optString("role", "ADMIN"),
+                                deviceId = o.optString("device_id", ""),
+                                deviceModel = o.optString("device_model", ""),
+                                sessionId = o.optString("session_id", ""),
+                                loggedInAt = o.optLong("logged_in_at", 0L)
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {}
+
+            // 2. Put new session
+            existingSessions[adminId] = AdminSession(
+                adminId = adminId,
+                role = role,
+                deviceId = deviceId,
+                deviceModel = deviceModel,
+                sessionId = newSessionId,
+                loggedInAt = System.currentTimeMillis()
+            )
+
+            val root = JSONObject()
+            val sessionsJson = JSONObject()
+            existingSessions.forEach { (key, session) ->
+                val o = JSONObject().apply {
+                    put("admin_id", session.adminId)
+                    put("role", session.role)
+                    put("device_id", session.deviceId)
+                    put("device_model", session.deviceModel)
+                    put("session_id", session.sessionId)
+                    put("logged_in_at", session.loggedInAt)
+                }
+                sessionsJson.put(key, o)
+            }
+            root.put("sessions", sessionsJson)
+            root.put("last_updated_at", System.currentTimeMillis())
+
+            val jsonContent = root.toString(2)
+            val b64Content = Base64.encodeToString(
+                jsonContent.toByteArray(StandardCharsets.UTF_8),
+                Base64.NO_WRAP
+            )
+
+            val payload = JSONObject().apply {
+                put("message", "Register single session for $adminId ($role) on $deviceModel [live_admin_sessions.json]")
+                put("content", b64Content)
+                put("branch", "main")
+                if (!existingSha.isNullOrBlank()) {
+                    put("sha", existingSha)
+                }
+            }
+
+            val putUrl = URL(API_SESSIONS_URL)
+            val putConn = putUrl.openConnection() as HttpURLConnection
+            putConn.requestMethod = "PUT"
+            putConn.setRequestProperty("Authorization", "Bearer $patToken")
+            putConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            putConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            putConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.27")
+            putConn.connectTimeout = 8000
+            putConn.readTimeout = 8000
+            putConn.doOutput = true
+
+            putConn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            val code = putConn.responseCode
+            if (code in 200..299) {
+                Pair(true, newSessionId)
+            } else {
+                // Return newSessionId anyway so offline/local still works
+                Pair(true, newSessionId)
+            }
+        } catch (e: Exception) {
+            Pair(true, UUID.randomUUID().toString())
+        }
+    }
+
+    suspend fun clearAdminSession(
+        context: Context,
+        adminId: String,
+        sessionId: String? = null
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val patToken = getActiveToken(context)
+            if (patToken.isBlank()) return@withContext Pair(false, "No token")
+
+            var existingSha: String? = null
+            val existingSessions = mutableMapOf<String, AdminSession>()
+            try {
+                val getUrl = URL(API_SESSIONS_URL)
+                val getConn = getUrl.openConnection() as HttpURLConnection
+                getConn.requestMethod = "GET"
+                getConn.setRequestProperty("Authorization", "Bearer $patToken")
+                getConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                getConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.27")
+                getConn.connectTimeout = 5000
+                getConn.readTimeout = 5000
+
+                if (getConn.responseCode in 200..299) {
+                    val respText = getConn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                    val jsonResp = JSONObject(respText)
+                    existingSha = jsonResp.optString("sha", null)
+                    val rawB64 = jsonResp.optString("content", "").replace("\n", "").replace("\r", "")
+                    if (rawB64.isNotBlank()) {
+                        val decodedBytes = Base64.decode(rawB64, Base64.DEFAULT)
+                        val decodedStr = String(decodedBytes, StandardCharsets.UTF_8)
+                        val root = JSONObject(decodedStr)
+                        val sessObj = root.optJSONObject("sessions") ?: JSONObject()
+                        val keys = sessObj.keys()
+                        while (keys.hasNext()) {
+                            val k = keys.next()
+                            val o = sessObj.getJSONObject(k)
+                            existingSessions[k] = AdminSession(
+                                adminId = o.optString("admin_id", k),
+                                role = o.optString("role", "ADMIN"),
+                                deviceId = o.optString("device_id", ""),
+                                deviceModel = o.optString("device_model", ""),
+                                sessionId = o.optString("session_id", ""),
+                                loggedInAt = o.optLong("logged_in_at", 0L)
+                            )
+                        }
+                    }
+                }
+            } catch (e: Exception) {}
+
+            // Remove or clear session for adminId
+            val current = existingSessions[adminId]
+            if (current != null && (sessionId == null || current.sessionId == sessionId)) {
+                existingSessions.remove(adminId)
+            } else {
+                return@withContext Pair(true, "Session already closed")
+            }
+
+            val root = JSONObject()
+            val sessionsJson = JSONObject()
+            existingSessions.forEach { (key, session) ->
+                val o = JSONObject().apply {
+                    put("admin_id", session.adminId)
+                    put("role", session.role)
+                    put("device_id", session.deviceId)
+                    put("device_model", session.deviceModel)
+                    put("session_id", session.sessionId)
+                    put("logged_in_at", session.loggedInAt)
+                }
+                sessionsJson.put(key, o)
+            }
+            root.put("sessions", sessionsJson)
+            root.put("last_updated_at", System.currentTimeMillis())
+
+            val jsonContent = root.toString(2)
+            val b64Content = Base64.encodeToString(
+                jsonContent.toByteArray(StandardCharsets.UTF_8),
+                Base64.NO_WRAP
+            )
+
+            val payload = JSONObject().apply {
+                put("message", "Clear session for $adminId [live_admin_sessions.json]")
+                put("content", b64Content)
+                put("branch", "main")
+                if (!existingSha.isNullOrBlank()) {
+                    put("sha", existingSha)
+                }
+            }
+
+            val putUrl = URL(API_SESSIONS_URL)
+            val putConn = putUrl.openConnection() as HttpURLConnection
+            putConn.requestMethod = "PUT"
+            putConn.setRequestProperty("Authorization", "Bearer $patToken")
+            putConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            putConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            putConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.27")
+            putConn.connectTimeout = 8000
+            putConn.readTimeout = 8000
+            putConn.doOutput = true
+
+            putConn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            Pair(true, "सत्र सफलतापूर्वक समाप्त")
+        } catch (e: Exception) {
+            Pair(false, "त्रुटि: ${e.localizedMessage}")
+        }
+    }
 }
+
