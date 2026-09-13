@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-13T14:41:04Z",
+  "updated_at": "2026-09-13T14:41:15Z",
   "updated_by": "Super Admin",
   "version": 1,
   "parchas": [
@@ -69,12 +69,12 @@
       "mantra_text": "।। संकट कटै मिटै सब पीरा। जो सुमिरै हनुमत बलबीरा ।।\n।। ॐ कपिराजाय नमः ।।",
       "image_uri": "",
       "is_published": true,
-      "is_hidden": true,
+      "is_hidden": false,
       "view_count": 0,
       "download_count": 0,
       "created_by": "SUPER_ADMIN",
       "created_at": 1789225604000,
-      "updated_at": 1789306596998
+      "updated_at": 1789310474695
     },
     {
       "parcha_id": "CANONICAL_NIYAM",
