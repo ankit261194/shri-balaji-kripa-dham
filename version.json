@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 28,
-  "latest_version_name": "2.25.0",
-  "update_notes_hindi": "नवीनतम महा-अपडेट (v2.25.0): 1. सोशल मीडिया लिंक्स पूर्णतः सक्रिय: व्हाट्सएप्प (ग्रुप व नंबर), यूट्यूब, फेसबुक, इंस्टाग्राम व शेयर ऍप अब बिना किसी एरर के तुरंत खुलते हैं। 2. नियम पर्चे लाइव क्लाउड सिंक: सुपर एडमिन द्वारा पर्चा छिपाना (Hide), हटाना (Delete), नया जोड़ना या संपादन (Edit) अब सभी भक्तों के फोन पर तुरंत अपडेट हो जाता है। 3. आश्रम विवरण व सोशल लिंक्स का लाइव क्लाउड सिंक। 4. 30-सेकंड ऑटोमैटिक बैकग्राउंड सिंक।",
-  "update_notes_english": "Major Update (v2.25.0): 1. All social media links (WhatsApp, YouTube, Facebook, Instagram, Share App) now open reliably with automatic URL formatting and phone number support. 2. Sacred Rules/Parchas Live Cloud Sync: Hide, delete, create, and edit operations now instantly sync to all devotee phones. 3. Real-time ashram details & social links cloud sync. 4. 30-second background auto-sync.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.25.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 29,
+  "latest_version_name": "2.26.0",
+  "update_notes_hindi": "आपातकालीन रविवार महा-सुधार अपडेट (v2.26.0): 1. जीपीएस व टोकन समस्या हल: आश्रम परिसर में बिना किसी एरर के तुरंत टोकन जनरेट होगा। 1.5 किमी बफर व एक्टिव जीपीएस रिफ्रेश। 2. फोटो क्लिक / सेल्फी कैमरा विकल्प पूर्णतः सक्रिय: भक्तों के लिए कैमरा व गैलरी बटन तुरंत खुलेंगे। 3. एडमिन UI बॉक्स कंट्रोल लाइव सिंक: बॉक्स छिपाना (👁️), दिखाना व संपादन (✏️) अब सभी भक्तों के फोन पर बिना रुकावट तुरंत लाइव लागू होता है। 4. सक्रिय फोन टेलीमेट्री अपग्रेड: अब एडमिन व भक्तों के सक्रिय फोन अलग-अलग स्पष्ट दिखेंगे। 5. होम स्क्रीन पर टोकन लाइव स्टेटस बैनर: टोकन चालू होने पर होम स्क्रीन पर बड़ा लाइव बैनर दिखेगा जिससे भक्त 1-टैप में टोकन ले सकें।",
+  "update_notes_english": "Critical Sunday Darbar Update (v2.26.0): 1. Ashram Location & GPS Token Fixed: Smooth token generation at Ashram premises without distance or spoof errors. Fresh GPS polling and 1.5km allowed radius. 2. Devotee Selfie Photo Camera Option Unlocked: Camera and gallery buttons are fully enabled and responsive. 3. Admin UI Box Control Live Sync: Hiding, showing, and editing home screen sections instantly syncs to all devotee devices. 4. Device Telemetry Upgrade: Clearly separates devotee handsets and admin handsets with 4 live KPI cards and filters. 5. Live Token Status Announcement Banner on Home Screen for 1-tap token generation.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.26.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

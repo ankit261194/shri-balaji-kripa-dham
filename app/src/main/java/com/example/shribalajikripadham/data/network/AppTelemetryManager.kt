@@ -35,7 +35,8 @@ object AppTelemetryManager {
         context: Context,
         devoteeName: String = "",
         devoteePhone: String = "",
-        city: String = ""
+        city: String = "",
+        role: String = "USER"
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             val deviceId = DeviceFingerprintManager.getDeviceId(context)
@@ -54,7 +55,8 @@ object AppTelemetryManager {
                 phoneNumber = devoteePhone,
                 city = city,
                 appVersion = appVersion,
-                lastSeenAt = System.currentTimeMillis()
+                lastSeenAt = System.currentTimeMillis(),
+                role = role
             )
 
             // 1. Cache to local SQLite database
@@ -136,6 +138,7 @@ object AppTelemetryManager {
                 put("app_version", presence.appVersion)
                 put("last_seen_at", presence.lastSeenAt)
                 put("open_count", curCount + 1)
+                put("role", presence.role)
             }
 
             if (exists) {
@@ -211,7 +214,8 @@ object AppTelemetryManager {
                         city = obj.optString("city", ""),
                         appVersion = obj.optString("app_version", "2.9.0"),
                         lastSeenAt = System.currentTimeMillis(), // fallback
-                        openCount = obj.optInt("open_count", 1)
+                        openCount = obj.optInt("open_count", 1),
+                        role = obj.optString("role", "USER")
                     )
                     list.add(dev)
                     // Update local cache
@@ -239,7 +243,9 @@ object AppTelemetryManager {
                 "SELECT * FROM active_device_telemetry ORDER BY last_seen_at DESC",
                 null
             )
+            val roleCol = cursor.getColumnIndex("role")
             while (cursor.moveToNext()) {
+                val roleVal = if (roleCol != -1) cursor.getString(roleCol) ?: "USER" else "USER"
                 list.add(
                     DevicePresence(
                         deviceId = cursor.getString(cursor.getColumnIndexOrThrow("device_id")),
@@ -249,7 +255,8 @@ object AppTelemetryManager {
                         city = cursor.getString(cursor.getColumnIndexOrThrow("city")),
                         appVersion = cursor.getString(cursor.getColumnIndexOrThrow("app_version")),
                         lastSeenAt = cursor.getLong(cursor.getColumnIndexOrThrow("last_seen_at")),
-                        openCount = cursor.getInt(cursor.getColumnIndexOrThrow("open_count"))
+                        openCount = cursor.getInt(cursor.getColumnIndexOrThrow("open_count")),
+                        role = roleVal
                     )
                 )
             }

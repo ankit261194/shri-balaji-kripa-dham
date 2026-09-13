@@ -20,7 +20,7 @@ data class LocationSecurityResult(
 
 object GeofenceLocationManager {
 
-    const val MAX_ALLOWED_ACCURACY_METERS = 50.0f
+    const val MAX_ALLOWED_ACCURACY_METERS = 250.0f
 
     /**
      * Calculates great-circle distance between two points on Earth using the Haversine formula.
@@ -115,8 +115,22 @@ object GeofenceLocationManager {
         context: Context,
         ashramLat: Double,
         ashramLon: Double,
-        allowedRadiusMeters: Double
+        allowedRadiusMeters: Double,
+        isGeofenceEnforced: Boolean = true
     ): LocationSecurityResult {
+        if (!isGeofenceEnforced) {
+            val acc = if (location != null && location.hasAccuracy()) location.accuracy else 10.0f
+            val dist = if (location != null) calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon) else 0.0
+            return LocationSecurityResult(
+                isValid = true,
+                isMock = false,
+                accuracyMeters = acc,
+                distanceMeters = dist,
+                isInsideGeofence = true,
+                securityExceptionReason = null
+            )
+        }
+
         if (location == null) {
             return LocationSecurityResult(
                 isValid = false,
@@ -141,7 +155,7 @@ object GeofenceLocationManager {
             )
         }
 
-        // 2. Validate Accuracy Threshold (Must be <= 50m)
+        // 2. Validate Accuracy Threshold (Must be <= MAX_ALLOWED_ACCURACY_METERS)
         val accuracy = if (location.hasAccuracy()) location.accuracy else Float.MAX_VALUE
         if (accuracy > MAX_ALLOWED_ACCURACY_METERS) {
             return LocationSecurityResult(
@@ -199,6 +213,62 @@ object GeofenceLocationManager {
             }
         } catch (e: Exception) {
             null
+        }
+    }
+
+    /**
+     * Actively requests a fresh location fix from GPS and Network providers.
+     * Guaranteed to trigger phone GPS hardware so passive cache is not empty.
+     */
+    @Suppress("MissingPermission")
+    fun requestFreshLocation(
+        context: Context,
+        onLocationResult: (Location?) -> Unit
+    ) {
+        val last = getLastKnownLocation(context)
+        if (last != null && (System.currentTimeMillis() - last.time) < 60_000L) {
+            onLocationResult(last)
+        }
+
+        val locManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+        if (locManager == null) {
+            onLocationResult(last)
+            return
+        }
+
+        var delivered = false
+        val listener = object : android.location.LocationListener {
+            override fun onLocationChanged(loc: Location) {
+                if (!delivered) {
+                    delivered = true
+                    try { locManager.removeUpdates(this) } catch (e: Exception) {}
+                    onLocationResult(loc)
+                }
+            }
+            @Deprecated("Deprecated in Java")
+            override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {}
+            override fun onProviderEnabled(provider: String) {}
+            override fun onProviderDisabled(provider: String) {}
+        }
+
+        try {
+            val mainLooper = android.os.Looper.getMainLooper()
+            if (locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 1.0f, listener, mainLooper)
+            }
+            if (locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000L, 1.0f, listener, mainLooper)
+            }
+            // Auto timeout removal after 8 seconds
+            android.os.Handler(mainLooper).postDelayed({
+                if (!delivered) {
+                    delivered = true
+                    try { locManager.removeUpdates(listener) } catch (e: Exception) {}
+                    onLocationResult(getLastKnownLocation(context))
+                }
+            }, 8000L)
+        } catch (e: Exception) {
+            onLocationResult(last)
         }
     }
 }

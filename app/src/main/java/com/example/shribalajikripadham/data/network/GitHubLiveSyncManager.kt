@@ -819,7 +819,8 @@ object GitHubLiveSyncManager {
                                     city = o.optString("city", ""),
                                     appVersion = o.optString("app_version", "2.22.0"),
                                     lastSeenAt = o.optLong("last_seen_at", System.currentTimeMillis()),
-                                    openCount = o.optInt("open_count", 1)
+                                    openCount = o.optInt("open_count", 1),
+                                    role = o.optString("role", "USER")
                                 )
                             }
                         }
@@ -833,6 +834,7 @@ object GitHubLiveSyncManager {
                     userName = if (presence.userName.isNotBlank()) presence.userName else (prev?.userName ?: ""),
                     phoneNumber = if (presence.phoneNumber.isNotBlank()) presence.phoneNumber else (prev?.phoneNumber ?: ""),
                     city = if (presence.city.isNotBlank()) presence.city else (prev?.city ?: ""),
+                    role = if (presence.role != "USER") presence.role else (prev?.role ?: "USER"),
                     lastSeenAt = System.currentTimeMillis()
                 )
                 devicesMap[presence.deviceId] = updatedPresence
@@ -849,6 +851,7 @@ object GitHubLiveSyncManager {
                         put("app_version", d.appVersion)
                         put("last_seen_at", d.lastSeenAt)
                         put("open_count", d.openCount)
+                        put("role", d.role)
                     })
                 }
 
@@ -935,7 +938,8 @@ object GitHubLiveSyncManager {
                             city = o.optString("city", ""),
                             appVersion = o.optString("app_version", "2.22.0"),
                             lastSeenAt = o.optLong("last_seen_at", System.currentTimeMillis()),
-                            openCount = o.optInt("open_count", 1)
+                            openCount = o.optInt("open_count", 1),
+                            role = o.optString("role", "USER")
                         )
                         map[did] = dp
                         AppTelemetryManager.saveDeviceLocally(context, dp)
@@ -958,7 +962,8 @@ object GitHubLiveSyncManager {
                         city = if (!existing?.city.isNullOrBlank()) existing!!.city else t.city,
                         appVersion = existing?.appVersion ?: "2.22.0",
                         lastSeenAt = if (existing != null && existing.lastSeenAt > t.createdAt) existing.lastSeenAt else t.createdAt,
-                        openCount = (existing?.openCount ?: 0) + 1
+                        openCount = (existing?.openCount ?: 0) + 1,
+                        role = existing?.role ?: "USER"
                     )
                     map[t.deviceId] = merged
                     AppTelemetryManager.saveDeviceLocally(context, merged)

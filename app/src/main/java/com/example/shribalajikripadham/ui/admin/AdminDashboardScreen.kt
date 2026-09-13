@@ -279,6 +279,18 @@ fun AdminDashboardScreen(
                 refreshData()
             } catch (e: Exception) {}
 
+            // Record admin device telemetry heartbeat
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                try {
+                    com.example.shribalajikripadham.data.network.AppTelemetryManager.recordAppHeartbeat(
+                        context = context,
+                        devoteeName = loggedInAdmin!!.name,
+                        devoteePhone = loggedInAdmin!!.phoneNumber,
+                        role = "ADMIN"
+                    )
+                } catch (e: Exception) {}
+            }
+
             // Auto-refresh token queue from cloud every 20 seconds while admin stays on dashboard
             while (isActive) {
                 delay(20000)
@@ -6113,7 +6125,8 @@ fun UiBoxControlTab(
                                     list[index - 1] = temp
                                     val reindexed = list.mapIndexed { idx, itm -> itm.copy(orderIndex = idx) }
                                     localSections = reindexed
-                                    hasUnsavedChanges = true
+                                    hasUnsavedChanges = false
+                                    onSaveSections(reindexed)
                                 }
                             },
                             enabled = index > 0,
@@ -6132,7 +6145,8 @@ fun UiBoxControlTab(
                                     list[index + 1] = temp
                                     val reindexed = list.mapIndexed { idx, itm -> itm.copy(orderIndex = idx) }
                                     localSections = reindexed
-                                    hasUnsavedChanges = true
+                                    hasUnsavedChanges = false
+                                    onSaveSections(reindexed)
                                 }
                             },
                             enabled = index < localSections.size - 1,
@@ -6158,13 +6172,14 @@ fun UiBoxControlTab(
                             Text("✏️", fontSize = 16.sp)
                         }
 
-                        // Visibility Toggle (Eye / Eye-off)
+                        // Visibility Toggle (Eye / Eye-off) -> Auto-save & Live Publish
                         IconButton(
                             onClick = {
                                 val list = localSections.toMutableList()
                                 list[index] = list[index].copy(isVisible = !list[index].isVisible)
                                 localSections = list
-                                hasUnsavedChanges = true
+                                hasUnsavedChanges = false
+                                onSaveSections(list)
                             },
                             modifier = Modifier.size(36.dp)
                         ) {
@@ -6220,8 +6235,10 @@ fun UiBoxControlTab(
                 Button(
                     onClick = {
                         showConfirmResetDialog = false
-                        localSections = UiSectionConfig.defaultSections()
+                        val defaults = UiSectionConfig.defaultSections()
+                        localSections = defaults
                         onResetToDefault()
+                        onSaveSections(defaults)
                         hasUnsavedChanges = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
@@ -6345,13 +6362,14 @@ fun UiBoxControlTab(
                                 customContentEnglish = editContentEn.trim()
                             )
                             localSections = list
-                            hasUnsavedChanges = true
+                            hasUnsavedChanges = false
+                            onSaveSections(list)
                         }
                         editingSection = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
                 ) {
-                    Text(if (isHindi) "लागू करें (Apply)" else "Apply", fontWeight = FontWeight.Bold)
+                    Text(if (isHindi) "सहेजें व लाइव पब्लिश करें" else "Save & Publish Live", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {

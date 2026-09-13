@@ -333,7 +333,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     city TEXT NOT NULL DEFAULT '',
                     app_version TEXT NOT NULL DEFAULT '',
                     last_seen_at INTEGER NOT NULL DEFAULT 0,
-                    open_count INTEGER NOT NULL DEFAULT 1
+                    open_count INTEGER NOT NULL DEFAULT 1,
+                    role TEXT NOT NULL DEFAULT 'USER'
                 )
             """.trimIndent())
         } catch (e: Exception) { e.printStackTrace() }
@@ -353,6 +354,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     private fun ensureColumns(db: SQLiteDatabase) {
         val alterStatements = listOf(
+            "ALTER TABLE active_device_telemetry ADD COLUMN role TEXT NOT NULL DEFAULT 'USER'",
             "ALTER TABLE ashram_settings ADD COLUMN is_aarti_timings_visible INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN is_guruji_info_visible INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN is_emergency_notice_visible INTEGER NOT NULL DEFAULT 1",
@@ -399,7 +401,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         try {
             db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1 WHERE role = 'SUPER_ADMIN'")
-            db.execSQL("UPDATE ashram_settings SET allowed_radius_meters = 200.0 WHERE allowed_radius_meters > 200.0")
+            db.execSQL("UPDATE ashram_settings SET allowed_radius_meters = 1500.0 WHERE allowed_radius_meters < 500.0")
             db.execSQL("UPDATE ashram_settings SET latitude = 28.3972915, longitude = 78.1460410 WHERE id = 1")
         } catch (ignored: Exception) {}
     }
@@ -422,7 +424,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     put("address", "Gram Dungra Jaat, Bulandshahr, UP")
                     put("latitude", 28.3972915)
                     put("longitude", 78.1460410)
-                    put("allowed_radius_meters", 200.0)
+                    put("allowed_radius_meters", 1500.0)
                     put("running_token_number", 1)
                     put("is_darbar_active", 1)
                     put("darbar_date", today)

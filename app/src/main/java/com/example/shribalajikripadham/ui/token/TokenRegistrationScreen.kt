@@ -162,9 +162,26 @@ fun TokenRegistrationScreen(
         }
     }
 
+    var isRefreshingLocation by remember { mutableStateOf(false) }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                      permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            GeofenceLocationManager.requestFreshLocation(context) { loc ->
+                if (loc != null) {
+                    userLatitude = loc.latitude
+                    userLongitude = loc.longitude
+                }
+            }
+        }
+    }
+
     val distanceMeters = remember(userLatitude, userLongitude, settings) {
         if (userLatitude == 0.0 && userLongitude == 0.0) {
-            999999.0 // Default to outside until actual GPS fix is obtained
+            if (!settings.isGeofenceEnforced) 0.0 else 999999.0
         } else {
             GeofenceLocationManager.calculateDistanceMeters(
                 userLatitude, userLongitude,
@@ -173,8 +190,12 @@ fun TokenRegistrationScreen(
         }
     }
     val isInsideGeofence = remember(distanceMeters, settings) {
-        val effectiveRadius = settings.allowedRadiusMeters.coerceIn(50.0, 200.0)
-        distanceMeters <= effectiveRadius
+        if (!settings.isGeofenceEnforced) {
+            true
+        } else {
+            val effectiveRadius = settings.allowedRadiusMeters.coerceAtLeast(100.0)
+            distanceMeters <= effectiveRadius
+        }
     }
     val isQuotaExceeded = remember(settings.maxDailyTokens, todayActiveTokens) {
         settings.maxDailyTokens > 0 && todayActiveTokens >= settings.maxDailyTokens
@@ -194,11 +215,29 @@ fun TokenRegistrationScreen(
             existingToken = repository.checkDeviceRegisteredToday(id)
             todayActiveTokens = repository.getTodayActiveTokenCount()
 
-            // Try getting actual location
-            val loc = GeofenceLocationManager.getLastKnownLocation(context)
-            if (loc != null) {
-                userLatitude = loc.latitude
-                userLongitude = loc.longitude
+            // Check & request location permissions
+            val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            val coarseGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+            if (!fineGranted && !coarseGranted) {
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        android.Manifest.permission.ACCESS_FINE_LOCATION,
+                        android.Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            }
+
+            // Actively acquire fresh GPS coordinates
+            GeofenceLocationManager.requestFreshLocation(context) { loc ->
+                if (loc != null) {
+                    userLatitude = loc.latitude
+                    userLongitude = loc.longitude
+                }
             }
 
             // Background cloud sync to pull all devotee profiles from any phone
@@ -685,6 +724,51 @@ fun TokenRegistrationScreen(
                                         color = if (estimatedDistanceKm >= 0f) Color(0xFFE65100) else Color.DarkGray
                                     )
                                 }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                        Text(if (isInsideGeofence) "🟢" else "📍", fontSize = 14.sp)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = if (!settings.isGeofenceEnforced) {
+                                                if (isHindi) "जियोफेंस: सभी स्थानों से खुला है" else "Geofence: Open everywhere"
+                                            } else if (isInsideGeofence) {
+                                                if (isHindi) "आश्रम सीमा में उपस्थित (सत्यापित)" else "Inside Ashram Premises (Verified)"
+                                            } else {
+                                                val kmStr = if (distanceMeters < 999990.0) String.format(java.util.Locale.US, "%.1f km", distanceMeters/1000.0) else "अज्ञात"
+                                                if (isHindi) "आश्रम सीमा से बाहर ($kmStr)" else "Outside Ashram boundary"
+                                            },
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (isInsideGeofence) Color(0xFF2E7D32) else Color(0xFFC62828)
+                                        )
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            isRefreshingLocation = true
+                                            GeofenceLocationManager.requestFreshLocation(context) { loc ->
+                                                if (loc != null) {
+                                                    userLatitude = loc.latitude
+                                                    userLongitude = loc.longitude
+                                                }
+                                                isRefreshingLocation = false
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(20.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        if (isRefreshingLocation) {
+                                            CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
+                                        } else {
+                                            Text(if (isHindi) "🔄 GPS रीफ्रेश" else "🔄 Refresh GPS", fontSize = 10.sp)
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -939,13 +1023,15 @@ fun TokenRegistrationScreen(
                                         val loc = GeofenceLocationManager.getLastKnownLocation(context)
                                         val isMock = GeofenceLocationManager.isMockLocation(loc, context)
                                         val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
+                                        val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: settings.latitude)
+                                        val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: settings.longitude)
 
                                         val created = repository.registerToken(
                                             patientName = patientName.trim(),
                                             phoneNumber = phoneNumber.trim(),
                                             deviceId = deviceId,
-                                            latitude = userLatitude,
-                                            longitude = userLongitude,
+                                            latitude = finalLat,
+                                            longitude = finalLon,
                                             city = city.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
                                             registeredBy = "SELF",
                                             photoUri = capturedPhotoUri,

@@ -7,7 +7,7 @@ data class AshramSettings(
     val address: String = "Gram Dungra Jaat, Bulandshahr, UP",
     val latitude: Double = 28.3972915,
     val longitude: Double = 78.1460410,
-    val allowedRadiusMeters: Double = 200.0,
+    val allowedRadiusMeters: Double = 1500.0,
     val runningTokenNumber: Int = 1,
     val isDarbarActive: Boolean = true,
     val darbarDate: String = "",

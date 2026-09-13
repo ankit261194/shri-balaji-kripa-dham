@@ -413,6 +413,117 @@ fun HomeScreen(
                 }
             }
 
+            // 🌟 GRAND LIVE TOKEN STATUS ANNOUNCEMENT BANNER (Instant Visibility for Devotees)
+            val isTokenOpen = settings.isTokenServiceEnabled && (settings.scheduledTokenOpenTimestamp == 0L || settings.scheduledTokenOpenTimestamp <= System.currentTimeMillis())
+            val isTokenScheduled = settings.isTokenServiceEnabled && settings.scheduledTokenOpenTimestamp > System.currentTimeMillis()
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = when {
+                        isTokenOpen -> Color(0xFFE8F5E9)
+                        isTokenScheduled -> Color(0xFFFFF8E1)
+                        else -> Color(0xFFFFEBEE)
+                    }
+                ),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(
+                    1.5.dp,
+                    when {
+                        isTokenOpen -> Color(0xFF2E7D32)
+                        isTokenScheduled -> Color(0xFFFFA000)
+                        else -> Color(0xFFC62828)
+                    }
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 14.dp)
+                    .clickable(enabled = isTokenOpen) {
+                        onNavigateToFaceToken()
+                    }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(
+                                when {
+                                    isTokenOpen -> Color(0xFF2E7D32)
+                                    isTokenScheduled -> Color(0xFFFFA000)
+                                    else -> Color(0xFFC62828)
+                                }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = when {
+                                isTokenOpen -> "🎟️"
+                                isTokenScheduled -> "⏳"
+                                else -> "🔒"
+                            },
+                            fontSize = 24.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = when {
+                                isTokenOpen -> if (isHindi) "🟢 रविवार टोकन वितरण चालू है!" else "🟢 Sunday Token Generation is OPEN!"
+                                isTokenScheduled -> if (isHindi) "⏳ टोकन पंजीकरण पूर्व-निर्धारित है" else "⏳ Token Registration Scheduled"
+                                else -> if (isHindi) "🔴 रविवार टोकन वितरण अभी बंद है" else "🔴 Sunday Token Service Currently Closed"
+                            },
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 15.sp,
+                            color = when {
+                                isTokenOpen -> Color(0xFF1B5E20)
+                                isTokenScheduled -> Color(0xFFE65100)
+                                else -> Color(0xFFB71C1C)
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = when {
+                                isTokenOpen -> if (isHindi) "👉 अभी टोकन प्राप्त करें (टैप करें ➔)" else "👉 Tap here to generate token now ➔"
+                                isTokenScheduled -> {
+                                    val sdf = java.text.SimpleDateFormat("dd MMM, hh:mm a", java.util.Locale.getDefault())
+                                    val timeStr = sdf.format(java.util.Date(settings.scheduledTokenOpenTimestamp))
+                                    if (isHindi) "खुलने का समय: $timeStr" else "Opens at: $timeStr"
+                                }
+                                else -> if (isHindi) "आश्रम व्यवस्था अनुसार टोकन सेवा अभी बंद है" else "Token service is paused by Ashram"
+                            },
+                            fontSize = 12.sp,
+                            fontWeight = if (isTokenOpen) FontWeight.Bold else FontWeight.Normal,
+                            color = when {
+                                isTokenOpen -> Color(0xFF2E7D32)
+                                isTokenScheduled -> Color(0xFFBF360C)
+                                else -> Color(0xFF7F0000)
+                            }
+                        )
+                    }
+                    if (isTokenOpen) {
+                        Button(
+                            onClick = { onNavigateToFaceToken() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = if (isHindi) "टोकन लें ➔" else "Get Token ➔",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+
             // 5 UI LAYOUT SELECTOR CHIP ROW OR ENFORCED BANNER
             if (settings.isUiLayoutEnforced) {
                 Card(

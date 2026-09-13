@@ -43,6 +43,7 @@ fun ActiveDevicesTab(
     var devicesList by remember { mutableStateOf<List<DevicePresence>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var selectedRoleFilter by remember { mutableStateOf("ALL") } // "ALL", "USER", "ADMIN"
 
     val fetchTelemetry: () -> Unit = {
         scope.launch {
@@ -72,17 +73,24 @@ fun ActiveDevicesTab(
         fetchTelemetry()
     }
 
-    val filteredList = remember(devicesList, searchQuery) {
-        if (searchQuery.isBlank()) {
-            devicesList
-        } else {
-            val q = searchQuery.trim().lowercase(Locale.getDefault())
-            devicesList.filter {
-                it.deviceModel.lowercase(Locale.getDefault()).contains(q) ||
-                it.userName.lowercase(Locale.getDefault()).contains(q) ||
-                it.phoneNumber.contains(q) ||
-                it.city.lowercase(Locale.getDefault()).contains(q)
+    val adminCount = remember(devicesList) { devicesList.count { it.role == "ADMIN" || it.role == "SEVADAR" } }
+    val devoteeCount = remember(devicesList) { devicesList.count { it.role != "ADMIN" && it.role != "SEVADAR" } }
+
+    val filteredList = remember(devicesList, searchQuery, selectedRoleFilter) {
+        devicesList.filter { dev ->
+            val matchesRole = when (selectedRoleFilter) {
+                "ADMIN" -> dev.role == "ADMIN" || dev.role == "SEVADAR"
+                "USER" -> dev.role != "ADMIN" && dev.role != "SEVADAR"
+                else -> true
             }
+            val matchesQuery = if (searchQuery.isBlank()) true else {
+                val q = searchQuery.trim().lowercase(Locale.getDefault())
+                dev.deviceModel.lowercase(Locale.getDefault()).contains(q) ||
+                dev.userName.lowercase(Locale.getDefault()).contains(q) ||
+                dev.phoneNumber.contains(q) ||
+                dev.city.lowercase(Locale.getDefault()).contains(q)
+            }
+            matchesRole && matchesQuery
         }
     }
 
@@ -147,86 +155,122 @@ fun ActiveDevicesTab(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // 3 KPI Badges
-                    Row(
+                    // 4 KPI Badges (2x2 Grid)
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Total Registered Phones
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFF1565C0))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                            // Total Devices
+                            Card(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                border = BorderStroke(1.dp, Color(0xFF1565C0))
                             ) {
-                                Text(
-                                    text = "$totalDevices",
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 22.sp,
-                                    color = Color(0xFF0D47A1)
-                                )
-                                Text(
-                                    text = if (isHindi) "कुल फोन" else "Total Phones",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.DarkGray
-                                )
+                                Column(
+                                    modifier = Modifier.padding(10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "${devicesList.size.coerceAtLeast(totalDevices)}",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 20.sp,
+                                        color = Color(0xFF0D47A1)
+                                    )
+                                    Text(
+                                        text = if (isHindi) "📱 कुल फोन" else "📱 Total Phones",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                            }
+
+                            // Opened Today
+                            Card(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                border = BorderStroke(1.dp, Color(0xFF2E7D32))
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "$activeTodayCount",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 20.sp,
+                                        color = Color(0xFF1B5E20)
+                                    )
+                                    Text(
+                                        text = if (isHindi) "⚡ आज सक्रिय" else "⚡ Active Today",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.DarkGray
+                                    )
+                                }
                             }
                         }
 
-                        // Opened Today
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFF2E7D32))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                            // Devotees count
+                            Card(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                border = BorderStroke(1.dp, Color(0xFF43A047))
                             ) {
-                                Text(
-                                    text = "$activeTodayCount",
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 22.sp,
-                                    color = Color(0xFF1B5E20)
-                                )
-                                Text(
-                                    text = if (isHindi) "आज सक्रिय" else "Active Today",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.DarkGray
-                                )
+                                Column(
+                                    modifier = Modifier.padding(10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "$devoteeCount",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 20.sp,
+                                        color = Color(0xFF2E7D32)
+                                    )
+                                    Text(
+                                        text = if (isHindi) "🙏 भक्त फोन" else "🙏 Devotee Phones",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.DarkGray
+                                    )
+                                }
                             }
-                        }
 
-                        // Total Tracked
-                        Card(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, SaffronPrimary)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                            // Admins count
+                            Card(
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                border = BorderStroke(1.dp, SaffronPrimary)
                             ) {
-                                Text(
-                                    text = "${devicesList.size}",
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 22.sp,
-                                    color = MaroonAccent
-                                )
-                                Text(
-                                    text = if (isHindi) "सूचीबद्ध" else "Tracked",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.DarkGray
-                                )
+                                Column(
+                                    modifier = Modifier.padding(10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "$adminCount",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 20.sp,
+                                        color = MaroonAccent
+                                    )
+                                    Text(
+                                        text = if (isHindi) "👑 एडमिन फोन" else "👑 Admin Phones",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.DarkGray
+                                    )
+                                }
                             }
                         }
                     }
@@ -248,6 +292,30 @@ fun ActiveDevicesTab(
                     unfocusedBorderColor = Color.LightGray
                 )
             )
+        }
+
+        // Role Filter Chips Row
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = selectedRoleFilter == "ALL",
+                    onClick = { selectedRoleFilter = "ALL" },
+                    label = { Text(if (isHindi) "सभी (${devicesList.size})" else "All (${devicesList.size})", fontSize = 11.sp) }
+                )
+                FilterChip(
+                    selected = selectedRoleFilter == "USER",
+                    onClick = { selectedRoleFilter = "USER" },
+                    label = { Text(if (isHindi) "🙏 भक्त ($devoteeCount)" else "Devotees ($devoteeCount)", fontSize = 11.sp) }
+                )
+                FilterChip(
+                    selected = selectedRoleFilter == "ADMIN",
+                    onClick = { selectedRoleFilter = "ADMIN" },
+                    label = { Text(if (isHindi) "👑 एडमिन ($adminCount)" else "Admins ($adminCount)", fontSize = 11.sp) }
+                )
+            }
         }
 
         if (filteredList.isEmpty()) {
@@ -330,18 +398,52 @@ private fun DeviceCardItem(
                     }
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = Color(0xFFF1F8E9),
-                    border = BorderStroke(1.dp, Color(0xFF81C784))
-                ) {
-                    Text(
-                        text = "v${dev.appVersion}",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2E7D32),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                    )
+                Column(horizontalAlignment = Alignment.End) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = when (dev.role) {
+                            "ADMIN" -> Color(0xFFFFF3E0)
+                            "SEVADAR" -> Color(0xFFF3E5F5)
+                            else -> Color(0xFFE8F5E9)
+                        },
+                        border = BorderStroke(
+                            1.dp,
+                            when (dev.role) {
+                                "ADMIN" -> Color(0xFFFFA000)
+                                "SEVADAR" -> Color(0xFFAB47BC)
+                                else -> Color(0xFF81C784)
+                            }
+                        )
+                    ) {
+                        Text(
+                            text = when (dev.role) {
+                                "ADMIN" -> if (isHindi) "👑 एडमिन" else "👑 Admin"
+                                "SEVADAR" -> if (isHindi) "🚩 सेवादार" else "🚩 Sevadar"
+                                else -> if (isHindi) "🙏 भक्त" else "🙏 Devotee"
+                            },
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = when (dev.role) {
+                                "ADMIN" -> Color(0xFFE65100)
+                                "SEVADAR" -> Color(0xFF6A1B9A)
+                                else -> Color(0xFF1B5E20)
+                            },
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFF5F5F5)
+                    ) {
+                        Text(
+                            text = "v${dev.appVersion}",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.DarkGray,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
 

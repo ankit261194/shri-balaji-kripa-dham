@@ -453,13 +453,17 @@ class AshramRepository(context: Context) {
             }
 
             if (settings.isGeofenceEnforced) {
-                val effectiveRadius = settings.allowedRadiusMeters.coerceIn(50.0, 200.0)
+                val effectiveRadius = settings.allowedRadiusMeters.coerceAtLeast(100.0)
+                if (latitude == 0.0 && longitude == 0.0) {
+                    throw SecurityException("कृपया GPS चालू करें और आश्रम परिसर में उपस्थित रहें।")
+                }
                 val distance = GeofenceLocationManager.calculateDistanceMeters(
                     latitude, longitude,
                     settings.latitude, settings.longitude
                 )
                 if (distance > effectiveRadius) {
-                    throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
+                    val km = String.format(java.util.Locale.US, "%.1f", distance / 1000.0)
+                    throw SecurityException("आप आश्रम सीमा से $km किमी दूर हैं। टोकन केवल आश्रम परिसर में उपस्थित होने पर मिलेगा।")
                 }
             }
         }

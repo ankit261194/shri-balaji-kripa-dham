@@ -97,9 +97,24 @@ fun FaceTokenRegistrationScreen(
     var manualCity by remember { mutableStateOf("") }
     var enrollFaceForFuture by remember { mutableStateOf(true) }
 
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                      permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            GeofenceLocationManager.requestFreshLocation(context) { loc ->
+                if (loc != null) {
+                    userLatitude = loc.latitude
+                    userLongitude = loc.longitude
+                }
+            }
+        }
+    }
+
     val distanceMeters = remember(userLatitude, userLongitude, settings) {
         if (userLatitude == 0.0 && userLongitude == 0.0) {
-            999999.0
+            if (!settings.isGeofenceEnforced) 0.0 else 999999.0
         } else {
             GeofenceLocationManager.calculateDistanceMeters(
                 userLatitude, userLongitude,
@@ -108,8 +123,12 @@ fun FaceTokenRegistrationScreen(
         }
     }
     val isInsideGeofence = remember(distanceMeters, settings) {
-        val effectiveRadius = settings.allowedRadiusMeters.coerceIn(50.0, 200.0)
-        distanceMeters <= effectiveRadius
+        if (!settings.isGeofenceEnforced) {
+            true
+        } else {
+            val effectiveRadius = settings.allowedRadiusMeters.coerceAtLeast(100.0)
+            distanceMeters <= effectiveRadius
+        }
     }
 
     // Process photo captured from real camera or gallery
@@ -246,12 +265,28 @@ fun FaceTokenRegistrationScreen(
                 e.printStackTrace()
             }
             settings = repository.getSettings()
-            existingToken = repository.checkDeviceRegisteredToday(id)
+            // Check & request location permissions
+            val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            val coarseGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
-            val loc = GeofenceLocationManager.getLastKnownLocation(context)
-            if (loc != null) {
-                userLatitude = loc.latitude
-                userLongitude = loc.longitude
+            if (!fineGranted && !coarseGranted) {
+                locationPermissionLauncher.launch(
+                    arrayOf(
+                        android.Manifest.permission.ACCESS_FINE_LOCATION,
+                        android.Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                )
+            }
+
+            GeofenceLocationManager.requestFreshLocation(context) { loc ->
+                if (loc != null) {
+                    userLatitude = loc.latitude
+                    userLongitude = loc.longitude
+                }
             }
             try { repository.syncDevoteesFromCloud() } catch (e: Exception) {}
         } catch (e: Exception) {
@@ -556,7 +591,7 @@ fun FaceTokenRegistrationScreen(
                             // Camera Photo Capture Button
                             Button(
                                 onClick = { launchCameraSafely() },
-                                enabled = isInsideGeofence && !isBeforeSchedule,
+                                enabled = !isBeforeSchedule,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp),
@@ -578,7 +613,7 @@ fun FaceTokenRegistrationScreen(
                             // Gallery Option Fallback
                             OutlinedButton(
                                 onClick = { galleryLauncher.launch("image/*") },
-                                enabled = isInsideGeofence && !isBeforeSchedule,
+                                enabled = !isBeforeSchedule,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(48.dp),
@@ -887,12 +922,14 @@ fun FaceTokenRegistrationScreen(
                                                 val loc = GeofenceLocationManager.getLastKnownLocation(context)
                                                 val isMock = GeofenceLocationManager.isMockLocation(loc, context)
                                                 val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
+                                                val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: settings.latitude)
+                                                val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: settings.longitude)
 
                                                 val (token, updated) = repository.confirmFaceAndGenerateToken(
                                                     matchedProfile = match.profile,
                                                     deviceId = deviceId,
-                                                    latitude = userLatitude,
-                                                    longitude = userLongitude,
+                                                    latitude = finalLat,
+                                                    longitude = finalLon,
                                                     candidateVector = candidateVector,
                                                     photoUri = if (capturedPhotoUri.isNotBlank()) capturedPhotoUri else match.profile.photoUri,
                                                     isMockLocation = isMock,
@@ -1145,14 +1182,16 @@ fun FaceTokenRegistrationScreen(
                                             val loc = GeofenceLocationManager.getLastKnownLocation(context)
                                             val isMock = GeofenceLocationManager.isMockLocation(loc, context)
                                             val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
+                                            val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: settings.latitude)
+                                            val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: settings.longitude)
 
                                             // Register Token with anti-fraud gating
                                             val token = repository.registerToken(
                                                 patientName = manualName.trim(),
                                                 phoneNumber = manualPhone.trim(),
                                                 deviceId = deviceId,
-                                                latitude = userLatitude,
-                                                longitude = userLongitude,
+                                                latitude = finalLat,
+                                                longitude = finalLon,
                                                 city = manualCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
                                                 registeredBy = "MANUAL_FALLBACK",
                                                 photoUri = capturedPhotoUri,
