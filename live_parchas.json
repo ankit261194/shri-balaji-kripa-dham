@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-13T13:36:11Z",
+  "updated_at": "2026-09-13T13:36:27Z",
   "updated_by": "Super Admin",
   "version": 1,
   "parchas": [
@@ -82,7 +82,7 @@
       "download_count": 0,
       "created_by": "SUPER_ADMIN",
       "created_at": 1789225602000,
-      "updated_at": 1789306570867
+      "updated_at": 1789306572022
     },
     {
       "parcha_id": "CANONICAL_ARDAS",
@@ -140,12 +140,12 @@
       "mantra_text": "।। भूत पिशाच निकट नहिं आवै। महाबीर जब नाम सुनावै ।।\n।। नासै रोग हरै सब पीरा। जपत निरंतर हनुमत बीरा ।।",
       "image_uri": "",
       "is_published": true,
-      "is_hidden": false,
+      "is_hidden": true,
       "view_count": 0,
       "download_count": 0,
       "created_by": "SUPER_ADMIN",
       "created_at": 1789225606000,
-      "updated_at": 1789225606000
+      "updated_at": 1789306587167
     }
   ]
 }
