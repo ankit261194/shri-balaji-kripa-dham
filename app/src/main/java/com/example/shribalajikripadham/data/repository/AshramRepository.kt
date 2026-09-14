@@ -433,11 +433,17 @@ class AshramRepository(context: Context) {
         // Geofence & Anti-Spoof bypass: Super Admin ALWAYS bypasses; Admins bypass IF bypassGeofence is granted
         val shouldBypassGeofence = isSuperAdmin || (isAdminDesk && bypassGeofence)
 
-        // 0. PRE-SCHEDULED TOKEN OPENING CHECK (Devotees only)
+        // 0. SUNDAY SCHEDULE & TOKEN OPENING CHECK (Devotees only)
         if (isDevoteeRequest) {
             val settings = getSettings()
-            if (settings.scheduledTokenOpenTimestamp > System.currentTimeMillis()) {
-                throw IllegalStateException("टोकन पंजीकरण अभी शुरू नहीं हुआ है। यह पूर्व निर्धारित समय पर स्वतः खुलेगा।")
+            val sched = com.example.shribalajikripadham.util.SundayTokenScheduleHelper.evaluateSchedule(settings)
+            when (sched) {
+                is com.example.shribalajikripadham.util.SundayScheduleState.Open -> { /* Allowed */ }
+                is com.example.shribalajikripadham.util.SundayScheduleState.SundayBeforeStart -> throw IllegalStateException(sched.messageHindi)
+                is com.example.shribalajikripadham.util.SundayScheduleState.SundayClosedEvening -> throw IllegalStateException(sched.messageHindi)
+                is com.example.shribalajikripadham.util.SundayScheduleState.NonSunday -> throw IllegalStateException(sched.messageHindi)
+                is com.example.shribalajikripadham.util.SundayScheduleState.ServiceDisabled -> throw IllegalStateException(sched.messageHindi)
+                is com.example.shribalajikripadham.util.SundayScheduleState.CustomScheduled -> throw IllegalStateException(sched.messageHindi)
             }
         }
 

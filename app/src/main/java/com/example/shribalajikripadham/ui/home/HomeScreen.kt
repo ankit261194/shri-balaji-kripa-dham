@@ -40,6 +40,8 @@ import com.example.shribalajikripadham.data.repository.AshramRepository
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.ui.common.SacredAvatar
 import com.example.shribalajikripadham.util.AppUpdateManager
+import com.example.shribalajikripadham.util.SundayTokenScheduleHelper
+import com.example.shribalajikripadham.util.SundayScheduleState
 import com.example.shribalajikripadham.util.DistanceCalculatorService
 import android.widget.Toast
 import androidx.compose.ui.window.Dialog
@@ -413,24 +415,30 @@ fun HomeScreen(
                 }
             }
 
-            // 🌟 GRAND LIVE TOKEN STATUS ANNOUNCEMENT BANNER (Instant Visibility for Devotees)
-            val isTokenOpen = settings.isTokenServiceEnabled && (settings.scheduledTokenOpenTimestamp == 0L || settings.scheduledTokenOpenTimestamp <= System.currentTimeMillis())
-            val isTokenScheduled = settings.isTokenServiceEnabled && settings.scheduledTokenOpenTimestamp > System.currentTimeMillis()
+            // 🌟 GRAND LIVE TOKEN STATUS ANNOUNCEMENT BANNER (Sunday 8:30 AM to 5:00 PM Schedule)
+            val scheduleState = remember(settings) {
+                SundayTokenScheduleHelper.evaluateSchedule(settings)
+            }
+            val isTokenOpen = scheduleState is SundayScheduleState.Open
 
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = when {
-                        isTokenOpen -> Color(0xFFE8F5E9)
-                        isTokenScheduled -> Color(0xFFFFF8E1)
+                    containerColor = when (scheduleState) {
+                        is SundayScheduleState.Open -> Color(0xFFE8F5E9)
+                        is SundayScheduleState.SundayBeforeStart -> Color(0xFFFFF8E1)
+                        is SundayScheduleState.SundayClosedEvening -> Color(0xFFFFEBEE)
+                        is SundayScheduleState.NonSunday -> Color(0xFFFFF3E0)
                         else -> Color(0xFFFFEBEE)
                     }
                 ),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(
                     1.5.dp,
-                    when {
-                        isTokenOpen -> Color(0xFF2E7D32)
-                        isTokenScheduled -> Color(0xFFFFA000)
+                    when (scheduleState) {
+                        is SundayScheduleState.Open -> Color(0xFF2E7D32)
+                        is SundayScheduleState.SundayBeforeStart -> Color(0xFFFFA000)
+                        is SundayScheduleState.SundayClosedEvening -> Color(0xFFEF5350)
+                        is SundayScheduleState.NonSunday -> Color(0xFFFF9800)
                         else -> Color(0xFFC62828)
                     }
                 ),
@@ -438,7 +446,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 14.dp)
-                    .clickable(enabled = isTokenOpen) {
+                    .clickable {
                         onNavigateToFaceToken()
                     }
             ) {
@@ -453,18 +461,22 @@ fun HomeScreen(
                             .size(46.dp)
                             .clip(CircleShape)
                             .background(
-                                when {
-                                    isTokenOpen -> Color(0xFF2E7D32)
-                                    isTokenScheduled -> Color(0xFFFFA000)
+                                when (scheduleState) {
+                                    is SundayScheduleState.Open -> Color(0xFF2E7D32)
+                                    is SundayScheduleState.SundayBeforeStart -> Color(0xFFFFA000)
+                                    is SundayScheduleState.SundayClosedEvening -> Color(0xFFC62828)
+                                    is SundayScheduleState.NonSunday -> Color(0xFFF57C00)
                                     else -> Color(0xFFC62828)
                                 }
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = when {
-                                isTokenOpen -> "🎟️"
-                                isTokenScheduled -> "⏳"
+                            text = when (scheduleState) {
+                                is SundayScheduleState.Open -> "🎟️"
+                                is SundayScheduleState.SundayBeforeStart -> "⏳"
+                                is SundayScheduleState.SundayClosedEvening -> "🔴"
+                                is SundayScheduleState.NonSunday -> "📅"
                                 else -> "🔒"
                             },
                             fontSize = 24.sp
@@ -473,53 +485,65 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = when {
-                                isTokenOpen -> if (isHindi) "🟢 रविवार टोकन वितरण चालू है!" else "🟢 Sunday Token Generation is OPEN!"
-                                isTokenScheduled -> if (isHindi) "⏳ टोकन पंजीकरण पूर्व-निर्धारित है" else "⏳ Token Registration Scheduled"
-                                else -> if (isHindi) "🔴 रविवार टोकन वितरण अभी बंद है" else "🔴 Sunday Token Service Currently Closed"
+                            text = when (scheduleState) {
+                                is SundayScheduleState.Open -> if (isHindi) "🟢 रविवार टोकन वितरण चालू है!" else "🟢 Sunday Token Generation OPEN!"
+                                is SundayScheduleState.SundayBeforeStart -> if (isHindi) "⏳ टोकन आज सुबह 8:30 बजे खुलेंगे" else "⏳ Opens Today at 8:30 AM"
+                                is SundayScheduleState.SundayClosedEvening -> if (isHindi) "🔴 आज के टोकन पूरे हो गए हैं" else "🔴 Today's Tokens Closed"
+                                is SundayScheduleState.NonSunday -> if (isHindi) "📅 रविवार टोकन वितरण सूचना" else "📅 Sunday Token Schedule"
+                                is SundayScheduleState.CustomScheduled -> if (isHindi) "⏳ टोकन पूर्व-निर्धारित है" else "⏳ Token Scheduled"
+                                else -> if (isHindi) "🔴 रविवार टोकन वितरण बंद है" else "🔴 Token Service Closed"
                             },
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 15.sp,
-                            color = when {
-                                isTokenOpen -> Color(0xFF1B5E20)
-                                isTokenScheduled -> Color(0xFFE65100)
+                            fontSize = 14.sp,
+                            color = when (scheduleState) {
+                                is SundayScheduleState.Open -> Color(0xFF1B5E20)
+                                is SundayScheduleState.SundayBeforeStart -> Color(0xFFE65100)
+                                is SundayScheduleState.SundayClosedEvening -> Color(0xFFB71C1C)
+                                is SundayScheduleState.NonSunday -> Color(0xFFE65100)
                                 else -> Color(0xFFB71C1C)
                             }
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = when {
-                                isTokenOpen -> if (isHindi) "👉 अभी टोकन प्राप्त करें (टैप करें ➔)" else "👉 Tap here to generate token now ➔"
-                                isTokenScheduled -> {
-                                    val sdf = java.text.SimpleDateFormat("dd MMM, hh:mm a", java.util.Locale.getDefault())
-                                    val timeStr = sdf.format(java.util.Date(settings.scheduledTokenOpenTimestamp))
-                                    if (isHindi) "खुलने का समय: $timeStr" else "Opens at: $timeStr"
-                                }
-                                else -> if (isHindi) "आश्रम व्यवस्था अनुसार टोकन सेवा अभी बंद है" else "Token service is paused by Ashram"
+                            text = when (scheduleState) {
+                                is SundayScheduleState.Open -> if (isHindi) "👉 अभी टोकन प्राप्त करें (टैप करें ➔)" else "👉 Tap here to get token now ➔"
+                                is SundayScheduleState.SundayBeforeStart -> if (isHindi) "सुबह 8:30 बजे आश्रम लोकेशन पर टोकन प्राप्त करें" else "Available from 8:30 AM at Ashram"
+                                is SundayScheduleState.SundayClosedEvening -> if (isHindi) "अब टोकन आगामी रविवार, ${scheduleState.nextSundayDateStr} को 8:30 AM से मिलेंगे" else "Next tokens on Sunday, ${scheduleState.nextSundayDateStr} 8:30 AM"
+                                is SundayScheduleState.NonSunday -> if (isHindi) "आगामी रविवार, ${scheduleState.nextSundayDateStr} को 8:30 AM से मिलेंगे" else "Next tokens on Sunday, ${scheduleState.nextSundayDateStr} 8:30 AM"
+                                is SundayScheduleState.CustomScheduled -> if (isHindi) "खुलने का समय: ${scheduleState.formattedDate}" else "Opens at: ${scheduleState.formattedDate}"
+                                else -> if (isHindi) "आश्रम व्यवस्था अनुसार टोकन सेवा अभी बंद है" else "Token service paused by Ashram"
                             },
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = if (isTokenOpen) FontWeight.Bold else FontWeight.Normal,
-                            color = when {
-                                isTokenOpen -> Color(0xFF2E7D32)
-                                isTokenScheduled -> Color(0xFFBF360C)
+                            color = when (scheduleState) {
+                                is SundayScheduleState.Open -> Color(0xFF2E7D32)
+                                is SundayScheduleState.SundayBeforeStart -> Color(0xFFBF360C)
+                                is SundayScheduleState.SundayClosedEvening -> Color(0xFFB71C1C)
+                                is SundayScheduleState.NonSunday -> Color(0xFFBF360C)
                                 else -> Color(0xFF7F0000)
                             }
                         )
                     }
-                    if (isTokenOpen) {
-                        Button(
-                            onClick = { onNavigateToFaceToken() },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                            shape = RoundedCornerShape(10.dp),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = if (isHindi) "टोकन लें ➔" else "Get Token ➔",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
+                    Button(
+                        onClick = { onNavigateToFaceToken() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = when (scheduleState) {
+                                is SundayScheduleState.Open -> Color(0xFF2E7D32)
+                                is SundayScheduleState.SundayBeforeStart -> Color(0xFFE65100)
+                                is SundayScheduleState.SundayClosedEvening -> Color(0xFFC62828)
+                                is SundayScheduleState.NonSunday -> Color(0xFFE65100)
+                                else -> Color(0xFFC62828)
+                            }
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (isTokenOpen) (if (isHindi) "टोकन लें ➔" else "Get Token ➔") else (if (isHindi) "विवरण ➔" else "Details ➔"),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
                     }
                 }
             }
@@ -649,6 +673,7 @@ fun HomeScreen(
                     onNavigateToYatra = onNavigateToYatra,
                     onNavigateToInfo = onNavigateToInfo,
                     onNavigateToAdmin = onNavigateToAdmin,
+                    onNavigateToParchas = onNavigateToParchas,
                     onThemeChanged = onThemeChanged
                 )
             } else if (activeLayout == AppUiLayout.VEDIC_GRID) {
@@ -663,6 +688,7 @@ fun HomeScreen(
                     onNavigateToYatra = onNavigateToYatra,
                     onNavigateToInfo = onNavigateToInfo,
                     onNavigateToAdmin = onNavigateToAdmin,
+                    onNavigateToParchas = onNavigateToParchas,
                     onThemeChanged = onThemeChanged
                 )
             } else if (activeLayout == AppUiLayout.COMPACT_LIST) {
@@ -677,6 +703,7 @@ fun HomeScreen(
                     onNavigateToYatra = onNavigateToYatra,
                     onNavigateToInfo = onNavigateToInfo,
                     onNavigateToAdmin = onNavigateToAdmin,
+                    onNavigateToParchas = onNavigateToParchas,
                     onThemeChanged = onThemeChanged
                 )
             } else if (activeLayout == AppUiLayout.DIVINE_FEED) {
@@ -691,6 +718,7 @@ fun HomeScreen(
                     onNavigateToYatra = onNavigateToYatra,
                     onNavigateToInfo = onNavigateToInfo,
                     onNavigateToAdmin = onNavigateToAdmin,
+                    onNavigateToParchas = onNavigateToParchas,
                     onThemeChanged = onThemeChanged
                 )
             }

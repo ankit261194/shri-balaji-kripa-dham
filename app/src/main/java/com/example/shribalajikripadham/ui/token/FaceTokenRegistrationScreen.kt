@@ -40,6 +40,8 @@ import com.example.shribalajikripadham.hardware.DeviceFingerprintManager
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.util.TokenCardExporter
+import com.example.shribalajikripadham.util.SundayTokenScheduleHelper
+import com.example.shribalajikripadham.util.SundayScheduleState
 import com.example.shribalajikripadham.util.DevoteePhotoHelper
 import com.example.shribalajikripadham.util.TakeFrontPicturePreview
 import kotlinx.coroutines.Dispatchers
@@ -88,6 +90,14 @@ fun FaceTokenRegistrationScreen(
     var candidateVector by remember { mutableStateOf(FloatArray(FaceEmbeddingEngine.EMBEDDING_DIM)) }
     var generatedToken by remember { mutableStateOf<Token?>(null) }
     var isEmbeddingAutoUpdated by remember { mutableStateOf(false) }
+    var showLocationAlertDialog by remember { mutableStateOf(false) }
+    var locationAlertTitle by remember { mutableStateOf("") }
+    var locationAlertMessage by remember { mutableStateOf("") }
+    var showScheduleAlertDialog by remember { mutableStateOf(false) }
+    var scheduleAlertTitle by remember { mutableStateOf("") }
+    var scheduleAlertMessage by remember { mutableStateOf("") }
+    var isSubmitting by remember { mutableStateOf(false) }
+
     var processingDurationMs by remember { mutableLongStateOf(0L) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -448,37 +458,75 @@ fun FaceTokenRegistrationScreen(
             // MAIN STATE MACHINE UI
             when (scanState) {
                 FaceScanState.SCANNING -> {
-                    val isBeforeSchedule = settings.isTokenServiceEnabled && settings.scheduledTokenOpenTimestamp > System.currentTimeMillis()
+                    val scheduleState = remember(settings) {
+                        SundayTokenScheduleHelper.evaluateSchedule(settings)
+                    }
 
-                    if (isBeforeSchedule) {
-                        val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
-                        val scheduledTimeStr = sdf.format(Date(settings.scheduledTokenOpenTimestamp))
+                    if (scheduleState !is SundayScheduleState.Open) {
+                        val visual = when (scheduleState) {
+                            is SundayScheduleState.NonSunday -> ScheduleBannerVisual(
+                                Color(0xFFFFF3E0),
+                                Color(0xFFFF9800),
+                                "📅",
+                                if (isHindi) "रविवार टोकन वितरण सूचना" else "Sunday Token Notice",
+                                if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                            )
+                            is SundayScheduleState.SundayBeforeStart -> ScheduleBannerVisual(
+                                Color(0xFFFFF8E1),
+                                Color(0xFFFFA000),
+                                "⏳",
+                                if (isHindi) "टोकन आज सुबह 8:30 बजे से खुलेंगे" else "Opens at 8:30 AM Today",
+                                if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                            )
+                            is SundayScheduleState.SundayClosedEvening -> ScheduleBannerVisual(
+                                Color(0xFFFFEBEE),
+                                Color(0xFFEF5350),
+                                "🔴",
+                                if (isHindi) "आज के टोकन पूरे हो गए हैं" else "Today's Tokens Complete",
+                                if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                            )
+                            is SundayScheduleState.ServiceDisabled -> ScheduleBannerVisual(
+                                Color(0xFFFFEBEE),
+                                Color(0xFFEF5350),
+                                "🔒",
+                                if (isHindi) "टोकन सेवा स्थगित" else "Token Service Paused",
+                                if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                            )
+                            is SundayScheduleState.CustomScheduled -> ScheduleBannerVisual(
+                                Color(0xFFFFF8E1),
+                                Color(0xFFFFB300),
+                                "⏳",
+                                if (isHindi) "टोकन पंजीकरण पूर्व-निर्धारित है" else "Token Registration Scheduled",
+                                if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                            )
+                            else -> ScheduleBannerVisual(Color.White, Color.Gray, "ℹ️", "", "")
+                        }
+                        val (bannerBg, borderCol, iconText, titleText, descText) = visual
+
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                            colors = CardDefaults.cardColors(containerColor = bannerBg),
                             shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
+                            border = BorderStroke(1.5.dp, borderCol),
                             elevation = CardDefaults.cardElevation(3.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(14.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("⏳", fontSize = 24.sp)
+                                    Text(iconText, fontSize = 24.sp)
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Text(
-                                        text = if (isHindi) "टोकन पंजीकरण पूर्व-निर्धारित है" else "Token Registration Scheduled",
+                                        text = titleText,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 14.sp,
-                                        color = Color(0xFFE65100)
+                                        color = if (scheduleState is SundayScheduleState.SundayClosedEvening) Color(0xFFC62828) else Color(0xFFE65100)
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = if (isHindi)
-                                        "टोकन जारी होना $scheduledTimeStr पर स्वतः प्रारंभ होगा। कृपया निर्धारित समय पर ही स्कैन करें।"
-                                    else
-                                        "Token generation will open automatically at $scheduledTimeStr.",
+                                    text = descText,
                                     fontSize = 12.sp,
-                                    color = TextPrimaryDark
+                                    color = TextPrimaryDark,
+                                    lineHeight = 18.sp
                                 )
                             }
                         }
@@ -588,10 +636,64 @@ fun FaceTokenRegistrationScreen(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Camera Photo Capture Button
+                            // Camera Photo Capture Button (Always clickable!)
                             Button(
-                                onClick = { launchCameraSafely() },
-                                enabled = !isBeforeSchedule,
+                                onClick = {
+                                    val currentSchedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
+                                    when (currentSchedule) {
+                                        is SundayScheduleState.NonSunday -> {
+                                            scheduleAlertTitle = if (isHindi) "📅 टोकन केवल रविवार को मिलते हैं" else "📅 Tokens Only On Sunday"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
+                                        is SundayScheduleState.SundayBeforeStart -> {
+                                            scheduleAlertTitle = if (isHindi) "⏳ टोकन सुबह 8:30 बजे से मिलेंगे" else "⏳ Opens at 8:30 AM"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
+                                        is SundayScheduleState.SundayClosedEvening -> {
+                                            scheduleAlertTitle = if (isHindi) "🔴 आज के टोकन पूरे हो गए हैं" else "🔴 Today's Tokens Closed"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
+                                        is SundayScheduleState.ServiceDisabled -> {
+                                            scheduleAlertTitle = if (isHindi) "🔒 टोकन सेवा स्थगित" else "🔒 Token Service Paused"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
+                                        is SundayScheduleState.CustomScheduled -> {
+                                            scheduleAlertTitle = if (isHindi) "⏳ टोकन पूर्व-निर्धारित है" else "⏳ Scheduled"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
+                                        SundayScheduleState.Open -> { /* Valid! */ }
+                                    }
+
+                                    if (settings.isGeofenceEnforced && !isInsideGeofence) {
+                                        val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
+                                        locationAlertTitle = if (isHindi) "📍 आप आश्रम लोकेशन पर नहीं हैं!" else "📍 Not at Ashram Location!"
+                                        locationAlertMessage = if (isHindi)
+                                            "⚠️ तुम लोकेशन पे नहीं हो!\n\nसुरक्षा व व्यवस्था नियमों के अनुसार रविवार टोकन केवल आश्रम परिसर (1.5 किमी दायरे) के अंदर उपस्थित होकर ही प्राप्त किया जा सकता है।\n\nकृपया आश्रम पहुंचें और पुनः प्रयास करें।\n(आपकी वर्तमान दूरी: $distKm)"
+                                        else
+                                            "⚠️ You are not at the Ashram location!\n\nTokens are only issued when physically present inside Ashram premises (1.5 km radius).\n(Current distance: $distKm)"
+                                        showLocationAlertDialog = true
+                                        errorMessage = if (isHindi) "⚠️ आप आश्रम लोकेशन पर नहीं हैं! टोकन केवल आश्रम में उपस्थित होने पर मिलेगा।" else "You are outside Ashram boundary."
+                                        return@Button
+                                    }
+
+                                    launchCameraSafely()
+                                },
+                                enabled = !isSubmitting,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(52.dp),
@@ -599,10 +701,7 @@ fun FaceTokenRegistrationScreen(
                                 shape = RoundedCornerShape(14.dp)
                             ) {
                                 Text(
-                                    text = if (isBeforeSchedule)
-                                        (if (isHindi) "🔒 पंजीकरण अभी बंद है" else "🔒 Registration Locked")
-                                    else
-                                        (if (isHindi) "🤳 सेल्फी फोटो लें (फ्रंट कैमरा)" else "🤳 Take Selfie (Front Camera)"),
+                                    text = if (isHindi) "🤳 सेल्फी फोटो लें (फ्रंट कैमरा) ➔" else "🤳 Take Selfie (Front Camera) ➔",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -612,8 +711,62 @@ fun FaceTokenRegistrationScreen(
 
                             // Gallery Option Fallback
                             OutlinedButton(
-                                onClick = { galleryLauncher.launch("image/*") },
-                                enabled = !isBeforeSchedule,
+                                onClick = {
+                                    val currentSchedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
+                                    when (currentSchedule) {
+                                        is SundayScheduleState.NonSunday -> {
+                                            scheduleAlertTitle = if (isHindi) "📅 टोकन केवल रविवार को मिलते हैं" else "📅 Tokens Only On Sunday"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@OutlinedButton
+                                        }
+                                        is SundayScheduleState.SundayBeforeStart -> {
+                                            scheduleAlertTitle = if (isHindi) "⏳ टोकन सुबह 8:30 बजे से मिलेंगे" else "⏳ Opens at 8:30 AM"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@OutlinedButton
+                                        }
+                                        is SundayScheduleState.SundayClosedEvening -> {
+                                            scheduleAlertTitle = if (isHindi) "🔴 आज के टोकन पूरे हो गए हैं" else "🔴 Today's Tokens Closed"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@OutlinedButton
+                                        }
+                                        is SundayScheduleState.ServiceDisabled -> {
+                                            scheduleAlertTitle = if (isHindi) "🔒 टोकन सेवा स्थगित" else "🔒 Token Service Paused"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@OutlinedButton
+                                        }
+                                        is SundayScheduleState.CustomScheduled -> {
+                                            scheduleAlertTitle = if (isHindi) "⏳ टोकन पूर्व-निर्धारित है" else "⏳ Scheduled"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@OutlinedButton
+                                        }
+                                        SundayScheduleState.Open -> { /* Valid! */ }
+                                    }
+
+                                    if (settings.isGeofenceEnforced && !isInsideGeofence) {
+                                        val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
+                                        locationAlertTitle = if (isHindi) "📍 आप आश्रम लोकेशन पर नहीं हैं!" else "📍 Not at Ashram Location!"
+                                        locationAlertMessage = if (isHindi)
+                                            "⚠️ तुम लोकेशन पे नहीं हो!\n\nसुरक्षा व व्यवस्था नियमों के अनुसार रविवार टोकन केवल आश्रम परिसर (1.5 किमी दायरे) के अंदर उपस्थित होकर ही प्राप्त किया जा सकता है।\n\nकृपया आश्रम पहुंचें और पुनः प्रयास करें।\n(आपकी वर्तमान दूरी: $distKm)"
+                                        else
+                                            "⚠️ You are not at the Ashram location!\n\nTokens are only issued when physically present inside Ashram premises (1.5 km radius).\n(Current distance: $distKm)"
+                                        showLocationAlertDialog = true
+                                        errorMessage = if (isHindi) "⚠️ आप आश्रम लोकेशन पर नहीं हैं! टोकन केवल आश्रम में उपस्थित होने पर मिलेगा।" else "You are outside Ashram boundary."
+                                        return@OutlinedButton
+                                    }
+
+                                    galleryLauncher.launch("image/*")
+                                },
+                                enabled = !isSubmitting,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(48.dp),
@@ -911,13 +1064,22 @@ fun FaceTokenRegistrationScreen(
                                 // 2 ACTION BUTTONS:
                                 // BUTTON 1: [ Confirm / Sahi Hai ] -> Generates Token & Auto-Updates Profile
                                 Button(
-                                    enabled = isInsideGeofence,
+                                    enabled = !isSubmitting,
                                     onClick = {
+                                        if (settings.isGeofenceEnforced && !isInsideGeofence) {
+                                            val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
+                                            locationAlertTitle = if (isHindi) "📍 आप आश्रम लोकेशन पर नहीं हैं!" else "📍 Not at Ashram Location!"
+                                            locationAlertMessage = if (isHindi)
+                                                "⚠️ तुम लोकेशन पे नहीं हो!\n\nसुरक्षा व व्यवस्था नियमों के अनुसार रविवार टोकन केवल आश्रम परिसर (1.5 किमी दायरे) के अंदर उपस्थित होकर ही प्राप्त किया जा सकता है।\n\nकृपया आश्रम पहुंचें और पुनः प्रयास करें।\n(आपकी वर्तमान दूरी: $distKm)"
+                                            else
+                                                "⚠️ You are not at the Ashram location!\n\nTokens are only issued when physically present inside Ashram premises (1.5 km radius)."
+                                            showLocationAlertDialog = true
+                                            errorMessage = if (isHindi) "⚠️ आप आश्रम लोकेशन पर नहीं हैं!" else "You are outside Ashram boundary."
+                                            return@Button
+                                        }
+
+                                        isSubmitting = true
                                         scope.launch {
-                                            if (!isInsideGeofence) {
-                                                errorMessage = if (isHindi) "आप आश्रम परिसर से बाहर हैं। टोकन केवल आश्रम में उपस्थित होने पर मिलेगा।" else "You are outside Ashram premises."
-                                                return@launch
-                                            }
                                             try {
                                                 val loc = GeofenceLocationManager.getLastKnownLocation(context)
                                                 val isMock = GeofenceLocationManager.isMockLocation(loc, context)
@@ -942,6 +1104,8 @@ fun FaceTokenRegistrationScreen(
                                                 errorMessage = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
                                             } catch (e: Exception) {
                                                 errorMessage = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
+                                            } finally {
+                                                isSubmitting = false
                                             }
                                         }
                                     },
@@ -1156,14 +1320,63 @@ fun FaceTokenRegistrationScreen(
                             Spacer(modifier = Modifier.height(18.dp))
 
                             Button(
-                                enabled = isInsideGeofence,
+                                enabled = !isSubmitting,
                                 onClick = {
+                                    val currentSchedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
+                                    when (currentSchedule) {
+                                        is SundayScheduleState.NonSunday -> {
+                                            scheduleAlertTitle = if (isHindi) "📅 टोकन केवल रविवार को मिलते हैं" else "📅 Tokens Only On Sunday"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
+                                        is SundayScheduleState.SundayBeforeStart -> {
+                                            scheduleAlertTitle = if (isHindi) "⏳ टोकन सुबह 8:30 बजे से मिलेंगे" else "⏳ Opens at 8:30 AM"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
+                                        is SundayScheduleState.SundayClosedEvening -> {
+                                            scheduleAlertTitle = if (isHindi) "🔴 आज के टोकन पूरे हो गए हैं" else "🔴 Today's Tokens Closed"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
+                                        is SundayScheduleState.ServiceDisabled -> {
+                                            scheduleAlertTitle = if (isHindi) "🔒 टोकन सेवा स्थगित" else "🔒 Token Service Paused"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
+                                        is SundayScheduleState.CustomScheduled -> {
+                                            scheduleAlertTitle = if (isHindi) "⏳ टोकन पूर्व-निर्धारित है" else "⏳ Scheduled"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
+                                        SundayScheduleState.Open -> { /* Valid! */ }
+                                    }
+
+                                    if (settings.isGeofenceEnforced && !isInsideGeofence) {
+                                        val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
+                                        locationAlertTitle = if (isHindi) "📍 आप आश्रम लोकेशन पर नहीं हैं!" else "📍 Not at Ashram Location!"
+                                        locationAlertMessage = if (isHindi)
+                                            "⚠️ तुम लोकेशन पे नहीं हो!\n\nसुरक्षा व व्यवस्था नियमों के अनुसार रविवार टोकन केवल आश्रम परिसर (1.5 किमी दायरे) के अंदर उपस्थित होकर ही प्राप्त किया जा सकता है।\n\nकृपया आश्रम पहुंचें और पुनः प्रयास करें।\n(आपकी वर्तमान दूरी: $distKm)"
+                                        else
+                                            "⚠️ You are not at the Ashram location!\n\nTokens are only issued when physically present inside Ashram premises (1.5 km radius)."
+                                        showLocationAlertDialog = true
+                                        errorMessage = if (isHindi) "⚠️ आप आश्रम लोकेशन पर नहीं हैं!" else "You are outside Ashram boundary."
+                                        return@Button
+                                    }
+
+                                    isSubmitting = true
                                     scope.launch {
                                         try {
-                                            if (!isInsideGeofence) {
-                                                errorMessage = if (isHindi) "आप आश्रम परिसर से बाहर हैं। टोकन केवल आश्रम में उपस्थित होने पर मिलेगा।" else "You are outside Ashram premises."
-                                                return@launch
-                                            }
                                             if (manualName.isBlank() || manualPhone.isBlank()) {
                                                 errorMessage = "कृपया नाम व फोन नंबर भरें"
                                                 return@launch
@@ -1216,6 +1429,8 @@ fun FaceTokenRegistrationScreen(
                                             errorMessage = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
                                         } catch (e: Exception) {
                                             errorMessage = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
+                                        } finally {
+                                            isSubmitting = false
                                         }
                                     }
                                 },

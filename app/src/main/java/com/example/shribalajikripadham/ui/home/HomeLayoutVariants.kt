@@ -45,6 +45,7 @@ fun ModernCardsLayout(
     onNavigateToYatra: () -> Unit,
     onNavigateToInfo: () -> Unit,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToParchas: () -> Unit = {},
     onThemeChanged: (SacredTheme) -> Unit
 ) {
     val context = LocalContext.current
@@ -218,6 +219,31 @@ fun ModernCardsLayout(
                 }
             }
 
+            // Sacred Parchas
+            Surface(
+                onClick = onNavigateToParchas,
+                color = Color.White,
+                shape = RoundedCornerShape(16.dp),
+                shadowElevation = 3.dp,
+                border = BorderStroke(1.dp, Color(0xFFCE93D8)),
+                modifier = Modifier.weight(1f)
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("📜", fontSize = 28.sp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (isHindi) "आश्रम पर्चे" else "Sacred Parchas",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Color(0xFF4A148C),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
             // Admin Portal
             Surface(
                 onClick = onNavigateToAdmin,
@@ -367,6 +393,7 @@ fun VedicGridLayout(
     onNavigateToYatra: () -> Unit,
     onNavigateToInfo: () -> Unit,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToParchas: () -> Unit = {},
     onThemeChanged: (SacredTheme) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -516,6 +543,31 @@ fun VedicGridLayout(
             }
         }
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Row 3: Sacred Parchas & Admin
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            VedicGridCard(
+                title = if (isHindi) "📜 आश्रम पर्चे" else "📜 Sacred Parchas",
+                desc = if (isHindi) "हवन, उतारा व A4 PDF" else "Hawan, Utara & Slips",
+                icon = "📜",
+                color = Color(0xFF6A1B9A),
+                onClick = onNavigateToParchas,
+                modifier = Modifier.weight(1f)
+            )
+            VedicGridCard(
+                title = if (isHindi) "व्यवस्थापक" else "Admin Portal",
+                desc = if (isHindi) "सेवादार व सुरक्षा" else "Sevadar Access",
+                icon = "⚙️",
+                color = MaroonAccent,
+                onClick = onNavigateToAdmin,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
         Spacer(modifier = Modifier.height(18.dp))
 
         // Sevadars Section
@@ -636,6 +688,7 @@ fun CompactListLayout(
     onNavigateToYatra: () -> Unit,
     onNavigateToInfo: () -> Unit,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToParchas: () -> Unit = {},
     onThemeChanged: (SacredTheme) -> Unit
 ) {
     val context = LocalContext.current
@@ -698,6 +751,18 @@ fun CompactListLayout(
             badge = "1-Sec",
             badgeColor = currentTheme.secondaryColor,
             onClick = onNavigateToFaceToken
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Action Item: Sacred Parchas
+        CompactActionRow(
+            icon = "📜",
+            title = if (isHindi) "📜 आश्रम पर्चे व नियम दस्तावेज" else "📜 Sacred Parchas & Slips",
+            subtitle = if (isHindi) "हवन पर्चा, मैया उतारा, अर्जी व नियम A4 PDF" else "Hawan, Utara, Arji & A4 PDF",
+            badge = if (isHindi) "पर्चे" else "Parchas",
+            badgeColor = Color(0xFF6A1B9A),
+            onClick = onNavigateToParchas
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -875,6 +940,7 @@ fun DivineFeedLayout(
     onNavigateToYatra: () -> Unit,
     onNavigateToInfo: () -> Unit,
     onNavigateToAdmin: () -> Unit,
+    onNavigateToParchas: () -> Unit = {},
     onThemeChanged: (SacredTheme) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -959,6 +1025,41 @@ fun DivineFeedLayout(
                         }
                     }
                 }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // Feed Story: Sacred Parchas Banner
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E5F5)),
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, Color(0xFFBA68C8)),
+            elevation = CardDefaults.cardElevation(2.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onNavigateToParchas() }
+        ) {
+            Row(
+                modifier = Modifier.padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("📜", fontSize = 28.sp)
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (isHindi) "📜 आश्रम पर्चे व दस्तावेज" else "📜 Sacred Documents & Slips",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = Color(0xFF4A148C)
+                    )
+                    Text(
+                        text = if (isHindi) "हवन पर्चा, मैया उतारा, अर्जी व नियम A4 PDF डाउनलोड करें" else "Download Hawan, Utara & Rules PDF",
+                        fontSize = 11.sp,
+                        color = Color.DarkGray
+                    )
+                }
+                Text("➔", color = Color(0xFF4A148C), fontWeight = FontWeight.Bold)
             }
         }
 

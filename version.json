@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 30,
-  "latest_version_name": "2.27.0",
-  "update_notes_hindi": "सुरक्षा एवं सुविधा महा-अपडेट (v2.27.0): 1. सिंगल-डिवाइस एडमिन लॉगिन: सुपर एडमिन व एडमिन एक समय में केवल एक ही फोन में लॉगिन रह सकते हैं; दूसरे फोन पर लॉगिन होते ही पहले फोन से तुरंत सुरक्षित ऑटो-लॉगआउट होगा। 2. एडमिन पैनल बैक बटन सुरक्षा: सिंगल बैक बटन से बाहर आने पर रोक; लॉगआउट की पुष्टि करने पर ही सुरक्षित रूप से पैनल से बाहर निकला जा सकेगा। 3. नियम पर्चे व एडिट फॉर्म स्क्रोलिंग समाधान: स्क्रीन ऊपर न जाने व कीबोर्ड के कारण फॉर्म छिपने की समस्या 100% हल; A4 पर्चे देखने व एडिट करने के लिए पूरी स्क्रीन और सुगम स्क्रोलिंग।",
-  "update_notes_english": "Security & Usability Update (v2.27.0): 1. Single-Device Admin Session Enforcement: Super Admin and Sevadars can only be logged into one phone at a time; logging into a new device automatically terminates previous sessions. 2. Admin Panel Back Press Protection: Prevents accidental panel exit; requires confirmed logout to protect session. 3. Sacred Parchas & Edit Dialog Scrolling Fix: Resolves screen freeze/cut-off and keyboard overlap when viewing or editing sacred parchas with full vertical clearance.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.27.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 31,
+  "latest_version_name": "2.28.0",
+  "update_notes_hindi": "दिव्य दरबार टोकन, पर्चे एवं गैलरी फोटो अपडेट (v2.28.0): 1. टोकन बटन हमेशा सक्रिय: लोकेशन पर न होने पर भी बटन क्लिक होगा और स्पष्ट सूचना दिखेगी कि 'तुम लोकेशन पे नहीं हो'। 2. साप्ताहिक रविवार टोकन समय (8:30 AM से 5:00 PM): रविवार के अलावा किसी भी दिन प्रयास करने पर आगामी रविवार की सही तारीख व समय दिखेगा। रविवार 5:00 बजे के बाद 'आज के टोकन पूरे हो गए हैं' व अगले रविवार की तारीख दिखेगी। 3. होम स्क्रीन पर 'आश्रम पर्चे' सुरक्षित व प्रमुख रूप से उपलब्ध। 4. पूज्य गुरुजी व सेवादारों की फोटो अब सीधे फोन गैलरी या कैमरे से सेट करें।",
+  "update_notes_english": "Token System, Parchas & Gallery Photo Update (v2.28.0): 1. Always Clickable Token Button: Provides instant clear geofence alert if outside Ashram location ('तुम लोकेशन पे नहीं हो'). 2. Weekly Sunday Token Window (08:30 AM - 05:00 PM): Non-Sunday attempts show next Sunday's date; post-5PM shows tokens completed with next Sunday date. 3. Ashram Parchas preserved across all Home Screen layouts. 4. Gallery & Camera photo pickers for Guruji and Sevadar profile photos.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.28.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

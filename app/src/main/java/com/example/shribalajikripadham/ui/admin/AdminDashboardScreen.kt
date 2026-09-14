@@ -36,6 +36,7 @@ import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.ui.common.SacredAvatar
 import com.example.shribalajikripadham.util.*
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -83,6 +84,64 @@ fun AdminDashboardScreen(
         showLogoutExitDialog = true
     }
 
+    // Sevadar photo states (must be declared before activity result launchers)
+    var newSevPhotoUri by remember { mutableStateOf("") }
+    var editSevPhotoUri by remember { mutableStateOf("") }
+
+    val newSevCameraLauncher = rememberLauncherForActivityResult(
+        contract = TakeAnyPicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "sevadar")
+            if (savedPath.isNotBlank()) {
+                newSevPhotoUri = savedPath
+                Toast.makeText(context, if (isHindi) "📸 सेवादार की फोटो सेट हो गई!" else "Sevadar photo captured!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val newSevGalleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+            if (bmp != null) {
+                val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
+                if (savedPath.isNotBlank()) {
+                    newSevPhotoUri = savedPath
+                    Toast.makeText(context, if (isHindi) "📁 गैलरी से फोटो चुनी गई!" else "Photo chosen from gallery!", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    val editSevCameraLauncher = rememberLauncherForActivityResult(
+        contract = TakeAnyPicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "sevadar")
+            if (savedPath.isNotBlank()) {
+                editSevPhotoUri = savedPath
+                Toast.makeText(context, if (isHindi) "📸 सेवादार की फोटो सेट हो गई!" else "Sevadar photo updated!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val editSevGalleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+            if (bmp != null) {
+                val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
+                if (savedPath.isNotBlank()) {
+                    editSevPhotoUri = savedPath
+                    Toast.makeText(context, if (isHindi) "📁 गैलरी से फोटो चुनी गई!" else "Photo chosen from gallery!", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
     var loginWithCreds by remember { mutableStateOf(true) }
     var usernameInput by remember { mutableStateOf("") }
     var passwordInput by remember { mutableStateOf("") }
@@ -124,7 +183,6 @@ fun AdminDashboardScreen(
     var newSevCanNotif by remember { mutableStateOf(false) }
     var newSevCanContent by remember { mutableStateOf(false) }
     var newSevCanPhotos by remember { mutableStateOf(false) }
-    var newSevPhotoUri by remember { mutableStateOf("") }
 
     // App Customizer
     var customAshramName by remember { mutableStateOf("") }
@@ -184,7 +242,6 @@ fun AdminDashboardScreen(
 
     // Edit Sevadar Dialog (Super Admin Control)
     var editingAdmin by remember { mutableStateOf<Admin?>(null) }
-    var editSevPhotoUri by remember { mutableStateOf("") }
     var editSevCanTokens by remember { mutableStateOf(false) }
     var editSevCanManualTokens by remember { mutableStateOf(false) }
     var editSevCanYatra by remember { mutableStateOf(false) }
@@ -1588,20 +1645,63 @@ fun AdminDashboardScreen(
                         label = { Text(if (isHindi) "त्वरित 4-अंकीय पिन" else "Quick 4-Digit PIN") },
                         modifier = Modifier.fillMaxWidth()
                     )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFFC5E1A5))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (isHindi) "📷 सेवादार प्रोफाइल फोटो (गैलरी / कैमरा)" else "📷 Sevadar Photo (Gallery / Camera)",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF2E7D32)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            SacredAvatar(photoUri = newSevPhotoUri, name = newSevName.ifEmpty { "सेवादार" }, size = 60.dp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { newSevGalleryLauncher.launch("image/*") },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0))
+                                ) {
+                                    Text(if (isHindi) "🖼️ गैलरी" else "🖼️ Gallery", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                OutlinedButton(
+                                    onClick = { newSevCameraLauncher.launch(null) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32))
+                                ) {
+                                    Text(if (isHindi) "📷 कैमरा" else "📷 Camera", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                if (newSevPhotoUri.isNotBlank()) {
+                                    OutlinedButton(
+                                        onClick = { newSevPhotoUri = "" },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                                    ) {
+                                        Text("❌", fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
                     OutlinedTextField(
                         value = newSevPhotoUri,
                         onValueChange = { newSevPhotoUri = it },
                         label = { Text(if (isHindi) "सेवादार फोटो (URL या फ़ाइल पाथ)" else "Photo URL / File Path") },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    if (newSevPhotoUri.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            SacredAvatar(photoUri = newSevPhotoUri, name = newSevName.ifEmpty { "सेवादार" }, size = 44.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(if (isHindi) "फोटो पूर्वावलोकन" else "Photo Preview", fontSize = 12.sp, color = Color.Gray)
-                        }
-                    }
 
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(if (isHindi) "अनुमतियाँ (Permissions):" else "Granted Permissions:", fontWeight = FontWeight.Bold)
@@ -2076,20 +2176,63 @@ fun AdminDashboardScreen(
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFFC5E1A5))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (isHindi) "📷 सेवादार प्रोफाइल फोटो (गैलरी / कैमरा)" else "📷 Sevadar Photo (Gallery / Camera)",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                                color = Color(0xFF2E7D32)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            SacredAvatar(photoUri = editSevPhotoUri, name = target.name, size = 60.dp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { editSevGalleryLauncher.launch("image/*") },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0))
+                                ) {
+                                    Text(if (isHindi) "🖼️ गैलरी" else "🖼️ Gallery", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                OutlinedButton(
+                                    onClick = { editSevCameraLauncher.launch(null) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32))
+                                ) {
+                                    Text(if (isHindi) "📷 कैमरा" else "📷 Camera", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                if (editSevPhotoUri.isNotBlank()) {
+                                    OutlinedButton(
+                                        onClick = { editSevPhotoUri = "" },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                                    ) {
+                                        Text("❌", fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
                     OutlinedTextField(
                         value = editSevPhotoUri,
                         onValueChange = { editSevPhotoUri = it },
                         label = { Text(if (isHindi) "सेवादार फोटो (URL या फ़ाइल पाथ)" else "Photo URL / File Path") },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    if (editSevPhotoUri.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            SacredAvatar(photoUri = editSevPhotoUri, name = target.name, size = 48.dp)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(if (isHindi) "फोटो पूर्वावलोकन" else "Photo Preview", fontSize = 12.sp, color = Color.Gray)
-                        }
-                    }
 
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(if (isHindi) "अनुमतियाँ प्रबंधित करें:" else "Manage Permissions:", fontWeight = FontWeight.Bold)
@@ -4788,6 +4931,34 @@ fun AppCustomizerTab(
     onDeleteEvent: (Long) -> Unit,
     onSave: () -> Unit
 ) {
+    val context = LocalContext.current
+    val gurujiCameraLauncher = rememberLauncherForActivityResult(
+        contract = TakeAnyPicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "guruji")
+            if (savedPath.isNotBlank()) {
+                onGurujiPhotoUriChange(savedPath)
+                Toast.makeText(context, if (isHindi) "📸 गुरुजी की फोटो कैमरे से सेट हो गई!" else "Guruji photo updated from camera!", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val gurujiGalleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+            if (bmp != null) {
+                val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "guruji")
+                if (savedPath.isNotBlank()) {
+                    onGurujiPhotoUriChange(savedPath)
+                    Toast.makeText(context, if (isHindi) "📁 गुरुजी की फोटो गैलरी से सेट हो गई!" else "Guruji photo chosen from gallery!", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -4817,24 +4988,64 @@ fun AppCustomizerTab(
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFFD54F))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (isHindi) "👑 पूज्य गुरुजी की पावन फोटो (गैलरी / कैमरा)" else "👑 Revered Guruji Photo (Gallery / Camera)",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaroonPrimary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            SacredAvatar(photoUri = gurujiPhotoUri, name = gurujiName, size = 80.dp)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { gurujiGalleryLauncher.launch("image/*") },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0))
+                                ) {
+                                    Text(if (isHindi) "🖼️ गैलरी से चुनें" else "🖼️ From Gallery", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                                OutlinedButton(
+                                    onClick = { gurujiCameraLauncher.launch(null) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32))
+                                ) {
+                                    Text(if (isHindi) "📷 कैमरे से लें" else "📷 Take Photo", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                            if (gurujiPhotoUri.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                TextButton(
+                                    onClick = { onGurujiPhotoUriChange("") },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                                ) {
+                                    Text(if (isHindi) "❌ फोटो हटाएं (Remove Photo)" else "❌ Remove Photo", fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = gurujiPhotoUri,
                         onValueChange = onGurujiPhotoUriChange,
                         label = { Text(if (isHindi) "पूज्य गुरुजी फोटो (URL या फ़ाइल पाथ)" else "Guruji Photo URL / File Path") },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    if (gurujiPhotoUri.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            SacredAvatar(photoUri = gurujiPhotoUri, name = gurujiName, size = 52.dp)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                if (isHindi) "गुरुजी फोटो पूर्वावलोकन (Preview)" else "Guruji Photo Preview",
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        }
-                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = address,
