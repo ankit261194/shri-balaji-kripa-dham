@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-14T15:34:58Z",
-  "updated_by": "मुख्य व्यवस्थापक (Super Admin)",
+  "updated_at": "2026-09-14T15:35:00Z",
+  "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
   "ashram_details": {
@@ -30,7 +30,7 @@
     "allowed_radius_meters": 1500,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789400098916
+    "updated_at": 1789400100343
   },
   "services_config": {
     "is_token_service_enabled": true,
