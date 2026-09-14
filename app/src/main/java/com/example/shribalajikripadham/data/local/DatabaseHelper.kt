@@ -339,6 +339,28 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             """.trimIndent())
         } catch (e: Exception) { e.printStackTrace() }
 
+        // 13. Payment Records Audit Table
+        try {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS payment_records (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    payment_id TEXT NOT NULL UNIQUE,
+                    devotee_name TEXT NOT NULL,
+                    devotee_phone TEXT NOT NULL,
+                    payment_app TEXT NOT NULL,
+                    transaction_id TEXT NOT NULL,
+                    amount REAL NOT NULL,
+                    purpose TEXT NOT NULL,
+                    seat_numbers TEXT NOT NULL DEFAULT '',
+                    timestamp INTEGER NOT NULL,
+                    payment_status TEXT NOT NULL DEFAULT 'SUCCESS',
+                    payment_mode TEXT NOT NULL DEFAULT 'UPI_QR',
+                    verified_by TEXT NOT NULL DEFAULT '',
+                    notes TEXT NOT NULL DEFAULT ''
+                )
+            """.trimIndent())
+        } catch (e: Exception) { e.printStackTrace() }
+
         // Safe Index Creation - Guaranteed to execute only after all tables exist
         try { db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_device_darbar ON device_registrations (device_id, darbar_date)") } catch (e: Exception) {}
         try { db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_device_darbar ON tokens (device_id, darbar_date) WHERE registered_by NOT IN ('SUPER_ADMIN', 'SEVADAR_DESK')") } catch (e: Exception) {}
@@ -392,7 +414,19 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             "ALTER TABLE admins ADD COLUMN can_cancel_tokens INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE admins ADD COLUMN can_delete_tokens INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE admins ADD COLUMN can_custom_token_number INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE admins ADD COLUMN can_export_pdf INTEGER NOT NULL DEFAULT 1"
+            "ALTER TABLE admins ADD COLUMN can_export_pdf INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE bus_seats ADD COLUMN passenger_age INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE bus_seats ADD COLUMN passenger_gender TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE bus_seats ADD COLUMN transaction_id TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE bus_seats ADD COLUMN booked_at INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE bus_seats ADD COLUMN booked_by TEXT NOT NULL DEFAULT 'DEVOTEE'",
+            "ALTER TABLE ashram_settings ADD COLUMN is_bus_booking_live INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN is_payment_feature_live INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN can_admin_view_payment_history INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN can_devotee_view_payment_history INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN ashram_upi_id TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
+            "ALTER TABLE ashram_settings ADD COLUMN ashram_upi_name TEXT NOT NULL DEFAULT 'Shri Balaji Kripa Dham'",
+            "ALTER TABLE ashram_settings ADD COLUMN bus_seat_fare_amount INTEGER NOT NULL DEFAULT 1500"
         )
         for (sql in alterStatements) {
             try {
@@ -536,35 +570,54 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             }
         } catch (e: Exception) { e.printStackTrace() }
 
-        // 4. Seed Bus Seats if not exists
+        // 4. Seed 60-Seater Bus Seats (3x2 Configuration: 12 Rows x 5 Seats = 60 Seats)
         try {
             val cursor = db.rawQuery("SELECT COUNT(*) FROM bus_seats", null)
             var count = 0
             if (cursor.moveToFirst()) count = cursor.getInt(0)
             cursor.close()
 
-            if (count == 0) {
-                val labels = listOf("A", "B", "C", "D")
+            if (count < 60) {
+                val labels = listOf("A", "B", "C", "D", "E")
                 var seatNum = 1
-                for (row in 1..10) {
-                    for (col in 1..4) {
+                for (row in 1..12) {
+                    for (col in 1..5) {
                         val label = "$row${labels[col - 1]}"
-                        val seatValues = ContentValues().apply {
-                            put("seat_number", seatNum)
-                            put("seat_label", label)
-                            put("row_idx", row)
-                            put("col_idx", col)
-                            put("is_booked", 0)
-                            put("passenger_name", "")
-                            put("phone_number", "")
-                            put("boarding_point", "Gram Dungra Jaat Ashram")
-                            put("payment_status", PaymentStatus.UNPAID.name)
-                            put("payment_mode", "")
-                            put("fare_amount", 1500)
-                            put("yatra_date", "Upcoming Pilgrimage")
-                            put("notes", "")
+                        val checkCursor = db.rawQuery("SELECT seat_number, is_booked FROM bus_seats WHERE seat_number = ?", arrayOf(seatNum.toString()))
+                        val exists = checkCursor.moveToFirst()
+                        val isAlreadyBooked = if (exists) checkCursor.getInt(1) == 1 else false
+                        checkCursor.close()
+
+                        if (!exists) {
+                            val seatValues = ContentValues().apply {
+                                put("seat_number", seatNum)
+                                put("seat_label", label)
+                                put("row_idx", row)
+                                put("col_idx", col)
+                                put("is_booked", 0)
+                                put("passenger_name", "")
+                                put("passenger_age", 0)
+                                put("passenger_gender", "")
+                                put("phone_number", "")
+                                put("boarding_point", "Gram Dungra Jaat Ashram")
+                                put("payment_status", PaymentStatus.UNPAID.name)
+                                put("payment_mode", "UPI_QR")
+                                put("transaction_id", "")
+                                put("fare_amount", 1500)
+                                put("yatra_date", "Upcoming Pilgrimage")
+                                put("booked_at", 0L)
+                                put("booked_by", "DEVOTEE")
+                                put("notes", "")
+                            }
+                            db.insertWithOnConflict("bus_seats", null, seatValues, SQLiteDatabase.CONFLICT_IGNORE)
+                        } else {
+                            val updateCv = ContentValues().apply {
+                                put("seat_label", label)
+                                put("row_idx", row)
+                                put("col_idx", col)
+                            }
+                            db.update("bus_seats", updateCv, "seat_number = ?", arrayOf(seatNum.toString()))
                         }
-                        db.insert("bus_seats", null, seatValues)
                         seatNum++
                     }
                 }

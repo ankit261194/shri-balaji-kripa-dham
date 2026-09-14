@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 35,
-  "latest_version_name": "2.28.4",
-  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.28.4 महा-अपडेट: 1. ऑटोमैटिक इन-ऐप अपडेट फिक्स—अब बिना स्टोरेज क्लियर किए हर फोन पर नया अपडेट तुरंत दिखेगा। 2. बैकग्राउंड में 20 सेकंड का लाइव ऑटो-अपडेट चेकर। 3. टॉप बार (🔄) एवं साइडबार में 1-टैप लाइव अपडेट। 4. संपूर्ण 10 UI Looks व स्मूथ स्क्रॉल-डाउन ड्रॉपडाउन।",
-  "update_notes_english": "Shri Balaji Kripa Dham v2.28.4 Major Update: 1. Automatic In-App Update Zero-Cache Fix (No need to clear app storage). 2. Continuous 20s background auto-update checker. 3. 1-tap live update check in Top Bar (🔄) and Drawer (☰). 4. 10 Full UI Architectural Looks with smooth scroll-down accordions.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.28.4/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 36,
+  "latest_version_name": "2.29.0",
+  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.29.0 महा-अपडेट: 1. पवित्र पर्चे हाइड/डिलीट फिक्स—सुपर एडमिन द्वारा पर्चा छिपाने या हटाने पर सभी भक्तों के फोन से तुरंत गायब। 2. 60-सीटर डीलक्स बस (12 पंक्तियाँ × 5 सीटें, 3+2 लेआउट) सुपर एडमिन नियंत्रण में। 3. आश्रम UPI QR कोड व डिजिटल पेमेंट ऑडिट लेजर (PhonePe, GPay, Paytm, BHIM, Cash)। 4. बस सीट बुकिंग पर तत्काल A4 साइज का आधिकारिक रंगीन टिकट स्वतः फोन में सेव। 5. भारत के सभी राज्य, जिले, तहसील व ग्राम डूँगरा जाट हेतु ऑटो-सर्च। 6. सोशल मीडिया शेयरिंग लिंक अपडेट।",
+  "update_notes_english": "Shri Balaji Kripa Dham v2.29.0 Major Update: 1. Sacred Parchas instant sync fix: hidden/deleted parchas disappear immediately from devotee screens. 2. 60-Seater Deluxe Bus (12 rows x 5 seats, 3+2 layout) under direct Super Admin control. 3. Ashram UPI QR Code & Complete Payment Audit Ledger (PhonePe, GPay, Paytm, BHIM, Cash). 4. Auto-generated and saved official A4 PDF Bus Ticket. 5. Pan-India state, district, tehsil, and village location autocomplete with auto-distance. 6. Clean social media sharing links.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.29.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

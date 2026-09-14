@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -83,6 +84,8 @@ fun TokenRegistrationScreen(
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var capturedPhotoUri by remember { mutableStateOf("") }
     var nameSuggestions by remember { mutableStateOf<List<DevoteeFaceProfile>>(emptyList()) }
+    var locationSuggestions by remember { mutableStateOf<List<com.example.shribalajikripadham.util.IndiaLocation>>(emptyList()) }
+    var showLocationDropdown by remember { mutableStateOf(false) }
     var autoFillBanner by remember { mutableStateOf<String?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -297,6 +300,28 @@ fun TokenRegistrationScreen(
             nameSuggestions = repository.searchDevoteesByName(q, limit = 5)
         } else {
             nameSuggestions = emptyList()
+        }
+    }
+
+    // Live search of Pan-India Locations & Road Distance
+    LaunchedEffect(originAddress) {
+        val q = originAddress.trim()
+        if (q.length >= 2) {
+            locationSuggestions = com.example.shribalajikripadham.util.IndiaLocationsDatabase.search(q, maxLimit = 6)
+            showLocationDropdown = locationSuggestions.isNotEmpty()
+            isCalculatingDistance = true
+            try {
+                val res = DistanceCalculatorService.calculateRoadDistance(q)
+                estimatedDistanceKm = res.distanceKm
+            } catch (e: Exception) {
+                // Ignore
+            } finally {
+                isCalculatingDistance = false
+            }
+        } else {
+            locationSuggestions = emptyList()
+            showLocationDropdown = false
+            estimatedDistanceKm = -1f
         }
     }
 
@@ -747,6 +772,111 @@ fun TokenRegistrationScreen(
                                 labelColor = Color(0xFF333333)
                             )
                         )
+
+                        // Pan-India Autocomplete Suggestions Dropdown
+                        if (showLocationDropdown && locationSuggestions.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA)),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.5f)),
+                                elevation = CardDefaults.cardElevation(3.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(6.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = if (isHindi) "🔍 स्थान सुझाव (Tap to Select):" else "🔍 Location Suggestions:",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaroonPrimary
+                                        )
+                                        Text(
+                                            text = "✕",
+                                            fontSize = 12.sp,
+                                            color = Color.Gray,
+                                            modifier = Modifier.clickable { showLocationDropdown = false }
+                                        )
+                                    }
+                                    locationSuggestions.forEach { loc ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    originAddress = loc.nameHindi
+                                                    city = loc.nameHindi
+                                                    if (loc.distanceKm >= 0f) {
+                                                        estimatedDistanceKm = loc.distanceKm
+                                                    }
+                                                    showLocationDropdown = false
+                                                }
+                                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = when (loc.category) {
+                                                    "स्थानीय गाँव" -> "🏡"
+                                                    "तहसील / कस्बा" -> "🏘️"
+                                                    "ज़िला (UP)" -> "🏛️"
+                                                    "राज्य / UT" -> "🇮🇳"
+                                                    else -> "📍"
+                                                },
+                                                fontSize = 14.sp
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = loc.nameHindi,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 13.sp,
+                                                        color = Color(0xFF111111)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Surface(
+                                                        color = Color(0xFFECEFF1),
+                                                        shape = RoundedCornerShape(4.dp)
+                                                    ) {
+                                                        Text(
+                                                            text = loc.category,
+                                                            fontSize = 9.sp,
+                                                            color = Color(0xFF455A64),
+                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                        )
+                                                    }
+                                                }
+                                                Text(
+                                                    text = "${loc.nameEnglish} • ${loc.stateHindi}",
+                                                    fontSize = 10.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                            }
+                                            if (loc.distanceKm >= 0f) {
+                                                Surface(
+                                                    color = if (loc.distanceKm <= 0.2f) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
+                                                    shape = RoundedCornerShape(6.dp)
+                                                ) {
+                                                    Text(
+                                                        text = if (loc.distanceKm <= 0.2f) "स्थानीय" else "${loc.distanceKm.toInt()} km",
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = if (loc.distanceKm <= 0.2f) Color(0xFF2E7D32) else Color(0xFFE65100),
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 0.5.dp)
+                                    }
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(8.dp))
 

@@ -60,7 +60,7 @@ $permLines
 
 ━━━━━━━━━━━━━━━━━━━━━
 📲 *आधिकारिक ऐप डाउनलोड लिंक:*
-https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest
+https://shribalajikripadham.org/app
 
 ⚠️ *सुरक्षा निर्देश:*
 1. ऐप खोलें और "व्यवस्थापक लॉगिन" (Admin Login) विकल्प चुनें।

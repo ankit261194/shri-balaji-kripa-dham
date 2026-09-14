@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.shribalajikripadham"
         minSdk = 24
         targetSdk = 34
-        versionCode = 35
-        versionName = "2.28.4"
+        versionCode = 36
+        versionName = "2.29.0"
     }
 
     signingConfigs {
@@ -112,4 +112,7 @@ dependencies {
   implementation(libs.androidx.navigation3.ui)
   implementation(libs.androidx.navigation3.runtime)
   implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+
+  // QR Code Generation for UPI Payments
+  implementation("com.google.zxing:core:3.5.3")
 }

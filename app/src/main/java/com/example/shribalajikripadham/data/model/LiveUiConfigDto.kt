@@ -31,7 +31,7 @@ data class AshramDetailsConfigDto(
     val youtubeChannelUrl: String = "https://www.youtube.com/@ShriBalajiKripaDham",
     val facebookPageUrl: String = "https://www.facebook.com/ShriBalajiKripaDham",
     val instagramUrl: String = "https://www.instagram.com/shribalajikripadham",
-    val appShareUrl: String = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest",
+    val appShareUrl: String = "https://shribalajikripadham.org/app",
     val gurujiPhotoUrl: String = ""
 )
 
@@ -47,7 +47,14 @@ data class ServicesConfigDto(
     val maxDailyTokens: Int = 0,
     val sundayTokenBannerTitle: String = "",
     val sundayTokenBannerText: String = "",
-    val sundayTokenCustomNotice: String = ""
+    val sundayTokenCustomNotice: String = "",
+    val isBusBookingLive: Boolean = false,
+    val isPaymentFeatureLive: Boolean = false,
+    val canAdminViewPaymentHistory: Boolean = false,
+    val canDevoteeViewPaymentHistory: Boolean = false,
+    val ashramUpiId: String = "shribalajikripadham@upi",
+    val ashramUpiName: String = "Shri Balaji Kripa Dham",
+    val busSeatFareAmount: Int = 1500
 )
 
 data class AshramEventConfigDto(
@@ -146,6 +153,13 @@ data class LiveUiConfigDto(
         srvObj.put("sunday_token_banner_title", servicesConfig.sundayTokenBannerTitle)
         srvObj.put("sunday_token_banner_text", servicesConfig.sundayTokenBannerText)
         srvObj.put("sunday_token_custom_notice", servicesConfig.sundayTokenCustomNotice)
+        srvObj.put("is_bus_booking_live", servicesConfig.isBusBookingLive)
+        srvObj.put("is_payment_feature_live", servicesConfig.isPaymentFeatureLive)
+        srvObj.put("can_admin_view_payment_history", servicesConfig.canAdminViewPaymentHistory)
+        srvObj.put("can_devotee_view_payment_history", servicesConfig.canDevoteeViewPaymentHistory)
+        srvObj.put("ashram_upi_id", servicesConfig.ashramUpiId)
+        srvObj.put("ashram_upi_name", servicesConfig.ashramUpiName)
+        srvObj.put("bus_seat_fare_amount", servicesConfig.busSeatFareAmount)
         root.put("services_config", srvObj)
 
         val secArr = JSONArray()
@@ -210,7 +224,7 @@ data class LiveUiConfigDto(
                         youtubeChannelUrl = detObj.optString("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham"),
                         facebookPageUrl = detObj.optString("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham"),
                         instagramUrl = detObj.optString("instagram_url", "https://www.instagram.com/shribalajikripadham"),
-                        appShareUrl = detObj.optString("app_share_url", "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest"),
+                        appShareUrl = detObj.optString("app_share_url", "https://shribalajikripadham.org/app"),
                         gurujiPhotoUrl = detObj.optString("guruji_photo_url", "")
                     )
                 } else AshramDetailsConfigDto()
@@ -250,7 +264,14 @@ data class LiveUiConfigDto(
                         maxDailyTokens = srvObj.optInt("max_daily_tokens", 0),
                         sundayTokenBannerTitle = srvObj.optString("sunday_token_banner_title", ""),
                         sundayTokenBannerText = srvObj.optString("sunday_token_banner_text", ""),
-                        sundayTokenCustomNotice = srvObj.optString("sunday_token_custom_notice", "")
+                        sundayTokenCustomNotice = srvObj.optString("sunday_token_custom_notice", ""),
+                        isBusBookingLive = srvObj.optBoolean("is_bus_booking_live", false),
+                        isPaymentFeatureLive = srvObj.optBoolean("is_payment_feature_live", false),
+                        canAdminViewPaymentHistory = srvObj.optBoolean("can_admin_view_payment_history", false),
+                        canDevoteeViewPaymentHistory = srvObj.optBoolean("can_devotee_view_payment_history", false),
+                        ashramUpiId = srvObj.optString("ashram_upi_id", "shribalajikripadham@upi"),
+                        ashramUpiName = srvObj.optString("ashram_upi_name", "Shri Balaji Kripa Dham"),
+                        busSeatFareAmount = srvObj.optInt("bus_seat_fare_amount", 1500)
                     )
                 } else ServicesConfigDto()
 

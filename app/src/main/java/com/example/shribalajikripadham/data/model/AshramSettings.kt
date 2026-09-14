@@ -51,7 +51,15 @@ data class AshramSettings(
     // Sunday Token Screen Dynamic Banner & Custom Notice
     val sundayTokenBannerTitle: String = "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन",
     val sundayTokenBannerText: String = "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।",
-    val sundayTokenCustomNotice: String = ""
+    val sundayTokenCustomNotice: String = "",
+    // Bus & Payment Super Admin Controls
+    val isBusBookingLive: Boolean = false,
+    val isPaymentFeatureLive: Boolean = false,
+    val canAdminViewPaymentHistory: Boolean = false,
+    val canDevoteeViewPaymentHistory: Boolean = false,
+    val ashramUpiId: String = "shribalajikripadham@upi",
+    val ashramUpiName: String = "Shri Balaji Kripa Dham",
+    val busSeatFareAmount: Int = 1500
 )
 
 data class CustomCityDistance(

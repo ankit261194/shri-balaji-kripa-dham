@@ -321,6 +321,10 @@ object DistanceCalculatorService {
         )
     }
 
+    suspend fun calculateRoadDistance(originAddress: String): DistanceResult {
+        return resolveDrivingDistance(originAddress)
+    }
+
     suspend fun getRoadDistanceKm(originAddress: String): Float {
         return resolveDrivingDistance(originAddress).distanceKm
     }

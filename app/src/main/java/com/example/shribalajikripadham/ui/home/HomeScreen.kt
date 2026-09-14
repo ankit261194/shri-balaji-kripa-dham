@@ -1312,7 +1312,7 @@ fun HomeScreen(
                     // Master Share App Button with Pre-filled Devotional Message
                     Button(
                         onClick = {
-                            val shareUrl = settings.appShareUrl.ifBlank { "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest" }
+                            val shareUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.org/app" }
                             val shareMessage = if (isHindi) {
                                 """
                                 🚩 श्री बालाजी कृपा धाम, डूँगरा जाट (बुलन्दशहर, उ.प्र.) 🚩
@@ -2877,7 +2877,7 @@ fun RenderClassicSection(
                     // Share App Button
                     Button(
                         onClick = {
-                            val shareUrl = settings.appShareUrl.ifBlank { "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest" }
+                            val shareUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.org/app" }
                             val shareMessage = if (isHindi) {
                                 """
                                 🚩 श्री बालाजी कृपा धाम, डूँगरा जाट (बुलन्दशहर, उ.प्र.) 🚩

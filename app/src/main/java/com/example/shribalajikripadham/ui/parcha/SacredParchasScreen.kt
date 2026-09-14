@@ -78,10 +78,10 @@ fun SacredParchasScreen(
                 } else {
                     repository.getAllPublicParchas()
                 }
-                parchasList = if (list.isNotEmpty()) list else com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
+                parchasList = list
             } catch (e: Exception) {
                 e.printStackTrace()
-                parchasList = com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
+                parchasList = if (hasParchaAccess) repository.getAllAdminParchas() else repository.getAllPublicParchas()
             }
         }
     }
@@ -89,20 +89,19 @@ fun SacredParchasScreen(
     LaunchedEffect(Unit) {
         scope.launch {
             val localList = if (hasParchaAccess) repository.getAllAdminParchas() else repository.getAllPublicParchas()
-            if (localList.isNotEmpty()) {
-                parchasList = localList
-            }
+            parchasList = localList
             // Fetch live parchas from GitHub in background
-            val (synced, cloudList) = repository.syncLiveParchasFromGitHub()
-            if (synced || cloudList.isNotEmpty()) {
+            val (synced, _) = repository.syncLiveParchasFromGitHub()
+            if (synced) {
                 val updatedList = if (hasParchaAccess) repository.getAllAdminParchas() else repository.getAllPublicParchas()
-                parchasList = if (updatedList.isNotEmpty()) updatedList else cloudList
+                parchasList = updatedList
             }
         }
     }
 
-    // Filtered Parchas
+    // Filtered Parchas - Strictly enforce visibility for devotees
     val displayedParchas = parchasList.filter { p ->
+        val matchesVisibility = if (hasParchaAccess) true else (!p.isHidden && p.isPublished)
         val matchesCategory = (selectedCategoryFilter == null || p.category == selectedCategoryFilter)
         val query = searchQuery.trim().lowercase()
         val matchesSearch = if (query.isBlank()) true else {
@@ -111,7 +110,7 @@ fun SacredParchasScreen(
             p.samagriList.any { it.lowercase().contains(query) } ||
             p.category.displayNameHindi.lowercase().contains(query)
         }
-        matchesCategory && matchesSearch
+        matchesVisibility && matchesCategory && matchesSearch
     }
 
     Scaffold(

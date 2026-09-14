@@ -256,6 +256,13 @@ fun AdminDashboardScreen(
     var svcEmergencyNoticeVisible by remember { mutableStateOf(true) }
     var svcScheduledTimestamp by remember { mutableLongStateOf(0L) }
     var customScheduledDateStr by remember { mutableStateOf("") }
+    var svcBusBookingLive by remember { mutableStateOf(false) }
+    var svcBusFareAmount by remember { mutableStateOf("1500") }
+    var svcPaymentFeatureLive by remember { mutableStateOf(false) }
+    var svcCanAdminViewPayments by remember { mutableStateOf(false) }
+    var svcCanDevoteeViewPayments by remember { mutableStateOf(false) }
+    var svcUpiId by remember { mutableStateOf("shribalajikripadham@upi") }
+    var svcUpiName by remember { mutableStateOf("Shri Balaji Kripa Dham") }
     var svcSuccessMsg by remember { mutableStateOf<String?>(null) }
 
     // Notification broadcast
@@ -367,6 +374,14 @@ fun AdminDashboardScreen(
             } else {
                 customScheduledDateStr = ""
             }
+
+            svcBusBookingLive = s.isBusBookingLive
+            svcBusFareAmount = s.busSeatFareAmount.toString()
+            svcPaymentFeatureLive = s.isPaymentFeatureLive
+            svcCanAdminViewPayments = s.canAdminViewPaymentHistory
+            svcCanDevoteeViewPayments = s.canDevoteeViewPaymentHistory
+            svcUpiId = s.ashramUpiId
+            svcUpiName = s.ashramUpiName
 
             updVersionCode = s.latestVersionCode.toString()
             updVersionName = s.latestVersionName
@@ -948,6 +963,12 @@ fun AdminDashboardScreen(
             if (isSuper || admin.canEditAshramInfo) {
                 allowedTabs.add(if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control")
             }
+            if (isSuper || (admin.canManageYatra && settings.isBusBookingLive)) {
+                allowedTabs.add(if (isHindi) "बस बुकिंग लेजर" else "Bus Ledger")
+            }
+            if (isSuper || settings.canAdminViewPaymentHistory) {
+                allowedTabs.add(if (isHindi) "पेमेंट लेजर" else "Payment Ledger")
+            }
             if (isSuper) {
                 allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
                 allowedTabs.add(if (isHindi) "सेवाएं ऑन/ऑफ" else "Services")
@@ -1376,6 +1397,26 @@ fun AdminDashboardScreen(
                                 }
                             )
                         }
+                        currentTabTitle == "बस बुकिंग लेजर" || currentTabTitle == "Bus Ledger" -> {
+                            BusLedgerTab(
+                                isHindi = isHindi,
+                                repository = repository,
+                                settings = settings,
+                                isSuperAdmin = isSuper,
+                                scope = scope,
+                                context = context
+                            )
+                        }
+                        currentTabTitle == "पेमेंट लेजर" || currentTabTitle == "Payment Ledger" -> {
+                            PaymentLedgerTab(
+                                isHindi = isHindi,
+                                repository = repository,
+                                settings = settings,
+                                isSuperAdmin = isSuper,
+                                scope = scope,
+                                context = context
+                            )
+                        }
                         currentTabTitle == "सेवाएं ऑन/ऑफ" || currentTabTitle == "Services" -> {
                             PublicServiceMatrixTab(
                                 isHindi = isHindi,
@@ -1397,6 +1438,20 @@ fun AdminDashboardScreen(
                                 onScheduledTimestampChange = { svcScheduledTimestamp = it },
                                 customDateStr = customScheduledDateStr,
                                 onCustomDateStrChange = { customScheduledDateStr = it },
+                                isBusBookingLive = svcBusBookingLive,
+                                onBusBookingLiveChange = { svcBusBookingLive = it },
+                                busFareAmount = svcBusFareAmount,
+                                onBusFareAmountChange = { svcBusFareAmount = it },
+                                isPaymentFeatureLive = svcPaymentFeatureLive,
+                                onPaymentFeatureLiveChange = { svcPaymentFeatureLive = it },
+                                canAdminViewPayments = svcCanAdminViewPayments,
+                                onCanAdminViewPaymentsChange = { svcCanAdminViewPayments = it },
+                                canDevoteeViewPayments = svcCanDevoteeViewPayments,
+                                onCanDevoteeViewPaymentsChange = { svcCanDevoteeViewPayments = it },
+                                upiId = svcUpiId,
+                                onUpiIdChange = { svcUpiId = it },
+                                upiName = svcUpiName,
+                                onUpiNameChange = { svcUpiName = it },
                                 successMsg = svcSuccessMsg,
                                 onSave = {
                                     scope.launch {
@@ -1425,11 +1480,20 @@ fun AdminDashboardScreen(
                                             isGurujiInfoVisible = svcGurujiInfoVisible,
                                             isEmergencyNoticeVisible = svcEmergencyNoticeVisible
                                         )
+                                        repository.updateBusAndPaymentSettings(
+                                            isBusBookingLive = svcBusBookingLive,
+                                            isPaymentFeatureLive = svcPaymentFeatureLive,
+                                            canAdminViewPaymentHistory = svcCanAdminViewPayments,
+                                            canDevoteeViewPaymentHistory = svcCanDevoteeViewPayments,
+                                            ashramUpiId = svcUpiId.trim(),
+                                            ashramUpiName = svcUpiName.trim(),
+                                            busSeatFareAmount = svcBusFareAmount.toIntOrNull() ?: 1500
+                                        )
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                         svcSuccessMsg = if (isHindi)
-                                            "सेवाएं व टोकन समय-निर्धारण सुरक्षित व सभी भक्तों के फोन पर लाइव अपडेट हुआ!"
+                                            "सेवाएं, बस व्यवस्था व UPI पेमेंट सेटिंग्स सुरक्षित और सभी भक्तों के फोन पर लाइव अपडेट हुई!"
                                         else
-                                            "Service visibility & scheduled opening saved & broadcast to all devotees!"
+                                            "Service visibility, bus & payment settings saved & broadcast to all devotees!"
                                         refreshData()
                                     }
                                 }
@@ -4864,6 +4928,20 @@ fun PublicServiceMatrixTab(
     onScheduledTimestampChange: (Long) -> Unit,
     customDateStr: String,
     onCustomDateStrChange: (String) -> Unit,
+    isBusBookingLive: Boolean = false,
+    onBusBookingLiveChange: (Boolean) -> Unit = {},
+    busFareAmount: String = "1500",
+    onBusFareAmountChange: (String) -> Unit = {},
+    isPaymentFeatureLive: Boolean = false,
+    onPaymentFeatureLiveChange: (Boolean) -> Unit = {},
+    canAdminViewPayments: Boolean = false,
+    onCanAdminViewPaymentsChange: (Boolean) -> Unit = {},
+    canDevoteeViewPayments: Boolean = false,
+    onCanDevoteeViewPaymentsChange: (Boolean) -> Unit = {},
+    upiId: String = "shribalajikripadham@upi",
+    onUpiIdChange: (String) -> Unit = {},
+    upiName: String = "Shri Balaji Kripa Dham",
+    onUpiNameChange: (String) -> Unit = {},
     successMsg: String?,
     onSave: () -> Unit
 ) {
@@ -4947,7 +5025,6 @@ fun PublicServiceMatrixTab(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            // Calculate upcoming Sunday 06:00 AM
                             val cal = java.util.Calendar.getInstance()
                             while (cal.get(java.util.Calendar.DAY_OF_WEEK) != java.util.Calendar.SUNDAY) {
                                 cal.add(java.util.Calendar.DAY_OF_YEAR, 1)
@@ -4992,7 +5069,191 @@ fun PublicServiceMatrixTab(
             }
         }
 
-        // SECTION 2: MASTER FEATURE VISIBILITY MATRIX
+        // SECTION 2: 60-SEATER LUXURY BUS CONTROL (SUPER ADMIN DIRECT CONTROL)
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, if (isBusBookingLive) Color(0xFF4CAF50) else Color(0xFFFFB74D))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Text("🚌", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "60-सीटर डीलक्स बस बुकिंग (सुपर एडमिन नियंत्रण)" else "60-Seater Deluxe Bus Booking",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = MaroonPrimary
+                            )
+                            Text(
+                                text = if (isHindi) "12 पंक्तियाँ × 5 सीटें (3×2 कॉन्फ़िगरेशन)" else "12 Rows × 5 Seats (3x2 Configuration)",
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                    Switch(checked = isBusBookingLive, onCheckedChange = onBusBookingLiveChange)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = if (isBusBookingLive) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (isBusBookingLive)
+                            (if (isHindi) "🟢 लाइव: आम भक्तों के ऐप में बस सीट बुकिंग व A4 टिकट सुविधा खुली है।" else "🟢 LIVE: Devotees can view 60-seat layout and book seats.")
+                        else
+                            (if (isHindi) "🔒 गुप्त/छिपा हुआ (Hidden): यह विकल्प भक्तों से पूरी तरह छिपा हुआ है। सुपर एडमिन जब चाहें इसे लाइव कर सकते हैं।" else "🔒 HIDDEN: Bus booking is hidden from devotee screens."),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isBusBookingLive) Color(0xFF2E7D32) else Color(0xFFE65100),
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = busFareAmount,
+                    onValueChange = onBusFareAmountChange,
+                    label = { Text(if (isHindi) "प्रति सीट किराया (₹)" else "Seat Fare Amount (₹)") },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // SECTION 3: ASHRAM UPI QR CODE & PAYMENT GATEWAY CONTROL (SUPER ADMIN DIRECT CONTROL)
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, if (isPaymentFeatureLive) Color(0xFF4CAF50) else Color(0xFF90CAF9))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Text("💳", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "आश्रम UPI QR कोड व डिजिटल पेमेंट (सुपर एडमिन नियंत्रण)" else "Ashram UPI QR & Payment Gateway",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = MaroonPrimary
+                            )
+                            Text(
+                                text = if (isHindi) "PhonePe, GPay, Paytm, BHIM ऑडिट लेजर" else "PhonePe, GPay, Paytm, BHIM Audit Ledger",
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                    Switch(checked = isPaymentFeatureLive, onCheckedChange = onPaymentFeatureLiveChange)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = if (isPaymentFeatureLive) Color(0xFFE8F5E9) else Color(0xFFE3F2FD),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (isPaymentFeatureLive)
+                            (if (isHindi) "🟢 लाइव: ऐप में आश्रम UPI QR कोड व पेमेंट सुविधा लाइव है।" else "🟢 LIVE: UPI QR code payment is active in app.")
+                        else
+                            (if (isHindi) "🔒 गुप्त/छिपा हुआ (Hidden): पेमेंट विकल्प भक्तों से छिपा हुआ है। केवल सुपर एडमिन ही इसे आवश्यकता पड़ने पर लाइव कर सकते हैं।" else "🔒 HIDDEN: Payment feature is hidden from public devotees."),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isPaymentFeatureLive) Color(0xFF2E7D32) else Color(0xFF1565C0),
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = upiId,
+                    onValueChange = onUpiIdChange,
+                    label = { Text(if (isHindi) "आश्रम की आधिकारिक UPI ID" else "Ashram Official UPI ID") },
+                    placeholder = { Text("उदा. shribalajikripadham@upi") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = upiName,
+                    onValueChange = onUpiNameChange,
+                    label = { Text(if (isHindi) "खाताधारक / ट्रस्ट का नाम" else "Payee / Trust Name") },
+                    placeholder = { Text("उदा. Shri Balaji Kripa Dham") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+                Divider(color = Color(0xFFE0E0E0))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = if (isHindi) "पेमेंट लेजर व इतिहास अनुमतियाँ (Access Control):" else "Payment Ledger Permissions:",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp,
+                    color = Color.DarkGray
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isHindi) "👥 एडमिन (पुजारी / सेवकों) को पेमेंट लेजर देखने दें" else "Allow Admins to view Payment Ledger",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = if (isHindi) "अक्रिय रहने पर केवल सुपर एडमिन ही पेमेंट इतिहास देख सकते हैं।" else "If off, only Super Admin can view history.",
+                            fontSize = 10.sp,
+                            color = Color.Gray
+                        )
+                    }
+                    Switch(checked = canAdminViewPayments, onCheckedChange = onCanAdminViewPaymentsChange)
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isHindi) "📱 आम भक्तों को उनके पेमेंट की हिस्ट्री देखने दें" else "Allow Devotees to view their Payment History",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = if (isHindi) "भक्त अपने फोन पर की गई लेन-देन की रसीद देख सकेंगे।" else "Devotees can see their receipt on their phone.",
+                            fontSize = 10.sp,
+                            color = Color.Gray
+                        )
+                    }
+                    Switch(checked = canDevoteeViewPayments, onCheckedChange = onCanDevoteeViewPaymentsChange)
+                }
+            }
+        }
+
+        // SECTION 4: MASTER FEATURE VISIBILITY MATRIX
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.White),
             shape = RoundedCornerShape(14.dp)
@@ -5020,42 +5281,6 @@ fun PublicServiceMatrixTab(
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
-
-                // 1. Bus Seat Booking (Permanent Hidden Control)
-                Surface(
-                    color = if (isYatra) Color(0xFFFFF8E1) else Color(0xFFFAFAFA),
-                    shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, if (isYatra) Color(0xFFFFD54F) else Color(0xFFE0E0E0)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = if (isHindi) "🚌 श्री बालाजी यात्रा व बस बुकिंग" else "🚌 Balaji Yatra & Bus Seat Booking",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isYatra) Color(0xFFE65100) else Color.DarkGray
-                                )
-                                Text(
-                                    text = if (isYatra)
-                                        "सक्रिय: आम भक्तों को बस सीट बुकिंग विकल्प दिखाई दे रहा है।"
-                                    else
-                                        "🔒 स्थायी रूप से बंद: यह विकल्प भक्तों से पूरी तरह छिपा हुआ है।",
-                                    fontSize = 11.sp,
-                                    color = if (isYatra) Color(0xFF2E7D32) else Color.Gray
-                                )
-                            }
-                            Switch(checked = isYatra, onCheckedChange = onYatraChange)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
 
                 ServiceSwitchRow("🏷️ रविवार दरबार टोकन पंजीकरण (Sunday Token Generation)", isToken, onTokenChange)
                 ServiceSwitchRow("🔢 लाइव टोकन काउंटर ट्रैकर (Live Darbar Queue Counter)", isLiveCounter, onLiveCounterChange)

@@ -31,6 +31,8 @@ object GitHubLiveSyncManager {
     private const val FILE_DEVICES = "live_devices.json"
     private const val FILE_PARCHAS = "live_parchas.json"
     private const val FILE_SESSIONS = "live_admin_sessions.json"
+    private const val FILE_PAYMENTS = "live_payments.json"
+    private const val FILE_BUS_SEATS = "live_bus_seats.json"
 
     // Raw CDN URLs for instantaneous unauthenticated reads
     private const val RAW_CONFIG_URL =
@@ -45,6 +47,10 @@ object GitHubLiveSyncManager {
         "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_PARCHAS"
     private const val RAW_SESSIONS_URL =
         "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_SESSIONS"
+    private const val RAW_PAYMENTS_URL =
+        "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_PAYMENTS"
+    private const val RAW_BUS_SEATS_URL =
+        "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_BUS_SEATS"
 
     // REST API Contents endpoints
     private const val API_CONFIG_URL =
@@ -59,6 +65,10 @@ object GitHubLiveSyncManager {
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_PARCHAS"
     private const val API_SESSIONS_URL =
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_SESSIONS"
+    private const val API_PAYMENTS_URL =
+        "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_PAYMENTS"
+    private const val API_BUS_SEATS_URL =
+        "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_BUS_SEATS"
 
     // Active PAT token
     private const val DEFAULT_TOKEN_PART_A = "ghp_xqbYU7Ugyp"
@@ -1117,17 +1127,19 @@ object GitHubLiveSyncManager {
 
     // ========================================================================
     // 5. LIVE PARCHAS & SACRED DOCUMENTS SYNC (live_parchas.json)
-    // ========================================================================
-
     suspend fun fetchLiveParchas(): List<com.example.shribalajikripadham.data.model.SacredParcha>? = withContext(Dispatchers.IO) {
         try {
-            val cacheBusterUrl = "$RAW_PARCHAS_URL?nocache=${System.currentTimeMillis()}"
+            val cacheBusterUrl = "$RAW_PARCHAS_URL?nocache=${System.currentTimeMillis()}&rand=${(1000..9999).random()}"
             val url = URL(cacheBusterUrl)
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
+            conn.useCaches = false
+            conn.defaultUseCaches = false
+            conn.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate")
+            conn.setRequestProperty("Pragma", "no-cache")
             conn.connectTimeout = 4000
             conn.readTimeout = 4000
-            conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.25")
+            conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.29")
 
             if (conn.responseCode in 200..299) {
                 val jsonText = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
@@ -1546,6 +1558,310 @@ object GitHubLiveSyncManager {
             }
 
             Pair(true, "सत्र सफलतापूर्वक समाप्त")
+        } catch (e: Exception) {
+            Pair(false, "त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    // ========================================================================
+    // 8. LIVE PAYMENTS AUDIT TRAIL SYNC (live_payments.json)
+    // ========================================================================
+
+    suspend fun fetchLivePayments(context: Context): List<com.example.shribalajikripadham.data.model.PaymentRecord>? = withContext(Dispatchers.IO) {
+        try {
+            val cacheBuster = "$RAW_PAYMENTS_URL?nocache=${System.currentTimeMillis()}&rand=${(1000..9999).random()}"
+            val url = URL(cacheBuster)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.useCaches = false
+            conn.defaultUseCaches = false
+            conn.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate")
+            conn.setRequestProperty("Pragma", "no-cache")
+            conn.connectTimeout = 4000
+            conn.readTimeout = 4000
+            conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.29")
+
+            if (conn.responseCode in 200..299) {
+                val jsonStr = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(jsonStr)
+                val arr = root.optJSONArray("payments") ?: JSONArray()
+                val list = mutableListOf<com.example.shribalajikripadham.data.model.PaymentRecord>()
+                for (i in 0 until arr.length()) {
+                    val o = arr.getJSONObject(i)
+                    list.add(
+                        com.example.shribalajikripadham.data.model.PaymentRecord(
+                            id = o.optLong("id", 0L),
+                            paymentId = o.optString("payment_id", UUID.randomUUID().toString()),
+                            devoteeName = o.optString("devotee_name", ""),
+                            devoteePhone = o.optString("devotee_phone", ""),
+                            paymentApp = o.optString("payment_app", "PhonePe"),
+                            transactionId = o.optString("transaction_id", ""),
+                            amount = o.optDouble("amount", 0.0),
+                            purpose = o.optString("purpose", "BUS_TICKET"),
+                            seatNumbers = o.optString("seat_numbers", ""),
+                            timestamp = o.optLong("timestamp", System.currentTimeMillis()),
+                            paymentStatus = o.optString("payment_status", "SUCCESS"),
+                            paymentMode = o.optString("payment_mode", "UPI_QR"),
+                            verifiedBy = o.optString("verified_by", ""),
+                            notes = o.optString("notes", "")
+                        )
+                    )
+                }
+                list
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun publishLivePayments(
+        context: Context,
+        payments: List<com.example.shribalajikripadham.data.model.PaymentRecord>,
+        adminName: String = "Super Admin"
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val patToken = getActiveToken(context)
+        if (patToken.isBlank()) return@withContext Pair(false, "सिंक टोकन उपलब्ध नहीं")
+
+        try {
+            var existingSha: String? = null
+            try {
+                val getUrl = URL(API_PAYMENTS_URL)
+                val conn = getUrl.openConnection() as HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.setRequestProperty("Authorization", "Bearer $patToken")
+                conn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.29")
+                conn.connectTimeout = 5000
+                conn.readTimeout = 5000
+
+                if (conn.responseCode in 200..299) {
+                    val respStr = conn.inputStream.bufferedReader().use { it.readText() }
+                    val jsonResp = JSONObject(respStr)
+                    existingSha = if (jsonResp.has("sha")) jsonResp.getString("sha") else null
+                }
+            } catch (e: Exception) {}
+
+            val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+
+            val root = JSONObject()
+            root.put("updated_at", isoFormat.format(Date()))
+            root.put("updated_by", adminName)
+            root.put("total_payments", payments.size)
+            root.put("total_amount", payments.sumOf { it.amount })
+
+            val arr = JSONArray()
+            for (p in payments) {
+                val o = JSONObject().apply {
+                    put("id", p.id)
+                    put("payment_id", p.paymentId)
+                    put("devotee_name", p.devoteeName)
+                    put("devotee_phone", p.devoteePhone)
+                    put("payment_app", p.paymentApp)
+                    put("transaction_id", p.transactionId)
+                    put("amount", p.amount)
+                    put("purpose", p.purpose)
+                    put("seat_numbers", p.seatNumbers)
+                    put("timestamp", p.timestamp)
+                    put("payment_status", p.paymentStatus)
+                    put("payment_mode", p.paymentMode)
+                    put("verified_by", p.verifiedBy)
+                    put("notes", p.notes)
+                }
+                arr.put(o)
+            }
+            root.put("payments", arr)
+
+            val jsonContent = root.toString(2)
+            val b64Content = Base64.encodeToString(jsonContent.toByteArray(StandardCharsets.UTF_8), Base64.NO_WRAP)
+
+            val payload = JSONObject().apply {
+                put("message", "Sync payment ledger via $adminName [live_payments.json]")
+                put("content", b64Content)
+                put("branch", "main")
+                if (!existingSha.isNullOrBlank()) {
+                    put("sha", existingSha)
+                }
+            }
+
+            val putUrl = URL(API_PAYMENTS_URL)
+            val putConn = putUrl.openConnection() as HttpURLConnection
+            putConn.requestMethod = "PUT"
+            putConn.setRequestProperty("Authorization", "Bearer $patToken")
+            putConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            putConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            putConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.29")
+            putConn.connectTimeout = 8000
+            putConn.readTimeout = 8000
+            putConn.doOutput = true
+
+            putConn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            val code = putConn.responseCode
+            if (code in 200..299) {
+                Pair(true, "पेमेंट लेजर सफलतापूर्वक सिंक हुआ")
+            } else {
+                Pair(false, "सिंक असफल: HTTP $code")
+            }
+        } catch (e: Exception) {
+            Pair(false, "त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    // ========================================================================
+    // 9. LIVE 60-SEATER BUS SEATS SYNC (live_bus_seats.json)
+    // ========================================================================
+
+    suspend fun fetchLiveBusSeats(context: Context): List<com.example.shribalajikripadham.data.model.BusSeat>? = withContext(Dispatchers.IO) {
+        try {
+            val cacheBuster = "$RAW_BUS_SEATS_URL?nocache=${System.currentTimeMillis()}&rand=${(1000..9999).random()}"
+            val url = URL(cacheBuster)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.useCaches = false
+            conn.defaultUseCaches = false
+            conn.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate")
+            conn.setRequestProperty("Pragma", "no-cache")
+            conn.connectTimeout = 4000
+            conn.readTimeout = 4000
+            conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.29")
+
+            if (conn.responseCode in 200..299) {
+                val jsonStr = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(jsonStr)
+                val arr = root.optJSONArray("seats") ?: JSONArray()
+                val list = mutableListOf<com.example.shribalajikripadham.data.model.BusSeat>()
+                for (i in 0 until arr.length()) {
+                    val o = arr.getJSONObject(i)
+                    list.add(
+                        com.example.shribalajikripadham.data.model.BusSeat(
+                            seatNumber = o.optInt("seat_number", i + 1),
+                            seatLabel = o.optString("seat_label", "${i + 1}"),
+                            row = o.optInt("row_idx", 1),
+                            column = o.optInt("col_idx", 1),
+                            isBooked = o.optBoolean("is_booked", false),
+                            passengerName = o.optString("passenger_name", ""),
+                            passengerAge = o.optInt("passenger_age", 0),
+                            passengerGender = o.optString("passenger_gender", ""),
+                            phoneNumber = o.optString("phone_number", ""),
+                            boardingPoint = o.optString("boarding_point", "Gram Dungra Jaat Ashram"),
+                            paymentStatus = com.example.shribalajikripadham.data.model.PaymentStatus.valueOf(o.optString("payment_status", "UNPAID")),
+                            paymentMode = o.optString("payment_mode", "UPI_QR"),
+                            transactionId = o.optString("transaction_id", ""),
+                            fareAmount = o.optInt("fare_amount", 1500),
+                            yatraDate = o.optString("yatra_date", ""),
+                            bookedAt = o.optLong("booked_at", 0L),
+                            bookedBy = o.optString("booked_by", "DEVOTEE"),
+                            notes = o.optString("notes", "")
+                        )
+                    )
+                }
+                list
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun publishLiveBusSeats(
+        context: Context,
+        seats: List<com.example.shribalajikripadham.data.model.BusSeat>,
+        adminName: String = "Super Admin"
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val patToken = getActiveToken(context)
+        if (patToken.isBlank()) return@withContext Pair(false, "सिंक टोकन उपलब्ध नहीं")
+
+        try {
+            var existingSha: String? = null
+            try {
+                val getUrl = URL(API_BUS_SEATS_URL)
+                val conn = getUrl.openConnection() as HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.setRequestProperty("Authorization", "Bearer $patToken")
+                conn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.29")
+                conn.connectTimeout = 5000
+                conn.readTimeout = 5000
+
+                if (conn.responseCode in 200..299) {
+                    val respStr = conn.inputStream.bufferedReader().use { it.readText() }
+                    val jsonResp = JSONObject(respStr)
+                    existingSha = if (jsonResp.has("sha")) jsonResp.getString("sha") else null
+                }
+            } catch (e: Exception) {}
+
+            val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
+
+            val root = JSONObject()
+            root.put("updated_at", isoFormat.format(Date()))
+            root.put("updated_by", adminName)
+            root.put("total_seats", seats.size)
+            root.put("booked_seats", seats.count { it.isBooked })
+
+            val arr = JSONArray()
+            for (s in seats) {
+                val o = JSONObject().apply {
+                    put("seat_number", s.seatNumber)
+                    put("seat_label", s.seatLabel)
+                    put("row_idx", s.row)
+                    put("col_idx", s.column)
+                    put("is_booked", s.isBooked)
+                    put("passenger_name", s.passengerName)
+                    put("passenger_age", s.passengerAge)
+                    put("passenger_gender", s.passengerGender)
+                    put("phone_number", s.phoneNumber)
+                    put("boarding_point", s.boardingPoint)
+                    put("payment_status", s.paymentStatus.name)
+                    put("payment_mode", s.paymentMode)
+                    put("transaction_id", s.transactionId)
+                    put("fare_amount", s.fareAmount)
+                    put("yatra_date", s.yatraDate)
+                    put("booked_at", s.bookedAt)
+                    put("booked_by", s.bookedBy)
+                    put("notes", s.notes)
+                }
+                arr.put(o)
+            }
+            root.put("seats", arr)
+
+            val jsonContent = root.toString(2)
+            val b64Content = Base64.encodeToString(jsonContent.toByteArray(StandardCharsets.UTF_8), Base64.NO_WRAP)
+
+            val payload = JSONObject().apply {
+                put("message", "Sync 60-seat bus bookings via $adminName [live_bus_seats.json]")
+                put("content", b64Content)
+                put("branch", "main")
+                if (!existingSha.isNullOrBlank()) {
+                    put("sha", existingSha)
+                }
+            }
+
+            val putUrl = URL(API_BUS_SEATS_URL)
+            val putConn = putUrl.openConnection() as HttpURLConnection
+            putConn.requestMethod = "PUT"
+            putConn.setRequestProperty("Authorization", "Bearer $patToken")
+            putConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            putConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            putConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.29")
+            putConn.connectTimeout = 8000
+            putConn.readTimeout = 8000
+            putConn.doOutput = true
+
+            putConn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            val code = putConn.responseCode
+            if (code in 200..299) {
+                Pair(true, "बस सीटें सफलतापूर्वक सिंक हुईं")
+            } else {
+                Pair(false, "सिंक असफल: HTTP $code")
+            }
         } catch (e: Exception) {
             Pair(false, "त्रुटि: ${e.localizedMessage}")
         }

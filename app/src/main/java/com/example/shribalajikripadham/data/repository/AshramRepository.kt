@@ -95,7 +95,14 @@ class AshramRepository(context: Context) {
                 isCloudSyncEnabled = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_cloud_sync_enabled")) == 1 } catch (e: Exception) { false },
                 sundayTokenBannerTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_banner_title")) } catch (e: Exception) { "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन" } ?: "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन",
                 sundayTokenBannerText = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_banner_text")) } catch (e: Exception) { "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।" } ?: "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।",
-                sundayTokenCustomNotice = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_custom_notice")) } catch (e: Exception) { "" } ?: ""
+                sundayTokenCustomNotice = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_custom_notice")) } catch (e: Exception) { "" } ?: "",
+                isBusBookingLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_bus_booking_live")) == 1 } catch (e: Exception) { false },
+                isPaymentFeatureLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_payment_feature_live")) == 1 } catch (e: Exception) { false },
+                canAdminViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_admin_view_payment_history")) == 1 } catch (e: Exception) { false },
+                canDevoteeViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_payment_history")) == 1 } catch (e: Exception) { false },
+                ashramUpiId = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_id")) } catch (e: Exception) { "shribalajikripadham@upi" } ?: "shribalajikripadham@upi",
+                ashramUpiName = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_name")) } catch (e: Exception) { "Shri Balaji Kripa Dham" } ?: "Shri Balaji Kripa Dham",
+                busSeatFareAmount = try { cursor.getInt(cursor.getColumnIndexOrThrow("bus_seat_fare_amount")) } catch (e: Exception) { 1500 }
             )
         }
         cursor.close()
@@ -842,12 +849,17 @@ class AshramRepository(context: Context) {
                     column = cursor.getInt(cursor.getColumnIndexOrThrow("col_idx")),
                     isBooked = cursor.getInt(cursor.getColumnIndexOrThrow("is_booked")) == 1,
                     passengerName = cursor.getString(cursor.getColumnIndexOrThrow("passenger_name")) ?: "",
+                    passengerAge = try { cursor.getInt(cursor.getColumnIndexOrThrow("passenger_age")) } catch (e: Exception) { 0 },
+                    passengerGender = try { cursor.getString(cursor.getColumnIndexOrThrow("passenger_gender")) ?: "" } catch (e: Exception) { "" },
                     phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow("phone_number")) ?: "",
-                    boardingPoint = cursor.getString(cursor.getColumnIndexOrThrow("boarding_point")) ?: "",
-                    paymentStatus = PaymentStatus.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("payment_status"))),
-                    paymentMode = cursor.getString(cursor.getColumnIndexOrThrow("payment_mode")) ?: "CASH",
+                    boardingPoint = cursor.getString(cursor.getColumnIndexOrThrow("boarding_point")) ?: "Gram Dungra Jaat Ashram",
+                    paymentStatus = try { PaymentStatus.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("payment_status"))) } catch (e: Exception) { PaymentStatus.UNPAID },
+                    paymentMode = cursor.getString(cursor.getColumnIndexOrThrow("payment_mode")) ?: "UPI_QR",
+                    transactionId = try { cursor.getString(cursor.getColumnIndexOrThrow("transaction_id")) ?: "" } catch (e: Exception) { "" },
                     fareAmount = cursor.getInt(cursor.getColumnIndexOrThrow("fare_amount")),
                     yatraDate = cursor.getString(cursor.getColumnIndexOrThrow("yatra_date")) ?: "",
+                    bookedAt = try { cursor.getLong(cursor.getColumnIndexOrThrow("booked_at")) } catch (e: Exception) { 0L },
+                    bookedBy = try { cursor.getString(cursor.getColumnIndexOrThrow("booked_by")) ?: "DEVOTEE" } catch (e: Exception) { "DEVOTEE" },
                     notes = cursor.getString(cursor.getColumnIndexOrThrow("notes")) ?: ""
                 )
             )
@@ -863,22 +875,38 @@ class AshramRepository(context: Context) {
         phoneNumber: String,
         paymentStatus: PaymentStatus,
         paymentMode: String,
-        boardingPoint: String = "Ashram",
+        boardingPoint: String = "Gram Dungra Jaat Ashram",
         fareAmount: Int = 1500,
-        notes: String = ""
+        notes: String = "",
+        passengerAge: Int = 0,
+        passengerGender: String = "",
+        transactionId: String = "",
+        bookedAt: Long = System.currentTimeMillis(),
+        bookedBy: String = "ADMIN"
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
             put("is_booked", if (isBooked) 1 else 0)
             put("passenger_name", if (isBooked) passengerName else "")
+            put("passenger_age", if (isBooked) passengerAge else 0)
+            put("passenger_gender", if (isBooked) passengerGender else "")
             put("phone_number", if (isBooked) phoneNumber else "")
             put("boarding_point", if (isBooked) boardingPoint else "")
             put("payment_status", paymentStatus.name)
             put("payment_mode", paymentMode)
+            put("transaction_id", if (isBooked) transactionId else "")
             put("fare_amount", fareAmount)
+            put("booked_at", if (isBooked) bookedAt else 0L)
+            put("booked_by", if (isBooked) bookedBy else "DEVOTEE")
             put("notes", notes)
         }
-        db.update("bus_seats", cv, "seat_number = ?", arrayOf(seatNumber.toString())) > 0
+        val res = db.update("bus_seats", cv, "seat_number = ?", arrayOf(seatNumber.toString())) > 0
+        if (res) {
+            try {
+                publishBusSeatsToGitHub()
+            } catch (e: Exception) {}
+        }
+        res
     }
 
     suspend fun bookBusSeat(
@@ -889,20 +917,96 @@ class AshramRepository(context: Context) {
         paymentStatus: PaymentStatus,
         paymentMode: String,
         fareAmount: Int,
-        notes: String
+        notes: String,
+        passengerAge: Int = 0,
+        passengerGender: String = "",
+        transactionId: String = "",
+        bookedAt: Long = System.currentTimeMillis(),
+        bookedBy: String = "DEVOTEE"
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
             put("is_booked", 1)
             put("passenger_name", passengerName)
+            put("passenger_age", passengerAge)
+            put("passenger_gender", passengerGender)
             put("phone_number", phoneNumber)
             put("boarding_point", boardingPoint)
             put("payment_status", paymentStatus.name)
             put("payment_mode", paymentMode)
+            put("transaction_id", transactionId)
             put("fare_amount", fareAmount)
+            put("booked_at", bookedAt)
+            put("booked_by", bookedBy)
             put("notes", notes)
         }
-        db.update("bus_seats", cv, "seat_number = ?", arrayOf(seatNumber.toString())) > 0
+        val res = db.update("bus_seats", cv, "seat_number = ?", arrayOf(seatNumber.toString())) > 0
+        if (res) {
+            try {
+                publishBusSeatsToGitHub()
+            } catch (e: Exception) {}
+        }
+        res
+    }
+
+    suspend fun bookMultipleBusSeats(
+        seatsToBook: List<BusSeat>,
+        paymentRecord: PaymentRecord? = null
+    ): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        db.beginTransaction()
+        try {
+            for (seat in seatsToBook) {
+                val cv = ContentValues().apply {
+                    put("is_booked", 1)
+                    put("passenger_name", seat.passengerName)
+                    put("passenger_age", seat.passengerAge)
+                    put("passenger_gender", seat.passengerGender)
+                    put("phone_number", seat.phoneNumber)
+                    put("boarding_point", seat.boardingPoint)
+                    put("payment_status", seat.paymentStatus.name)
+                    put("payment_mode", seat.paymentMode)
+                    put("transaction_id", seat.transactionId)
+                    put("fare_amount", seat.fareAmount)
+                    put("yatra_date", seat.yatraDate)
+                    put("booked_at", if (seat.bookedAt > 0) seat.bookedAt else System.currentTimeMillis())
+                    put("booked_by", seat.bookedBy)
+                    put("notes", seat.notes)
+                }
+                db.update("bus_seats", cv, "seat_number = ?", arrayOf(seat.seatNumber.toString()))
+            }
+            if (paymentRecord != null) {
+                val pCv = ContentValues().apply {
+                    put("payment_id", paymentRecord.paymentId)
+                    put("devotee_name", paymentRecord.devoteeName)
+                    put("devotee_phone", paymentRecord.devoteePhone)
+                    put("payment_app", paymentRecord.paymentApp)
+                    put("transaction_id", paymentRecord.transactionId)
+                    put("amount", paymentRecord.amount)
+                    put("purpose", paymentRecord.purpose)
+                    put("seat_numbers", paymentRecord.seatNumbers)
+                    put("timestamp", paymentRecord.timestamp)
+                    put("payment_status", paymentRecord.paymentStatus)
+                    put("payment_mode", paymentRecord.paymentMode)
+                    put("verified_by", paymentRecord.verifiedBy)
+                    put("notes", paymentRecord.notes)
+                }
+                db.insertWithOnConflict("payment_records", null, pCv, SQLiteDatabase.CONFLICT_REPLACE)
+            }
+            db.setTransactionSuccessful()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        } finally {
+            db.endTransaction()
+            try {
+                publishBusSeatsToGitHub()
+                if (paymentRecord != null) {
+                    publishPaymentsToGitHub()
+                }
+            } catch (e: Exception) {}
+        }
     }
 
     suspend fun cancelBusSeatBooking(seatNumber: Int): Boolean = withContext(Dispatchers.IO) {
@@ -910,13 +1014,216 @@ class AshramRepository(context: Context) {
         val cv = ContentValues().apply {
             put("is_booked", 0)
             put("passenger_name", "")
+            put("passenger_age", 0)
+            put("passenger_gender", "")
             put("phone_number", "")
             put("boarding_point", "")
             put("payment_status", PaymentStatus.UNPAID.name)
             put("payment_mode", "CASH")
+            put("transaction_id", "")
+            put("booked_at", 0L)
+            put("booked_by", "DEVOTEE")
             put("notes", "")
         }
-        db.update("bus_seats", cv, "seat_number = ?", arrayOf(seatNumber.toString())) > 0
+        val res = db.update("bus_seats", cv, "seat_number = ?", arrayOf(seatNumber.toString())) > 0
+        if (res) {
+            try {
+                publishBusSeatsToGitHub()
+            } catch (e: Exception) {}
+        }
+        res
+    }
+
+    // --- Payment Records Audit Ledger ---
+    suspend fun recordPayment(payment: PaymentRecord): Long = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("payment_id", payment.paymentId)
+            put("devotee_name", payment.devoteeName)
+            put("devotee_phone", payment.devoteePhone)
+            put("payment_app", payment.paymentApp)
+            put("transaction_id", payment.transactionId)
+            put("amount", payment.amount)
+            put("purpose", payment.purpose)
+            put("seat_numbers", payment.seatNumbers)
+            put("timestamp", payment.timestamp)
+            put("payment_status", payment.paymentStatus)
+            put("payment_mode", payment.paymentMode)
+            put("verified_by", payment.verifiedBy)
+            put("notes", payment.notes)
+        }
+        val id = db.insertWithOnConflict("payment_records", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+        if (id > 0) {
+            try {
+                publishPaymentsToGitHub()
+            } catch (e: Exception) {}
+        }
+        id
+    }
+
+    suspend fun getAllPayments(): List<PaymentRecord> = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val list = mutableListOf<PaymentRecord>()
+        val cursor = db.rawQuery("SELECT * FROM payment_records ORDER BY timestamp DESC", null)
+        while (cursor.moveToNext()) {
+            list.add(
+                PaymentRecord(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    paymentId = cursor.getString(cursor.getColumnIndexOrThrow("payment_id")),
+                    devoteeName = cursor.getString(cursor.getColumnIndexOrThrow("devotee_name")),
+                    devoteePhone = cursor.getString(cursor.getColumnIndexOrThrow("devotee_phone")),
+                    paymentApp = cursor.getString(cursor.getColumnIndexOrThrow("payment_app")),
+                    transactionId = cursor.getString(cursor.getColumnIndexOrThrow("transaction_id")),
+                    amount = cursor.getDouble(cursor.getColumnIndexOrThrow("amount")),
+                    purpose = cursor.getString(cursor.getColumnIndexOrThrow("purpose")),
+                    seatNumbers = try { cursor.getString(cursor.getColumnIndexOrThrow("seat_numbers")) ?: "" } catch (e: Exception) { "" },
+                    timestamp = cursor.getLong(cursor.getColumnIndexOrThrow("timestamp")),
+                    paymentStatus = try { cursor.getString(cursor.getColumnIndexOrThrow("payment_status")) ?: "SUCCESS" } catch (e: Exception) { "SUCCESS" },
+                    paymentMode = try { cursor.getString(cursor.getColumnIndexOrThrow("payment_mode")) ?: "UPI_QR" } catch (e: Exception) { "UPI_QR" },
+                    verifiedBy = try { cursor.getString(cursor.getColumnIndexOrThrow("verified_by")) ?: "" } catch (e: Exception) { "" },
+                    notes = try { cursor.getString(cursor.getColumnIndexOrThrow("notes")) ?: "" } catch (e: Exception) { "" }
+                )
+            )
+        }
+        cursor.close()
+        list
+    }
+
+    suspend fun updatePaymentStatus(paymentId: String, status: String, verifiedBy: String): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("payment_status", status)
+            put("verified_by", verifiedBy)
+        }
+        val res = db.update("payment_records", cv, "payment_id = ?", arrayOf(paymentId)) > 0
+        if (res) {
+            try {
+                publishPaymentsToGitHub()
+            } catch (e: Exception) {}
+        }
+        res
+    }
+
+    suspend fun deletePayment(paymentId: String): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val res = db.delete("payment_records", "payment_id = ?", arrayOf(paymentId)) > 0
+        if (res) {
+            try {
+                publishPaymentsToGitHub()
+            } catch (e: Exception) {}
+        }
+        res
+    }
+
+    suspend fun publishBusSeatsToGitHub(): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val allSeats = getAllBusSeats()
+        com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveBusSeats(appContext, allSeats)
+    }
+
+    suspend fun syncLiveBusSeatsFromGitHub(): Pair<Boolean, List<BusSeat>> = withContext(Dispatchers.IO) {
+        val remoteSeats = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveBusSeats(appContext)
+        if (remoteSeats != null && remoteSeats.isNotEmpty()) {
+            val db = dbHelper.writableDatabase
+            db.beginTransaction()
+            try {
+                for (s in remoteSeats) {
+                    val cv = ContentValues().apply {
+                        put("seat_number", s.seatNumber)
+                        put("seat_label", s.seatLabel)
+                        put("row_idx", s.row)
+                        put("col_idx", s.column)
+                        put("is_booked", if (s.isBooked) 1 else 0)
+                        put("passenger_name", s.passengerName)
+                        put("passenger_age", s.passengerAge)
+                        put("passenger_gender", s.passengerGender)
+                        put("phone_number", s.phoneNumber)
+                        put("boarding_point", s.boardingPoint)
+                        put("payment_status", s.paymentStatus.name)
+                        put("payment_mode", s.paymentMode)
+                        put("transaction_id", s.transactionId)
+                        put("fare_amount", s.fareAmount)
+                        put("yatra_date", s.yatraDate)
+                        put("booked_at", s.bookedAt)
+                        put("booked_by", s.bookedBy)
+                        put("notes", s.notes)
+                    }
+                    db.insertWithOnConflict("bus_seats", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+            Pair(true, remoteSeats)
+        } else {
+            Pair(false, emptyList())
+        }
+    }
+
+    suspend fun publishPaymentsToGitHub(): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val allPayments = getAllPayments()
+        com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLivePayments(appContext, allPayments)
+    }
+
+    suspend fun syncLivePaymentsFromGitHub(): Pair<Boolean, List<PaymentRecord>> = withContext(Dispatchers.IO) {
+        val remotePayments = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLivePayments(appContext)
+        if (remotePayments != null && remotePayments.isNotEmpty()) {
+            val db = dbHelper.writableDatabase
+            db.beginTransaction()
+            try {
+                for (p in remotePayments) {
+                    val cv = ContentValues().apply {
+                        put("payment_id", p.paymentId)
+                        put("devotee_name", p.devoteeName)
+                        put("devotee_phone", p.devoteePhone)
+                        put("payment_app", p.paymentApp)
+                        put("transaction_id", p.transactionId)
+                        put("amount", p.amount)
+                        put("purpose", p.purpose)
+                        put("seat_numbers", p.seatNumbers)
+                        put("timestamp", p.timestamp)
+                        put("payment_status", p.paymentStatus)
+                        put("payment_mode", p.paymentMode)
+                        put("verified_by", p.verifiedBy)
+                        put("notes", p.notes)
+                    }
+                    db.insertWithOnConflict("payment_records", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+            Pair(true, remotePayments)
+        } else {
+            Pair(false, emptyList())
+        }
+    }
+
+    suspend fun updateBusAndPaymentSettings(
+        isBusBookingLive: Boolean,
+        isPaymentFeatureLive: Boolean,
+        canAdminViewPaymentHistory: Boolean,
+        canDevoteeViewPaymentHistory: Boolean,
+        ashramUpiId: String,
+        ashramUpiName: String,
+        busSeatFareAmount: Int
+    ): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("is_bus_booking_live", if (isBusBookingLive) 1 else 0)
+            put("is_payment_feature_live", if (isPaymentFeatureLive) 1 else 0)
+            put("can_admin_view_payment_history", if (canAdminViewPaymentHistory) 1 else 0)
+            put("can_devotee_view_payment_history", if (canDevoteeViewPaymentHistory) 1 else 0)
+            put("ashram_upi_id", ashramUpiId)
+            put("ashram_upi_name", ashramUpiName)
+            put("bus_seat_fare_amount", busSeatFareAmount)
+        }
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try {
+                publishCurrentSettingsToGitHub()
+            } catch (e: Exception) {}
+        }
+        res
     }
 
     // --- Yatra Expenses ---
@@ -2195,10 +2502,23 @@ class AshramRepository(context: Context) {
                 if (sc.sundayTokenBannerTitle.isNotBlank()) cv.put("sunday_token_banner_title", sc.sundayTokenBannerTitle)
                 if (sc.sundayTokenBannerText.isNotBlank()) cv.put("sunday_token_banner_text", sc.sundayTokenBannerText)
                 if (sc.sundayTokenCustomNotice.isNotBlank()) cv.put("sunday_token_custom_notice", sc.sundayTokenCustomNotice)
+                cv.put("is_bus_booking_live", if (sc.isBusBookingLive) 1 else 0)
+                cv.put("is_payment_feature_live", if (sc.isPaymentFeatureLive) 1 else 0)
+                cv.put("can_admin_view_payment_history", if (sc.canAdminViewPaymentHistory) 1 else 0)
+                cv.put("can_devotee_view_payment_history", if (sc.canDevoteeViewPaymentHistory) 1 else 0)
+                if (sc.ashramUpiId.isNotBlank()) cv.put("ashram_upi_id", sc.ashramUpiId)
+                if (sc.ashramUpiName.isNotBlank()) cv.put("ashram_upi_name", sc.ashramUpiName)
+                if (sc.busSeatFareAmount > 0) cv.put("bus_seat_fare_amount", sc.busSeatFareAmount)
 
                 if (cv.size() > 0) {
                     db.update("ashram_settings", cv, "id = 1", null)
                 }
+
+                // Also trigger live bus seats and payments sync
+                try {
+                    syncLiveBusSeatsFromGitHub()
+                    syncLivePaymentsFromGitHub()
+                } catch (e: Exception) {}
 
                 // Synchronize App Auto-Update info from live cloud config
                 val upd = remoteConfig.appUpdate
@@ -2327,7 +2647,14 @@ class AshramRepository(context: Context) {
                 maxDailyTokens = currentSettings.maxDailyTokens,
                 sundayTokenBannerTitle = currentSettings.sundayTokenBannerTitle,
                 sundayTokenBannerText = currentSettings.sundayTokenBannerText,
-                sundayTokenCustomNotice = currentSettings.sundayTokenCustomNotice
+                sundayTokenCustomNotice = currentSettings.sundayTokenCustomNotice,
+                isBusBookingLive = currentSettings.isBusBookingLive,
+                isPaymentFeatureLive = currentSettings.isPaymentFeatureLive,
+                canAdminViewPaymentHistory = currentSettings.canAdminViewPaymentHistory,
+                canDevoteeViewPaymentHistory = currentSettings.canDevoteeViewPaymentHistory,
+                ashramUpiId = currentSettings.ashramUpiId,
+                ashramUpiName = currentSettings.ashramUpiName,
+                busSeatFareAmount = currentSettings.busSeatFareAmount
             ),
             sections = sections,
             events = currentEvents
@@ -2761,11 +3088,11 @@ class AshramRepository(context: Context) {
                 list.add(parseParchaCursor(cursor))
             }
             cursor.close()
-            if (list.isNotEmpty() || isParchasSeeded()) return list
+            return list
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas().filter { it.isPublished && !it.isHidden }
+        return emptyList()
     }
 
     fun getAllAdminParchas(): List<com.example.shribalajikripadham.data.model.SacredParcha> {
@@ -2781,11 +3108,11 @@ class AshramRepository(context: Context) {
                 list.add(parseParchaCursor(cursor))
             }
             cursor.close()
-            if (list.isNotEmpty() || isParchasSeeded()) return list
+            return list
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
+        return emptyList()
     }
 
     fun getParchaById(parchaId: String): com.example.shribalajikripadham.data.model.SacredParcha? {
