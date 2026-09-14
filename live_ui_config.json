@@ -1,13 +1,13 @@
 {
-  "updated_at": "2026-09-14T08:02:36Z",
-  "updated_by": "Ankit Chaudhary (Super Admin)",
+  "updated_at": "2026-09-14T09:56:53Z",
+  "updated_by": "मुख्य व्यवस्थापक (Super Admin)",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
   "ashram_details": {
     "ashram_name": "श्री बालाजी कृपा धाम",
     "guruji_name": "परम पूज्य गुरुजी",
     "address": "ग्राम डूंगरा जाट, तहसील शिकारपुर, जिला बुलन्दशहर (उ.प्र.)",
-    "contact_phone": "8171064598",
+    "contact_phone": "8533955333",
     "contact_phone_secondary": "",
     "whatsapp_number": "8171064598",
     "darbar_timings": "प्रत्येक रविवार प्रातः 8:30 बजे से प्रभु इच्छा तक",
@@ -16,7 +16,8 @@
     "youtube_channel_url": "https:\/\/www.youtube.com\/@ShriBalajiKripaDham",
     "facebook_page_url": "https:\/\/www.facebook.com\/ShriBalajiKripaDham",
     "instagram_url": "https:\/\/www.instagram.com\/shribalajikripadham",
-    "app_share_url": "https:\/\/shribalajikripadham.org\/app"
+    "app_share_url": "https:\/\/shribalajikripadham.org\/app",
+    "guruji_photo_url": ""
   },
   "emergency_notice": {
     "is_enabled": true,
@@ -29,7 +30,7 @@
     "allowed_radius_meters": 1500,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789372956967
+    "updated_at": 1789379813286
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -189,6 +190,28 @@
       "custom_subtitle_english": "",
       "custom_content_hindi": "",
       "custom_content_english": ""
+    }
+  ],
+  "events": [
+    {
+      "id": 1,
+      "title_hindi": "वार्षिक महोत्सव: श्री गुरु पूर्णिमा",
+      "title_english": "Annual Mahotsav: Guru Purnima",
+      "date_desc_hindi": "आषाढ़ पूर्णिमा (जुलाई) - प्रातः 6 बजे से",
+      "date_desc_english": "Ashadha Purnima (July) - 6:00 AM Onwards",
+      "details_hindi": "विशाल भंडारा, गुरु पूजा, अखंड संकीर्तन एवं विशेष आशीर्वाद दरबार। हजारों भक्तों हेतु प्रसादम की व्यवस्था।",
+      "details_english": "Grand Bhandara, Guru Puja, Akhand Sankirtan & Special Darbar with prasad distribution for thousands of devotees.",
+      "is_active": true
+    },
+    {
+      "id": 2,
+      "title_hindi": "महा जन्मोत्सव: श्री हनुमान जयंती",
+      "title_english": "Maha Janmotsav: Hanuman Jayanti",
+      "date_desc_hindi": "चैत्र पूर्णिमा (अप्रैल) - दिनभर",
+      "date_desc_english": "Chaitra Purnima (April) - Full Day",
+      "details_hindi": "श्री सुंदरकांड पाठ, सिंदूर अर्पण, महाआरती, चोला अर्पण एवं सामूहिक महाप्रसादम।",
+      "details_english": "Sundarkand Path, Sindoor Arpan, Maha Aarti, Chola offering and community Mahaprasadam.",
+      "is_active": true
     }
   ]
 }
