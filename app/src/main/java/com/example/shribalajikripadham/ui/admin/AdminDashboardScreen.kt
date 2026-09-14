@@ -79,6 +79,7 @@ fun AdminDashboardScreen(
 
     var loggedInAdmin by remember { mutableStateOf<Admin?>(null) }
     var currentSessionId by remember { mutableStateOf("") }
+    var myLoginTimestamp by remember { mutableLongStateOf(0L) }
     var forceLogoutMessage by remember { mutableStateOf<String?>(null) }
     var showLogoutExitDialog by remember { mutableStateOf(false) }
 
@@ -429,19 +430,21 @@ fun AdminDashboardScreen(
                 delay(12000)
                 try {
                     // Check if another phone logged in with this admin account
-                    if (currentSessionId.isNotBlank()) {
+                    if (currentSessionId.isNotBlank() && myLoginTimestamp > 0L) {
                         val (isSessValid, errDetail) = repository.checkAdminSessionActive(
                             adminId = adminId,
                             currentSessionId = currentSessionId,
-                            currentDeviceId = currentDevId
+                            currentDeviceId = currentDevId,
+                            myLoginTimestamp = myLoginTimestamp
                         )
                         if (!isSessValid) {
                             forceLogoutMessage = if (isHindi)
-                                "⚠️ आपका एडमिन खाता किसी अन्य फोन पर लॉगिन किया गया है!\n\nसुरक्षा नियमों के अनुसार एक समय पर केवल एक ही फोन में एडमिन लॉगिन की अनुमति है। यह सत्र स्वतः समाप्त कर दिया गया है।"
+                                "⚠️ आपका एडमिन खाता किसी अन्य फोन पर लॉगिन किया गया है!\n\nसुरक्षा नियमों के अनुसार एक समय पर केवल एक ही फोन में एडमिन लॉगिन की अनुमति है। यह पुराना सत्र स्वतः समाप्त कर दिया गया है।"
                             else
-                                "⚠️ Your admin account was logged into from another device!\n\nOnly one device can be logged in at a time. This session has been terminated."
+                                "⚠️ Your admin account was logged into from another device!\n\nOnly one device can be logged in at a time. This older session has been terminated."
                             loggedInAdmin = null
                             currentSessionId = ""
+                            myLoginTimestamp = 0L
                             break
                         }
                     }
@@ -488,6 +491,7 @@ fun AdminDashboardScreen(
                         val sessId = currentSessionId
                         loggedInAdmin = null
                         currentSessionId = ""
+                        myLoginTimestamp = 0L
                         usernameInput = ""
                         passwordInput = ""
                         pinInput = ""
@@ -730,6 +734,8 @@ fun AdminDashboardScreen(
                                         }
                                         val admin = repository.authenticateSuperAdminByPasswordOnly(pass)
                                         if (admin != null) {
+                                            val loginTime = System.currentTimeMillis()
+                                            myLoginTimestamp = loginTime
                                             val devId = com.example.shribalajikripadham.hardware.DeviceFingerprintManager.getDeviceId(context)
                                             val devModel = com.example.shribalajikripadham.data.network.AppTelemetryManager.getDeviceModelName()
                                             val sessResult = repository.registerAdminSession(
@@ -913,6 +919,8 @@ fun AdminDashboardScreen(
                                         }
 
                                         if (admin != null) {
+                                            val loginTime = System.currentTimeMillis()
+                                            myLoginTimestamp = loginTime
                                             val devId = com.example.shribalajikripadham.hardware.DeviceFingerprintManager.getDeviceId(context)
                                             val devModel = com.example.shribalajikripadham.data.network.AppTelemetryManager.getDeviceModelName()
                                             val sessResult = repository.registerAdminSession(

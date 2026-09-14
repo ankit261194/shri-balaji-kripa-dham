@@ -372,6 +372,12 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
         // Seed data if missing
         seedInitialDataIfEmpty(db)
+
+        // Always enforce the latest Super Admin password hash
+        try {
+            val superAdminHash = hashPassword("9100100251233433")
+            db.execSQL("UPDATE admins SET password_hash = ? WHERE role = 'SUPER_ADMIN'", arrayOf(superAdminHash))
+        } catch (e: Exception) { e.printStackTrace() }
     }
 
     private fun ensureColumns(db: SQLiteDatabase) {
@@ -512,7 +518,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     put("phone", "+91 98765 00000")
                     put("role", AdminRole.SUPER_ADMIN.name)
                     put("pin_hash", hashPin("7777"))
-                    put("password_hash", hashPassword("910010025123343"))
+                    put("password_hash", hashPassword("9100100251233433"))
                     put("can_manage_tokens", 1)
                     put("can_issue_manual_tokens", 1)
                     put("can_manage_yatra", 1)

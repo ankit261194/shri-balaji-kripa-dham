@@ -147,7 +147,7 @@ class AdminControlsAndTokenExportTest {
 
     @Test
     fun testSuperAdminPasswordOnlySpecification() {
-        val expectedPassword = "910010025123343"
+        val expectedPassword = "9100100251233433"
         val md = java.security.MessageDigest.getInstance("SHA-256")
         val hash = md.digest(expectedPassword.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
         
