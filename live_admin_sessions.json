@@ -5,8 +5,8 @@
       "role": "SUPER_ADMIN",
       "device_id": "2b01861028f80b2cdbb506932fe1ec27a8f041d05d01534805212b64de18d93a",
       "device_model": "motorola edge 40 neo",
-      "session_id": "5fec376e-2766-4f44-8033-8363e349821a",
-      "logged_in_at": 1789380186397
+      "session_id": "cdc1211e-027c-4ce2-90a9-b5e142eaf3bc",
+      "logged_in_at": 1789388265360
     },
     "3": {
       "admin_id": "3",
@@ -17,5 +17,5 @@
       "logged_in_at": 1789356113631
     }
   },
-  "last_updated_at": 1789380186397
+  "last_updated_at": 1789388265360
 }
