@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-14T15:35:06Z",
+  "updated_at": "2026-09-14T15:51:58Z",
   "updated_by": "मुख्य व्यवस्थापक (Super Admin)",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -27,10 +27,10 @@
   "location_config": {
     "latitude": 28.3972915,
     "longitude": 78.146041,
-    "allowed_radius_meters": 1500,
+    "allowed_radius_meters": 200,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789400106307
+    "updated_at": 1789401118478
   },
   "services_config": {
     "is_token_service_enabled": true,
