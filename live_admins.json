@@ -1,5 +1,5 @@
 {
-  "updated_at": 1789379812413,
+  "updated_at": 1789388418570,
   "admins": [
     {
       "id": 1,
@@ -8,7 +8,7 @@
       "phone": "8533955333",
       "role": "SUPER_ADMIN",
       "is_active": true,
-      "photo_uri": "",
+      "photo_uri": "https:\/\/raw.githubusercontent.com\/ankit261194\/shri-balaji-kripa-dham\/main\/uploads\/super_admin_1789388414624.jpg",
       "pin_hash": "41c991eb6a66242c0454191244278183ce58cf4a6bcd372f799e4b9cc01886af",
       "password_hash": "b0da547e17ef5c7f74ba8038a99a13265f486ccbd5e5f663ddc84b98d8185676",
       "permissions": {
