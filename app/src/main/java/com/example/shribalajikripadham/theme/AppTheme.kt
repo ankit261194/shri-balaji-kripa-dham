@@ -165,6 +165,144 @@ enum class SacredTheme(
         cardElevation = 4.dp,
         styleNameHindi = "नियॉन गोल्ड ग्लास",
         styleBadge = "🌌 नियॉन • डार्क 16dp"
+    ),
+
+    // 7. Surya Tej Crimson / Sindoor
+    SURYA_CRIMSON(
+        id = "crimson",
+        nameHindi = "सूर्य तेज सिंदूरी",
+        nameEnglish = "Surya Crimson",
+        icon = "☀️",
+        primaryColor = Color(0xFFC2185B),
+        secondaryColor = Color(0xFFFFD54F),
+        topBarColor = Color(0xFF880E4F),
+        headerGradientStart = Color(0xFFC2185B),
+        headerGradientEnd = Color(0xFF880E4F),
+        accentGold = Color(0xFFFFE082),
+        cardBorderColor = Color(0xFFFF80AB),
+        isDark = false,
+        fontFamily = FontFamily.Serif,
+        cardShape = RoundedCornerShape(20.dp),
+        buttonShape = RoundedCornerShape(14.dp),
+        cardBorderWidth = 1.5.dp,
+        cardElevation = 4.dp,
+        styleNameHindi = "सिंदूरी सूर्य तेज",
+        styleBadge = "☀️ सिंदूरी • 20dp"
+    ),
+
+    // 8. Ayodhya Sandalwood
+    AYODHYA_SANDALWOOD(
+        id = "sandalwood",
+        nameHindi = "अयोध्या चंदन",
+        nameEnglish = "Ayodhya Sandalwood",
+        icon = "🪵",
+        primaryColor = Color(0xFF6D4C41),
+        secondaryColor = Color(0xFFFFD54F),
+        topBarColor = Color(0xFF4E342E),
+        headerGradientStart = Color(0xFF6D4C41),
+        headerGradientEnd = Color(0xFF3E2723),
+        accentGold = Color(0xFFFFECB3),
+        cardBorderColor = Color(0xFFFFD54F),
+        isDark = false,
+        fontFamily = FontFamily.Serif,
+        cardShape = RoundedCornerShape(16.dp),
+        buttonShape = RoundedCornerShape(12.dp),
+        cardBorderWidth = 1.5.dp,
+        cardElevation = 4.dp,
+        styleNameHindi = "पावन चंदन काष्ठ",
+        styleBadge = "🪵 चंदन • 16dp"
+    ),
+
+    // 9. Ganga Aarti Amber Flame
+    GANGA_AARTI_AMBER(
+        id = "amber",
+        nameHindi = "गंगा आरती दीप",
+        nameEnglish = "Ganga Aarti Amber",
+        icon = "🔥",
+        primaryColor = Color(0xFFE64A19),
+        secondaryColor = Color(0xFFFFC107),
+        topBarColor = Color(0xFFBF360C),
+        headerGradientStart = Color(0xFFE64A19),
+        headerGradientEnd = Color(0xFFD84315),
+        accentGold = Color(0xFFFFD54F),
+        cardBorderColor = Color(0xFFFFB300),
+        isDark = false,
+        fontFamily = FontFamily.SansSerif,
+        cardShape = RoundedCornerShape(22.dp),
+        buttonShape = RoundedCornerShape(16.dp),
+        cardBorderWidth = 1.5.dp,
+        cardElevation = 4.dp,
+        styleNameHindi = "महा आरती ज्योति",
+        styleBadge = "🔥 महा आरती • 22dp"
+    ),
+
+    // 10. Vrindavan Violet
+    VRINDAVAN_VIOLET(
+        id = "purple",
+        nameHindi = "राधा माधव जामुनी",
+        nameEnglish = "Vrindavan Violet",
+        icon = "🪷",
+        primaryColor = Color(0xFF512DA8),
+        secondaryColor = Color(0xFFFFD54F),
+        topBarColor = Color(0xFF311B92),
+        headerGradientStart = Color(0xFF512DA8),
+        headerGradientEnd = Color(0xFF311B92),
+        accentGold = Color(0xFFFFD54F),
+        cardBorderColor = Color(0xFFB39DDB),
+        isDark = false,
+        fontFamily = FontFamily.Serif,
+        cardShape = RoundedCornerShape(18.dp),
+        buttonShape = RoundedCornerShape(12.dp),
+        cardBorderWidth = 1.5.dp,
+        cardElevation = 4.dp,
+        styleNameHindi = "ब्रज कमल जामुनी",
+        styleBadge = "🪷 ब्रज कमल • 18dp"
+    ),
+
+    // 11. Kailash Teal
+    KAILASH_TEAL(
+        id = "teal",
+        nameHindi = "कैलाश मानसरोवर",
+        nameEnglish = "Kailash Teal",
+        icon = "🌊",
+        primaryColor = Color(0xFF00695C),
+        secondaryColor = Color(0xFFFFD54F),
+        topBarColor = Color(0xFF004D40),
+        headerGradientStart = Color(0xFF00695C),
+        headerGradientEnd = Color(0xFF004D40),
+        accentGold = Color(0xFF80CBC4),
+        cardBorderColor = Color(0xFF4DB6AC),
+        isDark = false,
+        fontFamily = FontFamily.SansSerif,
+        cardShape = RoundedCornerShape(24.dp),
+        buttonShape = RoundedCornerShape(20.dp),
+        cardBorderWidth = 1.dp,
+        cardElevation = 3.dp,
+        styleNameHindi = "पवित्र मानसरोवर",
+        styleBadge = "🌊 मानसरोवर • 24dp"
+    ),
+
+    // 12. Mahadev Rudraksha Copper
+    MAHADEV_COPPER(
+        id = "copper",
+        nameHindi = "रुद्राक्ष ताम्र",
+        nameEnglish = "Mahadev Copper",
+        icon = "🔱",
+        primaryColor = Color(0xFF4E342E),
+        secondaryColor = Color(0xFFFFB300),
+        topBarColor = Color(0xFF2E1C18),
+        headerGradientStart = Color(0xFF4E342E),
+        headerGradientEnd = Color(0xFF2E1C18),
+        accentGold = Color(0xFFFFD54F),
+        cardBorderColor = Color(0xFFFFB300),
+        isDark = false,
+        fontFamily = FontFamily.Serif,
+        cardShape = RoundedCornerShape(14.dp),
+        buttonShape = RoundedCornerShape(10.dp),
+        cardBorderWidth = 1.5.dp,
+        cardElevation = 4.dp,
+        styleNameHindi = "महाकाल रुद्राक्ष",
+        styleBadge = "🔱 रुद्राक्ष • 14dp"
     );
 
     companion object {

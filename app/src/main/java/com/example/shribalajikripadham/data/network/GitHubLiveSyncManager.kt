@@ -322,6 +322,15 @@ object GitHubLiveSyncManager {
                     }
                 } catch (e: Exception) {}
 
+                var tokenPhotoUrl = token.photoUri
+                if (tokenPhotoUrl.isNotBlank() && !tokenPhotoUrl.startsWith("http://") && !tokenPhotoUrl.startsWith("https://")) {
+                    val safeRemoteName = "token_${token.tokenNumber}_${token.darbarDate.replace('-', '_').replace('/', '_')}.jpg"
+                    val uploaded = uploadPhotoToGitHub(context, tokenPhotoUrl, safeRemoteName)
+                    if (!uploaded.isNullOrBlank()) {
+                        tokenPhotoUrl = uploaded
+                    }
+                }
+
                 // 2. Prepare token object
                 val tokenObj = JSONObject().apply {
                     put("token_number", token.tokenNumber)
@@ -334,8 +343,8 @@ object GitHubLiveSyncManager {
                     put("distance_km", token.distanceKm)
                     put("status", token.status.name)
                     put("registered_by", token.registeredBy)
-                    put("has_photo", token.photoUri.isNotBlank())
-                    put("photo_uri", token.photoUri)
+                    put("has_photo", tokenPhotoUrl.isNotBlank())
+                    put("photo_uri", tokenPhotoUrl)
                     put("is_darshan_completed", token.isDarshanCompleted)
                     put("created_at", token.createdAt)
                 }
@@ -721,6 +730,14 @@ object GitHubLiveSyncManager {
 
             val adminsArray = JSONArray()
             for (admin in admins) {
+                var finalPhotoUri = admin.photoUri
+                if (finalPhotoUri.isNotBlank() && !finalPhotoUri.startsWith("http://") && !finalPhotoUri.startsWith("https://")) {
+                    val safeRemoteName = "sevadar_${admin.username.ifBlank { admin.id.toString() }}.jpg"
+                    val uploaded = uploadPhotoToGitHub(context, finalPhotoUri, safeRemoteName)
+                    if (!uploaded.isNullOrBlank()) {
+                        finalPhotoUri = uploaded
+                    }
+                }
                 val aObj = JSONObject().apply {
                     put("id", admin.id)
                     put("name", admin.name)
@@ -728,7 +745,7 @@ object GitHubLiveSyncManager {
                     put("phone", admin.phoneNumber)
                     put("role", admin.role.name)
                     put("is_active", admin.isActive)
-                    put("photo_uri", admin.photoUri)
+                    put("photo_uri", finalPhotoUri)
                     put("pin_hash", admin.pinHash)
                     put("password_hash", admin.passwordHash)
 

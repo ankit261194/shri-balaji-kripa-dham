@@ -1785,6 +1785,28 @@ fun AdminDashboardScreen(
                                 }
                                 if (newSevPhotoUri.isNotBlank()) {
                                     OutlinedButton(
+                                        onClick = {
+                                            val rotated = DevoteePhotoHelper.rotateSavedPhoto(context, newSevPhotoUri, 90f)
+                                            if (rotated.isNotBlank()) {
+                                                newSevPhotoUri = rotated
+                                                Toast.makeText(context, if (isHindi) "🔄 फोटो 90° सीधी हो गई!" else "🔄 Photo rotated 90°!", Toast.LENGTH_SHORT).show()
+                                                scope.launch(Dispatchers.IO) {
+                                                    val safeName = "sevadar_" + System.currentTimeMillis() + ".jpg"
+                                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, rotated, safeName)
+                                                    if (!cloudUrl.isNullOrBlank()) {
+                                                        withContext(Dispatchers.Main) {
+                                                            newSevPhotoUri = cloudUrl
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronPrimary)
+                                    ) {
+                                        Text("🔄 90°", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    OutlinedButton(
                                         onClick = { newSevPhotoUri = "" },
                                         shape = RoundedCornerShape(8.dp),
                                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
@@ -2372,6 +2394,28 @@ fun AdminDashboardScreen(
                                     Text(if (isHindi) "📷 कैमरा" else "📷 Camera", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 }
                                 if (editSevPhotoUri.isNotBlank()) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            val rotated = DevoteePhotoHelper.rotateSavedPhoto(context, editSevPhotoUri, 90f)
+                                            if (rotated.isNotBlank()) {
+                                                editSevPhotoUri = rotated
+                                                Toast.makeText(context, if (isHindi) "🔄 फोटो 90° सीधी हो गई!" else "🔄 Photo rotated 90°!", Toast.LENGTH_SHORT).show()
+                                                scope.launch(Dispatchers.IO) {
+                                                    val safeName = "sevadar_" + (editingAdmin?.username ?: System.currentTimeMillis().toString()) + ".jpg"
+                                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, rotated, safeName)
+                                                    if (!cloudUrl.isNullOrBlank()) {
+                                                        withContext(Dispatchers.Main) {
+                                                            editSevPhotoUri = cloudUrl
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronPrimary)
+                                    ) {
+                                        Text("🔄 90°", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
                                     OutlinedButton(
                                         onClick = { editSevPhotoUri = "" },
                                         shape = RoundedCornerShape(8.dp),
@@ -4181,11 +4225,24 @@ fun ManualTokenTab(
                         }
 
                         if (formCapturedBitmap != null) {
-                            IconButton(onClick = {
-                                formCapturedBitmap = null
-                                formPhotoUri = ""
-                            }) {
-                                Text("✕", color = Color.Red, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = {
+                                    val currentBmp = formCapturedBitmap
+                                    if (currentBmp != null) {
+                                        val rotated = DevoteePhotoHelper.rotateBitmap(currentBmp, 90f)
+                                        formCapturedBitmap = rotated
+                                        formPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, rotated, "desk_manual")
+                                        Toast.makeText(context, if (isHindi) "🔄 फोटो 90° सीधी हो गई!" else "Photo rotated 90°!", Toast.LENGTH_SHORT).show()
+                                    }
+                                }) {
+                                    Text("🔄", fontSize = 16.sp)
+                                }
+                                IconButton(onClick = {
+                                    formCapturedBitmap = null
+                                    formPhotoUri = ""
+                                }) {
+                                    Text("✕", color = Color.Red, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                         } else {
                             OutlinedButton(
@@ -5213,11 +5270,37 @@ fun AppCustomizerTab(
                             }
                             if (gurujiPhotoUri.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(6.dp))
-                                TextButton(
-                                    onClick = { onGurujiPhotoUriChange("") },
-                                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(if (isHindi) "❌ फोटो हटाएं (Remove Photo)" else "❌ Remove Photo", fontSize = 12.sp)
+                                    OutlinedButton(
+                                        onClick = {
+                                            val rotated = DevoteePhotoHelper.rotateSavedPhoto(context, gurujiPhotoUri, 90f)
+                                            if (rotated.isNotBlank()) {
+                                                onGurujiPhotoUriChange(rotated)
+                                                Toast.makeText(context, if (isHindi) "🔄 गुरुजी की फोटो 90° सीधी हो गई!" else "🔄 Photo rotated 90°!", Toast.LENGTH_SHORT).show()
+                                                scope.launch(Dispatchers.IO) {
+                                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, rotated, "guruji_profile.jpg")
+                                                    if (!cloudUrl.isNullOrBlank()) {
+                                                        withContext(Dispatchers.Main) {
+                                                            onGurujiPhotoUriChange(cloudUrl)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronPrimary)
+                                    ) {
+                                        Text(if (isHindi) "🔄 90° सीधा करें" else "🔄 Rotate 90°", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                    TextButton(
+                                        onClick = { onGurujiPhotoUriChange("") },
+                                        colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                                    ) {
+                                        Text(if (isHindi) "❌ फोटो हटाएं" else "❌ Remove Photo", fontSize = 12.sp)
+                                    }
                                 }
                             }
                         }
@@ -6084,6 +6167,28 @@ fun SuperControlTab(
                                     Text(if (isHindi) "📷 कैमरा" else "📷 Camera", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 }
                                 if (superPhotoUri.isNotBlank()) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            val rotated = DevoteePhotoHelper.rotateSavedPhoto(context, superPhotoUri, 90f)
+                                            if (rotated.isNotBlank()) {
+                                                superPhotoUri = rotated
+                                                Toast.makeText(context, if (isHindi) "🔄 फोटो 90° सीधी हो गई!" else "🔄 Photo rotated 90°!", Toast.LENGTH_SHORT).show()
+                                                kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                                    val safeName = "super_admin_${System.currentTimeMillis()}.jpg"
+                                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, rotated, safeName)
+                                                    if (!cloudUrl.isNullOrBlank()) {
+                                                        withContext(Dispatchers.Main) {
+                                                            superPhotoUri = cloudUrl
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronPrimary)
+                                    ) {
+                                        Text("🔄 90°", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
                                     OutlinedButton(
                                         onClick = { superPhotoUri = "" },
                                         shape = RoundedCornerShape(8.dp),

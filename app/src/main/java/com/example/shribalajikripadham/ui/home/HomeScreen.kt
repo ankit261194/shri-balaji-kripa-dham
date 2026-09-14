@@ -176,35 +176,47 @@ fun HomeScreen(
         scope.launch {
             try {
                 val (synced, liveConfig) = repository.syncLiveConfigFromGitHub()
+                try { repository.syncAdminsFromGitHub() } catch (e: Exception) {}
+                try { repository.syncLiveParchasFromGitHub() } catch (e: Exception) {}
                 if (synced && liveConfig != null) {
                     if (liveConfig.sections.isNotEmpty()) {
                         uiSectionConfigs = liveConfig.sections
                     }
-                    settings = repository.getSettings()
+                    val freshSettings = repository.getSettings()
+                    settings = freshSettings
+                    if (freshSettings.isUiLayoutEnforced) {
+                        activeLayout = AppUiLayout.fromId(freshSettings.activeUiLayout)
+                    }
+                    val evs = repository.getAllEvents()
+                    if (evs.isNotEmpty()) dynamicEvents = evs
+                    activeSevadars = repository.getAllActiveSevadars()
                 }
             } catch (e: Exception) {
                 // Smooth fallback to local SQLite cache
             }
-            try {
-                repository.syncLiveParchasFromGitHub()
-            } catch (e: Exception) {}
         }
 
-        // 🔄 Continuous live sync loop (every 30 seconds) while screen is open
+        // 🔄 Continuous live sync loop (every 20 seconds) while screen is open
         scope.launch {
             while (isActive) {
-                delay(30_000)
+                delay(20_000)
                 try {
                     val (synced, liveConfig) = repository.syncLiveConfigFromGitHub()
+                    try { repository.syncAdminsFromGitHub() } catch (e: Exception) {}
+                    try { repository.syncLiveParchasFromGitHub() } catch (e: Exception) {}
                     if (synced && liveConfig != null) {
                         if (liveConfig.sections.isNotEmpty()) {
                             uiSectionConfigs = liveConfig.sections
                         }
-                        settings = repository.getSettings()
+                        val freshSettings = repository.getSettings()
+                        settings = freshSettings
+                        if (freshSettings.isUiLayoutEnforced) {
+                            activeLayout = AppUiLayout.fromId(freshSettings.activeUiLayout)
+                        }
+                        val evs = repository.getAllEvents()
+                        if (evs.isNotEmpty()) dynamicEvents = evs
+                        activeSevadars = repository.getAllActiveSevadars()
                     }
-                } catch (e: Exception) {}
-                try {
-                    repository.syncLiveParchasFromGitHub()
                 } catch (e: Exception) {}
             }
         }
@@ -372,22 +384,117 @@ fun HomeScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
 
-                    // Quick Theme Toggle
+                    // 12 SACRED THEMES SHOWCASE IN SIDEBAR DRAWER
+                    Text(
+                        text = if (isHindi) "🎨 ऐप का दिव्य रूप (12 शैलियाँ)" else "🎨 12 Divine App Styles",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = currentTheme.primaryColor,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        for (theme in SacredTheme.entries) {
+                            val isSelected = theme == currentTheme
+                            Surface(
+                                onClick = { onThemeChanged(theme) },
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) theme.primaryColor.copy(alpha = 0.12f) else Color(0xFFFBFBFB),
+                                border = BorderStroke(
+                                    width = if (isSelected) 1.5.dp else 0.6.dp,
+                                    color = if (isSelected) theme.primaryColor else Color(0xFFE0E0E0)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .clip(CircleShape)
+                                            .background(theme.primaryColor)
+                                            .border(1.dp, theme.secondaryColor, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(theme.icon, fontSize = 14.sp)
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = if (isHindi) theme.nameHindi else theme.nameEnglish,
+                                            fontSize = 12.5.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) theme.primaryColor else TextPrimaryDark,
+                                            fontFamily = theme.fontFamily
+                                        )
+                                        Text(
+                                            text = theme.styleBadge,
+                                            fontSize = 9.sp,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                    if (isSelected) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = theme.primaryColor
+                                        ) {
+                                            Text(
+                                                text = if (isHindi) "✓ सक्रिय" else "✓ Active",
+                                                color = Color.White,
+                                                fontSize = 8.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Live Cloud Sync Action Button
                     NavigationDrawerItem(
-                        icon = { Text("🎨", fontSize = 20.sp) },
+                        icon = { Text("🔄", fontSize = 20.sp) },
                         label = {
                             Text(
-                                if (isHindi) "थीम बदलें (${currentTheme.nameHindi})" else "Change Theme (${currentTheme.nameEnglish})",
-                                fontSize = 14.sp,
+                                if (isHindi) "क्लाउड से लाइव सिंक करें" else "Sync with Cloud Now",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = TextPrimaryDark
                             )
                         },
                         selected = false,
                         onClick = {
-                            val nextIndex = (SacredTheme.entries.indexOf(currentTheme) + 1) % SacredTheme.entries.size
-                            onThemeChanged(SacredTheme.entries[nextIndex])
+                            scope.launch {
+                                drawerState.close()
+                                Toast.makeText(context, if (isHindi) "🔄 क्लाउड से डेटा सिंक हो रहा है..." else "Syncing with cloud...", Toast.LENGTH_SHORT).show()
+                                try {
+                                    repository.syncLiveConfigFromGitHub()
+                                    repository.syncAdminsFromGitHub()
+                                    repository.syncLiveParchasFromGitHub()
+                                    settings = repository.getSettings()
+                                    val evs = repository.getAllEvents()
+                                    if (evs.isNotEmpty()) dynamicEvents = evs
+                                    activeSevadars = repository.getAllActiveSevadars()
+                                    uiSectionConfigs = repository.getUiSectionConfigs()
+                                    Toast.makeText(context, if (isHindi) "✅ ऐप का सारा डेटा लाइव अपडेट हो गया!" else "✅ App data updated live from cloud!", Toast.LENGTH_SHORT).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "सिंक त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         },
-                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color(0xFFF5F5F5)),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
                     )
 
@@ -554,16 +661,6 @@ fun HomeScreen(
                         }
                     ) {
                         Text("🔄", fontSize = 19.sp)
-                    }
-
-                    // Quick Theme Cycle Button
-                    IconButton(
-                        onClick = {
-                            val nextIndex = (SacredTheme.entries.indexOf(currentTheme) + 1) % SacredTheme.entries.size
-                            onThemeChanged(SacredTheme.entries[nextIndex])
-                        }
-                    ) {
-                        Text("🎨", fontSize = 20.sp)
                     }
 
                     Button(
@@ -863,110 +960,7 @@ fun HomeScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
 
-            // 6. SACRED THEMES & 360-DEGREE VISUAL STYLE CHOOSER
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = currentTheme.cardShape,
-                elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
-                border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.secondaryColor.copy(alpha = 0.6f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("🎨", fontSize = 24.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = if (isHindi) "ऍप थीम व विज़ुअल स्टाइल बदलें" else "Choose Theme & Visual Style",
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = currentTheme.primaryColor
-                            )
-                            Text(
-                                text = if (isHindi) "फॉन्ट, कार्ड्स के कोने व रंग सब कुछ बदलें" else "Customize fonts, card shapes & spiritual colors",
-                                fontSize = 12.sp,
-                                color = TextSecondaryDark
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        contentPadding = PaddingValues(vertical = 4.dp)
-                    ) {
-                        items(SacredTheme.entries) { theme ->
-                            val isSelected = theme == currentTheme
-                            Surface(
-                                onClick = { onThemeChanged(theme) },
-                                shape = theme.cardShape,
-                                color = if (isSelected) theme.primaryColor.copy(alpha = 0.12f) else Color(0xFFF7F7F7),
-                                border = BorderStroke(
-                                    if (isSelected) theme.cardBorderWidth + 0.5.dp else 1.dp,
-                                    if (isSelected) theme.primaryColor else Color(0xFFE0E0E0)
-                                ),
-                                tonalElevation = if (isSelected) 2.dp else 0.dp,
-                                modifier = Modifier.width(155.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(10.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(theme.buttonShape)
-                                            .background(theme.primaryColor)
-                                            .border(2.dp, theme.secondaryColor, theme.buttonShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(theme.icon, fontSize = 18.sp)
-                                    }
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = if (isHindi) theme.nameHindi else theme.nameEnglish,
-                                        fontSize = 12.sp,
-                                        fontFamily = theme.fontFamily,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) theme.primaryColor else TextPrimaryDark,
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 1
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = if (isSelected) theme.primaryColor.copy(alpha = 0.14f) else Color(0xFFEEEEEE)
-                                    ) {
-                                        Text(
-                                            text = theme.styleBadge,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontFamily = theme.fontFamily,
-                                            color = if (isSelected) theme.primaryColor else Color(0xFF616161),
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                    if (isSelected) {
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = "✓ " + if (isHindi) "सक्रिय" else "Active",
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = theme.fontFamily,
-                                            color = theme.primaryColor
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
 
             // 7. SOCIAL MEDIA & APP SHARE HUB (Only for alternative layouts, since Classic Darbar renders it dynamically)
             if (activeLayout != AppUiLayout.CLASSIC_DARBAR) {

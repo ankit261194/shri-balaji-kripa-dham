@@ -126,30 +126,123 @@ object DevoteePhotoHelper {
     }
 
     /**
-     * Loads a Bitmap from file path, content URI, or remote HTTP/HTTPS URL with automatic disk caching.
+     * Rotates a Bitmap by arbitrary degrees clockwise.
+     */
+    fun rotateBitmap(source: Bitmap, degrees: Float): Bitmap {
+        if (degrees % 360f == 0f) return source
+        return try {
+            val matrix = android.graphics.Matrix().apply {
+                postRotate(degrees)
+            }
+            val rotated = Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+            toSoftwareBitmap(rotated)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            source
+        }
+    }
+
+    /**
+     * Reads EXIF orientation from a content URI or file stream.
+     */
+    fun getExifOrientationDegrees(context: Context, uri: Uri): Float {
+        return try {
+            val input = context.contentResolver.openInputStream(uri) ?: return 0f
+            val exif = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                android.media.ExifInterface(input)
+            } else {
+                null
+            }
+            val orientation = exif?.getAttributeInt(
+                android.media.ExifInterface.TAG_ORIENTATION,
+                android.media.ExifInterface.ORIENTATION_NORMAL
+            ) ?: android.media.ExifInterface.ORIENTATION_NORMAL
+            input.close()
+            when (orientation) {
+                android.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                android.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                android.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                else -> 0f
+            }
+        } catch (e: Exception) {
+            0f
+        }
+    }
+
+    /**
+     * Reads EXIF orientation from a local file path.
+     */
+    fun getExifOrientationDegrees(filePath: String): Float {
+        return try {
+            val exif = android.media.ExifInterface(filePath)
+            val orientation = exif.getAttributeInt(
+                android.media.ExifInterface.TAG_ORIENTATION,
+                android.media.ExifInterface.ORIENTATION_NORMAL
+            )
+            when (orientation) {
+                android.media.ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+                android.media.ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+                android.media.ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+                else -> 0f
+            }
+        } catch (e: Exception) {
+            0f
+        }
+    }
+
+    /**
+     * Rotates an existing local photo file by degrees (default 90° clockwise)
+     * and saves it back to storage. Returns the new valid file path.
+     */
+    fun rotateSavedPhoto(context: Context, photoPath: String, degrees: Float = 90f): String {
+        return try {
+            val bmp = loadBitmap(context, photoPath) ?: return photoPath
+            val rotated = rotateBitmap(bmp, degrees)
+            saveDevoteePhoto(context, rotated, "rotated")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            photoPath
+        }
+    }
+
+    /**
+     * Loads a Bitmap from file path, content URI, or remote HTTP/HTTPS URL with automatic disk caching
+     * and automatic EXIF upright correction.
      * Ensures returned bitmap is a software bitmap.
      */
     fun loadBitmap(context: Context, photoUri: String): Bitmap? {
         if (photoUri.isBlank()) return null
         return try {
-            val loaded = when {
+            val (loadedRaw, exifDegrees) = when {
                 photoUri.startsWith("http://") || photoUri.startsWith("https://") -> {
-                    loadFromNetworkOrCache(context, photoUri)
+                    Pair(loadFromNetworkOrCache(context, photoUri), 0f)
                 }
                 photoUri.startsWith("content://") || photoUri.startsWith("android.resource://") -> {
                     val uri = Uri.parse(photoUri)
+                    val degrees = getExifOrientationDegrees(context, uri)
                     val input: InputStream? = context.contentResolver.openInputStream(uri)
-                    input?.use { BitmapFactory.decodeStream(it) }
+                    val bmp = input?.use { BitmapFactory.decodeStream(it) }
+                    Pair(bmp, degrees)
                 }
                 else -> {
                     val path = if (photoUri.startsWith("file://")) photoUri.removePrefix("file://") else photoUri
                     val file = File(path)
                     if (file.exists()) {
-                        BitmapFactory.decodeFile(file.absolutePath)
-                    } else null
+                        val degrees = getExifOrientationDegrees(file.absolutePath)
+                        val bmp = BitmapFactory.decodeFile(file.absolutePath)
+                        Pair(bmp, degrees)
+                    } else Pair(null, 0f)
                 }
             }
-            if (loaded != null) toSoftwareBitmap(loaded) else null
+
+            if (loadedRaw != null) {
+                val softBmp = toSoftwareBitmap(loadedRaw)
+                if (exifDegrees != 0f) {
+                    rotateBitmap(softBmp, exifDegrees)
+                } else {
+                    softBmp
+                }
+            } else null
         } catch (e: Exception) {
             e.printStackTrace()
             null
