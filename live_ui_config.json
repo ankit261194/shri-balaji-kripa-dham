@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-14T15:55:50Z",
-  "updated_by": "मुख्य व्यवस्थापक (Super Admin)",
+  "updated_at": "2026-09-14T15:56:06Z",
+  "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
   "ashram_details": {
@@ -30,7 +30,7 @@
     "allowed_radius_meters": 1500,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789401350626
+    "updated_at": 1789401366050
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -51,7 +51,7 @@
     "can_devotee_view_payment_history": false,
     "ashram_upi_id": "shribalajikripadham@upi",
     "ashram_upi_name": "Shri Balaji Kripa Dham",
-    "bus_seat_fare_amount": 0
+    "bus_seat_fare_amount": 1500
   },
   "sections": [
     {
