@@ -1607,14 +1607,16 @@ fun MahabaliHeroLayout(
                 accentColor = Color(0xFFE65100),
                 onClick = onNavigateToYatra
             )
-            AccordionOptionRow(
-                icon = "💰",
-                title = if (isHindi) "यात्रा व्यय एवं हिसाब-किताब" else "Yatra Expense Tracker",
-                subtitle = if (isHindi) "पारदर्शी यात्रा व्यय व खर्च का पूरा ब्यौरा" else "View transparent yatra expense ledger",
-                actionButtonText = if (isHindi) "हिसाब देखें" else "Ledger",
-                accentColor = Color(0xFF2E7D32),
-                onClick = onNavigateToYatraExpenses
-            )
+            if (settings.canDevoteeViewYatraDiary) {
+                AccordionOptionRow(
+                    icon = "💰",
+                    title = if (isHindi) "यात्रा व्यय एवं हिसाब-किताब" else "Yatra Expense Tracker",
+                    subtitle = if (isHindi) "पारदर्शी यात्रा व्यय व खर्च का पूरा ब्यौरा" else "View transparent yatra expense ledger",
+                    actionButtonText = if (isHindi) "हिसाब देखें" else "Ledger",
+                    accentColor = Color(0xFF2E7D32),
+                    onClick = onNavigateToYatraExpenses
+                )
+            }
             AccordionOptionRow(
                 icon = "🏨",
                 title = if (isHindi) "धर्मशाला व विश्राम व्यवस्था" else "Dharamshala & Accommodation",
@@ -1809,14 +1811,16 @@ fun BhaktiAccordionLayout(
                 accentColor = Color(0xFFE65100),
                 onClick = onNavigateToYatra
             )
-            AccordionOptionRow(
-                icon = "💰",
-                title = if (isHindi) "यात्रा व्यय एवं हिसाब-किताब" else "Yatra Expense Ledger",
-                subtitle = if (isHindi) "पारदर्शी लेखा-जोखा व खर्च सूची" else "Transparent expense ledger",
-                actionButtonText = if (isHindi) "व्यय देखें" else "Ledger",
-                accentColor = Color(0xFF2E7D32),
-                onClick = onNavigateToYatraExpenses
-            )
+            if (settings.canDevoteeViewYatraDiary) {
+                AccordionOptionRow(
+                    icon = "💰",
+                    title = if (isHindi) "यात्रा व्यय एवं हिसाब-किताब" else "Yatra Expense Ledger",
+                    subtitle = if (isHindi) "पारदर्शी लेखा-जोखा व खर्च सूची" else "Transparent expense ledger",
+                    actionButtonText = if (isHindi) "व्यय देखें" else "Ledger",
+                    accentColor = Color(0xFF2E7D32),
+                    onClick = onNavigateToYatraExpenses
+                )
+            }
             AccordionOptionRow(
                 icon = "🏨",
                 title = if (isHindi) "आश्रम धर्मशाला एवं ठहरने की व्यवस्था" else "Dharamshala Stay Facilities",
@@ -2058,14 +2062,16 @@ fun MandirParikramaLayout(
                         accentColor = Color(0xFFE65100),
                         onClick = onNavigateToYatra
                     )
-                    AccordionOptionRow(
-                        icon = "💰",
-                        title = if (isHindi) "यात्रा व्यय एवं खर्च" else "Yatra Expenses",
-                        subtitle = if (isHindi) "यात्रा का पारदर्शी हिसाब-किताब" else "View trip expense ledger",
-                        actionButtonText = if (isHindi) "हिसाब" else "Ledger",
-                        accentColor = Color(0xFF2E7D32),
-                        onClick = onNavigateToYatraExpenses
-                    )
+                    if (settings.canDevoteeViewYatraDiary) {
+                        AccordionOptionRow(
+                            icon = "💰",
+                            title = if (isHindi) "यात्रा व्यय एवं खर्च" else "Yatra Expenses",
+                            subtitle = if (isHindi) "यात्रा का पारदर्शी हिसाब-किताब" else "View trip expense ledger",
+                            actionButtonText = if (isHindi) "हिसाब" else "Ledger",
+                            accentColor = Color(0xFF2E7D32),
+                            onClick = onNavigateToYatraExpenses
+                        )
+                    }
                 }
             }
             3 -> {
@@ -2225,14 +2231,16 @@ fun GoldenLotusLayout(
                 accentColor = Color(0xFFE65100),
                 onClick = onNavigateToYatra
             )
-            AccordionOptionRow(
-                icon = "💰",
-                title = if (isHindi) "यात्रा व्यय हिसाब" else "Yatra Ledger",
-                subtitle = if (isHindi) "पारदर्शी यात्रा व्यय विवरण" else "Trip expenses",
-                actionButtonText = if (isHindi) "हिसाब" else "Ledger",
-                accentColor = Color(0xFF2E7D32),
-                onClick = onNavigateToYatraExpenses
-            )
+            if (settings.canDevoteeViewYatraDiary) {
+                AccordionOptionRow(
+                    icon = "💰",
+                    title = if (isHindi) "यात्रा व्यय हिसाब" else "Yatra Ledger",
+                    subtitle = if (isHindi) "पारदर्शी यात्रा व्यय विवरण" else "Trip expenses",
+                    actionButtonText = if (isHindi) "हिसाब" else "Ledger",
+                    accentColor = Color(0xFF2E7D32),
+                    onClick = onNavigateToYatraExpenses
+                )
+            }
         }
 
         // Expandable Lotus Accordion for Sevadars & Help
@@ -2417,14 +2425,16 @@ fun SiddhaPeethPortalLayout(
                     accentColor = Color(0xFFE65100),
                     onClick = onNavigateToYatra
                 )
-                AccordionOptionRow(
-                    icon = "💰",
-                    title = if (isHindi) "यात्रा व्यय हिसाब" else "Yatra Expense Ledger",
-                    subtitle = if (isHindi) "पारदर्शी यात्रा व्यय विवरण" else "Trip expenses",
-                    actionButtonText = if (isHindi) "हिसाब" else "Ledger",
-                    accentColor = Color(0xFF2E7D32),
-                    onClick = onNavigateToYatraExpenses
-                )
+                if (settings.canDevoteeViewYatraDiary) {
+                    AccordionOptionRow(
+                        icon = "💰",
+                        title = if (isHindi) "यात्रा व्यय हिसाब" else "Yatra Expense Ledger",
+                        subtitle = if (isHindi) "पारदर्शी यात्रा व्यय विवरण" else "Trip expenses",
+                        actionButtonText = if (isHindi) "हिसाब" else "Ledger",
+                        accentColor = Color(0xFF2E7D32),
+                        onClick = onNavigateToYatraExpenses
+                    )
+                }
             }
         }
 

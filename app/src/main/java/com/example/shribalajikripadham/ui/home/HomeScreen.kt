@@ -352,15 +352,17 @@ fun HomeScreen(
 
                     // Navigation Items
                     data class NavDrawerItem(val icon: String, val title: String, val action: () -> Unit)
-                    val navItems = listOf(
-                        NavDrawerItem("🏠", if (isHindi) "मुख्य पृष्ठ (Home)" else "Home", { /* Stay on home */ }),
-                        NavDrawerItem("🎟️", if (isHindi) "दरबार टोकन जनरेट करें" else "Generate Darbar Token", onNavigateToToken),
-                        NavDrawerItem("🤳", if (isHindi) "फेस वेरिफिकेशन टोकन" else "Face Token", onNavigateToFaceToken),
-                        NavDrawerItem("📜", if (isHindi) "डिजिटल पर्चा देखें" else "Digital Parchas", onNavigateToParchas),
-                        NavDrawerItem("🚗", if (isHindi) "यात्रा व दूरी विवरण" else "Yatra & Distance Info", onNavigateToYatra),
-                        NavDrawerItem("💰", if (isHindi) "यात्रा खर्च डायरी" else "Yatra Expense Diary", onNavigateToYatraExpenses),
-                        NavDrawerItem("ℹ️", if (isHindi) "आश्रम परिचय व नियम" else "Ashram Info & Rules", onNavigateToInfo),
-                        NavDrawerItem("🔄", if (isHindi) "ऐप अपडेट जांचें (Live)" else "Check App Update", {
+                    val navItems = buildList {
+                        add(NavDrawerItem("🏠", if (isHindi) "मुख्य पृष्ठ (Home)" else "Home", { /* Stay on home */ }))
+                        add(NavDrawerItem("🎟️", if (isHindi) "दरबार टोकन जनरेट करें" else "Generate Darbar Token", onNavigateToToken))
+                        add(NavDrawerItem("🤳", if (isHindi) "फेस वेरिफिकेशन टोकन" else "Face Token", onNavigateToFaceToken))
+                        add(NavDrawerItem("📜", if (isHindi) "डिजिटल पर्चा देखें" else "Digital Parchas", onNavigateToParchas))
+                        add(NavDrawerItem("🚗", if (isHindi) "यात्रा व दूरी विवरण" else "Yatra & Distance Info", onNavigateToYatra))
+                        if (settings.canDevoteeViewYatraDiary) {
+                            add(NavDrawerItem("💰", if (isHindi) "यात्रा खर्च डायरी" else "Yatra Expense Diary", onNavigateToYatraExpenses))
+                        }
+                        add(NavDrawerItem("ℹ️", if (isHindi) "आश्रम परिचय व नियम" else "Ashram Info & Rules", onNavigateToInfo))
+                        add(NavDrawerItem("🔄", if (isHindi) "ऐप अपडेट जांचें (Live)" else "Check App Update", {
                             scope.launch {
                                 drawerState.close()
                                 Toast.makeText(context, if (isHindi) "🔄 लाइव अपडेट जांच रहे हैं..." else "Checking for updates...", Toast.LENGTH_SHORT).show()
@@ -391,9 +393,9 @@ fun HomeScreen(
                                     }
                                 }
                             }
-                        }),
-                        NavDrawerItem("🔐", if (isHindi) "प्रबंधक / सेवादार लॉगिन" else "Sevadar & Admin Portal", onNavigateToAdmin)
-                    )
+                        }))
+                        add(NavDrawerItem("🔐", if (isHindi) "प्रबंधक / सेवादार लॉगिन" else "Sevadar & Admin Portal", onNavigateToAdmin))
+                    }
 
                     navItems.forEach { item ->
                         NavigationDrawerItem(

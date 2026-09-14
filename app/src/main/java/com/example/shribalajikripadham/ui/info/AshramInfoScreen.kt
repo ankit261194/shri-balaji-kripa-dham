@@ -33,6 +33,11 @@ fun AshramInfoScreen(
     val repository = remember { AshramRepository(context) }
     val scope = rememberCoroutineScope()
     var updateStatusMsg by remember { mutableStateOf<String?>(null) }
+    var settings by remember { mutableStateOf<com.example.shribalajikripadham.data.model.AshramSettings?>(null) }
+
+    LaunchedEffect(Unit) {
+        settings = repository.getSettings()
+    }
 
     Scaffold(
         topBar = {
@@ -61,7 +66,7 @@ fun AshramInfoScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // 1. FREE SERVICE MANIFESTO
+            // 1. FREE SERVICE MANIFESTO & PARICHAY
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
                 shape = RoundedCornerShape(16.dp),
@@ -70,21 +75,37 @@ fun AshramInfoScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = if (isHindi) "॥ निःशुल्क सेवा संकल्प ॥" else "|| 100% Free Service Pledge ||",
+                        text = if (isHindi) "॥ निःशुल्क सेवा संकल्प एवं पावन परिचय ॥" else "|| 100% Free Service & Ashram Intro ||",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaroonAccent
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = if (isHindi)
-                            "श्री बालाजी कृपा धाम (ग्राम डुंगरा जाट, बुलंदशहर) में पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी हवा एवं मानसिक समस्याओं से पीड़ित लोगों का इलाज पूर्णतः निःशुल्क (FREE) किया जाता है। यहाँ किसी भी प्रकार का कोई चढ़ावा या शुल्क अनिवार्य नहीं है।"
-                        else
-                            "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Bulandshahr), under Guruji Tejveer Singh Ji, healing for spiritual and mental ailments is 100% FREE. No fee or donation is ever demanded.",
+                        text = if (isHindi) {
+                            settings?.ashramParichayHindi?.ifEmpty {
+                                "श्री बालाजी कृपा धाम (ग्राम डुंगरा जाट, बुलंदशहर) में पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी हवा एवं मानसिक समस्याओं से पीड़ित लोगों का इलाज पूर्णतः निःशुल्क (FREE) किया जाता है। यहाँ किसी भी प्रकार का कोई चढ़ावा या शुल्क अनिवार्य नहीं है।"
+                            } ?: "श्री बालाजी कृपा धाम (ग्राम डुंगरा जाट, बुलंदशहर) में पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी हवा एवं मानसिक समस्याओं से पीड़ित लोगों का इलाज पूर्णतः निःशुल्क (FREE) किया जाता है।"
+                        } else {
+                            settings?.ashramParichayEnglish?.ifEmpty {
+                                "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Bulandshahr), under Guruji Tejveer Singh Ji, healing for spiritual and mental ailments is 100% FREE. No fee or donation is ever demanded."
+                            } ?: "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Bulandshahr), under Guruji Tejveer Singh Ji, healing for spiritual and mental ailments is 100% FREE. No fee or donation is ever demanded."
+                        },
                         fontSize = 13.sp,
                         color = TextPrimaryDark,
                         lineHeight = 18.sp
                     )
+
+                    settings?.ashramHistoryHindi?.takeIf { it.isNotBlank() }?.let { history ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = history,
+                            fontSize = 12.sp,
+                            color = Color(0xFF5D4037),
+                            lineHeight = 17.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
 
@@ -99,29 +120,48 @@ fun AshramInfoScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = if (isHindi) "रविवार दरबार समय व नियम" else "Sunday Darbar Schedule & Rules",
+                        text = if (isHindi) "दरबार समय व नियम" else "Darbar Schedule & Rules",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaroonAccent
                     )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "⏰ ${settings?.darbarTimings?.ifEmpty { "प्रत्येक रविवार प्रातः 7:00 बजे से" } ?: "प्रत्येक रविवार प्रातः 7:00 बजे से"}",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2E7D32)
+                    )
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    RuleRow(
-                        num = "1",
-                        text = if (isHindi) "प्रत्येक रविवार प्रातःकाल से डुंगरा जाट आश्रम पर दिव्य दरबार प्रारंभ होता है।" else "Every Sunday morning, Darbar commences at Dungra Jaat Ashram."
-                    )
-                    RuleRow(
-                        num = "2",
-                        text = if (isHindi) "टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।" else "Tokens are issued only upon physical arrival inside Ashram premises."
-                    )
-                    RuleRow(
-                        num = "3",
-                        text = if (isHindi) "एक मोबाइल डिवाइस से केवल 1 मरीज का टोकन लग सकता है।" else "Strictly 1 token per mobile device on each Sunday."
-                    )
-                    RuleRow(
-                        num = "4",
-                        text = if (isHindi) "मरीजों को केवल भगवान की पूजा-पाठ, पाठ-जाप एवं शुद्ध सात्विक नियम बताए जाते हैं।" else "Devotees are guided only with prayers, holy chanting, and spiritual disciplines."
-                    )
+                    val customRules = settings?.ashramRulesHindi?.takeIf { it.isNotBlank() }
+                    if (customRules != null) {
+                        val ruleLines = customRules.lines().filter { it.isNotBlank() }
+                        ruleLines.forEachIndexed { idx, line ->
+                            RuleRow(
+                                num = (idx + 1).toString(),
+                                text = line.replace(Regex("^\\d+[.)\\s]+"), "")
+                            )
+                        }
+                    } else {
+                        RuleRow(
+                            num = "1",
+                            text = if (isHindi) "प्रत्येक रविवार प्रातःकाल से डुंगरा जाट आश्रम पर दिव्य दरबार प्रारंभ होता है।" else "Every Sunday morning, Darbar commences at Dungra Jaat Ashram."
+                        )
+                        RuleRow(
+                            num = "2",
+                            text = if (isHindi) "टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।" else "Tokens are issued only upon physical arrival inside Ashram premises."
+                        )
+                        RuleRow(
+                            num = "3",
+                            text = if (isHindi) "एक मोबाइल डिवाइस से केवल 1 मरीज का टोकन लग सकता है।" else "Strictly 1 token per mobile device on each Sunday."
+                        )
+                        RuleRow(
+                            num = "4",
+                            text = if (isHindi) "मरीजों को केवल भगवान की पूजा-पाठ, पाठ-जाप एवं शुद्ध सात्विक नियम बताए जाते हैं।" else "Devotees are guided only with prayers, holy chanting, and spiritual disciplines."
+                        )
+                    }
                 }
             }
 

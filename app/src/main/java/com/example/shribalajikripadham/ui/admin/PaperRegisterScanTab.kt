@@ -81,18 +81,91 @@ fun PaperRegisterScanTab(
         refreshSequenceInfo()
     }
 
-    // Camera Launcher
+    val tempScanFile = remember { java.io.File(context.cacheDir, "temp_register_scan.jpg") }
+    val tempScanUri = remember {
+        try {
+            androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                tempScanFile
+            )
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // Safe Camera Launcher with downsampling to prevent TransactionTooLargeException and OOM
     val cameraLauncher = rememberLauncherForActivityResult(
-        contract = TakeAnyPicturePreview()
-    ) { bitmap ->
-        if (bitmap != null) {
-            val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
-            capturedBitmap = safeBmp
-            // Automatically pre-populate default sequential parsing lines for instant review
-            if (rawTextInput.isBlank()) {
-                rawTextInput = "1. \n2. \n3. "
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success && tempScanFile.exists()) {
+            try {
+                val options = android.graphics.BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+                android.graphics.BitmapFactory.decodeFile(tempScanFile.absolutePath, options)
+                var inSample = 1
+                if (options.outHeight > 1600 || options.outWidth > 1600) {
+                    inSample = 2
+                }
+                if (options.outHeight > 3200 || options.outWidth > 3200) {
+                    inSample = 4
+                }
+                val decodeOptions = android.graphics.BitmapFactory.Options().apply {
+                    inSampleSize = inSample
+                    inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
+                }
+                val rawBmp = android.graphics.BitmapFactory.decodeFile(tempScanFile.absolutePath, decodeOptions)
+                if (rawBmp != null) {
+                    val exifDegrees = DevoteePhotoHelper.getExifOrientationDegrees(tempScanFile.absolutePath)
+                    val orientedBmp = if (exifDegrees != 0f) {
+                        DevoteePhotoHelper.rotateBitmap(rawBmp, exifDegrees)
+                    } else rawBmp
+                    val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(orientedBmp)
+                    capturedBitmap = safeBmp
+                    if (rawTextInput.isBlank()) {
+                        rawTextInput = "1. \n2. \n3. "
+                    }
+                    Toast.makeText(context, if (isHindi) "📸 फोटो सुरक्षित लोड हुई! नाम सत्यापित करें" else "📸 Photo captured safely!", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(context, "त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-            Toast.makeText(context, if (isHindi) "📸 फोटो खींची गई! नीचे नाम दर्ज/सत्यापित करें" else "📸 Photo captured! Verify names below", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            tempScanUri?.let { uri ->
+                try {
+                    cameraLauncher.launch(uri)
+                } catch (e: Exception) {
+                    Toast.makeText(context, "कैमरा त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            Toast.makeText(context, if (isHindi) "कैमरा अनुमति अस्वीकृत!" else "Camera permission denied!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun launchRegisterCamera() {
+        val permission = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.CAMERA
+        )
+        if (permission == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            tempScanUri?.let { uri ->
+                try {
+                    cameraLauncher.launch(uri)
+                } catch (e: Exception) {
+                    Toast.makeText(context, "कैमरा त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } else {
+            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
         }
     }
 
@@ -273,12 +346,39 @@ fun PaperRegisterScanTab(
                             Spacer(modifier = Modifier.height(10.dp))
                         }
 
+                        if (capturedBitmap != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        capturedBitmap?.let { bmp ->
+                                            val rotated = DevoteePhotoHelper.rotateBitmap(bmp, 90f)
+                                            capturedBitmap = rotated
+                                            Toast.makeText(context, if (isHindi) "🔄 फोटो 90° घुमाई गई" else "Photo rotated 90°", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Text(
+                                        text = if (isHindi) "🔄 फोटो घुमाएं (90°)" else "🔄 Rotate 90°",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Button(
-                                onClick = { cameraLauncher.launch(null) },
+                                onClick = { launchRegisterCamera() },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaroonAccent),
                                 shape = RoundedCornerShape(10.dp)

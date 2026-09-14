@@ -39,14 +39,15 @@ object AppUpdateManager {
 
     suspend fun fetchLatestUpdateFromOnline(urlStr: String = DEFAULT_VERSION_JSON_URL): OnlineUpdateInfo? {
         return withContext(Dispatchers.IO) {
-            // Source 1: Direct version.json with aggressive cache-buster and zero-cache headers
             val fromVersionJson = fetchFromVersionJson(urlStr)
-            if (fromVersionJson != null) {
-                return@withContext fromVersionJson
+            val fromGitHub = fetchFromGitHubReleasesApi()
+            when {
+                fromVersionJson != null && fromGitHub != null -> {
+                    if (fromGitHub.versionCode > fromVersionJson.versionCode) fromGitHub else fromVersionJson
+                }
+                fromVersionJson != null -> fromVersionJson
+                else -> fromGitHub
             }
-
-            // Source 2: Official GitHub Releases REST API (100% real-time, completely bypasses CDN caching)
-            fetchFromGitHubReleasesApi()
         }
     }
 

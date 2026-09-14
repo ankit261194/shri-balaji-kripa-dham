@@ -35,6 +35,7 @@ import com.example.shribalajikripadham.data.repository.AdminPermissionsUpdate
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.ui.common.SacredAvatar
+import com.example.shribalajikripadham.ui.home.AppUiLayout
 import com.example.shribalajikripadham.util.*
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -270,6 +271,11 @@ fun AdminDashboardScreen(
     var svcChhotiArziRate by remember { mutableStateOf("50") }
     var svcCanAdminViewArzi by remember { mutableStateOf(false) }
     var svcCanDevoteeViewArzi by remember { mutableStateOf(false) }
+    var svcCanDevoteeViewYatraDiary by remember { mutableStateOf(false) }
+    var customParichayHindi by remember { mutableStateOf("") }
+    var customParichayEnglish by remember { mutableStateOf("") }
+    var customHistoryHindi by remember { mutableStateOf("") }
+    var customRulesHindi by remember { mutableStateOf("") }
     var svcSuccessMsg by remember { mutableStateOf<String?>(null) }
 
     // Notification broadcast
@@ -395,6 +401,11 @@ fun AdminDashboardScreen(
             svcChhotiArziRate = s.chhotiArziRate.toString()
             svcCanAdminViewArzi = s.canAdminViewArziLedger
             svcCanDevoteeViewArzi = s.canDevoteeViewArziLedger
+            svcCanDevoteeViewYatraDiary = s.canDevoteeViewYatraDiary
+            customParichayHindi = s.ashramParichayHindi
+            customParichayEnglish = s.ashramParichayEnglish
+            customHistoryHindi = s.ashramHistoryHindi
+            customRulesHindi = s.ashramRulesHindi
 
             updVersionCode = s.latestVersionCode.toString()
             updVersionName = s.latestVersionName
@@ -1512,6 +1523,8 @@ fun AdminDashboardScreen(
                                 onCanAdminViewArziChange = { svcCanAdminViewArzi = it },
                                 canDevoteeViewArzi = svcCanDevoteeViewArzi,
                                 onCanDevoteeViewArziChange = { svcCanDevoteeViewArzi = it },
+                                canDevoteeViewYatraDiary = svcCanDevoteeViewYatraDiary,
+                                onCanDevoteeViewYatraDiaryChange = { svcCanDevoteeViewYatraDiary = it },
                                 successMsg = svcSuccessMsg,
                                 onSave = {
                                     scope.launch {
@@ -1556,11 +1569,13 @@ fun AdminDashboardScreen(
                                             canAdminViewArziLedger = svcCanAdminViewArzi,
                                             canDevoteeViewArziLedger = svcCanDevoteeViewArzi
                                         )
+                                        repository.updateCanDevoteeViewYatraDiary(svcCanDevoteeViewYatraDiary)
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                         svcSuccessMsg = if (isHindi)
-                                            "सेवाएं, अर्जी दर, बस व्यवस्था व UPI पेमेंट सेटिंग्स सुरक्षित और सभी भक्तों के फोन पर लाइव अपडेट हुई!"
+                                            "सेवाएं, अर्जी दर, बस व्यवस्था, Yatra डायरी व UPI पेमेंट सेटिंग्स सुरक्षित और सभी भक्तों के फोन पर लाइव अपडेट हुई!"
                                         else
-                                            "Service visibility, Arzi rates, bus & payment settings saved & broadcast to all devotees!"
+                                            "Service visibility, Arzi rates, Yatra diary & payment settings saved & broadcast to all devotees!"
+                                        Toast.makeText(context, if (isHindi) "✓ सेटिंग्स सुरक्षित व लाइव अपडेट!" else "Settings saved & live updated!", Toast.LENGTH_SHORT).show()
                                         refreshData()
                                     }
                                 }
@@ -1585,6 +1600,14 @@ fun AdminDashboardScreen(
                                 onDisclaimerChange = { customDisclaimer = it },
                                 emergencyNotice = customEmergencyNotice,
                                 onEmergencyNoticeChange = { customEmergencyNotice = it },
+                                ashramParichayHindi = customParichayHindi,
+                                onAshramParichayHindiChange = { customParichayHindi = it },
+                                ashramParichayEnglish = customParichayEnglish,
+                                onAshramParichayEnglishChange = { customParichayEnglish = it },
+                                ashramHistoryHindi = customHistoryHindi,
+                                onAshramHistoryHindiChange = { customHistoryHindi = it },
+                                ashramRulesHindi = customRulesHindi,
+                                onAshramRulesHindiChange = { customRulesHindi = it },
                                 whatsappGroup = customWhatsappGroup,
                                 onWhatsappGroupChange = { customWhatsappGroup = it },
                                 youtubeChannel = customYoutubeChannel,
@@ -1636,8 +1659,15 @@ fun AdminDashboardScreen(
                                             customSundayTokenBannerText,
                                             customSundayTokenCustomNotice
                                         )
+                                        repository.updateAshramParichayAndRules(
+                                            customParichayHindi.trim(),
+                                            customParichayEnglish.trim(),
+                                            customHistoryHindi.trim(),
+                                            customRulesHindi.trim()
+                                        )
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                         customizerSuccessMsg = if (isHindi) "✓ आश्रम विवरण, फोटो व सोशल लिंक्स सुरक्षित व सभी भक्तों के फोन पर लाइव अपडेट हो गए!" else "Ashram details saved & published live to all users!"
+                                        Toast.makeText(context, if (isHindi) "✓ आश्रम विवरण व परिचय सुरक्षित!" else "Details saved!", Toast.LENGTH_SHORT).show()
                                         refreshData()
                                     }
                                 }
@@ -1666,6 +1696,8 @@ fun AdminDashboardScreen(
                                 isHindi = isHindi,
                                 settings = settings,
                                 superAdmin = superAdminAccount ?: (if (admin.role == AdminRole.SUPER_ADMIN) admin else null),
+                                repository = repository,
+                                onRefreshData = { refreshData() },
                                 onUpdateSuperAdminProfile = { name, phone, username, password, pin, photoUri, onResult ->
                                     scope.launch {
                                         val (ok, msg) = repository.updateSuperAdminProfile(
@@ -5133,6 +5165,8 @@ fun PublicServiceMatrixTab(
     onCanAdminViewArziChange: (Boolean) -> Unit = {},
     canDevoteeViewArzi: Boolean = false,
     onCanDevoteeViewArziChange: (Boolean) -> Unit = {},
+    canDevoteeViewYatraDiary: Boolean = false,
+    onCanDevoteeViewYatraDiaryChange: (Boolean) -> Unit = {},
     successMsg: String?,
     onSave: () -> Unit
 ) {
@@ -5623,6 +5657,44 @@ fun PublicServiceMatrixTab(
                     }
                 }
 
+                // SECTION 5: YATRA EXPENSE DIARY PRIVACY (SUPER ADMIN ONLY BY DEFAULT)
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = if (canDevoteeViewYatraDiary) Color(0xFFE8F5E9) else Color(0xFFFFF8E1)),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, if (canDevoteeViewYatraDiary) Color(0xFF81C784) else Color(0xFFFFD54F)),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Text("📔", fontSize = 20.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = if (isHindi) "यात्रा खर्च डायरी (Yatra Khata Diary) गोपनीयता" else "Yatra Expense Diary Privacy",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = MaroonPrimary
+                                    )
+                                    Text(
+                                        text = if (canDevoteeViewYatraDiary)
+                                            (if (isHindi) "🔓 खुला: भक्त व सेवादार भी यात्रा खर्च डायरी देख सकते हैं।" else "🔓 PUBLIC: Devotees can view expenses.")
+                                        else
+                                            (if (isHindi) "🔒 केवल सुपर एडमिन (अनुशंसित): भक्तों से पूर्णतः छिपा हुआ।" else "🔒 PRIVATE: Super Admin exclusive privilege."),
+                                        fontSize = 11.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                            }
+                            Switch(checked = canDevoteeViewYatraDiary, onCheckedChange = onCanDevoteeViewYatraDiaryChange)
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = onSave,
@@ -5688,6 +5760,14 @@ fun AppCustomizerTab(
     onSundayTokenBannerTextChange: (String) -> Unit = {},
     sundayTokenCustomNotice: String = "",
     onSundayTokenCustomNoticeChange: (String) -> Unit = {},
+    ashramParichayHindi: String = "",
+    onAshramParichayHindiChange: (String) -> Unit = {},
+    ashramParichayEnglish: String = "",
+    onAshramParichayEnglishChange: (String) -> Unit = {},
+    ashramHistoryHindi: String = "",
+    onAshramHistoryHindiChange: (String) -> Unit = {},
+    ashramRulesHindi: String = "",
+    onAshramRulesHindiChange: (String) -> Unit = {},
     successMsg: String?,
     events: List<AshramEvent>,
     onOpenAddEvent: () -> Unit,
@@ -5889,6 +5969,48 @@ fun AppCustomizerTab(
                         onValueChange = onEmergencyNoticeChange,
                         label = { Text("आपातकालीन सूचना पट्टी (Emergency Ticker)") },
                         modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = Color(0xFFE0E0E0))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = if (isHindi) "📖 आश्रम परिचय, इतिहास व नियम (भक्तों की स्क्रीन हेतु)" else "📖 Ashram Info, History & Rules",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaroonPrimary
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    OutlinedTextField(
+                        value = ashramParichayHindi,
+                        onValueChange = onAshramParichayHindiChange,
+                        label = { Text(if (isHindi) "आश्रम परिचय (हिंदी)" else "Ashram Introduction (Hindi)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = ashramParichayEnglish,
+                        onValueChange = onAshramParichayEnglishChange,
+                        label = { Text("Ashram Introduction (English)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = ashramHistoryHindi,
+                        onValueChange = onAshramHistoryHindiChange,
+                        label = { Text(if (isHindi) "आश्रम का पावन इतिहास (हिंदी)" else "Ashram History (Hindi)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = ashramRulesHindi,
+                        onValueChange = onAshramRulesHindiChange,
+                        label = { Text(if (isHindi) "आश्रम नियम व मर्यादा (हिंदी)" else "Ashram Rules & Guidelines") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
                     )
 
                     if (successMsg != null) {
@@ -6485,6 +6607,8 @@ fun SuperControlTab(
     isHindi: Boolean,
     settings: AshramSettings,
     superAdmin: Admin? = null,
+    repository: AshramRepository? = null,
+    onRefreshData: () -> Unit = {},
     onUpdateSuperAdminProfile: (String, String, String, String?, String?, String?, (Boolean, String) -> Unit) -> Unit = { _, _, _, _, _, _, cb -> cb(true, "") },
     onUpdateMasterPassword: (String, String, (Boolean, String) -> Unit) -> Unit,
     onUpdateMaxDailyTokens: (Int) -> Unit,
@@ -6506,6 +6630,15 @@ fun SuperControlTab(
     var superProfileErrorMsg by remember { mutableStateOf<String?>(null) }
     var superProfileSuccessMsg by remember { mutableStateOf<String?>(null) }
     var isSavingSuperProfile by remember { mutableStateOf(false) }
+
+    // Ashram Parichay, History, Rules and Yatra Diary State
+    var parichayHiInput by remember(settings.ashramParichayHindi) { mutableStateOf(settings.ashramParichayHindi) }
+    var parichayEnInput by remember(settings.ashramParichayEnglish) { mutableStateOf(settings.ashramParichayEnglish) }
+    var historyHiInput by remember(settings.ashramHistoryHindi) { mutableStateOf(settings.ashramHistoryHindi) }
+    var rulesHiInput by remember(settings.ashramRulesHindi) { mutableStateOf(settings.ashramRulesHindi) }
+    var canDevoteeYatraDiaryChecked by remember(settings.canDevoteeViewYatraDiary) { mutableStateOf(settings.canDevoteeViewYatraDiary) }
+    var ashramInfoSaveMsg by remember { mutableStateOf<String?>(null) }
+    var isSavingAshramInfo by remember { mutableStateOf(false) }
 
     val superCameraLauncher = rememberLauncherForActivityResult(
         contract = TakeAnyPicturePreview()
@@ -6954,29 +7087,37 @@ fun SuperControlTab(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    val layouts = listOf(
-                        Triple("CLASSIC_DARBAR", "श्री दरबार (Classic)", "🛕"),
-                        Triple("MODERN_CARDS", "आधुनिक कार्ड (Modern)", "📱"),
-                        Triple("VEDIC_GRID", "वैदिक ग्रिड (Grid)", "🏛️"),
-                        Triple("COMPACT_LIST", "सरल सूची (Compact)", "📋"),
-                        Triple("DIVINE_FEED", "दिव्य प्रवाह (Divine)", "✨")
-                    )
-
-                    layouts.forEach { (key, title, icon) ->
+                    AppUiLayout.entries.forEach { layout ->
+                        val isSelected = (selectedLayoutKey == layout.id)
                         Surface(
-                            onClick = { selectedLayoutKey = key },
-                            color = if (selectedLayoutKey == key) Color(0xFFFFF3E0) else Color(0xFFF9F9F9),
+                            onClick = { selectedLayoutKey = layout.id },
+                            color = if (isSelected) Color(0xFFFFF3E0) else Color(0xFFF9F9F9),
                             shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, if (selectedLayoutKey == key) SaffronPrimary else Color(0xFFE0E0E0)),
+                            border = BorderStroke(1.dp, if (isSelected) SaffronPrimary else Color(0xFFE0E0E0)),
                             modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(icon, fontSize = 16.sp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(title, fontWeight = if (selectedLayoutKey == key) FontWeight.Bold else FontWeight.Normal, fontSize = 13.sp)
+                                Text(layout.icon, fontSize = 18.sp)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isHindi) "${layout.titleHindi} (${layout.titleEnglish})" else layout.titleEnglish,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) MaroonPrimary else Color.Black
+                                    )
+                                    Text(
+                                        text = layout.subtitleHindi,
+                                        fontSize = 11.sp,
+                                        color = Color.Gray
+                                    )
+                                }
+                                if (isSelected) {
+                                    Text("✓ सक्रिय", color = SaffronPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
                             }
                         }
                     }
@@ -7001,13 +7142,153 @@ fun SuperControlTab(
                     Button(
                         onClick = {
                             onUpdateEnforcedLayout(selectedLayoutKey, isEnforcedChecked)
-                            layoutSuccessMsg = if (isHindi) "UI लेआउट नियम सफलतापूर्वक सुरक्षित हुआ!" else "Layout policy saved successfully!"
+                            layoutSuccessMsg = if (isHindi) "UI लेआउट नियम सफलतापूर्वक सुरक्षित हुआ और सभी उपयोगकर्ताओं पर लागू हुआ!" else "Layout policy saved successfully!"
+                            Toast.makeText(context, if (isHindi) "✓ लेआउट सेटिंग्स सुरक्षित!" else "Layout settings saved!", Toast.LENGTH_SHORT).show()
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth().height(46.dp)
                     ) {
                         Text(if (isHindi) "💾 लेआउट नियम सुरक्षित करें" else "💾 Save Layout Policy", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // 3.5 ASHRAM PARICHAY, HISTORY, RULES & YATRA DIARY PRIVACY (SUPER ADMIN DIRECT CONTROL)
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(2.dp),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = if (isHindi) "📖 आश्रम परिचय, इतिहास, नियम व यात्रा डायरी संपादक" else "📖 Ashram Info, History, Rules & Yatra Diary",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaroonPrimary
+                    )
+                    Text(
+                        text = if (isHindi)
+                            "सुपर एडमिन सीधे यहाँ से संपूर्ण आश्रम का परिचय, इतिहास, नियम व यात्रा खर्च डायरी की गोपनीयता नियंत्रित कर सकते हैं।"
+                            else "Control Ashram Introduction, History, Rules, and Yatra Khata Diary access.",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Yatra Diary Privacy Toggle
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = if (canDevoteeYatraDiaryChecked) Color(0xFFE8F5E9) else Color(0xFFFFF3E0)),
+                        border = BorderStroke(1.dp, if (canDevoteeYatraDiaryChecked) Color(0xFF81C784) else Color(0xFFFFB74D)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isHindi) "यात्रा खर्च डायरी (Yatra Diary) प्राइवेसी" else "Yatra Expense Diary Privacy",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = MaroonPrimary
+                                    )
+                                    Text(
+                                        text = if (canDevoteeYatraDiaryChecked)
+                                            (if (isHindi) "🔓 सार्वजनिक: भक्त भी यात्रा खर्च देख सकते हैं।" else "🔓 PUBLIC: Devotees can view expenses.")
+                                        else
+                                            (if (isHindi) "🔒 केवल सुपर एडमिन (अनुशंसित): भक्तों से पूर्णतः गोपनीय।" else "🔒 PRIVATE: Super Admin exclusive privilege."),
+                                        fontSize = 11.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                                Switch(
+                                    checked = canDevoteeYatraDiaryChecked,
+                                    onCheckedChange = { canDevoteeYatraDiaryChecked = it }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    OutlinedTextField(
+                        value = parichayHiInput,
+                        onValueChange = { parichayHiInput = it; ashramInfoSaveMsg = null },
+                        label = { Text(if (isHindi) "आश्रम परिचय (हिंदी)" else "Ashram Info (Hindi)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = parichayEnInput,
+                        onValueChange = { parichayEnInput = it; ashramInfoSaveMsg = null },
+                        label = { Text("Ashram Introduction (English)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = historyHiInput,
+                        onValueChange = { historyHiInput = it; ashramInfoSaveMsg = null },
+                        label = { Text(if (isHindi) "आश्रम का पावन इतिहास (हिंदी)" else "Ashram History (Hindi)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = rulesHiInput,
+                        onValueChange = { rulesHiInput = it; ashramInfoSaveMsg = null },
+                        label = { Text(if (isHindi) "आश्रम नियम व मर्यादा (हिंदी)" else "Ashram Rules & Guidelines") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 3
+                    )
+
+                    if (ashramInfoSaveMsg != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(ashramInfoSaveMsg!!, color = Color(0xFF2E7D32), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = {
+                            isSavingAshramInfo = true
+                            ashramInfoSaveMsg = null
+                            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                if (repository != null) {
+                                    repository.updateAshramParichayAndRules(
+                                        parichayHindi = parichayHiInput.trim(),
+                                        parichayEnglish = parichayEnInput.trim(),
+                                        historyHindi = historyHiInput.trim(),
+                                        rulesHindi = rulesHiInput.trim()
+                                    )
+                                    repository.updateCanDevoteeViewYatraDiary(canDevoteeYatraDiaryChecked)
+                                    try {
+                                        repository.publishCurrentSettingsToGitHub(superAdmin?.name ?: "SUPER_ADMIN")
+                                    } catch (e: Exception) {}
+                                }
+                                withContext(Dispatchers.Main) {
+                                    isSavingAshramInfo = false
+                                    ashramInfoSaveMsg = if (isHindi) "✓ आश्रम परिचय, इतिहास, नियम व प्राइवेसी सेटिंग्स सुरक्षित!" else "Settings saved!"
+                                    Toast.makeText(context, if (isHindi) "✓ आश्रम विवरण व प्राइवेसी सुरक्षित!" else "Saved successfully!", Toast.LENGTH_SHORT).show()
+                                    onRefreshData()
+                                }
+                            }
+                        },
+                        enabled = !isSavingAshramInfo,
+                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().height(46.dp)
+                    ) {
+                        Text(
+                            text = if (isSavingAshramInfo) (if (isHindi) "सुरक्षित हो रहा है..." else "Saving...") else (if (isHindi) "💾 आश्रम विवरण व प्राइवेसी सुरक्षित करें" else "💾 Save Info & Privacy"),
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }

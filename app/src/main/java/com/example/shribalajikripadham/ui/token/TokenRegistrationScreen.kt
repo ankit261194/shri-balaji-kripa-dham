@@ -1,6 +1,7 @@
 package com.example.shribalajikripadham.ui.token
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -92,7 +93,11 @@ fun TokenRegistrationScreen(
         contract = TakeFrontPicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
-            val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+            var safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+            // Front camera on Android phones is usually landscape sensor (width > height). Auto-rotate to portrait:
+            if (safeBmp.width > safeBmp.height) {
+                safeBmp = DevoteePhotoHelper.rotateBitmap(safeBmp, 270f)
+            }
             capturedBitmap = safeBmp
             capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, safeBmp, "devotee_selfie")
             errorMessage = null
@@ -303,12 +308,20 @@ fun TokenRegistrationScreen(
     LaunchedEffect(originAddress) {
         val q = originAddress.trim()
         if (q.length >= 2) {
-            locationSuggestions = com.example.shribalajikripadham.util.IndiaLocationsDatabase.search(q, maxLimit = 6)
-            showLocationDropdown = locationSuggestions.isNotEmpty()
+            val localResults = com.example.shribalajikripadham.util.IndiaLocationsDatabase.search(q, maxLimit = 8)
+            if (localResults.isNotEmpty()) {
+                locationSuggestions = localResults
+                showLocationDropdown = true
+            } else if (q.length >= 3) {
+                locationSuggestions = com.example.shribalajikripadham.util.IndiaLocationsDatabase.searchWithOnlineFallback(q, maxLimit = 8)
+                showLocationDropdown = locationSuggestions.isNotEmpty()
+            }
             isCalculatingDistance = true
             try {
                 val res = DistanceCalculatorService.calculateRoadDistance(q)
-                estimatedDistanceKm = res.distanceKm
+                if (res.distanceKm >= 0f) {
+                    estimatedDistanceKm = res.distanceKm
+                }
             } catch (e: Exception) {
                 // Ignore
             } finally {
@@ -1063,51 +1076,72 @@ fun TokenRegistrationScreen(
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        OutlinedButton(
-                                            onClick = { launchCameraSafely() },
-                                            shape = RoundedCornerShape(20.dp),
-                                            border = BorderStroke(1.dp, SaffronPrimary),
-                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                                        ) {
-                                            Text(
-                                                text = if (isHindi) "🔄 पुनः खींचें" else "🔄 Retake",
-                                                fontSize = 11.sp,
-                                                color = SaffronPrimary,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                        OutlinedButton(
-                                            onClick = { galleryLauncher.launch("image/*") },
-                                            shape = RoundedCornerShape(20.dp),
-                                            border = BorderStroke(1.dp, Color(0xFF1976D2)),
-                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                                        ) {
-                                            Text(
-                                                text = if (isHindi) "🖼️ गैलरी से बदलें" else "🖼️ From Gallery",
-                                                fontSize = 11.sp,
-                                                color = Color(0xFF1976D2),
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                        TextButton(
-                                            onClick = {
-                                                capturedBitmap = null
-                                                capturedPhotoUri = ""
-                                            },
-                                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
-                                        ) {
-                                            Text(
-                                                text = if (isHindi) "❌ हटाएं" else "❌ Remove",
-                                                fontSize = 11.sp,
-                                                color = Color.Red
-                                            )
-                                        }
-                                    }
+                                     Spacer(modifier = Modifier.height(8.dp))
+                                     Row(
+                                         horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                         verticalAlignment = Alignment.CenterVertically,
+                                         modifier = Modifier.fillMaxWidth()
+                                     ) {
+                                         Button(
+                                             onClick = {
+                                                 capturedBitmap?.let { bmp ->
+                                                     val rotated = DevoteePhotoHelper.rotateBitmap(bmp, 90f)
+                                                     capturedBitmap = rotated
+                                                     capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, rotated, "devotee_rotated")
+                                                     Toast.makeText(context, if (isHindi) "🔄 फोटो 90° घुमाई गई" else "Photo rotated 90°", Toast.LENGTH_SHORT).show()
+                                                 }
+                                             },
+                                             shape = RoundedCornerShape(20.dp),
+                                             colors = ButtonDefaults.buttonColors(containerColor = MaroonAccent),
+                                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                         ) {
+                                             Text(
+                                                 text = if (isHindi) "🔄 फोटो घुमाएं (90°)" else "🔄 Rotate 90°",
+                                                 fontSize = 11.sp,
+                                                 color = AmberGold,
+                                                 fontWeight = FontWeight.Bold
+                                             )
+                                         }
+                                         OutlinedButton(
+                                             onClick = { launchCameraSafely() },
+                                             shape = RoundedCornerShape(20.dp),
+                                             border = BorderStroke(1.dp, SaffronPrimary),
+                                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                         ) {
+                                             Text(
+                                                 text = if (isHindi) "📸 पुनः लें" else "📸 Retake",
+                                                 fontSize = 11.sp,
+                                                 color = SaffronPrimary,
+                                                 fontWeight = FontWeight.Bold
+                                             )
+                                         }
+                                         OutlinedButton(
+                                             onClick = { galleryLauncher.launch("image/*") },
+                                             shape = RoundedCornerShape(20.dp),
+                                             border = BorderStroke(1.dp, Color(0xFF1976D2)),
+                                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                         ) {
+                                             Text(
+                                                 text = if (isHindi) "🖼️ गैलरी" else "🖼️ Gallery",
+                                                 fontSize = 11.sp,
+                                                 color = Color(0xFF1976D2),
+                                                 fontWeight = FontWeight.Bold
+                                             )
+                                         }
+                                         TextButton(
+                                             onClick = {
+                                                 capturedBitmap = null
+                                                 capturedPhotoUri = ""
+                                             },
+                                             contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp)
+                                         ) {
+                                             Text(
+                                                 text = if (isHindi) "❌ हटाएं" else "❌ Remove",
+                                                 fontSize = 11.sp,
+                                                 color = Color.Red
+                                             )
+                                         }
+                                     }
                                 } else {
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,

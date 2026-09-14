@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -11,6 +12,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -106,6 +108,25 @@ fun FaceTokenRegistrationScreen(
     var manualPhone by remember { mutableStateOf("") }
     var manualCity by remember { mutableStateOf("") }
     var enrollFaceForFuture by remember { mutableStateOf(true) }
+    var locationSuggestions by remember { mutableStateOf<List<com.example.shribalajikripadham.util.IndiaLocation>>(emptyList()) }
+    var showLocationDropdown by remember { mutableStateOf(false) }
+
+    LaunchedEffect(manualCity) {
+        val q = manualCity.trim()
+        if (q.length >= 2) {
+            val localResults = com.example.shribalajikripadham.util.IndiaLocationsDatabase.search(q, maxLimit = 8)
+            if (localResults.isNotEmpty()) {
+                locationSuggestions = localResults
+                showLocationDropdown = true
+            } else if (q.length >= 3) {
+                locationSuggestions = com.example.shribalajikripadham.util.IndiaLocationsDatabase.searchWithOnlineFallback(q, maxLimit = 8)
+                showLocationDropdown = locationSuggestions.isNotEmpty()
+            }
+        } else {
+            locationSuggestions = emptyList()
+            showLocationDropdown = false
+        }
+    }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
@@ -195,12 +216,15 @@ fun FaceTokenRegistrationScreen(
         }
     }
 
-    // Camera launcher for actual photo capture (defaults to front selfie camera)
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = TakeFrontPicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
-            val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+            var safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+            // Front camera on Android phones is usually landscape sensor (width > height). Auto-rotate to portrait:
+            if (safeBmp.width > safeBmp.height) {
+                safeBmp = DevoteePhotoHelper.rotateBitmap(safeBmp, 270f)
+            }
             capturedBitmap = safeBmp
             capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, safeBmp, "face_token")
             processCapturedFace(safeBmp)
@@ -1246,6 +1270,28 @@ fun FaceTokenRegistrationScreen(
                                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                             )
                                         }
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Button(
+                                            onClick = {
+                                                capturedBitmap?.let { bmp ->
+                                                    val rotated = DevoteePhotoHelper.rotateBitmap(bmp, 90f)
+                                                    capturedBitmap = rotated
+                                                    capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, rotated, "face_rotated")
+                                                    processCapturedFace(rotated)
+                                                    Toast.makeText(context, if (isHindi) "🔄 फोटो 90° घुमाई गई" else "Photo rotated 90°", Toast.LENGTH_SHORT).show()
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(20.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaroonAccent),
+                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = if (isHindi) "🔄 फोटो घुमाएं (90°)" else "🔄 Rotate 90°",
+                                                fontSize = 11.sp,
+                                                color = AmberGold,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1322,6 +1368,41 @@ fun FaceTokenRegistrationScreen(
                                     labelColor = Color(0xFF333333)
                                 )
                             )
+
+                            if (showLocationDropdown && locationSuggestions.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA)),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.5f)),
+                                    elevation = CardDefaults.cardElevation(3.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(6.dp)) {
+                                        locationSuggestions.forEach { loc ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        manualCity = loc.nameHindi
+                                                        showLocationDropdown = false
+                                                    }
+                                                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text("📍", fontSize = 14.sp)
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = "${loc.nameHindi} (${loc.stateHindi}) • ${loc.distanceKm} किमी",
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color(0xFF111111)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
 
                             Spacer(modifier = Modifier.height(12.dp))
 

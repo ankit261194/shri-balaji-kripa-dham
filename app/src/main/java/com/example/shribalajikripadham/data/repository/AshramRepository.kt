@@ -108,11 +108,57 @@ class AshramRepository(context: Context) {
                 badiArziRate = try { cursor.getDouble(cursor.getColumnIndexOrThrow("badi_arzi_rate")) } catch (e: Exception) { 100.0 },
                 chhotiArziRate = try { cursor.getDouble(cursor.getColumnIndexOrThrow("chhoti_arzi_rate")) } catch (e: Exception) { 50.0 },
                 canAdminViewArziLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_admin_view_arzi_ledger")) == 1 } catch (e: Exception) { true },
-                canDevoteeViewArziLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_arzi_ledger")) == 1 } catch (e: Exception) { false }
+                canDevoteeViewArziLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_arzi_ledger")) == 1 } catch (e: Exception) { false },
+                canDevoteeViewYatraDiary = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_yatra_diary")) == 1 } catch (e: Exception) { false },
+                ashramParichayHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_hindi")) ?: "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" } catch (e: Exception) { "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" },
+                ashramParichayEnglish = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_english")) ?: "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Shikarpur, Bulandshahr, UP), healing is 100% free under Guruji Tejveer Singh Ji." } catch (e: Exception) { "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Shikarpur, Bulandshahr, UP), healing is 100% free under Guruji Tejveer Singh Ji." },
+                ashramHistoryHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_history_hindi")) ?: "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है।" } catch (e: Exception) { "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है।" },
+                ashramRulesHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_rules_hindi")) ?: "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" } catch (e: Exception) { "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" }
             )
         }
         cursor.close()
         settings
+    }
+
+    suspend fun updateCanDevoteeViewYatraDiary(canView: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        try {
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN can_devotee_view_yatra_diary INTEGER DEFAULT 0")
+        } catch (ignored: Exception) {}
+        val cv = android.content.ContentValues().apply {
+            put("can_devotee_view_yatra_diary", if (canView) 1 else 0)
+        }
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+        }
+        res
+    }
+
+    suspend fun updateAshramParichayAndRules(
+        parichayHindi: String,
+        parichayEnglish: String,
+        historyHindi: String,
+        rulesHindi: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        try {
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN ashram_parichay_hindi TEXT")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN ashram_parichay_english TEXT")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN ashram_history_hindi TEXT")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN ashram_rules_hindi TEXT")
+        } catch (ignored: Exception) {}
+        val cv = android.content.ContentValues().apply {
+            put("ashram_parichay_hindi", parichayHindi)
+            put("ashram_parichay_english", parichayEnglish)
+            put("ashram_history_hindi", historyHindi)
+            put("ashram_rules_hindi", rulesHindi)
+        }
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+        }
+        res
     }
 
     suspend fun updateAshramDetails(
@@ -3687,12 +3733,53 @@ class AshramRepository(context: Context) {
             expCursor.close()
         } catch (e: Exception) {}
 
+        // 4. Fetch Direct QR Payments, Donations, Sewa & Dakshina
+        var donationTotal = 0.0
+        var donationPaid = 0.0
+        var donationCount = 0
+
+        try {
+            val payments = getAllPayments()
+            val dateFmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+            for (p in payments) {
+                // If payment has seatNumbers or purpose is BUS_BOOKING, bus seats table already counts it
+                val isBusPayment = p.seatNumbers.isNotBlank() || p.purpose.contains("BUS", ignoreCase = true)
+                if (!isBusPayment) {
+                    val isPaid = (p.paymentStatus.equals("PAID", ignoreCase = true) || p.paymentStatus.equals("SUCCESS", ignoreCase = true))
+                    donationCount++
+                    donationTotal += p.amount
+                    if (isPaid) donationPaid += p.amount
+
+                    val pDate = if (p.timestamp > 0L) dateFmt.format(java.util.Date(p.timestamp)) else ""
+
+                    entries.add(
+                        UnifiedLedgerEntry(
+                            id = "PAY_${p.paymentId.ifEmpty { p.id.toString() }}",
+                            date = pDate,
+                            category = "UPI_QR_DONATION",
+                            categoryTitleHindi = "दान / दक्षिणा / क्यूआर (${p.purpose.ifEmpty { "सहयोग राशि" }})",
+                            devoteeOrPerson = p.devoteeName.ifEmpty { "अनाम भक्त" },
+                            phone = p.devoteePhone,
+                            details = "माध्यम: ${p.paymentApp.ifEmpty { p.paymentMode }} | ट्रांजैक्शन: ${p.transactionId.ifEmpty { "N/A" }}",
+                            amount = p.amount,
+                            isInflow = true,
+                            isPaid = isPaid,
+                            paymentMode = p.paymentMode.ifEmpty { "UPI_QR" },
+                            timestamp = if (p.timestamp > 0L) p.timestamp else System.currentTimeMillis(),
+                            recordedBy = p.verifiedBy.ifEmpty { "ADMIN" },
+                            notes = p.notes
+                        )
+                    )
+                }
+            }
+        } catch (e: Exception) {}
+
         // Sort all entries descending by timestamp
         entries.sortByDescending { it.timestamp }
 
-        val totalInflow = busTotal + arziTotal
-        val totalPaidInflow = busPaid + arziPaid
-        val totalPendingInflow = busPending + arziPending
+        val totalInflow = busTotal + arziTotal + donationTotal
+        val totalPaidInflow = busPaid + arziPaid + donationPaid
+        val totalPendingInflow = busPending + arziPending + (donationTotal - donationPaid)
         val netBalance = totalPaidInflow - expenseTotal
 
         UnifiedMasterFinancialSummary(
@@ -3710,6 +3797,9 @@ class AshramRepository(context: Context) {
             arziPendingAmount = arziPending,
             arziBadiCount = arziBadiCount,
             arziChhotiCount = arziChhotiCount,
+            donationTotalAmount = donationTotal,
+            donationPaidAmount = donationPaid,
+            donationCount = donationCount,
             expenseTotalAmount = expenseTotal,
             expenseCount = expenseCount,
             entries = entries

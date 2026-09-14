@@ -50,6 +50,9 @@ data class UnifiedMasterFinancialSummary(
     val arziPendingAmount: Double = 0.0,
     val arziBadiCount: Int = 0,
     val arziChhotiCount: Int = 0,
+    val donationTotalAmount: Double = 0.0,
+    val donationPaidAmount: Double = 0.0,
+    val donationCount: Int = 0,
     val expenseTotalAmount: Double = 0.0,
     val expenseCount: Int = 0,
     val entries: List<UnifiedLedgerEntry> = emptyList()

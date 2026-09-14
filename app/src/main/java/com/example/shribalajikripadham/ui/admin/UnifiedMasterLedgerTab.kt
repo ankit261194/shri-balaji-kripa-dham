@@ -4,21 +4,26 @@ import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shribalajikripadham.data.model.AshramSettings
+import com.example.shribalajikripadham.data.model.PaymentRecord
 import com.example.shribalajikripadham.data.model.UnifiedLedgerEntry
 import com.example.shribalajikripadham.data.model.UnifiedMasterFinancialSummary
 import com.example.shribalajikripadham.data.repository.AshramRepository
@@ -45,8 +50,18 @@ fun UnifiedMasterLedgerTab(
 
     var summary by remember { mutableStateOf(UnifiedMasterFinancialSummary()) }
     var isLoading by remember { mutableStateOf(true) }
-    var selectedCategoryFilter by remember { mutableStateOf("ALL") } // ALL, ARZI_BOX, BUS_BOOKING, ASHRAM_EXPENSE
+    var selectedCategoryFilter by remember { mutableStateOf("ALL") } // ALL, ARZI_BOX, BUS_BOOKING, UPI_QR_DONATION, ASHRAM_EXPENSE
     var searchQuery by remember { mutableStateOf("") }
+
+    // Dialog State for adding payment / donation / dakshina
+    var showAddPaymentDialog by remember { mutableStateOf(false) }
+    var newPayerName by remember { mutableStateOf("") }
+    var newPayerPhone by remember { mutableStateOf("") }
+    var newAmountStr by remember { mutableStateOf("") }
+    var newPurpose by remember { mutableStateOf("सामान्य दान/सहयोग") }
+    var newPaymentMode by remember { mutableStateOf("CASH") }
+    var newNotes by remember { mutableStateOf("") }
+    var isSubmittingPayment by remember { mutableStateOf(false) }
 
     fun loadData() {
         scope.launch {
@@ -65,6 +80,7 @@ fun UnifiedMasterLedgerTab(
             val matchesCategory = when (selectedCategoryFilter) {
                 "ARZI_BOX" -> entry.category == "ARZI_BOX"
                 "BUS_BOOKING" -> entry.category == "BUS_BOOKING"
+                "UPI_QR_DONATION" -> entry.category == "UPI_QR_DONATION"
                 "ASHRAM_EXPENSE" -> entry.category == "ASHRAM_EXPENSE"
                 else -> true
             }
@@ -108,16 +124,28 @@ fun UnifiedMasterLedgerTab(
                         )
                     }
 
-                    IconButton(
-                        onClick = {
-                            loadData()
-                            Toast.makeText(context, if (isHindi) "महा-लेजर रीफ्रेश हुआ" else "Ledger refreshed", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(Color.White.copy(alpha = 0.2f), CircleShape)
-                    ) {
-                        Text("🔄", fontSize = 18.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Button(
+                            onClick = { showAddPaymentDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MaroonPrimary),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Text(if (isHindi) "+ नया भुगतान" else "+ Add Payment", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        IconButton(
+                            onClick = {
+                                loadData()
+                                Toast.makeText(context, if (isHindi) "महा-लेजर रीफ्रेश हुआ" else "Ledger refreshed", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                        ) {
+                            Text("🔄", fontSize = 18.sp)
+                        }
                     }
                 }
 
@@ -184,22 +212,22 @@ fun UnifiedMasterLedgerTab(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // 2. Service-Specific Quick Stats Cards
+        // 2. Service-Specific Quick Stats Cards (4 Columns / 2 Rows)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Card(
                 modifier = Modifier.weight(1f),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 border = BorderStroke(1.dp, Color(0xFFE0E0E0))
             ) {
-                Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("📦 अर्जी डिब्बे", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
-                    Text("₹${summary.arziTotalAmount.toInt()}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
-                    Text("चुकता: ₹${summary.arziPaidAmount.toInt()}", fontSize = 10.sp, color = Color.DarkGray)
+                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("📦 अर्जी", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                    Text("₹${summary.arziTotalAmount.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
+                    Text("चुकता: ₹${summary.arziPaidAmount.toInt()}", fontSize = 9.sp, color = Color.DarkGray)
                 }
             }
 
@@ -208,10 +236,10 @@ fun UnifiedMasterLedgerTab(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 border = BorderStroke(1.dp, Color(0xFFE0E0E0))
             ) {
-                Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("🚌 बस बुकिंग", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SaffronPrimary)
-                    Text("₹${summary.busTotalAmount.toInt()}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
-                    Text("${summary.busBookedSeatsCount} सीटें बुक", fontSize = 10.sp, color = Color.DarkGray)
+                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("🚌 बस", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SaffronPrimary)
+                    Text("₹${summary.busTotalAmount.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
+                    Text("${summary.busBookedSeatsCount} सीटें", fontSize = 9.sp, color = Color.DarkGray)
                 }
             }
 
@@ -220,10 +248,22 @@ fun UnifiedMasterLedgerTab(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 border = BorderStroke(1.dp, Color(0xFFE0E0E0))
             ) {
-                Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("💸 आश्रम खर्च", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFC62828))
-                    Text("₹${summary.expenseTotalAmount.toInt()}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFFC62828))
-                    Text("${summary.expenseCount} खर्चे", fontSize = 10.sp, color = Color.DarkGray)
+                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("🙏 दान/QR", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6A1B9A))
+                    Text("₹${summary.donationTotalAmount.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
+                    Text("${summary.donationCount} प्रविष्टियां", fontSize = 9.sp, color = Color.DarkGray)
+                }
+            }
+
+            Card(
+                modifier = Modifier.weight(1f),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+            ) {
+                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("💸 खर्च", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFC62828))
+                    Text("₹${summary.expenseTotalAmount.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFC62828))
+                    Text("${summary.expenseCount} खर्चे", fontSize = 9.sp, color = Color.DarkGray)
                 }
             }
         }
@@ -243,8 +283,11 @@ fun UnifiedMasterLedgerTab(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Category Filter Chips
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Category Filter Chips in horizontal scroll
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
             FilterChip(
                 selected = selectedCategoryFilter == "ALL",
                 onClick = { selectedCategoryFilter = "ALL" },
@@ -261,9 +304,142 @@ fun UnifiedMasterLedgerTab(
                 label = { Text("🚌 बस (${summary.entries.count { it.category == "BUS_BOOKING" }})", fontSize = 11.sp) }
             )
             FilterChip(
+                selected = selectedCategoryFilter == "UPI_QR_DONATION",
+                onClick = { selectedCategoryFilter = "UPI_QR_DONATION" },
+                label = { Text("🙏 दान/क्यूआर (${summary.entries.count { it.category == "UPI_QR_DONATION" }})", fontSize = 11.sp) }
+            )
+            FilterChip(
                 selected = selectedCategoryFilter == "ASHRAM_EXPENSE",
                 onClick = { selectedCategoryFilter = "ASHRAM_EXPENSE" },
                 label = { Text("💸 खर्च (${summary.expenseCount})", fontSize = 11.sp) }
+            )
+        }
+
+        // Add Manual Payment Dialog
+        if (showAddPaymentDialog) {
+            AlertDialog(
+                onDismissRequest = { if (!isSubmittingPayment) showAddPaymentDialog = false },
+                title = {
+                    Text(
+                        text = if (isHindi) "🙏 नया दान / दक्षिणा / भुगतान जोड़ें" else "Add New Payment / Donation",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaroonPrimary
+                    )
+                },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = newPayerName,
+                            onValueChange = { newPayerName = it },
+                            label = { Text(if (isHindi) "भक्त / दाता का नाम *" else "Devotee Name *") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = newPayerPhone,
+                            onValueChange = { newPayerPhone = it },
+                            label = { Text(if (isHindi) "मोबाइल नंबर" else "Mobile Number") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = newAmountStr,
+                            onValueChange = { newAmountStr = it },
+                            label = { Text(if (isHindi) "राशि (₹) *" else "Amount (₹) *") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = newPurpose,
+                            onValueChange = { newPurpose = it },
+                            label = { Text(if (isHindi) "प्रयोजन (जैसे: सामान्य दान, सेवा, भंडारा)" else "Purpose") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        Text(
+                            text = if (isHindi) "भुगतान का माध्यम:" else "Payment Mode:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.DarkGray
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf("CASH" to "नकद (Cash)", "UPI_QR" to "UPI / QR", "BANK" to "बैंक ट्रांसफर").forEach { (modeKey, modeTitle) ->
+                                FilterChip(
+                                    selected = newPaymentMode == modeKey,
+                                    onClick = { newPaymentMode = modeKey },
+                                    label = { Text(modeTitle, fontSize = 10.sp) }
+                                )
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = newNotes,
+                            onValueChange = { newNotes = it },
+                            label = { Text(if (isHindi) "टिप्पणी / रसीद नंबर (वैकल्पिक)" else "Notes / Receipt #") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val amt = newAmountStr.toDoubleOrNull() ?: 0.0
+                            if (newPayerName.isBlank()) {
+                                Toast.makeText(context, if (isHindi) "कृपया भक्त का नाम दर्ज करें" else "Enter devotee name", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+                            if (amt <= 0.0) {
+                                Toast.makeText(context, if (isHindi) "कृपया मान्य राशि दर्ज करें" else "Enter valid amount", Toast.LENGTH_SHORT).show()
+                                return@Button
+                            }
+                            isSubmittingPayment = true
+                            scope.launch {
+                                val rec = PaymentRecord(
+                                    paymentId = "MANUAL_${System.currentTimeMillis()}",
+                                    devoteeName = newPayerName.trim(),
+                                    devoteePhone = newPayerPhone.trim(),
+                                    paymentApp = newPaymentMode,
+                                    transactionId = "TXN_${System.currentTimeMillis().toString().takeLast(6)}",
+                                    amount = amt,
+                                    purpose = newPurpose.trim().ifEmpty { "सामान्य दान/सहयोग" },
+                                    timestamp = System.currentTimeMillis(),
+                                    paymentStatus = "SUCCESS",
+                                    paymentMode = newPaymentMode,
+                                    verifiedBy = if (isSuper) "SUPER_ADMIN" else "ADMIN",
+                                    notes = newNotes.trim()
+                                )
+                                repository.recordPayment(rec)
+                                isSubmittingPayment = false
+                                showAddPaymentDialog = false
+                                newPayerName = ""
+                                newPayerPhone = ""
+                                newAmountStr = ""
+                                newNotes = ""
+                                loadData()
+                                Toast.makeText(context, if (isHindi) "✓ भुगतान रिकॉर्ड सुरक्षित हो गया!" else "Payment recorded successfully!", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        enabled = !isSubmittingPayment,
+                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
+                    ) {
+                        Text(if (isSubmittingPayment) "जोड़ रहे हैं..." else "सुरक्षित करें (Save)")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { if (!isSubmittingPayment) showAddPaymentDialog = false }
+                    ) {
+                        Text(if (isHindi) "रद्द करें" else "Cancel")
+                    }
+                }
             )
         }
 
@@ -317,6 +493,7 @@ private fun UnifiedLedgerEntryRow(
     val categoryIcon = when (entry.category) {
         "ARZI_BOX" -> "📦"
         "BUS_BOOKING" -> "🚌"
+        "UPI_QR_DONATION" -> "🙏"
         "ASHRAM_EXPENSE" -> "💸"
         else -> "💰"
     }
@@ -324,8 +501,9 @@ private fun UnifiedLedgerEntryRow(
     val categoryBg = when (entry.category) {
         "ARZI_BOX" -> Color(0xFFFFF3E0)
         "BUS_BOOKING" -> Color(0xFFE3F2FD)
+        "UPI_QR_DONATION" -> Color(0xFFF3E5F5)
         "ASHRAM_EXPENSE" -> Color(0xFFFFEBEE)
-        else -> Color(0xFFF3E5F5)
+        else -> Color(0xFFF5F5F5)
     }
 
     Card(

@@ -49,8 +49,56 @@ object DistanceCalculatorService {
         "local" to 0f,
 
         // Bulandshahr District Villages & Towns
+        "रौंडा" to 8f,
+        "रौण्डा" to 8f,
+        "रोन्डा" to 8f,
+        "ronda" to 8f,
+        "raunda" to 8f,
+        "rawanda" to 8f,
+        "चांदोक" to 6f,
+        "chandok" to 6f,
+        "बहादुरपुर" to 7f,
+        "bahadurpur" to 7f,
         "सलेमपुर" to 8f,
         "salampur" to 8f,
+        "हबीबपुर" to 9f,
+        "habibpur" to 9f,
+        "तौली" to 10f,
+        "tauli" to 10f,
+        "दरियापुर" to 10f,
+        "dariyapur" to 10f,
+        "तैयबपुर" to 10f,
+        "taiyabpur" to 10f,
+        "कमालपुर" to 11f,
+        "kamalpur" to 11f,
+        "चिरौरी" to 11f,
+        "chirauri" to 11f,
+        "लखावटी" to 12f,
+        "lakhaoti" to 12f,
+        "जटपुरा" to 12f,
+        "jatpura" to 12f,
+        "बरौली" to 12f,
+        "barauli" to 12f,
+        "करौरा" to 13f,
+        "karaura" to 13f,
+        "भटौना" to 14f,
+        "bhatoona" to 14f,
+        "सिरोधन" to 14f,
+        "sirodhan" to 14f,
+        "सैदपुर" to 15f,
+        "saidpur" to 15f,
+        "मुबारिकपुर" to 15f,
+        "mubarikpur" to 15f,
+        "मामन कलां" to 16f,
+        "maman kalan" to 16f,
+        "धमेड़ा" to 16f,
+        "dhamera" to 16f,
+        "मामन खुर्द" to 17f,
+        "maman khurd" to 17f,
+        "सबितगढ़" to 18f,
+        "sabitgarh" to 18f,
+        "अगौता" to 18f,
+        "agauta" to 18f,
         "बावन" to 6f,
         "bavan" to 6f,
         "छोटाबांस" to 5f,
@@ -300,17 +348,20 @@ object DistanceCalculatorService {
             }
         }
 
-        // 3. Fallback to Device GPS Coordinates (if valid and not at origin)
+        // 3. Fallback to Device GPS Coordinates ONLY if origin was empty or user explicitly requested GPS
         if (deviceLat != null && deviceLng != null && deviceLat > 0 && deviceLng > 0) {
-            val straightKm = haversineDistanceKm(deviceLat, deviceLng, DESTINATION_LAT, DESTINATION_LNG)
-            val roadEstimated = straightKm * 1.28f
-            val rounded = (round(roadEstimated * 10) / 10)
-            return@withContext DistanceResult(
-                distanceKm = rounded,
-                isEstimated = true,
-                origin = if (trimmed.isNotEmpty()) trimmed else "GPS स्थान",
-                destination = DESTINATION_NAME
-            )
+            val isGpsQuery = trimmed.isEmpty() || trimmed.contains("gps", ignoreCase = true) || trimmed.contains("स्थान", ignoreCase = true) || trimmed.contains("वर्तमान", ignoreCase = true)
+            if (isGpsQuery) {
+                val straightKm = haversineDistanceKm(deviceLat, deviceLng, DESTINATION_LAT, DESTINATION_LNG)
+                val roadEstimated = straightKm * 1.28f
+                val rounded = (round(roadEstimated * 10) / 10)
+                return@withContext DistanceResult(
+                    distanceKm = rounded,
+                    isEstimated = true,
+                    origin = if (trimmed.isNotEmpty()) trimmed else "वर्तमान GPS स्थान",
+                    destination = DESTINATION_NAME
+                )
+            }
         }
 
         return@withContext DistanceResult(

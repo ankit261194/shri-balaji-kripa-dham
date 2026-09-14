@@ -29,14 +29,38 @@ data class IndiaLocation(
 object IndiaLocationsDatabase {
 
     private val LOCATIONS: List<IndiaLocation> = listOf(
-        // 1. LOCAL VILLAGES & GRAM PANCHAYATS AROUND DUNGRA JAAT
+        // 1. LOCAL VILLAGES & GRAM PANCHAYATS AROUND DUNGRA JAAT & BULANDSHAHR
         IndiaLocation("डूँगरा जाट (स्थानीय आश्रम)", "Dungra Jaat (Local Ashram)", "स्थानीय गाँव", "बुलन्दशहर", 0f),
         IndiaLocation("डूँगरा जाट", "Dungra Jaat", "स्थानीय गाँव", "बुलन्दशहर", 0f),
+        IndiaLocation("रौंडा", "Ronda", "स्थानीय गाँव", "बुलन्दशहर", 8f),
+        IndiaLocation("रौण्डा", "Raunda", "स्थानीय गाँव", "बुलन्दशहर", 8f),
+        IndiaLocation("रोन्डा", "Rawanda", "स्थानीय गाँव", "बुलन्दशहर", 8f),
+        IndiaLocation("चांदोक", "Chandok", "स्थानीय गाँव", "बुलन्दशहर", 6f),
         IndiaLocation("छोटाबांस", "Chhota Bans", "स्थानीय गाँव", "बुलन्दशहर", 5f),
         IndiaLocation("बावन", "Bavan", "स्थानीय गाँव", "बुलन्दशहर", 6f),
         IndiaLocation("बड़ाबांस", "Bada Bans", "स्थानीय गाँव", "बुलन्दशहर", 7f),
+        IndiaLocation("बहादुरपुर", "Bahadurpur", "स्थानीय गाँव", "बुलन्दशहर", 7f),
         IndiaLocation("सलेमपुर", "Salampur", "स्थानीय गाँव", "बुलन्दशहर", 8f),
+        IndiaLocation("हबीबपुर", "Habibpur", "स्थानीय गाँव", "बुलन्दशहर", 9f),
+        IndiaLocation("तौली", "Tauli", "स्थानीय गाँव", "बुलन्दशहर", 10f),
+        IndiaLocation("दरियापुर", "Dariyapur", "स्थानीय गाँव", "बुलन्दशहर", 10f),
+        IndiaLocation("तैयबपुर", "Taiyabpur", "स्थानीय गाँव", "बुलन्दशहर", 10f),
+        IndiaLocation("कमालपुर", "Kamalpur", "स्थानीय गाँव", "बुलन्दशहर", 11f),
+        IndiaLocation("चिरौरी", "Chirauri", "स्थानीय गाँव", "बुलन्दशहर", 11f),
+        IndiaLocation("लखावटी", "Lakhaoti", "स्थानीय गाँव", "बुलन्दशहर", 12f),
+        IndiaLocation("जटपुरा", "Jatpura", "स्थानीय गाँव", "बुलन्दशहर", 12f),
+        IndiaLocation("बरौली", "Barauli", "स्थानीय गाँव", "बुलन्दशहर", 12f),
+        IndiaLocation("करौरा", "Karaura", "स्थानीय गाँव", "बुलन्दशहर", 13f),
         IndiaLocation("शिकारपुर", "Shikarpur", "तहसील / कस्बा", "बुलन्दशहर", 14f),
+        IndiaLocation("भटौना", "Bhatoona", "स्थानीय गाँव", "बुलन्दशहर", 14f),
+        IndiaLocation("सिरोधन", "Sirodhan", "स्थानीय गाँव", "बुलन्दशहर", 14f),
+        IndiaLocation("सैदपुर", "Saidpur", "स्थानीय गाँव", "बुलन्दशहर", 15f),
+        IndiaLocation("मुबारिकपुर", "Mubarikpur", "स्थानीय गाँव", "बुलन्दशहर", 15f),
+        IndiaLocation("मामन कलां", "Maman Kalan", "स्थानीय गाँव", "बुलन्दशहर", 16f),
+        IndiaLocation("धमेड़ा", "Dhamera", "स्थानीय गाँव", "बुलन्दशहर", 16f),
+        IndiaLocation("मामन खुर्द", "Maman Khurd", "स्थानीय गाँव", "बुलन्दशहर", 17f),
+        IndiaLocation("सबितगढ़", "Sabitgarh", "स्थानीय गाँव", "बुलन्दशहर", 18f),
+        IndiaLocation("अगौता", "Agauta", "स्थानीय गाँव", "बुलन्दशहर", 18f),
         IndiaLocation("वलीपुरा", "Walipura", "स्थानीय गाँव", "बुलन्दशहर", 20f),
         IndiaLocation("बुलन्दशहर", "Bulandshahr", "ज़िला (UP)", "उत्तर प्रदेश", 22f),
         IndiaLocation("जहाँगीराबाद", "Jahangirabad", "तहसील / कस्बा", "बुलन्दशहर", 24f),
@@ -49,10 +73,12 @@ object IndiaLocationsDatabase {
         IndiaLocation("चोला", "Chola", "तहसील / कस्बा", "बुलन्दशहर", 35f),
         IndiaLocation("अनूपशहर", "Anupshahr", "तहसील / कस्बा", "बुलन्दशहर", 36f),
         IndiaLocation("खुर्जा", "Khurja", "तहसील / कस्बा", "बुलन्दशहर", 38f),
+        IndiaLocation("अहार", "Ahar", "तहसील / कस्बा", "बुलन्दशहर", 42f),
         IndiaLocation("गुलावठी", "Gulaothi", "तहसील / कस्बा", "बुलन्दशहर", 42f),
         IndiaLocation("बुगरासी", "Bugrasi", "तहसील / कस्बा", "बुलन्दशहर", 42f),
         IndiaLocation("जवां", "Jawan", "तहसील / कस्बा", "अलीगढ़", 42f),
         IndiaLocation("डिबाई", "Debai", "तहसील / कस्बा", "बुलन्दशहर", 44f),
+        IndiaLocation("नरौरा", "Narora", "तहसील / कस्बा", "बुलन्दशहर", 45f),
         IndiaLocation("सिकंदराबाद", "Sikandrabad", "तहसील / कस्बा", "बुलन्दशहर", 45f),
         IndiaLocation("अरनिया", "Arnia", "तहसील / कस्बा", "बुलन्दशहर", 45f),
         IndiaLocation("ककोड़", "Kakore", "तहसील / कस्बा", "बुलन्दशहर", 45f),
@@ -243,4 +269,49 @@ object IndiaLocationsDatabase {
     }
 
     fun getAllLocations(): List<IndiaLocation> = LOCATIONS
+
+    suspend fun searchWithOnlineFallback(query: String, maxLimit: Int = 8): List<IndiaLocation> {
+        val localMatches = search(query, maxLimit)
+        if (localMatches.isNotEmpty() || query.trim().length < 3) {
+            return localMatches
+        }
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val q = query.trim()
+                val encoded = java.net.URLEncoder.encode("$q, India", "UTF-8")
+                val url = java.net.URL("https://nominatim.openstreetmap.org/search?q=$encoded&format=json&limit=4&countrycodes=in&addressdetails=1")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.connectTimeout = 3000
+                conn.readTimeout = 3000
+                conn.setRequestProperty("User-Agent", "SBKD-App/2.31")
+                if (conn.responseCode in 200..299) {
+                    val resp = conn.inputStream.bufferedReader().use { it.readText() }
+                    val arr = org.json.JSONArray(resp)
+                    val onlineResults = mutableListOf<IndiaLocation>()
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        val name = obj.optString("name", q)
+                        val lat = obj.optDouble("lat", 0.0)
+                        val lon = obj.optDouble("lon", 0.0)
+                        val addr = obj.optJSONObject("address")
+                        val state = addr?.optString("state", "भारत") ?: "भारत"
+                        val type = obj.optString("type", "स्थान")
+                        val straightKm = DistanceCalculatorService.haversineDistanceKm(lat, lon, DistanceCalculatorService.DESTINATION_LAT, DistanceCalculatorService.DESTINATION_LNG)
+                        val roadKm = (Math.round(straightKm * 1.25f * 10f) / 10f)
+                        onlineResults.add(
+                            IndiaLocation(
+                                nameHindi = name,
+                                nameEnglish = name,
+                                category = if (type == "village" || type == "hamlet") "स्थानीय गाँव" else "कस्बा / शहर",
+                                stateHindi = state,
+                                distanceKm = roadKm
+                            )
+                        )
+                    }
+                    if (onlineResults.isNotEmpty()) return@withContext onlineResults.take(maxLimit)
+                }
+            } catch (ignored: Exception) {}
+            localMatches
+        }
+    }
 }

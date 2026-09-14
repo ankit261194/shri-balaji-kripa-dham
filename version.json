@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 37,
-  "latest_version_name": "2.29.1",
-  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.29.1 अपडेट: 1. सिंगल-डिवाइस एडमिन सुरक्षा सुधार: जब नए फोन में लॉगिन होगा तो पुराना फोन स्वतः सुरक्षित रूप से लॉगआउट हो जाएगा; नया फोन कभी बंद नहीं होगा। 2. सुपर एडमिन का नया 16-अंकीय पासवर्ड पूर्णतः लागू। 3. रीयल-टाइम क्लाउड सेशन सिंक व फास्टली सीडीएन कैश बाईपास।",
-  "update_notes_english": "Shri Balaji Kripa Dham v2.29.1 Update: 1. Single-device Admin session security fix: New login properly logs out older devices while keeping the new device active without loop logouts. 2. Super Admin new 16-digit password active. 3. Real-time cloud session sync bypassing CDN cache.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.29.1/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 39,
+  "latest_version_name": "2.31.0",
+  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.31.0 अपडेट: 1. ऑटो-अपडेट इंजन में सुधार। 2. फोटो घुमाने का 90° बटन व फ्रंट कैमरा ऑटो-सीधा फीचर। 3. रजिस्टर स्कैन कैमरा क्रैश पूर्णतः ठीक। 4. रौंडा (8 किमी) व पूरे भारत के गांव-कस्बों की सटीक लोकेशन व दूरी। 5. यात्रा खर्च डायरी केवल सुपर एडमिन के पास। 6. आश्रम परिचय व सभी 10 UI लेआउट्स पर सुपर एडमिन का पूरा नियंत्रण। 7. बटन क्लिक फीडबैक। 8. क्यूआर पेमेंट महा-लेजर ऑडिट।",
+  "update_notes_english": "Shri Balaji Kripa Dham v2.31.0 Update: 1. Auto-update engine fix. 2. 90° photo rotation button & front camera orientation fix. 3. Paper register scan crash resolved. 4. Pan-India village & town suggestions with Ronda (8km) accurate distance. 5. Yatra expense diary restricted to Super Admin. 6. Full Super Admin control on Ashram info & all 10 UI layouts. 7. Button tactile click feedback. 8. QR payments audit ledger.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.31.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }
