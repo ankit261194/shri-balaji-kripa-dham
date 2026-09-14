@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-14T12:19:43Z",
+  "updated_at": "2026-09-14T12:19:45Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -9,7 +9,7 @@
     "address": "ग्राम डूंगरा जाट, तहसील शिकारपुर, जिला बुलन्दशहर (उ.प्र.)",
     "contact_phone": "8533955333",
     "contact_phone_secondary": "",
-    "whatsapp_number": "8171064598",
+    "whatsapp_number": "8533955333",
     "darbar_timings": "प्रत्येक रविवार प्रातः 8:30 बजे से प्रभु इच्छा तक",
     "free_disclaimer": "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।",
     "whatsapp_group_url": "https:\/\/chat.whatsapp.com\/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4",
@@ -17,7 +17,7 @@
     "facebook_page_url": "https:\/\/www.facebook.com\/ShriBalajiKripaDham",
     "instagram_url": "https:\/\/www.instagram.com\/shribalajikripadham",
     "app_share_url": "https:\/\/shribalajikripadham.org\/app",
-    "guruji_photo_url": ""
+    "guruji_photo_url": "https:\/\/raw.githubusercontent.com\/ankit261194\/shri-balaji-kripa-dham\/main\/uploads\/guruji_profile.jpg"
   },
   "emergency_notice": {
     "is_enabled": true,
@@ -30,7 +30,7 @@
     "allowed_radius_meters": 1500,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789388383740
+    "updated_at": 1789388385541
   },
   "services_config": {
     "is_token_service_enabled": true,
