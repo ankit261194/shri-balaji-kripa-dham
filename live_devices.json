@@ -1,6 +1,6 @@
 {
   "total_devices": 2,
-  "updated_at": 1789373203487,
+  "updated_at": 1789379231033,
   "devices": [
     {
       "device_id": "2b01861028f80b2cdbb506932fe1ec27a8f041d05d01534805212b64de18d93a",
@@ -8,9 +8,9 @@
       "user_name": "Ankit Chaudhary (Super Admin)",
       "phone_number": "+91 98765 00000",
       "city": "",
-      "app_version": "2.28.0",
-      "last_seen_at": 1789373203487,
-      "open_count": 19,
+      "app_version": "2.28.1",
+      "last_seen_at": 1789379231033,
+      "open_count": 20,
       "role": "ADMIN"
     },
     {
