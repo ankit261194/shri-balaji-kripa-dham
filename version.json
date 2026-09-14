@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 34,
-  "latest_version_name": "2.28.3",
-  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.28.3 महा-अपडेट: 1. संपूर्ण 10 UI Looks (राजसी दरबार, आधुनिक फ्लोटिंग, वैदिक ग्रिड, त्वरित सूची, दर्शन फीड, महाबली डैशबोर्ड, भक्ति संगम, मंदिर परिक्रमा, गोल्डन लोटस, सिद्ध पीठ)। 2. साइडबार ड्रॉवर (☰) में 10 UI Looks का 1-टैप सीधा चयन। 3. सभी बहु-विकल्पीय सेवाओं में सुंदर स्क्रॉल-डाउन ड्रॉपडाउन (Expandable Accordions)। 4. फोटो EXIF ऑटो-रोटेशन व क्लाउड CDN सिंक।",
-  "update_notes_english": "Shri Balaji Kripa Dham v2.28.3 Major Update: 1. 10 Complete UI Architectural Looks (Royal Darbar, Modern Floating, Vedic Grid, Speed Compact, Divine Feed, Mahabali Hero, Bhakti Accordions, Mandir Parikrama, Golden Lotus, Siddha Peeth Portal). 2. 1-tap Look selection directly in the Toggle Sidebar Drawer (☰). 3. Smooth scroll-down expandable accordions for all multi-option services. 4. Automatic EXIF orientation & Cloud CDN photo sync.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.28.3/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 35,
+  "latest_version_name": "2.28.4",
+  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.28.4 महा-अपडेट: 1. ऑटोमैटिक इन-ऐप अपडेट फिक्स—अब बिना स्टोरेज क्लियर किए हर फोन पर नया अपडेट तुरंत दिखेगा। 2. बैकग्राउंड में 20 सेकंड का लाइव ऑटो-अपडेट चेकर। 3. टॉप बार (🔄) एवं साइडबार में 1-टैप लाइव अपडेट। 4. संपूर्ण 10 UI Looks व स्मूथ स्क्रॉल-डाउन ड्रॉपडाउन।",
+  "update_notes_english": "Shri Balaji Kripa Dham v2.28.4 Major Update: 1. Automatic In-App Update Zero-Cache Fix (No need to clear app storage). 2. Continuous 20s background auto-update checker. 3. 1-tap live update check in Top Bar (🔄) and Drawer (☰). 4. 10 Full UI Architectural Looks with smooth scroll-down accordions.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.28.4/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

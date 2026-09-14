@@ -39,39 +39,122 @@ object AppUpdateManager {
 
     suspend fun fetchLatestUpdateFromOnline(urlStr: String = DEFAULT_VERSION_JSON_URL): OnlineUpdateInfo? {
         return withContext(Dispatchers.IO) {
-            try {
-                val url = URL(urlStr)
-                val conn = url.openConnection() as HttpURLConnection
-                conn.connectTimeout = 8000
-                conn.readTimeout = 8000
-                conn.requestMethod = "GET"
-                conn.setRequestProperty("User-Agent", "BalajiApp-UpdateCheck")
-                conn.setRequestProperty("Accept", "application/json")
-                if (conn.responseCode == HttpURLConnection.HTTP_OK) {
-                    val reader = conn.inputStream.bufferedReader()
-                    val response = reader.readText()
-                    reader.close()
-                    val json = JSONObject(response)
-                    val parsedApkUrl = when {
-                        json.has("apk_url") && json.optString("apk_url").isNotBlank() -> json.optString("apk_url")
-                        json.has("apk_download_url") && json.optString("apk_download_url").isNotBlank() -> json.optString("apk_download_url")
-                        else -> DEFAULT_APK_URL
-                    }
-                    OnlineUpdateInfo(
-                        versionCode = json.optInt("latest_version_code", 1),
-                        versionName = json.optString("latest_version_name", "1.0"),
-                        updateNotesHindi = json.optString("update_notes_hindi", ""),
-                        updateNotesEnglish = json.optString("update_notes_english", ""),
-                        apkUrl = parsedApkUrl,
-                        isForce = json.optBoolean("is_force_update", false),
-                        webhookUrl = json.optString("webhook_url", "")
-                    )
-                } else {
-                    null
+            // Source 1: Direct version.json with aggressive cache-buster and zero-cache headers
+            val fromVersionJson = fetchFromVersionJson(urlStr)
+            if (fromVersionJson != null) {
+                return@withContext fromVersionJson
+            }
+
+            // Source 2: Official GitHub Releases REST API (100% real-time, completely bypasses CDN caching)
+            fetchFromGitHubReleasesApi()
+        }
+    }
+
+    private fun fetchFromVersionJson(baseUrl: String): OnlineUpdateInfo? {
+        return try {
+            val delimiter = if (baseUrl.contains("?")) "&" else "?"
+            val cacheBusterUrl = "$baseUrl${delimiter}nocache=${System.currentTimeMillis()}&rand=${(1000..9999).random()}"
+            val url = URL(cacheBusterUrl)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            conn.useCaches = false
+            conn.defaultUseCaches = false
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("User-Agent", "BalajiApp-UpdateCheck/2.28")
+            conn.setRequestProperty("Accept", "application/json")
+            conn.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate")
+            conn.setRequestProperty("Pragma", "no-cache")
+            conn.setRequestProperty("Expires", "0")
+
+            if (conn.responseCode in 200..299) {
+                val response = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                conn.disconnect()
+                val json = JSONObject(response)
+                val parsedApkUrl = when {
+                    json.has("apk_url") && json.optString("apk_url").isNotBlank() -> json.optString("apk_url")
+                    json.has("apk_download_url") && json.optString("apk_download_url").isNotBlank() -> json.optString("apk_download_url")
+                    else -> DEFAULT_APK_URL
                 }
-            } catch (e: Exception) {
+                OnlineUpdateInfo(
+                    versionCode = json.optInt("latest_version_code", 1),
+                    versionName = json.optString("latest_version_name", "1.0"),
+                    updateNotesHindi = json.optString("update_notes_hindi", ""),
+                    updateNotesEnglish = json.optString("update_notes_english", ""),
+                    apkUrl = parsedApkUrl,
+                    isForce = json.optBoolean("is_force_update", false),
+                    webhookUrl = json.optString("webhook_url", "")
+                )
+            } else {
+                conn.disconnect()
                 null
             }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun fetchFromGitHubReleasesApi(): OnlineUpdateInfo? {
+        return try {
+            val url = URL("https://api.github.com/repos/ankit261194/shri-balaji-kripa-dham/releases/latest?nocache=${System.currentTimeMillis()}")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            conn.useCaches = false
+            conn.defaultUseCaches = false
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("User-Agent", "BalajiApp-UpdateCheck/2.28")
+            conn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            conn.setRequestProperty("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate")
+            conn.setRequestProperty("Pragma", "no-cache")
+
+            if (conn.responseCode in 200..299) {
+                val response = conn.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                conn.disconnect()
+                val json = JSONObject(response)
+                val tagName = json.optString("tag_name", "")
+                val name = json.optString("name", "")
+                val body = json.optString("body", "")
+
+                var apkDownloadUrl = ""
+                val assets = json.optJSONArray("assets")
+                if (assets != null) {
+                    for (i in 0 until assets.length()) {
+                        val asset = assets.getJSONObject(i)
+                        val assetName = asset.optString("name", "")
+                        if (assetName.endsWith(".apk", ignoreCase = true)) {
+                            apkDownloadUrl = asset.optString("browser_download_url", "")
+                            if (assetName.contains("release", ignoreCase = true) || assetName.contains("v2.", ignoreCase = true)) {
+                                break
+                            }
+                        }
+                    }
+                }
+                if (apkDownloadUrl.isBlank()) {
+                    apkDownloadUrl = DEFAULT_APK_URL
+                }
+
+                // Extract build number from release title or body e.g. "Build #35" or "(Build #35)"
+                val combinedText = "$name $body $tagName"
+                val buildMatch = Regex("""Build\s*#?(\d+)""", RegexOption.IGNORE_CASE).find(combinedText)
+                val parsedCode = buildMatch?.groupValues?.get(1)?.toIntOrNull() ?: 1
+                val verClean = tagName.removePrefix("v").trim()
+
+                OnlineUpdateInfo(
+                    versionCode = parsedCode,
+                    versionName = verClean.ifEmpty { "2.28.4" },
+                    updateNotesHindi = body.ifEmpty { name },
+                    updateNotesEnglish = name,
+                    apkUrl = apkDownloadUrl,
+                    isForce = true,
+                    webhookUrl = ""
+                )
+            } else {
+                conn.disconnect()
+                null
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -214,6 +297,15 @@ object AppUpdateManager {
         } catch (_: Exception) {}
 
         try {
+            // Clean up any old cached APK files from cacheDir to ensure fresh download
+            try {
+                context.cacheDir.listFiles()?.forEach { f ->
+                    if (f.name.endsWith(".apk", ignoreCase = true)) {
+                        f.delete()
+                    }
+                }
+            } catch (_: Exception) {}
+
             val targetFile = File(context.cacheDir, "ShriBalajiKripaDham_update.apk")
             if (targetFile.exists()) {
                 targetFile.delete()
@@ -229,10 +321,13 @@ object AppUpdateManager {
                 connection = (urlObj.openConnection() as HttpURLConnection).apply {
                     connectTimeout = 15000
                     readTimeout = 30000
+                    useCaches = false
+                    defaultUseCaches = false
                     instanceFollowRedirects = true
                     requestMethod = "GET"
                     setRequestProperty("User-Agent", "ShriBalajiKripaDham-Updater/2.0")
                     setRequestProperty("Accept-Encoding", "identity")
+                    setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
                 }
                 connection.connect()
 

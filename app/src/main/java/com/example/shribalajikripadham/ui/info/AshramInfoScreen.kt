@@ -240,13 +240,27 @@ fun AshramInfoScreen(
                     Button(
                         onClick = {
                             scope.launch {
-                                val s = repository.getSettings()
+                                updateStatusMsg = if (isHindi) "🔄 नवीनतम अपडेट जांच रहे हैं..." else "🔄 Checking online for updates..."
                                 val currentCode = AppUpdateManager.getCurrentVersionCode(context)
-                                if (AppUpdateManager.isUpdateAvailable(currentCode, s.latestVersionCode)) {
-                                    updateStatusMsg = if (isHindi) "नया संस्करण उपलब्ध है! डाउनलोड शुरू हो रहा है..." else "New version available! Starting download..."
-                                    AppUpdateManager.downloadAndInstallUpdate(context, s.apkDownloadUrl)
+                                val onlineInfo = AppUpdateManager.fetchLatestUpdateFromOnline()
+                                if (onlineInfo != null && onlineInfo.versionCode > currentCode) {
+                                    repository.updateAppUpdateConfig(
+                                        latestVersionCode = onlineInfo.versionCode,
+                                        latestVersionName = onlineInfo.versionName,
+                                        updateNotes = if (isHindi) onlineInfo.updateNotesHindi else onlineInfo.updateNotesEnglish,
+                                        apkDownloadUrl = onlineInfo.apkUrl,
+                                        isForceUpdate = onlineInfo.isForce
+                                    )
+                                    updateStatusMsg = if (isHindi) "नया संस्करण v${onlineInfo.versionName} उपलब्ध है! डाउनलोड शुरू हो रहा है..." else "New version v${onlineInfo.versionName} available! Starting download..."
+                                    AppUpdateManager.downloadAndInstallUpdate(context, onlineInfo.apkUrl)
                                 } else {
-                                    updateStatusMsg = if (isHindi) "आपका ऐप पहले से ही नवीनतम संस्करण पर है (v${s.latestVersionName})" else "App is already up to date (v${s.latestVersionName})"
+                                    val s = repository.getSettings()
+                                    if (AppUpdateManager.isUpdateAvailable(currentCode, s.latestVersionCode)) {
+                                        updateStatusMsg = if (isHindi) "नया संस्करण v${s.latestVersionName} उपलब्ध है! डाउनलोड शुरू हो रहा है..." else "New version v${s.latestVersionName} available! Starting download..."
+                                        AppUpdateManager.downloadAndInstallUpdate(context, s.apkDownloadUrl)
+                                    } else {
+                                        updateStatusMsg = if (isHindi) "✅ आपका ऐप पहले से ही नवीनतम संस्करण पर है (v${AppUpdateManager.getCurrentVersionName(context)})" else "✅ App is already up to date (v${AppUpdateManager.getCurrentVersionName(context)})"
+                                    }
                                 }
                             }
                         },

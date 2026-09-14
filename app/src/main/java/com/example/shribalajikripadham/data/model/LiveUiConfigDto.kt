@@ -61,6 +61,15 @@ data class AshramEventConfigDto(
     val isActive: Boolean = true
 )
 
+data class AppUpdateLiveDto(
+    val latestVersionCode: Int = 0,
+    val latestVersionName: String = "",
+    val apkUrl: String = "",
+    val updateNotesHindi: String = "",
+    val updateNotesEnglish: String = "",
+    val isForceUpdate: Boolean = false
+)
+
 data class LiveUiConfigDto(
     val updatedAt: String = "",
     val updatedBy: String = "Super Admin",
@@ -71,7 +80,8 @@ data class LiveUiConfigDto(
     val locationConfig: LocationConfigDto = LocationConfigDto(),
     val servicesConfig: ServicesConfigDto = ServicesConfigDto(),
     val sections: List<UiSectionConfig> = UiSectionConfig.defaultSections(),
-    val events: List<AshramEventConfigDto> = emptyList()
+    val events: List<AshramEventConfigDto> = emptyList(),
+    val appUpdate: AppUpdateLiveDto? = null
 ) {
     fun toJsonString(): String {
         val root = JSONObject()
@@ -79,6 +89,17 @@ data class LiveUiConfigDto(
         root.put("updated_by", updatedBy)
         root.put("version", version)
         root.put("active_ui_layout", activeUiLayout)
+
+        if (appUpdate != null && appUpdate.latestVersionCode > 0) {
+            val updObj = JSONObject()
+            updObj.put("latest_version_code", appUpdate.latestVersionCode)
+            updObj.put("latest_version_name", appUpdate.latestVersionName)
+            updObj.put("apk_url", appUpdate.apkUrl)
+            updObj.put("update_notes_hindi", appUpdate.updateNotesHindi)
+            updObj.put("update_notes_english", appUpdate.updateNotesEnglish)
+            updObj.put("is_force_update", appUpdate.isForceUpdate)
+            root.put("app_update", updObj)
+        }
 
         val detObj = JSONObject()
         detObj.put("ashram_name", ashramDetails.ashramName)
@@ -275,6 +296,20 @@ data class LiveUiConfigDto(
                     }
                 }
 
+                val appUpdate = if (root.has("app_update")) {
+                    val updObj = root.optJSONObject("app_update")
+                    if (updObj != null) {
+                        AppUpdateLiveDto(
+                            latestVersionCode = updObj.optInt("latest_version_code", 0),
+                            latestVersionName = updObj.optString("latest_version_name", ""),
+                            apkUrl = updObj.optString("apk_url", ""),
+                            updateNotesHindi = updObj.optString("update_notes_hindi", ""),
+                            updateNotesEnglish = updObj.optString("update_notes_english", ""),
+                            isForceUpdate = updObj.optBoolean("is_force_update", false)
+                        )
+                    } else null
+                } else null
+
                 LiveUiConfigDto(
                     updatedAt = updatedAt,
                     updatedBy = updatedBy,
@@ -285,7 +320,8 @@ data class LiveUiConfigDto(
                     locationConfig = locationConfig,
                     servicesConfig = servicesConfig,
                     sections = if (sectionsList.isNotEmpty()) sectionsList else UiSectionConfig.defaultSections(),
-                    events = eventsList
+                    events = eventsList,
+                    appUpdate = appUpdate
                 )
             } catch (e: Exception) {
                 null

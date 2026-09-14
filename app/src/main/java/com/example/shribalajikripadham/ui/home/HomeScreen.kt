@@ -197,6 +197,39 @@ fun HomeScreen(
         }
 
         // 🔄 Continuous live sync loop (every 20 seconds) while screen is open
+        // Immediate zero-cache online update check on startup
+        scope.launch {
+            try {
+                val currentCode = AppUpdateManager.getCurrentVersionCode(context)
+                val onlineInfo = AppUpdateManager.fetchLatestUpdateFromOnline()
+                if (onlineInfo != null) {
+                    if (onlineInfo.webhookUrl.isNotBlank()) {
+                        com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.saveWebhookUrl(context, onlineInfo.webhookUrl)
+                    }
+                    if (onlineInfo.versionCode > currentCode) {
+                        repository.updateAppUpdateConfig(
+                            latestVersionCode = onlineInfo.versionCode,
+                            latestVersionName = onlineInfo.versionName,
+                            updateNotes = if (isHindi) onlineInfo.updateNotesHindi else onlineInfo.updateNotesEnglish,
+                            apkDownloadUrl = onlineInfo.apkUrl,
+                            isForceUpdate = onlineInfo.isForce
+                        )
+                        settings = repository.getSettings()
+                        showUpdatePopup = true
+                    }
+                } else {
+                    val fresh = repository.getSettings()
+                    if (AppUpdateManager.isUpdateAvailable(currentCode, fresh.latestVersionCode)) {
+                        settings = fresh
+                        showUpdatePopup = true
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("HomeScreenInit", "Update check error on startup", e)
+            }
+        }
+
+        // 🔄 Continuous live sync loop (every 20 seconds) while screen is open
         scope.launch {
             while (isActive) {
                 delay(20_000)
@@ -217,45 +250,24 @@ fun HomeScreen(
                         if (evs.isNotEmpty()) dynamicEvents = evs
                         activeSevadars = repository.getAllActiveSevadars()
                     }
-                } catch (e: Exception) {}
-            }
-        }
 
-        // Check for App Auto-Update: immediately trigger popup on Home Screen!
-        val currentCode = AppUpdateManager.getCurrentVersionCode(context)
-        if (AppUpdateManager.isUpdateAvailable(currentCode, s.latestVersionCode)) {
-            showUpdatePopup = true
-        } else {
-            // Check online GitHub version.json directly from cloud
-            scope.launch {
-                try {
+                    // 🔄 Continuous auto-check for new app releases in real-time
+                    val currentCode = AppUpdateManager.getCurrentVersionCode(context)
                     val onlineInfo = AppUpdateManager.fetchLatestUpdateFromOnline()
-                    if (onlineInfo != null) {
-                        // 🌐 Auto-distribute Google Sheet Webhook URL to all devices
-                        if (onlineInfo.webhookUrl.isNotBlank()) {
-                            com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.saveWebhookUrl(context, onlineInfo.webhookUrl)
-                        }
-                        if (onlineInfo.versionCode > currentCode) {
-                            repository.updateAppUpdateConfig(
-                                latestVersionCode = onlineInfo.versionCode,
-                                latestVersionName = onlineInfo.versionName,
-                                updateNotes = if (isHindi) onlineInfo.updateNotesHindi else onlineInfo.updateNotesEnglish,
-                                apkDownloadUrl = onlineInfo.apkUrl,
-                                isForceUpdate = onlineInfo.isForce
-                            )
-                            settings = settings.copy(
-                                latestVersionCode = onlineInfo.versionCode,
-                                latestVersionName = onlineInfo.versionName,
-                                updateNotes = if (isHindi) onlineInfo.updateNotesHindi else onlineInfo.updateNotesEnglish,
-                                apkDownloadUrl = onlineInfo.apkUrl,
-                                isForceUpdate = onlineInfo.isForce
-                            )
+                    if (onlineInfo != null && onlineInfo.versionCode > currentCode) {
+                        repository.updateAppUpdateConfig(
+                            latestVersionCode = onlineInfo.versionCode,
+                            latestVersionName = onlineInfo.versionName,
+                            updateNotes = if (isHindi) onlineInfo.updateNotesHindi else onlineInfo.updateNotesEnglish,
+                            apkDownloadUrl = onlineInfo.apkUrl,
+                            isForceUpdate = onlineInfo.isForce
+                        )
+                        settings = repository.getSettings()
+                        if (!showUpdatePopup && !isDownloadingUpdate) {
                             showUpdatePopup = true
                         }
                     }
-                } catch (e: Exception) {
-                    // Fallback to offline local check
-                }
+                } catch (e: Exception) {}
             }
         }
     }
@@ -348,6 +360,38 @@ fun HomeScreen(
                         NavDrawerItem("🚗", if (isHindi) "यात्रा व दूरी विवरण" else "Yatra & Distance Info", onNavigateToYatra),
                         NavDrawerItem("💰", if (isHindi) "यात्रा खर्च डायरी" else "Yatra Expense Diary", onNavigateToYatraExpenses),
                         NavDrawerItem("ℹ️", if (isHindi) "आश्रम परिचय व नियम" else "Ashram Info & Rules", onNavigateToInfo),
+                        NavDrawerItem("🔄", if (isHindi) "ऐप अपडेट जांचें (Live)" else "Check App Update", {
+                            scope.launch {
+                                drawerState.close()
+                                Toast.makeText(context, if (isHindi) "🔄 लाइव अपडेट जांच रहे हैं..." else "Checking for updates...", Toast.LENGTH_SHORT).show()
+                                val currentCode = AppUpdateManager.getCurrentVersionCode(context)
+                                val onlineInfo = AppUpdateManager.fetchLatestUpdateFromOnline()
+                                if (onlineInfo != null && onlineInfo.versionCode > currentCode) {
+                                    repository.updateAppUpdateConfig(
+                                        latestVersionCode = onlineInfo.versionCode,
+                                        latestVersionName = onlineInfo.versionName,
+                                        updateNotes = if (isHindi) onlineInfo.updateNotesHindi else onlineInfo.updateNotesEnglish,
+                                        apkDownloadUrl = onlineInfo.apkUrl,
+                                        isForceUpdate = onlineInfo.isForce
+                                    )
+                                    settings = repository.getSettings()
+                                    showUpdatePopup = true
+                                } else {
+                                    val freshSettings = repository.getSettings()
+                                    settings = freshSettings
+                                    if (AppUpdateManager.isUpdateAvailable(currentCode, freshSettings.latestVersionCode)) {
+                                        showUpdatePopup = true
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            if (isHindi) "✅ आपका ऐप नवीनतम संस्करण (v${AppUpdateManager.getCurrentVersionName(context)} Build #$currentCode) पर है!"
+                                            else "✅ App is on the latest version (v${AppUpdateManager.getCurrentVersionName(context)} Build #$currentCode)!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                            }
+                        }),
                         NavDrawerItem("🔐", if (isHindi) "प्रबंधक / सेवादार लॉगिन" else "Sevadar & Admin Portal", onNavigateToAdmin)
                     )
 
@@ -683,7 +727,13 @@ fun HomeScreen(
                     IconButton(
                         onClick = {
                             scope.launch {
-                                // 🔄 Sync latest live UI layout from GitHub
+                                Toast.makeText(
+                                    context,
+                                    if (isHindi) "🔄 डेटा एवं नवीनतम अपडेट जांच रहे हैं..." else "🔄 Checking for live updates...",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                // 1. Sync latest live UI layout & settings from GitHub
                                 try {
                                     val (synced, liveConfig) = repository.syncLiveConfigFromGitHub()
                                     if (synced && liveConfig != null && liveConfig.sections.isNotEmpty()) {
@@ -691,20 +741,33 @@ fun HomeScreen(
                                     }
                                 } catch (e: Exception) {}
 
-                                val freshSettings = repository.getSettings()
-                                settings = freshSettings
+                                // 2. Live Online Zero-Cache Update Check
                                 val currentCode = AppUpdateManager.getCurrentVersionCode(context)
-                                if (AppUpdateManager.isUpdateAvailable(currentCode, freshSettings.latestVersionCode)) {
+                                val onlineInfo = AppUpdateManager.fetchLatestUpdateFromOnline()
+                                if (onlineInfo != null && onlineInfo.versionCode > currentCode) {
+                                    repository.updateAppUpdateConfig(
+                                        latestVersionCode = onlineInfo.versionCode,
+                                        latestVersionName = onlineInfo.versionName,
+                                        updateNotes = if (isHindi) onlineInfo.updateNotesHindi else onlineInfo.updateNotesEnglish,
+                                        apkDownloadUrl = onlineInfo.apkUrl,
+                                        isForceUpdate = onlineInfo.isForce
+                                    )
+                                    settings = repository.getSettings()
                                     showUpdatePopup = true
                                 } else {
-                                    Toast.makeText(
-                                        context,
-                                        if (isHindi) "✅ आपका ऐप नवीनतम संस्करण (v${AppUpdateManager.getCurrentVersionName(context)} Build #$currentCode) पर है!"
-                                        else "✅ App is already on the latest version (v${AppUpdateManager.getCurrentVersionName(context)} Build #$currentCode)!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    // Open What's New dialog so user can review the recent updates
-                                    showWhatsNewDialog = true
+                                    val freshSettings = repository.getSettings()
+                                    settings = freshSettings
+                                    if (AppUpdateManager.isUpdateAvailable(currentCode, freshSettings.latestVersionCode)) {
+                                        showUpdatePopup = true
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            if (isHindi) "✅ आपका ऐप पहले से नवीनतम संस्करण (v${AppUpdateManager.getCurrentVersionName(context)} Build #$currentCode) पर है!"
+                                            else "✅ App is already on the latest version (v${AppUpdateManager.getCurrentVersionName(context)} Build #$currentCode)!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        showWhatsNewDialog = true
+                                    }
                                 }
                             }
                         }

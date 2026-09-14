@@ -2200,6 +2200,19 @@ class AshramRepository(context: Context) {
                     db.update("ashram_settings", cv, "id = 1", null)
                 }
 
+                // Synchronize App Auto-Update info from live cloud config
+                val upd = remoteConfig.appUpdate
+                if (upd != null && upd.latestVersionCode > 0) {
+                    val updCv = ContentValues().apply {
+                        put("latest_version_code", upd.latestVersionCode)
+                        if (upd.latestVersionName.isNotBlank()) put("latest_version_name", upd.latestVersionName)
+                        if (upd.apkUrl.isNotBlank()) put("apk_download_url", upd.apkUrl)
+                        if (upd.updateNotesHindi.isNotBlank()) put("update_notes", upd.updateNotesHindi)
+                        put("is_force_update", if (upd.isForceUpdate) 1 else 0)
+                    }
+                    db.update("ashram_settings", updCv, "id = 1", null)
+                }
+
                 // Synchronize dynamic Ashram Events from cloud
                 if (remoteConfig.events.isNotEmpty()) {
                     db.beginTransaction()
