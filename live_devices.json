@@ -1,6 +1,6 @@
 {
   "total_devices": 2,
-  "updated_at": 1789372289473,
+  "updated_at": 1789372742576,
   "devices": [
     {
       "device_id": "2b01861028f80b2cdbb506932fe1ec27a8f041d05d01534805212b64de18d93a",
@@ -9,8 +9,8 @@
       "phone_number": "8868959597",
       "city": "",
       "app_version": "2.28.0",
-      "last_seen_at": 1789372289473,
-      "open_count": 16,
+      "last_seen_at": 1789372742575,
+      "open_count": 17,
       "role": "ADMIN"
     },
     {
