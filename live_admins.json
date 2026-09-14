@@ -1,12 +1,16 @@
 {
-  "updated_at": "2026-09-12T12:00:00Z",
+  "updated_at": 1789379812413,
   "admins": [
     {
+      "id": 1,
+      "name": "मुख्य व्यवस्थापक (Super Admin)",
       "username": "admin",
-      "name": "\u092e\u0941\u0916\u094d\u092f \u0935\u094d\u092f\u0935\u0938\u094d\u0925\u093e\u092a\u0915 (Super Admin)",
-      "phone": "7417531776",
+      "phone": "8533955333",
       "role": "SUPER_ADMIN",
       "is_active": true,
+      "photo_uri": "",
+      "pin_hash": "41c991eb6a66242c0454191244278183ce58cf4a6bcd372f799e4b9cc01886af",
+      "password_hash": "b0da547e17ef5c7f74ba8038a99a13265f486ccbd5e5f663ddc84b98d8185676",
       "permissions": {
         "can_manage_tokens": true,
         "can_issue_manual_tokens": true,
