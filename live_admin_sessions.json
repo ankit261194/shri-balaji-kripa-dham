@@ -1,4 +1,13 @@
 {
-  "sessions": {},
-  "last_updated_at": 1789400000000
+  "sessions": {
+    "1": {
+      "admin_id": "1",
+      "role": "SUPER_ADMIN",
+      "device_id": "2b01861028f80b2cdbb506932fe1ec27a8f041d05d01534805212b64de18d93a",
+      "device_model": "motorola edge 40 neo",
+      "session_id": "35dc9f7a-db54-46b4-9406-aa25bef7ee82",
+      "logged_in_at": 1789399802126
+    }
+  },
+  "last_updated_at": 1789399802126
 }
