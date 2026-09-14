@@ -384,9 +384,9 @@ fun HomeScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
 
-                    // 12 SACRED THEMES SHOWCASE IN SIDEBAR DRAWER
+                    // 🌟 10 COMPLETE UI LOOKS SHOWCASE IN SIDEBAR DRAWER
                     Text(
-                        text = if (isHindi) "🎨 ऐप का दिव्य रूप (12 शैलियाँ)" else "🎨 12 Divine App Styles",
+                        text = if (isHindi) "🌟 ऐप का स्वरूप / 10 UI Looks (पूरा ढांचा बदलें)" else "🌟 App Architecture / 10 UI Looks",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = currentTheme.primaryColor,
@@ -397,65 +397,114 @@ fun HomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
-                        for (theme in SacredTheme.entries) {
-                            val isSelected = theme == currentTheme
+                        for (layout in AppUiLayout.entries) {
+                            val isSelected = layout == activeLayout
                             Surface(
-                                onClick = { onThemeChanged(theme) },
+                                onClick = {
+                                    activeLayout = layout
+                                    LayoutPreferences.saveLayout(context, layout)
+                                    scope.launch {
+                                        drawerState.close()
+                                        Toast.makeText(
+                                            context,
+                                            if (isHindi) "✅ ऐप का रूप बदलकर '${layout.titleHindi}' हो गया!" else "✅ Switched to ${layout.titleEnglish}!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                },
                                 shape = RoundedCornerShape(10.dp),
-                                color = if (isSelected) theme.primaryColor.copy(alpha = 0.12f) else Color(0xFFFBFBFB),
+                                color = if (isSelected) currentTheme.primaryColor.copy(alpha = 0.14f) else Color(0xFFFBFBFB),
                                 border = BorderStroke(
-                                    width = if (isSelected) 1.5.dp else 0.6.dp,
-                                    color = if (isSelected) theme.primaryColor else Color(0xFFE0E0E0)
+                                    width = if (isSelected) 1.8.dp else 0.6.dp,
+                                    color = if (isSelected) currentTheme.primaryColor else Color(0xFFE0E0E0)
                                 ),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                        .padding(horizontal = 10.dp, vertical = 7.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(28.dp)
-                                            .clip(CircleShape)
-                                            .background(theme.primaryColor)
-                                            .border(1.dp, theme.secondaryColor, CircleShape),
+                                            .size(32.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(if (isSelected) currentTheme.primaryColor else Color(0xFFEEEEEE)),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(theme.icon, fontSize = 14.sp)
+                                        Text(layout.icon, fontSize = 16.sp)
                                     }
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = if (isHindi) theme.nameHindi else theme.nameEnglish,
-                                            fontSize = 12.5.sp,
+                                            text = if (isHindi) layout.titleHindi else layout.titleEnglish,
+                                            fontSize = 13.sp,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isSelected) theme.primaryColor else TextPrimaryDark,
-                                            fontFamily = theme.fontFamily
+                                            color = if (isSelected) currentTheme.primaryColor else TextPrimaryDark
                                         )
                                         Text(
-                                            text = theme.styleBadge,
-                                            fontSize = 9.sp,
-                                            color = Color.Gray
+                                            text = layout.subtitleHindi,
+                                            fontSize = 9.5.sp,
+                                            color = Color.Gray,
+                                            maxLines = 1
                                         )
                                     }
                                     if (isSelected) {
                                         Surface(
                                             shape = RoundedCornerShape(4.dp),
-                                            color = theme.primaryColor
+                                            color = currentTheme.primaryColor
                                         ) {
                                             Text(
                                                 text = if (isHindi) "✓ सक्रिय" else "✓ Active",
                                                 color = Color.White,
-                                                fontSize = 8.5.sp,
+                                                fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
                                     }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Compact Palette Row of 12 Sacred Colors
+                    Text(
+                        text = if (isHindi) "🎨 आध्यात्मिक रंग (12 Palette)" else "🎨 Sacred Palette",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(SacredTheme.entries.size) { idx ->
+                            val theme = SacredTheme.entries[idx]
+                            val isSel = theme == currentTheme
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(theme.primaryColor)
+                                    .border(
+                                        if (isSel) 2.dp else 0.8.dp,
+                                        if (isSel) Color.White else Color.Transparent,
+                                        CircleShape
+                                    )
+                                    .clickable { onThemeChanged(theme) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isSel) {
+                                    Text("✓", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -876,13 +925,32 @@ fun HomeScreen(
 
 
 
-            // RENDERING BASED ON ACTIVE UI LAYOUT (5 DISTINCT LAYOUTS)
-            if (activeLayout == AppUiLayout.CLASSIC_DARBAR) {
-                val sortedVisibleSections = uiSectionConfigs.filter { it.isVisible }.sortedBy { it.orderIndex }
-                for (section in sortedVisibleSections) {
-                    RenderClassicSection(
-                        sectionId = section.sectionId,
-                        sectionConfig = section,
+            // RENDERING BASED ON ACTIVE UI LAYOUT (10 COMPLETE UI LOOKS)
+            when (activeLayout) {
+                AppUiLayout.CLASSIC_DARBAR -> {
+                    val sortedVisibleSections = uiSectionConfigs.filter { it.isVisible }.sortedBy { it.orderIndex }
+                    for (section in sortedVisibleSections) {
+                        RenderClassicSection(
+                            sectionId = section.sectionId,
+                            sectionConfig = section,
+                            settings = settings,
+                            isHindi = isHindi,
+                            currentTheme = currentTheme,
+                            activeSevadars = activeSevadars,
+                            dynamicEvents = dynamicEvents,
+                            onNavigateToToken = onNavigateToToken,
+                            onNavigateToFaceToken = onNavigateToFaceToken,
+                            onNavigateToYatra = onNavigateToYatra,
+                            onNavigateToInfo = onNavigateToInfo,
+                            onNavigateToAdmin = onNavigateToAdmin,
+                            onNavigateToParchas = onNavigateToParchas,
+                            context = context
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
+                    }
+                }
+                AppUiLayout.MODERN_CARDS -> {
+                    ModernCardsLayout(
                         settings = settings,
                         isHindi = isHindi,
                         currentTheme = currentTheme,
@@ -894,70 +962,146 @@ fun HomeScreen(
                         onNavigateToInfo = onNavigateToInfo,
                         onNavigateToAdmin = onNavigateToAdmin,
                         onNavigateToParchas = onNavigateToParchas,
-                        context = context
+                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
+                        onThemeChanged = onThemeChanged
                     )
-                    Spacer(modifier = Modifier.height(14.dp))
                 }
-            } else if (activeLayout == AppUiLayout.MODERN_CARDS) {
-                ModernCardsLayout(
-                    settings = settings,
-                    isHindi = isHindi,
-                    currentTheme = currentTheme,
-                    activeSevadars = activeSevadars,
-                    dynamicEvents = dynamicEvents,
-                    onNavigateToToken = onNavigateToToken,
-                    onNavigateToFaceToken = onNavigateToFaceToken,
-                    onNavigateToYatra = onNavigateToYatra,
-                    onNavigateToInfo = onNavigateToInfo,
-                    onNavigateToAdmin = onNavigateToAdmin,
-                    onNavigateToParchas = onNavigateToParchas,
-                    onThemeChanged = onThemeChanged
-                )
-            } else if (activeLayout == AppUiLayout.VEDIC_GRID) {
-                VedicGridLayout(
-                    settings = settings,
-                    isHindi = isHindi,
-                    currentTheme = currentTheme,
-                    activeSevadars = activeSevadars,
-                    dynamicEvents = dynamicEvents,
-                    onNavigateToToken = onNavigateToToken,
-                    onNavigateToFaceToken = onNavigateToFaceToken,
-                    onNavigateToYatra = onNavigateToYatra,
-                    onNavigateToInfo = onNavigateToInfo,
-                    onNavigateToAdmin = onNavigateToAdmin,
-                    onNavigateToParchas = onNavigateToParchas,
-                    onThemeChanged = onThemeChanged
-                )
-            } else if (activeLayout == AppUiLayout.COMPACT_LIST) {
-                CompactListLayout(
-                    settings = settings,
-                    isHindi = isHindi,
-                    currentTheme = currentTheme,
-                    activeSevadars = activeSevadars,
-                    dynamicEvents = dynamicEvents,
-                    onNavigateToToken = onNavigateToToken,
-                    onNavigateToFaceToken = onNavigateToFaceToken,
-                    onNavigateToYatra = onNavigateToYatra,
-                    onNavigateToInfo = onNavigateToInfo,
-                    onNavigateToAdmin = onNavigateToAdmin,
-                    onNavigateToParchas = onNavigateToParchas,
-                    onThemeChanged = onThemeChanged
-                )
-            } else if (activeLayout == AppUiLayout.DIVINE_FEED) {
-                DivineFeedLayout(
-                    settings = settings,
-                    isHindi = isHindi,
-                    currentTheme = currentTheme,
-                    activeSevadars = activeSevadars,
-                    dynamicEvents = dynamicEvents,
-                    onNavigateToToken = onNavigateToToken,
-                    onNavigateToFaceToken = onNavigateToFaceToken,
-                    onNavigateToYatra = onNavigateToYatra,
-                    onNavigateToInfo = onNavigateToInfo,
-                    onNavigateToAdmin = onNavigateToAdmin,
-                    onNavigateToParchas = onNavigateToParchas,
-                    onThemeChanged = onThemeChanged
-                )
+                AppUiLayout.VEDIC_GRID -> {
+                    VedicGridLayout(
+                        settings = settings,
+                        isHindi = isHindi,
+                        currentTheme = currentTheme,
+                        activeSevadars = activeSevadars,
+                        dynamicEvents = dynamicEvents,
+                        onNavigateToToken = onNavigateToToken,
+                        onNavigateToFaceToken = onNavigateToFaceToken,
+                        onNavigateToYatra = onNavigateToYatra,
+                        onNavigateToInfo = onNavigateToInfo,
+                        onNavigateToAdmin = onNavigateToAdmin,
+                        onNavigateToParchas = onNavigateToParchas,
+                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
+                        onThemeChanged = onThemeChanged
+                    )
+                }
+                AppUiLayout.COMPACT_LIST -> {
+                    CompactListLayout(
+                        settings = settings,
+                        isHindi = isHindi,
+                        currentTheme = currentTheme,
+                        activeSevadars = activeSevadars,
+                        dynamicEvents = dynamicEvents,
+                        onNavigateToToken = onNavigateToToken,
+                        onNavigateToFaceToken = onNavigateToFaceToken,
+                        onNavigateToYatra = onNavigateToYatra,
+                        onNavigateToInfo = onNavigateToInfo,
+                        onNavigateToAdmin = onNavigateToAdmin,
+                        onNavigateToParchas = onNavigateToParchas,
+                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
+                        onThemeChanged = onThemeChanged
+                    )
+                }
+                AppUiLayout.DIVINE_FEED -> {
+                    DivineFeedLayout(
+                        settings = settings,
+                        isHindi = isHindi,
+                        currentTheme = currentTheme,
+                        activeSevadars = activeSevadars,
+                        dynamicEvents = dynamicEvents,
+                        onNavigateToToken = onNavigateToToken,
+                        onNavigateToFaceToken = onNavigateToFaceToken,
+                        onNavigateToYatra = onNavigateToYatra,
+                        onNavigateToInfo = onNavigateToInfo,
+                        onNavigateToAdmin = onNavigateToAdmin,
+                        onNavigateToParchas = onNavigateToParchas,
+                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
+                        onThemeChanged = onThemeChanged
+                    )
+                }
+                AppUiLayout.MAHABALI_HERO -> {
+                    MahabaliHeroLayout(
+                        settings = settings,
+                        isHindi = isHindi,
+                        currentTheme = currentTheme,
+                        activeSevadars = activeSevadars,
+                        dynamicEvents = dynamicEvents,
+                        onNavigateToToken = onNavigateToToken,
+                        onNavigateToFaceToken = onNavigateToFaceToken,
+                        onNavigateToYatra = onNavigateToYatra,
+                        onNavigateToInfo = onNavigateToInfo,
+                        onNavigateToAdmin = onNavigateToAdmin,
+                        onNavigateToParchas = onNavigateToParchas,
+                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
+                        onThemeChanged = onThemeChanged
+                    )
+                }
+                AppUiLayout.BHAKTI_ACCORDION -> {
+                    BhaktiAccordionLayout(
+                        settings = settings,
+                        isHindi = isHindi,
+                        currentTheme = currentTheme,
+                        activeSevadars = activeSevadars,
+                        dynamicEvents = dynamicEvents,
+                        onNavigateToToken = onNavigateToToken,
+                        onNavigateToFaceToken = onNavigateToFaceToken,
+                        onNavigateToYatra = onNavigateToYatra,
+                        onNavigateToInfo = onNavigateToInfo,
+                        onNavigateToAdmin = onNavigateToAdmin,
+                        onNavigateToParchas = onNavigateToParchas,
+                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
+                        onThemeChanged = onThemeChanged
+                    )
+                }
+                AppUiLayout.PARIKRAMA_FLOW -> {
+                    MandirParikramaLayout(
+                        settings = settings,
+                        isHindi = isHindi,
+                        currentTheme = currentTheme,
+                        activeSevadars = activeSevadars,
+                        dynamicEvents = dynamicEvents,
+                        onNavigateToToken = onNavigateToToken,
+                        onNavigateToFaceToken = onNavigateToFaceToken,
+                        onNavigateToYatra = onNavigateToYatra,
+                        onNavigateToInfo = onNavigateToInfo,
+                        onNavigateToAdmin = onNavigateToAdmin,
+                        onNavigateToParchas = onNavigateToParchas,
+                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
+                        onThemeChanged = onThemeChanged
+                    )
+                }
+                AppUiLayout.GOLDEN_LOTUS -> {
+                    GoldenLotusLayout(
+                        settings = settings,
+                        isHindi = isHindi,
+                        currentTheme = currentTheme,
+                        activeSevadars = activeSevadars,
+                        dynamicEvents = dynamicEvents,
+                        onNavigateToToken = onNavigateToToken,
+                        onNavigateToFaceToken = onNavigateToFaceToken,
+                        onNavigateToYatra = onNavigateToYatra,
+                        onNavigateToInfo = onNavigateToInfo,
+                        onNavigateToAdmin = onNavigateToAdmin,
+                        onNavigateToParchas = onNavigateToParchas,
+                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
+                        onThemeChanged = onThemeChanged
+                    )
+                }
+                AppUiLayout.SIDDHA_PEETH_PORTAL -> {
+                    SiddhaPeethPortalLayout(
+                        settings = settings,
+                        isHindi = isHindi,
+                        currentTheme = currentTheme,
+                        activeSevadars = activeSevadars,
+                        dynamicEvents = dynamicEvents,
+                        onNavigateToToken = onNavigateToToken,
+                        onNavigateToFaceToken = onNavigateToFaceToken,
+                        onNavigateToYatra = onNavigateToYatra,
+                        onNavigateToInfo = onNavigateToInfo,
+                        onNavigateToAdmin = onNavigateToAdmin,
+                        onNavigateToParchas = onNavigateToParchas,
+                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
+                        onThemeChanged = onThemeChanged
+                    )
+                }
             }
 
 

@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 33,
-  "latest_version_name": "2.28.2",
-  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.28.2 दिव्य अपडेट: 1. फोटो सीधी रखने हेतु EXIF ऑटो-रोटेशन एवं 1-टैप '🔄 90° सीधा करें' बटन (गुरुजी, एडमिन, सेवादार, भक्त टोकन)। 2. क्लाउड CDN पर फोटो अपलोड जिससे सभी भक्तों के फोन पर हर फोटो तुरंत दिखे। 3. मुख्य स्क्रीन से थीम हटाकर साइडबार ड्रॉवर (☰) में 12 दिव्य शैलियाँ (Royal Maroon, Sacred Saffron, Pitambar Gold, Divine Blue, Tulsi Green, Midnight Dark, Surya Crimson, Ayodhya Sandalwood, Ganga Aarti Amber, Vrindavan Violet, Kailash Teal, Mahadev Copper)। 4. सुपर एडमिन का हर बदलाव स्वतः व 1-टैप लाइव सिंक से सभी भक्तों के फोन पर तुरंत अपडेट।",
-  "update_notes_english": "Shri Balaji Kripa Dham v2.28.2 Divine Update: 1. Automatic EXIF orientation & 1-tap 90° rotate button for upright photos (Guruji, Admins, Sevadars, Devotees). 2. Remote CDN uploads ensuring all photos are visible on all devotees' phones. 3. Themes removed from main screen and relocated to sidebar drawer (☰) with 12 magnificent styles. 4. Instant live cloud synchronization for all Super Admin updates.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.28.2/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 34,
+  "latest_version_name": "2.28.3",
+  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.28.3 महा-अपडेट: 1. संपूर्ण 10 UI Looks (राजसी दरबार, आधुनिक फ्लोटिंग, वैदिक ग्रिड, त्वरित सूची, दर्शन फीड, महाबली डैशबोर्ड, भक्ति संगम, मंदिर परिक्रमा, गोल्डन लोटस, सिद्ध पीठ)। 2. साइडबार ड्रॉवर (☰) में 10 UI Looks का 1-टैप सीधा चयन। 3. सभी बहु-विकल्पीय सेवाओं में सुंदर स्क्रॉल-डाउन ड्रॉपडाउन (Expandable Accordions)। 4. फोटो EXIF ऑटो-रोटेशन व क्लाउड CDN सिंक।",
+  "update_notes_english": "Shri Balaji Kripa Dham v2.28.3 Major Update: 1. 10 Complete UI Architectural Looks (Royal Darbar, Modern Floating, Vedic Grid, Speed Compact, Divine Feed, Mahabali Hero, Bhakti Accordions, Mandir Parikrama, Golden Lotus, Siddha Peeth Portal). 2. 1-tap Look selection directly in the Toggle Sidebar Drawer (☰). 3. Smooth scroll-down expandable accordions for all multi-option services. 4. Automatic EXIF orientation & Cloud CDN photo sync.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.28.3/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }
