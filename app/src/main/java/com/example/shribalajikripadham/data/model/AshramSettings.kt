@@ -59,7 +59,13 @@ data class AshramSettings(
     val canDevoteeViewPaymentHistory: Boolean = false,
     val ashramUpiId: String = "shribalajikripadham@upi",
     val ashramUpiName: String = "Shri Balaji Kripa Dham",
-    val busSeatFareAmount: Int = 1500
+    val busSeatFareAmount: Int = 1500,
+    // Sacred Arzi Box Super Admin Controls
+    val isArziLedgerLive: Boolean = true,
+    val badiArziRate: Double = 100.0,
+    val chhotiArziRate: Double = 50.0,
+    val canAdminViewArziLedger: Boolean = true,
+    val canDevoteeViewArziLedger: Boolean = false
 )
 
 data class CustomCityDistance(

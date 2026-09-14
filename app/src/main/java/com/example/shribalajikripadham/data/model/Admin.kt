@@ -29,6 +29,7 @@ data class Admin(
     val canIssueTokensAnywhere: Boolean = false,
     val canScanPaperRegister: Boolean = false,
     val canManageParchas: Boolean = false,
+    val canManageArzi: Boolean = false,
     val canExportPdf: Boolean = true,
     val photoUri: String = "",
     val isActive: Boolean = true,

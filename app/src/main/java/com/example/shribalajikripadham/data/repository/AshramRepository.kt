@@ -34,6 +34,7 @@ data class AdminPermissionsUpdate(
     val canIssueTokensAnywhere: Boolean = false,
     val canScanPaperRegister: Boolean = false,
     val canManageParchas: Boolean = false,
+    val canManageArzi: Boolean = false,
     val canCancelTokens: Boolean = false,
     val canDeleteTokens: Boolean = false,
     val canSetCustomTokenNumber: Boolean = false,
@@ -102,7 +103,12 @@ class AshramRepository(context: Context) {
                 canDevoteeViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_payment_history")) == 1 } catch (e: Exception) { false },
                 ashramUpiId = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_id")) } catch (e: Exception) { "shribalajikripadham@upi" } ?: "shribalajikripadham@upi",
                 ashramUpiName = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_name")) } catch (e: Exception) { "Shri Balaji Kripa Dham" } ?: "Shri Balaji Kripa Dham",
-                busSeatFareAmount = try { cursor.getInt(cursor.getColumnIndexOrThrow("bus_seat_fare_amount")) } catch (e: Exception) { 1500 }
+                busSeatFareAmount = try { cursor.getInt(cursor.getColumnIndexOrThrow("bus_seat_fare_amount")) } catch (e: Exception) { 1500 },
+                isArziLedgerLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_arzi_ledger_live")) == 1 } catch (e: Exception) { true },
+                badiArziRate = try { cursor.getDouble(cursor.getColumnIndexOrThrow("badi_arzi_rate")) } catch (e: Exception) { 100.0 },
+                chhotiArziRate = try { cursor.getDouble(cursor.getColumnIndexOrThrow("chhoti_arzi_rate")) } catch (e: Exception) { 50.0 },
+                canAdminViewArziLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_admin_view_arzi_ledger")) == 1 } catch (e: Exception) { true },
+                canDevoteeViewArziLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_arzi_ledger")) == 1 } catch (e: Exception) { false }
             )
         }
         cursor.close()
@@ -1361,6 +1367,7 @@ class AshramRepository(context: Context) {
             canIssueTokensAnywhere = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_issue_tokens_anywhere")) == 1 } catch (e: Exception) { false },
             canScanPaperRegister = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_scan_paper_register")) == 1 } catch (e: Exception) { false },
             canManageParchas = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_parchas")) == 1 } catch (e: Exception) { false },
+            canManageArzi = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_arzi")) == 1 } catch (e: Exception) { false },
             canCancelTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_cancel_tokens")) == 1 } catch (e: Exception) { false },
             canDeleteTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_delete_tokens")) == 1 } catch (e: Exception) { false },
             canSetCustomTokenNumber = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_custom_token_number")) == 1 } catch (e: Exception) { false },
@@ -1491,6 +1498,7 @@ class AshramRepository(context: Context) {
         canIssueTokensAnywhere: Boolean = false,
         canScanPaperRegister: Boolean = false,
         canManageParchas: Boolean = false,
+        canManageArzi: Boolean = false,
         canCancelTokens: Boolean = false,
         canDeleteTokens: Boolean = false,
         canSetCustomTokenNumber: Boolean = false,
@@ -1522,6 +1530,7 @@ class AshramRepository(context: Context) {
             put("can_issue_tokens_anywhere", if (canIssueTokensAnywhere || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_scan_paper_register", if (canScanPaperRegister || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_manage_parchas", if (canManageParchas || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_arzi", if (canManageArzi || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_cancel_tokens", if (canCancelTokens || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_delete_tokens", if (canDeleteTokens || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_custom_token_number", if (canSetCustomTokenNumber || role == AdminRole.SUPER_ADMIN) 1 else 0)
@@ -1583,6 +1592,7 @@ class AshramRepository(context: Context) {
                 put("can_issue_tokens_anywhere", if (p.canIssueTokensAnywhere) 1 else 0)
                 put("can_scan_paper_register", if (p.canScanPaperRegister) 1 else 0)
                 put("can_manage_parchas", if (p.canManageParchas) 1 else 0)
+                put("can_manage_arzi", if (p.canManageArzi) 1 else 0)
                 put("can_cancel_tokens", if (p.canCancelTokens) 1 else 0)
                 put("can_delete_tokens", if (p.canDeleteTokens) 1 else 0)
                 put("can_custom_token_number", if (p.canSetCustomTokenNumber) 1 else 0)
@@ -1642,6 +1652,7 @@ class AshramRepository(context: Context) {
         canIssueTokensAnywhere: Boolean = false,
         canScanPaperRegister: Boolean = false,
         canManageParchas: Boolean = false,
+        canManageArzi: Boolean = false,
         canCancelTokens: Boolean = false,
         canDeleteTokens: Boolean = false,
         canSetCustomTokenNumber: Boolean = false,
@@ -1661,6 +1672,7 @@ class AshramRepository(context: Context) {
             put("can_issue_tokens_anywhere", if (canIssueTokensAnywhere) 1 else 0)
             put("can_scan_paper_register", if (canScanPaperRegister) 1 else 0)
             put("can_manage_parchas", if (canManageParchas) 1 else 0)
+            put("can_manage_arzi", if (canManageArzi) 1 else 0)
             put("can_cancel_tokens", if (canCancelTokens) 1 else 0)
             put("can_delete_tokens", if (canDeleteTokens) 1 else 0)
             put("can_custom_token_number", if (canSetCustomTokenNumber) 1 else 0)
@@ -2812,6 +2824,7 @@ class AshramRepository(context: Context) {
                         put("can_issue_tokens_anywhere", if (a.canIssueTokensAnywhere) 1 else 0)
                         put("can_scan_paper_register", if (a.canScanPaperRegister) 1 else 0)
                         put("can_manage_parchas", if (a.canManageParchas) 1 else 0)
+                        put("can_manage_arzi", if (a.canManageArzi || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
                         put("can_export_pdf", if (a.canExportPdf) 1 else 0)
                         put("is_active", if (a.isActive) 1 else 0)
                     }
@@ -3376,6 +3389,330 @@ class AshramRepository(context: Context) {
             context = appContext,
             adminId = adminId,
             sessionId = sessionId
+        )
+    }
+
+    // ========================================================================
+    // SACRED ARZI BOX DISTRIBUTION & UNIFIED MASTER FINANCIAL LEDGER
+    // ========================================================================
+
+    suspend fun updateArziSettings(
+        isArziLedgerLive: Boolean,
+        badiArziRate: Int,
+        chhotiArziRate: Int,
+        canAdminViewArziLedger: Boolean,
+        canDevoteeViewArziLedger: Boolean
+    ): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("is_arzi_ledger_live", if (isArziLedgerLive) 1 else 0)
+            put("badi_arzi_rate", badiArziRate.toDouble())
+            put("chhoti_arzi_rate", chhotiArziRate.toDouble())
+            put("can_admin_view_arzi_ledger", if (canAdminViewArziLedger) 1 else 0)
+            put("can_devotee_view_arzi_ledger", if (canDevoteeViewArziLedger) 1 else 0)
+        }
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+        }
+        res
+    }
+
+    suspend fun getAllArziRecords(darbarDate: String = ""): List<ArziDistributionRecord> = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val list = mutableListOf<ArziDistributionRecord>()
+        val query = if (darbarDate.isNotBlank()) {
+            "SELECT * FROM arzi_distribution_records WHERE darbar_date = ? ORDER BY id DESC"
+        } else {
+            "SELECT * FROM arzi_distribution_records ORDER BY id DESC"
+        }
+        val args = if (darbarDate.isNotBlank()) arrayOf(darbarDate) else null
+        val cursor = db.rawQuery(query, args)
+        while (cursor.moveToNext()) {
+            list.add(
+                ArziDistributionRecord(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    devoteeName = cursor.getString(cursor.getColumnIndexOrThrow("devotee_name")),
+                    phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow("phone_number")),
+                    bigArziQty = cursor.getInt(cursor.getColumnIndexOrThrow("big_arzi_qty")),
+                    smallArziQty = cursor.getInt(cursor.getColumnIndexOrThrow("small_arzi_qty")),
+                    bigArziRate = cursor.getDouble(cursor.getColumnIndexOrThrow("big_arzi_rate")),
+                    smallArziRate = cursor.getDouble(cursor.getColumnIndexOrThrow("small_arzi_rate")),
+                    totalAmount = cursor.getDouble(cursor.getColumnIndexOrThrow("total_amount")),
+                    isPaid = cursor.getInt(cursor.getColumnIndexOrThrow("is_paid")) == 1,
+                    paymentMode = cursor.getString(cursor.getColumnIndexOrThrow("payment_mode")),
+                    recordedBy = cursor.getString(cursor.getColumnIndexOrThrow("recorded_by")),
+                    darbarDate = cursor.getString(cursor.getColumnIndexOrThrow("darbar_date")),
+                    timestamp = cursor.getLong(cursor.getColumnIndexOrThrow("timestamp")),
+                    notes = cursor.getString(cursor.getColumnIndexOrThrow("notes"))
+                )
+            )
+        }
+        cursor.close()
+        list
+    }
+
+    suspend fun upsertArziRecord(record: ArziDistributionRecord): Long = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("devotee_name", record.devoteeName.trim())
+            put("phone_number", record.phoneNumber.trim())
+            put("big_arzi_qty", record.bigArziQty)
+            put("small_arzi_qty", record.smallArziQty)
+            put("big_arzi_rate", record.bigArziRate)
+            put("small_arzi_rate", record.smallArziRate)
+            put("total_amount", record.totalAmount)
+            put("is_paid", if (record.isPaid) 1 else 0)
+            put("payment_mode", record.paymentMode)
+            put("recorded_by", record.recordedBy)
+            put("darbar_date", if (record.darbarDate.isNotBlank()) record.darbarDate else DatabaseHelper.getTodayDateString())
+            put("timestamp", if (record.timestamp > 0L) record.timestamp else System.currentTimeMillis())
+            put("notes", record.notes.trim())
+        }
+        val id = if (record.id > 0L) {
+            db.update("arzi_distribution_records", cv, "id = ?", arrayOf(record.id.toString()))
+            record.id
+        } else {
+            db.insert("arzi_distribution_records", null, cv)
+        }
+        try {
+            val all = getAllArziRecords()
+            com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveArziRecords(appContext, all, record.recordedBy)
+        } catch (e: Exception) {}
+        id
+    }
+
+    suspend fun toggleArziPaymentStatus(recordId: Long, isPaid: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("is_paid", if (isPaid) 1 else 0)
+        }
+        val updated = db.update("arzi_distribution_records", cv, "id = ?", arrayOf(recordId.toString())) > 0
+        if (updated) {
+            try {
+                val all = getAllArziRecords()
+                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveArziRecords(appContext, all)
+            } catch (e: Exception) {}
+        }
+        updated
+    }
+
+    suspend fun deleteArziRecord(recordId: Long): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val deleted = db.delete("arzi_distribution_records", "id = ?", arrayOf(recordId.toString())) > 0
+        if (deleted) {
+            try {
+                val all = getAllArziRecords()
+                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveArziRecords(appContext, all)
+            } catch (e: Exception) {}
+        }
+        deleted
+    }
+
+    suspend fun syncLiveArziFromCloud(): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
+        try {
+            val remote = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveArziRecords(appContext)
+                ?: return@withContext Pair(false, 0)
+            val db = dbHelper.writableDatabase
+            var count = 0
+            db.beginTransaction()
+            try {
+                remote.forEach { r ->
+                    val checkCursor = db.rawQuery(
+                        "SELECT id FROM arzi_distribution_records WHERE devotee_name = ? AND darbar_date = ? AND timestamp = ?",
+                        arrayOf(r.devoteeName, r.darbarDate, r.timestamp.toString())
+                    )
+                    val exists = checkCursor.moveToFirst()
+                    val existingId = if (exists) checkCursor.getLong(0) else 0L
+                    checkCursor.close()
+
+                    val cv = ContentValues().apply {
+                        put("devotee_name", r.devoteeName)
+                        put("phone_number", r.phoneNumber)
+                        put("big_arzi_qty", r.bigArziQty)
+                        put("small_arzi_qty", r.smallArziQty)
+                        put("big_arzi_rate", r.bigArziRate)
+                        put("small_arzi_rate", r.smallArziRate)
+                        put("total_amount", r.totalAmount)
+                        put("is_paid", if (r.isPaid) 1 else 0)
+                        put("payment_mode", r.paymentMode)
+                        put("recorded_by", r.recordedBy)
+                        put("darbar_date", r.darbarDate)
+                        put("timestamp", r.timestamp)
+                        put("notes", r.notes)
+                    }
+
+                    if (exists) {
+                        db.update("arzi_distribution_records", cv, "id = ?", arrayOf(existingId.toString()))
+                    } else {
+                        db.insert("arzi_distribution_records", null, cv)
+                        count++
+                    }
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+            Pair(true, count)
+        } catch (e: Exception) {
+            Pair(false, 0)
+        }
+    }
+
+    suspend fun publishLiveArziToCloud(recordedBy: String = "Admin"): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val records = getAllArziRecords()
+        com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveArziRecords(appContext, records, recordedBy)
+    }
+
+    suspend fun getUnifiedMasterFinancialSummary(darbarDate: String = ""): UnifiedMasterFinancialSummary = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val entries = mutableListOf<UnifiedLedgerEntry>()
+
+        var busTotal = 0.0
+        var busPaid = 0.0
+        var busPending = 0.0
+        var busSeatsCount = 0
+
+        var arziTotal = 0.0
+        var arziPaid = 0.0
+        var arziPending = 0.0
+        var arziBadiCount = 0
+        var arziChhotiCount = 0
+
+        var expenseTotal = 0.0
+        var expenseCount = 0
+
+        // 1. Fetch Bus Bookings
+        try {
+            val busCursor = db.rawQuery("SELECT seat_number, seat_label, passenger_name, phone_number, fare_amount, payment_status, payment_mode, yatra_date, booked_at FROM bus_seats WHERE is_booked = 1", null)
+            while (busCursor.moveToNext()) {
+                val seatNum = busCursor.getInt(0)
+                val seatLabel = busCursor.getString(1)
+                val passenger = busCursor.getString(2) ?: ""
+                val phone = busCursor.getString(3) ?: ""
+                val fare = busCursor.getInt(4).toDouble()
+                val status = busCursor.getString(5) ?: "UNPAID"
+                val mode = busCursor.getString(6) ?: "UPI_QR"
+                val yatraDate = busCursor.getString(7) ?: ""
+                val bookedAt = busCursor.getLong(8)
+
+                val isPaid = (status == "PAID" || status == "SUCCESS")
+                busSeatsCount++
+                busTotal += fare
+                if (isPaid) busPaid += fare else busPending += fare
+
+                entries.add(
+                    UnifiedLedgerEntry(
+                        id = "BUS_$seatNum",
+                        date = yatraDate,
+                        category = "BUS_BOOKING",
+                        categoryTitleHindi = "बालाजी बस सेवा (सीट $seatLabel)",
+                        devoteeOrPerson = passenger.ifEmpty { "यात्री #$seatNum" },
+                        phone = phone,
+                        details = "सीट संख्या: $seatLabel | किराया: ₹$fare",
+                        amount = fare,
+                        isInflow = true,
+                        isPaid = isPaid,
+                        paymentMode = mode,
+                        timestamp = if (bookedAt > 0L) bookedAt else System.currentTimeMillis()
+                    )
+                )
+            }
+            busCursor.close()
+        } catch (e: Exception) {}
+
+        // 2. Fetch Arzi Distributions
+        try {
+            val arziList = getAllArziRecords(darbarDate)
+            for (a in arziList) {
+                arziTotal += a.totalAmount
+                arziBadiCount += a.bigArziQty
+                arziChhotiCount += a.smallArziQty
+                if (a.isPaid) arziPaid += a.totalAmount else arziPending += a.totalAmount
+
+                entries.add(
+                    UnifiedLedgerEntry(
+                        id = "ARZI_${a.id}",
+                        date = a.darbarDate,
+                        category = "ARZI_BOX",
+                        categoryTitleHindi = "पवित्र अर्जी डिब्बा वितरण",
+                        devoteeOrPerson = a.devoteeName,
+                        phone = a.phoneNumber,
+                        details = "बड़ी अर्जी: ${a.bigArziQty}, छोटी अर्जी: ${a.smallArziQty} | दर: ₹${a.bigArziRate.toInt()}/₹${a.smallArziRate.toInt()}",
+                        amount = a.totalAmount,
+                        isInflow = true,
+                        isPaid = a.isPaid,
+                        paymentMode = a.paymentMode,
+                        timestamp = a.timestamp,
+                        recordedBy = a.recordedBy,
+                        notes = a.notes
+                    )
+                )
+            }
+        } catch (e: Exception) {}
+
+        // 3. Fetch Ashram Expenses
+        try {
+            val expCursor = db.rawQuery("SELECT id, title, category, amount, expense_date, added_by, created_at FROM yatra_expenses ORDER BY id DESC", null)
+            while (expCursor.moveToNext()) {
+                val expId = expCursor.getLong(0)
+                val title = expCursor.getString(1) ?: ""
+                val cat = expCursor.getString(2) ?: ""
+                val amt = expCursor.getDouble(3)
+                val expDate = expCursor.getString(4) ?: ""
+                val addedBy = expCursor.getString(5) ?: ""
+                val createdAt = expCursor.getLong(6)
+
+                expenseCount++
+                expenseTotal += amt
+
+                entries.add(
+                    UnifiedLedgerEntry(
+                        id = "EXP_$expId",
+                        date = expDate,
+                        category = "ASHRAM_EXPENSE",
+                        categoryTitleHindi = "आश्रम/यात्रा व्यय ($cat)",
+                        devoteeOrPerson = addedBy.ifEmpty { "व्यवस्थापक" },
+                        phone = "",
+                        details = title,
+                        amount = amt,
+                        isInflow = false,
+                        isPaid = true,
+                        paymentMode = "CASH",
+                        timestamp = createdAt,
+                        recordedBy = addedBy
+                    )
+                )
+            }
+            expCursor.close()
+        } catch (e: Exception) {}
+
+        // Sort all entries descending by timestamp
+        entries.sortByDescending { it.timestamp }
+
+        val totalInflow = busTotal + arziTotal
+        val totalPaidInflow = busPaid + arziPaid
+        val totalPendingInflow = busPending + arziPending
+        val netBalance = totalPaidInflow - expenseTotal
+
+        UnifiedMasterFinancialSummary(
+            totalInflow = totalInflow,
+            totalPaidInflow = totalPaidInflow,
+            totalPendingInflow = totalPendingInflow,
+            totalOutflow = expenseTotal,
+            netBalance = netBalance,
+            busTotalAmount = busTotal,
+            busPaidAmount = busPaid,
+            busPendingAmount = busPending,
+            busBookedSeatsCount = busSeatsCount,
+            arziTotalAmount = arziTotal,
+            arziPaidAmount = arziPaid,
+            arziPendingAmount = arziPending,
+            arziBadiCount = arziBadiCount,
+            arziChhotiCount = arziChhotiCount,
+            expenseTotalAmount = expenseTotal,
+            expenseCount = expenseCount,
+            entries = entries
         )
     }
 }

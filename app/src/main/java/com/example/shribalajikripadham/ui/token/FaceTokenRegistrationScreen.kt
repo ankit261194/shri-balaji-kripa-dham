@@ -132,14 +132,10 @@ fun FaceTokenRegistrationScreen(
             )
         }
     }
-    val isInsideGeofence = remember(distanceMeters, settings) {
-        if (!settings.isGeofenceEnforced) {
-            true
-        } else {
-            val effectiveRadius = settings.allowedRadiusMeters.coerceAtLeast(100.0)
-            distanceMeters <= effectiveRadius
-        }
+    val isDistanceEligible = remember(distanceMeters, settings) {
+        GeofenceLocationManager.isTokenDistancePermitted(distanceMeters, settings.isGeofenceEnforced)
     }
+    val isInsideGeofence = isDistanceEligible
 
     // Process photo captured from real camera or gallery
     fun processCapturedFace(bitmap: Bitmap) {
@@ -683,15 +679,15 @@ fun FaceTokenRegistrationScreen(
                                         SundayScheduleState.Open -> { /* Valid! */ }
                                     }
 
-                                    if (settings.isGeofenceEnforced && !isInsideGeofence) {
+                                    if (settings.isGeofenceEnforced && !isDistanceEligible) {
                                         val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
-                                        locationAlertTitle = if (isHindi) "📍 आप आश्रम लोकेशन पर नहीं हैं!" else "📍 Not at Ashram Location!"
+                                        locationAlertTitle = if (isHindi) "📍 आश्रम दूरी नियम (स्थानीय भक्त)" else "📍 Ashram Distance Policy"
                                         locationAlertMessage = if (isHindi)
-                                            "⚠️ तुम लोकेशन पे नहीं हो!\n\nसुरक्षा व व्यवस्था नियमों के अनुसार रविवार टोकन केवल आश्रम परिसर (1.5 किमी दायरे) के अंदर उपस्थित होकर ही प्राप्त किया जा सकता है।\n\nकृपया आश्रम पहुंचें और पुनः प्रयास करें।\n(आपकी वर्तमान दूरी: $distKm)"
+                                            "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: जो भक्त 30 किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु 30 किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल आश्रम परिसर (200 मीटर के भीतर) में आकर ही मिलेगा।\n\nकृपया आश्रम पहुँचकर ही सेल्फी व टोकन प्रक्रिया करें।"
                                         else
-                                            "⚠️ You are not at the Ashram location!\n\nTokens are only issued when physically present inside Ashram premises (1.5 km radius).\n(Current distance: $distKm)"
+                                            "⚠️ You are $distKm away from Ashram!\n\nPolicy: Devotees >30 km away can register in advance. Local devotees within 30 km must be within 200m of Ashram premises."
                                         showLocationAlertDialog = true
-                                        errorMessage = if (isHindi) "⚠️ आप आश्रम लोकेशन पर नहीं हैं! टोकन केवल आश्रम में उपस्थित होने पर मिलेगा।" else "You are outside Ashram boundary."
+                                        errorMessage = if (isHindi) "⚠️ 30 किमी दायरे वाले स्थानीय भक्त आश्रम परिसर (200m) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Local devotees must be at Ashram (within 200m)."
                                         return@Button
                                     }
 
@@ -756,15 +752,15 @@ fun FaceTokenRegistrationScreen(
                                         SundayScheduleState.Open -> { /* Valid! */ }
                                     }
 
-                                    if (settings.isGeofenceEnforced && !isInsideGeofence) {
+                                    if (settings.isGeofenceEnforced && !isDistanceEligible) {
                                         val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
-                                        locationAlertTitle = if (isHindi) "📍 आप आश्रम लोकेशन पर नहीं हैं!" else "📍 Not at Ashram Location!"
+                                        locationAlertTitle = if (isHindi) "📍 आश्रम दूरी नियम (स्थानीय भक्त)" else "📍 Ashram Distance Policy"
                                         locationAlertMessage = if (isHindi)
-                                            "⚠️ तुम लोकेशन पे नहीं हो!\n\nसुरक्षा व व्यवस्था नियमों के अनुसार रविवार टोकन केवल आश्रम परिसर (1.5 किमी दायरे) के अंदर उपस्थित होकर ही प्राप्त किया जा सकता है।\n\nकृपया आश्रम पहुंचें और पुनः प्रयास करें।\n(आपकी वर्तमान दूरी: $distKm)"
+                                            "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: जो भक्त 30 किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु 30 किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल आश्रम परिसर (200 मीटर के भीतर) में आकर ही मिलेगा।\n\nकृपया आश्रम पहुँचकर ही फोटो व टोकन प्रक्रिया करें।"
                                         else
-                                            "⚠️ You are not at the Ashram location!\n\nTokens are only issued when physically present inside Ashram premises (1.5 km radius).\n(Current distance: $distKm)"
+                                            "⚠️ You are $distKm away from Ashram!\n\nPolicy: Devotees >30 km away can register in advance. Local devotees within 30 km must be within 200m of Ashram premises."
                                         showLocationAlertDialog = true
-                                        errorMessage = if (isHindi) "⚠️ आप आश्रम लोकेशन पर नहीं हैं! टोकन केवल आश्रम में उपस्थित होने पर मिलेगा।" else "You are outside Ashram boundary."
+                                        errorMessage = if (isHindi) "⚠️ 30 किमी दायरे वाले स्थानीय भक्त आश्रम परिसर (200m) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Local devotees must be at Ashram (within 200m)."
                                         return@OutlinedButton
                                     }
 
@@ -1070,15 +1066,15 @@ fun FaceTokenRegistrationScreen(
                                 Button(
                                     enabled = !isSubmitting,
                                     onClick = {
-                                        if (settings.isGeofenceEnforced && !isInsideGeofence) {
+                                        if (settings.isGeofenceEnforced && !isDistanceEligible) {
                                             val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
-                                            locationAlertTitle = if (isHindi) "📍 आप आश्रम लोकेशन पर नहीं हैं!" else "📍 Not at Ashram Location!"
+                                            locationAlertTitle = if (isHindi) "📍 आश्रम दूरी नियम (स्थानीय भक्त)" else "📍 Ashram Distance Policy"
                                             locationAlertMessage = if (isHindi)
-                                                "⚠️ तुम लोकेशन पे नहीं हो!\n\nसुरक्षा व व्यवस्था नियमों के अनुसार रविवार टोकन केवल आश्रम परिसर (1.5 किमी दायरे) के अंदर उपस्थित होकर ही प्राप्त किया जा सकता है।\n\nकृपया आश्रम पहुंचें और पुनः प्रयास करें।\n(आपकी वर्तमान दूरी: $distKm)"
+                                                "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: जो भक्त 30 किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु 30 किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल आश्रम परिसर (200 मीटर के भीतर) में आकर ही मिलेगा।"
                                             else
-                                                "⚠️ You are not at the Ashram location!\n\nTokens are only issued when physically present inside Ashram premises (1.5 km radius)."
+                                                "⚠️ You are $distKm away from Ashram!\n\nPolicy: Devotees >30 km away can register in advance. Local devotees within 30 km must be within 200m of Ashram premises."
                                             showLocationAlertDialog = true
-                                            errorMessage = if (isHindi) "⚠️ आप आश्रम लोकेशन पर नहीं हैं!" else "You are outside Ashram boundary."
+                                            errorMessage = if (isHindi) "⚠️ 30 किमी दायरे वाले स्थानीय भक्त आश्रम परिसर (200m) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Local devotees must be at Ashram (within 200m)."
                                             return@Button
                                         }
 
@@ -1393,15 +1389,15 @@ fun FaceTokenRegistrationScreen(
                                         SundayScheduleState.Open -> { /* Valid! */ }
                                     }
 
-                                    if (settings.isGeofenceEnforced && !isInsideGeofence) {
+                                    if (settings.isGeofenceEnforced && !isDistanceEligible) {
                                         val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
-                                        locationAlertTitle = if (isHindi) "📍 आप आश्रम लोकेशन पर नहीं हैं!" else "📍 Not at Ashram Location!"
+                                        locationAlertTitle = if (isHindi) "📍 आश्रम दूरी नियम (स्थानीय भक्त)" else "📍 Ashram Distance Policy"
                                         locationAlertMessage = if (isHindi)
-                                            "⚠️ तुम लोकेशन पे नहीं हो!\n\nसुरक्षा व व्यवस्था नियमों के अनुसार रविवार टोकन केवल आश्रम परिसर (1.5 किमी दायरे) के अंदर उपस्थित होकर ही प्राप्त किया जा सकता है।\n\nकृपया आश्रम पहुंचें और पुनः प्रयास करें।\n(आपकी वर्तमान दूरी: $distKm)"
+                                            "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: जो भक्त 30 किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु 30 किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल आश्रम परिसर (200 मीटर के भीतर) में आकर ही मिलेगा।"
                                         else
-                                            "⚠️ You are not at the Ashram location!\n\nTokens are only issued when physically present inside Ashram premises (1.5 km radius)."
+                                            "⚠️ You are $distKm away from Ashram!\n\nPolicy: Devotees >30 km away can register in advance. Local devotees within 30 km must be within 200m of Ashram premises."
                                         showLocationAlertDialog = true
-                                        errorMessage = if (isHindi) "⚠️ आप आश्रम लोकेशन पर नहीं हैं!" else "You are outside Ashram boundary."
+                                        errorMessage = if (isHindi) "⚠️ 30 किमी दायरे वाले स्थानीय भक्त आश्रम परिसर (200m) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Local devotees must be at Ashram (within 200m)."
                                         return@Button
                                     }
 

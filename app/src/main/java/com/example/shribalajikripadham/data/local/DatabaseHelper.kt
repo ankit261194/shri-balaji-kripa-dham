@@ -14,7 +14,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     companion object {
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
-        const val DATABASE_VERSION = 22
+        const val DATABASE_VERSION = 23
 
         fun hashPin(pin: String): String {
             val md = MessageDigest.getInstance("SHA-256")
@@ -361,11 +361,35 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             """.trimIndent())
         } catch (e: Exception) { e.printStackTrace() }
 
+        // 14. Arzi Distribution Records Table
+        try {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS arzi_distribution_records (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    devotee_name TEXT NOT NULL,
+                    phone_number TEXT NOT NULL DEFAULT '',
+                    big_arzi_qty INTEGER NOT NULL DEFAULT 0,
+                    small_arzi_qty INTEGER NOT NULL DEFAULT 0,
+                    big_arzi_rate REAL NOT NULL DEFAULT 100.0,
+                    small_arzi_rate REAL NOT NULL DEFAULT 50.0,
+                    total_amount REAL NOT NULL DEFAULT 0.0,
+                    is_paid INTEGER NOT NULL DEFAULT 0,
+                    payment_mode TEXT NOT NULL DEFAULT 'CASH',
+                    recorded_by TEXT NOT NULL DEFAULT 'SUPER_ADMIN',
+                    darbar_date TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL,
+                    notes TEXT NOT NULL DEFAULT ''
+                )
+            """.trimIndent())
+        } catch (e: Exception) { e.printStackTrace() }
+
         // Safe Index Creation - Guaranteed to execute only after all tables exist
         try { db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_device_darbar ON device_registrations (device_id, darbar_date)") } catch (e: Exception) {}
         try { db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_device_darbar ON tokens (device_id, darbar_date) WHERE registered_by NOT IN ('SUPER_ADMIN', 'SEVADAR_DESK')") } catch (e: Exception) {}
         try { db.execSQL("CREATE INDEX IF NOT EXISTS idx_devotee_phone ON devotee_face_profiles (phone_number)") } catch (e: Exception) {}
         try { db.execSQL("CREATE INDEX IF NOT EXISTS idx_devotee_name ON devotee_face_profiles (patient_name)") } catch (e: Exception) {}
+        try { db.execSQL("CREATE INDEX IF NOT EXISTS idx_arzi_darbar_date ON arzi_distribution_records (darbar_date)") } catch (e: Exception) {}
+        try { db.execSQL("CREATE INDEX IF NOT EXISTS idx_arzi_devotee ON arzi_distribution_records (devotee_name)") } catch (e: Exception) {}
 
         // Ensure missing columns in existing tables
         ensureColumns(db)
@@ -432,7 +456,13 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             "ALTER TABLE ashram_settings ADD COLUMN can_devotee_view_payment_history INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN ashram_upi_id TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
             "ALTER TABLE ashram_settings ADD COLUMN ashram_upi_name TEXT NOT NULL DEFAULT 'Shri Balaji Kripa Dham'",
-            "ALTER TABLE ashram_settings ADD COLUMN bus_seat_fare_amount INTEGER NOT NULL DEFAULT 1500"
+            "ALTER TABLE ashram_settings ADD COLUMN bus_seat_fare_amount INTEGER NOT NULL DEFAULT 1500",
+            "ALTER TABLE ashram_settings ADD COLUMN is_arzi_ledger_live INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE ashram_settings ADD COLUMN badi_arzi_rate REAL NOT NULL DEFAULT 100.0",
+            "ALTER TABLE ashram_settings ADD COLUMN chhoti_arzi_rate REAL NOT NULL DEFAULT 50.0",
+            "ALTER TABLE ashram_settings ADD COLUMN can_admin_view_arzi_ledger INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE ashram_settings ADD COLUMN can_devotee_view_arzi_ledger INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_arzi INTEGER NOT NULL DEFAULT 0"
         )
         for (sql in alterStatements) {
             try {
@@ -440,7 +470,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             } catch (ignored: Exception) {}
         }
         try {
-            db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1 WHERE role = 'SUPER_ADMIN'")
+            db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1, can_manage_arzi = 1 WHERE role = 'SUPER_ADMIN'")
             db.execSQL("UPDATE ashram_settings SET allowed_radius_meters = 1500.0 WHERE allowed_radius_meters < 500.0")
             db.execSQL("UPDATE ashram_settings SET latitude = 28.3972915, longitude = 78.1460410 WHERE id = 1")
         } catch (ignored: Exception) {}
@@ -535,6 +565,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     put("can_delete_tokens", 1)
                     put("can_custom_token_number", 1)
                     put("can_export_pdf", 1)
+                    put("can_manage_arzi", 1)
                     put("photo_uri", "")
                     put("is_active", 1)
                     put("created_at", System.currentTimeMillis())

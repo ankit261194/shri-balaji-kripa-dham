@@ -103,13 +103,14 @@ object TokenPdfExporter {
             strokeWidth = 0.6f
         }
 
-        val totalTokens = tokens.size
-        val completedCount = tokens.count { it.isDarshanCompleted }
+        val sortedTokens = tokens.sortedBy { it.tokenNumber }
+        val totalTokens = sortedTokens.size
+        val completedCount = sortedTokens.count { it.isDarshanCompleted }
         val pendingCount = totalTokens - completedCount
 
         val timeSdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
 
-        val totalPages = if (tokens.isEmpty()) 1 else (tokens.size + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE
+        val totalPages = if (sortedTokens.isEmpty()) 1 else (sortedTokens.size + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE
 
         for (pageNum in 1..totalPages) {
             val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNum).create()
@@ -153,39 +154,66 @@ object TokenPdfExporter {
             canvas.drawText(addressLine, PAGE_WIDTH / 2f, margin + 72f, metaPaint.apply { textAlign = Paint.Align.CENTER })
             metaPaint.textAlign = Paint.Align.LEFT
 
-            // 2. Table Column Dimensions
+            // 2. Table Column Dimensions with Full Crisp Grid Borders
             val tableTop = margin + topBoxHeight + 14f
-            val tableWidth = PAGE_WIDTH - (margin * 2)
+            val tableWidth = PAGE_WIDTH - (margin * 2) // 547f
             val rowHeight = 22f
 
-            val colXToken = margin + 6f
-            val colXName = margin + 52f
-            val colXPhone = margin + 175f
-            val colXCity = margin + 265f
-            val colXDistance = margin + 370f
-            val colXTime = margin + 445f
-            val colXStatus = margin + 495f
+            // Column Boundaries (x0 to x8)
+            val colX0 = margin // 24f (Start of S.No / क्र.सं.)
+            val colX1 = margin + 28f // 52f (Start of Token # / टोकन नं.)
+            val colX2 = margin + 70f // 94f (Start of Devotee Name / भक्त का नाम)
+            val colX3 = margin + 186f // 210f (Start of Mobile / मोबाइल)
+            val colX4 = margin + 261f // 285f (Start of City / शहर)
+            val colX5 = margin + 356f // 380f (Start of Distance / दूरी)
+            val colX6 = margin + 411f // 435f (Start of Time / समय)
+            val colX7 = margin + 476f // 500f (Start of Status / स्थिति)
+            val colX8 = margin + tableWidth // 571f (End of Table)
+
+            // Text drawing offsets (colX + 4f)
+            val txtXSNo = colX0 + 4f
+            val txtXToken = colX1 + 4f
+            val txtXName = colX2 + 4f
+            val txtXPhone = colX3 + 4f
+            val txtXCity = colX4 + 4f
+            val txtXDistance = colX5 + 4f
+            val txtXTime = colX6 + 4f
+            val txtXStatus = colX7 + 4f
+
+            val gridBorderPaint = Paint().apply {
+                color = Color.rgb(180, 180, 180)
+                style = Paint.Style.STROKE
+                strokeWidth = 0.75f
+            }
 
             // Table Header Bar
-            val thRect = RectF(margin, tableTop, margin + tableWidth, tableTop + rowHeight)
-            canvas.drawRoundRect(thRect, 4f, 4f, tableHeaderBgPaint)
+            val thRect = RectF(colX0, tableTop, colX8, tableTop + rowHeight)
+            canvas.drawRect(thRect, tableHeaderBgPaint)
 
-            val thY = tableTop + 14f
-            canvas.drawText("टोकन #", colXToken, thY, tableHeaderPaint)
-            canvas.drawText("भक्त का नाम", colXName, thY, tableHeaderPaint)
-            canvas.drawText("मोबाइल नंबर", colXPhone, thY, tableHeaderPaint)
-            canvas.drawText("शहर / ग्राम", colXCity, thY, tableHeaderPaint)
-            canvas.drawText("आश्रम से दूरी", colXDistance, thY, tableHeaderPaint)
-            canvas.drawText("समय", colXTime, thY, tableHeaderPaint)
-            canvas.drawText("दर्शन स्थिति", colXStatus, thY, tableHeaderPaint)
+            val thY = tableTop + 14.5f
+            canvas.drawText("क्र.सं.", txtXSNo, thY, tableHeaderPaint)
+            canvas.drawText("टोकन #", txtXToken, thY, tableHeaderPaint)
+            canvas.drawText("भक्त का नाम", txtXName, thY, tableHeaderPaint)
+            canvas.drawText("मोबाइल नंबर", txtXPhone, thY, tableHeaderPaint)
+            canvas.drawText("शहर / ग्राम", txtXCity, thY, tableHeaderPaint)
+            canvas.drawText("दूरी", txtXDistance, thY, tableHeaderPaint)
+            canvas.drawText("समय", txtXTime, thY, tableHeaderPaint)
+            canvas.drawText("दर्शन स्थिति", txtXStatus, thY, tableHeaderPaint)
+
+            // Draw Header vertical lines and outer boundary
+            listOf(colX0, colX1, colX2, colX3, colX4, colX5, colX6, colX7, colX8).forEach { x ->
+                canvas.drawLine(x, tableTop, x, tableTop + rowHeight, borderPaint)
+            }
+            canvas.drawLine(colX0, tableTop, colX8, tableTop, borderPaint)
+            canvas.drawLine(colX0, tableTop + rowHeight, colX8, tableTop + rowHeight, borderPaint)
 
             // Table Rows
             val startIndex = (pageNum - 1) * ROWS_PER_PAGE
-            val endIndex = minOf(startIndex + ROWS_PER_PAGE, tokens.size)
+            val endIndex = minOf(startIndex + ROWS_PER_PAGE, sortedTokens.size)
 
             var currentY = tableTop + rowHeight
 
-            if (tokens.isEmpty()) {
+            if (sortedTokens.isEmpty()) {
                 val emptyY = currentY + 40f
                 val emptyPaint = Paint(metaPaint).apply {
                     textSize = 12f
@@ -194,34 +222,34 @@ object TokenPdfExporter {
                 canvas.drawText("आज की तिथि में कोई टोकन पंजीकृत नहीं है।", PAGE_WIDTH / 2f, emptyY, emptyPaint)
             } else {
                 for (i in startIndex until endIndex) {
-                    val token = tokens[i]
+                    val token = sortedTokens[i]
                     val isEven = (i % 2 == 0)
 
                     if (isEven) {
-                        val rowBgRect = RectF(margin, currentY, margin + tableWidth, currentY + rowHeight)
+                        val rowBgRect = RectF(colX0, currentY, colX8, currentY + rowHeight)
                         canvas.drawRect(rowBgRect, rowEvenBgPaint)
                     }
 
-                    // Divider line
-                    canvas.drawLine(margin, currentY + rowHeight, margin + tableWidth, currentY + rowHeight, borderPaint)
+                    val textY = currentY + 14.5f
 
-                    val textY = currentY + 14f
+                    // 0. Serial Number (क्र.सं. - 1, 2, 3...)
+                    canvas.drawText("${i + 1}", txtXSNo, textY, rowTextPaint)
 
                     // 1. Token Number
-                    canvas.drawText("#${token.tokenNumber}", colXToken, textY, rowTextPaint.apply { typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD) })
+                    canvas.drawText("#${token.tokenNumber}", txtXToken, textY, rowTextPaint.apply { typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD) })
                     rowTextPaint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
 
                     // 2. Patient Name (Truncated if too long)
-                    val safeName = if (token.patientName.length > 20) token.patientName.take(19) + "…" else token.patientName
-                    canvas.drawText(safeName, colXName, textY, rowTextPaint)
+                    val safeName = if (token.patientName.length > 18) token.patientName.take(17) + "…" else token.patientName
+                    canvas.drawText(safeName, txtXName, textY, rowTextPaint)
 
                     // 3. Phone Number
-                    val safePhone = if (token.phoneNumber.length > 13) token.phoneNumber.take(13) else token.phoneNumber
-                    canvas.drawText(safePhone, colXPhone, textY, rowTextPaint)
+                    val safePhone = if (token.phoneNumber.length > 12) token.phoneNumber.take(12) else token.phoneNumber
+                    canvas.drawText(safePhone, txtXPhone, textY, rowTextPaint)
 
                     // 4. City
-                    val safeCity = if (token.city.length > 16) token.city.take(15) + "…" else token.city
-                    canvas.drawText(safeCity, colXCity, textY, rowTextPaint)
+                    val safeCity = if (token.city.length > 15) token.city.take(14) + "…" else token.city
+                    canvas.drawText(safeCity, txtXCity, textY, rowTextPaint)
 
                     // 5. Distance
                     val distStr = when {
@@ -235,17 +263,25 @@ object TokenPdfExporter {
                             if (calculated > 1.0f) "%.1f किमी".format(Locale.getDefault(), calculated) else "काउंटर"
                         }
                     }
-                    canvas.drawText(distStr, colXDistance, textY, rowTextPaint)
+                    canvas.drawText(distStr, txtXDistance, textY, rowTextPaint)
 
                     // 6. Time
                     val timeStr = timeSdf.format(Date(token.createdAt))
-                    canvas.drawText(timeStr, colXTime, textY, rowTextPaint)
+                    canvas.drawText(timeStr, txtXTime, textY, rowTextPaint)
 
                     // 7. Status Checkmark
                     if (token.isDarshanCompleted) {
-                        canvas.drawText("✓ संपन्न", colXStatus, textY, rowCompletedPaint)
+                        canvas.drawText("✓ संपन्न", txtXStatus, textY, rowCompletedPaint)
                     } else {
-                        canvas.drawText("⏳ शेष", colXStatus, textY, rowPendingPaint)
+                        canvas.drawText("⏳ शेष", txtXStatus, textY, rowPendingPaint)
+                    }
+
+                    // Draw Horizontal Divider Line
+                    canvas.drawLine(colX0, currentY + rowHeight, colX8, currentY + rowHeight, gridBorderPaint)
+
+                    // Draw Vertical Grid Lines for each column
+                    listOf(colX0, colX1, colX2, colX3, colX4, colX5, colX6, colX7, colX8).forEach { x ->
+                        canvas.drawLine(x, currentY, x, currentY + rowHeight, gridBorderPaint)
                     }
 
                     currentY += rowHeight

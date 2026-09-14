@@ -15,12 +15,26 @@ data class LocationSecurityResult(
     val accuracyMeters: Float,
     val distanceMeters: Double,
     val isInsideGeofence: Boolean,
+    val isAdvanceDistanceEligible: Boolean = false, // > 30 km (outstation devotee)
+    val isAshramLocalEligible: Boolean = false, // <= 200 m (physically at Ashram)
     val securityExceptionReason: String? = null
 )
 
 object GeofenceLocationManager {
 
     const val MAX_ALLOWED_ACCURACY_METERS = 250.0f
+    const val OUTSTATION_MIN_DISTANCE_METERS = 30000.0 // 30 km
+    const val LOCAL_ASHRAM_MAX_DISTANCE_METERS = 200.0 // 200 meters
+
+    /**
+     * Dual-Distance Eligibility Evaluator:
+     * - Devotees > 30 km: Can register token in advance from home/city.
+     * - Devotees <= 30 km: MUST be physically within 200m of Ashram (Gram Dungra Jaat).
+     */
+    fun isTokenDistancePermitted(distanceMeters: Double, isGeofenceEnforced: Boolean = true): Boolean {
+        if (!isGeofenceEnforced) return true
+        return (distanceMeters > OUTSTATION_MIN_DISTANCE_METERS) || (distanceMeters <= LOCAL_ASHRAM_MAX_DISTANCE_METERS)
+    }
 
     /**
      * Calculates great-circle distance between two points on Earth using the Haversine formula.
@@ -105,17 +119,19 @@ object GeofenceLocationManager {
     }
 
     /**
-     * Strict Server/Repository-Side Location Validation:
-     * - Blocks Mock Location / Fake GPS
-     * - Rejects low confidence / inaccurate location (> 50m)
-     * - Verifies Geofence boundaries
+     * Strict Server/Repository-Side Location Validation with Dual-Distance Geofence Policy:
+     * - Blocks Mock Location / Fake GPS immediately
+     * - Rejects low confidence / inaccurate location (> 250m)
+     * - Enforces:
+     *     * > 30 km: Eligible to generate advance token from home/village
+     *     * <= 30 km: Strictly BLOCKED unless physically within 200m of Ashram
      */
     fun validateLocationSecurity(
         location: Location?,
         context: Context,
         ashramLat: Double,
         ashramLon: Double,
-        allowedRadiusMeters: Double,
+        allowedRadiusMeters: Double = LOCAL_ASHRAM_MAX_DISTANCE_METERS,
         isGeofenceEnforced: Boolean = true
     ): LocationSecurityResult {
         if (!isGeofenceEnforced) {
@@ -127,6 +143,8 @@ object GeofenceLocationManager {
                 accuracyMeters = acc,
                 distanceMeters = dist,
                 isInsideGeofence = true,
+                isAdvanceDistanceEligible = true,
+                isAshramLocalEligible = true,
                 securityExceptionReason = null
             )
         }
@@ -138,11 +156,11 @@ object GeofenceLocationManager {
                 accuracyMeters = Float.MAX_VALUE,
                 distanceMeters = Double.MAX_VALUE,
                 isInsideGeofence = false,
-                securityExceptionReason = "Security Exception: Location unavailable. Please enable GPS."
+                securityExceptionReason = "जीपीएस लोकेशन अनुपलब्ध है। कृपया फ़ोन की लोकेशन (GPS) चालू करें।"
             )
         }
 
-        // 1. Detect Fake GPS / Mock Location
+        // 1. Detect Fake GPS / Mock Location (Anti-Bypass Protection)
         val isMock = isMockLocation(location, context)
         if (isMock) {
             return LocationSecurityResult(
@@ -151,7 +169,7 @@ object GeofenceLocationManager {
                 accuracyMeters = location.accuracy,
                 distanceMeters = calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon),
                 isInsideGeofence = false,
-                securityExceptionReason = "Security Exception: Spoofed Location or Duplicate Device Request Denied."
+                securityExceptionReason = "⚠️ सुरक्षा चेतावनी: फ़ेक जीपीएस (Fake GPS) अथवा नकली लोकेशन का उपयोग पकड़ा गया है! टोकन पंजीकरण अवरुद्ध कर दिया गया है।"
             )
         }
 
@@ -164,33 +182,52 @@ object GeofenceLocationManager {
                 accuracyMeters = accuracy,
                 distanceMeters = calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon),
                 isInsideGeofence = false,
-                securityExceptionReason = "Security Exception: Low GPS accuracy (${String.format("%.1f", accuracy)}m > ${MAX_ALLOWED_ACCURACY_METERS}m). Stand in open area."
+                securityExceptionReason = "⚠️ जीपीएस सिग्नल बहुत कमज़ोर है (${String.format(java.util.Locale.US, "%.1f", accuracy)}m > ${MAX_ALLOWED_ACCURACY_METERS}m)। कृपया खुले स्थान पर आकर प्रयास करें।"
             )
         }
 
-        // 3. Geofence Distance Check
+        // 3. Dual-Distance Evaluation
         val distance = calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon)
-        val isInside = distance <= allowedRadiusMeters
 
-        if (!isInside) {
-            val km = String.format("%.1f", distance / 1000.0)
+        // Case A: Devotee is coming from > 30 km away -> Advance token is permitted
+        if (distance > OUTSTATION_MIN_DISTANCE_METERS) {
             return LocationSecurityResult(
-                isValid = false,
+                isValid = true,
                 isMock = false,
                 accuracyMeters = accuracy,
                 distanceMeters = distance,
                 isInsideGeofence = false,
-                securityExceptionReason = "Security Exception: Outside Geofence. You are $km km away from Ashram."
+                isAdvanceDistanceEligible = true,
+                isAshramLocalEligible = false,
+                securityExceptionReason = null
             )
         }
 
+        // Case B: Devotee is physically at Ashram (<= 200m) -> Local token permitted
+        if (distance <= LOCAL_ASHRAM_MAX_DISTANCE_METERS) {
+            return LocationSecurityResult(
+                isValid = true,
+                isMock = false,
+                accuracyMeters = accuracy,
+                distanceMeters = distance,
+                isInsideGeofence = true,
+                isAdvanceDistanceEligible = false,
+                isAshramLocalEligible = true,
+                securityExceptionReason = null
+            )
+        }
+
+        // Case C: Devotee is within 30 km (200m to 30 km) -> Strictly BLOCKED!
+        val km = String.format(java.util.Locale.US, "%.1f", distance / 1000.0)
         return LocationSecurityResult(
-            isValid = true,
+            isValid = false,
             isMock = false,
             accuracyMeters = accuracy,
             distanceMeters = distance,
-            isInsideGeofence = true,
-            securityExceptionReason = null
+            isInsideGeofence = false,
+            isAdvanceDistanceEligible = false,
+            isAshramLocalEligible = false,
+            securityExceptionReason = "⚠️ आश्रम दूरी नियम: 30 किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर (200 मीटर के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।"
         )
     }
 

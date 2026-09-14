@@ -224,6 +224,7 @@ fun AdminDashboardScreen(
     var newSevCanNotif by remember { mutableStateOf(false) }
     var newSevCanContent by remember { mutableStateOf(false) }
     var newSevCanPhotos by remember { mutableStateOf(false) }
+    var newSevCanArzi by remember { mutableStateOf(false) }
     var createSevErrorMsg by remember { mutableStateOf<String?>(null) }
 
     // App Customizer
@@ -264,6 +265,11 @@ fun AdminDashboardScreen(
     var svcCanDevoteeViewPayments by remember { mutableStateOf(false) }
     var svcUpiId by remember { mutableStateOf("shribalajikripadham@upi") }
     var svcUpiName by remember { mutableStateOf("Shri Balaji Kripa Dham") }
+    var svcArziLedgerLive by remember { mutableStateOf(false) }
+    var svcBadiArziRate by remember { mutableStateOf("100") }
+    var svcChhotiArziRate by remember { mutableStateOf("50") }
+    var svcCanAdminViewArzi by remember { mutableStateOf(false) }
+    var svcCanDevoteeViewArzi by remember { mutableStateOf(false) }
     var svcSuccessMsg by remember { mutableStateOf<String?>(null) }
 
     // Notification broadcast
@@ -324,6 +330,7 @@ fun AdminDashboardScreen(
     var editSevCanDeleteTokens by remember { mutableStateOf(false) }
     var editSevCanCustomTokenNumber by remember { mutableStateOf(false) }
     var editSevCanExportPdf by remember { mutableStateOf(true) }
+    var editSevCanArzi by remember { mutableStateOf(false) }
     var customDistancesList by remember { mutableStateOf<List<CustomCityDistance>>(emptyList()) }
     var uiSectionsList by remember { mutableStateOf<List<UiSectionConfig>>(emptyList()) }
 
@@ -383,6 +390,11 @@ fun AdminDashboardScreen(
             svcCanDevoteeViewPayments = s.canDevoteeViewPaymentHistory
             svcUpiId = s.ashramUpiId
             svcUpiName = s.ashramUpiName
+            svcArziLedgerLive = s.isArziLedgerLive
+            svcBadiArziRate = s.badiArziRate.toString()
+            svcChhotiArziRate = s.chhotiArziRate.toString()
+            svcCanAdminViewArzi = s.canAdminViewArziLedger
+            svcCanDevoteeViewArzi = s.canDevoteeViewArziLedger
 
             updVersionCode = s.latestVersionCode.toString()
             updVersionName = s.latestVersionName
@@ -977,6 +989,12 @@ fun AdminDashboardScreen(
             if (isSuper || settings.canAdminViewPaymentHistory) {
                 allowedTabs.add(if (isHindi) "पेमेंट लेजर" else "Payment Ledger")
             }
+            if (isSuper || (admin.canManageArzi && settings.canAdminViewArziLedger)) {
+                allowedTabs.add(if (isHindi) "अर्जी लेजर 📦" else "Arzi Ledger 📦")
+            }
+            if (isSuper || (settings.canAdminViewPaymentHistory && admin.canManageExpenses)) {
+                allowedTabs.add(if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊")
+            }
             if (isSuper) {
                 allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
                 allowedTabs.add(if (isHindi) "सेवाएं ऑन/ऑफ" else "Services")
@@ -1091,7 +1109,9 @@ fun AdminDashboardScreen(
                             Triple("सूचना प्रसारण", admin.canSendNotifications || isSuper, "📢"),
                             Triple("आश्रम विवरण", admin.canEditAshramInfo || isSuper, "⚙️"),
                             Triple("सेवादार नियंत्रण", isSuper, "👥"),
-                            Triple("भक्त फोटो", admin.canViewDevoteePhotos || isSuper, "📸")
+                            Triple("भक्त फोटो", admin.canViewDevoteePhotos || isSuper, "📸"),
+                            Triple("अर्जी लेजर", isSuper || admin.canManageArzi, "📦"),
+                            Triple("महा-लेजर", isSuper || (settings.canAdminViewPaymentHistory && admin.canManageExpenses), "📊")
                         )
 
                         LazyRow(
@@ -1374,6 +1394,7 @@ fun AdminDashboardScreen(
                                     editSevCanDeleteTokens = targetAdmin.canDeleteTokens
                                     editSevCanCustomTokenNumber = targetAdmin.canSetCustomTokenNumber
                                     editSevCanExportPdf = targetAdmin.canExportPdf
+                                    editSevCanArzi = targetAdmin.canManageArzi
                                 },
                                 onToggleActive = { targetAdmin ->
                                     scope.launch {
@@ -1390,6 +1411,7 @@ fun AdminDashboardScreen(
                                             canIssueTokensAnywhere = targetAdmin.canIssueTokensAnywhere,
                                             canScanPaperRegister = targetAdmin.canScanPaperRegister,
                                             canManageParchas = targetAdmin.canManageParchas,
+                                            canManageArzi = targetAdmin.canManageArzi,
                                             isActive = !targetAdmin.isActive
                                         )
                                         try { repository.publishAdminsToGitHub() } catch (e: Exception) {}
@@ -1417,6 +1439,26 @@ fun AdminDashboardScreen(
                         }
                         currentTabTitle == "पेमेंट लेजर" || currentTabTitle == "Payment Ledger" -> {
                             PaymentLedgerTab(
+                                isHindi = isHindi,
+                                repository = repository,
+                                settings = settings,
+                                isSuperAdmin = isSuper,
+                                scope = scope,
+                                context = context
+                            )
+                        }
+                        currentTabTitle == "अर्जी लेजर 📦" || currentTabTitle == "Arzi Ledger 📦" -> {
+                            ArziLedgerTab(
+                                isHindi = isHindi,
+                                repository = repository,
+                                settings = settings,
+                                isSuperAdmin = isSuper,
+                                scope = scope,
+                                context = context
+                            )
+                        }
+                        currentTabTitle == "महा-लेजर 📊" || currentTabTitle == "Master Ledger 📊" -> {
+                            UnifiedMasterLedgerTab(
                                 isHindi = isHindi,
                                 repository = repository,
                                 settings = settings,
@@ -1460,6 +1502,16 @@ fun AdminDashboardScreen(
                                 onUpiIdChange = { svcUpiId = it },
                                 upiName = svcUpiName,
                                 onUpiNameChange = { svcUpiName = it },
+                                isArziLedgerLive = svcArziLedgerLive,
+                                onArziLedgerLiveChange = { svcArziLedgerLive = it },
+                                badiArziRate = svcBadiArziRate,
+                                onBadiArziRateChange = { svcBadiArziRate = it },
+                                chhotiArziRate = svcChhotiArziRate,
+                                onChhotiArziRateChange = { svcChhotiArziRate = it },
+                                canAdminViewArzi = svcCanAdminViewArzi,
+                                onCanAdminViewArziChange = { svcCanAdminViewArzi = it },
+                                canDevoteeViewArzi = svcCanDevoteeViewArzi,
+                                onCanDevoteeViewArziChange = { svcCanDevoteeViewArzi = it },
                                 successMsg = svcSuccessMsg,
                                 onSave = {
                                     scope.launch {
@@ -1497,11 +1549,18 @@ fun AdminDashboardScreen(
                                             ashramUpiName = svcUpiName.trim(),
                                             busSeatFareAmount = svcBusFareAmount.toIntOrNull() ?: 1500
                                         )
+                                        repository.updateArziSettings(
+                                            isArziLedgerLive = svcArziLedgerLive,
+                                            badiArziRate = svcBadiArziRate.toIntOrNull() ?: 100,
+                                            chhotiArziRate = svcChhotiArziRate.toIntOrNull() ?: 50,
+                                            canAdminViewArziLedger = svcCanAdminViewArzi,
+                                            canDevoteeViewArziLedger = svcCanDevoteeViewArzi
+                                        )
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                         svcSuccessMsg = if (isHindi)
-                                            "सेवाएं, बस व्यवस्था व UPI पेमेंट सेटिंग्स सुरक्षित और सभी भक्तों के फोन पर लाइव अपडेट हुई!"
+                                            "सेवाएं, अर्जी दर, बस व्यवस्था व UPI पेमेंट सेटिंग्स सुरक्षित और सभी भक्तों के फोन पर लाइव अपडेट हुई!"
                                         else
-                                            "Service visibility, bus & payment settings saved & broadcast to all devotees!"
+                                            "Service visibility, Arzi rates, bus & payment settings saved & broadcast to all devotees!"
                                         refreshData()
                                     }
                                 }
@@ -1974,6 +2033,10 @@ fun AdminDashboardScreen(
                         Checkbox(checked = newSevCanExportPdf, onCheckedChange = { newSevCanExportPdf = it })
                         Text(if (isHindi) "📄 आज की टोकन सूची PDF डाउनलोड (Export PDF)" else "Allow Export PDF", fontSize = 13.sp)
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = newSevCanArzi, onCheckedChange = { newSevCanArzi = it })
+                        Text(if (isHindi) "📦 अर्जी डिब्बा वितरण व लेजर प्रबंधन" else "Manage Arzi Distribution & Ledger", fontSize = 13.sp)
+                    }
                 }
             },
             confirmButton = {
@@ -1993,6 +2056,7 @@ fun AdminDashboardScreen(
                                 if (newSevCanAnywhere) perms.add("कहीं से भी टोकन जारी करना")
                                 if (newSevCanScanRegister) perms.add("रजिस्टर कॉपी स्कैन")
                                 if (newSevCanParchas) perms.add("आश्रम पावन पर्चे")
+                                if (newSevCanArzi) perms.add("अर्जी डिब्बा व लेजर")
 
                                 val (createdOk, createMsg) = repository.createSevadarAdmin(
                                     name = newSevName,
@@ -2016,6 +2080,7 @@ fun AdminDashboardScreen(
                                     canDeleteTokens = newSevCanDeleteTokens,
                                     canSetCustomTokenNumber = newSevCanCustomTokenNumber,
                                     canExportPdf = newSevCanExportPdf,
+                                    canManageArzi = newSevCanArzi,
                                     photoUri = newSevPhotoUri
                                 )
 
@@ -2578,6 +2643,10 @@ fun AdminDashboardScreen(
                         Checkbox(checked = editSevCanExportPdf, onCheckedChange = { editSevCanExportPdf = it })
                         Text(if (isHindi) "📄 आज की टोकन सूची PDF डाउनलोड (Export PDF)" else "Allow Export PDF", fontSize = 13.sp)
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = editSevCanArzi, onCheckedChange = { editSevCanArzi = it })
+                        Text(if (isHindi) "📦 अर्जी डिब्बा वितरण व लेजर प्रबंधन" else "Manage Arzi Distribution & Ledger", fontSize = 13.sp)
+                    }
                 }
             },
             confirmButton = {
@@ -2608,6 +2677,7 @@ fun AdminDashboardScreen(
                                     canDeleteTokens = editSevCanDeleteTokens,
                                     canSetCustomTokenNumber = editSevCanCustomTokenNumber,
                                     canExportPdf = editSevCanExportPdf,
+                                    canManageArzi = editSevCanArzi,
                                     isActive = target.isActive
                                 )
                             )
@@ -2757,6 +2827,7 @@ fun TokenQueueTab(
     var selectedDistanceFilter by remember { mutableStateOf(DistanceFilter.ALL) }
     var selectedSortOrder by remember { mutableStateOf(TokenSortOrder.TOKEN_NUMBER) }
     var isExportingPdf by remember { mutableStateOf(false) }
+    var isVoiceMuted by remember { mutableStateOf(AshramVoiceAnnouncementManager.isMuted(context)) }
     var tokenToCancel by remember { mutableStateOf<Token?>(null) }
     var tokenToDelete by remember { mutableStateOf<Token?>(null) }
     var zoomedPhotoToken by remember { mutableStateOf<Token?>(null) }
@@ -2784,6 +2855,8 @@ fun TokenQueueTab(
     ) {
         // 1. Current Calling Token
         item {
+            val currentCalledDevotee = todayTokens.find { it.tokenNumber == settings.runningTokenNumber }
+
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -2797,24 +2870,107 @@ fun TokenQueueTab(
                     Text(if (isHindi) "वर्तमान बुलाया गया नंबर" else "Currently Active Token", fontSize = 14.sp, color = Color.Gray)
                     Text("#${settings.runningTokenNumber}", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = SaffronPrimary)
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    if (currentCalledDevotee != null) {
+                        Surface(
+                            color = Color(0xFFFFF3E0),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.5f)),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("👤 ", fontSize = 14.sp)
+                                Text(
+                                    text = "${currentCalledDevotee.patientName} (${currentCalledDevotee.city})",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = MaroonPrimary
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
-                            onClick = { onUpdateRunningToken((settings.runningTokenNumber - 1).coerceAtLeast(1)) },
+                            onClick = {
+                                val prevNum = (settings.runningTokenNumber - 1).coerceAtLeast(1)
+                                onUpdateRunningToken(prevNum)
+                            },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("-1 पिछला", color = Color.Black)
                         }
                         Button(
-                            onClick = { onUpdateRunningToken(settings.runningTokenNumber + 1) },
+                            onClick = {
+                                val nextNum = settings.runningTokenNumber + 1
+                                onUpdateRunningToken(nextNum)
+                                val nextDev = todayTokens.find { it.tokenNumber == nextNum }
+                                AshramVoiceAnnouncementManager.announceNextToken(
+                                    context = context,
+                                    tokenNumber = nextNum,
+                                    devoteeName = nextDev?.patientName ?: "",
+                                    city = nextDev?.city ?: ""
+                                )
+                            },
                             colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1.3f)
                         ) {
-                            Text("+1 अगला टोकन", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text("🔊 +1 अगला टोकन", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                val dev = todayTokens.find { it.tokenNumber == settings.runningTokenNumber }
+                                AshramVoiceAnnouncementManager.announceNextToken(
+                                    context = context,
+                                    tokenNumber = settings.runningTokenNumber,
+                                    devoteeName = dev?.patientName ?: "",
+                                    city = dev?.city ?: ""
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaroonPrimary)
+                        ) {
+                            Text(if (isHindi) "📢 पुनः बोलें" else "📢 Repeat Call", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val newMuted = !isVoiceMuted
+                                AshramVoiceAnnouncementManager.setMuted(context, newMuted)
+                                isVoiceMuted = newMuted
+                                val msg = if (newMuted)
+                                    (if (isHindi) "🔇 आवाज म्यूट कर दी गई" else "Voice muted")
+                                else
+                                    (if (isHindi) "🔊 आवाज चालू कर दी गई" else "Voice enabled")
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = if (isVoiceMuted) Color.Red else Color(0xFF2E7D32)
+                            )
+                        ) {
+                            Text(
+                                text = if (isVoiceMuted) (if (isHindi) "🔇 आवाज बंद" else "🔇 Muted") else (if (isHindi) "🔊 आवाज चालू" else "🔊 Voice ON"),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -3421,6 +3577,23 @@ fun TokenQueueTab(
                                 modifier = Modifier.height(28.dp)
                             ) {
                                 Text("📄 रसीद PDF", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    AshramVoiceAnnouncementManager.announceNextToken(
+                                        context = context,
+                                        tokenNumber = token.tokenNumber,
+                                        devoteeName = token.patientName,
+                                        city = token.city
+                                    )
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.height(28.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE65100))
+                            ) {
+                                Text("📢 बोलें", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                         }
 
@@ -4950,6 +5123,16 @@ fun PublicServiceMatrixTab(
     onUpiIdChange: (String) -> Unit = {},
     upiName: String = "Shri Balaji Kripa Dham",
     onUpiNameChange: (String) -> Unit = {},
+    isArziLedgerLive: Boolean = false,
+    onArziLedgerLiveChange: (Boolean) -> Unit = {},
+    badiArziRate: String = "100",
+    onBadiArziRateChange: (String) -> Unit = {},
+    chhotiArziRate: String = "50",
+    onChhotiArziRateChange: (String) -> Unit = {},
+    canAdminViewArzi: Boolean = false,
+    onCanAdminViewArziChange: (Boolean) -> Unit = {},
+    canDevoteeViewArzi: Boolean = false,
+    onCanDevoteeViewArziChange: (Boolean) -> Unit = {},
     successMsg: String?,
     onSave: () -> Unit
 ) {
@@ -5257,6 +5440,132 @@ fun PublicServiceMatrixTab(
                         )
                     }
                     Switch(checked = canDevoteeViewPayments, onCheckedChange = onCanDevoteeViewPaymentsChange)
+                }
+            }
+        }
+
+        // SECTION 3.5: ARZI BOX DISTRIBUTION & PRICING CONTROL (SUPER ADMIN DIRECT CONTROL)
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, if (isArziLedgerLive) Color(0xFFE65100) else Color(0xFFFFCC80))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Text("📦", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "पवित्र अर्जी डिब्बा लेजर व दर नियंत्रण" else "Arzi Box Distribution & Price Matrix",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = MaroonPrimary
+                            )
+                            Text(
+                                text = if (isHindi) "बड़ी/छोटी अर्जी दर, सेवादारों को एक्सेस व लेजर दृश्यता" else "Badi/Chhoti rates, Sevadar access & ledger",
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                    Switch(checked = isArziLedgerLive, onCheckedChange = onArziLedgerLiveChange)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = if (isArziLedgerLive) Color(0xFFFFF3E0) else Color(0xFFEEEEEE),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (isArziLedgerLive)
+                            (if (isHindi) "🟢 सक्रिय: अर्जी वितरण व लेजर रिकॉर्डिंग की सुविधा चालू है।" else "🟢 LIVE: Arzi distribution & voice ledger are active.")
+                        else
+                            (if (isHindi) "🔒 गुप्त/छिपा हुआ (Hidden): अर्जी सेवा छिपी हुई है। केवल सुपर एडमिन ही आवश्यकता पड़ने पर चालू कर सकते हैं।" else "🔒 HIDDEN: Arzi service is hidden from non-super admins."),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isArziLedgerLive) Color(0xFFE65100) else Color.DarkGray,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = badiArziRate,
+                        onValueChange = onBadiArziRateChange,
+                        label = { Text(if (isHindi) "बड़ी अर्जी दर (₹)" else "Badi Arzi Rate (₹)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = chhotiArziRate,
+                        onValueChange = onChhotiArziRateChange,
+                        label = { Text(if (isHindi) "छोटी अर्जी दर (₹)" else "Chhoti Arzi Rate (₹)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = Color(0xFFE0E0E0))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = if (isHindi) "अर्जी लेजर अनुमतियाँ (Access Delegation):" else "Arzi Ledger Permissions:",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 13.sp,
+                    color = Color.DarkGray
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isHindi) "👥 अधिकृत सेवादारों को अर्जी लेजर देखने दें" else "Allow Assigned Sevadars to view Arzi Ledger",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = if (isHindi) "अक्रिय होने पर केवल सुपर एडमिन ही अर्जी लेजर देख सकेंगे।" else "If off, only Super Admin can view Arzi ledger.",
+                            fontSize = 10.sp,
+                            color = Color.Gray
+                        )
+                    }
+                    Switch(checked = canAdminViewArzi, onCheckedChange = onCanAdminViewArziChange)
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isHindi) "📱 भक्तों को उनका अर्जी हिसाब देखने दें" else "Allow Devotees to view their Arzi Status",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = if (isHindi) "भक्त अपने फोन पर अर्जी रसीद देख सकेंगे।" else "Devotees can view Arzi receipt.",
+                            fontSize = 10.sp,
+                            color = Color.Gray
+                        )
+                    }
+                    Switch(checked = canDevoteeViewArzi, onCheckedChange = onCanDevoteeViewArziChange)
                 }
             }
         }

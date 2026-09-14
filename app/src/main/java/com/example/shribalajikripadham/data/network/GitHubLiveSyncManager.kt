@@ -33,6 +33,7 @@ object GitHubLiveSyncManager {
     private const val FILE_SESSIONS = "live_admin_sessions.json"
     private const val FILE_PAYMENTS = "live_payments.json"
     private const val FILE_BUS_SEATS = "live_bus_seats.json"
+    private const val FILE_ARZI = "live_arzi.json"
 
     // Raw CDN URLs for instantaneous unauthenticated reads
     private const val RAW_CONFIG_URL =
@@ -51,6 +52,8 @@ object GitHubLiveSyncManager {
         "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_PAYMENTS"
     private const val RAW_BUS_SEATS_URL =
         "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_BUS_SEATS"
+    private const val RAW_ARZI_URL =
+        "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_ARZI"
 
     // REST API Contents endpoints
     private const val API_CONFIG_URL =
@@ -69,6 +72,8 @@ object GitHubLiveSyncManager {
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_PAYMENTS"
     private const val API_BUS_SEATS_URL =
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_BUS_SEATS"
+    private const val API_ARZI_URL =
+        "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_ARZI"
 
     // Active PAT token
     private const val DEFAULT_TOKEN_PART_A = "ghp_xqbYU7Ugyp"
@@ -775,6 +780,7 @@ object GitHubLiveSyncManager {
                         put("can_issue_tokens_anywhere", admin.canIssueTokensAnywhere)
                         put("can_scan_paper_register", admin.canScanPaperRegister)
                         put("can_manage_parchas", admin.canManageParchas)
+                        put("can_manage_arzi", admin.canManageArzi)
                         put("can_export_pdf", admin.canExportPdf)
                     }
                     put("permissions", perms)
@@ -872,6 +878,7 @@ object GitHubLiveSyncManager {
                     val canAnywhere = perms.optBoolean("can_issue_tokens_anywhere", false)
                     val canPaper = perms.optBoolean("can_scan_paper_register", false)
                     val canParchas = perms.optBoolean("can_manage_parchas", false)
+                    val canArzi = perms.optBoolean("can_manage_arzi", false)
                     val canExport = perms.optBoolean("can_export_pdf", true)
 
                     list.add(
@@ -898,6 +905,7 @@ object GitHubLiveSyncManager {
                             canIssueTokensAnywhere = canAnywhere,
                             canScanPaperRegister = canPaper,
                             canManageParchas = canParchas,
+                            canManageArzi = canArzi,
                             canExportPdf = canExport,
                             photoUri = photoUri,
                             isActive = isActive
@@ -1921,6 +1929,149 @@ object GitHubLiveSyncManager {
             val code = putConn.responseCode
             if (code in 200..299) {
                 Pair(true, "बस सीटें सफलतापूर्वक सिंक हुईं")
+            } else {
+                Pair(false, "सिंक असफल: HTTP $code")
+            }
+        } catch (e: Exception) {
+            Pair(false, "त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    // ========================================================================
+    // 8. SACRED ARZI DISTRIBUTION LIVE CLOUD SYNC
+    // ========================================================================
+
+    suspend fun fetchLiveArziRecords(context: Context): List<com.example.shribalajikripadham.data.model.ArziDistributionRecord>? = withContext(Dispatchers.IO) {
+        try {
+            val cacheBuster = "$RAW_ARZI_URL?nocache=${System.currentTimeMillis()}"
+            val url = URL(cacheBuster)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.30")
+
+            if (conn.responseCode in 200..299) {
+                val jsonStr = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(jsonStr)
+                val arr = root.optJSONArray("arzi_records") ?: JSONArray()
+                val list = mutableListOf<com.example.shribalajikripadham.data.model.ArziDistributionRecord>()
+                for (i in 0 until arr.length()) {
+                    val o = arr.getJSONObject(i)
+                    list.add(
+                        com.example.shribalajikripadham.data.model.ArziDistributionRecord(
+                            id = o.optLong("id", 0L),
+                            devoteeName = o.optString("devotee_name", ""),
+                            phoneNumber = o.optString("phone_number", ""),
+                            bigArziQty = o.optInt("big_arzi_qty", 0),
+                            smallArziQty = o.optInt("small_arzi_qty", 0),
+                            bigArziRate = o.optDouble("big_arzi_rate", 100.0),
+                            smallArziRate = o.optDouble("small_arzi_rate", 50.0),
+                            totalAmount = o.optDouble("total_amount", 0.0),
+                            isPaid = o.optBoolean("is_paid", false),
+                            paymentMode = o.optString("payment_mode", "CASH"),
+                            recordedBy = o.optString("recorded_by", "SUPER_ADMIN"),
+                            darbarDate = o.optString("darbar_date", ""),
+                            timestamp = o.optLong("timestamp", System.currentTimeMillis()),
+                            notes = o.optString("notes", "")
+                        )
+                    )
+                }
+                list
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun publishLiveArziRecords(
+        context: Context,
+        records: List<com.example.shribalajikripadham.data.model.ArziDistributionRecord>,
+        recordedBy: String = "Super Admin"
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val patToken = getActiveToken(context)
+        if (patToken.isBlank()) return@withContext Pair(false, "सिंक टोकन उपलब्ध नहीं")
+
+        try {
+            var existingSha: String? = null
+            try {
+                val getUrl = URL(API_ARZI_URL)
+                val conn = getUrl.openConnection() as HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.setRequestProperty("Authorization", "Bearer $patToken")
+                conn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.30")
+                conn.connectTimeout = 5000
+                conn.readTimeout = 5000
+
+                if (conn.responseCode in 200..299) {
+                    val respStr = conn.inputStream.bufferedReader().use { it.readText() }
+                    val jsonResp = JSONObject(respStr)
+                    existingSha = if (jsonResp.has("sha")) jsonResp.getString("sha") else null
+                }
+            } catch (ignored: Exception) {}
+
+            val arr = JSONArray()
+            records.forEach { r ->
+                val o = JSONObject().apply {
+                    put("id", r.id)
+                    put("devotee_name", r.devoteeName)
+                    put("phone_number", r.phoneNumber)
+                    put("big_arzi_qty", r.bigArziQty)
+                    put("small_arzi_qty", r.smallArziQty)
+                    put("big_arzi_rate", r.bigArziRate)
+                    put("small_arzi_rate", r.smallArziRate)
+                    put("total_amount", r.totalAmount)
+                    put("is_paid", r.isPaid)
+                    put("payment_mode", r.paymentMode)
+                    put("recorded_by", r.recordedBy)
+                    put("darbar_date", r.darbarDate)
+                    put("timestamp", r.timestamp)
+                    put("notes", r.notes)
+                }
+                arr.put(o)
+            }
+
+            val root = JSONObject().apply {
+                put("total_records", records.size)
+                put("total_badi", records.sumOf { it.bigArziQty })
+                put("total_chhoti", records.sumOf { it.smallArziQty })
+                put("total_amount", records.sumOf { it.totalAmount })
+                put("total_paid", records.filter { it.isPaid }.sumOf { it.totalAmount })
+                put("total_pending", records.filter { !it.isPaid }.sumOf { it.totalAmount })
+                put("updated_at", System.currentTimeMillis())
+                put("updated_by", recordedBy)
+                put("arzi_records", arr)
+            }
+
+            val b64 = Base64.encodeToString(root.toString(2).toByteArray(StandardCharsets.UTF_8), Base64.NO_WRAP)
+            val payload = JSONObject().apply {
+                put("message", "Sync ${records.size} sacred arzi distribution records via $recordedBy")
+                put("content", b64)
+                put("branch", "main")
+                if (!existingSha.isNullOrBlank()) {
+                    put("sha", existingSha)
+                }
+            }
+
+            val putUrl = URL(API_ARZI_URL)
+            val putConn = putUrl.openConnection() as HttpURLConnection
+            putConn.requestMethod = "PUT"
+            putConn.setRequestProperty("Authorization", "Bearer $patToken")
+            putConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            putConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            putConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.30")
+            putConn.connectTimeout = 8000
+            putConn.readTimeout = 8000
+            putConn.doOutput = true
+
+            putConn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            val code = putConn.responseCode
+            if (code in 200..299) {
+                Pair(true, "अर्जी वितरण लेजर क्लाउड पर सुरक्षित हो गया!")
             } else {
                 Pair(false, "सिंक असफल: HTTP $code")
             }
