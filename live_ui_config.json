@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-09-14T15:56:07Z",
-  "updated_by": "मुख्य व्यवस्थापक (Super Admin)",
+  "updated_at": "2026-09-14T15:57:25Z",
+  "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
   "ashram_details": {
     "ashram_name": "श्री बालाजी कृपा धाम",
     "guruji_name": "परम पूज्य गुरुजी",
-    "address": "ग्राम डूंगरा जाट, तहसील शिकारपुर, जिला बुलन्दशहर (उ.प्र.)",
+    "address": "ग्राम डूंगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.)",
     "contact_phone": "8533955333",
     "contact_phone_secondary": "",
     "whatsapp_number": "8533955333",
@@ -30,7 +30,7 @@
     "allowed_radius_meters": 1500,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789401367648
+    "updated_at": 1789401445283
   },
   "services_config": {
     "is_token_service_enabled": true,
