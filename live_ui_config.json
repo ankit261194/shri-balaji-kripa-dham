@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-14T09:56:53Z",
+  "updated_at": "2026-09-14T12:19:07Z",
   "updated_by": "मुख्य व्यवस्थापक (Super Admin)",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -30,14 +30,14 @@
     "allowed_radius_meters": 1500,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789379813286
+    "updated_at": 1789388347997
   },
   "services_config": {
     "is_token_service_enabled": true,
     "is_yatra_service_enabled": false,
     "is_live_counter_visible": true,
     "is_events_visible": true,
-    "is_aarti_timings_visible": true,
+    "is_aarti_timings_visible": false,
     "is_guruji_info_visible": true,
     "is_emergency_notice_visible": true,
     "scheduled_token_open_timestamp": 1789268400000,
