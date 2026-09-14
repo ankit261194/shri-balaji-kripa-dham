@@ -263,15 +263,18 @@ fun SacredParchasScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text(if (isHindi) "🔍 पर्चा या सामग्री खोजें (उदा. हवन, उतारा)..." else "🔍 Search parcha or item...") },
+                placeholder = { Text(if (isHindi) "🔍 पर्चा या सामग्री खोजें (उदा. हवन, उतारा)..." else "🔍 Search parcha or item...", color = Color(0xFF666666)) },
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaroonPrimary,
-                    unfocusedBorderColor = GoldSecondary.copy(alpha = 0.5f),
+                colors = sacredOutlinedTextFieldColors(
+                    containerColor = Color.White,
                     focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    textColor = Color(0xFF111111),
+                    focusedBorderColor = MaroonPrimary,
+                    unfocusedBorderColor = Color(0xFF757575),
+                    labelColor = Color(0xFF333333)
                 )
             )
 

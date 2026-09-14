@@ -126,25 +126,70 @@ object DevoteePhotoHelper {
     }
 
     /**
-     * Loads a Bitmap from file path or content URI and ensures it is a software bitmap.
+     * Loads a Bitmap from file path, content URI, or remote HTTP/HTTPS URL with automatic disk caching.
+     * Ensures returned bitmap is a software bitmap.
      */
     fun loadBitmap(context: Context, photoUri: String): Bitmap? {
         if (photoUri.isBlank()) return null
         return try {
-            val loaded = if (photoUri.startsWith("content://") || photoUri.startsWith("android.resource://")) {
-                val uri = Uri.parse(photoUri)
-                val input: InputStream? = context.contentResolver.openInputStream(uri)
-                input?.use { BitmapFactory.decodeStream(it) }
-            } else {
-                val path = if (photoUri.startsWith("file://")) photoUri.removePrefix("file://") else photoUri
-                val file = File(path)
-                if (file.exists()) {
-                    BitmapFactory.decodeFile(file.absolutePath)
-                } else null
+            val loaded = when {
+                photoUri.startsWith("http://") || photoUri.startsWith("https://") -> {
+                    loadFromNetworkOrCache(context, photoUri)
+                }
+                photoUri.startsWith("content://") || photoUri.startsWith("android.resource://") -> {
+                    val uri = Uri.parse(photoUri)
+                    val input: InputStream? = context.contentResolver.openInputStream(uri)
+                    input?.use { BitmapFactory.decodeStream(it) }
+                }
+                else -> {
+                    val path = if (photoUri.startsWith("file://")) photoUri.removePrefix("file://") else photoUri
+                    val file = File(path)
+                    if (file.exists()) {
+                        BitmapFactory.decodeFile(file.absolutePath)
+                    } else null
+                }
             }
             if (loaded != null) toSoftwareBitmap(loaded) else null
         } catch (e: Exception) {
             e.printStackTrace()
+            null
+        }
+    }
+
+    private fun loadFromNetworkOrCache(context: Context, urlString: String): Bitmap? {
+        return try {
+            val cacheDir = File(context.filesDir, "remote_cache")
+            if (!cacheDir.exists()) cacheDir.mkdirs()
+
+            val safeFileName = "img_" + Math.abs(urlString.hashCode()).toString() + ".jpg"
+            val cacheFile = File(cacheDir, safeFileName)
+
+            // If cached and valid, return cached image immediately
+            if (cacheFile.exists() && cacheFile.length() > 0) {
+                return BitmapFactory.decodeFile(cacheFile.absolutePath)
+            }
+
+            // Download from network
+            val url = java.net.URL(urlString)
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.connectTimeout = 5000
+            conn.readTimeout = 7000
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.28")
+
+            if (conn.responseCode in 200..299) {
+                val bytes = conn.inputStream.use { it.readBytes() }
+                if (bytes.isNotEmpty()) {
+                    try {
+                        FileOutputStream(cacheFile).use { out ->
+                            out.write(bytes)
+                        }
+                    } catch (ignored: Exception) {}
+                    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                }
+            }
+            null
+        } catch (e: Exception) {
             null
         }
     }

@@ -2,7 +2,9 @@ package com.example.shribalajikripadham.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -111,3 +113,33 @@ fun ShriBalajiKripaDhamTheme(
         )
     }
 }
+
+/**
+ * Universal High-Contrast Input Field Colors for Shri Balaji Kripa Dham.
+ * Guarantees crystal-clear, deep black text and visible borders across ALL themes and modes.
+ */
+@Composable
+fun sacredOutlinedTextFieldColors(
+    containerColor: Color = Color(0xFFFAFAFA),
+    focusedContainerColor: Color = Color.White,
+    textColor: Color = Color(0xFF111111),
+    focusedBorderColor: Color = Color(0xFF8B0000),
+    unfocusedBorderColor: Color = Color(0xFF757575),
+    labelColor: Color = Color(0xFF333333)
+): TextFieldColors = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = textColor,
+    unfocusedTextColor = textColor,
+    focusedContainerColor = focusedContainerColor,
+    unfocusedContainerColor = containerColor,
+    focusedLabelColor = focusedBorderColor,
+    unfocusedLabelColor = labelColor,
+    focusedBorderColor = focusedBorderColor,
+    unfocusedBorderColor = unfocusedBorderColor,
+    cursorColor = focusedBorderColor,
+    focusedPlaceholderColor = Color(0xFF757575),
+    unfocusedPlaceholderColor = Color(0xFF757575),
+    focusedLeadingIconColor = focusedBorderColor,
+    unfocusedLeadingIconColor = Color(0xFF616161),
+    focusedTrailingIconColor = focusedBorderColor,
+    unfocusedTrailingIconColor = Color(0xFF616161)
+)

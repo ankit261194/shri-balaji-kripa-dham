@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 31,
-  "latest_version_name": "2.28.0",
-  "update_notes_hindi": "दिव्य दरबार टोकन, पर्चे एवं गैलरी फोटो अपडेट (v2.28.0): 1. टोकन बटन हमेशा सक्रिय: लोकेशन पर न होने पर भी बटन क्लिक होगा और स्पष्ट सूचना दिखेगी कि 'तुम लोकेशन पे नहीं हो'। 2. साप्ताहिक रविवार टोकन समय (8:30 AM से 5:00 PM): रविवार के अलावा किसी भी दिन प्रयास करने पर आगामी रविवार की सही तारीख व समय दिखेगा। रविवार 5:00 बजे के बाद 'आज के टोकन पूरे हो गए हैं' व अगले रविवार की तारीख दिखेगी। 3. होम स्क्रीन पर 'आश्रम पर्चे' सुरक्षित व प्रमुख रूप से उपलब्ध। 4. पूज्य गुरुजी व सेवादारों की फोटो अब सीधे फोन गैलरी या कैमरे से सेट करें।",
-  "update_notes_english": "Token System, Parchas & Gallery Photo Update (v2.28.0): 1. Always Clickable Token Button: Provides instant clear geofence alert if outside Ashram location ('तुम लोकेशन पे नहीं हो'). 2. Weekly Sunday Token Window (08:30 AM - 05:00 PM): Non-Sunday attempts show next Sunday's date; post-5PM shows tokens completed with next Sunday date. 3. Ashram Parchas preserved across all Home Screen layouts. 4. Gallery & Camera photo pickers for Guruji and Sevadar profile photos.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.28.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 32,
+  "latest_version_name": "2.28.1",
+  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.28.1 महा-अपडेट: 1. टोकन फॉर्म व सभी अलर्ट्स में गहरा जेट ब्लैक (Jet Black) व हाई-कंट्रास्ट स्पष्ट टेक्स्ट। 2. नया साइडबार ड्रॉवर (☰ Sidebar Menu) व हेडर सरलीकरण। 3. प्रत्येक सेवादार व एडमिन के लिए पूर्णतः अलग (Unique) यूजरनेम, पासवर्ड व पिन की अनिवार्यता। 4. सुपर एडमिन अपना मोबाइल नंबर, नाम, पासवर्ड, पिन, फोटो व सभी सेवादारों के पूर्ण विवरण सीधे संपादित कर सकते हैं। 5. सुपर एडमिन द्वारा ऐप में किया गया कोई भी बदलाव (संपर्क नंबर, उत्सव, समय, सूचना, बैनर) स्वतः सभी भक्तों के फोन पर लाइव क्लाउड सिंक।",
+  "update_notes_english": "Shri Balaji Kripa Dham v2.28.1 Major Update: 1. Deep jet-black readable text across token forms & Sunday notices. 2. New Toggle Sidebar Drawer (☰ Menu) & streamlined header. 3. Strict unique credentials enforcement for all admins (no duplicate username, password, or PIN). 4. Super Admin can update their own phone number, profile, and edit all details of any sevadar. 5. Universal real-time cloud sync ensures all admin updates reflect immediately on all devotees' phones.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.28.1/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

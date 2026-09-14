@@ -17,6 +17,30 @@ import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 
+data class CredentialCheckResult(
+    val isValid: Boolean,
+    val errorMessage: String? = null
+)
+
+data class AdminPermissionsUpdate(
+    val canManageTokens: Boolean = true,
+    val canIssueManualTokens: Boolean = true,
+    val canManageYatra: Boolean = true,
+    val canManageExpenses: Boolean = true,
+    val canChangeLocation: Boolean = false,
+    val canSendNotifications: Boolean = false,
+    val canEditAshramInfo: Boolean = false,
+    val canViewDevoteePhotos: Boolean = false,
+    val canIssueTokensAnywhere: Boolean = false,
+    val canScanPaperRegister: Boolean = false,
+    val canManageParchas: Boolean = false,
+    val canCancelTokens: Boolean = false,
+    val canDeleteTokens: Boolean = false,
+    val canSetCustomTokenNumber: Boolean = false,
+    val canExportPdf: Boolean = true,
+    val isActive: Boolean = true
+)
+
 class AshramRepository(context: Context) {
     private val appContext = context.applicationContext
     private val dbHelper = DatabaseHelper(appContext)
@@ -104,6 +128,14 @@ class AshramRepository(context: Context) {
             } catch (e: Exception) {}
         }
         res
+    }
+
+    suspend fun updateContactPhone(contactPhone: String): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("contact_phone", contactPhone.trim())
+        }
+        db.update("ashram_settings", cv, "id = 1", null) > 0
     }
 
     suspend fun updateGurujiPhoto(photoUri: String): Boolean = withContext(Dispatchers.IO) {
@@ -1029,6 +1061,97 @@ class AshramRepository(context: Context) {
         list
     }
 
+    suspend fun getSuperAdmin(): Admin? = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM admins WHERE role = 'SUPER_ADMIN' LIMIT 1", null)
+        var admin: Admin? = null
+        if (cursor.moveToFirst()) {
+            admin = parseAdminCursor(cursor)
+        }
+        cursor.close()
+        admin
+    }
+
+
+    /**
+     * STRICT CREDENTIAL UNIQUENESS VALIDATOR:
+     * Guarantees that no two admins or sevadars can ever have identical
+     * usernames, passwords, or PINs.
+     */
+    suspend fun validateUniqueCredentials(
+        username: String,
+        password: String?,
+        pin: String?,
+        excludeAdminId: Long? = null
+    ): CredentialCheckResult = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val cleanUsername = username.trim()
+
+        // 1. Check Username uniqueness (case-insensitive)
+        if (cleanUsername.isNotBlank()) {
+            val userQuery = if (excludeAdminId != null) {
+                "SELECT id, name FROM admins WHERE LOWER(username) = LOWER(?) AND id != ?"
+            } else {
+                "SELECT id, name FROM admins WHERE LOWER(username) = LOWER(?)"
+            }
+            val userArgs = if (excludeAdminId != null) arrayOf(cleanUsername, excludeAdminId.toString()) else arrayOf(cleanUsername)
+            val userCursor = db.rawQuery(userQuery, userArgs)
+            val exists = userCursor.moveToFirst()
+            val existingName = if (exists) userCursor.getString(1) else null
+            userCursor.close()
+            if (exists) {
+                return@withContext CredentialCheckResult(
+                    isValid = false,
+                    errorMessage = "⚠️ यूजर आईडी (Username) '$cleanUsername' पहले से $existingName द्वारा उपयोग में है! कृपया अलग यूजर आईडी दर्ज करें।"
+                )
+            }
+        }
+
+        // 2. Check Password uniqueness (no two accounts can share identical password)
+        if (!password.isNullOrBlank()) {
+            val hashedPass = DatabaseHelper.hashPassword(password.trim())
+            val passQuery = if (excludeAdminId != null) {
+                "SELECT id, name, username FROM admins WHERE password_hash = ? AND id != ?"
+            } else {
+                "SELECT id, name, username FROM admins WHERE password_hash = ?"
+            }
+            val passArgs = if (excludeAdminId != null) arrayOf(hashedPass, excludeAdminId.toString()) else arrayOf(hashedPass)
+            val passCursor = db.rawQuery(passQuery, passArgs)
+            val passExists = passCursor.moveToFirst()
+            val existingName = if (passExists) passCursor.getString(1) else null
+            passCursor.close()
+            if (passExists) {
+                return@withContext CredentialCheckResult(
+                    isValid = false,
+                    errorMessage = "⚠️ यह पासवर्ड पहले से $existingName के खाते में दर्ज है! नियमों के अनुसार प्रत्येक व्यवस्थापक/सेवादार का पासवर्ड पूर्णतः भिन्न (Unique) होना अनिवार्य है।"
+                )
+            }
+        }
+
+        // 3. Check PIN uniqueness (no two accounts can share identical PIN)
+        if (!pin.isNullOrBlank()) {
+            val hashedPin = DatabaseHelper.hashPin(pin.trim())
+            val pinQuery = if (excludeAdminId != null) {
+                "SELECT id, name, username FROM admins WHERE pin_hash = ? AND id != ?"
+            } else {
+                "SELECT id, name, username FROM admins WHERE pin_hash = ?"
+            }
+            val pinArgs = if (excludeAdminId != null) arrayOf(hashedPin, excludeAdminId.toString()) else arrayOf(hashedPin)
+            val pinCursor = db.rawQuery(pinQuery, pinArgs)
+            val pinExists = pinCursor.moveToFirst()
+            val existingName = if (pinExists) pinCursor.getString(1) else null
+            pinCursor.close()
+            if (pinExists) {
+                return@withContext CredentialCheckResult(
+                    isValid = false,
+                    errorMessage = "⚠️ यह सुरक्षा पिन (PIN) पहले से $existingName के खाते में दर्ज है! सभी व्यवस्थापकों व सेवादारों का पिन अलग होना चाहिए।"
+                )
+            }
+        }
+
+        CredentialCheckResult(isValid = true)
+    }
+
     suspend fun createSevadarAdmin(
         name: String,
         username: String,
@@ -1052,15 +1175,20 @@ class AshramRepository(context: Context) {
         canSetCustomTokenNumber: Boolean = false,
         canExportPdf: Boolean = true,
         photoUri: String = ""
-    ): Boolean = withContext(Dispatchers.IO) {
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val check = validateUniqueCredentials(username, password, pin)
+        if (!check.isValid) {
+            return@withContext Pair(false, check.errorMessage ?: "क्रेडेंशियल्स अमान्य हैं")
+        }
+
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
-            put("name", name)
+            put("name", name.trim())
             put("username", username.trim())
-            put("phone", phone)
+            put("phone", phone.trim())
             put("role", role.name)
-            put("pin_hash", DatabaseHelper.hashPin(if (pin.isNotEmpty()) pin else "1234"))
-            put("password_hash", DatabaseHelper.hashPassword(password))
+            put("pin_hash", DatabaseHelper.hashPin(if (pin.isNotEmpty()) pin.trim() else "1234"))
+            put("password_hash", DatabaseHelper.hashPassword(password.trim()))
             put("can_manage_tokens", if (canManageTokens) 1 else 0)
             put("can_issue_manual_tokens", if (canIssueManualTokens) 1 else 0)
             put("can_manage_yatra", if (canManageYatra) 1 else 0)
@@ -1085,7 +1213,91 @@ class AshramRepository(context: Context) {
         if (inserted) {
             try { publishAdminsToGitHub() } catch (e: Exception) {}
         }
-        inserted
+        Pair(inserted, if (inserted) "खाता सफलतापूर्वक बन गया!" else "डेटाबेस में सुरक्षित नहीं हो सका")
+    }
+
+    suspend fun updateAdminFullDetails(
+        adminId: Long,
+        name: String,
+        username: String,
+        phone: String,
+        password: String? = null,
+        pin: String? = null,
+        photoUri: String? = null,
+        permissions: AdminPermissionsUpdate? = null
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val check = validateUniqueCredentials(
+            username = username,
+            password = if (!password.isNullOrBlank()) password else null,
+            pin = if (!pin.isNullOrBlank()) pin else null,
+            excludeAdminId = adminId
+        )
+        if (!check.isValid) {
+            return@withContext Pair(false, check.errorMessage ?: "क्रेडेंशियल्स अमान्य हैं")
+        }
+
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("name", name.trim())
+            put("username", username.trim())
+            put("phone", phone.trim())
+            if (!password.isNullOrBlank()) {
+                put("password_hash", DatabaseHelper.hashPassword(password.trim()))
+            }
+            if (!pin.isNullOrBlank()) {
+                put("pin_hash", DatabaseHelper.hashPin(pin.trim()))
+            }
+            if (photoUri != null) {
+                put("photo_uri", photoUri.trim())
+            }
+            permissions?.let { p ->
+                put("can_manage_tokens", if (p.canManageTokens) 1 else 0)
+                put("can_issue_manual_tokens", if (p.canIssueManualTokens) 1 else 0)
+                put("can_manage_yatra", if (p.canManageYatra) 1 else 0)
+                put("can_manage_expenses", if (p.canManageExpenses) 1 else 0)
+                put("can_change_location", if (p.canChangeLocation) 1 else 0)
+                put("can_send_notifications", if (p.canSendNotifications) 1 else 0)
+                put("can_edit_ashram_info", if (p.canEditAshramInfo) 1 else 0)
+                put("can_view_devotee_photos", if (p.canViewDevoteePhotos) 1 else 0)
+                put("can_issue_tokens_anywhere", if (p.canIssueTokensAnywhere) 1 else 0)
+                put("can_scan_paper_register", if (p.canScanPaperRegister) 1 else 0)
+                put("can_manage_parchas", if (p.canManageParchas) 1 else 0)
+                put("can_cancel_tokens", if (p.canCancelTokens) 1 else 0)
+                put("can_delete_tokens", if (p.canDeleteTokens) 1 else 0)
+                put("can_custom_token_number", if (p.canSetCustomTokenNumber) 1 else 0)
+                put("can_export_pdf", if (p.canExportPdf) 1 else 0)
+                put("is_active", if (p.isActive) 1 else 0)
+            }
+        }
+        val count = db.update("admins", cv, "id = ?", arrayOf(adminId.toString()))
+        val ok = count > 0
+        if (ok) {
+            try { publishAdminsToGitHub() } catch (e: Exception) {}
+        }
+        Pair(ok, if (ok) "विवरण सफलतापूर्वक सुरक्षित हुआ!" else "डेटाबेस में अपडेट नहीं हो सका")
+    }
+
+    suspend fun updateSuperAdminProfile(
+        name: String,
+        phone: String,
+        username: String,
+        password: String?,
+        pin: String?,
+        photoUri: String?
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val superAdmin = getSuperAdmin()
+        if (superAdmin == null) {
+            return@withContext Pair(false, "सुपर एडमिन खाता नहीं मिला")
+        }
+        updateAdminFullDetails(
+            adminId = superAdmin.id,
+            name = name,
+            username = username,
+            phone = phone,
+            password = password,
+            pin = pin,
+            photoUri = photoUri
+        )
     }
 
     suspend fun updateAdminPhoto(adminId: Long, photoUri: String): Boolean = withContext(Dispatchers.IO) {
@@ -1948,6 +2160,7 @@ class AshramRepository(context: Context) {
                 if (det.facebookPageUrl.isNotBlank()) cv.put("facebook_page_url", det.facebookPageUrl)
                 if (det.instagramUrl.isNotBlank()) cv.put("instagram_url", det.instagramUrl)
                 if (det.appShareUrl.isNotBlank()) cv.put("app_share_url", det.appShareUrl)
+                if (det.gurujiPhotoUrl.isNotBlank()) cv.put("guruji_photo_uri", det.gurujiPhotoUrl)
 
                 // Synchronize Emergency Broadcast Notice
                 val em = remoteConfig.emergencyNotice
@@ -1986,6 +2199,31 @@ class AshramRepository(context: Context) {
                 if (cv.size() > 0) {
                     db.update("ashram_settings", cv, "id = 1", null)
                 }
+
+                // Synchronize dynamic Ashram Events from cloud
+                if (remoteConfig.events.isNotEmpty()) {
+                    db.beginTransaction()
+                    try {
+                        db.delete("ashram_events", null, null)
+                        for (ev in remoteConfig.events) {
+                            val evCv = ContentValues().apply {
+                                put("id", ev.id)
+                                put("title_hindi", ev.titleHindi)
+                                put("title_english", ev.titleEnglish)
+                                put("date_desc_hindi", ev.dateDescriptionHindi)
+                                put("date_desc_english", ev.dateDescriptionEnglish)
+                                put("details_hindi", ev.detailsHindi)
+                                put("details_english", ev.detailsEnglish)
+                                put("is_active", if (ev.isActive) 1 else 0)
+                                put("created_at", System.currentTimeMillis())
+                            }
+                            db.insertWithOnConflict("ashram_events", null, evCv, SQLiteDatabase.CONFLICT_REPLACE)
+                        }
+                        db.setTransactionSuccessful()
+                    } finally {
+                        db.endTransaction()
+                    }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -2004,6 +2242,32 @@ class AshramRepository(context: Context) {
         val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
         }
+        var finalGurujiPhotoUrl = currentSettings.gurujiPhotoUri
+        if (finalGurujiPhotoUrl.isNotBlank() && !finalGurujiPhotoUrl.startsWith("http://") && !finalGurujiPhotoUrl.startsWith("https://")) {
+            val uploadedUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(
+                appContext,
+                finalGurujiPhotoUrl,
+                "guruji_profile.jpg"
+            )
+            if (!uploadedUrl.isNullOrBlank()) {
+                finalGurujiPhotoUrl = uploadedUrl
+                updateGurujiPhoto(uploadedUrl)
+            }
+        }
+
+        val currentEvents = getAllEvents().map { ev ->
+            com.example.shribalajikripadham.data.model.AshramEventConfigDto(
+                id = ev.id,
+                titleHindi = ev.titleHindi,
+                titleEnglish = ev.titleEnglish,
+                dateDescriptionHindi = ev.dateDescriptionHindi,
+                dateDescriptionEnglish = ev.dateDescriptionEnglish,
+                detailsHindi = ev.detailsHindi,
+                detailsEnglish = ev.detailsEnglish,
+                isActive = ev.isActive
+            )
+        }
+
         val config = LiveUiConfigDto(
             updatedAt = isoFormat.format(Date()),
             updatedBy = adminName,
@@ -2022,7 +2286,8 @@ class AshramRepository(context: Context) {
                 youtubeChannelUrl = currentSettings.youtubeChannelUrl,
                 facebookPageUrl = currentSettings.facebookPageUrl,
                 instagramUrl = currentSettings.instagramUrl,
-                appShareUrl = currentSettings.appShareUrl
+                appShareUrl = currentSettings.appShareUrl,
+                gurujiPhotoUrl = finalGurujiPhotoUrl
             ),
             emergencyNotice = com.example.shribalajikripadham.data.model.EmergencyNoticeDto(
                 isEnabled = currentSettings.isEmergencyNoticeVisible,
@@ -2051,7 +2316,8 @@ class AshramRepository(context: Context) {
                 sundayTokenBannerText = currentSettings.sundayTokenBannerText,
                 sundayTokenCustomNotice = currentSettings.sundayTokenCustomNotice
             ),
-            sections = sections
+            sections = sections,
+            events = currentEvents
         )
         // Also save locally
         saveUiSectionConfigs(sections)
@@ -2143,7 +2409,22 @@ class AshramRepository(context: Context) {
 
     suspend fun publishAdminsToGitHub(): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val admins = getAllAdmins()
-        com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveAdmins(appContext, admins)
+        val updatedAdmins = admins.map { a ->
+            if (a.photoUri.isNotBlank() && !a.photoUri.startsWith("http://") && !a.photoUri.startsWith("https://")) {
+                val safeUsername = a.username.replace(Regex("[^a-zA-Z0-9_]"), "_")
+                val safeFileName = "sevadar_${safeUsername}.jpg"
+                val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(
+                    appContext,
+                    a.photoUri,
+                    safeFileName
+                )
+                if (!cloudUrl.isNullOrBlank()) {
+                    updateAdminPhoto(a.id, cloudUrl)
+                    a.copy(photoUri = cloudUrl)
+                } else a
+            } else a
+        }
+        com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveAdmins(appContext, updatedAdmins)
     }
 
     suspend fun syncAdminsFromGitHub(): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
@@ -2155,27 +2436,45 @@ class AshramRepository(context: Context) {
             db.beginTransaction()
             try {
                 remoteAdmins.forEach { a ->
-                    if (a.role == AdminRole.SEVADAR) {
-                        val cv = ContentValues().apply {
-                            put("can_manage_tokens", if (a.canManageTokens) 1 else 0)
-                            put("can_issue_manual_tokens", if (a.canIssueManualTokens) 1 else 0)
-                            put("can_cancel_tokens", if (a.canCancelTokens) 1 else 0)
-                            put("can_delete_tokens", if (a.canDeleteTokens) 1 else 0)
-                            put("can_custom_token_number", if (a.canSetCustomTokenNumber) 1 else 0)
-                            put("can_manage_yatra", if (a.canManageYatra) 1 else 0)
-                            put("can_manage_expenses", if (a.canManageExpenses) 1 else 0)
-                            put("can_change_location", if (a.canChangeLocation) 1 else 0)
-                            put("can_send_notifications", if (a.canSendNotifications) 1 else 0)
-                            put("can_edit_ashram_info", if (a.canEditAshramInfo) 1 else 0)
-                            put("can_view_devotee_photos", if (a.canViewDevoteePhotos) 1 else 0)
-                            put("can_issue_tokens_anywhere", if (a.canIssueTokensAnywhere) 1 else 0)
-                            put("can_scan_paper_register", if (a.canScanPaperRegister) 1 else 0)
-                            put("can_manage_parchas", if (a.canManageParchas) 1 else 0)
-                            put("can_export_pdf", if (a.canExportPdf) 1 else 0)
-                            put("is_active", if (a.isActive) 1 else 0)
-                        }
-                        val count = db.update("admins", cv, "username = ?", arrayOf(a.username))
+                    val cv = ContentValues().apply {
+                        put("name", a.name.trim())
+                        put("phone", a.phoneNumber.trim())
+                        put("role", a.role.name)
+                        if (a.pinHash.isNotBlank()) put("pin_hash", a.pinHash)
+                        if (a.passwordHash.isNotBlank()) put("password_hash", a.passwordHash)
+                        if (a.photoUri.isNotBlank()) put("photo_uri", a.photoUri)
+                        put("can_manage_tokens", if (a.canManageTokens) 1 else 0)
+                        put("can_issue_manual_tokens", if (a.canIssueManualTokens) 1 else 0)
+                        put("can_cancel_tokens", if (a.canCancelTokens) 1 else 0)
+                        put("can_delete_tokens", if (a.canDeleteTokens) 1 else 0)
+                        put("can_custom_token_number", if (a.canSetCustomTokenNumber) 1 else 0)
+                        put("can_manage_yatra", if (a.canManageYatra) 1 else 0)
+                        put("can_manage_expenses", if (a.canManageExpenses) 1 else 0)
+                        put("can_change_location", if (a.canChangeLocation) 1 else 0)
+                        put("can_send_notifications", if (a.canSendNotifications) 1 else 0)
+                        put("can_edit_ashram_info", if (a.canEditAshramInfo) 1 else 0)
+                        put("can_manage_admins", if (a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_view_devotee_photos", if (a.canViewDevoteePhotos) 1 else 0)
+                        put("can_issue_tokens_anywhere", if (a.canIssueTokensAnywhere) 1 else 0)
+                        put("can_scan_paper_register", if (a.canScanPaperRegister) 1 else 0)
+                        put("can_manage_parchas", if (a.canManageParchas) 1 else 0)
+                        put("can_export_pdf", if (a.canExportPdf) 1 else 0)
+                        put("is_active", if (a.isActive) 1 else 0)
+                    }
+
+                    if (a.role == AdminRole.SUPER_ADMIN) {
+                        val count = db.update("admins", cv, "role = 'SUPER_ADMIN'", null)
                         if (count > 0) synced++
+                    } else {
+                        val count = db.update("admins", cv, "username = ?", arrayOf(a.username))
+                        if (count > 0) {
+                            synced++
+                        } else {
+                            cv.put("username", a.username)
+                            cv.put("created_at", a.createdAt)
+                            val inserted = db.insert("admins", null, cv)
+                            if (inserted != -1L) synced++
+                        }
                     }
                 }
                 db.setTransactionSuccessful()

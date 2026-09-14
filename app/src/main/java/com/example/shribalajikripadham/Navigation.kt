@@ -96,6 +96,7 @@ fun MainNavigation(
                 onNavigateToInfo = { navigateTo(AppScreen.ASHRAM_INFO) },
                 onNavigateToAdmin = { navigateTo(AppScreen.ADMIN) },
                 onNavigateToParchas = { navigateTo(AppScreen.PARCHAS) },
+                onNavigateToYatraExpenses = { navigateTo(AppScreen.YATRA_EXPENSES) },
                 onToggleLanguage = { isHindi = !isHindi }
             )
 

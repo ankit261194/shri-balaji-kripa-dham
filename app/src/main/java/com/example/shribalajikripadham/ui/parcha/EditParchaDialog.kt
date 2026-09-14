@@ -28,6 +28,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.shribalajikripadham.ai.SacredParchaEngine
 import com.example.shribalajikripadham.data.model.ParchaCategory
 import com.example.shribalajikripadham.data.model.SacredParcha
+import com.example.shribalajikripadham.theme.sacredOutlinedTextFieldColors
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.util.DevoteePhotoHelper
 import com.example.shribalajikripadham.util.TakeAnyPicturePreview
@@ -233,9 +234,11 @@ fun EditParchaDialog(
                         OutlinedTextField(
                             value = rawOcrInput,
                             onValueChange = { rawOcrInput = it },
-                            label = { Text(if (isHindi) "स्कैन किया गया कच्चा टेक्स्ट (यहाँ पेस्ट करें)" else "Raw Scanned OCR Text") },
+                            label = { Text(if (isHindi) "स्कैन किया गया कच्चा टेक्स्ट (यहाँ पेस्ट करें)" else "Raw Scanned OCR Text", fontWeight = FontWeight.SemiBold) },
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 14.sp),
                             modifier = Modifier.fillMaxWidth().height(90.dp),
-                            placeholder = { Text("उदा. हवन सामग्री: जौ, तिल, घी... विधि: 108 आहुति दें...") }
+                            placeholder = { Text("उदा. हवन सामग्री: जौ, तिल, घी... विधि: 108 आहुति दें...", color = Color(0xFF757575)) },
+                            colors = sacredOutlinedTextFieldColors()
                         )
                         Button(
                             onClick = {
@@ -253,7 +256,7 @@ fun EditParchaDialog(
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A1B9A))
                         ) {
-                            Text(if (isHindi) "✨ टेक्स्ट को साफ-सुथरा व्यवस्थित करें" else "✨ Auto-Format into A4 Layout")
+                            Text(if (isHindi) "✨ टेक्स्ट को साफ-सुथरा व्यवस्थित करें" else "✨ Auto-Format into A4 Layout", color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -278,50 +281,62 @@ fun EditParchaDialog(
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
-                        label = { Text(if (isHindi) "पर्चे का नाम / शीर्षक *" else "Parcha Title *") },
+                        label = { Text(if (isHindi) "पर्चे का नाम / शीर्षक *" else "Parcha Title *", fontWeight = FontWeight.SemiBold) },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        colors = sacredOutlinedTextFieldColors()
                     )
 
                     // Subtitle
                     OutlinedTextField(
                         value = subtitle,
                         onValueChange = { subtitle = it },
-                        label = { Text(if (isHindi) "उप-शीर्षक / संक्षिप्त विवरण" else "Subtitle / Brief Summary") },
+                        label = { Text(if (isHindi) "उप-शीर्षक / संक्षिप्त विवरण" else "Subtitle / Brief Summary", fontWeight = FontWeight.SemiBold) },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        colors = sacredOutlinedTextFieldColors()
                     )
 
                     // Samagri List
                     OutlinedTextField(
                         value = samagriText,
                         onValueChange = { samagriText = it },
-                        label = { Text(if (isHindi) "आवश्यक पूजा / हवन सामग्री (प्रत्येक वस्तु नई लाइन में लिखें)" else "Samagri List (One item per line)") },
-                        modifier = Modifier.fillMaxWidth().height(110.dp)
+                        label = { Text(if (isHindi) "आवश्यक पूजा / हवन सामग्री (प्रत्येक वस्तु नई लाइन में लिखें)" else "Samagri List (One item per line)", fontWeight = FontWeight.SemiBold) },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 14.sp),
+                        modifier = Modifier.fillMaxWidth().height(110.dp),
+                        colors = sacredOutlinedTextFieldColors()
                     )
 
                     // Vidhi Steps
                     OutlinedTextField(
                         value = vidhiText,
                         onValueChange = { vidhiText = it },
-                        label = { Text(if (isHindi) "चरणबद्ध संपूर्ण विधि (प्रत्येक चरण नई लाइन में)" else "Step-by-Step Vidhi (One step per line)") },
-                        modifier = Modifier.fillMaxWidth().height(110.dp)
+                        label = { Text(if (isHindi) "चरणबद्ध संपूर्ण विधि (प्रत्येक चरण नई लाइन में)" else "Step-by-Step Vidhi (One step per line)", fontWeight = FontWeight.SemiBold) },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 14.sp),
+                        modifier = Modifier.fillMaxWidth().height(110.dp),
+                        colors = sacredOutlinedTextFieldColors()
                     )
 
                     // Precautions / Parhez
                     OutlinedTextField(
                         value = precautionsText,
                         onValueChange = { precautionsText = it },
-                        label = { Text(if (isHindi) "महत्वपूर्ण सावधानियाँ व परहेज (नियम)" else "Precautions & Rules (One per line)") },
-                        modifier = Modifier.fillMaxWidth().height(85.dp)
+                        label = { Text(if (isHindi) "महत्वपूर्ण सावधानियाँ व परहेज (नियम)" else "Precautions & Rules (One per line)", fontWeight = FontWeight.SemiBold) },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 14.sp),
+                        modifier = Modifier.fillMaxWidth().height(85.dp),
+                        colors = sacredOutlinedTextFieldColors()
                     )
 
                     // Mantras
                     OutlinedTextField(
                         value = mantraText,
                         onValueChange = { mantraText = it },
-                        label = { Text(if (isHindi) "सिद्ध मंत्र व स्तुति" else "Sacred Mantras") },
-                        modifier = Modifier.fillMaxWidth().height(80.dp)
+                        label = { Text(if (isHindi) "सिद्ध मंत्र व स्तुति" else "Sacred Mantras", fontWeight = FontWeight.SemiBold) },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 14.sp),
+                        modifier = Modifier.fillMaxWidth().height(80.dp),
+                        colors = sacredOutlinedTextFieldColors()
                     )
 
                     // Hide/Show Toggle

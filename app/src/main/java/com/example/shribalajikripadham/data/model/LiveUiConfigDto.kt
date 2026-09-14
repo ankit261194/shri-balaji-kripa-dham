@@ -31,7 +31,8 @@ data class AshramDetailsConfigDto(
     val youtubeChannelUrl: String = "https://www.youtube.com/@ShriBalajiKripaDham",
     val facebookPageUrl: String = "https://www.facebook.com/ShriBalajiKripaDham",
     val instagramUrl: String = "https://www.instagram.com/shribalajikripadham",
-    val appShareUrl: String = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest"
+    val appShareUrl: String = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest",
+    val gurujiPhotoUrl: String = ""
 )
 
 data class ServicesConfigDto(
@@ -49,6 +50,17 @@ data class ServicesConfigDto(
     val sundayTokenCustomNotice: String = ""
 )
 
+data class AshramEventConfigDto(
+    val id: Long = 0,
+    val titleHindi: String = "",
+    val titleEnglish: String = "",
+    val dateDescriptionHindi: String = "",
+    val dateDescriptionEnglish: String = "",
+    val detailsHindi: String = "",
+    val detailsEnglish: String = "",
+    val isActive: Boolean = true
+)
+
 data class LiveUiConfigDto(
     val updatedAt: String = "",
     val updatedBy: String = "Super Admin",
@@ -58,7 +70,8 @@ data class LiveUiConfigDto(
     val emergencyNotice: EmergencyNoticeDto = EmergencyNoticeDto(),
     val locationConfig: LocationConfigDto = LocationConfigDto(),
     val servicesConfig: ServicesConfigDto = ServicesConfigDto(),
-    val sections: List<UiSectionConfig> = UiSectionConfig.defaultSections()
+    val sections: List<UiSectionConfig> = UiSectionConfig.defaultSections(),
+    val events: List<AshramEventConfigDto> = emptyList()
 ) {
     fun toJsonString(): String {
         val root = JSONObject()
@@ -81,6 +94,7 @@ data class LiveUiConfigDto(
         detObj.put("facebook_page_url", ashramDetails.facebookPageUrl)
         detObj.put("instagram_url", ashramDetails.instagramUrl)
         detObj.put("app_share_url", ashramDetails.appShareUrl)
+        detObj.put("guruji_photo_url", ashramDetails.gurujiPhotoUrl)
         root.put("ashram_details", detObj)
 
         val emObj = JSONObject()
@@ -129,6 +143,22 @@ data class LiveUiConfigDto(
             secArr.put(sObj)
         }
         root.put("sections", secArr)
+
+        val evtArr = JSONArray()
+        events.forEach { e ->
+            val eObj = JSONObject()
+            eObj.put("id", e.id)
+            eObj.put("title_hindi", e.titleHindi)
+            eObj.put("title_english", e.titleEnglish)
+            eObj.put("date_desc_hindi", e.dateDescriptionHindi)
+            eObj.put("date_desc_english", e.dateDescriptionEnglish)
+            eObj.put("details_hindi", e.detailsHindi)
+            eObj.put("details_english", e.detailsEnglish)
+            eObj.put("is_active", e.isActive)
+            evtArr.put(eObj)
+        }
+        root.put("events", evtArr)
+
         return root.toString(2)
     }
 
@@ -159,7 +189,8 @@ data class LiveUiConfigDto(
                         youtubeChannelUrl = detObj.optString("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham"),
                         facebookPageUrl = detObj.optString("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham"),
                         instagramUrl = detObj.optString("instagram_url", "https://www.instagram.com/shribalajikripadham"),
-                        appShareUrl = detObj.optString("app_share_url", "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest")
+                        appShareUrl = detObj.optString("app_share_url", "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest"),
+                        gurujiPhotoUrl = detObj.optString("guruji_photo_url", "")
                     )
                 } else AshramDetailsConfigDto()
 
@@ -223,6 +254,27 @@ data class LiveUiConfigDto(
                         )
                     }
                 }
+
+                val eventsList = mutableListOf<AshramEventConfigDto>()
+                val evtArr = root.optJSONArray("events")
+                if (evtArr != null) {
+                    for (i in 0 until evtArr.length()) {
+                        val obj = evtArr.getJSONObject(i)
+                        eventsList.add(
+                            AshramEventConfigDto(
+                                id = obj.optLong("id", 0L),
+                                titleHindi = obj.optString("title_hindi", ""),
+                                titleEnglish = obj.optString("title_english", ""),
+                                dateDescriptionHindi = obj.optString("date_desc_hindi", ""),
+                                dateDescriptionEnglish = obj.optString("date_desc_english", ""),
+                                detailsHindi = obj.optString("details_hindi", ""),
+                                detailsEnglish = obj.optString("details_english", ""),
+                                isActive = obj.optBoolean("is_active", true)
+                            )
+                        )
+                    }
+                }
+
                 LiveUiConfigDto(
                     updatedAt = updatedAt,
                     updatedBy = updatedBy,
@@ -232,7 +284,8 @@ data class LiveUiConfigDto(
                     emergencyNotice = emergencyNotice,
                     locationConfig = locationConfig,
                     servicesConfig = servicesConfig,
-                    sections = if (sectionsList.isNotEmpty()) sectionsList else UiSectionConfig.defaultSections()
+                    sections = if (sectionsList.isNotEmpty()) sectionsList else UiSectionConfig.defaultSections(),
+                    events = eventsList
                 )
             } catch (e: Exception) {
                 null

@@ -227,10 +227,13 @@ fun YatraExpenseScreen(
         if (showAddDialog) {
             AlertDialog(
                 onDismissRequest = { showAddDialog = false },
+                containerColor = Color.White,
                 title = {
                     Text(
                         text = if (isHindi) "नया यात्रा खर्च जोड़ें" else "Add New Expense",
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF8B0000),
+                        fontSize = 18.sp
                     )
                 },
                 text = {
@@ -238,9 +241,11 @@ fun YatraExpenseScreen(
                         OutlinedTextField(
                             value = title,
                             onValueChange = { title = it },
-                            label = { Text(text = if (isHindi) "खर्च का विवरण *" else "Expense Title *") },
+                            label = { Text(text = if (isHindi) "खर्च का विवरण *" else "Expense Title *", fontWeight = FontWeight.SemiBold) },
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            colors = sacredOutlinedTextFieldColors()
                         )
 
                         Spacer(modifier = Modifier.height(10.dp))
@@ -248,10 +253,12 @@ fun YatraExpenseScreen(
                         OutlinedTextField(
                             value = amountText,
                             onValueChange = { amountText = it },
-                            label = { Text(text = if (isHindi) "रकम (₹) *" else "Amount (₹) *") },
+                            label = { Text(text = if (isHindi) "रकम (₹) *" else "Amount (₹) *", fontWeight = FontWeight.SemiBold) },
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            colors = sacredOutlinedTextFieldColors()
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))

@@ -465,39 +465,39 @@ fun FaceTokenRegistrationScreen(
                     if (scheduleState !is SundayScheduleState.Open) {
                         val visual = when (scheduleState) {
                             is SundayScheduleState.NonSunday -> ScheduleBannerVisual(
-                                Color(0xFFFFF3E0),
-                                Color(0xFFFF9800),
-                                "📅",
-                                if (isHindi) "रविवार टोकन वितरण सूचना" else "Sunday Token Notice",
-                                if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                                bannerBg = Color(0xFFFFFBEA),
+                                borderCol = Color(0xFFD84315),
+                                iconText = "📅",
+                                titleText = if (isHindi) "रविवार टोकन वितरण सूचना" else "Sunday Token Notice",
+                                descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                             )
                             is SundayScheduleState.SundayBeforeStart -> ScheduleBannerVisual(
-                                Color(0xFFFFF8E1),
-                                Color(0xFFFFA000),
-                                "⏳",
-                                if (isHindi) "टोकन आज सुबह 8:30 बजे से खुलेंगे" else "Opens at 8:30 AM Today",
-                                if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                                bannerBg = Color(0xFFFFFBEA),
+                                borderCol = Color(0xFFE65100),
+                                iconText = "⏳",
+                                titleText = if (isHindi) "टोकन आज सुबह 8:30 बजे से मिलेंगे" else "Opens at 8:30 AM Today",
+                                descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                             )
                             is SundayScheduleState.SundayClosedEvening -> ScheduleBannerVisual(
-                                Color(0xFFFFEBEE),
-                                Color(0xFFEF5350),
-                                "🔴",
-                                if (isHindi) "आज के टोकन पूरे हो गए हैं" else "Today's Tokens Complete",
-                                if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                                bannerBg = Color(0xFFFFF5F5),
+                                borderCol = Color(0xFFB71C1C),
+                                iconText = "🔴",
+                                titleText = if (isHindi) "आज के टोकन पूरे हो गए हैं" else "Today's Tokens Complete",
+                                descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                             )
                             is SundayScheduleState.ServiceDisabled -> ScheduleBannerVisual(
-                                Color(0xFFFFEBEE),
-                                Color(0xFFEF5350),
-                                "🔒",
-                                if (isHindi) "टोकन सेवा स्थगित" else "Token Service Paused",
-                                if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                                bannerBg = Color(0xFFFFF5F5),
+                                borderCol = Color(0xFFB71C1C),
+                                iconText = "🔒",
+                                titleText = if (isHindi) "टोकन सेवा स्थगित" else "Token Service Paused",
+                                descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                             )
                             is SundayScheduleState.CustomScheduled -> ScheduleBannerVisual(
-                                Color(0xFFFFF8E1),
-                                Color(0xFFFFB300),
-                                "⏳",
-                                if (isHindi) "टोकन पंजीकरण पूर्व-निर्धारित है" else "Token Registration Scheduled",
-                                if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                                bannerBg = Color(0xFFFFFBEA),
+                                borderCol = Color(0xFFD84315),
+                                iconText = "⏳",
+                                titleText = if (isHindi) "टोकन पंजीकरण पूर्व-निर्धारित है" else "Token Registration Scheduled",
+                                descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                             )
                             else -> ScheduleBannerVisual(Color.White, Color.Gray, "ℹ️", "", "")
                         }
@@ -506,31 +506,35 @@ fun FaceTokenRegistrationScreen(
                         Card(
                             colors = CardDefaults.cardColors(containerColor = bannerBg),
                             shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.5.dp, borderCol),
-                            elevation = CardDefaults.cardElevation(3.dp),
+                            border = BorderStroke(2.dp, borderCol),
+                            elevation = CardDefaults.cardElevation(4.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
+                            Column(modifier = Modifier.padding(16.dp)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(iconText, fontSize = 24.sp)
+                                    Text(iconText, fontSize = 28.sp)
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Text(
                                         text = titleText,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
-                                        color = if (scheduleState is SundayScheduleState.SundayClosedEvening) Color(0xFFC62828) else Color(0xFFE65100)
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 16.sp,
+                                        color = if (scheduleState is SundayScheduleState.SundayClosedEvening || scheduleState is SundayScheduleState.ServiceDisabled)
+                                            Color(0xFFB71C1C)
+                                        else
+                                            Color(0xFF8B0000)
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = descText,
-                                    fontSize = 12.sp,
-                                    color = TextPrimaryDark,
-                                    lineHeight = 18.sp
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF111111),
+                                    lineHeight = 22.sp
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                     }
 
                     // Viewfinder & Oval Reticle
@@ -1253,8 +1257,8 @@ fun FaceTokenRegistrationScreen(
                             Text(
                                 text = if (isHindi) "भक्त पंजीकरण एवं टोकन" else "Devotee Token Registration",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 17.sp,
-                                color = MaroonAccent
+                                fontSize = 18.sp,
+                                color = Color(0xFF8B0000)
                             )
                             Text(
                                 text = if (isHindi)
@@ -1262,7 +1266,7 @@ fun FaceTokenRegistrationScreen(
                                 else
                                     "Enter details below. Your face profile will be saved for fast 1-second token next visit.",
                                 fontSize = 12.sp,
-                                color = TextSecondaryDark
+                                color = Color(0xFF424242)
                             )
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -1270,9 +1274,18 @@ fun FaceTokenRegistrationScreen(
                             OutlinedTextField(
                                 value = manualName,
                                 onValueChange = { manualName = it },
-                                label = { Text(if (isHindi) "भक्त / मरीज का नाम" else "Devotee Name") },
+                                label = { Text(if (isHindi) "भक्त / मरीज का नाम *" else "Devotee Name *", fontWeight = FontWeight.SemiBold) },
+                                textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                colors = sacredOutlinedTextFieldColors(
+                                    containerColor = Color.White,
+                                    focusedContainerColor = Color.White,
+                                    textColor = Color(0xFF111111),
+                                    focusedBorderColor = Color(0xFF8B0000),
+                                    unfocusedBorderColor = Color(0xFF757575),
+                                    labelColor = Color(0xFF333333)
+                                )
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -1280,9 +1293,18 @@ fun FaceTokenRegistrationScreen(
                             OutlinedTextField(
                                 value = manualPhone,
                                 onValueChange = { manualPhone = it },
-                                label = { Text(if (isHindi) "मोबाइल नंबर" else "Mobile Number") },
+                                label = { Text(if (isHindi) "मोबाइल नंबर *" else "Mobile Number *", fontWeight = FontWeight.SemiBold) },
+                                textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                colors = sacredOutlinedTextFieldColors(
+                                    containerColor = Color.White,
+                                    focusedContainerColor = Color.White,
+                                    textColor = Color(0xFF111111),
+                                    focusedBorderColor = Color(0xFF8B0000),
+                                    unfocusedBorderColor = Color(0xFF757575),
+                                    labelColor = Color(0xFF333333)
+                                )
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -1290,10 +1312,19 @@ fun FaceTokenRegistrationScreen(
                             OutlinedTextField(
                                 value = manualCity,
                                 onValueChange = { manualCity = it },
-                                label = { Text(if (isHindi) "आगमन स्थान / शहर (Coming From)" else "Coming From (City / Village)") },
-                                placeholder = { Text(if (isHindi) "उदा. डूँगरा जाट, बुलन्दशहर, दिल्ली..." else "e.g. Dungra Jaat, Bulandshahr...") },
+                                label = { Text(if (isHindi) "आगमन स्थान / शहर *" else "Coming From (City / Village) *", fontWeight = FontWeight.SemiBold) },
+                                placeholder = { Text(if (isHindi) "उदा. डूँगरा जाट, बुलन्दशहर, दिल्ली..." else "e.g. Dungra Jaat, Bulandshahr...", color = Color(0xFF757575)) },
+                                textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                colors = sacredOutlinedTextFieldColors(
+                                    containerColor = Color.White,
+                                    focusedContainerColor = Color.White,
+                                    textColor = Color(0xFF111111),
+                                    focusedBorderColor = Color(0xFF8B0000),
+                                    unfocusedBorderColor = Color(0xFF757575),
+                                    labelColor = Color(0xFF333333)
+                                )
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
@@ -1502,6 +1533,89 @@ fun FaceTokenRegistrationScreen(
                     }
                 }
             }
+        }
+
+        // Alert Dialog: Outside Ashram Location
+        if (showLocationAlertDialog) {
+            AlertDialog(
+                onDismissRequest = { showLocationAlertDialog = false },
+                containerColor = Color.White,
+                icon = { Text("📍", fontSize = 36.sp) },
+                title = {
+                    Text(
+                        text = locationAlertTitle,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF8B0000),
+                        fontSize = 18.sp
+                    )
+                },
+                text = {
+                    Text(
+                        text = locationAlertMessage,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF111111),
+                        lineHeight = 22.sp
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showLocationAlertDialog = false
+                            GeofenceLocationManager.requestFreshLocation(context) { loc ->
+                                if (loc != null) {
+                                    userLatitude = loc.latitude
+                                    userLongitude = loc.longitude
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(if (isHindi) "🔄 GPS रीफ्रेश करें" else "🔄 Refresh GPS", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLocationAlertDialog = false }) {
+                        Text(if (isHindi) "समझ गया" else "Dismiss", color = Color(0xFF424242), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+            )
+        }
+
+        // Alert Dialog: Schedule Timing / Non-Sunday Notice
+        if (showScheduleAlertDialog) {
+            AlertDialog(
+                onDismissRequest = { showScheduleAlertDialog = false },
+                containerColor = Color.White,
+                icon = { Text("📅", fontSize = 36.sp) },
+                title = {
+                    Text(
+                        text = scheduleAlertTitle,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF8B0000),
+                        fontSize = 18.sp
+                    )
+                },
+                text = {
+                    Text(
+                        text = scheduleAlertMessage,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF111111),
+                        lineHeight = 22.sp
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = { showScheduleAlertDialog = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(if (isHindi) "समझ गया / ठीक है" else "Got It", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 15.sp)
+                    }
+                }
+            )
         }
     }
 }

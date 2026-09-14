@@ -533,39 +533,39 @@ fun TokenRegistrationScreen(
                 if (scheduleState !is SundayScheduleState.Open) {
                     val visual = when (scheduleState) {
                         is SundayScheduleState.NonSunday -> ScheduleBannerVisual(
-                            Color(0xFFFFF3E0),
-                            Color(0xFFFF9800),
-                            "📅",
-                            if (isHindi) "रविवार टोकन वितरण सूचना" else "Sunday Token Notice",
-                            if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                            bannerBg = Color(0xFFFFFBEA),
+                            borderCol = Color(0xFFD84315),
+                            iconText = "📅",
+                            titleText = if (isHindi) "रविवार टोकन वितरण सूचना" else "Sunday Token Notice",
+                            descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                         )
                         is SundayScheduleState.SundayBeforeStart -> ScheduleBannerVisual(
-                            Color(0xFFFFF8E1),
-                            Color(0xFFFFA000),
-                            "⏳",
-                            if (isHindi) "टोकन आज सुबह 8:30 बजे से मिलेंगे" else "Opens at 8:30 AM Today",
-                            if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                            bannerBg = Color(0xFFFFFBEA),
+                            borderCol = Color(0xFFE65100),
+                            iconText = "⏳",
+                            titleText = if (isHindi) "टोकन आज सुबह 8:30 बजे से मिलेंगे" else "Opens at 8:30 AM Today",
+                            descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                         )
                         is SundayScheduleState.SundayClosedEvening -> ScheduleBannerVisual(
-                            Color(0xFFFFEBEE),
-                            Color(0xFFEF5350),
-                            "🔴",
-                            if (isHindi) "आज के टोकन पूरे हो गए हैं" else "Today's Tokens Complete",
-                            if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                            bannerBg = Color(0xFFFFF5F5),
+                            borderCol = Color(0xFFB71C1C),
+                            iconText = "🔴",
+                            titleText = if (isHindi) "आज के टोकन पूरे हो गए हैं" else "Today's Tokens Complete",
+                            descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                         )
                         is SundayScheduleState.ServiceDisabled -> ScheduleBannerVisual(
-                            Color(0xFFFFEBEE),
-                            Color(0xFFEF5350),
-                            "🔒",
-                            if (isHindi) "टोकन सेवा स्थगित" else "Token Service Paused",
-                            if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                            bannerBg = Color(0xFFFFF5F5),
+                            borderCol = Color(0xFFB71C1C),
+                            iconText = "🔒",
+                            titleText = if (isHindi) "टोकन सेवा स्थगित" else "Token Service Paused",
+                            descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                         )
                         is SundayScheduleState.CustomScheduled -> ScheduleBannerVisual(
-                            Color(0xFFFFF8E1),
-                            Color(0xFFFFB300),
-                            "⏳",
-                            if (isHindi) "टोकन पंजीकरण पूर्व-निर्धारित है" else "Token Registration Scheduled",
-                            if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                            bannerBg = Color(0xFFFFFBEA),
+                            borderCol = Color(0xFFD84315),
+                            iconText = "⏳",
+                            titleText = if (isHindi) "टोकन पंजीकरण पूर्व-निर्धारित है" else "Token Registration Scheduled",
+                            descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                         )
                         else -> ScheduleBannerVisual(Color.White, Color.Gray, "ℹ️", "", "")
                     }
@@ -574,27 +574,31 @@ fun TokenRegistrationScreen(
                     Card(
                         colors = CardDefaults.cardColors(containerColor = bannerBg),
                         shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.5.dp, borderCol),
-                        elevation = CardDefaults.cardElevation(3.dp),
+                        border = BorderStroke(2.dp, borderCol),
+                        elevation = CardDefaults.cardElevation(4.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(iconText, fontSize = 24.sp)
+                                Text(iconText, fontSize = 28.sp)
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = titleText,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = if (scheduleState is SundayScheduleState.SundayClosedEvening) Color(0xFFC62828) else Color(0xFFE65100)
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 16.sp,
+                                    color = if (scheduleState is SundayScheduleState.SundayClosedEvening || scheduleState is SundayScheduleState.ServiceDisabled)
+                                        Color(0xFFB71C1C)
+                                    else
+                                        Color(0xFF8B0000)
                                 )
                             }
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = descText,
-                                fontSize = 12.sp,
-                                color = TextPrimaryDark,
-                                lineHeight = 18.sp
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF111111),
+                                lineHeight = 22.sp
                             )
                         }
                     }
@@ -605,25 +609,35 @@ fun TokenRegistrationScreen(
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.5.dp, Color(0xFFDCDCDC)),
                     elevation = CardDefaults.cardElevation(3.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Text(
                             text = if (isHindi) "टोकन विवरण दर्ज करें" else "Enter Token Details",
-                            fontSize = 16.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaroonAccent
+                            color = Color(0xFF8B0000)
                         )
                         Spacer(modifier = Modifier.height(14.dp))
 
                         OutlinedTextField(
                             value = patientName,
                             onValueChange = { patientName = it },
-                            label = { Text(text = if (isHindi) "मरीज / भक्त का पूरा नाम *" else "Patient Full Name *") },
+                            label = { Text(text = if (isHindi) "मरीज / भक्त का पूरा नाम *" else "Patient Full Name *", fontWeight = FontWeight.SemiBold) },
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            colors = sacredOutlinedTextFieldColors(
+                                containerColor = Color.White,
+                                focusedContainerColor = Color.White,
+                                textColor = Color(0xFF111111),
+                                focusedBorderColor = Color(0xFF8B0000),
+                                unfocusedBorderColor = Color(0xFF757575),
+                                labelColor = Color(0xFF333333)
+                            )
                         )
 
                         // Name Auto-Suggestion Chips
@@ -631,8 +645,8 @@ fun TokenRegistrationScreen(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = if (isHindi) "सुझाव (Tap to Auto-fill):" else "Suggestions (Tap to fill):",
-                                fontSize = 11.sp,
-                                color = MaroonAccent,
+                                fontSize = 12.sp,
+                                color = Color(0xFF8B0000),
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(2.dp))
@@ -652,8 +666,13 @@ fun TokenRegistrationScreen(
                                             if (sugg.photoUri.isNotBlank()) capturedPhotoUri = sugg.photoUri
                                             nameSuggestions = emptyList()
                                         },
+                                        colors = SuggestionChipDefaults.suggestionChipColors(
+                                            containerColor = Color(0xFFFFF3E0),
+                                            labelColor = Color(0xFF5C001E)
+                                        ),
+                                        border = BorderStroke(1.dp, Color(0xFFFFB300)),
                                         label = {
-                                            Text("${sugg.patientName} (${sugg.city})", fontSize = 11.sp)
+                                            Text("${sugg.patientName} (${sugg.city})", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                                         }
                                     )
                                 }
@@ -676,7 +695,7 @@ fun TokenRegistrationScreen(
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = autoFillBanner!!,
-                                        fontSize = 11.sp,
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color(0xFF1B5E20)
                                     )
@@ -689,11 +708,20 @@ fun TokenRegistrationScreen(
                         OutlinedTextField(
                             value = phoneNumber,
                             onValueChange = { if (it.length <= 10) phoneNumber = it },
-                            label = { Text(text = if (isHindi) "मोबाइल नंबर *" else "Mobile Number *") },
+                            label = { Text(text = if (isHindi) "मोबाइल नंबर *" else "Mobile Number *", fontWeight = FontWeight.SemiBold) },
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            colors = sacredOutlinedTextFieldColors(
+                                containerColor = Color.White,
+                                focusedContainerColor = Color.White,
+                                textColor = Color(0xFF111111),
+                                focusedBorderColor = Color(0xFF8B0000),
+                                unfocusedBorderColor = Color(0xFF757575),
+                                labelColor = Color(0xFF333333)
+                            )
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))
@@ -704,21 +732,30 @@ fun TokenRegistrationScreen(
                                 originAddress = it
                                 city = it
                             },
-                            label = { Text(text = if (isHindi) "कहाँ से आए हैं / कहाँ के निवासी हैं *" else "Resident Address / Origin *") },
-                            placeholder = { Text(text = if (isHindi) "उदा. डूँगरा जाट, बुलन्दशहर, खुर्जा, नोएडा, दिल्ली..." else "e.g. Dungra Jaat, Bulandshahr, Delhi...") },
+                            label = { Text(text = if (isHindi) "कहाँ से आए हैं / कहाँ के निवासी हैं *" else "Resident Address / Origin *", fontWeight = FontWeight.SemiBold) },
+                            placeholder = { Text(text = if (isHindi) "उदा. डूँगरा जाट, बुलन्दशहर, खुर्जा, नोएडा, दिल्ली..." else "e.g. Dungra Jaat, Bulandshahr, Delhi...", color = Color(0xFF757575)) },
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            colors = sacredOutlinedTextFieldColors(
+                                containerColor = Color.White,
+                                focusedContainerColor = Color.White,
+                                textColor = Color(0xFF111111),
+                                focusedBorderColor = Color(0xFF8B0000),
+                                unfocusedBorderColor = Color(0xFF757575),
+                                labelColor = Color(0xFF333333)
+                            )
                         )
 
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         // Quick City Chips
                         Text(
                             text = if (isHindi) "त्वरित चयन (Quick Select):" else "Quick Select:",
-                            fontSize = 11.sp,
-                            color = Color.DarkGray,
-                            fontWeight = FontWeight.Medium
+                            fontSize = 12.sp,
+                            color = Color(0xFF333333),
+                            fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         val quickCities = listOf(
@@ -736,7 +773,12 @@ fun TokenRegistrationScreen(
                                         originAddress = cName
                                         city = cName
                                     },
-                                    label = { Text(cName, fontSize = 11.sp) }
+                                    colors = SuggestionChipDefaults.suggestionChipColors(
+                                        containerColor = Color(0xFFF5F5F5),
+                                        labelColor = Color(0xFF212121)
+                                    ),
+                                    border = BorderStroke(1.dp, Color(0xFFBDBDBD)),
+                                    label = { Text(cName, fontSize = 12.sp, fontWeight = FontWeight.Medium) }
                                 )
                             }
                         }
@@ -1191,21 +1233,23 @@ fun TokenRegistrationScreen(
         if (showLocationAlertDialog) {
             AlertDialog(
                 onDismissRequest = { showLocationAlertDialog = false },
-                icon = { Text("📍", fontSize = 32.sp) },
+                containerColor = Color.White,
+                icon = { Text("📍", fontSize = 36.sp) },
                 title = {
                     Text(
                         text = locationAlertTitle,
                         fontWeight = FontWeight.Bold,
-                        color = MaroonAccent,
-                        fontSize = 16.sp
+                        color = Color(0xFF8B0000),
+                        fontSize = 18.sp
                     )
                 },
                 text = {
                     Text(
                         text = locationAlertMessage,
-                        fontSize = 13.sp,
-                        color = TextPrimaryDark,
-                        lineHeight = 20.sp
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF111111),
+                        lineHeight = 22.sp
                     )
                 },
                 confirmButton = {
@@ -1224,12 +1268,12 @@ fun TokenRegistrationScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text(if (isHindi) "🔄 GPS रीफ्रेश करें" else "🔄 Refresh GPS", fontWeight = FontWeight.Bold)
+                        Text(if (isHindi) "🔄 GPS रीफ्रेश करें" else "🔄 Refresh GPS", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showLocationAlertDialog = false }) {
-                        Text(if (isHindi) "समझ गया" else "Dismiss", color = Color.Gray)
+                        Text(if (isHindi) "समझ गया" else "Dismiss", color = Color(0xFF424242), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
             )
@@ -1239,21 +1283,23 @@ fun TokenRegistrationScreen(
         if (showScheduleAlertDialog) {
             AlertDialog(
                 onDismissRequest = { showScheduleAlertDialog = false },
-                icon = { Text("📅", fontSize = 32.sp) },
+                containerColor = Color.White,
+                icon = { Text("📅", fontSize = 36.sp) },
                 title = {
                     Text(
                         text = scheduleAlertTitle,
                         fontWeight = FontWeight.Bold,
-                        color = MaroonAccent,
-                        fontSize = 16.sp
+                        color = Color(0xFF8B0000),
+                        fontSize = 18.sp
                     )
                 },
                 text = {
                     Text(
                         text = scheduleAlertMessage,
-                        fontSize = 13.sp,
-                        color = TextPrimaryDark,
-                        lineHeight = 20.sp
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF111111),
+                        lineHeight = 22.sp
                     )
                 },
                 confirmButton = {
@@ -1262,7 +1308,7 @@ fun TokenRegistrationScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
                         shape = RoundedCornerShape(10.dp)
                     ) {
-                        Text(if (isHindi) "समझ गया / ठीक है" else "Got It", fontWeight = FontWeight.Bold)
+                        Text(if (isHindi) "समझ गया / ठीक है" else "Got It", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 15.sp)
                     }
                 }
             )

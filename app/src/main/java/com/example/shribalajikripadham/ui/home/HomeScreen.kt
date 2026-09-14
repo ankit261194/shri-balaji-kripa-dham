@@ -128,6 +128,7 @@ fun HomeScreen(
     onNavigateToInfo: () -> Unit,
     onNavigateToAdmin: () -> Unit,
     onNavigateToParchas: () -> Unit = {},
+    onNavigateToYatraExpenses: () -> Unit = {},
     onToggleLanguage: () -> Unit
 ) {
     val context = LocalContext.current
@@ -247,25 +248,263 @@ fun HomeScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                navigationIcon = {
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                drawerContainerColor = Color.White,
+                modifier = Modifier.width(320.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    // Drawer Header with Sacred Gradient
                     Box(
                         modifier = Modifier
-                            .padding(start = 12.dp, end = 8.dp)
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .border(1.5.dp, currentTheme.secondaryColor, CircleShape)
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        currentTheme.primaryColor,
+                                        currentTheme.headerGradientEnd
+                                    )
+                                )
+                            )
+                            .padding(20.dp)
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.app_logo),
-                            contentDescription = "Ashram Logo",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(54.dp)
+                                        .clip(CircleShape)
+                                        .border(2.dp, currentTheme.accentGold, CircleShape)
+                                ) {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.app_logo),
+                                        contentDescription = "Ashram Logo",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
+                                Column {
+                                    Text(
+                                        text = if (isHindi) "श्री बालाजी कृपा धाम" else "Shri Balaji Kripa Dham",
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = if (isHindi) "डूँगरा जाट, बुलन्दशहर" else "Dungra Jaat, Bulandshahr",
+                                        fontSize = 12.sp,
+                                        color = currentTheme.accentGold
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "॥ ॐ श्री हनुमते नमः ॥",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = if (isHindi) "🚩 मुख्य सेवाएं व स्क्रीन" else "🚩 Main Screens & Services",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = currentTheme.primaryColor,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                    )
+
+                    // Navigation Items
+                    data class NavDrawerItem(val icon: String, val title: String, val action: () -> Unit)
+                    val navItems = listOf(
+                        NavDrawerItem("🏠", if (isHindi) "मुख्य पृष्ठ (Home)" else "Home", { /* Stay on home */ }),
+                        NavDrawerItem("🎟️", if (isHindi) "दरबार टोकन जनरेट करें" else "Generate Darbar Token", onNavigateToToken),
+                        NavDrawerItem("🤳", if (isHindi) "फेस वेरिफिकेशन टोकन" else "Face Token", onNavigateToFaceToken),
+                        NavDrawerItem("📜", if (isHindi) "डिजिटल पर्चा देखें" else "Digital Parchas", onNavigateToParchas),
+                        NavDrawerItem("🚗", if (isHindi) "यात्रा व दूरी विवरण" else "Yatra & Distance Info", onNavigateToYatra),
+                        NavDrawerItem("💰", if (isHindi) "यात्रा खर्च डायरी" else "Yatra Expense Diary", onNavigateToYatraExpenses),
+                        NavDrawerItem("ℹ️", if (isHindi) "आश्रम परिचय व नियम" else "Ashram Info & Rules", onNavigateToInfo),
+                        NavDrawerItem("🔐", if (isHindi) "प्रबंधक / सेवादार लॉगिन" else "Sevadar & Admin Portal", onNavigateToAdmin)
+                    )
+
+                    navItems.forEach { item ->
+                        NavigationDrawerItem(
+                            icon = { Text(item.icon, fontSize = 20.sp) },
+                            label = {
+                                Text(
+                                    item.title,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextPrimaryDark
+                                )
+                            },
+                            selected = false,
+                            onClick = {
+                                scope.launch { drawerState.close() }
+                                item.action()
+                            },
+                            colors = NavigationDrawerItemDefaults.colors(
+                                unselectedContainerColor = Color.Transparent
+                            ),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
                         )
                     }
-                },
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp), color = Color(0xFFEEEEEE))
+
+                    Text(
+                        text = if (isHindi) "⚙️ त्वरित सेटिंग्स" else "⚙️ Quick Actions",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = currentTheme.primaryColor,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                    )
+
+                    // Quick Theme Toggle
+                    NavigationDrawerItem(
+                        icon = { Text("🎨", fontSize = 20.sp) },
+                        label = {
+                            Text(
+                                if (isHindi) "थीम बदलें (${currentTheme.nameHindi})" else "Change Theme (${currentTheme.nameEnglish})",
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark
+                            )
+                        },
+                        selected = false,
+                        onClick = {
+                            val nextIndex = (SacredTheme.entries.indexOf(currentTheme) + 1) % SacredTheme.entries.size
+                            onThemeChanged(SacredTheme.entries[nextIndex])
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                    )
+
+                    // Quick Language Toggle
+                    NavigationDrawerItem(
+                        icon = { Text("🌐", fontSize = 20.sp) },
+                        label = {
+                            Text(
+                                if (isHindi) "भाषा बदलें (English)" else "Switch Language (हिंदी)",
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark
+                            )
+                        },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            onToggleLanguage()
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                    )
+
+                    // Ashram Call
+                    NavigationDrawerItem(
+                        icon = { Text("📞", fontSize = 20.sp) },
+                        label = {
+                            Text(
+                                if (isHindi) "आश्रम संपर्क (कॉल करें)" else "Call Ashram Helpline",
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark
+                            )
+                        },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            val phone = settings.contactPhone.ifEmpty { "+91 98765 00000" }
+                            try {
+                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {}
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                    )
+
+                    // Ashram WhatsApp
+                    NavigationDrawerItem(
+                        icon = { Text("💬", fontSize = 20.sp) },
+                        label = {
+                            Text(
+                                if (isHindi) "व्हाट्सएप सेवा" else "WhatsApp Helpline",
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark
+                            )
+                        },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            val wa = settings.whatsappNumber.ifEmpty { "+919876543210" }
+                            openSocialMediaLink(
+                                context = context,
+                                rawUrl = "https://wa.me/91$wa",
+                                defaultUrl = "https://wa.me/91$wa",
+                                isWhatsApp = true
+                            )
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text(
+                        text = "v${AppUpdateManager.getCurrentVersionName(context)} • श्री बालाजी कृपा धाम",
+                        fontSize = 11.sp,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                    )
+                }
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    navigationIcon = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(start = 4.dp)
+                        ) {
+                            IconButton(
+                                onClick = { scope.launch { drawerState.open() } }
+                            ) {
+                                Text("☰", fontSize = 22.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .padding(end = 6.dp)
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .border(1.5.dp, currentTheme.secondaryColor, CircleShape)
+                                    .clickable { scope.launch { drawerState.open() } }
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.app_logo),
+                                    contentDescription = "Ashram Logo",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+                    },
                 title = {
                     Column {
                         Text(
@@ -425,21 +664,18 @@ fun HomeScreen(
                 colors = CardDefaults.cardColors(
                     containerColor = when (scheduleState) {
                         is SundayScheduleState.Open -> Color(0xFFE8F5E9)
-                        is SundayScheduleState.SundayBeforeStart -> Color(0xFFFFF8E1)
-                        is SundayScheduleState.SundayClosedEvening -> Color(0xFFFFEBEE)
-                        is SundayScheduleState.NonSunday -> Color(0xFFFFF3E0)
-                        else -> Color(0xFFFFEBEE)
+                        else -> Color(0xFFFFFBEA)
                     }
                 ),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(
-                    1.5.dp,
+                    2.dp,
                     when (scheduleState) {
                         is SundayScheduleState.Open -> Color(0xFF2E7D32)
-                        is SundayScheduleState.SundayBeforeStart -> Color(0xFFFFA000)
-                        is SundayScheduleState.SundayClosedEvening -> Color(0xFFEF5350)
-                        is SundayScheduleState.NonSunday -> Color(0xFFFF9800)
-                        else -> Color(0xFFC62828)
+                        is SundayScheduleState.SundayBeforeStart -> Color(0xFFD84315)
+                        is SundayScheduleState.SundayClosedEvening -> Color(0xFF8B0000)
+                        is SundayScheduleState.NonSunday -> Color(0xFFD84315)
+                        else -> Color(0xFF8B0000)
                     }
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -463,10 +699,10 @@ fun HomeScreen(
                             .background(
                                 when (scheduleState) {
                                     is SundayScheduleState.Open -> Color(0xFF2E7D32)
-                                    is SundayScheduleState.SundayBeforeStart -> Color(0xFFFFA000)
-                                    is SundayScheduleState.SundayClosedEvening -> Color(0xFFC62828)
-                                    is SundayScheduleState.NonSunday -> Color(0xFFF57C00)
-                                    else -> Color(0xFFC62828)
+                                    is SundayScheduleState.SundayBeforeStart -> Color(0xFFD84315)
+                                    is SundayScheduleState.SundayClosedEvening -> Color(0xFF8B0000)
+                                    is SundayScheduleState.NonSunday -> Color(0xFFD84315)
+                                    else -> Color(0xFF8B0000)
                                 }
                             ),
                         contentAlignment = Alignment.Center
@@ -494,16 +730,13 @@ fun HomeScreen(
                                 else -> if (isHindi) "🔴 रविवार टोकन वितरण बंद है" else "🔴 Token Service Closed"
                             },
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 14.sp,
+                            fontSize = 15.sp,
                             color = when (scheduleState) {
                                 is SundayScheduleState.Open -> Color(0xFF1B5E20)
-                                is SundayScheduleState.SundayBeforeStart -> Color(0xFFE65100)
-                                is SundayScheduleState.SundayClosedEvening -> Color(0xFFB71C1C)
-                                is SundayScheduleState.NonSunday -> Color(0xFFE65100)
-                                else -> Color(0xFFB71C1C)
+                                else -> Color(0xFF8B0000)
                             }
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = when (scheduleState) {
                                 is SundayScheduleState.Open -> if (isHindi) "👉 अभी टोकन प्राप्त करें (टैप करें ➔)" else "👉 Tap here to get token now ➔"
@@ -513,26 +746,22 @@ fun HomeScreen(
                                 is SundayScheduleState.CustomScheduled -> if (isHindi) "खुलने का समय: ${scheduleState.formattedDate}" else "Opens at: ${scheduleState.formattedDate}"
                                 else -> if (isHindi) "आश्रम व्यवस्था अनुसार टोकन सेवा अभी बंद है" else "Token service paused by Ashram"
                             },
-                            fontSize = 11.sp,
-                            fontWeight = if (isTokenOpen) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            lineHeight = 18.sp,
                             color = when (scheduleState) {
-                                is SundayScheduleState.Open -> Color(0xFF2E7D32)
-                                is SundayScheduleState.SundayBeforeStart -> Color(0xFFBF360C)
-                                is SundayScheduleState.SundayClosedEvening -> Color(0xFFB71C1C)
-                                is SundayScheduleState.NonSunday -> Color(0xFFBF360C)
-                                else -> Color(0xFF7F0000)
+                                is SundayScheduleState.Open -> Color(0xFF1B5E20)
+                                else -> Color(0xFF111111)
                             }
                         )
                     }
+                    Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = { onNavigateToFaceToken() },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = when (scheduleState) {
                                 is SundayScheduleState.Open -> Color(0xFF2E7D32)
-                                is SundayScheduleState.SundayBeforeStart -> Color(0xFFE65100)
-                                is SundayScheduleState.SundayClosedEvening -> Color(0xFFC62828)
-                                is SundayScheduleState.NonSunday -> Color(0xFFE65100)
-                                else -> Color(0xFFC62828)
+                                else -> Color(0xFF8B0000)
                             }
                         ),
                         shape = RoundedCornerShape(10.dp),
@@ -548,96 +777,7 @@ fun HomeScreen(
                 }
             }
 
-            // 5 UI LAYOUT SELECTOR CHIP ROW OR ENFORCED BANNER
-            if (settings.isUiLayoutEnforced) {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, Color(0xFFFFD54F)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("🔒", fontSize = 16.sp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isHindi) "आश्रम द्वारा निर्धारित लेआउट: ${activeLayout.titleHindi}" else "Ashram Enforced Layout: ${activeLayout.titleEnglish}",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF5D4037)
-                        )
-                    }
-                }
-            } else {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(2.dp),
-                    border = BorderStroke(1.dp, currentTheme.secondaryColor.copy(alpha = 0.4f)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 14.dp)
-                ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = if (isHindi) "🎨 UI लेआउट बदलें (5 शैलियाँ)" else "🎨 Change UI Layout (5 Styles)",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = currentTheme.primaryColor
-                        )
-                        Text(
-                            text = if (isHindi) activeLayout.titleHindi else activeLayout.titleEnglish,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = SaffronDark
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(AppUiLayout.entries) { layout ->
-                            val isSelected = layout == activeLayout
-                            Surface(
-                                onClick = {
-                                    activeLayout = layout
-                                    LayoutPreferences.saveLayout(context, layout)
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) currentTheme.primaryColor else Color(0xFFF5F5F5),
-                                border = BorderStroke(
-                                    1.dp,
-                                    if (isSelected) currentTheme.secondaryColor else Color(0xFFE0E0E0)
-                                )
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(layout.icon, fontSize = 14.sp)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = if (isHindi) layout.titleHindi else layout.titleEnglish,
-                                        fontSize = 12.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) Color.White else TextPrimaryDark
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+
 
             // RENDERING BASED ON ACTIVE UI LAYOUT (5 DISTINCT LAYOUTS)
             if (activeLayout == AppUiLayout.CLASSIC_DARBAR) {
@@ -1437,6 +1577,7 @@ fun HomeScreen(
             }
         }
     }
+}
 }
 
 @Composable

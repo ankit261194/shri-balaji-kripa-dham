@@ -31,6 +31,7 @@ import com.example.shribalajikripadham.data.local.DatabaseHelper
 import com.example.shribalajikripadham.ai.FaceEmbeddingEngine
 import com.example.shribalajikripadham.data.model.*
 import com.example.shribalajikripadham.data.repository.AshramRepository
+import com.example.shribalajikripadham.data.repository.AdminPermissionsUpdate
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.ui.common.SacredAvatar
@@ -51,9 +52,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.ui.text.input.ImeAction
 
 import androidx.compose.ui.window.Dialog
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class CreatedSevadarShareData(
     val name: String,
@@ -85,6 +88,7 @@ fun AdminDashboardScreen(
     }
 
     // Sevadar photo states (must be declared before activity result launchers)
+    var editingAdmin by remember { mutableStateOf<Admin?>(null) }
     var newSevPhotoUri by remember { mutableStateOf("") }
     var editSevPhotoUri by remember { mutableStateOf("") }
 
@@ -95,7 +99,16 @@ fun AdminDashboardScreen(
             val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "sevadar")
             if (savedPath.isNotBlank()) {
                 newSevPhotoUri = savedPath
-                Toast.makeText(context, if (isHindi) "📸 सेवादार की फोटो सेट हो गई!" else "Sevadar photo captured!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, if (isHindi) "📸 सेवादार फोटो सेट, क्लाउड सिंक जारी..." else "Photo set, syncing to cloud...", Toast.LENGTH_SHORT).show()
+                scope.launch(Dispatchers.IO) {
+                    val safeName = "sevadar_" + System.currentTimeMillis() + ".jpg"
+                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                    if (!cloudUrl.isNullOrBlank()) {
+                        withContext(Dispatchers.Main) {
+                            newSevPhotoUri = cloudUrl
+                        }
+                    }
+                }
             }
         }
     }
@@ -109,7 +122,16 @@ fun AdminDashboardScreen(
                 val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
                 if (savedPath.isNotBlank()) {
                     newSevPhotoUri = savedPath
-                    Toast.makeText(context, if (isHindi) "📁 गैलरी से फोटो चुनी गई!" else "Photo chosen from gallery!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (isHindi) "📁 गैलरी से फोटो चुनी गई, क्लाउड सिंक जारी..." else "Photo selected, syncing to cloud...", Toast.LENGTH_SHORT).show()
+                    scope.launch(Dispatchers.IO) {
+                        val safeName = "sevadar_" + System.currentTimeMillis() + ".jpg"
+                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                        if (!cloudUrl.isNullOrBlank()) {
+                            withContext(Dispatchers.Main) {
+                                newSevPhotoUri = cloudUrl
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -122,7 +144,16 @@ fun AdminDashboardScreen(
             val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "sevadar")
             if (savedPath.isNotBlank()) {
                 editSevPhotoUri = savedPath
-                Toast.makeText(context, if (isHindi) "📸 सेवादार की फोटो सेट हो गई!" else "Sevadar photo updated!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, if (isHindi) "📸 सेवादार फोटो सेट, क्लाउड सिंक जारी..." else "Photo set, syncing to cloud...", Toast.LENGTH_SHORT).show()
+                scope.launch(Dispatchers.IO) {
+                    val safeName = "sevadar_" + (editingAdmin?.username ?: System.currentTimeMillis().toString()) + ".jpg"
+                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                    if (!cloudUrl.isNullOrBlank()) {
+                        withContext(Dispatchers.Main) {
+                            editSevPhotoUri = cloudUrl
+                        }
+                    }
+                }
             }
         }
     }
@@ -136,7 +167,16 @@ fun AdminDashboardScreen(
                 val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
                 if (savedPath.isNotBlank()) {
                     editSevPhotoUri = savedPath
-                    Toast.makeText(context, if (isHindi) "📁 गैलरी से फोटो चुनी गई!" else "Photo chosen from gallery!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (isHindi) "📁 गैलरी से फोटो चुनी गई, क्लाउड सिंक जारी..." else "Photo selected, syncing to cloud...", Toast.LENGTH_SHORT).show()
+                    scope.launch(Dispatchers.IO) {
+                        val safeName = "sevadar_" + (editingAdmin?.username ?: System.currentTimeMillis().toString()) + ".jpg"
+                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                        if (!cloudUrl.isNullOrBlank()) {
+                            withContext(Dispatchers.Main) {
+                                editSevPhotoUri = cloudUrl
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -183,6 +223,7 @@ fun AdminDashboardScreen(
     var newSevCanNotif by remember { mutableStateOf(false) }
     var newSevCanContent by remember { mutableStateOf(false) }
     var newSevCanPhotos by remember { mutableStateOf(false) }
+    var createSevErrorMsg by remember { mutableStateOf<String?>(null) }
 
     // App Customizer
     var customAshramName by remember { mutableStateOf("") }
@@ -241,7 +282,13 @@ fun AdminDashboardScreen(
     var evDescEn by remember { mutableStateOf("") }
 
     // Edit Sevadar Dialog (Super Admin Control)
-    var editingAdmin by remember { mutableStateOf<Admin?>(null) }
+    var editSevName by remember { mutableStateOf("") }
+    var editSevUsername by remember { mutableStateOf("") }
+    var editSevPhone by remember { mutableStateOf("") }
+    var editSevPassword by remember { mutableStateOf("") }
+    var editSevPin by remember { mutableStateOf("") }
+    var editSevErrorMsg by remember { mutableStateOf<String?>(null) }
+    var superAdminAccount by remember { mutableStateOf<Admin?>(null) }
     var editSevCanTokens by remember { mutableStateOf(false) }
     var editSevCanManualTokens by remember { mutableStateOf(false) }
     var editSevCanYatra by remember { mutableStateOf(false) }
@@ -329,6 +376,7 @@ fun AdminDashboardScreen(
 
             todayTokens = repository.getAllTokensToday()
             adminsList = repository.getAllAdmins()
+            superAdminAccount = repository.getSuperAdmin()
             eventsList = repository.getAllEvents()
             notificationsList = repository.getAllNotifications()
             customDistancesList = repository.getAllCustomCityDistances()
@@ -627,8 +675,10 @@ fun AdminDashboardScreen(
                             OutlinedTextField(
                                 value = passwordInput,
                                 onValueChange = { passwordInput = it },
-                                label = { Text(if (isHindi) "सुपर एडमिन पासवर्ड दर्ज करें" else "Enter Super Admin Password") },
+                                label = { Text(if (isHindi) "सुपर एडमिन पासवर्ड दर्ज करें" else "Enter Super Admin Password", color = Color(0xFF333333)) },
                                 leadingIcon = { Text("🔑") },
+                                textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp),
+                                colors = sacredOutlinedTextFieldColors(),
                                 visualTransformation = PasswordVisualTransformation(),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                                 modifier = Modifier.fillMaxWidth(),
@@ -773,8 +823,10 @@ fun AdminDashboardScreen(
                                 OutlinedTextField(
                                     value = usernameInput,
                                     onValueChange = { usernameInput = it },
-                                    label = { Text(if (isHindi) "सेवादार यूजरनेम" else "Sevadar Username") },
+                                    label = { Text(if (isHindi) "सेवादार यूजरनेम" else "Sevadar Username", color = Color(0xFF333333)) },
                                     leadingIcon = { Text("👤") },
+                                    textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp),
+                                    colors = sacredOutlinedTextFieldColors(),
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
                                     shape = RoundedCornerShape(12.dp)
@@ -783,8 +835,10 @@ fun AdminDashboardScreen(
                                 OutlinedTextField(
                                     value = passwordInput,
                                     onValueChange = { passwordInput = it },
-                                    label = { Text(if (isHindi) "पासवर्ड" else "Password") },
+                                    label = { Text(if (isHindi) "पासवर्ड" else "Password", color = Color(0xFF333333)) },
                                     leadingIcon = { Text("🔑") },
+                                    textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp),
+                                    colors = sacredOutlinedTextFieldColors(),
                                     visualTransformation = PasswordVisualTransformation(),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                                     modifier = Modifier.fillMaxWidth(),
@@ -795,8 +849,10 @@ fun AdminDashboardScreen(
                                 OutlinedTextField(
                                     value = pinInput,
                                     onValueChange = { if (it.length <= 6) pinInput = it },
-                                    label = { Text(if (isHindi) "4-अंकीय सेवादार पिन दर्ज करें" else "Enter 4-Digit Sevadar PIN") },
+                                    label = { Text(if (isHindi) "4-अंकीय सेवादार पिन दर्ज करें" else "Enter 4-Digit Sevadar PIN", color = Color(0xFF333333)) },
                                     leadingIcon = { Text("🔢") },
+                                    textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp),
+                                    colors = sacredOutlinedTextFieldColors(),
                                     visualTransformation = PasswordVisualTransformation(),
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                                     modifier = Modifier.fillMaxWidth(),
@@ -1267,6 +1323,12 @@ fun AdminDashboardScreen(
                                 },
                                 onOpenEdit = { targetAdmin ->
                                     editingAdmin = targetAdmin
+                                    editSevName = targetAdmin.name
+                                    editSevUsername = targetAdmin.username
+                                    editSevPhone = targetAdmin.phoneNumber
+                                    editSevPassword = ""
+                                    editSevPin = ""
+                                    editSevErrorMsg = null
                                     editSevPhotoUri = targetAdmin.photoUri
                                     editSevCanTokens = targetAdmin.canManageTokens
                                     editSevCanManualTokens = targetAdmin.canIssueManualTokens
@@ -1414,6 +1476,7 @@ fun AdminDashboardScreen(
                                 onDeleteEvent = { evId ->
                                     scope.launch {
                                         repository.deleteEvent(evId)
+                                        try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                         refreshData()
                                     }
                                 },
@@ -1471,6 +1534,25 @@ fun AdminDashboardScreen(
                             SuperControlTab(
                                 isHindi = isHindi,
                                 settings = settings,
+                                superAdmin = superAdminAccount ?: (if (admin.role == AdminRole.SUPER_ADMIN) admin else null),
+                                onUpdateSuperAdminProfile = { name, phone, username, password, pin, photoUri, onResult ->
+                                    scope.launch {
+                                        val (ok, msg) = repository.updateSuperAdminProfile(
+                                            name = name,
+                                            phone = phone,
+                                            username = username,
+                                            password = password,
+                                            pin = pin,
+                                            photoUri = photoUri
+                                        )
+                                        if (ok) {
+                                            repository.updateContactPhone(phone)
+                                            try { repository.publishCurrentSettingsToGitHub(name) } catch (e: Exception) {}
+                                            refreshData()
+                                        }
+                                        onResult(ok, msg)
+                                    }
+                                },
                                 onUpdateMasterPassword = { currentPass, newPass, onResult ->
                                     scope.launch {
                                         val isValid = repository.verifySuperAdminPassword(currentPass)
@@ -1615,33 +1697,50 @@ fun AdminDashboardScreen(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    createSevErrorMsg?.let { err ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                            border = BorderStroke(1.dp, Color(0xFFE57373))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("⚠️", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(err, color = Color(0xFFC62828), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
                     OutlinedTextField(
                         value = newSevName,
-                        onValueChange = { newSevName = it },
+                        onValueChange = { newSevName = it; createSevErrorMsg = null },
                         label = { Text(if (isHindi) "सेवादार का नाम" else "Full Name") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = newSevUsername,
-                        onValueChange = { newSevUsername = it },
+                        onValueChange = { newSevUsername = it; createSevErrorMsg = null },
                         label = { Text(if (isHindi) "यूजरनेम (Unique Username)" else "Unique Username") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = newSevPassword,
-                        onValueChange = { newSevPassword = it },
+                        onValueChange = { newSevPassword = it; createSevErrorMsg = null },
                         label = { Text(if (isHindi) "पासवर्ड (Password)" else "Password") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = newSevPhone,
-                        onValueChange = { newSevPhone = it },
+                        onValueChange = { newSevPhone = it; createSevErrorMsg = null },
                         label = { Text(if (isHindi) "मोबाइल नंबर" else "Mobile Number") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = newSevPin,
-                        onValueChange = { newSevPin = it },
+                        onValueChange = { newSevPin = it; createSevErrorMsg = null },
                         label = { Text(if (isHindi) "त्वरित 4-अंकीय पिन" else "Quick 4-Digit PIN") },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -1801,7 +1900,7 @@ fun AdminDashboardScreen(
                                 if (newSevCanScanRegister) perms.add("रजिस्टर कॉपी स्कैन")
                                 if (newSevCanParchas) perms.add("आश्रम पावन पर्चे")
 
-                                repository.createSevadarAdmin(
+                                val (createdOk, createMsg) = repository.createSevadarAdmin(
                                     name = newSevName,
                                     username = newSevUsername,
                                     phone = newSevPhone,
@@ -1826,29 +1925,34 @@ fun AdminDashboardScreen(
                                     photoUri = newSevPhotoUri
                                 )
 
-                                // Capture credentials for instant WhatsApp banner sharing
-                                createdSevadarShareData = CreatedSevadarShareData(
-                                    name = newSevName,
-                                    username = newSevUsername,
-                                    phone = newSevPhone,
-                                    password = newSevPassword,
-                                    pin = newSevPin,
-                                    permissions = perms
-                                )
+                                if (createdOk) {
+                                    // Capture credentials for instant WhatsApp banner sharing
+                                    createdSevadarShareData = CreatedSevadarShareData(
+                                        name = newSevName,
+                                        username = newSevUsername,
+                                        phone = newSevPhone,
+                                        password = newSevPassword,
+                                        pin = newSevPin,
+                                        permissions = perms
+                                    )
 
-                                showCreateSevadarDialog = false
-                                newSevName = ""
-                                newSevUsername = ""
-                                newSevPassword = ""
-                                newSevPhone = ""
-                                newSevPin = ""
-                                newSevPhotoUri = ""
-                                newSevCanPhotos = false
-                                newSevCanAnywhere = false
-                                newSevCanScanRegister = false
-                                newSevCanParchas = false
-                                try { repository.publishAdminsToGitHub() } catch (e: Exception) {}
-                                refreshData()
+                                    showCreateSevadarDialog = false
+                                    createSevErrorMsg = null
+                                    newSevName = ""
+                                    newSevUsername = ""
+                                    newSevPassword = ""
+                                    newSevPhone = ""
+                                    newSevPin = ""
+                                    newSevPhotoUri = ""
+                                    newSevCanPhotos = false
+                                    newSevCanAnywhere = false
+                                    newSevCanScanRegister = false
+                                    newSevCanParchas = false
+                                    try { repository.publishAdminsToGitHub() } catch (e: Exception) {}
+                                    refreshData()
+                                } else {
+                                    createSevErrorMsg = createMsg
+                                }
                             }
                         }
                     },
@@ -2161,7 +2265,7 @@ fun AdminDashboardScreen(
         val target = editingAdmin!!
         AlertDialog(
             onDismissRequest = { editingAdmin = null },
-            title = { Text(if (isHindi) "सेवादार अनुमतियाँ व फोटो संपादित करें" else "Edit Sevadar Permissions & Photo", fontWeight = FontWeight.Bold) },
+            title = { Text(if (isHindi) "सेवादार पूर्ण विवरण व अनुमतियाँ संपादित करें" else "Edit Sevadar Details & Permissions", fontWeight = FontWeight.Bold) },
             text = {
                 Column(
                     modifier = Modifier
@@ -2170,9 +2274,61 @@ fun AdminDashboardScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "सेवादार: ${target.name} (${target.username})",
+                        text = "व्यवस्थापक / सेवादार आईडी: #${target.id}",
                         fontWeight = FontWeight.Bold,
                         color = MaroonPrimary
+                    )
+
+                    editSevErrorMsg?.let { err ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                            border = BorderStroke(1.dp, Color(0xFFE57373))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("⚠️", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(err, color = Color(0xFFC62828), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = editSevName,
+                        onValueChange = { editSevName = it; editSevErrorMsg = null },
+                        label = { Text(if (isHindi) "सेवादार का पूरा नाम" else "Full Name") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = editSevUsername,
+                        onValueChange = { editSevUsername = it; editSevErrorMsg = null },
+                        label = { Text(if (isHindi) "यूजर आईडी (Unique Username)" else "Unique Username") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = editSevPhone,
+                        onValueChange = { editSevPhone = it; editSevErrorMsg = null },
+                        label = { Text(if (isHindi) "मोबाइल नंबर" else "Mobile Number") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = editSevPassword,
+                        onValueChange = { editSevPassword = it; editSevErrorMsg = null },
+                        label = { Text(if (isHindi) "नया पासवर्ड (छोड़ने पर पुराना रहेगा)" else "New Password (optional)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = editSevPin,
+                        onValueChange = { editSevPin = it; editSevErrorMsg = null },
+                        label = { Text(if (isHindi) "नया 4-अंकीय पिन (छोड़ने पर पुराना रहेगा)" else "New 4-digit PIN (optional)") },
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -2193,7 +2349,7 @@ fun AdminDashboardScreen(
                                 color = Color(0xFF2E7D32)
                             )
                             Spacer(modifier = Modifier.height(6.dp))
-                            SacredAvatar(photoUri = editSevPhotoUri, name = target.name, size = 60.dp)
+                            SacredAvatar(photoUri = editSevPhotoUri, name = editSevName.ifEmpty { target.name }, size = 60.dp)
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -2227,12 +2383,6 @@ fun AdminDashboardScreen(
                             }
                         }
                     }
-                    OutlinedTextField(
-                        value = editSevPhotoUri,
-                        onValueChange = { editSevPhotoUri = it },
-                        label = { Text(if (isHindi) "सेवादार फोटो (URL या फ़ाइल पाथ)" else "Photo URL / File Path") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
 
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(if (isHindi) "अनुमतियाँ प्रबंधित करें:" else "Manage Permissions:", fontWeight = FontWeight.Bold)
@@ -2318,29 +2468,40 @@ fun AdminDashboardScreen(
                 Button(
                     onClick = {
                         scope.launch {
-                            repository.updateAdminPermissions(
+                            val (ok, msg) = repository.updateAdminFullDetails(
                                 adminId = target.id,
-                                canManageTokens = editSevCanTokens,
-                                canIssueManualTokens = editSevCanManualTokens,
-                                canManageYatra = editSevCanYatra,
-                                canManageExpenses = editSevCanExpenses,
-                                canChangeLocation = editSevCanLocation,
-                                canSendNotifications = editSevCanNotif,
-                                canEditAshramInfo = editSevCanContent,
-                                canViewDevoteePhotos = editSevCanPhotos,
-                                canIssueTokensAnywhere = editSevCanAnywhere,
-                                canScanPaperRegister = editSevCanScanRegister,
-                                canManageParchas = editSevCanParchas,
-                                canCancelTokens = editSevCanCancelTokens,
-                                canDeleteTokens = editSevCanDeleteTokens,
-                                canSetCustomTokenNumber = editSevCanCustomTokenNumber,
-                                canExportPdf = editSevCanExportPdf,
-                                isActive = target.isActive
+                                name = editSevName,
+                                username = editSevUsername,
+                                phone = editSevPhone,
+                                password = editSevPassword.ifBlank { null },
+                                pin = editSevPin.ifBlank { null },
+                                photoUri = editSevPhotoUri,
+                                permissions = AdminPermissionsUpdate(
+                                    canManageTokens = editSevCanTokens,
+                                    canIssueManualTokens = editSevCanManualTokens,
+                                    canManageYatra = editSevCanYatra,
+                                    canManageExpenses = editSevCanExpenses,
+                                    canChangeLocation = editSevCanLocation,
+                                    canSendNotifications = editSevCanNotif,
+                                    canEditAshramInfo = editSevCanContent,
+                                    canViewDevoteePhotos = editSevCanPhotos,
+                                    canIssueTokensAnywhere = editSevCanAnywhere,
+                                    canScanPaperRegister = editSevCanScanRegister,
+                                    canManageParchas = editSevCanParchas,
+                                    canCancelTokens = editSevCanCancelTokens,
+                                    canDeleteTokens = editSevCanDeleteTokens,
+                                    canSetCustomTokenNumber = editSevCanCustomTokenNumber,
+                                    canExportPdf = editSevCanExportPdf,
+                                    isActive = target.isActive
+                                )
                             )
-                            repository.updateAdminPhoto(target.id, editSevPhotoUri)
-                            try { repository.publishAdminsToGitHub() } catch (e: Exception) {}
-                            editingAdmin = null
-                            refreshData()
+                            if (ok) {
+                                editingAdmin = null
+                                editSevErrorMsg = null
+                                refreshData()
+                            } else {
+                                editSevErrorMsg = msg
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
@@ -2421,6 +2582,7 @@ fun AdminDashboardScreen(
                                     detailsHindi = evDescHi,
                                     detailsEnglish = evDescEn.ifEmpty { evDescHi }
                                 )
+                                try { repository.publishCurrentSettingsToGitHub(loggedInAdmin?.name ?: "SuperAdmin") } catch (e: Exception) {}
                                 showAddEventDialog = false
                                 evTitleHi = ""
                                 evTitleEn = ""
@@ -2748,8 +2910,10 @@ fun TokenQueueTab(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text(if (isHindi) "नाम, फोन नंबर या शहर से खोजें..." else "Search devotee by name, phone or city...") },
+                    placeholder = { Text(if (isHindi) "नाम, फोन नंबर या शहर से खोजें..." else "Search devotee by name, phone or city...", color = Color(0xFF757575)) },
                     leadingIcon = { Text("🔍") },
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
+                    colors = sacredOutlinedTextFieldColors(),
                     trailingIcon = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (searchQuery.isNotEmpty()) {
@@ -2758,7 +2922,7 @@ fun TokenQueueTab(
                                     keyboardController?.hide()
                                     focusManager.clearFocus()
                                 }) {
-                                    Text("✕")
+                                    Text("✕", color = Color(0xFF111111), fontWeight = FontWeight.Bold)
                                 }
                             }
                             IconButton(onClick = {
@@ -4932,6 +5096,7 @@ fun AppCustomizerTab(
     onSave: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val gurujiCameraLauncher = rememberLauncherForActivityResult(
         contract = TakeAnyPicturePreview()
     ) { bitmap ->
@@ -4939,7 +5104,16 @@ fun AppCustomizerTab(
             val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "guruji")
             if (savedPath.isNotBlank()) {
                 onGurujiPhotoUriChange(savedPath)
-                Toast.makeText(context, if (isHindi) "📸 गुरुजी की फोटो कैमरे से सेट हो गई!" else "Guruji photo updated from camera!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, if (isHindi) "📸 गुरुजी की फोटो कैमरे से सेट हो गई, क्लाउड सिंक जारी..." else "Guruji photo set, syncing to cloud...", Toast.LENGTH_SHORT).show()
+                scope.launch(Dispatchers.IO) {
+                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, "guruji_profile.jpg")
+                    if (!cloudUrl.isNullOrBlank()) {
+                        withContext(Dispatchers.Main) {
+                            onGurujiPhotoUriChange(cloudUrl)
+                            Toast.makeText(context, if (isHindi) "☁️ गुरुजी की फोटो सभी भक्तों के लिए क्लाउड पर सिंक हो गई!" else "Guruji photo synced to cloud for all devotees!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
             }
         }
     }
@@ -4953,7 +5127,16 @@ fun AppCustomizerTab(
                 val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "guruji")
                 if (savedPath.isNotBlank()) {
                     onGurujiPhotoUriChange(savedPath)
-                    Toast.makeText(context, if (isHindi) "📁 गुरुजी की फोटो गैलरी से सेट हो गई!" else "Guruji photo chosen from gallery!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (isHindi) "📁 गुरुजी की फोटो गैलरी से चुनी गई, क्लाउड सिंक जारी..." else "Guruji photo selected, syncing to cloud...", Toast.LENGTH_SHORT).show()
+                    scope.launch(Dispatchers.IO) {
+                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, "guruji_profile.jpg")
+                        if (!cloudUrl.isNullOrBlank()) {
+                            withContext(Dispatchers.Main) {
+                                onGurujiPhotoUriChange(cloudUrl)
+                                Toast.makeText(context, if (isHindi) "☁️ गुरुजी की फोटो सभी भक्तों के लिए क्लाउड पर सिंक हो गई!" else "Guruji photo synced to cloud for all devotees!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -5676,6 +5859,8 @@ fun CustomDistancesTab(
 fun SuperControlTab(
     isHindi: Boolean,
     settings: AshramSettings,
+    superAdmin: Admin? = null,
+    onUpdateSuperAdminProfile: (String, String, String, String?, String?, String?, (Boolean, String) -> Unit) -> Unit = { _, _, _, _, _, _, cb -> cb(true, "") },
     onUpdateMasterPassword: (String, String, (Boolean, String) -> Unit) -> Unit,
     onUpdateMaxDailyTokens: (Int) -> Unit,
     onUpdateEnforcedLayout: (String, Boolean) -> Unit,
@@ -5685,6 +5870,63 @@ fun SuperControlTab(
     onRestoreDatabaseBackup: (String, (Boolean, String) -> Unit) -> Unit
 ) {
     val context = LocalContext.current
+
+    // Super Admin Profile State
+    var superNameInput by remember(superAdmin?.id, superAdmin?.name) { mutableStateOf(superAdmin?.name ?: "सुपर एडमिन") }
+    var superPhoneInput by remember(superAdmin?.id, superAdmin?.phoneNumber, settings.contactPhone) { mutableStateOf(superAdmin?.phoneNumber?.ifBlank { settings.contactPhone } ?: settings.contactPhone) }
+    var superUsernameInput by remember(superAdmin?.id, superAdmin?.username) { mutableStateOf(superAdmin?.username ?: "superadmin") }
+    var superPasswordInput by remember { mutableStateOf("") }
+    var superPinInput by remember { mutableStateOf("") }
+    var superPhotoUri by remember(superAdmin?.id, superAdmin?.photoUri) { mutableStateOf(superAdmin?.photoUri ?: "") }
+    var superProfileErrorMsg by remember { mutableStateOf<String?>(null) }
+    var superProfileSuccessMsg by remember { mutableStateOf<String?>(null) }
+    var isSavingSuperProfile by remember { mutableStateOf(false) }
+
+    val superCameraLauncher = rememberLauncherForActivityResult(
+        contract = TakeAnyPicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "super_admin")
+            if (savedPath.isNotBlank()) {
+                superPhotoUri = savedPath
+                Toast.makeText(context, if (isHindi) "📸 सुपर एडमिन फोटो सेट, क्लाउड सिंक जारी..." else "Photo set, syncing...", Toast.LENGTH_SHORT).show()
+                kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                    val safeName = "super_admin_${System.currentTimeMillis()}.jpg"
+                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                    if (!cloudUrl.isNullOrBlank()) {
+                        withContext(Dispatchers.Main) {
+                            superPhotoUri = cloudUrl
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    val superGalleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+            if (bmp != null) {
+                val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "super_admin")
+                if (savedPath.isNotBlank()) {
+                    superPhotoUri = savedPath
+                    Toast.makeText(context, if (isHindi) "📁 गैलरी से फोटो चुनी गई, क्लाउड सिंक जारी..." else "Photo selected, syncing...", Toast.LENGTH_SHORT).show()
+                    kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                        val safeName = "super_admin_${System.currentTimeMillis()}.jpg"
+                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                        if (!cloudUrl.isNullOrBlank()) {
+                            withContext(Dispatchers.Main) {
+                                superPhotoUri = cloudUrl
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     var currentPassInput by remember { mutableStateOf("") }
     var newPassInput by remember { mutableStateOf("") }
     var confirmPassInput by remember { mutableStateOf("") }
@@ -5711,6 +5953,187 @@ fun SuperControlTab(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // 0. SUPER ADMIN PROFILE & CONTACT DETAILS CARD
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(2.dp),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = if (isHindi) "👑 सुपर एडमिन प्रोफ़ाइल व संपर्क विवरण" else "👑 Super Admin Profile & Contact Details",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaroonPrimary
+                    )
+                    Text(
+                        text = if (isHindi) "यहाँ से आप अपना नाम, मोबाइल नंबर, यूजर आईडी, मास्टर पासवर्ड, सुरक्षा पिन व फोटो बदल सकते हैं। यहाँ से अपडेट किया गया मोबाइल नंबर स्वतः सभी भक्तों व आश्रम संपर्क विवरण में लाइव क्लाउड सिंक हो जाएगा।" else "Update your name, mobile phone, username, master password, PIN, and photo. The phone number syncs to all devotees' apps instantly.",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+
+                    superProfileErrorMsg?.let { err ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                            border = BorderStroke(1.dp, Color(0xFFE57373))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("⚠️", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(err, color = Color(0xFFC62828), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    superProfileSuccessMsg?.let { msg ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                            border = BorderStroke(1.dp, Color(0xFFA5D6A7))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("✓", fontSize = 16.sp, color = Color(0xFF2E7D32))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(msg, color = Color(0xFF2E7D32), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = superNameInput,
+                        onValueChange = { superNameInput = it; superProfileErrorMsg = null; superProfileSuccessMsg = null },
+                        label = { Text(if (isHindi) "सुपर एडमिन का नाम / पद" else "Full Name / Title") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = superPhoneInput,
+                        onValueChange = { superPhoneInput = it; superProfileErrorMsg = null; superProfileSuccessMsg = null },
+                        label = { Text(if (isHindi) "मोबाइल / आश्रम संपर्क नंबर (Live Phone for Devotees)" else "Mobile / Ashram Phone") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = superUsernameInput,
+                        onValueChange = { superUsernameInput = it; superProfileErrorMsg = null; superProfileSuccessMsg = null },
+                        label = { Text(if (isHindi) "यूजर आईडी (Unique Username)" else "Unique Username") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = superPasswordInput,
+                        onValueChange = { superPasswordInput = it; superProfileErrorMsg = null; superProfileSuccessMsg = null },
+                        label = { Text(if (isHindi) "नया मास्टर पासवर्ड (खाली छोड़ने पर पुराना रहेगा)" else "New Master Password (optional)") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = superPinInput,
+                        onValueChange = { superPinInput = it; superProfileErrorMsg = null; superProfileSuccessMsg = null },
+                        label = { Text(if (isHindi) "नया 4-अंकीय मास्टर पिन (खाली छोड़ने पर पुराना रहेगा)" else "New 4-digit PIN (optional)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFFE082))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (isHindi) "📷 सुपर एडमिन प्रोफाइल फोटो" else "📷 Super Admin Photo",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                                color = MaroonPrimary
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            SacredAvatar(photoUri = superPhotoUri, name = superNameInput.ifEmpty { "Super Admin" }, size = 64.dp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { superGalleryLauncher.launch("image/*") },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1565C0))
+                                ) {
+                                    Text(if (isHindi) "🖼️ गैलरी" else "🖼️ Gallery", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                OutlinedButton(
+                                    onClick = { superCameraLauncher.launch(null) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32))
+                                ) {
+                                    Text(if (isHindi) "📷 कैमरा" else "📷 Camera", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                if (superPhotoUri.isNotBlank()) {
+                                    OutlinedButton(
+                                        onClick = { superPhotoUri = "" },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                                    ) {
+                                        Text("❌", fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Button(
+                        onClick = {
+                            isSavingSuperProfile = true
+                            superProfileErrorMsg = null
+                            superProfileSuccessMsg = null
+                            onUpdateSuperAdminProfile(
+                                superNameInput,
+                                superPhoneInput,
+                                superUsernameInput,
+                                superPasswordInput.ifBlank { null },
+                                superPinInput.ifBlank { null },
+                                superPhotoUri
+                            ) { success, msg ->
+                                isSavingSuperProfile = false
+                                if (success) {
+                                    superProfileSuccessMsg = if (isHindi) "✓ सुपर एडमिन प्रोफाइल व संपर्क नंबर सफलतापूर्वक अपडेट व लाइव क्लाउड सिंक हो गए!" else "Profile & phone updated and synced to cloud!"
+                                    superPasswordInput = ""
+                                    superPinInput = ""
+                                } else {
+                                    superProfileErrorMsg = msg
+                                }
+                            }
+                        },
+                        enabled = !isSavingSuperProfile,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(
+                            text = if (isSavingSuperProfile) (if (isHindi) "सुरक्षित हो रहा है..." else "Saving...") else (if (isHindi) "💾 विवरण सुरक्षित करें व क्लाउड सिंक करें" else "Save Profile & Sync Cloud"),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
         // 1. CHANGE MASTER PASSWORD CARD
         item {
             Card(

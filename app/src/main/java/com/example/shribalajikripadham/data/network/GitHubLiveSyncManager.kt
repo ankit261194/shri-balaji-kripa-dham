@@ -77,6 +77,107 @@ object GitHubLiveSyncManager {
     }
 
     // ========================================================================
+    // 0. CENTRAL CLOUD PHOTO UPLOAD SYNC
+    // ========================================================================
+
+    /**
+     * Uploads any local image file or bitmap to the central GitHub repository under `uploads/`.
+     * Returns the permanent raw CDN URL on success (e.g. https://raw.githubusercontent.com/.../uploads/filename.jpg),
+     * or null on failure.
+     */
+    suspend fun uploadPhotoToGitHub(
+        context: Context,
+        localPathOrUri: String,
+        remoteFileName: String
+    ): String? = withContext(Dispatchers.IO) {
+        if (localPathOrUri.isBlank()) return@withContext null
+        if (localPathOrUri.startsWith("http://") || localPathOrUri.startsWith("https://")) {
+            return@withContext localPathOrUri
+        }
+
+        val patToken = getActiveToken(context)
+        if (patToken.isBlank()) return@withContext null
+
+        try {
+            val bmp = com.example.shribalajikripadham.util.DevoteePhotoHelper.loadBitmap(context, localPathOrUri)
+                ?: return@withContext null
+
+            // Scale down to max 1024x1024 for lightweight fast cloud sync (~60KB)
+            val maxDim = 1024
+            val width = bmp.width
+            val height = bmp.height
+            val scaledBmp = if (width > maxDim || height > maxDim) {
+                val ratio = width.toFloat() / height.toFloat()
+                val targetW = if (width > height) maxDim else (maxDim * ratio).toInt()
+                val targetH = if (width > height) (maxDim / ratio).toInt() else maxDim
+                android.graphics.Bitmap.createScaledBitmap(bmp, targetW, targetH, true)
+            } else {
+                bmp
+            }
+
+            val baos = java.io.ByteArrayOutputStream()
+            scaledBmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 82, baos)
+            val imageBytes = baos.toByteArray()
+            if (imageBytes.isEmpty()) return@withContext null
+
+            val b64Content = Base64.encodeToString(imageBytes, Base64.NO_WRAP)
+
+            val targetPath = "uploads/$remoteFileName"
+            val apiUrl = "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$targetPath"
+
+            var existingSha: String? = null
+            try {
+                val checkUrl = URL(apiUrl)
+                val checkConn = checkUrl.openConnection() as HttpURLConnection
+                checkConn.requestMethod = "GET"
+                checkConn.setRequestProperty("Authorization", "Bearer $patToken")
+                checkConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                checkConn.setRequestProperty("User-Agent", "ShriBalajiApp/2.28")
+                checkConn.connectTimeout = 6000
+                checkConn.readTimeout = 6000
+                if (checkConn.responseCode in 200..299) {
+                    val resp = checkConn.inputStream.bufferedReader().use { it.readText() }
+                    val jObj = JSONObject(resp)
+                    if (jObj.has("sha")) existingSha = jObj.getString("sha")
+                }
+            } catch (ignored: Exception) {}
+
+            val payload = JSONObject().apply {
+                put("message", "Upload $remoteFileName [Live Cloud Sync]")
+                put("content", b64Content)
+                put("branch", "main")
+                if (!existingSha.isNullOrBlank()) {
+                    put("sha", existingSha)
+                }
+            }
+
+            val putUrl = URL(apiUrl)
+            val putConn = putUrl.openConnection() as HttpURLConnection
+            putConn.requestMethod = "PUT"
+            putConn.setRequestProperty("Authorization", "Bearer $patToken")
+            putConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            putConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            putConn.setRequestProperty("User-Agent", "ShriBalajiApp/2.28")
+            putConn.connectTimeout = 12000
+            putConn.readTimeout = 12000
+            putConn.doOutput = true
+
+            putConn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            if (putConn.responseCode in 200..299) {
+                "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$targetPath"
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    // ========================================================================
     // 1. LIVE UI & ASHRAM SETTINGS CONFIG SYNC
     // ========================================================================
 
@@ -628,6 +729,8 @@ object GitHubLiveSyncManager {
                     put("role", admin.role.name)
                     put("is_active", admin.isActive)
                     put("photo_uri", admin.photoUri)
+                    put("pin_hash", admin.pinHash)
+                    put("password_hash", admin.passwordHash)
 
                     val perms = JSONObject().apply {
                         put("can_manage_tokens", admin.canManageTokens)
@@ -723,6 +826,8 @@ object GitHubLiveSyncManager {
                     val role = try { AdminRole.valueOf(roleStr) } catch (e: Exception) { AdminRole.SEVADAR }
                     val isActive = obj.optBoolean("is_active", true)
                     val photoUri = obj.optString("photo_uri", "")
+                    val pinHash = obj.optString("pin_hash", "")
+                    val passwordHash = obj.optString("password_hash", "")
 
                     val perms = obj.optJSONObject("permissions") ?: JSONObject()
                     val canTokens = perms.optBoolean("can_manage_tokens", true)
@@ -749,6 +854,8 @@ object GitHubLiveSyncManager {
                             username = username,
                             phoneNumber = phone,
                             role = role,
+                            pinHash = pinHash,
+                            passwordHash = passwordHash,
                             canManageTokens = canTokens,
                             canIssueManualTokens = canManual,
                             canCancelTokens = canCancel,

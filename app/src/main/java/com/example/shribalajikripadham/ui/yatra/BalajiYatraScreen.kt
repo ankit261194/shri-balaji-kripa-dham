@@ -325,9 +325,11 @@ fun BalajiYatraScreen(
                         OutlinedTextField(
                             value = passengerName,
                             onValueChange = { passengerName = it },
-                            label = { Text(text = if (isHindi) "यात्री का नाम" else "Passenger Name") },
+                            label = { Text(text = if (isHindi) "यात्री का नाम *" else "Passenger Name *", fontWeight = FontWeight.SemiBold) },
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            colors = sacredOutlinedTextFieldColors()
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -335,9 +337,11 @@ fun BalajiYatraScreen(
                         OutlinedTextField(
                             value = phoneNumber,
                             onValueChange = { phoneNumber = it },
-                            label = { Text(text = if (isHindi) "मोबाइल नंबर" else "Mobile Number") },
+                            label = { Text(text = if (isHindi) "मोबाइल नंबर *" else "Mobile Number *", fontWeight = FontWeight.SemiBold) },
+                            textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            colors = sacredOutlinedTextFieldColors()
                         )
 
                         Spacer(modifier = Modifier.height(12.dp))

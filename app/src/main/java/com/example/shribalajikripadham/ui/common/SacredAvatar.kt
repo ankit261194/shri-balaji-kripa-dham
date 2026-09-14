@@ -11,7 +11,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shribalajikripadham.theme.GoldSecondary
 import com.example.shribalajikripadham.theme.SaffronPrimary
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
 
@@ -42,24 +48,16 @@ fun SacredAvatar(
     val context = LocalContext.current
     val effectiveText = name.ifBlank { fallbackText }
 
-    val bitmap: Bitmap? = remember(photoUri) {
-        if (photoUri.isBlank()) null
-        else {
-            try {
-                if (photoUri.startsWith("content://") || photoUri.startsWith("android.resource://")) {
-                    val uri = Uri.parse(photoUri)
-                    val input: InputStream? = context.contentResolver.openInputStream(uri)
-                    input?.use { BitmapFactory.decodeStream(it) }
-                } else if (photoUri.startsWith("file://") || photoUri.startsWith("/")) {
-                    val path = if (photoUri.startsWith("file://")) photoUri.removePrefix("file://") else photoUri
-                    val file = File(path)
-                    if (file.exists()) BitmapFactory.decodeFile(file.absolutePath) else null
-                } else {
-                    null
-                }
-            } catch (e: Exception) {
-                null
-            }
+    var bitmap by remember(photoUri) { mutableStateOf<Bitmap?>(null) }
+
+    LaunchedEffect(photoUri) {
+        if (photoUri.isBlank()) {
+            bitmap = null
+            return@LaunchedEffect
+        }
+        withContext(Dispatchers.IO) {
+            val loaded = com.example.shribalajikripadham.util.DevoteePhotoHelper.loadBitmap(context, photoUri)
+            bitmap = loaded
         }
     }
 
