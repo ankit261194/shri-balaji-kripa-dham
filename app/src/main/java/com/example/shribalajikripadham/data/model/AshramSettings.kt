@@ -27,8 +27,8 @@ data class AshramSettings(
     val isGeofenceEnforced: Boolean = true,
     // In-app auto update system configuration
     val latestVersionCode: Int = 3,
-    val latestVersionName: String = "2.2.0",
-    val updateNotes: String = "नया अपडेट v2.2.0: 8 नए सुपर एडमिन नियंत्रण फीचर्स, पासवर्ड चेंज, CSV एक्सपोर्ट, टोकन डिलीट, डेली कोटा...",
+    val latestVersionName: String = "2.34.0",
+    val updateNotes: String = "सुरक्षा पैच एवं सिस्टम स्थिरता सुधार (Security Patch Update)",
     val apkDownloadUrl: String = "",
     val isForceUpdate: Boolean = false,
     // Social Media Links & App Sharing

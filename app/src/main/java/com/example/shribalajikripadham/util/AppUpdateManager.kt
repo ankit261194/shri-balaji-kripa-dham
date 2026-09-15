@@ -141,11 +141,19 @@ object AppUpdateManager {
                 val parsedCode = buildMatch?.groupValues?.get(1)?.toIntOrNull() ?: 1
                 val verClean = tagName.removePrefix("v").trim()
 
+                // Keep release notes concise as a clean security patch notice so the update popup never overflows
+                val conciseHindiNotes = if (body.isNotBlank() && body.length <= 120 && !body.contains("\n\n")) {
+                    body.trim()
+                } else {
+                    "सुरक्षा पैच एवं सिस्टम स्थिरता सुधार (Security Patch Update)"
+                }
+                val conciseEnglishNotes = "Security patch & critical stability improvements"
+
                 OnlineUpdateInfo(
                     versionCode = parsedCode,
-                    versionName = verClean.ifEmpty { "2.28.4" },
-                    updateNotesHindi = body.ifEmpty { name },
-                    updateNotesEnglish = name,
+                    versionName = verClean.ifEmpty { "2.34.0" },
+                    updateNotesHindi = conciseHindiNotes,
+                    updateNotesEnglish = conciseEnglishNotes,
                     apkUrl = apkDownloadUrl,
                     isForce = true,
                     webhookUrl = ""

@@ -1522,7 +1522,9 @@ fun HomeScreen(
                     .padding(8.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(22.dp),
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Divine App Icon
@@ -1579,17 +1581,34 @@ fun HomeScreen(
                         color = TextPrimaryDark,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = settings.updateNotes.ifEmpty {
-                            if (isHindi) "नवीनतम सुधार, तीव्र गति, 6 दिव्य थीम्स व सोशल मीडिया हब जोड़ा गया है।"
-                            else "Latest fixes, faster performance and new features added."
-                        },
-                        fontSize = 12.sp,
-                        color = TextSecondaryDark,
-                        lineHeight = 17.sp,
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Surface(
+                        color = Color(0xFFE8F5E9),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFF81C784)),
                         modifier = Modifier.fillMaxWidth()
-                    )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("🛡️", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "सुरक्षा पैच एवं सिस्टम स्थिरता सुधार" else "Security Patch & System Stability",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1B5E20)
+                                )
+                                Text(
+                                    text = if (isHindi) "टोकन व दर्शन सेवा की गति एवं सुरक्षा बढ़ाई गई है।" else "Enhanced token & darshan service performance and security.",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF2E7D32)
+                                )
+                            }
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(18.dp))
 
