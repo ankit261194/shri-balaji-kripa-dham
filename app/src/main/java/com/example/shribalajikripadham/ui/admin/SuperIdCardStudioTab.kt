@@ -95,7 +95,7 @@ fun SuperIdCardStudioTab(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var selectedCategory by remember { mutableStateOf("सभी (All 50+)") }
+    var selectedCategory by remember { mutableStateOf("सभी (All)") }
     var selectedTemplate by remember { mutableStateOf(IdCardTemplateLibrary.TEMPLATES[0]) }
     var previewSideTab by remember { mutableStateOf(0) } // 0 = Front, 1 = Back
 
@@ -161,8 +161,8 @@ fun SuperIdCardStudioTab(
         refreshPreview()
     }
 
-    val categories = listOf("सभी (All 50+)") + IdCardTemplateLibrary.getAllCategories()
-    val filteredTemplates = if (selectedCategory == "सभी (All 50+)") {
+    val categories = listOf("सभी (All)") + IdCardTemplateLibrary.getAllCategories()
+    val filteredTemplates = if (selectedCategory == "सभी (All)" || selectedCategory.startsWith("सभी")) {
         IdCardTemplateLibrary.TEMPLATES
     } else {
         IdCardTemplateLibrary.getByCategory(selectedCategory)
@@ -190,13 +190,13 @@ fun SuperIdCardStudioTab(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = if (isHindi) "सुपर एडमिन 50+ ID कार्ड स्टूडियो" else "Super Admin 50+ ID Card Studio",
+                                text = if (isHindi) "सुपर एडमिन 14 विशिष्ट ID कार्ड स्टूडियो" else "Super Admin 14 Distinct ID Card Studio",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 color = MaroonPrimary
                             )
                             Text(
-                                text = if (isHindi) "50+ भव्य टेम्पलेट्स से 1-क्लिक में Photoshop (.PSD), PDF व इमेज बनाएं" else "Generate Adobe Photoshop (.PSD), PDF & PNG in 1 click",
+                                text = if (isHindi) "14 भव्य एवं विशिष्ट टेम्पलेट्स से 1-क्लिक में Photoshop (.PSD), PDF व इमेज बनाएं" else "Generate Adobe Photoshop (.PSD), PDF & PNG in 1 click",
                                 fontSize = 12.sp,
                                 color = Color.DarkGray
                             )
@@ -215,7 +215,7 @@ fun SuperIdCardStudioTab(
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = if (isHindi) "🎨 चरण 1: ID कार्ड टेम्पलेट चुनें (50+ उपलब्ध)" else "🎨 Step 1: Select ID Card Template (50+ Available)",
+                        text = if (isHindi) "🎨 चरण 1: ID कार्ड टेम्पलेट चुनें (14 विशिष्ट टेम्पलेट्स)" else "🎨 Step 1: Select ID Card Template (14 Distinct Templates)",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = MaroonPrimary

@@ -4,18 +4,17 @@ import com.example.shribalajikripadham.data.model.DevoteeFaceProfile
 import com.example.shribalajikripadham.data.model.FaceMatchResult
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.security.MessageDigest
 import kotlin.math.sqrt
 
 /**
- * High-Precision Deep Metric Learning & Invariant Vector Search Engine.
+ * On-Device 128-D Mathematical Facial Geometry & Spatial Vector Matching Engine.
  *
- * Implements:
- * 1. Deep Invariant Vector Operations (MobileFaceNet / ArcFace 128D Spherical Hypersphere).
- * 2. Invariance to Beard Growth, Clean Shaving, Spectacles, and Caps via deep landmark features.
- * 3. Sub-Millisecond Cosine Similarity Dot-Product Matrix Search.
- * 4. Zero False-Match Policy with strict confidence gating (>= 88% - 90%).
- * 5. Online Adaptive Face Embedding Enrichment via Exponential Moving Average (EMA).
+ * Real On-Device Implementation:
+ * 1. Computes 128-D normalized spatial luminance & Sobel gradient feature vectors from camera image.
+ * 2. Cosine Similarity Dot-Product Matrix Search over enrolled devotee face profiles.
+ * 3. Strict confidence gating (>= 72% minimum threshold, >= 85% high precision).
+ * 4. Online Adaptive Profile Enrichment via Exponential Moving Average (EMA).
+ * 5. Zero external subscription fees & 100% on-device local execution (₹0 cost).
  */
 data class FaceQualityCheck(
     val isFaceClear: Boolean,
@@ -259,52 +258,7 @@ object FaceEmbeddingEngine {
         }
     }
 
-    /**
-     * Generates a deterministic Invariant Deep Face Vector.
-     *
-     * In production with CameraX, this interfaces with:
-     * 1. Google ML Kit Face Detector (detecting eye pupils, nose base, mouth corners).
-     * 2. MobileFaceNet / ArcFace ONNX/TFLite model (outputting 128D float embedding).
-     *
-     * For robust testing, standalone simulation, and offline operation:
-     * Generates a normalized unit vector anchored by primary cranial/facial invariants
-     * (inter-ocular distance, nasal bridge, cheekbone geometry) that remains invariant
-     * whether the subject grows a beard, shaves, wears spectacles, or wears a cap.
-     */
-    fun generateSimulatedInvariantVector(
-        identitySeed: String,
-        hasBeard: Boolean = false,
-        hasGlasses: Boolean = false,
-        hasCap: Boolean = false
-    ): FloatArray {
-        // Core invariant identity derived from unique facial bone structure seed
-        val md = MessageDigest.getInstance("SHA-256")
-        val baseDigest = md.digest("CRANIAL_BONE_STRUCTURE_$identitySeed".toByteArray())
-        val seedLong = ByteBuffer.wrap(baseDigest).long
 
-        val random = java.util.Random(seedLong)
-        val vector = FloatArray(EMBEDDING_DIM)
-        for (i in 0 until EMBEDDING_DIM) {
-            vector[i] = random.nextGaussian().toFloat()
-        }
-
-        // Deep Invariance Formulation:
-        // Transient surface changes (facial hair, eyewear, hats) only affect high-frequency
-        // superficial pixels, but deep ArcFace embeddings suppress these by >= 98% in latent space.
-        var perturbation = 0.0f
-        if (hasBeard) perturbation += 0.016f
-        if (hasGlasses) perturbation += 0.014f
-        if (hasCap) perturbation += 0.010f
-
-        if (perturbation > 0.0f) {
-            val perturbRandom = java.util.Random(seedLong xor 0x5A5A5A5AL)
-            for (i in 0 until EMBEDDING_DIM) {
-                vector[i] += (perturbRandom.nextGaussian().toFloat() * perturbation)
-            }
-        }
-
-        return l2Normalize(vector)
-    }
 
     /**
      * Extracts a normalized 128D invariant face embedding vector from a captured camera Bitmap.

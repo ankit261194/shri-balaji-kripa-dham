@@ -289,6 +289,98 @@ object GitHubLiveSyncManager {
     }
 
     // ========================================================================
+    // 1.5. LIVE CENTRAL BROADCAST NOTICE PUSH (live_broadcasts.json)
+    // ========================================================================
+
+    private const val FILE_BROADCASTS = "live_broadcasts.json"
+    private const val RAW_BROADCASTS_URL =
+        "https://raw.githubusercontent.com/$REPO_OWNER/$REPO_NAME/main/$FILE_BROADCASTS"
+    private const val API_BROADCASTS_URL =
+        "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_BROADCASTS"
+
+    suspend fun publishBroadcastNoticeToCloud(
+        context: Context,
+        title: String,
+        message: String,
+        priority: String = "HIGH",
+        sentBy: String = "Super Admin"
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val token = getActiveToken(context)
+        if (token.isBlank()) {
+            return@withContext Pair(false, "सिंक टोकन अनुपलब्ध है")
+        }
+
+        try {
+            var existingSha: String? = null
+            try {
+                val getUrl = URL(API_BROADCASTS_URL)
+                val getConn = getUrl.openConnection() as HttpURLConnection
+                getConn.requestMethod = "GET"
+                getConn.setRequestProperty("Authorization", "Bearer $token")
+                getConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                getConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.28")
+                getConn.connectTimeout = 5000
+                getConn.readTimeout = 5000
+
+                if (getConn.responseCode in 200..299) {
+                    val respStr = getConn.inputStream.bufferedReader().use { it.readText() }
+                    val jsonResp = JSONObject(respStr)
+                    existingSha = if (jsonResp.has("sha")) jsonResp.getString("sha") else null
+                }
+            } catch (e: Exception) {}
+
+            val noticeObj = JSONObject().apply {
+                put("id", System.currentTimeMillis())
+                put("title", title)
+                put("message", message)
+                put("priority", priority)
+                put("sent_by", sentBy)
+                put("timestamp", System.currentTimeMillis())
+            }
+
+            val jsonString = noticeObj.toString(2)
+            val base64Content = Base64.encodeToString(
+                jsonString.toByteArray(StandardCharsets.UTF_8),
+                Base64.NO_WRAP
+            )
+
+            val payloadObj = JSONObject().apply {
+                put("message", "Broadcast notice: $title by $sentBy")
+                put("content", base64Content)
+                put("branch", "main")
+                if (!existingSha.isNullOrBlank()) {
+                    put("sha", existingSha)
+                }
+            }
+
+            val putUrl = URL(API_BROADCASTS_URL)
+            val putConn = putUrl.openConnection() as HttpURLConnection
+            putConn.requestMethod = "PUT"
+            putConn.setRequestProperty("Authorization", "Bearer $token")
+            putConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            putConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            putConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.28")
+            putConn.connectTimeout = 8000
+            putConn.readTimeout = 8000
+            putConn.doOutput = true
+
+            putConn.outputStream.use { os ->
+                os.write(payloadObj.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            val code = putConn.responseCode
+            if (code in 200..299) {
+                Pair(true, "✅ सूचना सभी भक्तों के फोन पर लाइव प्रसारित हो गई!")
+            } else {
+                val err = putConn.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+                Pair(false, "सर्वर त्रुटि ($code): $err")
+            }
+        } catch (e: Exception) {
+            Pair(false, "सिंक विफल: ${e.localizedMessage ?: "नेटवर्क समस्या"}")
+        }
+    }
+
+    // ========================================================================
     // 2. LIVE CENTRAL DEVOTEE TOKENS SYNC (live_tokens.json)
     // ========================================================================
 

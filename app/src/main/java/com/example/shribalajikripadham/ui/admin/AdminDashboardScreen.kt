@@ -1317,6 +1317,17 @@ fun AdminDashboardScreen(
                                             val radVal = radiusInput.toDouble().coerceIn(10.0, 50000.0)
                                             repository.updateAshramLocation(admin, latVal, longVal, radVal, geofenceEnforced)
                                             try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
+                                        try {
+                                            com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishBroadcastNoticeToCloud(
+                                                context = context,
+                                                title = notifTitle,
+                                                message = notifMsg,
+                                                priority = notifPriority,
+                                                sentBy = admin.name
+                                            )
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
                                             locationSuccessMsg = if (isHindi) "✓ नई GPS लोकेशन व परिधि सुरक्षित व क्लाउड द्वारा सभी भक्तों के फोन पर लाइव अपडेट हो गई!" else "GPS coordinates & radius updated & broadcast to all users live!"
                                             locationErrorMsg = null
                                             Toast.makeText(context, locationSuccessMsg, Toast.LENGTH_LONG).show()
@@ -1349,6 +1360,17 @@ fun AdminDashboardScreen(
                                         repository.saveBroadcastNotification(notifTitle, notifMsg, notifPriority, admin.name)
                                         repository.updateEmergencyNotice("$notifTitle: $notifMsg")
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
+                                        try {
+                                            com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishBroadcastNoticeToCloud(
+                                                context = context,
+                                                title = notifTitle,
+                                                message = notifMsg,
+                                                priority = notifPriority,
+                                                sentBy = admin.name
+                                            )
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
                                         // Trigger heads-up system alert
                                         NotificationHelper.showSystemNotification(context, notifTitle, notifMsg)
                                         notifSuccessMsg = if (isHindi) "सूचना प्रसारित व सभी भक्तों के फोन पर लाइव अपडेट कर दी गई!" else "Notification successfully broadcasted live to all devotees!"
@@ -1582,6 +1604,17 @@ fun AdminDashboardScreen(
                                         )
                                         repository.updateCanDevoteeViewYatraDiary(svcCanDevoteeViewYatraDiary)
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
+                                        try {
+                                            com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishBroadcastNoticeToCloud(
+                                                context = context,
+                                                title = notifTitle,
+                                                message = notifMsg,
+                                                priority = notifPriority,
+                                                sentBy = admin.name
+                                            )
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
                                         svcSuccessMsg = if (isHindi)
                                             "सेवाएं, अर्जी दर, बस व्यवस्था, Yatra डायरी व UPI पेमेंट सेटिंग्स सुरक्षित और सभी भक्तों के फोन पर लाइव अपडेट हुई!"
                                         else
@@ -1642,6 +1675,17 @@ fun AdminDashboardScreen(
                                     scope.launch {
                                         repository.deleteEvent(evId)
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
+                                        try {
+                                            com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishBroadcastNoticeToCloud(
+                                                context = context,
+                                                title = notifTitle,
+                                                message = notifMsg,
+                                                priority = notifPriority,
+                                                sentBy = admin.name
+                                            )
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
                                         refreshData()
                                     }
                                 },
@@ -1677,6 +1721,17 @@ fun AdminDashboardScreen(
                                             customRulesHindi.trim()
                                         )
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
+                                        try {
+                                            com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishBroadcastNoticeToCloud(
+                                                context = context,
+                                                title = notifTitle,
+                                                message = notifMsg,
+                                                priority = notifPriority,
+                                                sentBy = admin.name
+                                            )
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
                                         customizerSuccessMsg = if (isHindi) "✓ आश्रम विवरण, फोटो व सोशल लिंक्स सुरक्षित व सभी भक्तों के फोन पर लाइव अपडेट हो गए!" else "Ashram details saved & published live to all users!"
                                         Toast.makeText(context, if (isHindi) "✓ आश्रम विवरण व परिचय सुरक्षित!" else "Details saved!", Toast.LENGTH_SHORT).show()
                                         refreshData()
@@ -1746,6 +1801,17 @@ fun AdminDashboardScreen(
                                     scope.launch {
                                         repository.updateMaxDailyTokens(maxTokens)
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
+                                        try {
+                                            com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishBroadcastNoticeToCloud(
+                                                context = context,
+                                                title = notifTitle,
+                                                message = notifMsg,
+                                                priority = notifPriority,
+                                                sentBy = admin.name
+                                            )
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
                                         refreshData()
                                     }
                                 },
@@ -1753,6 +1819,17 @@ fun AdminDashboardScreen(
                                     scope.launch {
                                         repository.updateActiveUiLayoutEnforced(layoutKey, isEnforced)
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
+                                        try {
+                                            com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishBroadcastNoticeToCloud(
+                                                context = context,
+                                                title = notifTitle,
+                                                message = notifMsg,
+                                                priority = notifPriority,
+                                                sentBy = admin.name
+                                            )
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
                                         refreshData()
                                     }
                                 },
@@ -3030,51 +3107,59 @@ fun TokenQueueTab(
             }
         }
 
-        // 1.1 Inline Token Queue Voice Selection & Audio Preview Studio (48 Curated Voices)
+        // 1.1 Inline Token Queue Voice Selection & Audio Preview Studio (Genuine Human & Live Recorded Voices)
         item {
             var selectedVoiceId by remember(settings.tokenVoicePreset) {
                 mutableStateOf(settings.tokenVoicePreset.ifBlank { AshramVoiceAnnouncementManager.getSelectedVoicePreset(context) })
             }
-            var selectedCategory by remember { mutableStateOf("ALL") }
-            var isVoiceMenuExpanded by remember { mutableStateOf(false) }
+            var isRecordingAudio by remember { mutableStateOf(false) }
+            var hasRecording by remember { mutableStateOf(AshramVoiceAnnouncementManager.hasCustomRecording(context)) }
 
-            val allVoices = remember { AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS }
-            val filteredVoices = remember(selectedCategory, allVoices) {
-                when (selectedCategory) {
-                    "MALE" -> allVoices.filter { it.category == "MALE" }
-                    "FEMALE" -> allVoices.filter { it.category == "FEMALE" }
-                    "KIDS" -> allVoices.filter { it.category == "KIDS" }
-                    else -> allVoices
+            val recordAudioLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (isGranted) {
+                    val started = AshramVoiceAnnouncementManager.startCustomRecording(context)
+                    if (started) {
+                        isRecordingAudio = true
+                        Toast.makeText(context, "🎙️ रिकॉर्डिंग शुरू... स्पष्ट बोलें", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "रिकॉर्डिंग शुरू करने में विफल", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(context, "ऑडियो रिकॉर्डिंग हेतु माइक्रोफ़ोन अनुमति आवश्यक है", Toast.LENGTH_SHORT).show()
                 }
             }
+
+            val allVoices = remember { AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS }
             val activeVoiceInfo = remember(selectedVoiceId, allVoices) {
                 allVoices.find { it.id == selectedVoiceId } ?: allVoices[0]
             }
 
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFDFBF7)),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(14.dp),
                 border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.4f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(12.dp)) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🎙️", fontSize = 20.sp)
+                            Text("🎙️", fontSize = 22.sp)
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
                                 Text(
-                                    text = if (isHindi) "टोकन घोषणा आवाज़ (48 AI न्यूरल स्वर)" else "Token Voice Studio (48 Neural Voices)",
+                                    text = if (isHindi) "टोकन घोषणा आवाज़ (प्राकृतिक HD एवं लाइव स्टूडियो)" else "Token Voice (Natural HD & Live Studio)",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
                                     color = MaroonPrimary
                                 )
                                 Text(
-                                    text = if (isHindi) "घोषणा हेतु सक्रिय आवाज़ यहाँ से तुरंत बदलें व सुनें" else "Select & test queue announcement voice",
+                                    text = if (isHindi) "100% वास्तविक इंसानी स्वर एवं लाइव माइक रिकॉर्डिंग" else "100% Real human audio & live mic recording",
                                     fontSize = 11.sp,
                                     color = Color.Gray
                                 )
@@ -3094,145 +3179,178 @@ fun TokenQueueTab(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Category Filter Chips
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    // Live In-App Voice Recording Studio Box
+                    Surface(
+                        color = if (isRecordingAudio) Color(0xFFFFEBEE) else Color(0xFFF1F8E9),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, if (isRecordingAudio) Color(0xFFD32F2F) else Color(0xFF81C784)),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        listOf(
-                            Triple("ALL", if (isHindi) "सभी (48)" else "All (48)", "🌐"),
-                            Triple("MALE", if (isHindi) "पुरुष (16)" else "Male (16)", "👨"),
-                            Triple("FEMALE", if (isHindi) "महिला (16)" else "Female (16)", "👩"),
-                            Triple("KIDS", if (isHindi) "बच्चे (16)" else "Kids (16)", "👶")
-                        ).forEach { (catId, catLabel, catIcon) ->
-                            val isSelected = selectedCategory == catId
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { selectedCategory = catId },
-                                label = { Text("$catIcon $catLabel", fontSize = 11.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaroonPrimary,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Voice Dropdown Selector
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        OutlinedCard(
-                            onClick = { isVoiceMenuExpanded = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.outlinedCardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFFD7CCC8))
-                        ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(if (isRecordingAudio) "🔴" else "🎙️", fontSize = 16.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (isRecordingAudio) "रिकॉर्डिंग चल रही है..." else "लाइव माइक रिकॉर्डिंग स्टूडियो",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isRecordingAudio) Color(0xFFC62828) else Color(0xFF2E7D32)
+                                    )
+                                }
+                                if (hasRecording && !isRecordingAudio) {
+                                    Surface(color = Color(0xFFE8F5E9), shape = RoundedCornerShape(4.dp)) {
+                                        Text("✓ रिकॉर्डेड उपलब्ध", fontSize = 10.sp, color = Color(0xFF2E7D32), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                if (isRecordingAudio) {
+                                    Button(
+                                        onClick = {
+                                            AshramVoiceAnnouncementManager.stopCustomRecording(context)
+                                            isRecordingAudio = false
+                                            hasRecording = true
+                                            selectedVoiceId = AshramVoiceAnnouncementManager.PRESET_CUSTOM_RECORDED
+                                            AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoiceId)
+                                            onUpdateVoicePreset?.invoke(selectedVoiceId)
+                                            Toast.makeText(context, "✓ लाइव आवाज़ सेव व लागू हो गई!", Toast.LENGTH_SHORT).show()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("⏹️ रिकॉर्डिंग रोकें व सेव करें", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                } else {
+                                    OutlinedButton(
+                                        onClick = {
+                                            recordAudioLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                                        },
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32)),
+                                        border = BorderStroke(1.dp, Color(0xFF4CAF50)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("🎙️ अपनी आवाज़ रिकॉर्ड करें", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    if (hasRecording) {
+                                        OutlinedButton(
+                                            onClick = {
+                                                AshramVoiceAnnouncementManager.playCustomRecording(context) { }
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 10.dp)
+                                        ) {
+                                            Text("▶️ सुनें", fontSize = 11.sp)
+                                        }
+                                        OutlinedButton(
+                                            onClick = {
+                                                AshramVoiceAnnouncementManager.deleteCustomRecording(context)
+                                                hasRecording = false
+                                                if (selectedVoiceId == AshramVoiceAnnouncementManager.PRESET_CUSTOM_RECORDED) {
+                                                    selectedVoiceId = AshramVoiceAnnouncementManager.PRESET_NATURAL_MALE
+                                                    AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoiceId)
+                                                    onUpdateVoicePreset?.invoke(selectedVoiceId)
+                                                }
+                                                Toast.makeText(context, "रिकॉर्डिंग हटा दी गई", Toast.LENGTH_SHORT).show()
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+                                            border = BorderStroke(1.dp, Color.Red.copy(alpha = 0.5f)),
+                                            contentPadding = PaddingValues(horizontal = 8.dp)
+                                        ) {
+                                            Text("🗑️", fontSize = 11.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Preset Selection Cards
+                    Text("सक्रिय उद्घोषणा स्वर चुनें:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    allVoices.forEach { voice ->
+                        val isSelected = selectedVoiceId == voice.id
+                        Surface(
+                            onClick = {
+                                selectedVoiceId = voice.id
+                                AshramVoiceAnnouncementManager.setVoicePreset(context, voice.id)
+                                onUpdateVoicePreset?.invoke(voice.id)
+                                Toast.makeText(context, "✓ आवाज़ चुनी गई: ${voice.nameHindi}", Toast.LENGTH_SHORT).show()
+                            },
+                            color = if (isSelected) Color(0xFFFFF3E0) else Color.White,
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, if (isSelected) SaffronPrimary else Color(0xFFE0E0E0)),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(voice.icon, fontSize = 20.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "${activeVoiceInfo.icon} ${if (isHindi) activeVoiceInfo.nameHindi else activeVoiceInfo.nameEnglish}",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
-                                        color = MaroonPrimary
+                                        text = if (isHindi) voice.nameHindi else voice.nameEnglish,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 12.sp,
+                                        color = if (isSelected) MaroonPrimary else Color.Black
                                     )
                                     Text(
-                                        text = activeVoiceInfo.description,
+                                        text = voice.description,
                                         fontSize = 10.sp,
-                                        color = Color.DarkGray,
+                                        color = Color.Gray,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                 }
-                                Text("▼", fontSize = 12.sp, color = MaroonPrimary)
-                            }
-                        }
-
-                        DropdownMenu(
-                            expanded = isVoiceMenuExpanded,
-                            onDismissRequest = { isVoiceMenuExpanded = false },
-                            modifier = Modifier.fillMaxWidth(0.9f)
-                        ) {
-                            filteredVoices.forEach { voice ->
-                                DropdownMenuItem(
-                                    text = {
-                                        Column {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text(voice.icon, fontSize = 14.sp)
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text(
-                                                    text = if (isHindi) voice.nameHindi else voice.nameEnglish,
-                                                    fontWeight = if (voice.id == selectedVoiceId) FontWeight.Bold else FontWeight.Normal,
-                                                    fontSize = 13.sp,
-                                                    color = if (voice.id == selectedVoiceId) SaffronPrimary else Color.Black
-                                                )
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text("(${voice.category})", fontSize = 10.sp, color = Color.Gray)
-                                            }
-                                            Text(
-                                                text = voice.description,
-                                                fontSize = 10.sp,
-                                                color = Color.Gray,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-                                    },
+                                Spacer(modifier = Modifier.width(6.dp))
+                                OutlinedButton(
                                     onClick = {
-                                        selectedVoiceId = voice.id
-                                        isVoiceMenuExpanded = false
-                                        AshramVoiceAnnouncementManager.setVoicePreset(context, voice.id)
-                                        onUpdateVoicePreset?.invoke(voice.id)
-                                        Toast.makeText(context, "✓ आवाज़ चुनी गई: ${voice.nameHindi}", Toast.LENGTH_SHORT).show()
-                                    }
-                                )
+                                        AshramVoiceAnnouncementManager.testVoice(context, voice.id)
+                                    },
+                                    shape = RoundedCornerShape(6.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronPrimary),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text("▶️ टेस्ट", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Actions: Listen Test & Apply
-                    Row(
+                    Button(
+                        onClick = {
+                            AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoiceId)
+                            onUpdateVoicePreset?.invoke(selectedVoiceId)
+                            Toast.makeText(
+                                context,
+                                if (isHindi) "✓ घोषणा आवाज़ सुरक्षित व लागू हो गई!" else "✓ Announcement voice applied!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
                     ) {
-                        OutlinedButton(
-                            onClick = {
-                                AshramVoiceAnnouncementManager.testVoice(context, selectedVoiceId)
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronPrimary),
-                            border = BorderStroke(1.dp, SaffronPrimary)
-                        ) {
-                            Text("▶️ टेस्ट आवाज़ सुनें", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        Button(
-                            onClick = {
-                                AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoiceId)
-                                onUpdateVoicePreset?.invoke(selectedVoiceId)
-                                Toast.makeText(
-                                    context,
-                                    if (isHindi) "✓ घोषणा आवाज़ सुरक्षित व लागू हो गई!" else "✓ Announcement voice applied!",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
-                        ) {
-                            Text(if (isHindi) "✅ यह आवाज़ लागू करें" else "✅ Apply Voice", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        }
+                        Text(if (isHindi) "✅ यह आवाज़ लागू करें" else "✅ Apply Voice", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
@@ -7506,9 +7624,26 @@ fun SuperControlTab(
             }
         }
 
-        // 3.1 TOKEN TTS REAL HUMAN VOICE SELECTION & TEST AUDIO (48+ UNIQUE VOICES)
+        // 3.1 TOKEN TTS REAL HUMAN VOICE SELECTION & TEST AUDIO (GENUINE HUMAN & RECORDED VOICES)
         item {
-            var voiceCategoryFilter by remember { mutableStateOf("ALL") }
+            var isRecordingAudio by remember { mutableStateOf(false) }
+            var hasRecording by remember { mutableStateOf(AshramVoiceAnnouncementManager.hasCustomRecording(context)) }
+
+            val recordAudioLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (isGranted) {
+                    val started = AshramVoiceAnnouncementManager.startCustomRecording(context)
+                    if (started) {
+                        isRecordingAudio = true
+                        Toast.makeText(context, "🎙️ रिकॉर्डिंग शुरू... स्पष्ट बोलें", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "रिकॉर्डिंग शुरू करने में विफल", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(context, "ऑडियो रिकॉर्डिंग हेतु माइक्रोफ़ोन अनुमति आवश्यक है", Toast.LENGTH_SHORT).show()
+                }
+            }
 
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -7520,7 +7655,7 @@ fun SuperControlTab(
                         Text("🎙️", fontSize = 22.sp)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (isHindi) "टोकन उद्घोषणा: 48 सजीव इंसानी आवाज़ें (Male, Female, Kids)" else "Token Voice: 48 Human Voices (Male, Female, Kids)",
+                            text = if (isHindi) "टोकन उद्घोषणा: वास्तविक इंसानी आवाज़ें एवं लाइव रिकॉर्डिंग" else "Token Voice: Real Human Audio & Live Recording",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                             color = MaroonPrimary
@@ -7528,55 +7663,121 @@ fun SuperControlTab(
                     }
                     Text(
                         text = if (isHindi)
-                            "पुरुष, महिला व बाल स्वर में 48 वास्तविक इंसानी आवाज़ें। न्यूरल नेचुरल टीटीएस मॉडलिंग के साथ किसी भी आवाज़ को '▶️ सुनें' दबाकर तुरंत लाइव टेस्ट करें।"
-                            else "48 real human voice personas across Male, Female, and Kids categories with Neural Natural expressive modeling.",
+                            "100% असली प्राकृतिक HD आवाज़ (पुरुष व महिला), आपकी अपनी लाइव रिकॉर्डेड आवाज़, अथवा फ़ोन का डिफ़ॉल्ट ऑफ़लाइन स्वर। किसी भी आवाज़ को '▶️ सुनें' दबाकर तुरंत टेस्ट करें।"
+                            else "100% Real human HD audio, in-app live microphone recording, or offline device TTS. Test any voice instantly.",
                         fontSize = 12.sp,
                         color = Color.DarkGray
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Category Filter Chips
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    // Live In-App Voice Recording Studio
+                    Surface(
+                        color = if (isRecordingAudio) Color(0xFFFFEBEE) else Color(0xFFF1F8E9),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.2.dp, if (isRecordingAudio) Color(0xFFD32F2F) else Color(0xFF81C784)),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        val categories = listOf(
-                            Triple("ALL", "✨ सभी (48)", "All (48)"),
-                            Triple("MALE", "👨 पुरुष (16)", "Male (16)"),
-                            Triple("FEMALE", "👩 महिला (16)", "Female (16)"),
-                            Triple("KIDS", "🧒 बाल स्वर (16)", "Kids (16)")
-                        )
-                        categories.forEach { (catKey, catHi, catEn) ->
-                            val isCatSelected = (voiceCategoryFilter == catKey)
-                            Surface(
-                                onClick = { voiceCategoryFilter = catKey },
-                                shape = RoundedCornerShape(20.dp),
-                                color = if (isCatSelected) MaroonPrimary else Color(0xFFF0F0F0),
-                                border = if (isCatSelected) null else BorderStroke(1.dp, Color(0xFFDCDCDC))
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = if (isHindi) catHi else catEn,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isCatSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isCatSelected) Color.White else Color.DarkGray,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(if (isRecordingAudio) "🔴" else "🎙️", fontSize = 18.sp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = if (isRecordingAudio) "माइक से रिकॉर्डिंग जारी है..." else "आश्रम लाइव वॉयस रिकॉर्डिंग स्टूडियो",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isRecordingAudio) Color(0xFFC62828) else Color(0xFF2E7D32)
+                                        )
+                                        Text(
+                                            text = if (isRecordingAudio) "स्पष्ट टोकन उद्घोषणा बोलें..." else "पंडित जी / मुख्य सेवादार की आवाज़ में रिकॉर्ड करें",
+                                            fontSize = 10.sp,
+                                            color = Color.DarkGray
+                                        )
+                                    }
+                                }
+                                if (hasRecording && !isRecordingAudio) {
+                                    Surface(color = Color(0xFFE8F5E9), shape = RoundedCornerShape(4.dp)) {
+                                        Text("✓ रिकॉर्डिंग सुरक्षित है", fontSize = 10.sp, color = Color(0xFF2E7D32), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                if (isRecordingAudio) {
+                                    Button(
+                                        onClick = {
+                                            AshramVoiceAnnouncementManager.stopCustomRecording(context)
+                                            isRecordingAudio = false
+                                            hasRecording = true
+                                            selectedVoicePreset = AshramVoiceAnnouncementManager.PRESET_CUSTOM_RECORDED
+                                            AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoicePreset)
+                                            voiceSuccessMsg = "✓ आपकी असली आवाज़ रिकॉर्ड व सेट हो गई!"
+                                            Toast.makeText(context, "✓ रिकॉर्डिंग सुरक्षित हुई!", Toast.LENGTH_SHORT).show()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("⏹️ रिकॉर्डिंग रोकें व सुरक्षित करें", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                } else {
+                                    OutlinedButton(
+                                        onClick = {
+                                            recordAudioLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                                        },
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32)),
+                                        border = BorderStroke(1.dp, Color(0xFF4CAF50)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("🎙️ नई आवाज़ रिकॉर्ड करें", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    if (hasRecording) {
+                                        OutlinedButton(
+                                            onClick = {
+                                                AshramVoiceAnnouncementManager.playCustomRecording(context) { }
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 12.dp)
+                                        ) {
+                                            Text("▶️ सुनें", fontSize = 12.sp)
+                                        }
+                                        OutlinedButton(
+                                            onClick = {
+                                                AshramVoiceAnnouncementManager.deleteCustomRecording(context)
+                                                hasRecording = false
+                                                if (selectedVoicePreset == AshramVoiceAnnouncementManager.PRESET_CUSTOM_RECORDED) {
+                                                    selectedVoicePreset = AshramVoiceAnnouncementManager.PRESET_NATURAL_MALE
+                                                    AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoicePreset)
+                                                }
+                                                Toast.makeText(context, "रिकॉर्डिंग हटा दी गई", Toast.LENGTH_SHORT).show()
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+                                            border = BorderStroke(1.dp, Color.Red.copy(alpha = 0.5f)),
+                                            contentPadding = PaddingValues(horizontal = 8.dp)
+                                        ) {
+                                            Text("🗑️", fontSize = 12.sp)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text("उपलब्ध प्राकृतिक स्वर विकल्प:", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                    val filteredVoices = remember(voiceCategoryFilter) {
-                        when (voiceCategoryFilter) {
-                            "MALE" -> AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS.filter { it.category == "MALE" }
-                            "FEMALE" -> AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS.filter { it.category == "FEMALE" }
-                            "KIDS" -> AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS.filter { it.category == "KIDS" }
-                            else -> AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS
-                        }
-                    }
-
-                    filteredVoices.forEach { preset ->
+                    AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS.forEach { preset ->
                         val isSelected = (selectedVoicePreset == preset.id)
                         Surface(
                             onClick = { selectedVoicePreset = preset.id; voiceSuccessMsg = null },
@@ -7589,7 +7790,7 @@ fun SuperControlTab(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(preset.icon, fontSize = 20.sp)
+                                Text(preset.icon, fontSize = 22.sp)
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -7601,9 +7802,10 @@ fun SuperControlTab(
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                         val (badgeText, badgeBg, badgeFg) = when (preset.category) {
-                                            "KIDS" -> Triple("बाल स्वर", Color(0xFFFFF3E0), Color(0xFFE65100))
-                                            "FEMALE" -> Triple("महिला", Color(0xFFFCE4EC), Color(0xFFC2185B))
-                                            else -> Triple("पुरुष", Color(0xFFE3F2FD), Color(0xFF1976D2))
+                                            "CUSTOM" -> Triple("लाइव माइक", Color(0xFFE8F5E9), Color(0xFF2E7D32))
+                                            "DEVICE" -> Triple("ऑफलाइन", Color(0xFFEDE7F6), Color(0xFF512DA8))
+                                            "FEMALE" -> Triple("महिला HD", Color(0xFFFCE4EC), Color(0xFFC2185B))
+                                            else -> Triple("पुरुष HD", Color(0xFFE3F2FD), Color(0xFF1976D2))
                                         }
                                         Surface(
                                             color = badgeBg,

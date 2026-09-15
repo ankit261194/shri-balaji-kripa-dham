@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 41,
-  "latest_version_name": "2.33.0",
-  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.33.0 महा-अपडेट: 1. टोकन उद्घोषणा में 48 सजीव मानवीय आवाज़ें (16 पुरुष, 16 महिला, 16 बाल स्वर) न्यूरल नेचुरल टीटीएस मॉडलिंग व लाइव टेस्ट बटन के साथ। 2. ग्रैन्युलर मल्टी-लोकेशन सर्च इंजन: एक ही नाम के स्थानों (जैसे शिवाली - हापुड़ vs शिवाली - अलवर) का ज़िला/राज्य टैग सहित सटीक विभेदीकरण व छोटे गाँवों/मोहल्लों का सर्च। 3. ग्लोबल देवोती मास्टर डायरेक्टरी व स्मार्ट ऑटो-कंप्लीट: नाम या फ़ोन नंबर डालते ही पूर्व रिकॉर्ड का स्वतः सुझाव व 1-क्लिक में पूरा विवरण प्री-फिल।",
-  "update_notes_english": "Shri Balaji Kripa Dham v2.33.0 Update: 1. 48 Real Human Voice Presets across Male (16), Female (16), and Kids (16) with Neural Natural TTS Modeling & Test Voice preview. 2. Granular Multi-Location Search Engine with same-name district/state disambiguation and small village/hamlet coverage. 3. Global Devotee Master Directory Indexing & Smart Auto-Fill across Token, Arzi, and Registration modules.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.33.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 44,
+  "latest_version_name": "2.34.2",
+  "update_notes_hindi": "सुरक्षा पैच एवं सिस्टम स्थिरता सुधार (Security Patch Update)",
+  "update_notes_english": "Security patch and system performance update",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.34.2/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

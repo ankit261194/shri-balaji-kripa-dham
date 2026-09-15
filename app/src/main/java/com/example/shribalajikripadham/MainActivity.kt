@@ -33,9 +33,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
 
-        // Create notification channel on app launch
+        // Create notification channel & schedule native background push job
         try {
             NotificationHelper.createNotificationChannel(this)
+            com.example.shribalajikripadham.notification.AshramPushNotificationScheduler.schedulePeriodicJob(this)
         } catch (e: Exception) {
             e.printStackTrace()
         }
