@@ -243,7 +243,7 @@ data class LiveUiConfigDto(
                     LocationConfigDto(
                         latitude = locObj.optDouble("latitude", 28.3972915),
                         longitude = locObj.optDouble("longitude", 78.1460410),
-                        allowedRadiusMeters = locObj.optDouble("allowed_radius_meters", 200.0).coerceIn(50.0, 200.0),
+                        allowedRadiusMeters = locObj.optDouble("allowed_radius_meters", 200.0).coerceIn(10.0, 50000.0),
                         isGeofenceEnforced = locObj.optBoolean("is_geofence_enforced", true),
                         locationName = locObj.optString("location_name", "श्री बालाजी कृपा धाम"),
                         updatedAt = locObj.optLong("updated_at", 0L)

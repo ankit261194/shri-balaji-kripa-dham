@@ -46,6 +46,10 @@ class AshramRepository(context: Context) {
     private val appContext = context.applicationContext
     private val dbHelper = DatabaseHelper(appContext)
 
+    companion object {
+        private val tokenGenerationLock = Any()
+    }
+
     // --- Ashram Settings & Customization ---
     suspend fun getSettings(): AshramSettings = withContext(Dispatchers.IO) {
         val db = dbHelper.readableDatabase
@@ -370,7 +374,7 @@ class AshramRepository(context: Context) {
             throw SecurityException("Unauthorized: Admin lacks 'can_change_location' permission.")
         }
         val db = dbHelper.writableDatabase
-        val clampedRadius = newRadius.coerceIn(50.0, 200.0)
+        val clampedRadius = newRadius.coerceIn(10.0, 50000.0)
         val cv = ContentValues().apply {
             put("latitude", newLat)
             put("longitude", newLong)
@@ -642,7 +646,6 @@ class AshramRepository(context: Context) {
             }
 
             if (settings.isGeofenceEnforced) {
-                val effectiveRadius = settings.allowedRadiusMeters.coerceAtLeast(100.0)
                 if (latitude == 0.0 && longitude == 0.0) {
                     throw SecurityException("कृपया GPS चालू करें और आश्रम परिसर में उपस्थित रहें।")
                 }
@@ -650,9 +653,16 @@ class AshramRepository(context: Context) {
                     latitude, longitude,
                     settings.latitude, settings.longitude
                 )
-                if (distance > effectiveRadius) {
+                val isPermitted = GeofenceLocationManager.isTokenDistancePermitted(
+                    distanceMeters = distance,
+                    isGeofenceEnforced = true,
+                    allowedRadiusMeters = settings.allowedRadiusMeters.coerceAtLeast(10.0)
+                )
+                if (!isPermitted) {
                     val km = String.format(java.util.Locale.US, "%.1f", distance / 1000.0)
-                    throw SecurityException("आप आश्रम सीमा से $km किमी दूर हैं। टोकन केवल आश्रम परिसर में उपस्थित होने पर मिलेगा।")
+                    val allowedM = settings.allowedRadiusMeters.toInt()
+                    val radiusDesc = if (allowedM >= 1000) "${String.format(java.util.Locale.US, "%.1f", allowedM / 1000.0)} किमी" else "$allowedM मीटर"
+                    throw SecurityException("⚠️ आश्रम दूरी नियम: 30 किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।")
                 }
             }
         }
@@ -670,39 +680,6 @@ class AshramRepository(context: Context) {
             checkCursor.close()
         }
 
-        val settings = getSettings()
-        if (settings.maxDailyTokens > 0) {
-            val countCursor = db.rawQuery(
-                "SELECT COUNT(*) FROM tokens WHERE darbar_date = ? AND status != 'CANCELLED'",
-                arrayOf(today)
-            )
-            var todayCount = 0
-            if (countCursor.moveToFirst()) {
-                todayCount = countCursor.getInt(0)
-            }
-            countCursor.close()
-            if (todayCount >= settings.maxDailyTokens) {
-                throw IllegalStateException("आज की अधिकतम टोकन सीमा (${settings.maxDailyTokens}) पूरी हो चुकी है। कृपया अगले दरबार में प्रयास करें।")
-            }
-        }
-
-        val nextTokenNum = if (customTokenNumber != null && customTokenNumber > 0) {
-            // If replacing a previously cancelled token with this number, remove old entry
-            db.delete("tokens", "darbar_date = ? AND token_number = ? AND status = 'CANCELLED'", arrayOf(today, customTokenNumber.toString()))
-            customTokenNumber
-        } else {
-            val maxTokenCursor = db.rawQuery(
-                "SELECT MAX(token_number) FROM tokens WHERE darbar_date = ?",
-                arrayOf(today)
-            )
-            var num = 1
-            if (maxTokenCursor.moveToFirst() && !maxTokenCursor.isNull(0)) {
-                num = maxTokenCursor.getInt(0) + 1
-            }
-            maxTokenCursor.close()
-            num
-        }
-
         val safeCity = if (city.isBlank()) "डूँगरा जाट (स्थानीय)" else city.trim()
         val safeOrigin = if (originAddress.isNotBlank()) originAddress.trim() else safeCity
 
@@ -717,46 +694,84 @@ class AshramRepository(context: Context) {
             ).distanceKm
         }
 
-        val tokenValues = ContentValues().apply {
-            put("token_number", nextTokenNum)
-            put("darbar_date", today)
-            put("patient_name", patientName)
-            put("phone_number", phoneNumber)
-            put("city", safeCity)
-            put("device_id", deviceId)
-            put("latitude", latitude)
-            put("longitude", longitude)
-            put("status", TokenStatus.WAITING.name)
-            put("registered_by", registeredBy)
-            put("photo_uri", photoUri)
-            put("is_darshan_completed", 0)
-            put("darshan_completed_at", 0L)
-            put("origin_address", safeOrigin)
-            put("destination_address", destinationAddress)
-            put("distance_km", calculatedDistance)
-            put("created_at", System.currentTimeMillis())
-        }
-
+        val settings = getSettings()
+        var nextTokenNum = 1
         var insertedId: Long = -1
-        db.beginTransaction()
-        try {
-            insertedId = db.insertOrThrow("tokens", null, tokenValues)
 
-            if (isDevoteeRequest) {
-                val devValues = ContentValues().apply {
-                    put("device_id", deviceId)
-                    put("darbar_date", today)
+        // Strict Thread & Atomic SQLite Lock to eliminate Token Race Conditions
+        synchronized(tokenGenerationLock) {
+            if (settings.maxDailyTokens > 0) {
+                val countCursor = db.rawQuery(
+                    "SELECT COUNT(*) FROM tokens WHERE darbar_date = ? AND status != 'CANCELLED'",
+                    arrayOf(today)
+                )
+                var todayCount = 0
+                if (countCursor.moveToFirst()) {
+                    todayCount = countCursor.getInt(0)
+                }
+                countCursor.close()
+                if (todayCount >= settings.maxDailyTokens) {
+                    throw IllegalStateException("आज की अधिकतम टोकन सीमा (${settings.maxDailyTokens}) पूरी हो चुकी है। कृपया अगले दरबार में प्रयास करें।")
+                }
+            }
+
+            db.beginTransaction()
+            try {
+                nextTokenNum = if (customTokenNumber != null && customTokenNumber > 0) {
+                    // If replacing a previously cancelled token with this number, remove old entry
+                    db.delete("tokens", "darbar_date = ? AND token_number = ? AND status = 'CANCELLED'", arrayOf(today, customTokenNumber.toString()))
+                    customTokenNumber
+                } else {
+                    val maxTokenCursor = db.rawQuery(
+                        "SELECT MAX(token_number) FROM tokens WHERE darbar_date = ?",
+                        arrayOf(today)
+                    )
+                    var num = 1
+                    if (maxTokenCursor.moveToFirst() && !maxTokenCursor.isNull(0)) {
+                        num = maxTokenCursor.getInt(0) + 1
+                    }
+                    maxTokenCursor.close()
+                    num
+                }
+
+                val tokenValues = ContentValues().apply {
                     put("token_number", nextTokenNum)
+                    put("darbar_date", today)
                     put("patient_name", patientName)
+                    put("phone_number", phoneNumber)
+                    put("city", safeCity)
+                    put("device_id", deviceId)
+                    put("latitude", latitude)
+                    put("longitude", longitude)
+                    put("status", TokenStatus.WAITING.name)
+                    put("registered_by", registeredBy)
+                    put("photo_uri", photoUri)
+                    put("is_darshan_completed", 0)
+                    put("darshan_completed_at", 0L)
+                    put("origin_address", safeOrigin)
+                    put("destination_address", destinationAddress)
+                    put("distance_km", calculatedDistance)
                     put("created_at", System.currentTimeMillis())
                 }
-                db.insertOrThrow("device_registrations", null, devValues)
+
+                insertedId = db.insertOrThrow("tokens", null, tokenValues)
+
+                if (isDevoteeRequest) {
+                    val devValues = ContentValues().apply {
+                        put("device_id", deviceId)
+                        put("darbar_date", today)
+                        put("token_number", nextTokenNum)
+                        put("patient_name", patientName)
+                        put("created_at", System.currentTimeMillis())
+                    }
+                    db.insertOrThrow("device_registrations", null, devValues)
+                }
+                db.setTransactionSuccessful()
+            } catch (e: android.database.sqlite.SQLiteConstraintException) {
+                throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
+            } finally {
+                db.endTransaction()
             }
-            db.setTransactionSuccessful()
-        } catch (e: android.database.sqlite.SQLiteConstraintException) {
-            throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
-        } finally {
-            db.endTransaction()
         }
 
         // Auto-index into Devotee Master Directory
@@ -2655,7 +2670,7 @@ class AshramRepository(context: Context) {
                 if (loc.latitude != 0.0 && loc.longitude != 0.0) {
                     cv.put("latitude", loc.latitude)
                     cv.put("longitude", loc.longitude)
-                    cv.put("allowed_radius_meters", loc.allowedRadiusMeters.coerceIn(50.0, 200.0))
+                    cv.put("allowed_radius_meters", loc.allowedRadiusMeters.coerceIn(10.0, 50000.0))
                     cv.put("is_geofence_enforced", if (loc.isGeofenceEnforced) 1 else 0)
                 }
 

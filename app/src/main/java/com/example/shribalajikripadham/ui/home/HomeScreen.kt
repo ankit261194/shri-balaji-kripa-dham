@@ -355,9 +355,11 @@ fun HomeScreen(
                         add(NavDrawerItem("🎟️", if (isHindi) "दरबार टोकन जनरेट करें" else "Generate Darbar Token", onNavigateToToken))
                         add(NavDrawerItem("🤳", if (isHindi) "फेस वेरिफिकेशन टोकन" else "Face Token", onNavigateToFaceToken))
                         add(NavDrawerItem("📜", if (isHindi) "डिजिटल पर्चा देखें" else "Digital Parchas", onNavigateToParchas))
-                        add(NavDrawerItem("🚗", if (isHindi) "यात्रा व दूरी विवरण" else "Yatra & Distance Info", onNavigateToYatra))
-                        if (settings.canDevoteeViewYatraDiary) {
-                            add(NavDrawerItem("💰", if (isHindi) "यात्रा खर्च डायरी" else "Yatra Expense Diary", onNavigateToYatraExpenses))
+                        if (settings.isYatraServiceEnabled) {
+                            add(NavDrawerItem("🚗", if (isHindi) "यात्रा व दूरी विवरण" else "Yatra & Distance Info", onNavigateToYatra))
+                            if (settings.canDevoteeViewYatraDiary) {
+                                add(NavDrawerItem("💰", if (isHindi) "यात्रा खर्च डायरी" else "Yatra Expense Diary", onNavigateToYatraExpenses))
+                            }
                         }
                         add(NavDrawerItem("ℹ️", if (isHindi) "आश्रम परिचय व नियम" else "Ashram Info & Rules", onNavigateToInfo))
                         add(NavDrawerItem("🔄", if (isHindi) "ऐप अपडेट जांचें (Live)" else "Check App Update", {

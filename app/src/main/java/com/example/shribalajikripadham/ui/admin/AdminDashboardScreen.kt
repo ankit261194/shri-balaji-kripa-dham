@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.content.Intent
@@ -1242,6 +1243,12 @@ fun AdminDashboardScreen(
                                             Toast.makeText(context, if (isHindi) "क्लाउड सिंक: सभी टोकन पहले से अपडेट हैं" else "Cloud sync: All tokens are up to date", Toast.LENGTH_SHORT).show()
                                         }
                                     }
+                                },
+                                onUpdateVoicePreset = { newPreset ->
+                                    scope.launch {
+                                        repository.updateTokenVoicePreset(newPreset)
+                                        refreshData()
+                                    }
                                 }
                             )
                         }
@@ -1307,14 +1314,16 @@ fun AdminDashboardScreen(
                                         try {
                                             val latVal = latInput.toDouble()
                                             val longVal = longInput.toDouble()
-                                            val radVal = radiusInput.toDouble().coerceIn(50.0, 200.0)
+                                            val radVal = radiusInput.toDouble().coerceIn(10.0, 50000.0)
                                             repository.updateAshramLocation(admin, latVal, longVal, radVal, geofenceEnforced)
                                             try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
-                                            locationSuccessMsg = if (isHindi) "✓ नई GPS लोकेशन सुरक्षित व क्लाउड द्वारा सभी भक्तों के फोन पर लाइव अपडेट हो गई!" else "GPS coordinates updated & broadcast to all users live!"
+                                            locationSuccessMsg = if (isHindi) "✓ नई GPS लोकेशन व परिधि सुरक्षित व क्लाउड द्वारा सभी भक्तों के फोन पर लाइव अपडेट हो गई!" else "GPS coordinates & radius updated & broadcast to all users live!"
                                             locationErrorMsg = null
+                                            Toast.makeText(context, locationSuccessMsg, Toast.LENGTH_LONG).show()
                                             refreshData()
                                         } catch (e: Exception) {
                                             locationErrorMsg = e.localizedMessage
+                                            Toast.makeText(context, "त्रुटि: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 }
@@ -2857,7 +2866,8 @@ fun TokenQueueTab(
     onCancelToken: ((Long) -> Unit)? = null,
     onDeleteToken: ((Long) -> Unit)? = null,
     onSyncFromCloud: (() -> Unit)? = null,
-    onSyncFromGoogleSheet: (() -> Unit)? = null
+    onSyncFromGoogleSheet: (() -> Unit)? = null,
+    onUpdateVoicePreset: ((String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -3014,6 +3024,214 @@ fun TokenQueueTab(
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 1.1 Inline Token Queue Voice Selection & Audio Preview Studio (48 Curated Voices)
+        item {
+            var selectedVoiceId by remember(settings.tokenVoicePreset) {
+                mutableStateOf(settings.tokenVoicePreset.ifBlank { AshramVoiceAnnouncementManager.getSelectedVoicePreset(context) })
+            }
+            var selectedCategory by remember { mutableStateOf("ALL") }
+            var isVoiceMenuExpanded by remember { mutableStateOf(false) }
+
+            val allVoices = remember { AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS }
+            val filteredVoices = remember(selectedCategory, allVoices) {
+                when (selectedCategory) {
+                    "MALE" -> allVoices.filter { it.category == "MALE" }
+                    "FEMALE" -> allVoices.filter { it.category == "FEMALE" }
+                    "KIDS" -> allVoices.filter { it.category == "KIDS" }
+                    else -> allVoices
+                }
+            }
+            val activeVoiceInfo = remember(selectedVoiceId, allVoices) {
+                allVoices.find { it.id == selectedVoiceId } ?: allVoices[0]
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFDFBF7)),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.4f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("🎙️", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "टोकन घोषणा आवाज़ (48 AI न्यूरल स्वर)" else "Token Voice Studio (48 Neural Voices)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaroonPrimary
+                                )
+                                Text(
+                                    text = if (isHindi) "घोषणा हेतु सक्रिय आवाज़ यहाँ से तुरंत बदलें व सुनें" else "Select & test queue announcement voice",
+                                    fontSize = 11.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                        Surface(
+                            color = SaffronPrimary.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "${activeVoiceInfo.icon} ${activeVoiceInfo.category}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaroonPrimary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Category Filter Chips
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            Triple("ALL", if (isHindi) "सभी (48)" else "All (48)", "🌐"),
+                            Triple("MALE", if (isHindi) "पुरुष (16)" else "Male (16)", "👨"),
+                            Triple("FEMALE", if (isHindi) "महिला (16)" else "Female (16)", "👩"),
+                            Triple("KIDS", if (isHindi) "बच्चे (16)" else "Kids (16)", "👶")
+                        ).forEach { (catId, catLabel, catIcon) ->
+                            val isSelected = selectedCategory == catId
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { selectedCategory = catId },
+                                label = { Text("$catIcon $catLabel", fontSize = 11.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaroonPrimary,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Voice Dropdown Selector
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedCard(
+                            onClick = { isVoiceMenuExpanded = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.outlinedCardColors(containerColor = Color.White),
+                            border = BorderStroke(1.dp, Color(0xFFD7CCC8))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "${activeVoiceInfo.icon} ${if (isHindi) activeVoiceInfo.nameHindi else activeVoiceInfo.nameEnglish}",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = MaroonPrimary
+                                    )
+                                    Text(
+                                        text = activeVoiceInfo.description,
+                                        fontSize = 10.sp,
+                                        color = Color.DarkGray,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                Text("▼", fontSize = 12.sp, color = MaroonPrimary)
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = isVoiceMenuExpanded,
+                            onDismissRequest = { isVoiceMenuExpanded = false },
+                            modifier = Modifier.fillMaxWidth(0.9f)
+                        ) {
+                            filteredVoices.forEach { voice ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(voice.icon, fontSize = 14.sp)
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = if (isHindi) voice.nameHindi else voice.nameEnglish,
+                                                    fontWeight = if (voice.id == selectedVoiceId) FontWeight.Bold else FontWeight.Normal,
+                                                    fontSize = 13.sp,
+                                                    color = if (voice.id == selectedVoiceId) SaffronPrimary else Color.Black
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("(${voice.category})", fontSize = 10.sp, color = Color.Gray)
+                                            }
+                                            Text(
+                                                text = voice.description,
+                                                fontSize = 10.sp,
+                                                color = Color.Gray,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        selectedVoiceId = voice.id
+                                        isVoiceMenuExpanded = false
+                                        AshramVoiceAnnouncementManager.setVoicePreset(context, voice.id)
+                                        onUpdateVoicePreset?.invoke(voice.id)
+                                        Toast.makeText(context, "✓ आवाज़ चुनी गई: ${voice.nameHindi}", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Actions: Listen Test & Apply
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                AshramVoiceAnnouncementManager.testVoice(context, selectedVoiceId)
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronPrimary),
+                            border = BorderStroke(1.dp, SaffronPrimary)
+                        ) {
+                            Text("▶️ टेस्ट आवाज़ सुनें", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = {
+                                AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoiceId)
+                                onUpdateVoicePreset?.invoke(selectedVoiceId)
+                                Toast.makeText(
+                                    context,
+                                    if (isHindi) "✓ घोषणा आवाज़ सुरक्षित व लागू हो गई!" else "✓ Announcement voice applied!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                        ) {
+                            Text(if (isHindi) "✅ यह आवाज़ लागू करें" else "✅ Apply Voice", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
                 }
@@ -4713,19 +4931,19 @@ fun LocationConfigTab(
                     onValueChange = { input ->
                         val clean = input.filter { it.isDigit() || it == '.' }
                         val num = clean.toDoubleOrNull()
-                        if (num != null && num > 200.0) {
-                            onRadiusChange("200.0")
+                        if (num != null && num > 50000.0) {
+                            onRadiusChange("50000.0")
                         } else {
                             onRadiusChange(clean)
                         }
                     },
-                    label = { Text(if (isHindi) "स्वीकृत परिधि (100m - 200m)" else "Allowed Radius (100m - 200m)") },
+                    label = { Text(if (isHindi) "स्वीकृत परिधि (मीटर में, उदा. 200m, 500m, 2000m)" else "Allowed Radius (meters, e.g. 200m, 500m, 2000m)") },
                     supportingText = {
                         Text(
                             text = if (isHindi)
-                                "नियम: भक्त केवल आश्रम के 100m से 200m के दायरे में ही टोकन बना सकते हैं (अधिकतम सीमा: 200m)।"
+                                "नियम: स्थानीय भक्तों के लिए वैध परिधि (10m से 50,000m / 50km तक सेट कर सकते हैं)। बाहरी भक्तों (30km+) को स्वतः रिमोट बुकिंग की अनुमति है।"
                             else
-                                "Rule: Devotees can only generate tokens within 100m - 200m of Ashram (Max: 200m).",
+                                "Rule: Devotees within this radius can book local tokens (10m - 50,000m / 50km). Outstation devotees (30km+) are allowed remote booking.",
                             fontSize = 11.sp,
                             color = MaroonAccent
                         )
@@ -4736,27 +4954,58 @@ fun LocationConfigTab(
 
                 if (canChangeLocation) {
                     Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (isHindi) "⚡ त्वरित परिधि चुनें:" else "⚡ Quick Radius Presets:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         OutlinedButton(
                             onClick = { onRadiusChange("100.0") },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("100m (सख्त)", fontSize = 11.sp)
-                        }
-                        OutlinedButton(
-                            onClick = { onRadiusChange("150.0") },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("150m", fontSize = 11.sp)
+                            Text("100m", fontSize = 11.sp)
                         }
                         OutlinedButton(
                             onClick = { onRadiusChange("200.0") },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("200m (मानक)", fontSize = 11.sp)
+                            Text("200m", fontSize = 11.sp)
+                        }
+                        OutlinedButton(
+                            onClick = { onRadiusChange("500.0") },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("500m", fontSize = 11.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { onRadiusChange("1000.0") },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("1 km", fontSize = 11.sp)
+                        }
+                        OutlinedButton(
+                            onClick = { onRadiusChange("2000.0") },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("2 km", fontSize = 11.sp)
+                        }
+                        OutlinedButton(
+                            onClick = { onRadiusChange("5000.0") },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("5 km", fontSize = 11.sp)
                         }
                     }
                 }

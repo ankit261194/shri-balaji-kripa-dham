@@ -189,6 +189,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     created_at INTEGER NOT NULL
                 )
             """.trimIndent())
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_darbar_number ON tokens (darbar_date, token_number);")
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date);")
         } catch (e: Exception) { e.printStackTrace() }
 
         // 4. Device Registrations Table
@@ -317,7 +319,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     custom_subtitle_hindi TEXT NOT NULL DEFAULT '',
                     custom_subtitle_english TEXT NOT NULL DEFAULT '',
                     custom_content_hindi TEXT NOT NULL DEFAULT '',
-                    custom_content_english TEXT NOT NULL DEFAULT ''
+                    custom_content_english TEXT NOT NULL DEFAULT '',
+                    target_audience TEXT NOT NULL DEFAULT 'ALL'
                 )
             """.trimIndent())
         } catch (e: Exception) { e.printStackTrace() }
@@ -524,7 +527,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             "ALTER TABLE ashram_settings ADD COLUMN ad_banner_description TEXT NOT NULL DEFAULT 'धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।'",
             "ALTER TABLE ashram_settings ADD COLUMN ad_target_url TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN ad_placement TEXT NOT NULL DEFAULT 'HOME_BOTTOM'",
-            "ALTER TABLE admins ADD COLUMN can_manage_arzi INTEGER NOT NULL DEFAULT 0"
+            "ALTER TABLE admins ADD COLUMN can_manage_arzi INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ui_section_configs ADD COLUMN target_audience TEXT NOT NULL DEFAULT 'ALL'",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_darbar_number ON tokens (darbar_date, token_number)",
+            "CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date)"
         )
         for (sql in alterStatements) {
             try {

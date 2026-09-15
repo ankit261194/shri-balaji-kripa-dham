@@ -13,9 +13,11 @@ data class UiSectionConfig(
     val customSubtitleHindi: String = "",
     val customSubtitleEnglish: String = "",
     val customContentHindi: String = "",
-    val customContentEnglish: String = ""
+    val customContentEnglish: String = "",
+    val targetAudience: String = "ALL" // "ALL", "SUPER_ADMIN", "ADMIN", "DEVOTEE"
 ) {
     companion object {
+        const val ID_PROMO_TOP_BANNER = "PROMO_TOP_BANNER"
         const val ID_GURUJI_BANNER = "GURUJI_BANNER"
         const val ID_EMERGENCY_NOTICE = "EMERGENCY_NOTICE"
         const val ID_FREE_TREATMENT_BOX = "FREE_TREATMENT_BOX"
@@ -142,6 +144,7 @@ data class UiSectionConfig(
                     put("custom_subtitle_english", item.customSubtitleEnglish)
                     put("custom_content_hindi", item.customContentHindi)
                     put("custom_content_english", item.customContentEnglish)
+                    put("target_audience", item.targetAudience)
                 }
                 arr.put(obj)
             }
@@ -166,7 +169,8 @@ data class UiSectionConfig(
                             customSubtitleHindi = obj.optString("custom_subtitle_hindi", ""),
                             customSubtitleEnglish = obj.optString("custom_subtitle_english", ""),
                             customContentHindi = obj.optString("custom_content_hindi", ""),
-                            customContentEnglish = obj.optString("custom_content_english", "")
+                            customContentEnglish = obj.optString("custom_content_english", ""),
+                            targetAudience = obj.optString("target_audience", "ALL")
                         )
                     )
                 }

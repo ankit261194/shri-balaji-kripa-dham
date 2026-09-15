@@ -1496,7 +1496,9 @@ fun MahabaliHeroLayout(
                 QuickActionBubble(icon = "🎫", label = if (isHindi) "टोकन" else "Token", color = currentTheme.primaryColor, onClick = onNavigateToToken)
                 QuickActionBubble(icon = "📸", label = if (isHindi) "फेस टोकन" else "Face", color = Color(0xFF2E7D32), onClick = onNavigateToFaceToken)
                 QuickActionBubble(icon = "📜", label = if (isHindi) "पर्चे" else "Parcha", color = Color(0xFF00695C), onClick = onNavigateToParchas)
-                QuickActionBubble(icon = "🚌", label = if (isHindi) "यात्रा" else "Yatra", color = Color(0xFFE65100), onClick = onNavigateToYatra)
+                if (settings.isYatraServiceEnabled) {
+                    QuickActionBubble(icon = "🚌", label = if (isHindi) "यात्रा" else "Yatra", color = Color(0xFFE65100), onClick = onNavigateToYatra)
+                }
                 QuickActionBubble(icon = "👥", label = if (isHindi) "सेवादार" else "Sevadar", color = Color(0xFF1565C0), onClick = onNavigateToInfo)
             }
         }
@@ -1591,39 +1593,41 @@ fun MahabaliHeroLayout(
             )
         }
 
-        // 3. YATRA & STAY ACCORDION
-        ScrollDownFunctionAccordion(
-            title = if (isHindi) "धाम यात्रा एवं विश्राम व्यवस्था" else "Yatra & Accommodation",
-            subtitle = if (isHindi) "धाम बस यात्रा, धर्मशाला व व्यय विवरण" else "Yatra booking, stay & expenses",
-            icon = "🚌",
-            badgeText = if (isHindi) "व्यवस्था" else "Facilities",
-            primaryColor = Color(0xFFE65100)
-        ) {
-            AccordionOptionRow(
+        // 3. YATRA & STAY ACCORDION (Guarded by Super Admin Service Switch)
+        if (settings.isYatraServiceEnabled) {
+            ScrollDownFunctionAccordion(
+                title = if (isHindi) "धाम यात्रा एवं विश्राम व्यवस्था" else "Yatra & Accommodation",
+                subtitle = if (isHindi) "धाम बस यात्रा, धर्मशाला व व्यय विवरण" else "Yatra booking, stay & expenses",
                 icon = "🚌",
-                title = if (isHindi) "आगामी धाम यात्रा पंजीकरण" else "Upcoming Dham Yatra Registration",
-                subtitle = if (isHindi) "बालाजी धाम दर्शन बस यात्रा हेतु सीट बुक करें" else "Book seat for upcoming spiritual yatra",
-                actionButtonText = if (isHindi) "पंजीकरण" else "Register",
-                accentColor = Color(0xFFE65100),
-                onClick = onNavigateToYatra
-            )
-            if (settings.canDevoteeViewYatraDiary) {
+                badgeText = if (isHindi) "व्यवस्था" else "Facilities",
+                primaryColor = Color(0xFFE65100)
+            ) {
                 AccordionOptionRow(
-                    icon = "💰",
-                    title = if (isHindi) "यात्रा व्यय एवं हिसाब-किताब" else "Yatra Expense Tracker",
-                    subtitle = if (isHindi) "पारदर्शी यात्रा व्यय व खर्च का पूरा ब्यौरा" else "View transparent yatra expense ledger",
-                    actionButtonText = if (isHindi) "हिसाब देखें" else "Ledger",
-                    accentColor = Color(0xFF2E7D32),
-                    onClick = onNavigateToYatraExpenses
+                    icon = "🚌",
+                    title = if (isHindi) "आगामी धाम यात्रा पंजीकरण" else "Upcoming Dham Yatra Registration",
+                    subtitle = if (isHindi) "बालाजी धाम दर्शन बस यात्रा हेतु सीट बुक करें" else "Book seat for upcoming spiritual yatra",
+                    actionButtonText = if (isHindi) "पंजीकरण" else "Register",
+                    accentColor = Color(0xFFE65100),
+                    onClick = onNavigateToYatra
+                )
+                if (settings.canDevoteeViewYatraDiary) {
+                    AccordionOptionRow(
+                        icon = "💰",
+                        title = if (isHindi) "यात्रा व्यय एवं हिसाब-किताब" else "Yatra Expense Tracker",
+                        subtitle = if (isHindi) "पारदर्शी यात्रा व्यय व खर्च का पूरा ब्यौरा" else "View transparent yatra expense ledger",
+                        actionButtonText = if (isHindi) "हिसाब देखें" else "Ledger",
+                        accentColor = Color(0xFF2E7D32),
+                        onClick = onNavigateToYatraExpenses
+                    )
+                }
+                AccordionOptionRow(
+                    icon = "🏨",
+                    title = if (isHindi) "धर्मशाला व विश्राम व्यवस्था" else "Dharamshala & Accommodation",
+                    subtitle = if (isHindi) "बाहर से आने वाले भक्तों के विश्राम की सूचना" else "Stay arrangements for outstation devotees",
+                    accentColor = Color(0xFF1565C0),
+                    onClick = onNavigateToInfo
                 )
             }
-            AccordionOptionRow(
-                icon = "🏨",
-                title = if (isHindi) "धर्मशाला व विश्राम व्यवस्था" else "Dharamshala & Accommodation",
-                subtitle = if (isHindi) "बाहर से आने वाले भक्तों के विश्राम की सूचना" else "Stay arrangements for outstation devotees",
-                accentColor = Color(0xFF1565C0),
-                onClick = onNavigateToInfo
-            )
         }
 
         // 4. SEVADAR DIRECTORY & CONTACT ACCORDION
@@ -1796,38 +1800,40 @@ fun BhaktiAccordionLayout(
             )
         }
 
-        // Accordion 3: Yatra & Expenses
-        ScrollDownFunctionAccordion(
-            title = if (isHindi) "3. धाम यात्रा एवं धर्मशाला" else "3. Yatra & Accommodation",
-            subtitle = if (isHindi) "बस यात्रा बुकिंग, धर्मशाला व खर्च विवरण" else "Yatra bus booking & stay",
-            icon = "🚌",
-            primaryColor = Color(0xFFE65100)
-        ) {
-            AccordionOptionRow(
+        // Accordion 3: Yatra & Expenses (Guarded by Super Admin Service Switch)
+        if (settings.isYatraServiceEnabled) {
+            ScrollDownFunctionAccordion(
+                title = if (isHindi) "3. धाम यात्रा एवं धर्मशाला" else "3. Yatra & Accommodation",
+                subtitle = if (isHindi) "बस यात्रा बुकिंग, धर्मशाला व खर्च विवरण" else "Yatra bus booking & stay",
                 icon = "🚌",
-                title = if (isHindi) "धाम यात्रा पंजीकरण" else "Yatra Registration",
-                subtitle = if (isHindi) "आगामी दर्शन बस यात्रा में सीट सुरक्षित करें" else "Reserve seats for Dham visit",
-                actionButtonText = if (isHindi) "रजिस्ट्रेशन" else "Register",
-                accentColor = Color(0xFFE65100),
-                onClick = onNavigateToYatra
-            )
-            if (settings.canDevoteeViewYatraDiary) {
+                primaryColor = Color(0xFFE65100)
+            ) {
                 AccordionOptionRow(
-                    icon = "💰",
-                    title = if (isHindi) "यात्रा व्यय एवं हिसाब-किताब" else "Yatra Expense Ledger",
-                    subtitle = if (isHindi) "पारदर्शी लेखा-जोखा व खर्च सूची" else "Transparent expense ledger",
-                    actionButtonText = if (isHindi) "व्यय देखें" else "Ledger",
-                    accentColor = Color(0xFF2E7D32),
-                    onClick = onNavigateToYatraExpenses
+                    icon = "🚌",
+                    title = if (isHindi) "धाम यात्रा पंजीकरण" else "Yatra Registration",
+                    subtitle = if (isHindi) "आगामी दर्शन बस यात्रा में सीट सुरक्षित करें" else "Reserve seats for Dham visit",
+                    actionButtonText = if (isHindi) "रजिस्ट्रेशन" else "Register",
+                    accentColor = Color(0xFFE65100),
+                    onClick = onNavigateToYatra
+                )
+                if (settings.canDevoteeViewYatraDiary) {
+                    AccordionOptionRow(
+                        icon = "💰",
+                        title = if (isHindi) "यात्रा व्यय एवं हिसाब-किताब" else "Yatra Expense Ledger",
+                        subtitle = if (isHindi) "पारदर्शी लेखा-जोखा व खर्च सूची" else "Transparent expense ledger",
+                        actionButtonText = if (isHindi) "व्यय देखें" else "Ledger",
+                        accentColor = Color(0xFF2E7D32),
+                        onClick = onNavigateToYatraExpenses
+                    )
+                }
+                AccordionOptionRow(
+                    icon = "🏨",
+                    title = if (isHindi) "आश्रम धर्मशाला एवं ठहरने की व्यवस्था" else "Dharamshala Stay Facilities",
+                    subtitle = settings.address.ifEmpty { "आश्रम परिसर" },
+                    accentColor = Color(0xFF1565C0),
+                    onClick = onNavigateToInfo
                 )
             }
-            AccordionOptionRow(
-                icon = "🏨",
-                title = if (isHindi) "आश्रम धर्मशाला एवं ठहरने की व्यवस्था" else "Dharamshala Stay Facilities",
-                subtitle = settings.address.ifEmpty { "आश्रम परिसर" },
-                accentColor = Color(0xFF1565C0),
-                onClick = onNavigateToInfo
-            )
         }
 
         // Accordion 4: Sevadars & Contact
@@ -2046,31 +2052,33 @@ fun MandirParikramaLayout(
                 }
             }
             2 -> {
-                // Station 3: Yatra & Seva
-                ScrollDownFunctionAccordion(
-                    title = if (isHindi) "पड़ाव ३: धाम यात्रा एवं धर्मशाला" else "Station 3: Yatra & Seva",
-                    subtitle = if (isHindi) "बस यात्रा, खर्च ब्यौरा व धर्मशाला" else "Yatra bus, expense ledger & stay",
-                    icon = "🚌",
-                    primaryColor = Color(0xFFE65100),
-                    isInitiallyExpanded = true
-                ) {
-                    AccordionOptionRow(
+                if (settings.isYatraServiceEnabled) {
+                    // Station 3: Yatra & Seva (Guarded by Super Admin Switch)
+                    ScrollDownFunctionAccordion(
+                        title = if (isHindi) "पड़ाव ३: धाम यात्रा एवं धर्मशाला" else "Station 3: Yatra & Seva",
+                        subtitle = if (isHindi) "बस यात्रा, खर्च ब्यौरा व धर्मशाला" else "Yatra bus, expense ledger & stay",
                         icon = "🚌",
-                        title = if (isHindi) "धाम यात्रा पंजीकरण" else "Dham Yatra Registration",
-                        subtitle = if (isHindi) "आगामी दर्शन यात्रा में सीट बुक करें" else "Reserve your yatra seat",
-                        actionButtonText = if (isHindi) "पंजीकरण" else "Register",
-                        accentColor = Color(0xFFE65100),
-                        onClick = onNavigateToYatra
-                    )
-                    if (settings.canDevoteeViewYatraDiary) {
+                        primaryColor = Color(0xFFE65100),
+                        isInitiallyExpanded = true
+                    ) {
                         AccordionOptionRow(
-                            icon = "💰",
-                            title = if (isHindi) "यात्रा व्यय एवं खर्च" else "Yatra Expenses",
-                            subtitle = if (isHindi) "यात्रा का पारदर्शी हिसाब-किताब" else "View trip expense ledger",
-                            actionButtonText = if (isHindi) "हिसाब" else "Ledger",
-                            accentColor = Color(0xFF2E7D32),
-                            onClick = onNavigateToYatraExpenses
+                            icon = "🚌",
+                            title = if (isHindi) "धाम यात्रा पंजीकरण" else "Dham Yatra Registration",
+                            subtitle = if (isHindi) "आगामी दर्शन यात्रा में सीट बुक करें" else "Reserve your yatra seat",
+                            actionButtonText = if (isHindi) "पंजीकरण" else "Register",
+                            accentColor = Color(0xFFE65100),
+                            onClick = onNavigateToYatra
                         )
+                        if (settings.canDevoteeViewYatraDiary) {
+                            AccordionOptionRow(
+                                icon = "💰",
+                                title = if (isHindi) "यात्रा व्यय एवं खर्च" else "Yatra Expenses",
+                                subtitle = if (isHindi) "यात्रा का पारदर्शी हिसाब-किताब" else "View trip expense ledger",
+                                actionButtonText = if (isHindi) "हिसाब" else "Ledger",
+                                accentColor = Color(0xFF2E7D32),
+                                onClick = onNavigateToYatraExpenses
+                            )
+                        }
                     }
                 }
             }
@@ -2211,8 +2219,8 @@ fun GoldenLotusLayout(
 
         // Expandable Lotus Accordion for Darshan & Yatra
         ScrollDownFunctionAccordion(
-            title = if (isHindi) "आरती, उत्सव एवं धाम यात्रा" else "Aarti, Festivals & Yatra",
-            subtitle = if (isHindi) "आरती समय, आगामी उत्सव व बस यात्रा" else "Aarti schedule & yatra bus",
+            title = if (isHindi) (if (settings.isYatraServiceEnabled) "आरती, उत्सव एवं धाम यात्रा" else "आरती एवं आगामी उत्सव") else (if (settings.isYatraServiceEnabled) "Aarti, Festivals & Yatra" else "Aarti & Festivals"),
+            subtitle = if (isHindi) (if (settings.isYatraServiceEnabled) "आरती समय, आगामी उत्सव व बस यात्रा" else "आरती समय व आगामी उत्सव") else "Aarti schedule & darbar info",
             icon = "🪔",
             primaryColor = currentTheme.secondaryColor
         ) {
@@ -2223,23 +2231,25 @@ fun GoldenLotusLayout(
                 accentColor = currentTheme.secondaryColor,
                 onClick = onNavigateToInfo
             )
-            AccordionOptionRow(
-                icon = "🚌",
-                title = if (isHindi) "धाम यात्रा पंजीकरण" else "Yatra Registration",
-                subtitle = if (isHindi) "आगामी दर्शन यात्रा में सीट सुरक्षित करें" else "Reserve your yatra seat",
-                actionButtonText = if (isHindi) "पंजीकरण" else "Register",
-                accentColor = Color(0xFFE65100),
-                onClick = onNavigateToYatra
-            )
-            if (settings.canDevoteeViewYatraDiary) {
+            if (settings.isYatraServiceEnabled) {
                 AccordionOptionRow(
-                    icon = "💰",
-                    title = if (isHindi) "यात्रा व्यय हिसाब" else "Yatra Ledger",
-                    subtitle = if (isHindi) "पारदर्शी यात्रा व्यय विवरण" else "Trip expenses",
-                    actionButtonText = if (isHindi) "हिसाब" else "Ledger",
-                    accentColor = Color(0xFF2E7D32),
-                    onClick = onNavigateToYatraExpenses
+                    icon = "🚌",
+                    title = if (isHindi) "धाम यात्रा पंजीकरण" else "Yatra Registration",
+                    subtitle = if (isHindi) "आगामी दर्शन यात्रा में सीट सुरक्षित करें" else "Reserve your yatra seat",
+                    actionButtonText = if (isHindi) "पंजीकरण" else "Register",
+                    accentColor = Color(0xFFE65100),
+                    onClick = onNavigateToYatra
                 )
+                if (settings.canDevoteeViewYatraDiary) {
+                    AccordionOptionRow(
+                        icon = "💰",
+                        title = if (isHindi) "यात्रा व्यय हिसाब" else "Yatra Ledger",
+                        subtitle = if (isHindi) "पारदर्शी यात्रा व्यय विवरण" else "Trip expenses",
+                        actionButtonText = if (isHindi) "हिसाब" else "Ledger",
+                        accentColor = Color(0xFF2E7D32),
+                        onClick = onNavigateToYatraExpenses
+                    )
+                }
             }
         }
 
@@ -2409,7 +2419,7 @@ fun SiddhaPeethPortalLayout(
             }
         }
 
-        if (selectedCategory == 0 || selectedCategory == 3) {
+        if (settings.isYatraServiceEnabled && (selectedCategory == 0 || selectedCategory == 3)) {
             ScrollDownFunctionAccordion(
                 title = if (isHindi) "धाम यात्रा एवं विश्राम व्यवस्था" else "Yatra & Stay",
                 subtitle = if (isHindi) "बस यात्रा, खर्च व धर्मशाला" else "Bus booking, stay & expenses",

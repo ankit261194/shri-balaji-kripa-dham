@@ -46,9 +46,14 @@ fun MainNavigation(
         val hasEntered = prefs.getBoolean("has_entered_darbar", false)
         if (hasEntered) AppScreen.HOME else AppScreen.SPLASH
     }
-
     var currentScreen by remember { mutableStateOf(initialScreen) }
     val backStack = remember { mutableStateListOf<AppScreen>() }
+
+    val repository = remember { com.example.shribalajikripadham.data.repository.AshramRepository(context) }
+    var settings by remember { mutableStateOf(com.example.shribalajikripadham.data.model.AshramSettings()) }
+    LaunchedEffect(currentScreen) {
+        settings = repository.getSettings()
+    }
 
     fun navigateTo(screen: AppScreen) {
         backStack.add(currentScreen)
@@ -92,11 +97,31 @@ fun MainNavigation(
                 onThemeChanged = onThemeChanged,
                 onNavigateToToken = { navigateTo(AppScreen.TOKEN) },
                 onNavigateToFaceToken = { navigateTo(AppScreen.FACE_TOKEN) },
-                onNavigateToYatra = { navigateTo(AppScreen.YATRA) },
+                onNavigateToYatra = {
+                    if (settings.isYatraServiceEnabled) {
+                        navigateTo(AppScreen.YATRA)
+                    } else {
+                        android.widget.Toast.makeText(
+                            context,
+                            if (isHindi) "यात्रा व दूरी सेवा व्यवस्थापक द्वारा अस्थायी रूप से बंद है।" else "Yatra service is currently disabled by Admin.",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
                 onNavigateToInfo = { navigateTo(AppScreen.ASHRAM_INFO) },
                 onNavigateToAdmin = { navigateTo(AppScreen.ADMIN) },
                 onNavigateToParchas = { navigateTo(AppScreen.PARCHAS) },
-                onNavigateToYatraExpenses = { navigateTo(AppScreen.YATRA_EXPENSES) },
+                onNavigateToYatraExpenses = {
+                    if (settings.isYatraServiceEnabled && settings.canDevoteeViewYatraDiary) {
+                        navigateTo(AppScreen.YATRA_EXPENSES)
+                    } else {
+                        android.widget.Toast.makeText(
+                            context,
+                            if (isHindi) "यात्रा खर्च डायरी सेवा बंद है।" else "Yatra Expense Diary is disabled.",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
                 onToggleLanguage = { isHindi = !isHindi }
             )
 
@@ -115,16 +140,37 @@ fun MainNavigation(
                 onNavigateToFaceToken = { navigateTo(AppScreen.FACE_TOKEN) }
             )
 
-            AppScreen.YATRA -> BalajiYatraScreen(
-                isHindi = isHindi,
-                onBack = { navigateBack() },
-                onNavigateToExpenses = { navigateTo(AppScreen.YATRA_EXPENSES) }
-            )
+            AppScreen.YATRA -> {
+                if (settings.isYatraServiceEnabled) {
+                    BalajiYatraScreen(
+                        isHindi = isHindi,
+                        onBack = { navigateBack() },
+                        onNavigateToExpenses = { navigateTo(AppScreen.YATRA_EXPENSES) }
+                    )
+                } else {
+                    LaunchedEffect(Unit) {
+                        android.widget.Toast.makeText(
+                            context,
+                            if (isHindi) "यात्रा सेवा वर्तमान में बंद है।" else "Yatra service is disabled.",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        navigateBack()
+                    }
+                }
+            }
 
-            AppScreen.YATRA_EXPENSES -> YatraExpenseScreen(
-                isHindi = isHindi,
-                onBack = { navigateBack() }
-            )
+            AppScreen.YATRA_EXPENSES -> {
+                if (settings.isYatraServiceEnabled && settings.canDevoteeViewYatraDiary) {
+                    YatraExpenseScreen(
+                        isHindi = isHindi,
+                        onBack = { navigateBack() }
+                    )
+                } else {
+                    LaunchedEffect(Unit) {
+                        navigateBack()
+                    }
+                }
+            }
 
             AppScreen.ADMIN -> AdminDashboardScreen(
                 isHindi = isHindi,

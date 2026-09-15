@@ -31,9 +31,15 @@ object GeofenceLocationManager {
      * - Devotees > 30 km: Can register token in advance from home/city.
      * - Devotees <= 30 km: MUST be physically within 200m of Ashram (Gram Dungra Jaat).
      */
-    fun isTokenDistancePermitted(distanceMeters: Double, isGeofenceEnforced: Boolean = true): Boolean {
+    fun isTokenDistancePermitted(
+        distanceMeters: Double,
+        isGeofenceEnforced: Boolean = true,
+        allowedRadiusMeters: Double = LOCAL_ASHRAM_MAX_DISTANCE_METERS,
+        outstationMinDistanceKm: Double = 30.0
+    ): Boolean {
         if (!isGeofenceEnforced) return true
-        return (distanceMeters > OUTSTATION_MIN_DISTANCE_METERS) || (distanceMeters <= LOCAL_ASHRAM_MAX_DISTANCE_METERS)
+        val outstationMinMeters = outstationMinDistanceKm * 1000.0
+        return (distanceMeters > outstationMinMeters) || (distanceMeters <= allowedRadiusMeters)
     }
 
     /**
@@ -203,8 +209,8 @@ object GeofenceLocationManager {
             )
         }
 
-        // Case B: Devotee is physically at Ashram (<= 200m) -> Local token permitted
-        if (distance <= LOCAL_ASHRAM_MAX_DISTANCE_METERS) {
+        // Case B: Devotee is physically at Ashram (<= allowedRadiusMeters) -> Local token permitted
+        if (distance <= allowedRadiusMeters) {
             return LocationSecurityResult(
                 isValid = true,
                 isMock = false,
@@ -217,8 +223,10 @@ object GeofenceLocationManager {
             )
         }
 
-        // Case C: Devotee is within 30 km (200m to 30 km) -> Strictly BLOCKED!
+        // Case C: Devotee is within 30 km (beyond allowed radius) -> Strictly BLOCKED!
         val km = String.format(java.util.Locale.US, "%.1f", distance / 1000.0)
+        val allowedM = allowedRadiusMeters.toInt()
+        val radiusDesc = if (allowedM >= 1000) "${String.format(java.util.Locale.US, "%.1f", allowedM / 1000.0)} किमी" else "$allowedM मीटर"
         return LocationSecurityResult(
             isValid = false,
             isMock = false,
@@ -227,7 +235,7 @@ object GeofenceLocationManager {
             isInsideGeofence = false,
             isAdvanceDistanceEligible = false,
             isAshramLocalEligible = false,
-            securityExceptionReason = "⚠️ आश्रम दूरी नियम: 30 किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर (200 मीटर के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।"
+            securityExceptionReason = "⚠️ आश्रम दूरी नियम: 30 किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।"
         )
     }
 

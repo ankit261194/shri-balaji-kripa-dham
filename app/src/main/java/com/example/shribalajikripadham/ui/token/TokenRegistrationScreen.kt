@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shribalajikripadham.ai.FaceEmbeddingEngine
 import com.example.shribalajikripadham.data.model.DevoteeFaceProfile
+import com.example.shribalajikripadham.data.model.DevoteeDirectoryEntry
 import com.example.shribalajikripadham.data.model.AshramSettings
 import com.example.shribalajikripadham.data.model.Token
 import com.example.shribalajikripadham.data.repository.AshramRepository
@@ -85,6 +86,7 @@ fun TokenRegistrationScreen(
     var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var capturedPhotoUri by remember { mutableStateOf("") }
     var nameSuggestions by remember { mutableStateOf<List<DevoteeFaceProfile>>(emptyList()) }
+    var directorySuggestions by remember { mutableStateOf<List<DevoteeDirectoryEntry>>(emptyList()) }
     var locationSuggestions by remember { mutableStateOf<List<com.example.shribalajikripadham.util.IndiaLocation>>(emptyList()) }
     var showLocationDropdown by remember { mutableStateOf(false) }
     var autoFillBanner by remember { mutableStateOf<String?>(null) }
@@ -270,7 +272,7 @@ fun TokenRegistrationScreen(
         }
     }
 
-    // Auto-search devotee when 10-digit phone number is entered
+    // Auto-search devotee when 10-digit phone number is entered or partial phone is typed
     LaunchedEffect(phoneNumber) {
         val clean = phoneNumber.trim().replace("+91", "").replace(" ", "").replace("-", "")
         if (clean.length == 10) {
@@ -289,7 +291,12 @@ fun TokenRegistrationScreen(
                 else
                     "Found record: ${devotee.patientName} (${devotee.city}) auto-filled!"
             }
+            directorySuggestions = emptyList()
+        } else if (clean.length in 3..9) {
+            directorySuggestions = repository.searchDevoteeDirectory(clean, limit = 5)
+            autoFillBanner = null
         } else {
+            directorySuggestions = emptyList()
             autoFillBanner = null
         }
     }
@@ -299,8 +306,15 @@ fun TokenRegistrationScreen(
         val q = patientName.trim()
         if (q.length >= 2) {
             nameSuggestions = repository.searchDevoteesByName(q, limit = 5)
+            val dirMatches = repository.searchDevoteeDirectory(q, limit = 5)
+            if (dirMatches.isNotEmpty() && directorySuggestions.isEmpty()) {
+                directorySuggestions = dirMatches
+            }
         } else {
             nameSuggestions = emptyList()
+            if (phoneNumber.length < 3) {
+                directorySuggestions = emptyList()
+            }
         }
     }
 
@@ -699,6 +713,7 @@ fun TokenRegistrationScreen(
                                             originAddress = sugg.city
                                             if (sugg.photoUri.isNotBlank()) capturedPhotoUri = sugg.photoUri
                                             nameSuggestions = emptyList()
+                                            directorySuggestions = emptyList()
                                         },
                                         colors = SuggestionChipDefaults.suggestionChipColors(
                                             containerColor = Color(0xFFFFF3E0),
@@ -757,6 +772,48 @@ fun TokenRegistrationScreen(
                                 labelColor = Color(0xFF333333)
                             )
                         )
+
+                        if (directorySuggestions.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isHindi) "📱 भक्त डायरेक्टरी सुझाव (1-टैप ऑटो-फिल):" else "📱 Devotee Directory Suggestions (1-Tap Auto-fill):",
+                                fontSize = 12.sp,
+                                color = Color(0xFF00695C),
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                directorySuggestions.forEach { entry ->
+                                    SuggestionChip(
+                                        onClick = {
+                                            phoneNumber = entry.phoneNumber
+                                            patientName = entry.patientName
+                                            city = entry.city
+                                            originAddress = entry.city
+                                            if (entry.photoUri.isNotBlank()) capturedPhotoUri = entry.photoUri
+                                            directorySuggestions = emptyList()
+                                        },
+                                        colors = SuggestionChipDefaults.suggestionChipColors(
+                                            containerColor = Color(0xFFE0F2F1),
+                                            labelColor = Color(0xFF004D40)
+                                        ),
+                                        border = BorderStroke(1.dp, Color(0xFF80CBC4)),
+                                        label = {
+                                            Text(
+                                                text = "${entry.patientName} • ${entry.phoneNumber} (${entry.city})",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(12.dp))
 
