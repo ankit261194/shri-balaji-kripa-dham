@@ -1,28 +1,11 @@
 {
-  "total_records": 1,
-  "total_badi": 4,
-  "total_chhoti": 3,
-  "total_amount": 550,
-  "total_paid": 550,
+  "total_records": 0,
+  "total_badi": 0,
+  "total_chhoti": 0,
+  "total_amount": 0,
+  "total_paid": 0,
   "total_pending": 0,
-  "updated_at": 1789446949850,
+  "updated_at": 1789446968753,
   "updated_by": "Super Admin",
-  "arzi_records": [
-    {
-      "id": 1,
-      "devotee_name": "राकेश",
-      "phone_number": "",
-      "big_arzi_qty": 4,
-      "small_arzi_qty": 3,
-      "big_arzi_rate": 100,
-      "small_arzi_rate": 50,
-      "total_amount": 550,
-      "is_paid": true,
-      "payment_mode": "CASH",
-      "recorded_by": "SUPER_ADMIN",
-      "darbar_date": "2026-09-14",
-      "timestamp": 1789446917637,
-      "notes": "🎙️ बोलकर दर्ज: \"राकेश को चार बड़ी अर्जी तीन छोटी अर्जी\""
-    }
-  ]
+  "arzi_records": []
 }
