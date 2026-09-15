@@ -391,6 +391,55 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         try { db.execSQL("CREATE INDEX IF NOT EXISTS idx_arzi_darbar_date ON arzi_distribution_records (darbar_date)") } catch (e: Exception) {}
         try { db.execSQL("CREATE INDEX IF NOT EXISTS idx_arzi_devotee ON arzi_distribution_records (devotee_name)") } catch (e: Exception) {}
 
+        // 15. Devotee Master Directory Indexing Table (Global Auto-Complete & Smart Lookup)
+        try {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS devotee_directory (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    devotee_id TEXT UNIQUE NOT NULL,
+                    patient_name TEXT NOT NULL,
+                    phone_number TEXT NOT NULL,
+                    city TEXT NOT NULL DEFAULT '',
+                    age INTEGER NOT NULL DEFAULT 0,
+                    gender TEXT NOT NULL DEFAULT '',
+                    photo_uri TEXT NOT NULL DEFAULT '',
+                    last_visit_date TEXT NOT NULL DEFAULT '',
+                    visit_count INTEGER NOT NULL DEFAULT 1,
+                    source_module TEXT NOT NULL DEFAULT 'TOKEN',
+                    updated_at INTEGER NOT NULL
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_dir_phone ON devotee_directory (phone_number)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_dir_name ON devotee_directory (patient_name)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_dir_devotee_id ON devotee_directory (devotee_id)")
+
+            val countCursor = db.rawQuery("SELECT COUNT(*) FROM devotee_directory", null)
+            var dirCount = 0
+            if (countCursor.moveToFirst()) {
+                dirCount = countCursor.getInt(0)
+            }
+            countCursor.close()
+
+            if (dirCount == 0) {
+                db.execSQL("""
+                    INSERT OR IGNORE INTO devotee_directory (devotee_id, patient_name, phone_number, city, photo_uri, last_visit_date, visit_count, source_module, updated_at)
+                    SELECT 
+                        'DEV_' || phone_number AS devotee_id,
+                        patient_name,
+                        phone_number,
+                        city,
+                        COALESCE(photo_uri, '') AS photo_uri,
+                        darbar_date AS last_visit_date,
+                        COUNT(*) AS visit_count,
+                        'TOKEN' AS source_module,
+                        MAX(created_at) AS updated_at
+                    FROM tokens
+                    WHERE phone_number IS NOT NULL AND phone_number != ''
+                    GROUP BY phone_number, patient_name
+                """.trimIndent())
+            }
+        } catch (e: Exception) { e.printStackTrace() }
+
         // Ensure missing columns in existing tables
         ensureColumns(db)
 

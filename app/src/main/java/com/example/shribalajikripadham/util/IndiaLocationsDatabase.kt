@@ -6,19 +6,30 @@ package com.example.shribalajikripadham.util
 data class IndiaLocation(
     val nameHindi: String,
     val nameEnglish: String,
-    val category: String, // "स्थानीय गाँव", "तहसील / कस्बा", "ज़िला (UP)", "राज्य / UT", "प्रमुख शहर"
+    val category: String, // "स्थानीय गाँव", "तहसील / कस्बा", "ज़िला (UP)", "राज्य / UT", "प्रमुख शहर", "गाँव", "मोहल्ला / क्षेत्र"
     val stateHindi: String = "उत्तर प्रदेश",
-    val distanceKm: Float = -1f
+    val distanceKm: Float = -1f,
+    val districtHindi: String = "",
+    val districtEnglish: String = "",
+    val subDistrictOrTehsil: String = ""
 ) {
     val displayLabel: String
-        get() = if (category == "स्थानीय गाँव" || category == "तहसील / कस्बा") {
-            "$nameHindi (तहसील/गाँव, $stateHindi)"
-        } else if (category == "ज़िला (UP)") {
-            "$nameHindi ($stateHindi)"
-        } else if (category == "राज्य / UT") {
-            "$nameHindi (राज्य)"
-        } else {
-            "$nameHindi ($stateHindi)"
+        get() {
+            val tags = mutableListOf<String>()
+            if (category.isNotBlank() && category != "प्रमुख शहर" && category != "ज़िला (UP)" && category != "राज्य / UT") {
+                tags.add(category)
+            }
+            if (subDistrictOrTehsil.isNotBlank()) {
+                tags.add(subDistrictOrTehsil)
+            }
+            if (districtHindi.isNotBlank() && !nameHindi.contains(districtHindi)) {
+                tags.add(districtHindi)
+            }
+            if (stateHindi.isNotBlank() && !nameHindi.contains(stateHindi) && !tags.contains(stateHindi)) {
+                tags.add(stateHindi)
+            }
+            val tagStr = if (tags.isNotEmpty()) " (${tags.joinToString(", ")})" else ""
+            return "$nameHindi$tagStr"
         }
 }
 
@@ -30,6 +41,20 @@ object IndiaLocationsDatabase {
 
     private val LOCATIONS: List<IndiaLocation> = listOf(
         // 1. LOCAL VILLAGES & GRAM PANCHAYATS AROUND DUNGRA JAAT & BULANDSHAHR
+                // MULTI-STATE & SAME-NAME DISAMBIGUATION (UP, RAJASTHAN, BIHAR, HARYANA)
+        IndiaLocation("शिवाली", "Shiwali", "गाँव", "उत्तर प्रदेश", 45f, districtHindi = "हापुड़", districtEnglish = "Hapur"),
+        IndiaLocation("शिवाली", "Shiwali", "गाँव", "राजस्थान", 215f, districtHindi = "अलवर", districtEnglish = "Alwar"),
+        IndiaLocation("रामपुर", "Rampur", "गाँव", "उत्तर प्रदेश", 18f, districtHindi = "बुलन्दशहर", districtEnglish = "Bulandshahr"),
+        IndiaLocation("रामपुर", "Rampur", "ज़िला मुख्यालय", "उत्तर प्रदेश", 125f, districtHindi = "रामपुर", districtEnglish = "Rampur"),
+        IndiaLocation("रामपुर", "Rampur", "कस्बा", "बिहार", 880f, districtHindi = "पटना", districtEnglish = "Patna"),
+        IndiaLocation("बिलासपुर", "Bilaspur", "कस्बा", "उत्तर प्रदेश", 52f, districtHindi = "गौतम बुद्ध नगर", districtEnglish = "Gautam Buddha Nagar"),
+        IndiaLocation("बिलासपुर", "Bilaspur", "तहसील / कस्बा", "हरियाणा", 135f, districtHindi = "गुरुग्राम", districtEnglish = "Gurugram"),
+        IndiaLocation("बिलासपुर", "Bilaspur", "ज़िला", "छत्तीसगढ़", 920f, districtHindi = "बिलासपुर", districtEnglish = "Bilaspur"),
+        IndiaLocation("मुरादपुर", "Muradpur", "गाँव", "उत्तर प्रदेश", 15f, districtHindi = "बुलन्दशहर", districtEnglish = "Bulandshahr"),
+        IndiaLocation("मुरादपुर", "Muradpur", "गाँव", "उत्तर प्रदेश", 65f, districtHindi = "हापुड़", districtEnglish = "Hapur"),
+        IndiaLocation("कल्याणपुर", "Kalyanpur", "गाँव", "उत्तर प्रदेश", 25f, districtHindi = "बुलन्दशहर", districtEnglish = "Bulandshahr"),
+        IndiaLocation("कल्याणपुर", "Kalyanpur", "कस्बा", "उत्तर प्रदेश", 360f, districtHindi = "कानपुर", districtEnglish = "Kanpur"),
+
         IndiaLocation("डूँगरा जाट (स्थानीय आश्रम)", "Dungra Jaat (Local Ashram)", "स्थानीय गाँव", "बुलन्दशहर", 0f),
         IndiaLocation("डूँगरा जाट", "Dungra Jaat", "स्थानीय गाँव", "बुलन्दशहर", 0f),
         IndiaLocation("रौंडा", "Ronda", "स्थानीय गाँव", "बुलन्दशहर", 8f),
@@ -234,7 +259,7 @@ object IndiaLocationsDatabase {
      * Searches the Pan-India database for location matches.
      * Prioritizes prefix matches in Hindi/English, local villages and nearby locations.
      */
-    fun search(query: String, maxLimit: Int = 8): List<IndiaLocation> {
+    fun search(query: String, maxLimit: Int = 10): List<IndiaLocation> {
         val q = query.trim().lowercase()
         if (q.length < 2) {
             // Default suggestions: Dungra Jaat and local nearby hubs
@@ -243,21 +268,23 @@ object IndiaLocationsDatabase {
 
         val cleanedQ = q.replace(Regex("^(ग्राम|गांव|गाँव|तहसील|जिला|dist|district|post|post office|थाना|thana|श्री|shri)\\s+"), "")
 
-        // Filter and sort:
-        // 1. Starts with Hindi name
-        // 2. Starts with English name
-        // 3. Contains in Hindi
-        // 4. Contains in English
+        // Filter and sort by name, district, and state match
         return LOCATIONS
             .map { loc ->
                 val hi = loc.nameHindi.lowercase()
                 val en = loc.nameEnglish.lowercase()
+                val distHi = loc.districtHindi.lowercase()
+                val distEn = loc.districtEnglish.lowercase()
+                val stateHi = loc.stateHindi.lowercase()
 
                 val score = when {
                     hi.startsWith(cleanedQ) -> 100 - (loc.distanceKm / 50f).toInt().coerceAtMost(30)
                     en.startsWith(cleanedQ) -> 90 - (loc.distanceKm / 50f).toInt().coerceAtMost(30)
+                    distHi.startsWith(cleanedQ) || distEn.startsWith(cleanedQ) -> 80 - (loc.distanceKm / 50f).toInt().coerceAtMost(25)
                     hi.contains(cleanedQ) -> 60 - (loc.distanceKm / 50f).toInt().coerceAtMost(20)
                     en.contains(cleanedQ) -> 50 - (loc.distanceKm / 50f).toInt().coerceAtMost(20)
+                    distHi.contains(cleanedQ) || distEn.contains(cleanedQ) -> 45 - (loc.distanceKm / 50f).toInt().coerceAtMost(20)
+                    stateHi.contains(cleanedQ) -> 30
                     else -> 0
                 }
                 Pair(loc, score)
@@ -270,48 +297,81 @@ object IndiaLocationsDatabase {
 
     fun getAllLocations(): List<IndiaLocation> = LOCATIONS
 
-    suspend fun searchWithOnlineFallback(query: String, maxLimit: Int = 8): List<IndiaLocation> {
+    suspend fun searchWithOnlineFallback(query: String, maxLimit: Int = 12): List<IndiaLocation> {
         val localMatches = search(query, maxLimit)
-        if (localMatches.isNotEmpty() || query.trim().length < 3) {
+        val q = query.trim()
+        if (q.length < 2) {
             return localMatches
         }
+
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val combined = mutableListOf<IndiaLocation>()
+            combined.addAll(localMatches)
+
             try {
-                val q = query.trim()
                 val encoded = java.net.URLEncoder.encode("$q, India", "UTF-8")
-                val url = java.net.URL("https://nominatim.openstreetmap.org/search?q=$encoded&format=json&limit=4&countrycodes=in&addressdetails=1")
+                val url = java.net.URL("https://nominatim.openstreetmap.org/search?q=$encoded&format=json&limit=8&countrycodes=in&addressdetails=1")
                 val conn = url.openConnection() as java.net.HttpURLConnection
                 conn.connectTimeout = 3000
                 conn.readTimeout = 3000
-                conn.setRequestProperty("User-Agent", "SBKD-App/2.31")
+                conn.setRequestProperty("User-Agent", "SBKD-App/2.32")
                 if (conn.responseCode in 200..299) {
                     val resp = conn.inputStream.bufferedReader().use { it.readText() }
                     val arr = org.json.JSONArray(resp)
-                    val onlineResults = mutableListOf<IndiaLocation>()
                     for (i in 0 until arr.length()) {
                         val obj = arr.getJSONObject(i)
-                        val name = obj.optString("name", q)
+                        val name = obj.optString("name", q).ifBlank { q }
                         val lat = obj.optDouble("lat", 0.0)
                         val lon = obj.optDouble("lon", 0.0)
                         val addr = obj.optJSONObject("address")
+
+                        val village = addr?.optString("village", "").orEmpty()
+                        val hamlet = addr?.optString("hamlet", "").orEmpty()
+                        val suburb = addr?.optString("suburb", addr?.optString("neighbourhood", "")).orEmpty()
+                        val town = addr?.optString("town", addr?.optString("city", "")).orEmpty()
+                        val district = addr?.optString("state_district", addr?.optString("county", addr?.optString("district", ""))).orEmpty()
                         val state = addr?.optString("state", "भारत") ?: "भारत"
                         val type = obj.optString("type", "स्थान")
+
+                        val chosenName = when {
+                            village.isNotBlank() -> village
+                            hamlet.isNotBlank() -> hamlet
+                            suburb.isNotBlank() -> suburb
+                            name.isNotBlank() -> name
+                            town.isNotBlank() -> town
+                            else -> q
+                        }
+
+                        val cat = when {
+                            village.isNotBlank() || hamlet.isNotBlank() || type == "village" || type == "hamlet" -> "गाँव"
+                            suburb.isNotBlank() || type == "suburb" || type == "neighbourhood" -> "मोहल्ला / क्षेत्र"
+                            else -> "कस्बा / शहर"
+                        }
+
                         val straightKm = DistanceCalculatorService.haversineDistanceKm(lat, lon, DistanceCalculatorService.DESTINATION_LAT, DistanceCalculatorService.DESTINATION_LNG)
                         val roadKm = (Math.round(straightKm * 1.25f * 10f) / 10f)
-                        onlineResults.add(
+
+                        combined.add(
                             IndiaLocation(
-                                nameHindi = name,
+                                nameHindi = chosenName,
                                 nameEnglish = name,
-                                category = if (type == "village" || type == "hamlet") "स्थानीय गाँव" else "कस्बा / शहर",
+                                category = cat,
                                 stateHindi = state,
-                                distanceKm = roadKm
+                                distanceKm = roadKm,
+                                districtHindi = district,
+                                districtEnglish = district
                             )
                         )
                     }
-                    if (onlineResults.isNotEmpty()) return@withContext onlineResults.take(maxLimit)
                 }
             } catch (ignored: Exception) {}
-            localMatches
+
+            // Distinct by Name + District + State (keeps same place names in DIFFERENT districts/states!)
+            val distinctResults = combined.distinctBy {
+                "${it.nameHindi.trim().lowercase()}|${it.districtHindi.trim().lowercase()}|${it.stateHindi.trim().lowercase()}"
+            }
+
+            distinctResults.take(maxLimit)
         }
     }
 }

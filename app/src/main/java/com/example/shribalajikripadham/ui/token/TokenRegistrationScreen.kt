@@ -818,8 +818,15 @@ fun TokenRegistrationScreen(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable {
-                                                    originAddress = loc.nameHindi
-                                                    city = loc.nameHindi
+                                                    val formattedLoc = if (loc.districtHindi.isNotBlank() && !loc.nameHindi.contains(loc.districtHindi)) {
+                                                        "${loc.nameHindi} (${loc.districtHindi}, ${loc.stateHindi})"
+                                                    } else if (loc.stateHindi.isNotBlank() && !loc.nameHindi.contains(loc.stateHindi)) {
+                                                        "${loc.nameHindi} (${loc.stateHindi})"
+                                                    } else {
+                                                        loc.nameHindi
+                                                    }
+                                                    originAddress = formattedLoc
+                                                    city = formattedLoc
                                                     if (loc.distanceKm >= 0f) {
                                                         estimatedDistanceKm = loc.distanceKm
                                                     }
@@ -860,8 +867,12 @@ fun TokenRegistrationScreen(
                                                         )
                                                     }
                                                 }
+                                                val locDetails = listOfNotNull(
+                                                    loc.districtHindi.takeIf { it.isNotBlank() },
+                                                    loc.stateHindi.takeIf { it.isNotBlank() }
+                                                ).joinToString(", ")
                                                 Text(
-                                                    text = "${loc.nameEnglish} • ${loc.stateHindi}",
+                                                    text = if (locDetails.isNotBlank()) "${loc.nameEnglish} • $locDetails" else "${loc.nameEnglish} • ${loc.stateHindi}",
                                                     fontSize = 10.sp,
                                                     color = Color.DarkGray
                                                 )

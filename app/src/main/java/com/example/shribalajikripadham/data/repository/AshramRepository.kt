@@ -759,6 +759,16 @@ class AshramRepository(context: Context) {
             db.endTransaction()
         }
 
+        // Auto-index into Devotee Master Directory
+        upsertDevoteeDirectoryInternal(
+            name = patientName,
+            phone = phoneNumber,
+            city = safeCity,
+            photoUri = photoUri,
+            sourceModule = "TOKEN",
+            lastVisitDate = today
+        )
+
         val createdToken = Token(
             id = insertedId,
             tokenNumber = nextTokenNum,
@@ -3046,12 +3056,167 @@ class AshramRepository(context: Context) {
         }
     }
 
-    // --- Devotee Registry & Cross-Device Auto-Fill ---
+    // --- Devotee Master Directory & Global Smart Auto-Fill ---
+
+    suspend fun upsertDevoteeDirectory(
+        name: String,
+        phone: String,
+        city: String = "",
+        age: Int = 0,
+        gender: String = "",
+        photoUri: String = "",
+        sourceModule: String = "TOKEN",
+        lastVisitDate: String = DatabaseHelper.getTodayDateString()
+    ) = withContext(Dispatchers.IO) {
+        upsertDevoteeDirectoryInternal(name, phone, city, age, gender, photoUri, sourceModule, lastVisitDate)
+    }
+
+    private fun upsertDevoteeDirectoryInternal(
+        name: String,
+        phone: String,
+        city: String = "",
+        age: Int = 0,
+        gender: String = "",
+        photoUri: String = "",
+        sourceModule: String = "TOKEN",
+        lastVisitDate: String = DatabaseHelper.getTodayDateString()
+    ) {
+        val cleanName = name.trim()
+        val cleanPhone = phone.trim().replace("+91", "").replace(" ", "").replace("-", "")
+        if (cleanName.isBlank() && cleanPhone.isBlank()) return
+
+        try {
+            val db = dbHelper.writableDatabase
+            val devId = if (cleanPhone.isNotBlank()) "DEV_$cleanPhone" else "DEV_NAME_${Math.abs(cleanName.hashCode())}"
+
+            val cursor = db.rawQuery(
+                "SELECT id, visit_count, city, age, gender, photo_uri FROM devotee_directory WHERE phone_number = ? OR devotee_id = ? OR patient_name = ? LIMIT 1",
+                arrayOf(cleanPhone, devId, cleanName)
+            )
+
+            if (cursor.moveToFirst()) {
+                val rowId = cursor.getLong(0)
+                val currentVisits = cursor.getInt(1)
+                val existingCity = cursor.getString(2) ?: ""
+                val existingAge = cursor.getInt(3)
+                val existingGender = cursor.getString(4) ?: ""
+                val existingPhoto = cursor.getString(5) ?: ""
+                cursor.close()
+
+                val finalCity = if (city.isNotBlank() && city != "डूँगरा जाट (स्थानीय)") city else existingCity
+                val finalAge = if (age > 0) age else existingAge
+                val finalGender = if (gender.isNotBlank()) gender else existingGender
+                val finalPhoto = if (photoUri.isNotBlank()) photoUri else existingPhoto
+
+                val cv = ContentValues().apply {
+                    put("patient_name", cleanName)
+                    if (cleanPhone.isNotBlank()) put("phone_number", cleanPhone)
+                    put("city", finalCity)
+                    put("age", finalAge)
+                    put("gender", finalGender)
+                    put("photo_uri", finalPhoto)
+                    put("visit_count", currentVisits + 1)
+                    put("last_visit_date", lastVisitDate)
+                    put("source_module", sourceModule)
+                    put("updated_at", System.currentTimeMillis())
+                }
+                db.update("devotee_directory", cv, "id = ?", arrayOf(rowId.toString()))
+            } else {
+                cursor.close()
+                val cv = ContentValues().apply {
+                    put("devotee_id", devId)
+                    put("patient_name", cleanName)
+                    put("phone_number", cleanPhone)
+                    put("city", city.trim())
+                    put("age", age)
+                    put("gender", gender)
+                    put("photo_uri", photoUri)
+                    put("visit_count", 1)
+                    put("last_visit_date", lastVisitDate)
+                    put("source_module", sourceModule)
+                    put("updated_at", System.currentTimeMillis())
+                }
+                db.insertWithOnConflict("devotee_directory", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("AshramRepository", "Error upserting devotee directory: ${e.message}")
+        }
+    }
+
+    suspend fun searchDevoteeDirectory(query: String, limit: Int = 6): List<DevoteeDirectoryEntry> = withContext(Dispatchers.IO) {
+        val q = query.trim()
+        if (q.length < 2) return@withContext emptyList()
+        val cleanPhone = q.replace("+91", "").replace(" ", "").replace("-", "")
+        val db = dbHelper.readableDatabase
+        val results = mutableListOf<DevoteeDirectoryEntry>()
+
+        try {
+            val cursor = db.rawQuery(
+                """
+                SELECT id, devotee_id, patient_name, phone_number, city, age, gender, photo_uri, last_visit_date, visit_count, source_module, updated_at 
+                FROM devotee_directory 
+                WHERE phone_number LIKE ? OR patient_name LIKE ? OR devotee_id LIKE ? OR city LIKE ?
+                ORDER BY visit_count DESC, updated_at DESC 
+                LIMIT ?
+                """.trimIndent(),
+                arrayOf("%$cleanPhone%", "%$q%", "%$q%", "%$q%", limit.toString())
+            )
+            while (cursor.moveToNext()) {
+                results.add(
+                    DevoteeDirectoryEntry(
+                        id = cursor.getLong(0),
+                        devoteeId = cursor.getString(1),
+                        patientName = cursor.getString(2),
+                        phoneNumber = cursor.getString(3),
+                        city = cursor.getString(4) ?: "",
+                        age = cursor.getInt(5),
+                        gender = cursor.getString(6) ?: "",
+                        photoUri = cursor.getString(7) ?: "",
+                        lastVisitDate = cursor.getString(8) ?: "",
+                        visitCount = cursor.getInt(9),
+                        sourceModule = cursor.getString(10) ?: "TOKEN",
+                        updatedAt = cursor.getLong(11)
+                    )
+                )
+            }
+            cursor.close()
+        } catch (e: Exception) {
+            android.util.Log.e("AshramRepository", "Error searching devotee directory: ${e.message}")
+        }
+        results
+    }
 
     suspend fun searchDevoteeByPhone(phone: String): DevoteeFaceProfile? = withContext(Dispatchers.IO) {
         val cleanPhone = phone.trim().replace("+91", "").replace(" ", "").replace("-", "")
         if (cleanPhone.length < 10) return@withContext null
         val db = dbHelper.readableDatabase
+
+        // 1. Search devotee_directory first (covers tokens, arzis, manual tokens)
+        try {
+            val dirCursor = db.rawQuery(
+                "SELECT patient_name, phone_number, city, photo_uri, visit_count FROM devotee_directory WHERE phone_number LIKE ? ORDER BY updated_at DESC LIMIT 1",
+                arrayOf("%$cleanPhone%")
+            )
+            if (dirCursor.moveToFirst()) {
+                val profile = DevoteeFaceProfile(
+                    id = 0,
+                    patientName = dirCursor.getString(0),
+                    phoneNumber = dirCursor.getString(1),
+                    city = try { dirCursor.getString(2) ?: "डूँगरा जाट (स्थानीय)" } catch (e: Exception) { "डूँगरा जाट (स्थानीय)" },
+                    faceVector = FloatArray(0),
+                    photoUri = dirCursor.getString(3) ?: "",
+                    visitCount = dirCursor.getInt(4),
+                    lastConfidence = 1.0f,
+                    lastVerifiedAt = System.currentTimeMillis(),
+                    createdAt = System.currentTimeMillis()
+                )
+                dirCursor.close()
+                return@withContext profile
+            }
+            dirCursor.close()
+        } catch (e: Exception) {}
+
+        // 2. Fallback to devotee_face_profiles
         val cursor = db.rawQuery(
             "SELECT * FROM devotee_face_profiles WHERE phone_number LIKE ? ORDER BY last_verified_at DESC LIMIT 1",
             arrayOf("%$cleanPhone%")
@@ -3081,11 +3246,40 @@ class AshramRepository(context: Context) {
         val trimmed = query.trim()
         if (trimmed.length < 2) return@withContext emptyList()
         val db = dbHelper.readableDatabase
+        val list = mutableListOf<DevoteeFaceProfile>()
+
+        // 1. Search devotee_directory
+        try {
+            val dirCursor = db.rawQuery(
+                "SELECT patient_name, phone_number, city, photo_uri, visit_count FROM devotee_directory WHERE patient_name LIKE ? OR phone_number LIKE ? ORDER BY visit_count DESC, updated_at DESC LIMIT ?",
+                arrayOf("%$trimmed%", "%$trimmed%", limit.toString())
+            )
+            while (dirCursor.moveToNext()) {
+                list.add(
+                    DevoteeFaceProfile(
+                        id = 0,
+                        patientName = dirCursor.getString(0),
+                        phoneNumber = dirCursor.getString(1),
+                        city = try { dirCursor.getString(2) ?: "डूँगरा जाट (स्थानीय)" } catch (e: Exception) { "डूँगरा जाट (स्थानीय)" },
+                        faceVector = FloatArray(0),
+                        photoUri = dirCursor.getString(3) ?: "",
+                        visitCount = dirCursor.getInt(4),
+                        lastConfidence = 1.0f,
+                        lastVerifiedAt = System.currentTimeMillis(),
+                        createdAt = System.currentTimeMillis()
+                    )
+                )
+            }
+            dirCursor.close()
+        } catch (e: Exception) {}
+
+        if (list.isNotEmpty()) return@withContext list
+
+        // 2. Fallback to devotee_face_profiles
         val cursor = db.rawQuery(
             "SELECT * FROM devotee_face_profiles WHERE patient_name LIKE ? ORDER BY last_verified_at DESC LIMIT ?",
             arrayOf("%$trimmed%", limit.toString())
         )
-        val list = mutableListOf<DevoteeFaceProfile>()
         while (cursor.moveToNext()) {
             val blob = cursor.getBlob(cursor.getColumnIndexOrThrow("face_vector"))
             val vector = FaceEmbeddingEngine.blobToVector(blob)
@@ -3627,6 +3821,14 @@ class AshramRepository(context: Context) {
         } else {
             db.insert("arzi_distribution_records", null, cv)
         }
+
+        // Auto-index devotee details into Master Directory
+        upsertDevoteeDirectoryInternal(
+            name = record.devoteeName,
+            phone = record.phoneNumber,
+            sourceModule = "ARZI",
+            lastVisitDate = record.darbarDate.ifBlank { DatabaseHelper.getTodayDateString() }
+        )
         try {
             val all = getAllArziRecords()
             com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveArziRecords(appContext, all, record.recordedBy)

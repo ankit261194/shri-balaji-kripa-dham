@@ -1384,7 +1384,14 @@ fun FaceTokenRegistrationScreen(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .clickable {
-                                                        manualCity = loc.nameHindi
+                                                        val formattedLoc = if (loc.districtHindi.isNotBlank() && !loc.nameHindi.contains(loc.districtHindi)) {
+                                                            "${loc.nameHindi} (${loc.districtHindi}, ${loc.stateHindi})"
+                                                        } else if (loc.stateHindi.isNotBlank() && !loc.nameHindi.contains(loc.stateHindi)) {
+                                                            "${loc.nameHindi} (${loc.stateHindi})"
+                                                        } else {
+                                                            loc.nameHindi
+                                                        }
+                                                        manualCity = formattedLoc
                                                         showLocationDropdown = false
                                                     }
                                                     .padding(horizontal = 8.dp, vertical = 6.dp),
@@ -1392,8 +1399,12 @@ fun FaceTokenRegistrationScreen(
                                             ) {
                                                 Text("📍", fontSize = 14.sp)
                                                 Spacer(modifier = Modifier.width(8.dp))
+                                                val locDetails = listOfNotNull(
+                                                    loc.districtHindi.takeIf { it.isNotBlank() },
+                                                    loc.stateHindi.takeIf { it.isNotBlank() }
+                                                ).joinToString(", ")
                                                 Text(
-                                                    text = "${loc.nameHindi} (${loc.stateHindi}) • ${loc.distanceKm} किमी",
+                                                    text = if (locDetails.isNotBlank()) "${loc.nameHindi} ($locDetails) • ${loc.distanceKm} किमी" else "${loc.nameHindi} (${loc.stateHindi}) • ${loc.distanceKm} किमी",
                                                     fontSize = 12.sp,
                                                     fontWeight = FontWeight.Medium,
                                                     color = Color(0xFF111111)

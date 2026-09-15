@@ -7236,8 +7236,10 @@ fun SuperControlTab(
             }
         }
 
-        // 3.1 TOKEN TTS REAL HUMAN VOICE SELECTION & TEST AUDIO (SUPER ADMIN DIRECT CONTROL)
+        // 3.1 TOKEN TTS REAL HUMAN VOICE SELECTION & TEST AUDIO (48+ UNIQUE VOICES)
         item {
+            var voiceCategoryFilter by remember { mutableStateOf("ALL") }
+
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(2.dp),
@@ -7248,7 +7250,7 @@ fun SuperControlTab(
                         Text("🎙️", fontSize = 22.sp)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (isHindi) "टोकन उद्घोषणा: वास्तविक इंसानी आवाज़ चयन (6 Voice Options)" else "Token Voice: Real Human Voice Selection",
+                            text = if (isHindi) "टोकन उद्घोषणा: 48 सजीव इंसानी आवाज़ें (Male, Female, Kids)" else "Token Voice: 48 Human Voices (Male, Female, Kids)",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                             color = MaroonPrimary
@@ -7256,14 +7258,55 @@ fun SuperControlTab(
                     }
                     Text(
                         text = if (isHindi)
-                            "दरबार में अगले टोकन को पुकारने हेतु 6 सजीव इंसानी स्वर। किसी भी आवाज़ को '▶️ आवाज़ सुनें' दबाकर तुरंत टेस्ट करें।"
-                            else "Select from 6 real human voice personas for live token announcements with instant test preview.",
+                            "पुरुष, महिला व बाल स्वर में 48 वास्तविक इंसानी आवाज़ें। न्यूरल नेचुरल टीटीएस मॉडलिंग के साथ किसी भी आवाज़ को '▶️ सुनें' दबाकर तुरंत लाइव टेस्ट करें।"
+                            else "48 real human voice personas across Male, Female, and Kids categories with Neural Natural expressive modeling.",
                         fontSize = 12.sp,
                         color = Color.DarkGray
                     )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Category Filter Chips
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val categories = listOf(
+                            Triple("ALL", "✨ सभी (48)", "All (48)"),
+                            Triple("MALE", "👨 पुरुष (16)", "Male (16)"),
+                            Triple("FEMALE", "👩 महिला (16)", "Female (16)"),
+                            Triple("KIDS", "🧒 बाल स्वर (16)", "Kids (16)")
+                        )
+                        categories.forEach { (catKey, catHi, catEn) ->
+                            val isCatSelected = (voiceCategoryFilter == catKey)
+                            Surface(
+                                onClick = { voiceCategoryFilter = catKey },
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isCatSelected) MaroonPrimary else Color(0xFFF0F0F0),
+                                border = if (isCatSelected) null else BorderStroke(1.dp, Color(0xFFDCDCDC))
+                            ) {
+                                Text(
+                                    text = if (isHindi) catHi else catEn,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isCatSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isCatSelected) Color.White else Color.DarkGray,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS.forEach { preset ->
+                    val filteredVoices = remember(voiceCategoryFilter) {
+                        when (voiceCategoryFilter) {
+                            "MALE" -> AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS.filter { it.category == "MALE" }
+                            "FEMALE" -> AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS.filter { it.category == "FEMALE" }
+                            "KIDS" -> AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS.filter { it.category == "KIDS" }
+                            else -> AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS
+                        }
+                    }
+
+                    filteredVoices.forEach { preset ->
                         val isSelected = (selectedVoicePreset == preset.id)
                         Surface(
                             onClick = { selectedVoicePreset = preset.id; voiceSuccessMsg = null },
@@ -7279,12 +7322,32 @@ fun SuperControlTab(
                                 Text(preset.icon, fontSize = 20.sp)
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = if (isHindi) preset.nameHindi else preset.nameEnglish,
-                                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
-                                        fontSize = 13.sp,
-                                        color = if (isSelected) MaroonPrimary else Color.Black
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = if (isHindi) preset.nameHindi else preset.nameEnglish,
+                                            fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                                            fontSize = 13.sp,
+                                            color = if (isSelected) MaroonPrimary else Color.Black
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        val (badgeText, badgeBg, badgeFg) = when (preset.category) {
+                                            "KIDS" -> Triple("बाल स्वर", Color(0xFFFFF3E0), Color(0xFFE65100))
+                                            "FEMALE" -> Triple("महिला", Color(0xFFFCE4EC), Color(0xFFC2185B))
+                                            else -> Triple("पुरुष", Color(0xFFE3F2FD), Color(0xFF1976D2))
+                                        }
+                                        Surface(
+                                            color = badgeBg,
+                                            shape = RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text(
+                                                text = badgeText,
+                                                color = badgeFg,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                    }
                                     Text(
                                         text = preset.description,
                                         fontSize = 11.sp,
