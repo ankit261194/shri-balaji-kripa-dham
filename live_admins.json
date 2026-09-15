@@ -1,5 +1,5 @@
 {
-  "updated_at": 1789388418570,
+  "updated_at": 1789446460350,
   "admins": [
     {
       "id": 1,
@@ -27,6 +27,37 @@
         "can_issue_tokens_anywhere": true,
         "can_scan_paper_register": true,
         "can_manage_parchas": true,
+        "can_manage_arzi": true,
+        "can_export_pdf": true
+      }
+    },
+    {
+      "id": 2,
+      "name": "रवि कुमार गर्ग",
+      "username": "Ravi001",
+      "phone": "9758510501",
+      "role": "SEVADAR",
+      "is_active": true,
+      "photo_uri": "https:\/\/raw.githubusercontent.com\/ankit261194\/shri-balaji-kripa-dham\/main\/uploads\/sevadar_1789446401612.jpg",
+      "pin_hash": "3324dab86f4dcdf48ba8ed6d736dcf050f09a23bf617c7d3579224548269ba1f",
+      "password_hash": "87ad6dca27b563ed4e13bf6f4b4eda3863655094fb3f9d82cf0d3e57311bf9eb",
+      "permissions": {
+        "can_manage_tokens": true,
+        "can_issue_manual_tokens": true,
+        "can_cancel_tokens": true,
+        "can_delete_tokens": true,
+        "can_custom_token_number": true,
+        "can_manage_yatra": false,
+        "can_manage_expenses": false,
+        "can_change_location": false,
+        "can_send_notifications": true,
+        "can_edit_ashram_info": false,
+        "can_manage_admins": false,
+        "can_view_devotee_photos": true,
+        "can_issue_tokens_anywhere": true,
+        "can_scan_paper_register": true,
+        "can_manage_parchas": false,
+        "can_manage_arzi": false,
         "can_export_pdf": true
       }
     }
