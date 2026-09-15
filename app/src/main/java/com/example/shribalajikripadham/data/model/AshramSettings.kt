@@ -44,7 +44,23 @@ data class AshramSettings(
     // Daily token limit quota (0 = unlimited)
     val maxDailyTokens: Int = 0,
     // Whether Super Admin enforces activeUiLayout across all devotees
-    val isUiLayoutEnforced: Boolean = false,
+    val isUiLayoutEnforced: Boolean = true,
+    // Token TTS Human Voice Preset (GURU_CALM, FEMALE_SWEET, ANNOUNCER_MALE, SEVIKA_FEMALE, YOUTH_CRISP, TRADITIONAL_VYAS)
+    val tokenVoicePreset: String = "GURU_CALM",
+    // Ashram Main Home Banner Manager (Super Admin Controlled)
+    val bannerPhotoUri: String = "",
+    val isBannerVisible: Boolean = true,
+    val bannerTitle: String = "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट",
+    val bannerSubtitle: String = "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार",
+    val bannerActionUrl: String = "",
+    // Ads & Devotee Sponsorship Master Control (Super Admin 100% Controlled)
+    val isAdsEnabled: Boolean = false,
+    val adType: String = "CUSTOM", // CUSTOM, SPONSOR, ADMOB
+    val adBannerPhotoUri: String = "",
+    val adBannerTitle: String = "आश्रम सेवा व गौशाला सहयोग",
+    val adBannerDescription: String = "धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।",
+    val adTargetUrl: String = "",
+    val adPlacement: String = "HOME_BOTTOM",
     // Cloud Sync Server Endpoint
     val cloudSyncUrl: String = "",
     val isCloudSyncEnabled: Boolean = false,

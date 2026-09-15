@@ -295,7 +295,7 @@ fun ModernCardsLayout(
                     SacredAvatar(
                         photoUri = settings.gurujiPhotoUri,
                         fallbackText = "गुरुजी",
-                        size = 58.dp,
+                        size = 88.dp,
                         primaryColor = currentTheme.primaryColor,
                         borderColor = currentTheme.secondaryColor
                     )
@@ -354,7 +354,7 @@ fun ModernCardsLayout(
                             SacredAvatar(
                                 photoUri = sevadar.photoUri,
                                 fallbackText = sevadar.name,
-                                size = 44.dp,
+                                size = 68.dp,
                                 primaryColor = currentTheme.primaryColor,
                                 borderColor = currentTheme.secondaryColor
                             )
@@ -454,7 +454,7 @@ fun VedicGridLayout(
                     SacredAvatar(
                         photoUri = settings.gurujiPhotoUri,
                         fallbackText = "गुरुजी",
-                        size = 54.dp,
+                        size = 88.dp,
                         primaryColor = currentTheme.primaryColor,
                         borderColor = currentTheme.secondaryColor
                     )
@@ -602,7 +602,7 @@ fun VedicGridLayout(
                             SacredAvatar(
                                 photoUri = s.photoUri,
                                 fallbackText = s.name,
-                                size = 46.dp,
+                                size = 68.dp,
                                 primaryColor = currentTheme.primaryColor,
                                 borderColor = currentTheme.secondaryColor
                             )
@@ -843,7 +843,7 @@ fun CompactListLayout(
                     SacredAvatar(
                         photoUri = settings.gurujiPhotoUri,
                         fallbackText = "गुरुजी",
-                        size = 46.dp,
+                        size = 88.dp,
                         primaryColor = currentTheme.primaryColor,
                         borderColor = currentTheme.secondaryColor
                     )
@@ -1087,7 +1087,7 @@ fun DivineFeedLayout(
                         SacredAvatar(
                             photoUri = settings.gurujiPhotoUri,
                             fallbackText = "गुरुजी",
-                            size = 64.dp,
+                            size = 92.dp,
                             primaryColor = currentTheme.primaryColor,
                             borderColor = currentTheme.secondaryColor
                         )
@@ -1153,7 +1153,7 @@ fun DivineFeedLayout(
                             SacredAvatar(
                                 photoUri = sevadar.photoUri,
                                 fallbackText = sevadar.name,
-                                size = 42.dp,
+                                size = 68.dp,
                                 primaryColor = currentTheme.primaryColor,
                                 borderColor = currentTheme.secondaryColor
                             )

@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 39,
-  "latest_version_name": "2.31.0",
-  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.31.0 अपडेट: 1. ऑटो-अपडेट इंजन में सुधार। 2. फोटो घुमाने का 90° बटन व फ्रंट कैमरा ऑटो-सीधा फीचर। 3. रजिस्टर स्कैन कैमरा क्रैश पूर्णतः ठीक। 4. रौंडा (8 किमी) व पूरे भारत के गांव-कस्बों की सटीक लोकेशन व दूरी। 5. यात्रा खर्च डायरी केवल सुपर एडमिन के पास। 6. आश्रम परिचय व सभी 10 UI लेआउट्स पर सुपर एडमिन का पूरा नियंत्रण। 7. बटन क्लिक फीडबैक। 8. क्यूआर पेमेंट महा-लेजर ऑडिट।",
-  "update_notes_english": "Shri Balaji Kripa Dham v2.31.0 Update: 1. Auto-update engine fix. 2. 90° photo rotation button & front camera orientation fix. 3. Paper register scan crash resolved. 4. Pan-India village & town suggestions with Ronda (8km) accurate distance. 5. Yatra expense diary restricted to Super Admin. 6. Full Super Admin control on Ashram info & all 10 UI layouts. 7. Button tactile click feedback. 8. QR payments audit ledger.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.31.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 40,
+  "latest_version_name": "2.32.0",
+  "update_notes_hindi": "श्री बालाजी कृपा धाम v2.32.0 महा-अपडेट: 1. टोकन की आवाज़ में 6 असली मानवीय आवाज़ें (Human Voice Presets) व टेस्ट बटन। 2. अर्जी बोलकर जोड़ने का सटीक वाक्-विश्लेषण (Badi/Chhoti Arzi Voice Fix)। 3. सुपर एडमिन 50+ ID कार्ड स्टूडियो व Photoshop (.PSD) लेयर्ड फाइल डाउनलोड। 4. सुपर एडमिन का सभी भक्तों के UI लेआउट पर 100% सीधा कंट्रोल। 5. कीपैड ओवरलैप व पैडिंग फिक्स। 6. गुरुजी व सेवादारों के बड़े फोटो व चेहरा न कटना (Face-Centering)। 7. आश्रम मुख्य बैनर प्रबंधन व भविष्य में विज्ञापन/प्रायोजक नियंत्रण। 8. अर्जी दर सेविंग व सभी बटनों पर लाइव रिस्पॉन्स।",
+  "update_notes_english": "Shri Balaji Kripa Dham v2.32.0 Update: 1. 6 Real Human TTS Voice Presets with Test Voice button. 2. Enhanced Arzi Voice Parser for Hindi/Hinglish. 3. Super Admin 50+ ID Card Templates & Adobe Photoshop (.PSD) layered file export. 4. Full Super Admin Global UI Control. 5. Soft keyboard IME overlap & padding fixed. 6. Large Face-Centered Guruji & Sevadar photos with 90° rotation. 7. Ashram Home Banner & Future Ads/Sponsorship Master Control. 8. Fixed Arzi rates saving & responsive buttons.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.32.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

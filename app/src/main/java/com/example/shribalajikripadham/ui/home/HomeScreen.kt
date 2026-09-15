@@ -18,10 +18,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -154,11 +156,7 @@ fun HomeScreen(
         try {
             s = repository.getSettings()
             settings = s
-            activeLayout = if (s.isUiLayoutEnforced) {
-                AppUiLayout.fromId(s.activeUiLayout)
-            } else {
-                LayoutPreferences.getSavedLayout(context, AppUiLayout.fromId(s.activeUiLayout))
-            }
+            activeLayout = AppUiLayout.fromId(s.activeUiLayout)
             val customDists = repository.getAllCustomCityDistances()
             DistanceCalculatorService.loadCustomDistances(customDists.map { Pair(it.cityName, it.distanceKm) })
             val evs = repository.getAllEvents()
@@ -439,77 +437,108 @@ fun HomeScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        for (layout in AppUiLayout.entries) {
-                            val isSelected = layout == activeLayout
-                            Surface(
-                                onClick = {
-                                    activeLayout = layout
-                                    LayoutPreferences.saveLayout(context, layout)
-                                    scope.launch {
-                                        drawerState.close()
-                                        Toast.makeText(
-                                            context,
-                                            if (isHindi) "✅ ऐप का रूप बदलकर '${layout.titleHindi}' हो गया!" else "✅ Switched to ${layout.titleEnglish}!",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                },
-                                shape = RoundedCornerShape(10.dp),
-                                color = if (isSelected) currentTheme.primaryColor.copy(alpha = 0.14f) else Color(0xFFFBFBFB),
-                                border = BorderStroke(
-                                    width = if (isSelected) 1.8.dp else 0.6.dp,
-                                    color = if (isSelected) currentTheme.primaryColor else Color(0xFFE0E0E0)
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 10.dp, vertical = 7.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                    if (settings.isUiLayoutEnforced) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFFB74D)),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("👑", fontSize = 16.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (isHindi) "सुपर एडमिन यूनिवर्सल कंट्रोल सक्रिय" else "Super Admin Universal Control Active",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = MaroonAccent
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (isHindi) "वर्तमान सक्रिय ढांचा: ${activeLayout.titleHindi} (${activeLayout.icon})\n(यह रूप सभी भक्तों के फोन पर अनिवार्य रूप से लागू है)" else "Active Layout: ${activeLayout.titleEnglish} (${activeLayout.icon})\n(Enforced across all devotees)",
+                                    fontSize = 11.sp,
+                                    color = Color.DarkGray,
+                                    lineHeight = 15.sp
+                                )
+                            }
+                        }
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            for (layout in AppUiLayout.entries) {
+                                val isSelected = layout == activeLayout
+                                Surface(
+                                    onClick = {
+                                        activeLayout = layout
+                                        LayoutPreferences.saveLayout(context, layout)
+                                        scope.launch {
+                                            drawerState.close()
+                                            Toast.makeText(
+                                                context,
+                                                if (isHindi) "✅ ऐप का रूप बदलकर '${layout.titleHindi}' हो गया!" else "✅ Switched to ${layout.titleEnglish}!",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = if (isSelected) currentTheme.primaryColor.copy(alpha = 0.14f) else Color(0xFFFBFBFB),
+                                    border = BorderStroke(
+                                        width = if (isSelected) 1.8.dp else 0.6.dp,
+                                        color = if (isSelected) currentTheme.primaryColor else Color(0xFFE0E0E0)
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Box(
+                                    Row(
                                         modifier = Modifier
-                                            .size(32.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(if (isSelected) currentTheme.primaryColor else Color(0xFFEEEEEE)),
-                                        contentAlignment = Alignment.Center
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 10.dp, vertical = 7.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(layout.icon, fontSize = 16.sp)
-                                    }
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = if (isHindi) layout.titleHindi else layout.titleEnglish,
-                                            fontSize = 13.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isSelected) currentTheme.primaryColor else TextPrimaryDark
-                                        )
-                                        Text(
-                                            text = layout.subtitleHindi,
-                                            fontSize = 9.5.sp,
-                                            color = Color.Gray,
-                                            maxLines = 1
-                                        )
-                                    }
-                                    if (isSelected) {
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = currentTheme.primaryColor
+                                        Box(
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(
+                                                    if (isSelected) currentTheme.primaryColor else Color(0xFFEEEEEE)
+                                                ),
+                                            contentAlignment = Alignment.Center
                                         ) {
+                                            Text(layout.icon, fontSize = 16.sp)
+                                        }
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = if (isHindi) "✓ सक्रिय" else "✓ Active",
-                                                color = Color.White,
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                text = if (isHindi) layout.titleHindi else layout.titleEnglish,
+                                                fontSize = 12.5.sp,
+                                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                                                color = if (isSelected) currentTheme.primaryColor else TextPrimaryDark
                                             )
+                                            Text(
+                                                text = if (isHindi) layout.subtitleHindi else layout.titleHindi,
+                                                fontSize = 10.sp,
+                                                color = TextSecondaryDark,
+                                                maxLines = 1
+                                            )
+                                        }
+                                        if (isSelected) {
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = currentTheme.primaryColor
+                                            ) {
+                                                Text(
+                                                    text = if (isHindi) "सक्रिय" else "ACTIVE",
+                                                    color = Color.White,
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -657,6 +686,31 @@ fun HomeScreen(
                                 defaultUrl = "https://wa.me/91$wa",
                                 isWhatsApp = true
                             )
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                    )
+
+                    // Devotee App Share (WhatsApp & Social Media)
+                    NavigationDrawerItem(
+                        icon = { Text("📲", fontSize = 20.sp) },
+                        label = {
+                            Text(
+                                if (isHindi) "ऐप शेयर करें (भक्तों को भेजें)" else "Share App with Devotees",
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark
+                            )
+                        },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            val shareUrl = settings.appShareUrl.ifEmpty { "https://shribalajikripadham.org/app" }
+                            val shareMsg = if (isHindi) {
+                                "🚩 ॐ श्री हनुमते नमः 🚩\n\nश्री बालाजी कृपा धाम (ग्राम डूँगरा जाट, जिला बुलंदशहर, उ.प्र.)\nपरम पूज्य गुरुजी तेजवीर सिंह जी महाराज\n\nआश्रम का आधिकारिक मोबाइल ऐप डाउनलोड करें और रविवार टोकन, पर्चा, व लाइव जानकारी प्राप्त करें:\n$shareUrl"
+                            } else {
+                                "🚩 Om Shri Hanumate Namah 🚩\n\nShri Balaji Kripa Dham (Gram Dungra Jaat, Bulandshahr, UP)\nParam Pujya Guruji Tejveer Singh Ji\n\nDownload the Official Ashram App for Sunday Token, Parchas & Live Updates:\n$shareUrl"
+                            }
+                            shareAppContent(context, shareMsg, if (isHindi) "श्री बालाजी कृपा धाम ऐप" else "Shri Balaji Kripa Dham App")
                         },
                         colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
@@ -989,6 +1043,20 @@ fun HomeScreen(
             }
 
 
+
+            // 🚩 ASHRAM MAIN HERO BANNER (Super Admin 100% Controlled)
+            if (settings.isBannerVisible && settings.bannerPhotoUri.isNotBlank()) {
+                AshramHomeHeroBanner(
+                    bannerPhotoUri = settings.bannerPhotoUri,
+                    title = settings.bannerTitle,
+                    subtitle = settings.bannerSubtitle,
+                    actionUrl = settings.bannerActionUrl,
+                    primaryColor = currentTheme.primaryColor,
+                    secondaryColor = currentTheme.secondaryColor,
+                    context = context
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+            }
 
             // RENDERING BASED ON ACTIVE UI LAYOUT (10 COMPLETE UI LOOKS)
             when (activeLayout) {
@@ -1368,6 +1436,20 @@ fun HomeScreen(
                         }
                     }
                 }
+            }
+
+            // 📢 SPONSORED ADS / ASHRAM SEVA SAHYOG BANNER (Super Admin 100% Controlled)
+            if (settings.isAdsEnabled && (settings.adBannerPhotoUri.isNotBlank() || settings.adBannerTitle.isNotBlank())) {
+                DevoteeSponsorAdBanner(
+                    photoUri = settings.adBannerPhotoUri,
+                    title = settings.adBannerTitle,
+                    description = settings.adBannerDescription,
+                    targetUrl = settings.adTargetUrl,
+                    primaryColor = currentTheme.primaryColor,
+                    secondaryColor = currentTheme.secondaryColor,
+                    context = context
+                )
+                Spacer(modifier = Modifier.height(14.dp))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -2575,11 +2657,11 @@ fun RenderClassicSection(
                             SacredAvatar(
                                 photoUri = settings.gurujiPhotoUri,
                                 fallbackText = "गुरुजी",
-                                size = 58.dp,
+                                size = 92.dp,
                                 primaryColor = currentTheme.primaryColor,
                                 borderColor = currentTheme.secondaryColor
                             )
-                            Spacer(modifier = Modifier.width(14.dp))
+                            Spacer(modifier = Modifier.width(16.dp))
                             Column {
                                 Text(
                                     text = settings.gurujiName.ifEmpty {
@@ -2634,18 +2716,18 @@ fun RenderClassicSection(
                                 shape = RoundedCornerShape(18.dp),
                                 elevation = CardDefaults.cardElevation(4.dp),
                                 border = BorderStroke(1.dp, currentTheme.secondaryColor.copy(alpha = 0.5f)),
-                                modifier = Modifier.width(225.dp)
+                                modifier = Modifier.width(240.dp)
                             ) {
                                 Column(modifier = Modifier.padding(14.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         SacredAvatar(
                                             photoUri = sevadar.photoUri,
                                             fallbackText = sevadar.name,
-                                            size = 46.dp,
+                                            size = 72.dp,
                                             primaryColor = currentTheme.primaryColor,
                                             borderColor = currentTheme.secondaryColor
                                         )
-                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Spacer(modifier = Modifier.width(12.dp))
                                         Column {
                                             Text(
                                                 text = sevadar.name,
@@ -2971,6 +3053,168 @@ fun RenderClassicSection(
                         text = "Anti Gravity • High-Performance Native Android Engineering",
                         fontSize = 11.sp,
                         color = TextSecondaryDark
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AshramHomeHeroBanner(
+    bannerPhotoUri: String,
+    title: String,
+    subtitle: String,
+    actionUrl: String,
+    primaryColor: Color,
+    secondaryColor: Color,
+    context: android.content.Context
+) {
+    var bmp by remember(bannerPhotoUri) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(bannerPhotoUri) {
+        if (bannerPhotoUri.isNotBlank()) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                bmp = com.example.shribalajikripadham.util.DevoteePhotoHelper.loadBitmap(context, bannerPhotoUri)
+            }
+        }
+    }
+    val safeBmp = remember(bmp) {
+        bmp?.let { com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(it) }
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(5.dp),
+        border = BorderStroke(1.2.dp, secondaryColor),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = actionUrl.isNotBlank()) {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(actionUrl))
+                    context.startActivity(intent)
+                } catch (e: Exception) {}
+            }
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            if (safeBmp != null) {
+                Image(
+                    bitmap = safeBmp.asImageBitmap(),
+                    contentDescription = title,
+                    contentScale = ContentScale.Crop,
+                    alignment = BiasAlignment(0f, -0.2f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(170.dp)
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                )
+            }
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text(
+                    text = title.ifEmpty { "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट" },
+                    fontSize = 16.5.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = primaryColor
+                )
+                if (subtitle.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = subtitle,
+                        fontSize = 12.5.sp,
+                        color = Color.DarkGray,
+                        lineHeight = 17.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DevoteeSponsorAdBanner(
+    photoUri: String,
+    title: String,
+    description: String,
+    targetUrl: String,
+    primaryColor: Color,
+    secondaryColor: Color,
+    context: android.content.Context
+) {
+    var bmp by remember(photoUri) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    LaunchedEffect(photoUri) {
+        if (photoUri.isNotBlank()) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                bmp = com.example.shribalajikripadham.util.DevoteePhotoHelper.loadBitmap(context, photoUri)
+            }
+        }
+    }
+    val safeBmp = remember(bmp) {
+        bmp?.let { com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(it) }
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF0)),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(4.dp),
+        border = BorderStroke(1.2.dp, secondaryColor.copy(alpha = 0.8f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = targetUrl.isNotBlank()) {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl))
+                    context.startActivity(intent)
+                } catch (e: Exception) {}
+            }
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFFFF3E0))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("📢", fontSize = 13.sp)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "धर्मार्थ सहयोग एवं प्रायोजक (Ashram Sponsorship)",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFE65100)
+                )
+            }
+            if (safeBmp != null) {
+                Image(
+                    bitmap = safeBmp.asImageBitmap(),
+                    contentDescription = title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(130.dp)
+                )
+            }
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    text = title.ifEmpty { "आश्रम सेवा व गौशाला सहयोग" },
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaroonAccent
+                )
+                if (description.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = description,
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                }
+                if (targetUrl.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "🔗 अधिक जानकारी देखें ➔",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = primaryColor
                     )
                 }
             }

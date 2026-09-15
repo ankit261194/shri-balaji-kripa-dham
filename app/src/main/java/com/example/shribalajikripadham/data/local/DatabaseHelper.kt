@@ -462,6 +462,19 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             "ALTER TABLE ashram_settings ADD COLUMN chhoti_arzi_rate REAL NOT NULL DEFAULT 50.0",
             "ALTER TABLE ashram_settings ADD COLUMN can_admin_view_arzi_ledger INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN can_devotee_view_arzi_ledger INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN token_voice_preset TEXT NOT NULL DEFAULT 'GURU_CALM'",
+            "ALTER TABLE ashram_settings ADD COLUMN banner_photo_uri TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ashram_settings ADD COLUMN is_banner_visible INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE ashram_settings ADD COLUMN banner_title TEXT NOT NULL DEFAULT '🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट'",
+            "ALTER TABLE ashram_settings ADD COLUMN banner_subtitle TEXT NOT NULL DEFAULT 'परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार'",
+            "ALTER TABLE ashram_settings ADD COLUMN banner_action_url TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ashram_settings ADD COLUMN is_ads_enabled INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN ad_type TEXT NOT NULL DEFAULT 'CUSTOM'",
+            "ALTER TABLE ashram_settings ADD COLUMN ad_banner_photo_uri TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ashram_settings ADD COLUMN ad_banner_title TEXT NOT NULL DEFAULT 'आश्रम सेवा व गौशाला सहयोग'",
+            "ALTER TABLE ashram_settings ADD COLUMN ad_banner_description TEXT NOT NULL DEFAULT 'धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।'",
+            "ALTER TABLE ashram_settings ADD COLUMN ad_target_url TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ashram_settings ADD COLUMN ad_placement TEXT NOT NULL DEFAULT 'HOME_BOTTOM'",
             "ALTER TABLE admins ADD COLUMN can_manage_arzi INTEGER NOT NULL DEFAULT 0"
         )
         for (sql in alterStatements) {

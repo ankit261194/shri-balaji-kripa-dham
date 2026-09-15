@@ -397,8 +397,8 @@ fun AdminDashboardScreen(
             svcUpiId = s.ashramUpiId
             svcUpiName = s.ashramUpiName
             svcArziLedgerLive = s.isArziLedgerLive
-            svcBadiArziRate = s.badiArziRate.toString()
-            svcChhotiArziRate = s.chhotiArziRate.toString()
+            svcBadiArziRate = if (s.badiArziRate % 1.0 == 0.0) s.badiArziRate.toInt().toString() else s.badiArziRate.toString()
+            svcChhotiArziRate = if (s.chhotiArziRate % 1.0 == 0.0) s.chhotiArziRate.toInt().toString() else s.chhotiArziRate.toString()
             svcCanAdminViewArzi = s.canAdminViewArziLedger
             svcCanDevoteeViewArzi = s.canDevoteeViewArziLedger
             svcCanDevoteeViewYatraDiary = s.canDevoteeViewYatraDiary
@@ -1012,6 +1012,7 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "ऐप कस्टमाइजर" else "Customizer")
                 allowedTabs.add(if (isHindi) "कस्टम दूरियाँ" else "Distances")
                 allowedTabs.add(if (isHindi) "सुपर कंट्रोल" else "Super Control")
+                allowedTabs.add(if (isHindi) "🪪 ID कार्ड स्टूडियो" else "🪪 ID Card Studio")
                 allowedTabs.add(if (isHindi) "ऑटो-अपडेट" else "Updates")
             }
 
@@ -1122,7 +1123,8 @@ fun AdminDashboardScreen(
                             Triple("सेवादार नियंत्रण", isSuper, "👥"),
                             Triple("भक्त फोटो", admin.canViewDevoteePhotos || isSuper, "📸"),
                             Triple("अर्जी लेजर", isSuper || admin.canManageArzi, "📦"),
-                            Triple("महा-लेजर", isSuper || (settings.canAdminViewPaymentHistory && admin.canManageExpenses), "📊")
+                            Triple("महा-लेजर", isSuper || (settings.canAdminViewPaymentHistory && admin.canManageExpenses), "📊"),
+                            Triple("ID कार्ड स्टूडियो", isSuper, "🪪")
                         )
 
                         LazyRow(
@@ -1564,8 +1566,8 @@ fun AdminDashboardScreen(
                                         )
                                         repository.updateArziSettings(
                                             isArziLedgerLive = svcArziLedgerLive,
-                                            badiArziRate = svcBadiArziRate.toIntOrNull() ?: 100,
-                                            chhotiArziRate = svcChhotiArziRate.toIntOrNull() ?: 50,
+                                            badiArziRate = svcBadiArziRate.toDoubleOrNull() ?: 100.0,
+                                            chhotiArziRate = svcChhotiArziRate.toDoubleOrNull() ?: 50.0,
                                             canAdminViewArziLedger = svcCanAdminViewArzi,
                                             canDevoteeViewArziLedger = svcCanDevoteeViewArzi
                                         )
@@ -1810,6 +1812,13 @@ fun AdminDashboardScreen(
                                     refreshData()
                                     res
                                 }
+                            )
+                        }
+                        currentTabTitle == "🪪 ID कार्ड स्टूडियो" || currentTabTitle == "🪪 ID Card Studio" -> {
+                            SuperIdCardStudioTab(
+                                isHindi = isHindi,
+                                repository = repository,
+                                adminsList = adminsList
                             )
                         }
                         currentTabTitle == "ऑटो-अपडेट" || currentTabTitle == "Updates" -> {
@@ -2144,6 +2153,8 @@ fun AdminDashboardScreen(
                                 } else {
                                     createSevErrorMsg = createMsg
                                 }
+                            } else {
+                                createSevErrorMsg = if (isHindi) "कृपया सेवादार का नाम, यूजरनेम और पासवर्ड अवश्य भरें!" else "Please fill Name, Username and Password!"
                             }
                         }
                     },
@@ -6707,6 +6718,76 @@ fun SuperControlTab(
     var showRestoreDialog by remember { mutableStateOf(false) }
     var restoreJsonText by remember { mutableStateOf("") }
 
+    // --- Token TTS Human Voice State ---
+    var selectedVoicePreset by remember(settings.tokenVoicePreset) { mutableStateOf(settings.tokenVoicePreset) }
+    var voiceSuccessMsg by remember { mutableStateOf<String?>(null) }
+
+    // --- Ashram Main Home Banner Manager State ---
+    var bannerPhotoUriInput by remember(settings.bannerPhotoUri) { mutableStateOf(settings.bannerPhotoUri) }
+    var isBannerVisibleChecked by remember(settings.isBannerVisible) { mutableStateOf(settings.isBannerVisible) }
+    var bannerTitleInput by remember(settings.bannerTitle) { mutableStateOf(settings.bannerTitle) }
+    var bannerSubtitleInput by remember(settings.bannerSubtitle) { mutableStateOf(settings.bannerSubtitle) }
+    var bannerActionUrlInput by remember(settings.bannerActionUrl) { mutableStateOf(settings.bannerActionUrl) }
+    var bannerSaveMsg by remember { mutableStateOf<String?>(null) }
+
+    val bannerGalleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+            if (bmp != null) {
+                val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "ashram_banner")
+                if (savedPath.isNotBlank()) {
+                    bannerPhotoUriInput = savedPath
+                    Toast.makeText(context, if (isHindi) "बैनर फोटो सेट, क्लाउड सिंक जारी..." else "Banner photo set, syncing...", Toast.LENGTH_SHORT).show()
+                    kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                        val safeName = "banner_" + System.currentTimeMillis() + ".jpg"
+                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                        if (!cloudUrl.isNullOrBlank()) {
+                            withContext(Dispatchers.Main) {
+                                bannerPhotoUriInput = cloudUrl
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // --- Future Ads & Devotee Sponsorship Master Control State ---
+    var isAdsEnabledChecked by remember(settings.isAdsEnabled) { mutableStateOf(settings.isAdsEnabled) }
+    var adTypeInput by remember(settings.adType) { mutableStateOf(settings.adType) }
+    var adBannerPhotoUriInput by remember(settings.adBannerPhotoUri) { mutableStateOf(settings.adBannerPhotoUri) }
+    var adBannerTitleInput by remember(settings.adBannerTitle) { mutableStateOf(settings.adBannerTitle) }
+    var adBannerDescInput by remember(settings.adBannerDescription) { mutableStateOf(settings.adBannerDescription) }
+    var adTargetUrlInput by remember(settings.adTargetUrl) { mutableStateOf(settings.adTargetUrl) }
+    var adPlacementInput by remember(settings.adPlacement) { mutableStateOf(settings.adPlacement) }
+    var adSaveMsg by remember { mutableStateOf<String?>(null) }
+
+    val adBannerGalleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+            if (bmp != null) {
+                val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "ad_banner")
+                if (savedPath.isNotBlank()) {
+                    adBannerPhotoUriInput = savedPath
+                    Toast.makeText(context, if (isHindi) "विज्ञापन बैनर फोटो सेट!" else "Ad banner photo set!", Toast.LENGTH_SHORT).show()
+                    kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                        val safeName = "ad_banner_" + System.currentTimeMillis() + ".jpg"
+                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                        if (!cloudUrl.isNullOrBlank()) {
+                            withContext(Dispatchers.Main) {
+                                adBannerPhotoUriInput = cloudUrl
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -7155,6 +7236,384 @@ fun SuperControlTab(
             }
         }
 
+        // 3.1 TOKEN TTS REAL HUMAN VOICE SELECTION & TEST AUDIO (SUPER ADMIN DIRECT CONTROL)
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(2.dp),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🎙️", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isHindi) "टोकन उद्घोषणा: वास्तविक इंसानी आवाज़ चयन (6 Voice Options)" else "Token Voice: Real Human Voice Selection",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = MaroonPrimary
+                        )
+                    }
+                    Text(
+                        text = if (isHindi)
+                            "दरबार में अगले टोकन को पुकारने हेतु 6 सजीव इंसानी स्वर। किसी भी आवाज़ को '▶️ आवाज़ सुनें' दबाकर तुरंत टेस्ट करें।"
+                            else "Select from 6 real human voice personas for live token announcements with instant test preview.",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS.forEach { preset ->
+                        val isSelected = (selectedVoicePreset == preset.id)
+                        Surface(
+                            onClick = { selectedVoicePreset = preset.id; voiceSuccessMsg = null },
+                            color = if (isSelected) Color(0xFFFFF3E0) else Color(0xFFF9F9F9),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.2.dp, if (isSelected) SaffronPrimary else Color(0xFFE0E0E0)),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(preset.icon, fontSize = 20.sp)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isHindi) preset.nameHindi else preset.nameEnglish,
+                                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) MaroonPrimary else Color.Black
+                                    )
+                                    Text(
+                                        text = preset.description,
+                                        fontSize = 11.sp,
+                                        color = Color.Gray,
+                                        lineHeight = 15.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        AshramVoiceAnnouncementManager.testVoice(context, preset.id)
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronPrimary),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text("▶️ सुनें", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+
+                    if (voiceSuccessMsg != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(voiceSuccessMsg!!, color = Color(0xFF2E7D32), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                repository?.updateTokenVoicePreset(selectedVoicePreset)
+                                AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoicePreset)
+                                withContext(Dispatchers.Main) {
+                                    voiceSuccessMsg = if (isHindi) "✓ टोकन उद्घोषणा आवाज़ सुरक्षित व लागू हुई!" else "Voice preset updated successfully!"
+                                    Toast.makeText(context, if (isHindi) "✓ आवाज़ सुरक्षित हुई!" else "Voice preset saved!", Toast.LENGTH_SHORT).show()
+                                    onRefreshData()
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().height(46.dp)
+                    ) {
+                        Text(if (isHindi) "💾 टोकन आवाज़ सुरक्षित करें" else "💾 Save Voice Preset", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // 3.2 ASHRAM MAIN HERO BANNER MANAGER (SUPER ADMIN DIRECT CONTROL)
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(2.dp),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🖼️", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isHindi) "आश्रम मुख्य होम स्क्रीन बैनर (Hero Banner Manager)" else "Ashram Main Home Screen Banner",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = MaroonPrimary
+                        )
+                    }
+                    Text(
+                        text = if (isHindi)
+                            "सभी भक्तों के फोन पर होम स्क्रीन के सबसे ऊपर पावन धाम का मुख्य बैनर, शीर्षक व विवरण प्रदर्शित करें।"
+                            else "Display majestic ashram hero photo, title and description at top of devotee home screen.",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Switch(
+                            checked = isBannerVisibleChecked,
+                            onCheckedChange = { isBannerVisibleChecked = it; bannerSaveMsg = null }
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = if (isBannerVisibleChecked) (if (isHindi) "✅ मुख्य बैनर सक्रिय (दिखेगा)" else "Banner Visible") else (if (isHindi) "🔒 मुख्य बैनर छिपा हुआ है" else "Banner Hidden"),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            if (bannerPhotoUriInput.isNotBlank()) {
+                                SacredAvatar(
+                                    photoUri = bannerPhotoUriInput,
+                                    fallbackText = "बैनर",
+                                    size = 80.dp,
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = { bannerGalleryLauncher.launch("image/*") },
+                                    colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(if (isHindi) "🖼️ गैलरी से बैनर फोटो चुनें" else "Pick Banner Photo", fontSize = 12.sp)
+                                }
+                                if (bannerPhotoUriInput.isNotBlank()) {
+                                    OutlinedButton(
+                                        onClick = { bannerPhotoUriInput = "" },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                                    ) {
+                                        Text("❌ हटाएं", fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = bannerPhotoUriInput,
+                        onValueChange = { bannerPhotoUriInput = it; bannerSaveMsg = null },
+                        label = { Text(if (isHindi) "बैनर फोटो फ़ाइल पाथ / URL" else "Banner Photo URI") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = bannerTitleInput,
+                        onValueChange = { bannerTitleInput = it; bannerSaveMsg = null },
+                        label = { Text(if (isHindi) "बैनर मुख्य शीर्षक (Title)" else "Banner Title") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = bannerSubtitleInput,
+                        onValueChange = { bannerSubtitleInput = it; bannerSaveMsg = null },
+                        label = { Text(if (isHindi) "बैनर उपशीर्षक (Subtitle / विवरण)" else "Banner Subtitle") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = bannerActionUrlInput,
+                        onValueChange = { bannerActionUrlInput = it; bannerSaveMsg = null },
+                        label = { Text(if (isHindi) "क्लिक करने पर खुलने वाला लिंक / URL (वैकल्पिक)" else "Action Link URL (Optional)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (bannerSaveMsg != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(bannerSaveMsg!!, color = Color(0xFF2E7D32), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                repository?.updateBannerSettings(
+                                    photoUri = bannerPhotoUriInput.trim(),
+                                    isVisible = isBannerVisibleChecked,
+                                    title = bannerTitleInput.trim(),
+                                    subtitle = bannerSubtitleInput.trim(),
+                                    actionUrl = bannerActionUrlInput.trim()
+                                )
+                                withContext(Dispatchers.Main) {
+                                    bannerSaveMsg = if (isHindi) "✓ मुख्य बैनर सेटिंग्स सुरक्षित व लाइव अपडेट!" else "Banner settings saved & live updated!"
+                                    Toast.makeText(context, if (isHindi) "✓ बैनर सुरक्षित हुआ!" else "Banner saved!", Toast.LENGTH_SHORT).show()
+                                    onRefreshData()
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().height(46.dp)
+                    ) {
+                        Text(if (isHindi) "💾 मुख्य बैनर सुरक्षित करें" else "💾 Save Banner Settings", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // 3.3 FUTURE ADS & DEVOTEE SPONSORSHIP MASTER CONTROL (SUPER ADMIN DIRECT CONTROL)
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(2.dp),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("📢", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isHindi) "भविष्य के विज्ञापन व भक्त प्रायोजन (Ads & Sponsorship)" else "Ads & Sponsorship Master Control",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = MaroonPrimary
+                        )
+                    }
+                    Text(
+                        text = if (isHindi)
+                            "100% सुपर एडमिन के नियंत्रण में: भविष्य में आश्रम सेवा, गौशाला सहयोग, या प्रायोजक विज्ञापन को ऑन/ऑफ करें।"
+                            else "100% Super Admin controlled: Enable custom sponsor banners or ads on devotee home screen.",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Switch(
+                            checked = isAdsEnabledChecked,
+                            onCheckedChange = { isAdsEnabledChecked = it; adSaveMsg = null }
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = if (isAdsEnabledChecked) (if (isHindi) "✅ विज्ञापन / प्रायोजक बैनर चालू है" else "Ads Enabled") else (if (isHindi) "🔒 विज्ञापन बंद हैं (कोई ऐड नहीं दिखेगा)" else "Ads Disabled"),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    if (isAdsEnabledChecked) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDE7)),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFFF176))
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                if (adBannerPhotoUriInput.isNotBlank()) {
+                                    SacredAvatar(
+                                        photoUri = adBannerPhotoUriInput,
+                                        fallbackText = "प्रायोजक",
+                                        size = 70.dp,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                }
+                                Button(
+                                    onClick = { adBannerGalleryLauncher.launch("image/*") },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(if (isHindi) "🖼️ विज्ञापन बैनर फोटो अपलोड करें" else "Upload Ad Banner Photo", fontSize = 12.sp)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = adBannerPhotoUriInput,
+                            onValueChange = { adBannerPhotoUriInput = it; adSaveMsg = null },
+                            label = { Text(if (isHindi) "विज्ञापन बैनर फोटो URI" else "Ad Banner Photo URI") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = adBannerTitleInput,
+                            onValueChange = { adBannerTitleInput = it; adSaveMsg = null },
+                            label = { Text(if (isHindi) "विज्ञापन / सहयोग शीर्षक" else "Ad Title") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = adBannerDescInput,
+                            onValueChange = { adBannerDescInput = it; adSaveMsg = null },
+                            label = { Text(if (isHindi) "विज्ञापन विवरण" else "Ad Description") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = adTargetUrlInput,
+                            onValueChange = { adTargetUrlInput = it; adSaveMsg = null },
+                            label = { Text(if (isHindi) "टारगेट वेबसाइट / सहयोग लिंक" else "Target Link URL") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    if (adSaveMsg != null) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(adSaveMsg!!, color = Color(0xFF2E7D32), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                repository?.updateAdsSettings(
+                                    isAdsEnabled = isAdsEnabledChecked,
+                                    adType = adTypeInput.trim(),
+                                    bannerPhotoUri = adBannerPhotoUriInput.trim(),
+                                    title = adBannerTitleInput.trim(),
+                                    description = adBannerDescInput.trim(),
+                                    targetUrl = adTargetUrlInput.trim(),
+                                    placement = adPlacementInput.trim()
+                                )
+                                withContext(Dispatchers.Main) {
+                                    adSaveMsg = if (isHindi) "✓ विज्ञापन व प्रायोजक सेटिंग्स सुरक्षित!" else "Ads settings saved!"
+                                    Toast.makeText(context, if (isHindi) "✓ विज्ञापन सेटिंग्स सुरक्षित!" else "Settings saved!", Toast.LENGTH_SHORT).show()
+                                    onRefreshData()
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth().height(46.dp)
+                    ) {
+                        Text(if (isHindi) "💾 विज्ञापन सेटिंग्स सुरक्षित करें" else "💾 Save Ads Settings", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
         // 3.5 ASHRAM PARICHAY, HISTORY, RULES & YATRA DIARY PRIVACY (SUPER ADMIN DIRECT CONTROL)
         item {
             Card(
@@ -7353,6 +7812,11 @@ fun SuperControlTab(
 
                         Button(
                             onClick = {
+                                if (cloudUrlInput.isBlank()) {
+                                    cloudSyncStatusMsg = if (isHindi) "कृपया पहले क्लाउड सर्वर URL दर्ज करें!" else "Please enter Cloud Server URL first!"
+                                    Toast.makeText(context, cloudSyncStatusMsg, Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
                                 isCloudSyncing = true
                                 cloudSyncStatusMsg = if (isHindi) "क्लाउड से सिंक हो रहा है..." else "Syncing with cloud..."
                                 onTriggerCloudSync { success, msg ->
@@ -7360,7 +7824,7 @@ fun SuperControlTab(
                                     cloudSyncStatusMsg = msg
                                 }
                             },
-                            enabled = !isCloudSyncing && cloudUrlInput.isNotBlank(),
+                            enabled = !isCloudSyncing,
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
                             modifier = Modifier.weight(1f).height(46.dp),
                             shape = RoundedCornerShape(10.dp)

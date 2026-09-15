@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -35,6 +36,19 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.InputStream
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.window.Dialog
+
 @Composable
 fun SacredAvatar(
     photoUri: String,
@@ -43,12 +57,15 @@ fun SacredAvatar(
     size: Dp = 56.dp,
     primaryColor: Color = SaffronPrimary,
     borderColor: Color = GoldSecondary,
+    shape: Shape = CircleShape,
+    enableFullScreenPreview: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val effectiveText = name.ifBlank { fallbackText }
 
     var bitmap by remember(photoUri) { mutableStateOf<Bitmap?>(null) }
+    var showPreviewDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(photoUri) {
         if (photoUri.isBlank()) {
@@ -68,13 +85,16 @@ fun SacredAvatar(
     Box(
         modifier = modifier
             .size(size)
-            .clip(CircleShape)
-            .border(1.5.dp, borderColor, CircleShape)
+            .clip(shape)
+            .border(1.5.dp, borderColor, shape)
             .background(
                 Brush.linearGradient(
                     colors = listOf(primaryColor, primaryColor.copy(alpha = 0.85f))
                 )
-            ),
+            )
+            .clickable(enabled = enableFullScreenPreview && safeBitmap != null) {
+                showPreviewDialog = true
+            },
         contentAlignment = Alignment.Center
     ) {
         if (safeBitmap != null) {
@@ -82,9 +102,10 @@ fun SacredAvatar(
                 bitmap = safeBitmap.asImageBitmap(),
                 contentDescription = effectiveText,
                 contentScale = ContentScale.Crop,
+                alignment = BiasAlignment(0f, -0.4f), // Face centering: shifts focus up to portrait head/face
                 modifier = Modifier
                     .size(size)
-                    .clip(CircleShape)
+                    .clip(shape)
             )
         } else {
             Text(
@@ -93,6 +114,45 @@ fun SacredAvatar(
                 fontSize = (size.value * 0.32f).sp,
                 fontWeight = FontWeight.Bold
             )
+        }
+    }
+
+    if (showPreviewDialog && safeBitmap != null) {
+        Dialog(onDismissRequest = { showPreviewDialog = false }) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = effectiveText,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = Color(0xFF8B0000)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Image(
+                        bitmap = safeBitmap.asImageBitmap(),
+                        contentDescription = effectiveText,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(280.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    TextButton(onClick = { showPreviewDialog = false }) {
+                        Text("बंद करें (Close)", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
     }
 }

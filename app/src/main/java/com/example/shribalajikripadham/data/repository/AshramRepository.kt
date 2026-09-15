@@ -113,7 +113,20 @@ class AshramRepository(context: Context) {
                 ashramParichayHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_hindi")) ?: "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" } catch (e: Exception) { "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" },
                 ashramParichayEnglish = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_english")) ?: "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Shikarpur, Bulandshahr, UP), healing is 100% free under Guruji Tejveer Singh Ji." } catch (e: Exception) { "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Shikarpur, Bulandshahr, UP), healing is 100% free under Guruji Tejveer Singh Ji." },
                 ashramHistoryHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_history_hindi")) ?: "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है।" } catch (e: Exception) { "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है।" },
-                ashramRulesHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_rules_hindi")) ?: "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" } catch (e: Exception) { "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" }
+                ashramRulesHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_rules_hindi")) ?: "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" } catch (e: Exception) { "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" },
+                tokenVoicePreset = try { cursor.getString(cursor.getColumnIndexOrThrow("token_voice_preset")) ?: "GURU_CALM" } catch (e: Exception) { "GURU_CALM" },
+                bannerPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_photo_uri")) ?: "" } catch (e: Exception) { "" },
+                isBannerVisible = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_banner_visible")) == 1 } catch (e: Exception) { true },
+                bannerTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_title")) ?: "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट" } catch (e: Exception) { "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट" },
+                bannerSubtitle = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_subtitle")) ?: "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार" } catch (e: Exception) { "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार" },
+                bannerActionUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_action_url")) ?: "" } catch (e: Exception) { "" },
+                isAdsEnabled = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_ads_enabled")) == 1 } catch (e: Exception) { false },
+                adType = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_type")) ?: "CUSTOM" } catch (e: Exception) { "CUSTOM" },
+                adBannerPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_photo_uri")) ?: "" } catch (e: Exception) { "" },
+                adBannerTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_title")) ?: "आश्रम सेवा व गौशाला सहयोग" } catch (e: Exception) { "आश्रम सेवा व गौशाला सहयोग" },
+                adBannerDescription = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_description")) ?: "धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।" } catch (e: Exception) { "धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।" },
+                adTargetUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_target_url")) ?: "" } catch (e: Exception) { "" },
+                adPlacement = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_placement")) ?: "HOME_BOTTOM" } catch (e: Exception) { "HOME_BOTTOM" }
             )
         }
         cursor.close()
@@ -153,6 +166,85 @@ class AshramRepository(context: Context) {
             put("ashram_parichay_english", parichayEnglish)
             put("ashram_history_hindi", historyHindi)
             put("ashram_rules_hindi", rulesHindi)
+        }
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+        }
+        res
+    }
+
+    suspend fun updateBannerSettings(
+        photoUri: String,
+        isVisible: Boolean,
+        title: String,
+        subtitle: String,
+        actionUrl: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        try {
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN banner_photo_uri TEXT DEFAULT ''")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN is_banner_visible INTEGER DEFAULT 1")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN banner_title TEXT DEFAULT ''")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN banner_subtitle TEXT DEFAULT ''")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN banner_action_url TEXT DEFAULT ''")
+        } catch (ignored: Exception) {}
+        val cv = android.content.ContentValues().apply {
+            put("banner_photo_uri", photoUri)
+            put("is_banner_visible", if (isVisible) 1 else 0)
+            put("banner_title", title)
+            put("banner_subtitle", subtitle)
+            put("banner_action_url", actionUrl)
+        }
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+        }
+        res
+    }
+
+    suspend fun updateAdsSettings(
+        isAdsEnabled: Boolean,
+        adType: String,
+        bannerPhotoUri: String,
+        title: String,
+        description: String,
+        targetUrl: String,
+        placement: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        try {
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN is_ads_enabled INTEGER DEFAULT 0")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN ad_type TEXT DEFAULT 'CUSTOM'")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN ad_banner_photo_uri TEXT DEFAULT ''")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN ad_banner_title TEXT DEFAULT ''")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN ad_banner_description TEXT DEFAULT ''")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN ad_target_url TEXT DEFAULT ''")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN ad_placement TEXT DEFAULT 'HOME_BOTTOM'")
+        } catch (ignored: Exception) {}
+        val cv = android.content.ContentValues().apply {
+            put("is_ads_enabled", if (isAdsEnabled) 1 else 0)
+            put("ad_type", adType)
+            put("ad_banner_photo_uri", bannerPhotoUri)
+            put("ad_banner_title", title)
+            put("ad_banner_description", description)
+            put("ad_target_url", targetUrl)
+            put("ad_placement", placement)
+        }
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+        }
+        res
+    }
+
+    suspend fun updateTokenVoicePreset(voicePreset: String): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        try {
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN token_voice_preset TEXT DEFAULT 'GURU_CALM'")
+        } catch (ignored: Exception) {}
+        val cv = android.content.ContentValues().apply {
+            put("token_voice_preset", voicePreset)
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
@@ -3444,16 +3536,16 @@ class AshramRepository(context: Context) {
 
     suspend fun updateArziSettings(
         isArziLedgerLive: Boolean,
-        badiArziRate: Int,
-        chhotiArziRate: Int,
+        badiArziRate: Double,
+        chhotiArziRate: Double,
         canAdminViewArziLedger: Boolean,
         canDevoteeViewArziLedger: Boolean
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
             put("is_arzi_ledger_live", if (isArziLedgerLive) 1 else 0)
-            put("badi_arzi_rate", badiArziRate.toDouble())
-            put("chhoti_arzi_rate", chhotiArziRate.toDouble())
+            put("badi_arzi_rate", badiArziRate)
+            put("chhoti_arzi_rate", chhotiArziRate)
             put("can_admin_view_arzi_ledger", if (canAdminViewArziLedger) 1 else 0)
             put("can_devotee_view_arzi_ledger", if (canDevoteeViewArziLedger) 1 else 0)
         }
@@ -3463,6 +3555,20 @@ class AshramRepository(context: Context) {
         }
         res
     }
+
+    suspend fun updateArziSettings(
+        isArziLedgerLive: Boolean,
+        badiArziRate: Int,
+        chhotiArziRate: Int,
+        canAdminViewArziLedger: Boolean,
+        canDevoteeViewArziLedger: Boolean
+    ): Boolean = updateArziSettings(
+        isArziLedgerLive = isArziLedgerLive,
+        badiArziRate = badiArziRate.toDouble(),
+        chhotiArziRate = chhotiArziRate.toDouble(),
+        canAdminViewArziLedger = canAdminViewArziLedger,
+        canDevoteeViewArziLedger = canDevoteeViewArziLedger
+    )
 
     suspend fun getAllArziRecords(darbarDate: String = ""): List<ArziDistributionRecord> = withContext(Dispatchers.IO) {
         val db = dbHelper.readableDatabase
