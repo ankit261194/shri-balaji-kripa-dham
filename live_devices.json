@@ -1,7 +1,18 @@
 {
   "total_devices": 4,
-  "updated_at": 1789446668833,
+  "updated_at": 1789447434330,
   "devices": [
+    {
+      "device_id": "071cc3935458db55e8a62e2ba0a796cf2ba4f402cbad7063b30b20f6865f44cd",
+      "device_model": "Vivo V2153",
+      "user_name": "मुख्य व्यवस्थापक (Super Admin)",
+      "phone_number": "8533955333",
+      "city": "",
+      "app_version": "2.29.0",
+      "last_seen_at": 1789447434330,
+      "open_count": 8,
+      "role": "ADMIN"
+    },
     {
       "device_id": "2b01861028f80b2cdbb506932fe1ec27a8f041d05d01534805212b64de18d93a",
       "device_model": "motorola edge 40 neo",
@@ -23,17 +34,6 @@
       "last_seen_at": 1789440311555,
       "open_count": 9,
       "role": "USER"
-    },
-    {
-      "device_id": "071cc3935458db55e8a62e2ba0a796cf2ba4f402cbad7063b30b20f6865f44cd",
-      "device_model": "Vivo V2153",
-      "user_name": "मुख्य व्यवस्थापक (Super Admin)",
-      "phone_number": "8533955333",
-      "city": "",
-      "app_version": "2.29.0",
-      "last_seen_at": 1789395759885,
-      "open_count": 7,
-      "role": "ADMIN"
     },
     {
       "device_id": "dc672a70b799db25e71d9f0dba57bffb8de13aab787448bb2738322b243fc66c",
