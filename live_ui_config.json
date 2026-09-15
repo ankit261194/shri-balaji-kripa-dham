@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-15T04:33:43Z",
+  "updated_at": "2026-09-15T04:37:22Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -30,7 +30,7 @@
     "allowed_radius_meters": 1500,
     "is_geofence_enforced": true,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789446823580
+    "updated_at": 1789447042834
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -40,7 +40,7 @@
     "is_aarti_timings_visible": false,
     "is_guruji_info_visible": true,
     "is_emergency_notice_visible": true,
-    "scheduled_token_open_timestamp": 1789268400000,
+    "scheduled_token_open_timestamp": 1789873200000,
     "max_daily_tokens": 0,
     "sunday_token_banner_title": "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन",
     "sunday_token_banner_text": "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।",
