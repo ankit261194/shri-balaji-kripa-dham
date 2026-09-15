@@ -11,11 +11,11 @@
     "2": {
       "admin_id": "2",
       "role": "SEVADAR",
-      "device_id": "071cc3935458db55e8a62e2ba0a796cf2ba4f402cbad7063b30b20f6865f44cd",
-      "device_model": "Vivo V2153",
-      "session_id": "4395cc00-989f-4ea0-8647-866695614252",
-      "logged_in_at": 1789447619268
+      "device_id": "2b01861028f80b2cdbb506932fe1ec27a8f041d05d01534805212b64de18d93a",
+      "device_model": "motorola edge 40 neo",
+      "session_id": "d90114ea-2b59-4dcf-8a19-9e6eec99239c",
+      "logged_in_at": 1789460576286
     }
   },
-  "last_updated_at": 1789457716530
+  "last_updated_at": 1789460576286
 }
