@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 44,
-  "latest_version_name": "2.34.2",
+  "latest_version_code": 45,
+  "latest_version_name": "2.34.3",
   "update_notes_hindi": "सुरक्षा पैच एवं सिस्टम स्थिरता सुधार (Security Patch Update)",
   "update_notes_english": "Security patch and system performance update",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.34.2/ShriBalajiKripaDham-release.apk",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.34.3/ShriBalajiKripaDham-release.apk",
   "webhook_url": "",
   "is_force_update": true
 }

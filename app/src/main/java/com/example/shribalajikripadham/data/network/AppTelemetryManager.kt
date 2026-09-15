@@ -65,11 +65,6 @@ object AppTelemetryManager {
                 presence = presence
             )
 
-            // 2. Post to GitHub Live Sync repo
-            try {
-                GitHubLiveSyncManager.recordDeviceHeartbeat(context, presence)
-            } catch (e: Exception) {}
-
             // 2. Post to central Google Sheet Webhook if configured
             val webhookUrl = GoogleSheetTokenSyncManager.getWebhookUrl(context)
             if (webhookUrl.isBlank() || !webhookUrl.startsWith("https://script.google.com/")) {

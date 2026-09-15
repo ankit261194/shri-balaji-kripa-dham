@@ -244,6 +244,26 @@ object AppUpdateManager {
                 return
             }
 
+            // Ensure the file is readable by the Android OS Package Installer
+            file.setReadable(true, false)
+
+            // Validate that the file is a complete, uncorrupted APK archive before launching installer
+            val packageInfo = try {
+                context.packageManager.getPackageArchiveInfo(file.absolutePath, 0)
+            } catch (e: Exception) {
+                null
+            }
+
+            if (packageInfo == null) {
+                Toast.makeText(
+                    context,
+                    "APK फ़ाइल अमान्य या अधूरी है, कृपया पुनः डाउनलोड करें (Incomplete or corrupt APK file)",
+                    Toast.LENGTH_LONG
+                ).show()
+                try { file.delete() } catch (_: Exception) {}
+                return
+            }
+
             if (!hasInstallPermission(context)) {
                 requestInstallPermission(context)
                 Toast.makeText(
@@ -259,10 +279,38 @@ object AppUpdateManager {
                 "${context.packageName}.fileprovider",
                 file
             )
+
             val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/vnd.android.package-archive")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
             }
+
+            // Explicitly grant URI read permissions to all intent handlers and system package installers
+            val resolveInfoList = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.queryIntentActivities(
+                    intent,
+                    PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong())
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            }
+
+            for (resolveInfo in resolveInfoList) {
+                val targetPkg = resolveInfo.activityInfo.packageName
+                try {
+                    context.grantUriPermission(targetPkg, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                } catch (_: Exception) {}
+            }
+
+            listOf("com.google.android.packageinstaller", "com.android.packageinstaller").forEach { pkg ->
+                try {
+                    context.grantUriPermission(pkg, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                } catch (_: Exception) {}
+            }
+
             context.startActivity(intent)
         } catch (e: Exception) {
             Toast.makeText(context, "इन्स्टॉल त्रुटि: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
@@ -292,22 +340,35 @@ object AppUpdateManager {
     ) = withContext(Dispatchers.IO) {
         val finalUrl = if (downloadUrl.isNotBlank()) downloadUrl.trim() else DEFAULT_APK_URL
 
+        // Choose accessible external files directory so system Package Installer can read the file
+        val targetDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+            ?: context.externalCacheDir
+            ?: context.cacheDir
+
         // Check if pre-existing release APK is available locally in Downloads folder
         try {
             val publicDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             val localCandidate = File(publicDownloads, "ShriBalajiKripaDham-release.apk")
             if (localCandidate.exists() && localCandidate.length() > 5000000L && downloadUrl.isBlank()) {
-                withContext(Dispatchers.Main) {
-                    onProgress(100, localCandidate.length(), localCandidate.length())
-                    onSuccess(localCandidate)
+                val valid = context.packageManager.getPackageArchiveInfo(localCandidate.absolutePath, 0) != null
+                if (valid) {
+                    withContext(Dispatchers.Main) {
+                        onProgress(100, localCandidate.length(), localCandidate.length())
+                        onSuccess(localCandidate)
+                    }
+                    return@withContext
                 }
-                return@withContext
             }
         } catch (_: Exception) {}
 
         try {
-            // Clean up any old cached APK files from cacheDir to ensure fresh download
+            // Clean up any old cached APK files
             try {
+                targetDir.listFiles()?.forEach { f ->
+                    if (f.name.endsWith(".apk", ignoreCase = true)) {
+                        f.delete()
+                    }
+                }
                 context.cacheDir.listFiles()?.forEach { f ->
                     if (f.name.endsWith(".apk", ignoreCase = true)) {
                         f.delete()
@@ -315,7 +376,7 @@ object AppUpdateManager {
                 }
             } catch (_: Exception) {}
 
-            val targetFile = File(context.cacheDir, "ShriBalajiKripaDham_update.apk")
+            val targetFile = File(targetDir, "ShriBalajiKripaDham_update.apk")
             if (targetFile.exists()) {
                 targetFile.delete()
             }
@@ -323,7 +384,7 @@ object AppUpdateManager {
             var currentUrl = finalUrl
             var connection: HttpURLConnection? = null
             var redirects = 0
-            val maxRedirects = 5
+            val maxRedirects = 6
 
             while (redirects < maxRedirects) {
                 val urlObj = URL(currentUrl)
@@ -334,7 +395,7 @@ object AppUpdateManager {
                     defaultUseCaches = false
                     instanceFollowRedirects = true
                     requestMethod = "GET"
-                    setRequestProperty("User-Agent", "ShriBalajiKripaDham-Updater/2.0")
+                    setRequestProperty("User-Agent", "ShriBalajiKripaDham-Updater/2.34")
                     setRequestProperty("Accept-Encoding", "identity")
                     setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
                 }
@@ -396,6 +457,26 @@ object AppUpdateManager {
             inputStream.close()
             conn.disconnect()
 
+            // Verify download completeness and validity
+            if (totalBytes > 0 && downloadedBytes < totalBytes) {
+                targetFile.delete()
+                throw Exception("डाउनलोड अधूरा रह गया (${formatFileSize(downloadedBytes)} / ${formatFileSize(totalBytes)})")
+            }
+
+            if (targetFile.length() < 5000000L) {
+                targetFile.delete()
+                throw Exception("अमान्य APK फ़ाइल आकार (${formatFileSize(targetFile.length())})")
+            }
+
+            targetFile.setReadable(true, false)
+
+            // Validate that the package is intact
+            val packageArchive = context.packageManager.getPackageArchiveInfo(targetFile.absolutePath, 0)
+            if (packageArchive == null) {
+                targetFile.delete()
+                throw Exception("डाउनलोड की गई APK पैकेज अमान्य या दूषित है (Invalid APK package)")
+            }
+
             withContext(Dispatchers.Main) {
                 onProgress(100, targetFile.length(), targetFile.length())
                 onSuccess(targetFile)
@@ -407,10 +488,13 @@ object AppUpdateManager {
                 val publicDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 val localCandidate = File(publicDownloads, "ShriBalajiKripaDham-release.apk")
                 if (localCandidate.exists() && localCandidate.length() > 5000000L) {
-                    resolvedLocal = true
-                    withContext(Dispatchers.Main) {
-                        onProgress(100, localCandidate.length(), localCandidate.length())
-                        onSuccess(localCandidate)
+                    val valid = context.packageManager.getPackageArchiveInfo(localCandidate.absolutePath, 0) != null
+                    if (valid) {
+                        resolvedLocal = true
+                        withContext(Dispatchers.Main) {
+                            onProgress(100, localCandidate.length(), localCandidate.length())
+                            onSuccess(localCandidate)
+                        }
                     }
                 }
             } catch (_: Exception) {}
@@ -420,6 +504,22 @@ object AppUpdateManager {
                     onError(e.localizedMessage ?: "नेटवर्क डाउनलोड त्रुटि (Network Download Error)")
                 }
             }
+        }
+    }
+
+    /**
+     * Opens the direct APK download link in external system browser (Chrome/default browser)
+     * as a 100% reliable alternative when phone settings block in-app package installations.
+     */
+    fun openInBrowser(context: Context, downloadUrl: String) {
+        try {
+            val finalUrl = if (downloadUrl.isNotBlank()) downloadUrl.trim() else DEFAULT_APK_URL
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(finalUrl)).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "ब्राउज़र खोलने में असमर्थ: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
         }
     }
 

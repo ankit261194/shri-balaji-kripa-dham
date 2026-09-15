@@ -16,3 +16,4 @@ local.properties
 *.log
 release_binaries/
 *.apk
+uploads/

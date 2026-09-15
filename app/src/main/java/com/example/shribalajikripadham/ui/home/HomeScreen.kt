@@ -1753,6 +1753,28 @@ fun HomeScreen(
                             }
                         }
 
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedButton(
+                            onClick = {
+                                AppUpdateManager.openInBrowser(context, settings.apkDownloadUrl)
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(42.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🌐", fontSize = 15.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isHindi) "ब्राउज़र से डाउनलोड करें" else "Download via Browser",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = currentTheme.primaryColor
+                                )
+                            }
+                        }
+
                         if (!settings.isForceUpdate) {
                             Spacer(modifier = Modifier.height(8.dp))
                             TextButton(
