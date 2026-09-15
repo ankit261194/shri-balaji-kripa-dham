@@ -1,16 +1,16 @@
 {
   "total_devices": 4,
-  "updated_at": 1789447574138,
+  "updated_at": 1789447623709,
   "devices": [
     {
       "device_id": "071cc3935458db55e8a62e2ba0a796cf2ba4f402cbad7063b30b20f6865f44cd",
       "device_model": "Vivo V2153",
-      "user_name": "मुख्य व्यवस्थापक (Super Admin)",
-      "phone_number": "8533955333",
+      "user_name": "रवि कुमार गर्ग",
+      "phone_number": "9758510501",
       "city": "",
       "app_version": "2.31.0",
-      "last_seen_at": 1789447574138,
-      "open_count": 10,
+      "last_seen_at": 1789447623708,
+      "open_count": 11,
       "role": "ADMIN"
     },
     {
