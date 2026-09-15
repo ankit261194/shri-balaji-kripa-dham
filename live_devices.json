@@ -1,7 +1,18 @@
 {
-  "total_devices": 3,
-  "updated_at": 1789414086236,
+  "total_devices": 4,
+  "updated_at": 1789440164362,
   "devices": [
+    {
+      "device_id": "255306e9bddc87d4d426d2fb4c3264b3e3383758635aec5f5d9c01142cc54335",
+      "device_model": "Samsung SM-G9860",
+      "user_name": "",
+      "phone_number": "",
+      "city": "",
+      "app_version": "2.31.0",
+      "last_seen_at": 1789440164362,
+      "open_count": 1,
+      "role": "USER"
+    },
     {
       "device_id": "2b01861028f80b2cdbb506932fe1ec27a8f041d05d01534805212b64de18d93a",
       "device_model": "motorola edge 40 neo",
