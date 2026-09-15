@@ -3,10 +3,10 @@
   "total_badi": 4,
   "total_chhoti": 3,
   "total_amount": 550,
-  "total_paid": 0,
-  "total_pending": 550,
-  "updated_at": 1789446917959,
-  "updated_by": "SUPER_ADMIN",
+  "total_paid": 550,
+  "total_pending": 0,
+  "updated_at": 1789446949850,
+  "updated_by": "Super Admin",
   "arzi_records": [
     {
       "id": 1,
@@ -17,7 +17,7 @@
       "big_arzi_rate": 100,
       "small_arzi_rate": 50,
       "total_amount": 550,
-      "is_paid": false,
+      "is_paid": true,
       "payment_mode": "CASH",
       "recorded_by": "SUPER_ADMIN",
       "darbar_date": "2026-09-14",
