@@ -1569,7 +1569,7 @@ fun MahabaliHeroLayout(
                 title = if (isHindi) "दैनिक आरती का समय" else "Daily Aarti Timings",
                 subtitle = settings.darbarTimings.ifEmpty { "प्रातः 8:00 बजे एवं संध्या 7:00 बजे" },
                 accentColor = currentTheme.secondaryColor,
-                onClick = {}
+                onClick = onNavigateToInfo
             )
             if (dynamicEvents.isNotEmpty()) {
                 for (ev in dynamicEvents.take(3)) {
@@ -1578,7 +1578,7 @@ fun MahabaliHeroLayout(
                         title = ev.titleHindi.ifEmpty { ev.titleEnglish },
                         subtitle = if (isHindi) ev.dateDescriptionHindi.ifEmpty { ev.detailsHindi } else ev.dateDescriptionEnglish.ifEmpty { ev.detailsEnglish },
                         accentColor = Color(0xFFE65100),
-                        onClick = {}
+                        onClick = onNavigateToInfo
                     )
                 }
             }
@@ -1587,7 +1587,7 @@ fun MahabaliHeroLayout(
                 title = if (isHindi) "पूज्य गुरुजी भेंट व आशीर्वाद" else "Revered Guruji Blessing Hours",
                 subtitle = settings.gurujiName.ifEmpty { "पूज्य गुरुजी" },
                 accentColor = Color(0xFFC2185B),
-                onClick = {}
+                onClick = onNavigateToInfo
             )
         }
 
@@ -1777,14 +1777,14 @@ fun BhaktiAccordionLayout(
                 title = if (isHindi) "आरती एवं दरबार समय सारणी" else "Aarti & Darbar Timings",
                 subtitle = settings.darbarTimings.ifEmpty { "प्रातः 8:00 बजे व संध्या 7:00 बजे" },
                 accentColor = currentTheme.secondaryColor,
-                onClick = {}
+                onClick = onNavigateToInfo
             )
             AccordionOptionRow(
                 icon = "👑",
                 title = if (isHindi) "पूज्य गुरुजी का सानिध्य व दर्शन" else "Revered Guruji Blessings",
                 subtitle = settings.gurujiName.ifEmpty { "पूज्य गुरुजी" },
                 accentColor = Color(0xFFC2185B),
-                onClick = {}
+                onClick = onNavigateToInfo
             )
             AccordionOptionRow(
                 icon = "📜",
@@ -2034,14 +2034,14 @@ fun MandirParikramaLayout(
                         title = if (isHindi) "आरती का पावन समय" else "Sacred Aarti Hours",
                         subtitle = settings.darbarTimings.ifEmpty { "प्रातः 8:00 बजे एवं संध्या 7:00 बजे" },
                         accentColor = currentTheme.secondaryColor,
-                        onClick = {}
+                        onClick = onNavigateToInfo
                     )
                     AccordionOptionRow(
                         icon = "👑",
                         title = if (isHindi) "पूज्य गुरुजी का आशीर्वाद" else "Guruji Blessings",
                         subtitle = settings.gurujiName.ifEmpty { "पूज्य गुरुजी" },
                         accentColor = Color(0xFFC2185B),
-                        onClick = {}
+                        onClick = onNavigateToInfo
                     )
                 }
             }
@@ -2221,7 +2221,7 @@ fun GoldenLotusLayout(
                 title = if (isHindi) "पावन आरती समय" else "Aarti Timings",
                 subtitle = settings.darbarTimings.ifEmpty { "प्रातः 8:00 बजे एवं संध्या 7:00 बजे" },
                 accentColor = currentTheme.secondaryColor,
-                onClick = {}
+                onClick = onNavigateToInfo
             )
             AccordionOptionRow(
                 icon = "🚌",
@@ -2397,14 +2397,14 @@ fun SiddhaPeethPortalLayout(
                     title = if (isHindi) "आरती एवं दरबार समय सारणी" else "Aarti & Darbar Timings",
                     subtitle = settings.darbarTimings.ifEmpty { "प्रातः 8:00 बजे व संध्या 7:00 बजे" },
                     accentColor = currentTheme.secondaryColor,
-                    onClick = {}
+                    onClick = onNavigateToInfo
                 )
                 AccordionOptionRow(
                     icon = "👑",
                     title = if (isHindi) "पूज्य गुरुजी का सानिध्य व दर्शन" else "Revered Guruji Blessings",
                     subtitle = settings.gurujiName.ifEmpty { "पूज्य गुरुजी" },
                     accentColor = Color(0xFFC2185B),
-                    onClick = {}
+                    onClick = onNavigateToInfo
                 )
             }
         }
