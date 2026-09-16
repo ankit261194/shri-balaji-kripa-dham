@@ -14,6 +14,8 @@ data class LocationConfigDto(
     val longitude: Double = 78.1460410,
     val allowedRadiusMeters: Double = 200.0,
     val isGeofenceEnforced: Boolean = true,
+    val isOutstationAdvanceAllowed: Boolean = true,
+    val outstationMinDistanceKm: Double = 30.0,
     val locationName: String = "श्री बालाजी कृपा धाम",
     val updatedAt: Long = System.currentTimeMillis()
 )
@@ -136,6 +138,8 @@ data class LiveUiConfigDto(
         locObj.put("longitude", locationConfig.longitude)
         locObj.put("allowed_radius_meters", locationConfig.allowedRadiusMeters)
         locObj.put("is_geofence_enforced", locationConfig.isGeofenceEnforced)
+        locObj.put("is_outstation_advance_allowed", locationConfig.isOutstationAdvanceAllowed)
+        locObj.put("outstation_min_distance_km", locationConfig.outstationMinDistanceKm)
         locObj.put("location_name", locationConfig.locationName)
         locObj.put("updated_at", locationConfig.updatedAt)
         root.put("location_config", locObj)
@@ -245,6 +249,8 @@ data class LiveUiConfigDto(
                         longitude = locObj.optDouble("longitude", 78.1460410),
                         allowedRadiusMeters = locObj.optDouble("allowed_radius_meters", 200.0).coerceIn(10.0, 50000.0),
                         isGeofenceEnforced = locObj.optBoolean("is_geofence_enforced", true),
+                        isOutstationAdvanceAllowed = locObj.optBoolean("is_outstation_advance_allowed", true),
+                        outstationMinDistanceKm = locObj.optDouble("outstation_min_distance_km", 30.0),
                         locationName = locObj.optString("location_name", "श्री बालाजी कृपा धाम"),
                         updatedAt = locObj.optLong("updated_at", 0L)
                     )

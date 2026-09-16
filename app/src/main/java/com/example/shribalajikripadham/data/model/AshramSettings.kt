@@ -7,7 +7,7 @@ data class AshramSettings(
     val address: String = "Gram Dungra Jaat, Bulandshahr, UP",
     val latitude: Double = 28.3972915,
     val longitude: Double = 78.1460410,
-    val allowedRadiusMeters: Double = 1500.0,
+    val allowedRadiusMeters: Double = 200.0,
     val runningTokenNumber: Int = 1,
     val isDarbarActive: Boolean = true,
     val darbarDate: String = "",
@@ -25,6 +25,8 @@ data class AshramSettings(
     val isEmergencyNoticeVisible: Boolean = true,
     val scheduledTokenOpenTimestamp: Long = 0L, // 0 means immediate/always open during Darbar
     val isGeofenceEnforced: Boolean = true,
+    val isOutstationAdvanceAllowed: Boolean = true,
+    val outstationMinDistanceKm: Double = 30.0,
     // In-app auto update system configuration
     val latestVersionCode: Int = 3,
     val latestVersionName: String = "2.34.0",

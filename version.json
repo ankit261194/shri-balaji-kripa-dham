@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 47,
-  "latest_version_name": "2.35.0",
-  "update_notes_hindi": "Google ML Kit देवनागरी OCR, फेस बायोमेट्रिक्स, UPI फ्रॉड प्रोटेक्शन एवं लाइव Google Sheet बही-खाता",
-  "update_notes_english": "Google ML Kit OCR, Face Biometrics, UPI Fraud Protection and Live Google Sheet Sync",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.35.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 48,
+  "latest_version_name": "2.35.1",
+  "update_notes_hindi": "200m स्थायी आश्रम परिधि फिक्स, 30 किमी बाहरी भक्त कंट्रोल स्विच एवं क्विक दूरी प्रीसेट बटन",
+  "update_notes_english": "Fixed 200m geofence lock, added 30km outstation switch and quick distance presets",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.35.1/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

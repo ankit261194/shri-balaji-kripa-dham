@@ -80,6 +80,8 @@ class AshramRepository(context: Context) {
                 isEmergencyNoticeVisible = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_emergency_notice_visible")) == 1 } catch (e: Exception) { true },
                 scheduledTokenOpenTimestamp = try { cursor.getLong(cursor.getColumnIndexOrThrow("scheduled_token_open_timestamp")) } catch (e: Exception) { 0L },
                 isGeofenceEnforced = cursor.getInt(cursor.getColumnIndexOrThrow("is_geofence_enforced")) == 1,
+                isOutstationAdvanceAllowed = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_outstation_advance_allowed")) == 1 } catch (e: Exception) { true },
+                outstationMinDistanceKm = try { cursor.getDouble(cursor.getColumnIndexOrThrow("outstation_min_distance_km")) } catch (e: Exception) { 30.0 },
                 latestVersionCode = cursor.getInt(cursor.getColumnIndexOrThrow("latest_version_code")),
                 latestVersionName = cursor.getString(cursor.getColumnIndexOrThrow("latest_version_name")),
                 updateNotes = cursor.getString(cursor.getColumnIndexOrThrow("update_notes")),
@@ -368,18 +370,23 @@ class AshramRepository(context: Context) {
         newLat: Double,
         newLong: Double,
         newRadius: Double,
-        isGeofenceEnforced: Boolean
+        isGeofenceEnforced: Boolean,
+        isOutstationAdvanceAllowed: Boolean = true,
+        outstationMinDistanceKm: Double = 30.0
     ): Boolean = withContext(Dispatchers.IO) {
         if (!requestingAdmin.canChangeLocation && requestingAdmin.role != AdminRole.SUPER_ADMIN) {
             throw SecurityException("Unauthorized: Admin lacks 'can_change_location' permission.")
         }
         val db = dbHelper.writableDatabase
         val clampedRadius = newRadius.coerceIn(10.0, 50000.0)
+        val clampedOutstationKm = outstationMinDistanceKm.coerceIn(1.0, 500.0)
         val cv = ContentValues().apply {
             put("latitude", newLat)
             put("longitude", newLong)
             put("allowed_radius_meters", clampedRadius)
             put("is_geofence_enforced", if (isGeofenceEnforced) 1 else 0)
+            put("is_outstation_advance_allowed", if (isOutstationAdvanceAllowed) 1 else 0)
+            put("outstation_min_distance_km", clampedOutstationKm)
         }
         val updated = db.update("ashram_settings", cv, "id = 1", null) > 0
 
@@ -398,6 +405,8 @@ class AshramRepository(context: Context) {
                         longitude = newLong,
                         allowedRadiusMeters = clampedRadius,
                         isGeofenceEnforced = isGeofenceEnforced,
+                        isOutstationAdvanceAllowed = isOutstationAdvanceAllowed,
+                        outstationMinDistanceKm = clampedOutstationKm,
                         updatedAt = System.currentTimeMillis()
                     )
                 )
@@ -656,13 +665,21 @@ class AshramRepository(context: Context) {
                 val isPermitted = GeofenceLocationManager.isTokenDistancePermitted(
                     distanceMeters = distance,
                     isGeofenceEnforced = true,
-                    allowedRadiusMeters = settings.allowedRadiusMeters.coerceAtLeast(10.0)
+                    allowedRadiusMeters = settings.allowedRadiusMeters.coerceAtLeast(10.0),
+                    isOutstationAdvanceAllowed = settings.isOutstationAdvanceAllowed,
+                    outstationMinDistanceKm = settings.outstationMinDistanceKm
                 )
                 if (!isPermitted) {
                     val km = String.format(java.util.Locale.US, "%.1f", distance / 1000.0)
                     val allowedM = settings.allowedRadiusMeters.toInt()
                     val radiusDesc = if (allowedM >= 1000) "${String.format(java.util.Locale.US, "%.1f", allowedM / 1000.0)} किमी" else "$allowedM मीटर"
-                    throw SecurityException("⚠️ आश्रम दूरी नियम: 30 किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।")
+                    val outstationKm = settings.outstationMinDistanceKm.toInt()
+                    val msg = if (settings.isOutstationAdvanceAllowed) {
+                        "⚠️ आश्रम दूरी नियम: ${outstationKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।"
+                    } else {
+                        "⚠️ आश्रम दूरी नियम: टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम परिसर में आकर टोकन जनरेट करें।"
+                    }
+                    throw SecurityException(msg)
                 }
             }
         }
@@ -2400,6 +2417,8 @@ class AshramRepository(context: Context) {
             put("latitude", s.latitude)
             put("longitude", s.longitude)
             put("allowed_radius_meters", s.allowedRadiusMeters)
+            put("is_outstation_advance_allowed", s.isOutstationAdvanceAllowed)
+            put("outstation_min_distance_km", s.outstationMinDistanceKm)
             put("running_token_number", s.runningTokenNumber)
             put("is_darbar_active", s.isDarbarActive)
             put("darbar_date", s.darbarDate)
@@ -2508,6 +2527,8 @@ class AshramRepository(context: Context) {
                     if (s.has("latitude")) put("latitude", s.getDouble("latitude"))
                     if (s.has("longitude")) put("longitude", s.getDouble("longitude"))
                     if (s.has("allowed_radius_meters")) put("allowed_radius_meters", s.getDouble("allowed_radius_meters"))
+                    if (s.has("is_outstation_advance_allowed")) put("is_outstation_advance_allowed", if (s.getBoolean("is_outstation_advance_allowed")) 1 else 0)
+                    if (s.has("outstation_min_distance_km")) put("outstation_min_distance_km", s.getDouble("outstation_min_distance_km"))
                     if (s.has("running_token_number")) put("running_token_number", s.getInt("running_token_number"))
                     if (s.has("is_darbar_active")) put("is_darbar_active", if (s.getBoolean("is_darbar_active")) 1 else 0)
                     if (s.has("darbar_date")) put("darbar_date", s.getString("darbar_date"))
@@ -2781,6 +2802,8 @@ class AshramRepository(context: Context) {
                     cv.put("longitude", loc.longitude)
                     cv.put("allowed_radius_meters", loc.allowedRadiusMeters.coerceIn(10.0, 50000.0))
                     cv.put("is_geofence_enforced", if (loc.isGeofenceEnforced) 1 else 0)
+                    cv.put("is_outstation_advance_allowed", if (loc.isOutstationAdvanceAllowed) 1 else 0)
+                    cv.put("outstation_min_distance_km", loc.outstationMinDistanceKm.coerceIn(1.0, 500.0))
                 }
 
                 if (remoteConfig.activeUiLayout.isNotBlank()) {
@@ -2930,6 +2953,8 @@ class AshramRepository(context: Context) {
                 longitude = currentSettings.longitude,
                 allowedRadiusMeters = currentSettings.allowedRadiusMeters,
                 isGeofenceEnforced = currentSettings.isGeofenceEnforced,
+                isOutstationAdvanceAllowed = currentSettings.isOutstationAdvanceAllowed,
+                outstationMinDistanceKm = currentSettings.outstationMinDistanceKm,
                 locationName = currentSettings.ashramName,
                 updatedAt = System.currentTimeMillis()
             ),

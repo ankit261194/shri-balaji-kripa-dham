@@ -208,6 +208,8 @@ fun AdminDashboardScreen(
     var longInput by remember { mutableStateOf("") }
     var radiusInput by remember { mutableStateOf("") }
     var geofenceEnforced by remember { mutableStateOf(true) }
+    var isOutstationAllowed by remember { mutableStateOf(true) }
+    var outstationKmInput by remember { mutableStateOf("30") }
     var locationSuccessMsg by remember { mutableStateOf<String?>(null) }
     var locationErrorMsg by remember { mutableStateOf<String?>(null) }
 
@@ -347,8 +349,10 @@ fun AdminDashboardScreen(
             settings = s
             latInput = s.latitude.toString()
             longInput = s.longitude.toString()
-            radiusInput = s.allowedRadiusMeters.toString()
+            radiusInput = if (s.allowedRadiusMeters % 1.0 == 0.0) s.allowedRadiusMeters.toInt().toString() else s.allowedRadiusMeters.toString()
             geofenceEnforced = s.isGeofenceEnforced
+            isOutstationAllowed = s.isOutstationAdvanceAllowed
+            outstationKmInput = if (s.outstationMinDistanceKm % 1.0 == 0.0) s.outstationMinDistanceKm.toInt().toString() else s.outstationMinDistanceKm.toString()
 
             customAshramName = s.ashramName
             customGurujiName = s.gurujiName
@@ -1310,6 +1314,10 @@ fun AdminDashboardScreen(
                                 onRadiusChange = { radiusInput = it },
                                 isEnforced = geofenceEnforced,
                                 onEnforcedChange = { geofenceEnforced = it },
+                                isOutstationAllowed = isOutstationAllowed,
+                                onOutstationAllowedChange = { isOutstationAllowed = it },
+                                outstationMinKm = outstationKmInput,
+                                onOutstationMinKmChange = { outstationKmInput = it },
                                 successMsg = locationSuccessMsg,
                                 errorMsg = locationErrorMsg,
                                 onSave = {
@@ -1318,20 +1326,20 @@ fun AdminDashboardScreen(
                                             val latVal = latInput.toDouble()
                                             val longVal = longInput.toDouble()
                                             val radVal = radiusInput.toDouble().coerceIn(10.0, 50000.0)
-                                            repository.updateAshramLocation(admin, latVal, longVal, radVal, geofenceEnforced)
-                                            try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
-                                        try {
-                                            com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishBroadcastNoticeToCloud(
-                                                context = context,
-                                                title = notifTitle,
-                                                message = notifMsg,
-                                                priority = notifPriority,
-                                                sentBy = admin.name
+                                            val outKmVal = outstationKmInput.toDoubleOrNull()?.coerceIn(1.0, 500.0) ?: 30.0
+                                            repository.updateAshramLocation(
+                                                requestingAdmin = admin,
+                                                newLat = latVal,
+                                                newLong = longVal,
+                                                newRadius = radVal,
+                                                isGeofenceEnforced = geofenceEnforced,
+                                                isOutstationAdvanceAllowed = isOutstationAllowed,
+                                                outstationMinDistanceKm = outKmVal
                                             )
-                                        } catch (e: Exception) {
-                                            e.printStackTrace()
-                                        }
-                                            locationSuccessMsg = if (isHindi) "✓ नई GPS लोकेशन व परिधि सुरक्षित व क्लाउड द्वारा सभी भक्तों के फोन पर लाइव अपडेट हो गई!" else "GPS coordinates & radius updated & broadcast to all users live!"
+                                            try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
+                                            val radText = if (radVal >= 1000.0) "${String.format(java.util.Locale.US, "%.1f", radVal/1000.0)}km" else "${radVal.toInt()}m"
+                                            val outText = "${outKmVal.toInt()}km"
+                                            locationSuccessMsg = if (isHindi) "✓ GPS लोकेशन, परिधि ($radText) व बाहरी भक्त नियम ($outText) सुरक्षित व क्लाउड द्वारा सभी भक्तों के फोन पर लाइव अपडेट हो गई!" else "GPS coordinates, radius ($radText) & outstation rule ($outText) updated & broadcast to all users live!"
                                             locationErrorMsg = null
                                             Toast.makeText(context, locationSuccessMsg, Toast.LENGTH_LONG).show()
                                             refreshData()
@@ -4943,6 +4951,10 @@ fun LocationConfigTab(
     onRadiusChange: (String) -> Unit,
     isEnforced: Boolean,
     onEnforcedChange: (Boolean) -> Unit,
+    isOutstationAllowed: Boolean,
+    onOutstationAllowedChange: (Boolean) -> Unit,
+    outstationMinKm: String,
+    onOutstationMinKmChange: (String) -> Unit,
     successMsg: String?,
     errorMsg: String?,
     onSave: () -> Unit
@@ -4954,6 +4966,7 @@ fun LocationConfigTab(
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Card 1: Ashram GPS Coordinates & Geofence Radius
         Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
@@ -5059,18 +5072,18 @@ fun LocationConfigTab(
                         val clean = input.filter { it.isDigit() || it == '.' }
                         val num = clean.toDoubleOrNull()
                         if (num != null && num > 50000.0) {
-                            onRadiusChange("50000.0")
+                            onRadiusChange("50000")
                         } else {
                             onRadiusChange(clean)
                         }
                     },
-                    label = { Text(if (isHindi) "स्वीकृत परिधि (मीटर में, उदा. 200m, 500m, 2000m)" else "Allowed Radius (meters, e.g. 200m, 500m, 2000m)") },
+                    label = { Text(if (isHindi) "स्वीकृत आश्रम परिधि (मीटर में, उदा. 200m, 500m)" else "Allowed Radius (meters, e.g. 200m, 500m)") },
                     supportingText = {
                         Text(
                             text = if (isHindi)
-                                "नियम: स्थानीय भक्तों के लिए वैध परिधि (10m से 50,000m / 50km तक सेट कर सकते हैं)। बाहरी भक्तों (30km+) को स्वतः रिमोट बुकिंग की अनुमति है।"
+                                "स्थानीय भक्तों के लिए वैध भौतिक परिधि (डिफ़ॉल्ट 200m)। यहाँ जो भी परिधि सेट करेंगे वह स्थायी रहेगी और कभी अपने आप 1500m नहीं बदलेगी।"
                             else
-                                "Rule: Devotees within this radius can book local tokens (10m - 50,000m / 50km). Outstation devotees (30km+) are allowed remote booking.",
+                                "Permitted local radius (default 200m). Will stay locked permanently and never revert to 1500m.",
                             fontSize = 11.sp,
                             color = MaroonAccent
                         )
@@ -5082,7 +5095,7 @@ fun LocationConfigTab(
                 if (canChangeLocation) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = if (isHindi) "⚡ त्वरित परिधि चुनें:" else "⚡ Quick Radius Presets:",
+                        text = if (isHindi) "⚡ त्वरित परिधि चुनें (मीटर):" else "⚡ Quick Radius Presets (Meters):",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.DarkGray
@@ -5093,19 +5106,20 @@ fun LocationConfigTab(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         OutlinedButton(
-                            onClick = { onRadiusChange("100.0") },
+                            onClick = { onRadiusChange("100") },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("100m", fontSize = 11.sp)
                         }
                         OutlinedButton(
-                            onClick = { onRadiusChange("200.0") },
-                            modifier = Modifier.weight(1f)
+                            onClick = { onRadiusChange("200") },
+                            modifier = Modifier.weight(1f),
+                            colors = if (radius == "200" || radius == "200.0") ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFE8F5E9)) else ButtonDefaults.outlinedButtonColors()
                         ) {
-                            Text("200m", fontSize = 11.sp)
+                            Text("200m", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                         OutlinedButton(
-                            onClick = { onRadiusChange("500.0") },
+                            onClick = { onRadiusChange("500") },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("500m", fontSize = 11.sp)
@@ -5117,19 +5131,19 @@ fun LocationConfigTab(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         OutlinedButton(
-                            onClick = { onRadiusChange("1000.0") },
+                            onClick = { onRadiusChange("1000") },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("1 km", fontSize = 11.sp)
                         }
                         OutlinedButton(
-                            onClick = { onRadiusChange("2000.0") },
+                            onClick = { onRadiusChange("2000") },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("2 km", fontSize = 11.sp)
                         }
                         OutlinedButton(
-                            onClick = { onRadiusChange("5000.0") },
+                            onClick = { onRadiusChange("5000") },
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("5 km", fontSize = 11.sp)
@@ -5150,24 +5164,170 @@ fun LocationConfigTab(
                         fontSize = 13.sp
                     )
                 }
+            }
+        }
 
+        // Card 2: 30 km Outstation Rule & Advance Booking Controls
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = BorderStroke(1.dp, Color(0xFFFF9800)),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🚗", fontSize = 22.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = if (isHindi) "30 किमी बाहरी भक्त दूरी नियम (Outstation Rule)" else "Outstation Devotee Distance Rule",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaroonPrimary
+                        )
+                        Text(
+                            text = if (isHindi) "दूरस्थ भक्तों हेतु घर बैठे ऑनलाइन टोकन की अनुमति" else "Remote token generation for distant devotees",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Switch for Outstation Advance Booking
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Switch(
+                        checked = isOutstationAllowed,
+                        onCheckedChange = onOutstationAllowedChange,
+                        enabled = canChangeLocation
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = if (isHindi)
+                            "30 किमी से दूर वाले भक्तों को घर से टोकन की अनुमति दें (चालू/बंद)"
+                        else
+                            "Allow remote tokens for outstation devotees (>30 km)",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (isOutstationAllowed) Color(0xFFE3F2FD) else Color(0xFFFFEBEE),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (isHindi) {
+                            if (isOutstationAllowed)
+                                "✓ नियम सक्रिय: $outstationMinKm किमी से अधिक दूर रहने वाले भक्त घर/शहर से रविवार टोकन जनरेट कर सकते हैं। $outstationMinKm किमी के दायरे वाले स्थानीय भक्तों को आश्रम परिसर (${radius}m) में आकर ही टोकन मिलेगा।"
+                            else
+                                "⚠️ नियम बंद: सभी भक्तों (दूर व पास) को अनिवार्य रूप से आश्रम परिसर (${radius}m) में उपस्थित होकर ही टोकन लेना होगा।"
+                        } else {
+                            if (isOutstationAllowed)
+                                "Active: Devotees >$outstationMinKm km can register from home. Local devotees must be within ${radius}m of Ashram."
+                            else
+                                "Inactive: All devotees must be physically present inside Ashram (${radius}m)."
+                        },
+                        fontSize = 11.sp,
+                        color = if (isOutstationAllowed) Color(0xFF0D47A1) else Color(0xFFB71C1C),
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+
+                if (isOutstationAllowed) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = outstationMinKm,
+                        onValueChange = { input ->
+                            val clean = input.filter { it.isDigit() || it == '.' }
+                            val num = clean.toDoubleOrNull()
+                            if (num != null && num > 500.0) {
+                                onOutstationMinKmChange("500")
+                            } else {
+                                onOutstationMinKmChange(clean)
+                            }
+                        },
+                        label = { Text(if (isHindi) "न्यूनतम बाहरी दूरी (किमी में, उदा. 30 km)" else "Min Outstation Distance (km)") },
+                        supportingText = {
+                            Text(
+                                text = if (isHindi) "उदा. 30 लिखने पर 30 किमी से दूर वाले भक्तों का टोकन घर बैठे बनेगा" else "e.g. 30 allows devotees >30km away to register",
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
+                        },
+                        enabled = canChangeLocation,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (isHindi) "⚡ त्वरित दूरी बटन (क्लिक करके सेट करें):" else "⚡ Quick Distance Presets:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { onOutstationMinKmChange("15") },
+                            modifier = Modifier.weight(1f),
+                            colors = if (outstationMinKm == "15" || outstationMinKm == "15.0") ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFFFF3E0)) else ButtonDefaults.outlinedButtonColors()
+                        ) {
+                            Text("15 किमी", fontSize = 11.sp)
+                        }
+                        OutlinedButton(
+                            onClick = { onOutstationMinKmChange("20") },
+                            modifier = Modifier.weight(1f),
+                            colors = if (outstationMinKm == "20" || outstationMinKm == "20.0") ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFFFF3E0)) else ButtonDefaults.outlinedButtonColors()
+                        ) {
+                            Text("20 किमी", fontSize = 11.sp)
+                        }
+                        OutlinedButton(
+                            onClick = { onOutstationMinKmChange("30") },
+                            modifier = Modifier.weight(1f),
+                            colors = if (outstationMinKm == "30" || outstationMinKm == "30.0") ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFFFE0B2)) else ButtonDefaults.outlinedButtonColors()
+                        ) {
+                            Text("30 किमी", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                        OutlinedButton(
+                            onClick = { onOutstationMinKmChange("50") },
+                            modifier = Modifier.weight(1f),
+                            colors = if (outstationMinKm == "50" || outstationMinKm == "50.0") ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFFFF3E0)) else ButtonDefaults.outlinedButtonColors()
+                        ) {
+                            Text("50 किमी", fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Status Messages and Save Button
+        Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 if (successMsg != null) {
+                    Text(successMsg, color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(successMsg, color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold)
                 }
                 if (errorMsg != null) {
+                    Text(errorMsg, color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(errorMsg, color = Color.Red, fontWeight = FontWeight.Bold)
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = onSave,
                     enabled = canChangeLocation,
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
                 ) {
-                    Text(if (isHindi) "🌐 लोकेशन सुरक्षित करें व सभी भक्तों के फोन पर लाइव भेजें" else "🌐 Save & Broadcast Coordinates Live", fontWeight = FontWeight.Bold)
+                    Text(if (isHindi) "🌐 लोकेशन, परिधि व 30km नियम सुरक्षित करें" else "🌐 Save & Broadcast Location Rules Live", fontWeight = FontWeight.Bold)
                 }
             }
         }

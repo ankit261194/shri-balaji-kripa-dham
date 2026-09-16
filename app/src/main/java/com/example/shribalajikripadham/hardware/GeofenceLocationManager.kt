@@ -35,11 +35,14 @@ object GeofenceLocationManager {
         distanceMeters: Double,
         isGeofenceEnforced: Boolean = true,
         allowedRadiusMeters: Double = LOCAL_ASHRAM_MAX_DISTANCE_METERS,
+        isOutstationAdvanceAllowed: Boolean = true,
         outstationMinDistanceKm: Double = 30.0
     ): Boolean {
         if (!isGeofenceEnforced) return true
         val outstationMinMeters = outstationMinDistanceKm * 1000.0
-        return (distanceMeters > outstationMinMeters) || (distanceMeters <= allowedRadiusMeters)
+        val isOutstationPermitted = isOutstationAdvanceAllowed && (distanceMeters > outstationMinMeters)
+        val isLocalPermitted = (distanceMeters <= allowedRadiusMeters)
+        return isOutstationPermitted || isLocalPermitted
     }
 
     /**
@@ -138,7 +141,9 @@ object GeofenceLocationManager {
         ashramLat: Double,
         ashramLon: Double,
         allowedRadiusMeters: Double = LOCAL_ASHRAM_MAX_DISTANCE_METERS,
-        isGeofenceEnforced: Boolean = true
+        isGeofenceEnforced: Boolean = true,
+        isOutstationAdvanceAllowed: Boolean = true,
+        outstationMinDistanceKm: Double = 30.0
     ): LocationSecurityResult {
         if (!isGeofenceEnforced) {
             val acc = if (location != null && location.hasAccuracy()) location.accuracy else 10.0f
@@ -194,9 +199,10 @@ object GeofenceLocationManager {
 
         // 3. Dual-Distance Evaluation
         val distance = calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon)
+        val outstationMinMeters = outstationMinDistanceKm * 1000.0
 
-        // Case A: Devotee is coming from > 30 km away -> Advance token is permitted
-        if (distance > OUTSTATION_MIN_DISTANCE_METERS) {
+        // Case A: Devotee is coming from > outstationMinDistanceKm away -> Advance token is permitted
+        if (isOutstationAdvanceAllowed && distance > outstationMinMeters) {
             return LocationSecurityResult(
                 isValid = true,
                 isMock = false,
@@ -223,10 +229,16 @@ object GeofenceLocationManager {
             )
         }
 
-        // Case C: Devotee is within 30 km (beyond allowed radius) -> Strictly BLOCKED!
+        // Case C: Devotee is within boundary (beyond allowed radius) -> Strictly BLOCKED!
         val km = String.format(java.util.Locale.US, "%.1f", distance / 1000.0)
         val allowedM = allowedRadiusMeters.toInt()
         val radiusDesc = if (allowedM >= 1000) "${String.format(java.util.Locale.US, "%.1f", allowedM / 1000.0)} किमी" else "$allowedM मीटर"
+        val outDesc = String.format(java.util.Locale.US, "%.0f", outstationMinDistanceKm)
+        val reason = if (isOutstationAdvanceAllowed) {
+            "⚠️ आश्रम दूरी नियम: ${outDesc} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।"
+        } else {
+            "⚠️ आश्रम जिओफेंस नियम: टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें।"
+        }
         return LocationSecurityResult(
             isValid = false,
             isMock = false,
@@ -235,7 +247,7 @@ object GeofenceLocationManager {
             isInsideGeofence = false,
             isAdvanceDistanceEligible = false,
             isAshramLocalEligible = false,
-            securityExceptionReason = "⚠️ आश्रम दूरी नियम: 30 किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।"
+            securityExceptionReason = reason
         )
     }
 

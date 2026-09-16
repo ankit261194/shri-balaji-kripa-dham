@@ -217,7 +217,13 @@ fun TokenRegistrationScreen(
         }
     }
     val isDistanceEligible = remember(distanceMeters, settings) {
-        GeofenceLocationManager.isTokenDistancePermitted(distanceMeters, settings.isGeofenceEnforced)
+        GeofenceLocationManager.isTokenDistancePermitted(
+            distanceMeters = distanceMeters,
+            isGeofenceEnforced = settings.isGeofenceEnforced,
+            allowedRadiusMeters = settings.allowedRadiusMeters,
+            isOutstationAdvanceAllowed = settings.isOutstationAdvanceAllowed,
+            outstationMinDistanceKm = settings.outstationMinDistanceKm
+        )
     }
     val isInsideGeofence = isDistanceEligible
     val isQuotaExceeded = remember(settings.maxDailyTokens, todayActiveTokens) {
@@ -1040,11 +1046,12 @@ fun TokenRegistrationScreen(
                                         Text(
                                             text = if (!settings.isGeofenceEnforced) {
                                                 if (isHindi) "जियोफेंस: सभी स्थानों से खुला है" else "Geofence: Open everywhere"
-                                            } else if (distanceMeters > GeofenceLocationManager.OUTSTATION_MIN_DISTANCE_METERS) {
+                                            } else if (settings.isOutstationAdvanceAllowed && distanceMeters > (settings.outstationMinDistanceKm * 1000.0)) {
                                                 val kmStr = String.format(java.util.Locale.US, "%.1f km", distanceMeters/1000.0)
                                                 if (isHindi) "🟢 दूरस्थ भक्त ($kmStr): अग्रिम टोकन मान्य" else "🟢 Outstation ($kmStr): Advance Token Eligible"
-                                            } else if (distanceMeters <= GeofenceLocationManager.LOCAL_ASHRAM_MAX_DISTANCE_METERS) {
-                                                if (isHindi) "🟢 आश्रम परिसर में उपस्थित (200m सत्यापित)" else "🟢 Inside Ashram Premises (Verified)"
+                                            } else if (distanceMeters <= settings.allowedRadiusMeters) {
+                                                val radText = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(java.util.Locale.US, "%.1f", settings.allowedRadiusMeters/1000.0)}km" else "${settings.allowedRadiusMeters.toInt()}m"
+                                                if (isHindi) "🟢 आश्रम परिसर में उपस्थित ($radText सत्यापित)" else "🟢 Inside Ashram Premises ($radText Verified)"
                                             } else {
                                                 val kmStr = if (distanceMeters < 999990.0) String.format(java.util.Locale.US, "%.1f km", distanceMeters/1000.0) else "अज्ञात"
                                                 if (isHindi) "🔴 स्थानीय दायरा ($kmStr): आश्रम परिसर में आकर लें" else "🔴 Local ($kmStr): Collect at Ashram"
@@ -1349,13 +1356,20 @@ fun TokenRegistrationScreen(
                                 // 2. Check Ashram Location & Dual-Distance Geofence Policy
                                 if (settings.isGeofenceEnforced && !isDistanceEligible) {
                                     val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
+                                    val outKm = settings.outstationMinDistanceKm.toInt()
+                                    val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
                                     locationAlertTitle = if (isHindi) "📍 आश्रम दूरी नियम (स्थानीय भक्त)" else "📍 Ashram Distance Policy"
-                                    locationAlertMessage = if (isHindi)
-                                        "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: जो भक्त 30 किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु 30 किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल आश्रम परिसर (200 मीटर के भीतर) में आकर ही मिलेगा।\n\nकृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि व्यवस्था सुचारू रहे।"
-                                    else
-                                        "⚠️ You are $distKm away from Ashram!\n\nPolicy: Devotees >30 km away can register in advance. Local devotees within 30 km must be within 200m of Ashram premises to register."
+                                    locationAlertMessage = if (isHindi) {
+                                        if (settings.isOutstationAdvanceAllowed) {
+                                            "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: जो भक्त $outKm किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु $outKm किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल आश्रम परिसर ($radM के भीतर) में आकर ही मिलेगा।\n\nकृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि व्यवस्था सुचारू रहे।"
+                                        } else {
+                                            "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: टोकन केवल आश्रम परिसर ($radM के भीतर) में उपस्थित होने पर ही मिलेगा।"
+                                        }
+                                    } else {
+                                        "⚠️ You are $distKm away from Ashram! Must be within $radM of Ashram premises to register."
+                                    }
                                     showLocationAlertDialog = true
-                                    errorMessage = if (isHindi) "⚠️ 30 किमी दायरे वाले स्थानीय भक्त आश्रम परिसर (200m) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Local devotees must be at Ashram (within 200m)."
+                                    errorMessage = if (isHindi) "⚠️ $outKm किमी दायरे वाले स्थानीय भक्त आश्रम परिसर ($radM) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Must be at Ashram (within $radM)."
                                     return@Button
                                 }
 

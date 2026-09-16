@@ -529,6 +529,8 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             "ALTER TABLE ashram_settings ADD COLUMN ad_placement TEXT NOT NULL DEFAULT 'HOME_BOTTOM'",
             "ALTER TABLE admins ADD COLUMN can_manage_arzi INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ui_section_configs ADD COLUMN target_audience TEXT NOT NULL DEFAULT 'ALL'",
+            "ALTER TABLE ashram_settings ADD COLUMN is_outstation_advance_allowed INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE ashram_settings ADD COLUMN outstation_min_distance_km REAL NOT NULL DEFAULT 30.0",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_darbar_number ON tokens (darbar_date, token_number)",
             "CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date)"
         )
@@ -539,7 +541,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         try {
             db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1, can_manage_arzi = 1 WHERE role = 'SUPER_ADMIN'")
-            db.execSQL("UPDATE ashram_settings SET allowed_radius_meters = 1500.0 WHERE allowed_radius_meters < 500.0")
             db.execSQL("UPDATE ashram_settings SET latitude = 28.3972915, longitude = 78.1460410 WHERE id = 1")
         } catch (ignored: Exception) {}
     }
@@ -557,12 +558,14 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
             if (count == 0) {
                 val settingsValues = ContentValues().apply {
                     put("id", 1)
-                    put("ashram_name", "Shri Balaji Kripa Dham")
-                    put("guruji_name", "Guruji Tejveer Singh Ji")
-                    put("address", "Gram Dungra Jaat, Bulandshahr, UP")
+                    put("ashram_name", "श्री बालाजी कृपा धाम")
+                    put("guruji_name", "परम पूज्य गुरुजी")
+                    put("address", "ग्राम डूंगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.)")
                     put("latitude", 28.3972915)
                     put("longitude", 78.1460410)
-                    put("allowed_radius_meters", 1500.0)
+                    put("allowed_radius_meters", 200.0)
+                    put("is_outstation_advance_allowed", 1)
+                    put("outstation_min_distance_km", 30.0)
                     put("running_token_number", 1)
                     put("is_darbar_active", 1)
                     put("darbar_date", today)
