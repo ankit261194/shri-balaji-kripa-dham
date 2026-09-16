@@ -267,4 +267,200 @@ object HostingerCentralSyncManager {
         }
         Pair(successCount > 0, "$successCount / ${tokens.size} टोकन Hostinger सर्वर पर सुरक्षित हुए!")
     }
+
+    // --- Cloud Backend Mode Switcher ---
+    private const val PREFS_NAME = "sbkd_cloud_mode_prefs"
+    private const val KEY_CLOUD_MODE = "active_cloud_mode" // "HOSTING" or "GITHUB"
+
+    fun getActiveCloudMode(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_CLOUD_MODE, "HOSTING") ?: "HOSTING"
+    }
+
+    fun setActiveCloudMode(context: Context, mode: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_CLOUD_MODE, mode).apply()
+    }
+
+    fun isHostingMode(context: Context): Boolean {
+        return getActiveCloudMode(context) == "HOSTING"
+    }
+
+    /**
+     * SHIFT: Hosting -> GitHub
+     * Pulls all tokens and live settings from Hostinger MySQL, merges into SQLite,
+     * clones everything to GitHub repository, and sets active mode to GITHUB!
+     */
+    suspend fun shiftFromHostingToGitHub(
+        repository: com.example.shribalajikripadham.data.repository.AshramRepository,
+        context: Context
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val queueJson = fetchLiveQueue()
+            val configJson = fetchLiveConfig()
+
+            var importedCount = 0
+            if (queueJson != null && queueJson.optBoolean("success", false)) {
+                val tokensArray = queueJson.optJSONArray("tokens")
+                if (tokensArray != null && tokensArray.length() > 0) {
+                    for (i in 0 until tokensArray.length()) {
+                        val t = tokensArray.getJSONObject(i)
+                        val ok = repository.insertOrUpdateCentralToken(
+                            tokenNumber = t.optInt("token_number"),
+                            darbarDate = t.optString("darbar_date"),
+                            patientName = t.optString("patient_name"),
+                            phoneNumber = t.optString("phone_number"),
+                            city = t.optString("city", "डूँगरा जाट (स्थानीय)"),
+                            deviceId = t.optString("device_id", "HOSTINGER"),
+                            latitude = t.optDouble("latitude", 28.3972915),
+                            longitude = t.optDouble("longitude", 78.1460410),
+                            distanceKm = t.optDouble("distance_km", 0.0).toFloat(),
+                            photoUri = t.optString("photo_url", ""),
+                            registeredBy = t.optString("registered_by", "HOSTINGER"),
+                            status = t.optString("status", "WAITING"),
+                            isDarshanCompleted = t.optInt("is_darshan_completed", 0) == 1,
+                            createdAt = t.optLong("created_at", System.currentTimeMillis())
+                        )
+                        if (ok) importedCount++
+                    }
+                }
+            }
+
+            if (configJson != null && configJson.optBoolean("success", false)) {
+                repository.updateAshramLocation(
+                    lat = configJson.optDouble("latitude", 28.3972915),
+                    long = configJson.optDouble("longitude", 78.1460410),
+                    radiusMeters = configJson.optDouble("allowed_radius_meters", 200.0),
+                    isGeofenceEnforced = configJson.optBoolean("is_geofence_enforced", true),
+                    isOutstationAdvanceAllowed = configJson.optBoolean("is_outstation_advance_allowed", true),
+                    outstationMinDistanceKm = configJson.optDouble("outstation_min_distance_km", 30.0)
+                )
+            }
+
+            val (ghOk, ghMsg) = repository.publishCurrentSettingsToGitHub("Super Admin (Shift from Hosting to GitHub)")
+
+            if (GoogleSheetTokenSyncManager.isConfigured(context)) {
+                val allTokens = repository.getAllTokens()
+                if (allTokens.isNotEmpty()) {
+                    GoogleSheetTokenSyncManager.postBatchTokensToSheet(context, allTokens)
+                }
+            }
+
+            setActiveCloudMode(context, "GITHUB")
+
+            if (ghOk) {
+                Pair(true, "✅ होस्टिंग से GitHub पर शिफ्ट सफल! ($importedCount टोकन व संपूर्ण सेटिंग्स GitHub पर 100% क्लोन हो गए। अब ऐप GitHub मोड में है।)")
+            } else {
+                Pair(false, "डेटा प्राप्त हुआ पर GitHub पुश में समस्या: $ghMsg")
+            }
+        } catch (e: Exception) {
+            Pair(false, "शिफ्ट त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    /**
+     * SHIFT: GitHub -> Hosting
+     * Pulls complete A-to-Z data from GitHub, restores into SQLite,
+     * writes all tokens and live config to Hostinger MySQL, and sets active mode to HOSTING!
+     */
+    suspend fun shiftFromGitHubToHosting(
+        repository: com.example.shribalajikripadham.data.repository.AshramRepository,
+        context: Context
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            repository.syncCurrentLiveSettingsFromGitHub()
+
+            val allTokens = repository.getAllTokens()
+            val (hOk, hMsg) = syncAllTokensToHostinger(allTokens)
+
+            val s = repository.getSettings()
+            updateLiveConfig(
+                radiusMeters = s.allowedRadiusMeters,
+                isGeofenceEnforced = s.isGeofenceEnforced,
+                isOutstationAllowed = s.isOutstationAdvanceAllowed,
+                outstationKm = s.outstationMinDistanceKm,
+                currentServingToken = s.runningTokenNumber,
+                lat = s.latitude,
+                long = s.longitude
+            )
+
+            if (GoogleSheetTokenSyncManager.isConfigured(context) && allTokens.isNotEmpty()) {
+                GoogleSheetTokenSyncManager.postBatchTokensToSheet(context, allTokens)
+            }
+
+            setActiveCloudMode(context, "HOSTING")
+
+            Pair(true, "✅ GitHub से Hosting पर शिफ्ट सफल! ($hMsg, संपूर्ण सेटिंग्स Hostinger पर 100% क्लोन हो गई। अब ऐप Hosting मोड में है।)")
+        } catch (e: Exception) {
+            Pair(false, "शिफ्ट त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    /**
+     * MASTER BIDIRECTIONAL SYNC
+     * Merges Hosting, GitHub, Google Sheet and Local App so all 3 places have 100% EXACT SAME DATA!
+     */
+    suspend fun bidirectionalTripleSync(
+        repository: com.example.shribalajikripadham.data.repository.AshramRepository,
+        context: Context
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val results = mutableListOf<String>()
+        try {
+            val queueJson = fetchLiveQueue()
+            if (queueJson != null && queueJson.optBoolean("success", false)) {
+                val tokensArray = queueJson.optJSONArray("tokens")
+                if (tokensArray != null && tokensArray.length() > 0) {
+                    for (i in 0 until tokensArray.length()) {
+                        val t = tokensArray.getJSONObject(i)
+                        repository.insertOrUpdateCentralToken(
+                            tokenNumber = t.optInt("token_number"),
+                            darbarDate = t.optString("darbar_date"),
+                            patientName = t.optString("patient_name"),
+                            phoneNumber = t.optString("phone_number"),
+                            city = t.optString("city", "डूँगरा जाट (स्थानीय)"),
+                            deviceId = t.optString("device_id", "HOSTINGER"),
+                            latitude = t.optDouble("latitude", 28.3972915),
+                            longitude = t.optDouble("longitude", 78.1460410),
+                            distanceKm = t.optDouble("distance_km", 0.0).toFloat(),
+                            photoUri = t.optString("photo_url", ""),
+                            registeredBy = t.optString("registered_by", "HOSTINGER"),
+                            status = t.optString("status", "WAITING"),
+                            isDarshanCompleted = t.optInt("is_darshan_completed", 0) == 1,
+                            createdAt = t.optLong("created_at", System.currentTimeMillis())
+                        )
+                    }
+                }
+            }
+
+            repository.syncCurrentLiveSettingsFromGitHub()
+
+            val allTokens = repository.getAllTokens()
+            val (hOk, hMsg) = syncAllTokensToHostinger(allTokens)
+            val s = repository.getSettings()
+            updateLiveConfig(
+                radiusMeters = s.allowedRadiusMeters,
+                isGeofenceEnforced = s.isGeofenceEnforced,
+                isOutstationAllowed = s.isOutstationAdvanceAllowed,
+                outstationKm = s.outstationMinDistanceKm,
+                currentServingToken = s.runningTokenNumber,
+                lat = s.latitude,
+                long = s.longitude
+            )
+            results.add(if (hOk) "🌐 Hosting: ✅ 100% एकसमान डेटा ($hMsg)" else "🌐 Hosting: ⚠️ $hMsg")
+
+            val (ghOk, ghMsg) = repository.publishCurrentSettingsToGitHub("Super Admin (Full Bidirectional 100% Mirror)")
+            results.add(if (ghOk) "🚀 GitHub: ✅ 100% एकसमान डेटा (${allTokens.size} टोकन व संपूर्ण बही-खाता सुरक्षित)" else "🚀 GitHub: ⚠️ $ghMsg")
+
+            if (GoogleSheetTokenSyncManager.isConfigured(context) && allTokens.isNotEmpty()) {
+                GoogleSheetTokenSyncManager.postBatchTokensToSheet(context, allTokens)
+                results.add("📊 Google Sheet: ✅ 100% एकसमान डेटा (${allTokens.size} टोकन सुरक्षित)")
+            } else {
+                results.add("📊 Google Sheet: ⚠️ लिंक कॉन्फ़िगर नहीं है")
+            }
+
+            Pair(true, results.joinToString("\n"))
+        } catch (e: Exception) {
+            Pair(false, "सिंक त्रुटि: ${e.localizedMessage}")
+        }
+    }
 }

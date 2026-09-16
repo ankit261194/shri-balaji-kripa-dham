@@ -366,6 +366,37 @@ class AshramRepository(context: Context) {
     }
 
     suspend fun updateAshramLocation(
+        lat: Double,
+        long: Double,
+        radiusMeters: Double,
+        isGeofenceEnforced: Boolean,
+        isOutstationAdvanceAllowed: Boolean = true,
+        outstationMinDistanceKm: Double = 30.0
+    ): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val clampedRadius = radiusMeters.coerceIn(10.0, 50000.0)
+        val clampedOutstationKm = outstationMinDistanceKm.coerceIn(1.0, 500.0)
+        val cv = ContentValues().apply {
+            put("latitude", lat)
+            put("longitude", long)
+            put("allowed_radius_meters", clampedRadius)
+            put("is_geofence_enforced", if (isGeofenceEnforced) 1 else 0)
+            put("is_outstation_advance_allowed", if (isOutstationAdvanceAllowed) 1 else 0)
+            put("outstation_min_distance_km", clampedOutstationKm)
+        }
+        db.update("ashram_settings", cv, "id = 1", null) > 0
+    }
+
+    suspend fun syncCurrentLiveSettingsFromGitHub(): Boolean = withContext(Dispatchers.IO) {
+        val (cOk, _) = syncLiveConfigFromGitHub()
+        syncLiveTokensFromCloud()
+        syncLiveParchasFromGitHub()
+        syncLivePaymentsFromGitHub()
+        syncLiveBusSeatsFromGitHub()
+        cOk
+    }
+
+    suspend fun updateAshramLocation(
         requestingAdmin: Admin,
         newLat: Double,
         newLong: Double,
@@ -546,7 +577,25 @@ class AshramRepository(context: Context) {
         val cv = ContentValues().apply {
             put("running_token_number", tokenNum)
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) {
+            try {
+                val s = getSettings()
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateLiveConfig(
+                    radiusMeters = s.allowedRadiusMeters,
+                    isGeofenceEnforced = s.isGeofenceEnforced,
+                    isOutstationAllowed = s.isOutstationAdvanceAllowed,
+                    outstationKm = s.outstationMinDistanceKm,
+                    currentServingToken = tokenNum,
+                    lat = s.latitude,
+                    long = s.longitude
+                )
+            } catch (e: Exception) {}
+            try {
+                publishCurrentSettingsToGitHub("Live Counter: $tokenNum")
+            } catch (e: Exception) {}
+        }
+        ok
     }
 
     // --- Tokens & Devices ---
@@ -874,6 +923,26 @@ class AshramRepository(context: Context) {
             com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.postTokenToSheet(appContext, createdToken)
         } catch (e: Exception) {}
 
+        // 🌐 Real-Time Hostinger Sync (Ensures MySQL has this token even if generated offline or via custom token)
+        if (centralTokenNumber == null) {
+            try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
+                    patientName = createdToken.patientName,
+                    phoneNumber = createdToken.phoneNumber,
+                    city = createdToken.city,
+                    deviceId = createdToken.deviceId,
+                    latitude = createdToken.latitude,
+                    longitude = createdToken.longitude,
+                    distanceKm = createdToken.distanceKm.toDouble(),
+                    photoUrl = createdToken.photoUri,
+                    registeredBy = createdToken.registeredBy,
+                    originAddress = createdToken.originAddress,
+                    destinationAddress = createdToken.destinationAddress,
+                    darbarDate = createdToken.darbarDate
+                )
+            } catch (e: Exception) {}
+        }
+
         // 🌐 Central Devotee Profile Sync (Saves contact to registry for cross-device lookup)
         try {
             if (phoneNumber.isNotBlank() && patientName.isNotBlank()) {
@@ -1003,6 +1072,14 @@ class AshramRepository(context: Context) {
             e.printStackTrace()
         }
 
+        // 3. Batch GitHub & Hostinger Triple Sync
+        try {
+            for (t in createdTokens) {
+                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadTokenToGitHub(appContext, t)
+            }
+            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.syncAllTokensToHostinger(createdTokens)
+        } catch (e: Exception) {}
+
         createdTokens
     }
 
@@ -1069,6 +1146,57 @@ class AshramRepository(context: Context) {
         }
         cursor.close()
         list
+    }
+
+    suspend fun insertOrUpdateCentralToken(
+        tokenNumber: Int,
+        darbarDate: String,
+        patientName: String,
+        phoneNumber: String,
+        city: String = "डूँगरा जाट (स्थानीय)",
+        deviceId: String = "HOSTINGER",
+        latitude: Double = 28.3972915,
+        longitude: Double = 78.1460410,
+        distanceKm: Float = 0f,
+        photoUri: String = "",
+        registeredBy: String = "HOSTINGER",
+        status: String = "WAITING",
+        isDarshanCompleted: Boolean = false,
+        createdAt: Long = System.currentTimeMillis()
+    ): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        try {
+            val cv = ContentValues().apply {
+                put("token_number", tokenNumber)
+                put("darbar_date", darbarDate)
+                put("patient_name", patientName)
+                put("phone_number", phoneNumber)
+                put("city", city)
+                put("device_id", deviceId)
+                put("latitude", latitude)
+                put("longitude", longitude)
+                put("distance_km", distanceKm)
+                put("photo_uri", photoUri)
+                put("registered_by", registeredBy)
+                put("status", status)
+                put("is_darshan_completed", if (isDarshanCompleted) 1 else 0)
+                put("created_at", createdAt)
+            }
+            val existing = db.rawQuery(
+                "SELECT id FROM tokens WHERE darbar_date = ? AND token_number = ?",
+                arrayOf(darbarDate, tokenNumber.toString())
+            )
+            val exists = existing.moveToFirst()
+            existing.close()
+            if (exists) {
+                db.update("tokens", cv, "darbar_date = ? AND token_number = ?", arrayOf(darbarDate, tokenNumber.toString()))
+            } else {
+                db.insertWithOnConflict("tokens", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     suspend fun toggleDarshanCompleted(tokenId: Long, completed: Boolean): Boolean = withContext(Dispatchers.IO) {
@@ -1620,6 +1748,9 @@ class AshramRepository(context: Context) {
                     createdAt = System.currentTimeMillis()
                 )
                 com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.postExpenseToSheet(appContext, expObj)
+            } catch (e: Exception) {}
+            try {
+                publishCurrentSettingsToGitHub("Auto Sync - Expense Added: $title")
             } catch (e: Exception) {}
         }
         ok

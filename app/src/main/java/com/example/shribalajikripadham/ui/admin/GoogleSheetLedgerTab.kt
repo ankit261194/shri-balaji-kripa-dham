@@ -44,6 +44,12 @@ fun GoogleSheetLedgerTab(
     var isSheetConnected by remember { mutableStateOf(GoogleSheetTokenSyncManager.isConfigured(context)) }
     var sheetStatusMsg by remember { mutableStateOf<String?>(null) }
 
+    // Cloud Mode & Shift state
+    var activeCloudMode by remember { mutableStateOf(HostingerCentralSyncManager.getActiveCloudMode(context)) }
+    var isShiftingToGitHub by remember { mutableStateOf(false) }
+    var isShiftingToHosting by remember { mutableStateOf(false) }
+    var shiftReportMsg by remember { mutableStateOf<String?>(null) }
+
     // Sync state flags
     var isSyncingSheet by remember { mutableStateOf(false) }
     var isSyncingHostinger by remember { mutableStateOf(false) }
@@ -151,7 +157,177 @@ fun GoogleSheetLedgerTab(
             }
         }
 
-        // ⚡ 2. MASTER 1-CLICK TRIPLE SYNC BUTTON
+        // 🔄 2. DYNAMIC SHIFT & CLOUD MODE SWITCH (Super Admin Control)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E5F5)),
+            border = BorderStroke(1.5.dp, Color(0xFF7B1FA2)),
+            elevation = CardDefaults.cardElevation(4.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isHindi) "🔄 क्लाउड मोड व 1-क्लिक शिफ्ट" else "🔄 Cloud Mode & 1-Click Shift",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF4A148C)
+                        )
+                        Text(
+                            text = if (isHindi)
+                                "जब चाहें Hosting से GitHub पर शिफ्ट हों, या GitHub से Hosting पर। दोनों में A to Z 100% एकसमान डेटा रहता है।"
+                            else
+                                "Shift between Hosting and GitHub anytime. All A-Z data remains 100% mirrored.",
+                            fontSize = 11.sp,
+                            color = Color(0xFF311B92)
+                        )
+                    }
+                    Text(text = "🔁", fontSize = 26.sp)
+                }
+
+                // Active Mode Toggle Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Option 1: Hostinger Mode
+                    FilterChip(
+                        selected = (activeCloudMode == "HOSTING"),
+                        onClick = {
+                            activeCloudMode = "HOSTING"
+                            HostingerCentralSyncManager.setActiveCloudMode(context, "HOSTING")
+                            Toast.makeText(context, if (isHindi) "🌐 Hostinger मोड सक्रिय हुआ!" else "Hosting Mode Activated", Toast.LENGTH_SHORT).show()
+                        },
+                        label = {
+                            Text(
+                                text = if (isHindi) "🌐 Hosting मोड" else "🌐 Hosting Mode",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFF1A237E),
+                            selectedLabelColor = Color.White
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    // Option 2: GitHub Mode
+                    FilterChip(
+                        selected = (activeCloudMode == "GITHUB"),
+                        onClick = {
+                            activeCloudMode = "GITHUB"
+                            HostingerCentralSyncManager.setActiveCloudMode(context, "GITHUB")
+                            Toast.makeText(context, if (isHindi) "🚀 GitHub मोड सक्रिय (Zero-Cost / Offline Safe)!" else "GitHub Mode Activated", Toast.LENGTH_SHORT).show()
+                        },
+                        label = {
+                            Text(
+                                text = if (isHindi) "🚀 GitHub मोड" else "🚀 GitHub Mode",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFF24292E),
+                            selectedLabelColor = Color.White
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Shift Migration Buttons Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Button: Shift Hosting -> GitHub
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                isShiftingToGitHub = true
+                                shiftReportMsg = null
+                                val (ok, msg) = HostingerCentralSyncManager.shiftFromHostingToGitHub(repository, context)
+                                isShiftingToGitHub = false
+                                if (ok) activeCloudMode = "GITHUB"
+                                shiftReportMsg = msg
+                                Toast.makeText(context, if (ok) "Hosting ➔ GitHub शिफ्ट सफल!" else "त्रुटि", Toast.LENGTH_LONG).show()
+                            }
+                        },
+                        enabled = !isShiftingToGitHub && !isShiftingToHosting,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF24292E)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                    ) {
+                        if (isShiftingToGitHub) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Text(
+                                text = if (isHindi) "Hosting ➔ GitHub\nशिफ्ट करें" else "Hosting ➔ GitHub\nShift",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    // Button: Shift GitHub -> Hosting
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                isShiftingToHosting = true
+                                shiftReportMsg = null
+                                val (ok, msg) = HostingerCentralSyncManager.shiftFromGitHubToHosting(repository, context)
+                                isShiftingToHosting = false
+                                if (ok) activeCloudMode = "HOSTING"
+                                shiftReportMsg = msg
+                                Toast.makeText(context, if (ok) "GitHub ➔ Hosting शिफ्ट सफल!" else "त्रुटि", Toast.LENGTH_LONG).show()
+                            }
+                        },
+                        enabled = !isShiftingToGitHub && !isShiftingToHosting,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A237E)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                    ) {
+                        if (isShiftingToHosting) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
+                        } else {
+                            Text(
+                                text = if (isHindi) "GitHub ➔ Hosting\nशिफ्ट करें" else "GitHub ➔ Hosting\nShift",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+
+                if (shiftReportMsg != null) {
+                    Surface(
+                        color = Color(0xFFEDE7F6),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, Color(0xFFBA68C8)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = shiftReportMsg!!,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF4A148C),
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // ⚡ 3. MASTER 1-CLICK TRIPLE SYNC BUTTON
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -180,52 +356,10 @@ fun GoogleSheetLedgerTab(
                         scope.launch {
                             isSyncingTriple = true
                             tripleSyncReport = null
-                            val results = mutableListOf<String>()
-
-                            // 1. Sync to Hostinger
-                            try {
-                                val tokens = repository.getAllTokens()
-                                val (hOk, hMsg) = HostingerCentralSyncManager.syncAllTokensToHostinger(tokens)
-                                val s = repository.getSettings()
-                                HostingerCentralSyncManager.updateLiveConfig(
-                                    radiusMeters = s.allowedRadiusMeters,
-                                    isGeofenceEnforced = s.isGeofenceEnforced,
-                                    isOutstationAllowed = s.isOutstationAdvanceAllowed,
-                                    outstationKm = s.outstationMinDistanceKm,
-                                    lat = s.latitude,
-                                    long = s.longitude
-                                )
-                                results.add(if (hOk) "🌐 Hostinger: ✅ सुरक्षित ($hMsg)" else "🌐 Hostinger: ⚠️ $hMsg")
-                            } catch (e: Exception) {
-                                results.add("🌐 Hostinger: ❌ ${e.localizedMessage}")
-                            }
-
-                            // 2. Sync to GitHub
-                            try {
-                                val (ghOk, ghMsg) = repository.publishCurrentSettingsToGitHub("Super Admin")
-                                results.add(if (ghOk) "🚀 GitHub: ✅ सुरक्षित" else "🚀 GitHub: ⚠️ $ghMsg")
-                            } catch (e: Exception) {
-                                results.add("🚀 GitHub: ❌ ${e.localizedMessage}")
-                            }
-
-                            // 3. Sync to Google Sheet
-                            try {
-                                if (GoogleSheetTokenSyncManager.isConfigured(context)) {
-                                    val tokens = repository.getAllTokens()
-                                    if (tokens.isNotEmpty()) {
-                                        GoogleSheetTokenSyncManager.postBatchTokensToSheet(context, tokens)
-                                    }
-                                    results.add("📊 Google Sheet: ✅ सुरक्षित")
-                                } else {
-                                    results.add("📊 Google Sheet: ⚠️ लिंक कॉन्फ़िगर नहीं है")
-                                }
-                            } catch (e: Exception) {
-                                results.add("📊 Google Sheet: ❌ ${e.localizedMessage}")
-                            }
-
+                            val (ok, report) = HostingerCentralSyncManager.bidirectionalTripleSync(repository, context)
                             isSyncingTriple = false
-                            tripleSyncReport = results.joinToString("\n")
-                            Toast.makeText(context, if (isHindi) "त्रिमूर्ति सिंक पूर्ण हुआ!" else "Triple sync completed!", Toast.LENGTH_SHORT).show()
+                            tripleSyncReport = report
+                            Toast.makeText(context, if (ok) "त्रिमूर्ति 100% एकसमान सिंक पूर्ण!" else "सिंक त्रुटि", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -241,7 +375,7 @@ fun GoogleSheetLedgerTab(
                         Text(text = "⚡", fontSize = 18.sp)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (isHindi) "तीनों जगह अभी सिंक करें (Triple Push)" else "Push to All 3 Clouds Now",
+                            text = if (isHindi) "तीनों जगह 100% एकसमान सिंक (Bidirectional Triple Sync)" else "100% Full Mirror All 3 Clouds",
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                             fontSize = 14.sp
