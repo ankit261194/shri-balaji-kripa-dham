@@ -1399,6 +1399,23 @@ class AshramRepository(context: Context) {
         val db = dbHelper.writableDatabase
         db.beginTransaction()
         try {
+            // 1. Atomic Collision Check: Ensure no seat is already booked by another user
+            for (seat in seatsToBook) {
+                val checkCursor = db.rawQuery("SELECT is_booked, passenger_name FROM bus_seats WHERE seat_number = ?", arrayOf(seat.seatNumber.toString()))
+                var alreadyBooked = false
+                var existingPassenger = ""
+                if (checkCursor.moveToFirst()) {
+                    if (checkCursor.getInt(0) == 1) {
+                        alreadyBooked = true
+                        existingPassenger = checkCursor.getString(1) ?: ""
+                    }
+                }
+                checkCursor.close()
+                if (alreadyBooked) {
+                    throw IllegalStateException("सीट संख्या #${seat.seatNumber} पहले से आरक्षित है (${existingPassenger})!")
+                }
+            }
+
             for (seat in seatsToBook) {
                 val cv = ContentValues().apply {
                     put("is_booked", 1)
@@ -1450,6 +1467,60 @@ class AshramRepository(context: Context) {
                 }
             } catch (e: Exception) {}
         }
+    }
+
+    suspend fun approveBusSeatBooking(seatNumber: Int, adminName: String): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("payment_status", PaymentStatus.PAID.name)
+            put("notes", "सत्यापित द्वारा: $adminName")
+        }
+        val res = db.update("bus_seats", cv, "seat_number = ?", arrayOf(seatNumber.toString())) > 0
+        if (res) {
+            try {
+                val cursor = db.query("bus_seats", arrayOf("transaction_id"), "seat_number = ?", arrayOf(seatNumber.toString()), null, null, null)
+                var utr = ""
+                if (cursor.moveToFirst()) {
+                    utr = cursor.getString(0) ?: ""
+                }
+                cursor.close()
+                if (utr.isNotBlank()) {
+                    val pCv = ContentValues().apply {
+                        put("payment_status", "CONFIRMED")
+                        put("verified_by", adminName)
+                    }
+                    db.update("payment_records", pCv, "transaction_id = ?", arrayOf(utr))
+                }
+                publishBusSeatsToGitHub()
+                publishPaymentsToGitHub()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        res
+    }
+
+    suspend fun rejectBusSeatBooking(seatNumber: Int, adminName: String): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        try {
+            val cursor = db.query("bus_seats", arrayOf("transaction_id"), "seat_number = ?", arrayOf(seatNumber.toString()), null, null, null)
+            var utr = ""
+            if (cursor.moveToFirst()) {
+                utr = cursor.getString(0) ?: ""
+            }
+            cursor.close()
+            if (utr.isNotBlank()) {
+                val pCv = ContentValues().apply {
+                    put("payment_status", "REJECTED")
+                    put("verified_by", adminName)
+                }
+                db.update("payment_records", pCv, "transaction_id = ?", arrayOf(utr))
+                publishPaymentsToGitHub()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        cancelBusSeatBooking(seatNumber)
     }
 
     suspend fun cancelBusSeatBooking(seatNumber: Int): Boolean = withContext(Dispatchers.IO) {

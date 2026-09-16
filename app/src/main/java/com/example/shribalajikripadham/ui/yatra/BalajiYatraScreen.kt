@@ -295,8 +295,9 @@ fun BalajiYatraScreen(
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
                     LegendIndicator(color = StatusAvailable, label = if (isHindi) "खाली" else "Vacant")
-                    LegendIndicator(color = SaffronPrimary, label = if (isHindi) "आपकी पसंद" else "Selected")
-                    LegendIndicator(color = StatusOutsideAshram, label = if (isHindi) "आरक्षित (Booked)" else "Booked")
+                    LegendIndicator(color = SaffronPrimary, label = if (isHindi) "चयनित" else "Selected")
+                    LegendIndicator(color = Color(0xFFFBC02D), label = if (isHindi) "सत्यापन बाकी" else "Pending")
+                    LegendIndicator(color = StatusOutsideAshram, label = if (isHindi) "आरक्षित" else "Booked")
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -982,8 +983,10 @@ fun SixSeaterSeatItem(
 
     val (bgColor, textColor, borderColor) = when {
         isSelected -> Triple(SaffronPrimary, Color.White, Color(0xFFE65100))
-        seat.isBooked -> Triple(Color(0xFFFFCDD2), Color(0xFFB71C1C), Color(0xFFE57373))
-        else -> Triple(Color(0xFFE8F5E9), Color(0xFF1B5E20), Color(0xFF81C784))
+        seat.isBooked && seat.paymentStatus == PaymentStatus.PENDING_VERIFICATION ->
+            Triple(Color(0xFFFFF9C4), Color(0xFFE65100), Color(0xFFFBC02D)) // Amber for Pending Admin Verification
+        seat.isBooked -> Triple(Color(0xFFFFCDD2), Color(0xFFB71C1C), Color(0xFFE57373)) // Red for Confirmed Booked
+        else -> Triple(Color(0xFFE8F5E9), Color(0xFF1B5E20), Color(0xFF81C784)) // Green for Available
     }
 
     Box(

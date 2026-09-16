@@ -81,9 +81,11 @@ fun BusLedgerTab(
     }
 
     val bookedSeats = seats.filter { it.isBooked }
+    val pendingSeats = seats.filter { it.isBooked && it.paymentStatus == PaymentStatus.PENDING_VERIFICATION }
+    val confirmedSeats = seats.filter { it.isBooked && it.paymentStatus != PaymentStatus.PENDING_VERIFICATION }
     val availableSeats = seats.filter { !it.isBooked }
     val farePerSeat = if (settings.busSeatFareAmount > 0) settings.busSeatFareAmount else 1500
-    val totalRevenue = bookedSeats.size * farePerSeat
+    val totalRevenue = confirmedSeats.size * farePerSeat
 
     Column(
         modifier = Modifier
@@ -252,7 +254,7 @@ fun BusLedgerTab(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // VIEW TABS (Seat Map vs Passenger Ledger)
+        // VIEW TABS (Seat Map vs Passenger Ledger vs Pending Approvals)
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color(0xFFFFF3E0),
@@ -261,12 +263,26 @@ fun BusLedgerTab(
             Tab(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
-                text = { Text(if (isHindi) "🚌 60-सीट नक्शा" else "🚌 60-Seat Map", fontWeight = FontWeight.Bold, fontSize = 13.sp) }
+                text = { Text(if (isHindi) "🚌 60-सीट नक्शा" else "🚌 60-Seat Map", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
             )
             Tab(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
-                text = { Text(if (isHindi) "📋 यात्री सूची (${bookedSeats.size})" else "📋 Passengers (${bookedSeats.size})", fontWeight = FontWeight.Bold, fontSize = 13.sp) }
+                text = { Text(if (isHindi) "📋 सभी यात्री (${bookedSeats.size})" else "📋 All (${bookedSeats.size})", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+            )
+            Tab(
+                selected = selectedTab == 2,
+                onClick = { selectedTab = 2 },
+                text = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (isHindi) "⏳ सत्यापन (${pendingSeats.size})" else "⏳ Pending (${pendingSeats.size})",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = if (pendingSeats.isNotEmpty()) Color(0xFFE65100) else Color.DarkGray
+                        )
+                    }
+                }
             )
         }
 
@@ -420,7 +436,7 @@ fun BusLedgerTab(
 
                 Spacer(modifier = Modifier.height(20.dp))
             }
-        } else {
+        } else if (selectedTab == 1) {
             // PASSENGER LEDGER (LIST VIEW WITH SEARCH)
             Column(modifier = Modifier.fillMaxSize()) {
                 OutlinedTextField(
@@ -504,6 +520,185 @@ fun BusLedgerTab(
                     }
                 }
             }
+        } else {
+            // PENDING APPROVALS QUEUE (selectedTab == 2)
+            Column(modifier = Modifier.fillMaxSize()) {
+                Surface(
+                    color = Color(0xFFFFF8E1),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, Color(0xFFFFB74D)),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
+                ) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("⚠️", fontSize = 20.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "ऑनलाइन बुकिंग सत्यापन कतार" else "Online Booking Approval Queue",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFFE65100)
+                            )
+                            Text(
+                                text = if (isHindi) "भक्तों द्वारा दर्ज UTR को अपने बैंक में जांचें, फिर 'स्वीकार' या 'अस्वीकार' करें।" else "Verify entered UTR in your bank statement, then Approve or Reject.",
+                                fontSize = 11.sp,
+                                color = Color.DarkGray
+                            )
+                        }
+                    }
+                }
+
+                if (pendingSeats.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("🎉", fontSize = 36.sp)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = if (isHindi) "कोई भी भुगतान सत्यापन लंबित नहीं है!" else "No pending payments awaiting verification!",
+                                color = Color(0xFF2E7D32),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = if (isHindi) "सभी ऑनलाइन बुकिंग्स जांची जा चुकी हैं।" else "All bookings are up to date.",
+                                color = Color.Gray,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(pendingSeats) { seat ->
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                shape = RoundedCornerShape(12.dp),
+                                elevation = CardDefaults.cardElevation(2.dp),
+                                border = BorderStroke(1.dp, Color(0xFFFFE082)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Surface(
+                                                color = Color(0xFFFBC02D),
+                                                shape = RoundedCornerShape(6.dp)
+                                            ) {
+                                                Text(
+                                                    text = seat.seatLabel,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp,
+                                                    color = Color.Black,
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = seat.passengerName,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 15.sp,
+                                                color = Color(0xFF1B1B1B)
+                                            )
+                                        }
+                                        Text(
+                                            text = "₹${seat.fareAmount}",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = Color(0xFFE65100)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("📞 ${seat.phoneNumber}", fontSize = 12.sp, color = Color.DarkGray)
+                                        Text("${seat.passengerGender}, ${seat.passengerAge} वर्ष", fontSize = 12.sp, color = Color.Gray)
+                                    }
+
+                                    Spacer(modifier = Modifier.height(6.dp))
+
+                                    Surface(
+                                        color = Color(0xFFFFF9C4),
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = "UTR: ${seat.transactionId.ifBlank { "नदारद" }}",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp,
+                                                color = Color(0xFFBF360C)
+                                            )
+                                            Text(
+                                                text = seat.paymentMode,
+                                                fontSize = 11.sp,
+                                                color = Color.DarkGray
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(
+                                            onClick = {
+                                                scope.launch {
+                                                    val ok = repository.approveBusSeatBooking(seat.seatNumber, "Admin")
+                                                    if (ok) {
+                                                        Toast.makeText(context, if (isHindi) "सीट ${seat.seatLabel} भुगतान स्वीकृत व कन्फर्म हुआ!" else "Approved!", Toast.LENGTH_SHORT).show()
+                                                        refreshSeats()
+                                                    }
+                                                }
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text(if (isHindi) "✅ स्वीकार करें" else "Approve", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = {
+                                                scope.launch {
+                                                    val ok = repository.rejectBusSeatBooking(seat.seatNumber, "Admin")
+                                                    if (ok) {
+                                                        Toast.makeText(context, if (isHindi) "भुगतान खारिज, सीट खाली की गई!" else "Rejected!", Toast.LENGTH_SHORT).show()
+                                                        refreshSeats()
+                                                    }
+                                                }
+                                            },
+                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+                                            shape = RoundedCornerShape(8.dp),
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text(if (isHindi) "❌ अस्वीकार" else "Reject", fontSize = 12.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -563,6 +758,69 @@ fun BusLedgerTab(
                     if (s.bookedAt > 0) {
                         val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
                         DetailItem(if (isHindi) "बुकिंग समय" else "Booked At", sdf.format(Date(s.bookedAt)))
+                    }
+                    if (s.paymentStatus == PaymentStatus.PENDING_VERIFICATION) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            color = Color(0xFFFFF8E1),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFFB74D)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = if (isHindi) "⏳ भुगतान सत्यापन प्रतीक्षित (Pending Approval)" else "⏳ Payment Pending Approval",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFE65100)
+                                )
+                                Text(
+                                    text = if (isHindi) "UTR: ${s.transactionId} को बैंक खाते में जांचें, फिर पुष्टि करें।" else "Verify UTR: ${s.transactionId} in your bank.",
+                                    fontSize = 11.sp,
+                                    color = Color.DarkGray
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            scope.launch {
+                                                val ok = repository.approveBusSeatBooking(s.seatNumber, "Admin")
+                                                if (ok) {
+                                                    Toast.makeText(context, if (isHindi) "सीट ${s.seatLabel} भुगतान स्वीकृत व कन्फर्म हुआ!" else "Approved!", Toast.LENGTH_SHORT).show()
+                                                    refreshSeats()
+                                                    seatDetailTarget = null
+                                                }
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(if (isHindi) "✅ स्वीकार" else "Approve", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    OutlinedButton(
+                                        onClick = {
+                                            scope.launch {
+                                                val ok = repository.rejectBusSeatBooking(s.seatNumber, "Admin")
+                                                if (ok) {
+                                                    Toast.makeText(context, if (isHindi) "भुगतान खारिज, सीट खाली की गई!" else "Rejected!", Toast.LENGTH_SHORT).show()
+                                                    refreshSeats()
+                                                    seatDetailTarget = null
+                                                }
+                                            }
+                                        },
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(if (isHindi) "❌ अस्वीकार" else "Reject", fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

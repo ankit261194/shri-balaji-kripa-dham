@@ -190,6 +190,19 @@ fun FaceTokenRegistrationScreen(
                 val safeBitmap = DevoteePhotoHelper.toSoftwareBitmap(bitmap)
                 capturedBitmap = safeBitmap
 
+                // AI Facial Liveness & Anti-Spoofing Verification
+                val liveness = withContext(Dispatchers.Default) {
+                    FaceEmbeddingEngine.verifyLiveness(safeBitmap)
+                }
+                if (!liveness.isLiveHuman) {
+                    errorMessage = if (isHindi)
+                        "⚠️ जीवंतता सत्यापन विफल: ${liveness.failureReason ?: "कृपया कैमरे के सामने वास्तविक जीवित व्यक्ति ही आएं।"}"
+                    else
+                        "⚠️ Liveness verification failed: ${liveness.failureReason ?: "Live person required"}"
+                    scanState = FaceScanState.SCANNING
+                    return@launch
+                }
+
                 val (vector, match) = withContext(Dispatchers.Default) {
                     // 1. Extract 128-d invariant feature vector from captured bitmap safely
                     val v = FaceEmbeddingEngine.extractVectorFromBitmap(safeBitmap)

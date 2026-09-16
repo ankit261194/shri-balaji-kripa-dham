@@ -8173,15 +8173,27 @@ fun SuperControlTab(
                     Button(
                         onClick = {
                             kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                var targetUri = bannerPhotoUriInput.trim()
+                                if (targetUri.isNotBlank() && !targetUri.startsWith("http://") && !targetUri.startsWith("https://")) {
+                                    withContext(Dispatchers.Main) {
+                                        Toast.makeText(context, if (isHindi) "क्लाउड पर फोटो अपलोड हो रही है..." else "Uploading photo to cloud...", Toast.LENGTH_SHORT).show()
+                                    }
+                                    val safeName = "banner_" + System.currentTimeMillis() + ".jpg"
+                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, targetUri, safeName)
+                                    if (!cloudUrl.isNullOrBlank()) {
+                                        targetUri = cloudUrl
+                                    }
+                                }
                                 repository?.updateBannerSettings(
-                                    photoUri = bannerPhotoUriInput.trim(),
+                                    photoUri = targetUri,
                                     isVisible = isBannerVisibleChecked,
                                     title = bannerTitleInput.trim(),
                                     subtitle = bannerSubtitleInput.trim(),
                                     actionUrl = bannerActionUrlInput.trim()
                                 )
                                 withContext(Dispatchers.Main) {
-                                    bannerSaveMsg = if (isHindi) "✓ मुख्य बैनर सेटिंग्स सुरक्षित व लाइव अपडेट!" else "Banner settings saved & live updated!"
+                                    bannerPhotoUriInput = targetUri
+                                    bannerSaveMsg = if (isHindi) "✓ मुख्य बैनर सुरक्षित व क्लाउड पर लाइव!" else "Banner saved & live on cloud!"
                                     Toast.makeText(context, if (isHindi) "✓ बैनर सुरक्षित हुआ!" else "Banner saved!", Toast.LENGTH_SHORT).show()
                                     onRefreshData()
                                 }
@@ -8307,17 +8319,29 @@ fun SuperControlTab(
                     Button(
                         onClick = {
                             kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                                var targetUri = adBannerPhotoUriInput.trim()
+                                if (targetUri.isNotBlank() && !targetUri.startsWith("http://") && !targetUri.startsWith("https://")) {
+                                    withContext(Dispatchers.Main) {
+                                        Toast.makeText(context, if (isHindi) "क्लाउड पर विज्ञापन फोटो अपलोड हो रही है..." else "Uploading ad photo to cloud...", Toast.LENGTH_SHORT).show()
+                                    }
+                                    val safeName = "ad_banner_" + System.currentTimeMillis() + ".jpg"
+                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, targetUri, safeName)
+                                    if (!cloudUrl.isNullOrBlank()) {
+                                        targetUri = cloudUrl
+                                    }
+                                }
                                 repository?.updateAdsSettings(
                                     isAdsEnabled = isAdsEnabledChecked,
                                     adType = adTypeInput.trim(),
-                                    bannerPhotoUri = adBannerPhotoUriInput.trim(),
+                                    bannerPhotoUri = targetUri,
                                     title = adBannerTitleInput.trim(),
                                     description = adBannerDescInput.trim(),
                                     targetUrl = adTargetUrlInput.trim(),
                                     placement = adPlacementInput.trim()
                                 )
                                 withContext(Dispatchers.Main) {
-                                    adSaveMsg = if (isHindi) "✓ विज्ञापन व प्रायोजक सेटिंग्स सुरक्षित!" else "Ads settings saved!"
+                                    adBannerPhotoUriInput = targetUri
+                                    adSaveMsg = if (isHindi) "✓ विज्ञापन व प्रायोजक सेटिंग्स सुरक्षित व लाइव!" else "Ads settings saved & live!"
                                     Toast.makeText(context, if (isHindi) "✓ विज्ञापन सेटिंग्स सुरक्षित!" else "Settings saved!", Toast.LENGTH_SHORT).show()
                                     onRefreshData()
                                 }

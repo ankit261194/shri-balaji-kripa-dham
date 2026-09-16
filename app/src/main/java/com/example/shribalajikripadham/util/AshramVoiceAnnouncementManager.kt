@@ -435,8 +435,31 @@ object AshramVoiceAnnouncementManager {
         }
     }
 
+    fun playTempleChime() {
+        try {
+            val toneGen = android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 90)
+            toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP2, 380)
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                kotlinx.coroutines.delay(450)
+                try { toneGen.release() } catch (e: Exception) {}
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Temple chime synth fallback: ${e.message}")
+        }
+    }
+
+    fun isHindiLanguageAvailable(): Boolean {
+        return try {
+            val res = tts?.isLanguageAvailable(Locale("hi", "IN")) ?: TextToSpeech.LANG_NOT_SUPPORTED
+            res >= TextToSpeech.LANG_AVAILABLE
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     private fun speakRaw(text: String) {
         try {
+            playTempleChime()
             tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "token_announcement_${System.currentTimeMillis()}")
         } catch (e: Exception) {
             Log.e(TAG, "Error executing speakRaw", e)
