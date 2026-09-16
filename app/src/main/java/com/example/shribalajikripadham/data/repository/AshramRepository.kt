@@ -1286,19 +1286,74 @@ class AshramRepository(context: Context) {
         list
     }
 
+    suspend fun isTransactionIdAlreadyUsed(txId: String): Boolean = withContext(Dispatchers.IO) {
+        val clean = txId.trim()
+        if (clean.isBlank()) return@withContext false
+        val db = dbHelper.readableDatabase
+        val cursor = db.rawQuery(
+            "SELECT COUNT(*) FROM payment_records WHERE LOWER(TRIM(transaction_id)) = LOWER(?)",
+            arrayOf(clean)
+        )
+        var count = 0
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0)
+        }
+        cursor.close()
+        count > 0
+    }
+
     suspend fun updatePaymentStatus(paymentId: String, status: String, verifiedBy: String): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
-        val cv = ContentValues().apply {
-            put("payment_status", status)
-            put("verified_by", verifiedBy)
-        }
-        val res = db.update("payment_records", cv, "payment_id = ?", arrayOf(paymentId)) > 0
-        if (res) {
+        db.beginTransaction()
+        try {
+            val cv = ContentValues().apply {
+                put("payment_status", status)
+                put("verified_by", verifiedBy)
+            }
+            val res = db.update("payment_records", cv, "payment_id = ?", arrayOf(paymentId)) > 0
+
+            // Sync linked bus seats if any
+            val cursor = db.rawQuery("SELECT seat_numbers FROM payment_records WHERE payment_id = ?", arrayOf(paymentId))
+            var seatNumsStr = ""
+            if (cursor.moveToFirst()) {
+                seatNumsStr = cursor.getString(0) ?: ""
+            }
+            cursor.close()
+
+            if (seatNumsStr.isNotBlank()) {
+                val seatParts = seatNumsStr.split(",").map { it.trim().removePrefix("#") }.mapNotNull { it.toIntOrNull() }
+                for (sNum in seatParts) {
+                    if (status.equals("REJECTED", ignoreCase = true)) {
+                        // Release seat
+                        val sCv = ContentValues().apply {
+                            put("is_booked", 0)
+                            put("payment_status", PaymentStatus.UNPAID.name)
+                            put("passenger_name", "")
+                            put("phone_number", "")
+                            put("transaction_id", "")
+                        }
+                        db.update("bus_seats", sCv, "seat_number = ?", arrayOf(sNum.toString()))
+                    } else if (status.equals("VERIFIED", ignoreCase = true) || status.equals("SUCCESS", ignoreCase = true)) {
+                        val sCv = ContentValues().apply {
+                            put("payment_status", PaymentStatus.PAID.name)
+                        }
+                        db.update("bus_seats", sCv, "seat_number = ?", arrayOf(sNum.toString()))
+                    }
+                }
+            }
+
+            db.setTransactionSuccessful()
+            res
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        } finally {
+            db.endTransaction()
             try {
                 publishPaymentsToGitHub()
+                publishBusSeatsToGitHub()
             } catch (e: Exception) {}
         }
-        res
     }
 
     suspend fun deletePayment(paymentId: String): Boolean = withContext(Dispatchers.IO) {

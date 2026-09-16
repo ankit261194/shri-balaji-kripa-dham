@@ -41,8 +41,9 @@ import com.example.shribalajikripadham.theme.MaroonAccent
 import com.example.shribalajikripadham.theme.MaroonPrimary
 import com.example.shribalajikripadham.theme.SaffronPrimary
 import com.example.shribalajikripadham.util.DevoteePhotoHelper
-import com.example.shribalajikripadham.util.TakeAnyPicturePreview
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,10 +61,33 @@ fun PaperRegisterScanTab(
     var rawTextInput by remember { mutableStateOf("") }
     var activeMode by remember { mutableIntStateOf(0) } // 0 = Camera Photo, 1 = Direct Text Paste
     var isProcessing by remember { mutableStateOf(false) }
+    var isOcrProcessing by remember { mutableStateOf(false) }
     var currentMaxTokenToday by remember { mutableIntStateOf(0) }
     var generatedTokensResult by remember { mutableStateOf<List<Token>?>(null) }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val processBitmapWithOcr: (Bitmap) -> Unit = { safeBmp ->
+        capturedBitmap = safeBmp
+        isOcrProcessing = true
+        Toast.makeText(context, if (isHindi) "🔍 Google ML Kit से रजिस्टर स्कैन हो रहा है..." else "Scanning paper text with ML Kit...", Toast.LENGTH_SHORT).show()
+        scope.launch(Dispatchers.Default) {
+            val ocrResult = PaperRegisterScannerEngine.recognizeTextFromBitmap(safeBmp)
+            withContext(Dispatchers.Main) {
+                isOcrProcessing = false
+                if (ocrResult.isNotBlank()) {
+                    rawTextInput = ocrResult
+                    parsedEntries = PaperRegisterScannerEngine.parseRegisterText(ocrResult)
+                    Toast.makeText(context, if (isHindi) "✅ Google ML Kit ने ${parsedEntries.size} नाम सफलतापूर्वक पढ़ लिए!" else "Parsed ${parsedEntries.size} entries with ML Kit!", Toast.LENGTH_LONG).show()
+                } else {
+                    if (rawTextInput.isBlank()) {
+                        rawTextInput = "1. \n2. \n3. "
+                    }
+                    Toast.makeText(context, if (isHindi) "⚠️ फोटो में कोई स्पष्ट अक्षर नहीं मिला। कृपया हाथ से लिखें या दोबारा फोटो लें।" else "No clear text found. Please retake photo.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
 
     // Refresh current maximum token number today to give live sequence visibility
     val refreshSequenceInfo: () -> Unit = {
@@ -122,11 +146,7 @@ fun PaperRegisterScanTab(
                         DevoteePhotoHelper.rotateBitmap(rawBmp, exifDegrees)
                     } else rawBmp
                     val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(orientedBmp)
-                    capturedBitmap = safeBmp
-                    if (rawTextInput.isBlank()) {
-                        rawTextInput = "1. \n2. \n3. "
-                    }
-                    Toast.makeText(context, if (isHindi) "📸 फोटो सुरक्षित लोड हुई! नाम सत्यापित करें" else "📸 Photo captured safely!", Toast.LENGTH_SHORT).show()
+                    processBitmapWithOcr(safeBmp)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -177,8 +197,7 @@ fun PaperRegisterScanTab(
             val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
             if (bmp != null) {
                 val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(bmp)
-                capturedBitmap = safeBmp
-                Toast.makeText(context, if (isHindi) "📁 फोटो लोड हो गई!" else "📁 Photo loaded!", Toast.LENGTH_SHORT).show()
+                processBitmapWithOcr(safeBmp)
             }
         }
     }
@@ -342,6 +361,23 @@ fun PaperRegisterScanTab(
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Fit
                                 )
+                                if (isOcrProcessing) {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.65f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            CircularProgressIndicator(color = AmberGold, strokeWidth = 3.dp)
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Text(
+                                                text = if (isHindi) "🔍 Google ML Kit से नाम पढ़े जा रहे हैं..." else "Reading Hindi names with ML Kit...",
+                                                color = Color.White,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
                             }
                             Spacer(modifier = Modifier.height(10.dp))
                         }
@@ -355,13 +391,13 @@ fun PaperRegisterScanTab(
                                     onClick = {
                                         capturedBitmap?.let { bmp ->
                                             val rotated = DevoteePhotoHelper.rotateBitmap(bmp, 90f)
-                                            capturedBitmap = rotated
-                                            Toast.makeText(context, if (isHindi) "🔄 फोटो 90° घुमाई गई" else "Photo rotated 90°", Toast.LENGTH_SHORT).show()
+                                            processBitmapWithOcr(rotated)
                                         }
                                     },
                                     modifier = Modifier.weight(1f),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                                    shape = RoundedCornerShape(10.dp)
+                                    shape = RoundedCornerShape(10.dp),
+                                    enabled = !isOcrProcessing
                                 ) {
                                     Text(
                                         text = if (isHindi) "🔄 फोटो घुमाएं (90°)" else "🔄 Rotate 90°",

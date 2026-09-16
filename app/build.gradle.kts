@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.shribalajikripadham"
         minSdk = 24
         targetSdk = 34
-        versionCode = 46
-        versionName = "2.34.4"
+        versionCode = 47
+        versionName = "2.35.0"
     }
 
     signingConfigs {
@@ -115,4 +115,10 @@ dependencies {
 
   // QR Code Generation for UPI Payments
   implementation("com.google.zxing:core:3.5.3")
+
+  // Google ML Kit On-Device Devanagari (Hindi) Text Recognition
+  implementation("com.google.mlkit:text-recognition-devanagari:16.0.1")
+
+  // Google ML Kit On-Device Face Detection
+  implementation("com.google.mlkit:face-detection:16.1.7")
 }

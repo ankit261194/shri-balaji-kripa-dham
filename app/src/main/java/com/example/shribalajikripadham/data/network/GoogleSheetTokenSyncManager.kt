@@ -87,7 +87,7 @@ object GoogleSheetTokenSyncManager {
                 conn.connectTimeout = timeoutMs
                 conn.readTimeout = timeoutMs
                 conn.instanceFollowRedirects = true
-                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.34.4")
+                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.35.0")
 
                 if (redirectCount == 0) {
                     conn.requestMethod = "POST"
@@ -382,7 +382,7 @@ object GoogleSheetTokenSyncManager {
                 conn.connectTimeout = 8000
                 conn.readTimeout = 8000
                 conn.requestMethod = "GET"
-                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.34.4")
+                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.35.0")
 
                 val code = conn.responseCode
                 if (code in 300..399) {
@@ -469,7 +469,7 @@ object GoogleSheetTokenSyncManager {
                 conn.connectTimeout = 8000
                 conn.readTimeout = 8000
                 conn.requestMethod = "GET"
-                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.34.4")
+                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.35.0")
 
                 val code = conn.responseCode
                 if (code in 300..399) {

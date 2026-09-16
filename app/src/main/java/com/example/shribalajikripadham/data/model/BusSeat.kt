@@ -2,7 +2,8 @@ package com.example.shribalajikripadham.data.model
 
 enum class PaymentStatus {
     PAID,
-    UNPAID
+    UNPAID,
+    PENDING_VERIFICATION
 }
 
 data class BusSeat(

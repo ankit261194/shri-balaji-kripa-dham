@@ -72,9 +72,14 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // Background telemetry heartbeat (installed devices tracking for Super Admin)
+                    // Background telemetry heartbeat & immediate broadcast push check
                     kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                        com.example.shribalajikripadham.data.network.AppTelemetryManager.recordAppHeartbeat(context)
+                        try {
+                            com.example.shribalajikripadham.data.network.AppTelemetryManager.recordAppHeartbeat(context)
+                            com.example.shribalajikripadham.notification.AshramBackgroundPushJobService.executeBackgroundCheck(context)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                 }
 

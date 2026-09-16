@@ -15,6 +15,39 @@ import com.example.shribalajikripadham.data.model.RegisterEntry
 object PaperRegisterScannerEngine {
 
     /**
+     * Real On-Device Google ML Kit Devanagari (Hindi) Text Recognition.
+     * Extracts multi-line text directly from scanned register/notebook photos.
+     */
+    suspend fun recognizeTextFromBitmap(bitmap: Bitmap): String = kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
+        try {
+            val recognizer = com.google.mlkit.vision.text.TextRecognition.getClient(
+                com.google.mlkit.vision.text.devanagari.DevanagariTextRecognizerOptions.Builder().build()
+            )
+            val inputImage = com.google.mlkit.vision.common.InputImage.fromBitmap(bitmap, 0)
+            recognizer.process(inputImage)
+                .addOnSuccessListener { visionText ->
+                    val text = visionText.text
+                    if (continuation.isActive) {
+                        continuation.resume(text) { _, _, _ -> }
+                    }
+                    try { recognizer.close() } catch (e: Exception) {}
+                }
+                .addOnFailureListener { e ->
+                    e.printStackTrace()
+                    if (continuation.isActive) {
+                        continuation.resume("") { _, _, _ -> }
+                    }
+                    try { recognizer.close() } catch (ex: Exception) {}
+                }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            if (continuation.isActive) {
+                continuation.resume("") { _, _, _ -> }
+            }
+        }
+    }
+
+    /**
      * Replaces Devanagari numerals with standard ASCII digits.
      */
     fun normalizeDevanagariDigits(input: String): String {

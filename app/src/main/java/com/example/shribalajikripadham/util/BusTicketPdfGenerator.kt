@@ -311,13 +311,19 @@ object BusTicketPdfGenerator {
         canvas.drawText(pTxn, PAGE_WIDTH / 2f + 10f, currentY + 49f, utrPaint)
 
         canvas.drawText("भुगतान स्थिति (Status):", PAGE_WIDTH / 2f + 10f, currentY + 64f, metaLabelPaint)
+        val isVerified = paymentRecord?.paymentStatus.equals("VERIFIED", ignoreCase = true)
+        val statusText = if (isVerified) {
+            "✓ आश्रम बैंक सत्यापित (VERIFIED & CONFIRMED)"
+        } else {
+            "⚠️ सत्यापन लंबित (Pending Bank Verification)"
+        }
         val statusPaint = Paint().apply {
-            color = greenColor
-            textSize = 10f
+            color = if (isVerified) greenColor else Color.rgb(210, 105, 30)
+            textSize = 9.5f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             isAntiAlias = true
         }
-        canvas.drawText("✓ भुगतान संपन्न एवं सीट आरक्षित (PAID / RESERVED)", PAGE_WIDTH / 2f + 10f, currentY + 76f, statusPaint)
+        canvas.drawText(statusText, PAGE_WIDTH / 2f + 10f, currentY + 76f, statusPaint)
 
         currentY += 96f
 

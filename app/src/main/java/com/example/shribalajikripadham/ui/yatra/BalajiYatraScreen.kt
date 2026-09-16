@@ -755,7 +755,8 @@ fun BalajiYatraScreen(
                             bookingErrorMessage = if (isHindi) "कृपया सभी सीटों के यात्रियों के नाम भरें" else "Please enter all passenger names"
                             return@Button
                         }
-                        if (transactionIdInput.trim().length < 6) {
+                        val utrClean = transactionIdInput.trim()
+                        if (utrClean.length < 6) {
                             bookingErrorMessage = if (isHindi) "कृपया मान्य UPI ट्रांजेक्शन आईडी / UTR दर्ज करें" else "Please enter valid UTR/Transaction ID"
                             return@Button
                         }
@@ -765,6 +766,16 @@ fun BalajiYatraScreen(
 
                         scope.launch {
                             try {
+                                val isDuplicate = repository.isTransactionIdAlreadyUsed(utrClean)
+                                if (isDuplicate) {
+                                    bookingErrorMessage = if (isHindi)
+                                        "⚠️ यह UTR / ट्रांजेक्शन नंबर पहले ही किसी अन्य बुकिंग में इस्तेमाल हो चुका है! कृपया अपनी नई वास्तविक पेमेंट रसीद का UTR दर्ज करें।"
+                                    else
+                                        "This UTR / Transaction ID has already been used. Please enter a valid unique UTR."
+                                    isBookingInProgress = false
+                                    return@launch
+                                }
+
                                 val bookedList = selectedSeats.map { seat ->
                                     val inp = passengerInputs[seat.seatNumber]
                                     seat.copy(
@@ -773,9 +784,9 @@ fun BalajiYatraScreen(
                                         passengerAge = inp?.age?.toIntOrNull() ?: 0,
                                         passengerGender = inp?.gender?.trim() ?: "पुरुष",
                                         phoneNumber = pPhone,
-                                        paymentStatus = PaymentStatus.PAID,
+                                        paymentStatus = PaymentStatus.PENDING_VERIFICATION,
                                         paymentMode = "UPI_QR",
-                                        transactionId = transactionIdInput.trim(),
+                                        transactionId = utrClean,
                                         fareAmount = farePerSeat,
                                         bookedAt = System.currentTimeMillis(),
                                         bookedBy = "DEVOTEE"
@@ -787,12 +798,12 @@ fun BalajiYatraScreen(
                                     devoteeName = pName,
                                     devoteePhone = pPhone,
                                     paymentApp = selectedPaymentApp,
-                                    transactionId = transactionIdInput.trim(),
+                                    transactionId = utrClean,
                                     amount = totalFare.toDouble(),
                                     purpose = "BUS_TICKET",
                                     seatNumbers = seatLabelsStr,
                                     timestamp = System.currentTimeMillis(),
-                                    paymentStatus = "SUCCESS",
+                                    paymentStatus = "PENDING_VERIFICATION",
                                     paymentMode = "UPI_QR"
                                 )
 
@@ -862,9 +873,9 @@ fun BalajiYatraScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = if (isHindi)
-                            "जय श्री बालाजी! आपकी सीटें सफलतापूर्वक आरक्षित हो गई हैं।\n\nआधिकारिक A4 यात्रा टिकट आपके फोन के Downloads फ़ोल्डर में सहेजा जा चुका है।"
+                            "जय श्री बालाजी! आपकी सीटें आरक्षित हो गई हैं।\n\n📌 वर्तमान स्थिति: 'सत्यापन लंबित (Pending Bank Verification)'\nआश्रम व्यवस्थापक द्वारा बैंक में UTR की पुष्टि होते ही टिकट पूर्णतः सत्यापित हो जाएगा। A4 टिकट आपके Downloads फ़ोल्डर में सहेजा जा चुका है।"
                         else
-                            "Seats booked successfully! Official A4 ticket has been saved to your Downloads folder.",
+                            "Seats reserved successfully!\n\nStatus: Pending Bank Verification.\nOnce Ashram verifies the UTR, your seat is fully confirmed. A4 ticket saved to Downloads.",
                         fontSize = 13.sp,
                         color = Color(0xFF111111)
                     )

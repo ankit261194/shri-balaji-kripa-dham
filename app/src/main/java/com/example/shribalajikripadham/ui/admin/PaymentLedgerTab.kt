@@ -308,7 +308,7 @@ fun PaymentLedgerTab(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            val filterOptions = listOf("सभी", "PhonePe", "Google Pay", "Paytm", "BHIM", "Cash", "बस टिकट")
+            val filterOptions = listOf("सभी", "लंबित सत्यापन", "सत्यापित", "अस्वीकृत", "PhonePe", "Google Pay", "Paytm", "Cash", "बस टिकट")
             filterOptions.forEach { filter ->
                 FilterChip(
                     selected = selectedAppFilter == filter,
@@ -332,6 +332,9 @@ fun PaymentLedgerTab(
 
             val matchesFilter = when (selectedAppFilter) {
                 "सभी" -> true
+                "लंबित सत्यापन" -> p.paymentStatus.equals("PENDING_VERIFICATION", ignoreCase = true)
+                "सत्यापित" -> p.paymentStatus.equals("VERIFIED", ignoreCase = true) || p.paymentStatus.equals("SUCCESS", ignoreCase = true)
+                "अस्वीकृत" -> p.paymentStatus.equals("REJECTED", ignoreCase = true)
                 "बस टिकट" -> p.purpose.contains("BUS", ignoreCase = true)
                 else -> p.paymentApp.contains(selectedAppFilter, ignoreCase = true) || p.paymentMode.contains(selectedAppFilter, ignoreCase = true)
             }
@@ -372,6 +375,20 @@ fun PaymentLedgerTab(
                             val clip = ClipData.newPlainText("UTR", utr)
                             clipboard.setPrimaryClip(clip)
                             Toast.makeText(context, if (isHindi) "UTR कॉपी हुआ: $utr" else "Copied: $utr", Toast.LENGTH_SHORT).show()
+                        },
+                        onApprove = {
+                            scope.launch {
+                                repository.updatePaymentStatus(pay.paymentId, "VERIFIED", "SUPER_ADMIN")
+                                Toast.makeText(context, if (isHindi) "✅ पेमेंट सत्यापित हुआ! सीट पक्की हुई।" else "Payment approved!", Toast.LENGTH_SHORT).show()
+                                refreshPayments()
+                            }
+                        },
+                        onReject = {
+                            scope.launch {
+                                repository.updatePaymentStatus(pay.paymentId, "REJECTED", "SUPER_ADMIN")
+                                Toast.makeText(context, if (isHindi) "❌ पेमेंट अस्वीकृत! सीटें निरस्त हुईं।" else "Payment rejected!", Toast.LENGTH_SHORT).show()
+                                refreshPayments()
+                            }
                         },
                         onToggleVerify = {
                             val newStatus = if (pay.paymentStatus == "VERIFIED") "SUCCESS" else "VERIFIED"
@@ -640,6 +657,8 @@ private fun PaymentCard(
     payment: PaymentRecord,
     isSuperAdmin: Boolean,
     onCopyUtr: (String) -> Unit,
+    onApprove: () -> Unit,
+    onReject: () -> Unit,
     onToggleVerify: () -> Unit,
     onDelete: () -> Unit,
     onShareWhatsApp: () -> Unit
@@ -656,10 +675,17 @@ private fun PaymentCard(
         else -> MaroonPrimary
     }
 
+    val (badgeBg, badgeText, badgeTextColor) = when (payment.paymentStatus) {
+        "VERIFIED" -> Triple(Color(0xFFE8F5E9), if (isHindi) "✓ बैंक सत्यापित" else "✓ VERIFIED", Color(0xFF2E7D32))
+        "REJECTED" -> Triple(Color(0xFFFFEBEE), if (isHindi) "❌ अस्वीकृत / फर्जी" else "❌ REJECTED", Color(0xFFC62828))
+        "PENDING_VERIFICATION" -> Triple(Color(0xFFFFF3E0), if (isHindi) "⏳ बैंक सत्यापन लंबित" else "⏳ PENDING UTR", Color(0xFFE65100))
+        else -> Triple(Color(0xFFE3F2FD), if (isHindi) "सफल" else "SUCCESS", Color(0xFF1565C0))
+    }
+
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+        border = BorderStroke(1.dp, if (payment.paymentStatus == "PENDING_VERIFICATION") Color(0xFFFFB74D) else Color(0xFFEEEEEE)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -703,18 +729,18 @@ private fun PaymentCard(
                         text = "₹${String.format("%.0f", payment.amount)}",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2E7D32)
+                        color = if (payment.paymentStatus == "REJECTED") Color(0xFFC62828) else Color(0xFF2E7D32)
                     )
                     Surface(
-                        color = if (payment.paymentStatus == "VERIFIED") Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
+                        color = badgeBg,
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
-                            text = if (payment.paymentStatus == "VERIFIED") "✓ सत्यापित" else "सफल",
+                            text = badgeText,
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (payment.paymentStatus == "VERIFIED") Color(0xFF2E7D32) else Color(0xFFE65100),
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                            color = badgeTextColor,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                         )
                     }
                 }
@@ -778,17 +804,39 @@ private fun PaymentCard(
                     Text("📤", fontSize = 14.sp)
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (isSuperAdmin) {
-                        TextButton(
-                            onClick = onToggleVerify,
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = if (payment.paymentStatus == "VERIFIED") "असत्यापित करें" else "✓ सत्यापित करें",
-                                fontSize = 11.sp,
-                                color = if (payment.paymentStatus == "VERIFIED") Color.Gray else Color(0xFF2E7D32)
-                            )
+                        if (payment.paymentStatus == "PENDING_VERIFICATION") {
+                            // Quick 1-click Approve & Reject buttons for Admin to prevent fraud
+                            Button(
+                                onClick = onApprove,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier.height(30.dp)
+                            ) {
+                                Text(if (isHindi) "✅ बैंक में आया" else "Approve", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Button(
+                                onClick = onReject,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier.height(30.dp)
+                            ) {
+                                Text(if (isHindi) "❌ फर्जी UTR" else "Reject", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            }
+                        } else {
+                            TextButton(
+                                onClick = onToggleVerify,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = if (payment.paymentStatus == "VERIFIED") "असत्यापित करें" else "✓ सत्यापित करें",
+                                    fontSize = 11.sp,
+                                    color = if (payment.paymentStatus == "VERIFIED") Color.Gray else Color(0xFF2E7D32)
+                                )
+                            }
                         }
 
                         IconButton(
