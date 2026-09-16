@@ -262,29 +262,11 @@ fun HomeScreen(
             }
         }
 
-        // 🔄 Continuous live sync loop (every 20 seconds) while screen is open
+        // 🔄 Continuous auto-check for new app releases in real-time (every 30 seconds)
         scope.launch {
             while (isActive) {
-                delay(20_000)
+                delay(30_000)
                 try {
-                    val (synced, liveConfig) = repository.syncLiveConfigFromGitHub()
-                    try { repository.syncAdminsFromGitHub() } catch (e: Exception) {}
-                    try { repository.syncLiveParchasFromGitHub() } catch (e: Exception) {}
-                    if (synced && liveConfig != null) {
-                        if (liveConfig.sections.isNotEmpty()) {
-                            uiSectionConfigs = liveConfig.sections
-                        }
-                        val freshSettings = repository.getSettings()
-                        settings = freshSettings
-                        if (freshSettings.isUiLayoutEnforced) {
-                            activeLayout = AppUiLayout.fromId(freshSettings.activeUiLayout)
-                        }
-                        val evs = repository.getAllEvents()
-                        if (evs.isNotEmpty()) dynamicEvents = evs
-                        activeSevadars = repository.getAllActiveSevadars()
-                    }
-
-                    // 🔄 Continuous auto-check for new app releases in real-time
                     val currentCode = AppUpdateManager.getCurrentVersionCode(context)
                     val onlineInfo = AppUpdateManager.fetchLatestUpdateFromOnline()
                     if (onlineInfo != null && onlineInfo.versionCode > currentCode) {

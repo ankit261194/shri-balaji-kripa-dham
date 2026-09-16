@@ -10,7 +10,7 @@ import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.*
 
-class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     companion object {
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
@@ -541,7 +541,6 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
         try {
             db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1, can_manage_arzi = 1 WHERE role = 'SUPER_ADMIN'")
-            db.execSQL("UPDATE ashram_settings SET latitude = 28.3972915, longitude = 78.1460410 WHERE id = 1")
         } catch (ignored: Exception) {}
     }
 
@@ -643,6 +642,11 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 }
                 db.insert("admins", null, superAdmin)
             }
+
+            // Automatic restoration from permanent vault
+            try {
+                AppPermanentVault.restoreVault(context, db)
+            } catch (e: Exception) {}
         } catch (e: Exception) { e.printStackTrace() }
 
         // 3. Seed Canonical Sacred Parchas if not exists

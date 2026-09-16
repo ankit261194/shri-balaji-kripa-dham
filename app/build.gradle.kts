@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.shribalajikripadham"
         minSdk = 24
         targetSdk = 34
-        versionCode = 51
-        versionName = "2.37.0"
+        versionCode = 52
+        versionName = "2.37.1"
     }
 
     androidResources {

@@ -204,7 +204,12 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
+            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
             try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+            try {
+                val fresh = getSettings()
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
+            } catch (e: Exception) {}
         }
         res
     }
@@ -342,7 +347,15 @@ class AshramRepository(context: Context) {
         val cv = ContentValues().apply {
             put("emergency_notice", emergencyNotice)
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
+            try {
+                val fresh = getSettings()
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
+            } catch (e: Exception) {}
+        }
+        res
     }
 
     suspend fun updateSundayTokenBanner(
@@ -358,8 +371,11 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
+            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
+            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
             try {
-                publishCurrentSettingsToGitHub()
+                val fresh = getSettings()
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
             } catch (e: Exception) {}
         }
         res
@@ -384,7 +400,15 @@ class AshramRepository(context: Context) {
             put("is_outstation_advance_allowed", if (isOutstationAdvanceAllowed) 1 else 0)
             put("outstation_min_distance_km", clampedOutstationKm)
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
+            try {
+                val fresh = getSettings()
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
+            } catch (e: Exception) {}
+        }
+        res
     }
 
     suspend fun syncCurrentLiveSettingsFromGitHub(): Boolean = withContext(Dispatchers.IO) {
@@ -2054,6 +2078,7 @@ class AshramRepository(context: Context) {
         }
         val inserted = db.insert("admins", null, cv) > 0
         if (inserted) {
+            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
             try { publishAdminsToGitHub() } catch (e: Exception) {}
         }
         Pair(inserted, if (inserted) "खाता सफलतापूर्वक बन गया!" else "डेटाबेस में सुरक्षित नहीं हो सका")
@@ -2116,6 +2141,7 @@ class AshramRepository(context: Context) {
         val count = db.update("admins", cv, "id = ?", arrayOf(adminId.toString()))
         val ok = count > 0
         if (ok) {
+            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
             try { publishAdminsToGitHub() } catch (e: Exception) {}
         }
         Pair(ok, if (ok) "विवरण सफलतापूर्वक सुरक्षित हुआ!" else "डेटाबेस में अपडेट नहीं हो सका")
@@ -2225,7 +2251,12 @@ class AshramRepository(context: Context) {
 
     suspend fun deleteAdmin(adminId: Long): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
-        db.delete("admins", "id = ?", arrayOf(adminId.toString())) > 0
+        val res = db.delete("admins", "id = ?", arrayOf(adminId.toString())) > 0
+        if (res) {
+            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
+            try { publishAdminsToGitHub() } catch (e: Exception) {}
+        }
+        res
     }
 
     // --- Dynamic Ashram Events ---
@@ -3256,6 +3287,11 @@ class AshramRepository(context: Context) {
                 if (sc.ashramUpiId.isNotBlank()) cv.put("ashram_upi_id", sc.ashramUpiId)
                 if (sc.ashramUpiName.isNotBlank()) cv.put("ashram_upi_name", sc.ashramUpiName)
                 if (sc.busSeatFareAmount > 0) cv.put("bus_seat_fare_amount", sc.busSeatFareAmount)
+                if (sc.bannerTitle.isNotBlank()) cv.put("banner_title", sc.bannerTitle)
+                if (sc.bannerSubtitle.isNotBlank()) cv.put("banner_subtitle", sc.bannerSubtitle)
+                if (sc.bannerPhotoUri.isNotBlank()) cv.put("banner_photo_uri", sc.bannerPhotoUri)
+                cv.put("is_banner_visible", if (sc.isBannerVisible) 1 else 0)
+                if (sc.bannerActionUrl.isNotBlank()) cv.put("banner_action_url", sc.bannerActionUrl)
 
                 if (cv.size() > 0) {
                     db.update("ashram_settings", cv, "id = 1", null)
@@ -3403,7 +3439,12 @@ class AshramRepository(context: Context) {
                 canDevoteeViewPaymentHistory = currentSettings.canDevoteeViewPaymentHistory,
                 ashramUpiId = currentSettings.ashramUpiId,
                 ashramUpiName = currentSettings.ashramUpiName,
-                busSeatFareAmount = currentSettings.busSeatFareAmount
+                busSeatFareAmount = currentSettings.busSeatFareAmount,
+                bannerTitle = currentSettings.bannerTitle,
+                bannerSubtitle = currentSettings.bannerSubtitle,
+                bannerPhotoUri = currentSettings.bannerPhotoUri,
+                isBannerVisible = currentSettings.isBannerVisible,
+                bannerActionUrl = currentSettings.bannerActionUrl
             ),
             sections = sections,
             events = currentEvents
@@ -4810,8 +4851,11 @@ class AshramRepository(context: Context) {
                     if (cfg.has("is_bus_booking_live")) put("is_bus_booking_live", if (cfg.optBoolean("is_bus_booking_live", false)) 1 else 0)
                     if (cfg.has("is_live_counter_visible")) put("is_live_counter_visible", if (cfg.optBoolean("is_live_counter_visible", true)) 1 else 0)
                     if (cfg.has("is_darbar_active")) put("is_darbar_active", if (cfg.optBoolean("is_darbar_active", true)) 1 else 0)
-                    if (cfg.has("emergency_notice")) put("emergency_notice", cfg.optString("emergency_notice", ""))
+                    if (cfg.has("emergency_notice") && cfg.optString("emergency_notice").isNotBlank()) put("emergency_notice", cfg.optString("emergency_notice", ""))
                     if (cfg.has("is_emergency_notice_visible")) put("is_emergency_notice_visible", if (cfg.optBoolean("is_emergency_notice_visible", false)) 1 else 0)
+                    if (cfg.has("banner_title") && cfg.optString("banner_title").isNotBlank()) put("banner_title", cfg.optString("banner_title"))
+                    if (cfg.has("banner_subtitle") && cfg.optString("banner_subtitle").isNotBlank()) put("banner_subtitle", cfg.optString("banner_subtitle"))
+                    if (cfg.has("is_banner_visible")) put("is_banner_visible", if (cfg.optBoolean("is_banner_visible", true)) 1 else 0)
                 }
                 db.update("ashram_settings", cv, "id = 1", null)
             }
