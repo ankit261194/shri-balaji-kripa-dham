@@ -2546,6 +2546,7 @@ class AshramRepository(context: Context) {
                 put("status", tokenCursor.getString(tokenCursor.getColumnIndexOrThrow("status")))
                 put("registered_by", tokenCursor.getString(tokenCursor.getColumnIndexOrThrow("registered_by")))
                 put("is_darshan_completed", try { tokenCursor.getInt(tokenCursor.getColumnIndexOrThrow("is_darshan_completed")) } catch (e: Exception) { 0 })
+                put("photo_uri", try { tokenCursor.getString(tokenCursor.getColumnIndexOrThrow("photo_uri")) } catch (e: Exception) { "" })
                 put("created_at", tokenCursor.getLong(tokenCursor.getColumnIndexOrThrow("created_at")))
             })
         }
@@ -2578,6 +2579,93 @@ class AshramRepository(context: Context) {
             })
         }
         root.put("ui_sections", uiSectionsArr)
+
+        // 6. Yatra & Ashram Expenses (Hisab-Kitab)
+        val expensesArr = JSONArray()
+        try {
+            val expCursor = db.rawQuery("SELECT * FROM yatra_expenses ORDER BY id ASC", null)
+            while (expCursor.moveToNext()) {
+                expensesArr.put(JSONObject().apply {
+                    put("title", expCursor.getString(expCursor.getColumnIndexOrThrow("title")))
+                    put("category", expCursor.getString(expCursor.getColumnIndexOrThrow("category")))
+                    put("amount", expCursor.getDouble(expCursor.getColumnIndexOrThrow("amount")))
+                    put("receipt_uri", try { expCursor.getString(expCursor.getColumnIndexOrThrow("receipt_uri")) } catch (e: Exception) { "" })
+                    put("added_by", expCursor.getString(expCursor.getColumnIndexOrThrow("added_by")))
+                    put("expense_date", expCursor.getString(expCursor.getColumnIndexOrThrow("expense_date")))
+                    put("created_at", expCursor.getLong(expCursor.getColumnIndexOrThrow("created_at")))
+                })
+            }
+            expCursor.close()
+        } catch (e: Exception) {}
+        root.put("yatra_expenses", expensesArr)
+
+        // 7. Payment Records (Donations & Bus Hisab-Kitab)
+        val paymentsArr = JSONArray()
+        try {
+            val payCursor = db.rawQuery("SELECT * FROM payment_records ORDER BY id ASC", null)
+            while (payCursor.moveToNext()) {
+                paymentsArr.put(JSONObject().apply {
+                    put("payment_id", payCursor.getString(payCursor.getColumnIndexOrThrow("payment_id")))
+                    put("devotee_name", payCursor.getString(payCursor.getColumnIndexOrThrow("devotee_name")))
+                    put("devotee_phone", payCursor.getString(payCursor.getColumnIndexOrThrow("devotee_phone")))
+                    put("payment_app", payCursor.getString(payCursor.getColumnIndexOrThrow("payment_app")))
+                    put("transaction_id", payCursor.getString(payCursor.getColumnIndexOrThrow("transaction_id")))
+                    put("amount", payCursor.getDouble(payCursor.getColumnIndexOrThrow("amount")))
+                    put("purpose", payCursor.getString(payCursor.getColumnIndexOrThrow("purpose")))
+                    put("seat_numbers", try { payCursor.getString(payCursor.getColumnIndexOrThrow("seat_numbers")) } catch (e: Exception) { "" })
+                    put("timestamp", payCursor.getLong(payCursor.getColumnIndexOrThrow("timestamp")))
+                    put("payment_status", payCursor.getString(payCursor.getColumnIndexOrThrow("payment_status")))
+                    put("payment_mode", payCursor.getString(payCursor.getColumnIndexOrThrow("payment_mode")))
+                    put("verified_by", try { payCursor.getString(payCursor.getColumnIndexOrThrow("verified_by")) } catch (e: Exception) { "" })
+                    put("notes", try { payCursor.getString(payCursor.getColumnIndexOrThrow("notes")) } catch (e: Exception) { "" })
+                })
+            }
+            payCursor.close()
+        } catch (e: Exception) {}
+        root.put("payment_records", paymentsArr)
+
+        // 8. Sacred Parchas
+        val parchasArr = JSONArray()
+        try {
+            val parchaCursor = db.rawQuery("SELECT * FROM sacred_parchas ORDER BY id ASC", null)
+            while (parchaCursor.moveToNext()) {
+                parchasArr.put(JSONObject().apply {
+                    put("parcha_id", parchaCursor.getString(parchaCursor.getColumnIndexOrThrow("parcha_id")))
+                    put("title", parchaCursor.getString(parchaCursor.getColumnIndexOrThrow("title")))
+                    put("category", parchaCursor.getString(parchaCursor.getColumnIndexOrThrow("category")))
+                    put("subtitle", try { parchaCursor.getString(parchaCursor.getColumnIndexOrThrow("subtitle")) } catch (e: Exception) { "" })
+                    put("samagri_list", try { parchaCursor.getString(parchaCursor.getColumnIndexOrThrow("samagri_list")) } catch (e: Exception) { "" })
+                    put("vidhi_text", try { parchaCursor.getString(parchaCursor.getColumnIndexOrThrow("vidhi_text")) } catch (e: Exception) { "" })
+                    put("precautions", try { parchaCursor.getString(parchaCursor.getColumnIndexOrThrow("precautions")) } catch (e: Exception) { "" })
+                    put("mantra_text", try { parchaCursor.getString(parchaCursor.getColumnIndexOrThrow("mantra_text")) } catch (e: Exception) { "" })
+                    put("image_uri", try { parchaCursor.getString(parchaCursor.getColumnIndexOrThrow("image_uri")) } catch (e: Exception) { "" })
+                    put("is_published", parchaCursor.getInt(parchaCursor.getColumnIndexOrThrow("is_published")))
+                    put("created_at", parchaCursor.getLong(parchaCursor.getColumnIndexOrThrow("created_at")))
+                    put("updated_at", parchaCursor.getLong(parchaCursor.getColumnIndexOrThrow("updated_at")))
+                })
+            }
+            parchaCursor.close()
+        } catch (e: Exception) {}
+        root.put("sacred_parchas", parchasArr)
+
+        // 9. Devotee Master Directory
+        val dirArr = JSONArray()
+        try {
+            val dirCursor = db.rawQuery("SELECT * FROM devotee_directory ORDER BY id ASC", null)
+            while (dirCursor.moveToNext()) {
+                dirArr.put(JSONObject().apply {
+                    put("name", dirCursor.getString(dirCursor.getColumnIndexOrThrow("name")))
+                    put("phone", dirCursor.getString(dirCursor.getColumnIndexOrThrow("phone")))
+                    put("city", try { dirCursor.getString(dirCursor.getColumnIndexOrThrow("city")) } catch (e: Exception) { "" })
+                    put("photo_uri", try { dirCursor.getString(dirCursor.getColumnIndexOrThrow("photo_uri")) } catch (e: Exception) { "" })
+                    put("visits_count", dirCursor.getInt(dirCursor.getColumnIndexOrThrow("visits_count")))
+                    put("source_module", try { dirCursor.getString(dirCursor.getColumnIndexOrThrow("source_module")) } catch (e: Exception) { "TOKEN" })
+                    put("last_visit_date", try { dirCursor.getString(dirCursor.getColumnIndexOrThrow("last_visit_date")) } catch (e: Exception) { "" })
+                })
+            }
+            dirCursor.close()
+        } catch (e: Exception) {}
+        root.put("devotee_directory", dirArr)
 
         root.toString(2)
     }
@@ -2646,10 +2734,11 @@ class AshramRepository(context: Context) {
                         put("longitude", t.optDouble("longitude", 78.1460410))
                         put("status", t.optString("status", "WAITING"))
                         put("registered_by", t.optString("registered_by", "RESTORE"))
+                        put("photo_uri", t.optString("photo_uri", ""))
                         put("is_darshan_completed", t.optInt("is_darshan_completed", 0))
                         put("created_at", t.optLong("created_at", System.currentTimeMillis()))
                     }
-                    db.insert("tokens", null, cv)
+                    db.insertWithOnConflict("tokens", null, cv, SQLiteDatabase.CONFLICT_IGNORE)
                 }
             }
 
@@ -2683,6 +2772,89 @@ class AshramRepository(context: Context) {
                         }
                         db.insertWithOnConflict("ui_section_configs", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
                     }
+                }
+            }
+
+            // Restore Yatra Expenses (Hisab-Kitab)
+            if (root.has("yatra_expenses")) {
+                val expArr = root.getJSONArray("yatra_expenses")
+                for (i in 0 until expArr.length()) {
+                    val exp = expArr.getJSONObject(i)
+                    val cv = ContentValues().apply {
+                        put("title", exp.getString("title"))
+                        put("category", exp.getString("category"))
+                        put("amount", exp.getDouble("amount"))
+                        put("receipt_uri", exp.optString("receipt_uri", ""))
+                        put("added_by", exp.optString("added_by", "ADMIN"))
+                        put("expense_date", exp.optString("expense_date", ""))
+                        put("created_at", exp.optLong("created_at", System.currentTimeMillis()))
+                    }
+                    db.insert("yatra_expenses", null, cv)
+                }
+            }
+
+            // Restore Payment Records
+            if (root.has("payment_records")) {
+                val payArr = root.getJSONArray("payment_records")
+                for (i in 0 until payArr.length()) {
+                    val p = payArr.getJSONObject(i)
+                    val cv = ContentValues().apply {
+                        put("payment_id", p.getString("payment_id"))
+                        put("devotee_name", p.getString("devotee_name"))
+                        put("devotee_phone", p.getString("devotee_phone"))
+                        put("payment_app", p.getString("payment_app"))
+                        put("transaction_id", p.getString("transaction_id"))
+                        put("amount", p.getDouble("amount"))
+                        put("purpose", p.getString("purpose"))
+                        put("seat_numbers", p.optString("seat_numbers", ""))
+                        put("timestamp", p.optLong("timestamp", System.currentTimeMillis()))
+                        put("payment_status", p.optString("payment_status", "SUCCESS"))
+                        put("payment_mode", p.optString("payment_mode", "UPI_QR"))
+                        put("verified_by", p.optString("verified_by", ""))
+                        put("notes", p.optString("notes", ""))
+                    }
+                    db.insertWithOnConflict("payment_records", null, cv, SQLiteDatabase.CONFLICT_IGNORE)
+                }
+            }
+
+            // Restore Sacred Parchas
+            if (root.has("sacred_parchas")) {
+                val parArr = root.getJSONArray("sacred_parchas")
+                for (i in 0 until parArr.length()) {
+                    val pc = parArr.getJSONObject(i)
+                    val cv = ContentValues().apply {
+                        put("parcha_id", pc.getString("parcha_id"))
+                        put("title", pc.getString("title"))
+                        put("category", pc.getString("category"))
+                        put("subtitle", pc.optString("subtitle", ""))
+                        put("samagri_list", pc.optString("samagri_list", ""))
+                        put("vidhi_text", pc.optString("vidhi_text", ""))
+                        put("precautions", pc.optString("precautions", ""))
+                        put("mantra_text", pc.optString("mantra_text", ""))
+                        put("image_uri", pc.optString("image_uri", ""))
+                        put("is_published", pc.optInt("is_published", 1))
+                        put("created_at", pc.optLong("created_at", System.currentTimeMillis()))
+                        put("updated_at", pc.optLong("updated_at", System.currentTimeMillis()))
+                    }
+                    db.insertWithOnConflict("sacred_parchas", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                }
+            }
+
+            // Restore Devotee Directory
+            if (root.has("devotee_directory")) {
+                val dirArr = root.getJSONArray("devotee_directory")
+                for (i in 0 until dirArr.length()) {
+                    val d = dirArr.getJSONObject(i)
+                    val cv = ContentValues().apply {
+                        put("name", d.getString("name"))
+                        put("phone", d.getString("phone"))
+                        put("city", d.optString("city", ""))
+                        put("photo_uri", d.optString("photo_uri", ""))
+                        put("visits_count", d.optInt("visits_count", 1))
+                        put("source_module", d.optString("source_module", "RESTORE"))
+                        put("last_visit_date", d.optString("last_visit_date", ""))
+                    }
+                    db.insertWithOnConflict("devotee_directory", null, cv, SQLiteDatabase.CONFLICT_IGNORE)
                 }
             }
 
@@ -2811,6 +2983,89 @@ class AshramRepository(context: Context) {
                 }
                 db.insertWithOnConflict("ui_section_configs", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
             }
+            // Restore Yatra Expenses (Hisab-Kitab)
+            if (root.has("yatra_expenses")) {
+                val expArr = root.getJSONArray("yatra_expenses")
+                for (i in 0 until expArr.length()) {
+                    val exp = expArr.getJSONObject(i)
+                    val cv = ContentValues().apply {
+                        put("title", exp.getString("title"))
+                        put("category", exp.getString("category"))
+                        put("amount", exp.getDouble("amount"))
+                        put("receipt_uri", exp.optString("receipt_uri", ""))
+                        put("added_by", exp.optString("added_by", "ADMIN"))
+                        put("expense_date", exp.optString("expense_date", ""))
+                        put("created_at", exp.optLong("created_at", System.currentTimeMillis()))
+                    }
+                    db.insert("yatra_expenses", null, cv)
+                }
+            }
+
+            // Restore Payment Records
+            if (root.has("payment_records")) {
+                val payArr = root.getJSONArray("payment_records")
+                for (i in 0 until payArr.length()) {
+                    val p = payArr.getJSONObject(i)
+                    val cv = ContentValues().apply {
+                        put("payment_id", p.getString("payment_id"))
+                        put("devotee_name", p.getString("devotee_name"))
+                        put("devotee_phone", p.getString("devotee_phone"))
+                        put("payment_app", p.getString("payment_app"))
+                        put("transaction_id", p.getString("transaction_id"))
+                        put("amount", p.getDouble("amount"))
+                        put("purpose", p.getString("purpose"))
+                        put("seat_numbers", p.optString("seat_numbers", ""))
+                        put("timestamp", p.optLong("timestamp", System.currentTimeMillis()))
+                        put("payment_status", p.optString("payment_status", "SUCCESS"))
+                        put("payment_mode", p.optString("payment_mode", "UPI_QR"))
+                        put("verified_by", p.optString("verified_by", ""))
+                        put("notes", p.optString("notes", ""))
+                    }
+                    db.insertWithOnConflict("payment_records", null, cv, SQLiteDatabase.CONFLICT_IGNORE)
+                }
+            }
+
+            // Restore Sacred Parchas
+            if (root.has("sacred_parchas")) {
+                val parArr = root.getJSONArray("sacred_parchas")
+                for (i in 0 until parArr.length()) {
+                    val pc = parArr.getJSONObject(i)
+                    val cv = ContentValues().apply {
+                        put("parcha_id", pc.getString("parcha_id"))
+                        put("title", pc.getString("title"))
+                        put("category", pc.getString("category"))
+                        put("subtitle", pc.optString("subtitle", ""))
+                        put("samagri_list", pc.optString("samagri_list", ""))
+                        put("vidhi_text", pc.optString("vidhi_text", ""))
+                        put("precautions", pc.optString("precautions", ""))
+                        put("mantra_text", pc.optString("mantra_text", ""))
+                        put("image_uri", pc.optString("image_uri", ""))
+                        put("is_published", pc.optInt("is_published", 1))
+                        put("created_at", pc.optLong("created_at", System.currentTimeMillis()))
+                        put("updated_at", pc.optLong("updated_at", System.currentTimeMillis()))
+                    }
+                    db.insertWithOnConflict("sacred_parchas", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                }
+            }
+
+            // Restore Devotee Directory
+            if (root.has("devotee_directory")) {
+                val dirArr = root.getJSONArray("devotee_directory")
+                for (i in 0 until dirArr.length()) {
+                    val d = dirArr.getJSONObject(i)
+                    val cv = ContentValues().apply {
+                        put("name", d.getString("name"))
+                        put("phone", d.getString("phone"))
+                        put("city", d.optString("city", ""))
+                        put("photo_uri", d.optString("photo_uri", ""))
+                        put("visits_count", d.optInt("visits_count", 1))
+                        put("source_module", d.optString("source_module", "RESTORE"))
+                        put("last_visit_date", d.optString("last_visit_date", ""))
+                    }
+                    db.insertWithOnConflict("devotee_directory", null, cv, SQLiteDatabase.CONFLICT_IGNORE)
+                }
+            }
+
             db.setTransactionSuccessful()
             true
         } catch (e: Exception) {
