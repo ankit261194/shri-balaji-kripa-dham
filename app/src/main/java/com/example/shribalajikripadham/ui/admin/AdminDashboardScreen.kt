@@ -1008,6 +1008,9 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊")
             }
             if (isSuper) {
+                allowedTabs.add(if (isHindi) "Google Sheet बही-खाता 📊" else "Google Sheet 📊")
+            }
+            if (isSuper) {
                 allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
                 allowedTabs.add(if (isHindi) "सेवाएं ऑन/ऑफ" else "Services")
                 allowedTabs.add(if (isHindi) "ऐप कस्टमाइजर" else "Customizer")
@@ -1509,6 +1512,12 @@ fun AdminDashboardScreen(
                                 isSuperAdmin = isSuper,
                                 scope = scope,
                                 context = context
+                            )
+                        }
+                        currentTabTitle == "Google Sheet 📊" || currentTabTitle == "Google Sheet बही-खाता 📊" -> {
+                            GoogleSheetLedgerTab(
+                                isHindi = isHindi,
+                                repository = repository
                             )
                         }
                         currentTabTitle == "सेवाएं ऑन/ऑफ" || currentTabTitle == "Services" -> {

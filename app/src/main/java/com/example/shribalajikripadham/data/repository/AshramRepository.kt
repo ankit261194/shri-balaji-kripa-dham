@@ -984,6 +984,17 @@ class AshramRepository(context: Context) {
 
     suspend fun toggleDarshanCompleted(tokenId: Long, completed: Boolean): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
+        var tokenNum = 0
+        var darbarDate = ""
+        try {
+            val cur = db.rawQuery("SELECT token_number, darbar_date FROM tokens WHERE id = ?", arrayOf(tokenId.toString()))
+            if (cur.moveToFirst()) {
+                tokenNum = cur.getInt(0)
+                darbarDate = cur.getString(1)
+            }
+            cur.close()
+        } catch (e: Exception) {}
+
         val cv = ContentValues().apply {
             put("is_darshan_completed", if (completed) 1 else 0)
             put("darshan_completed_at", if (completed) System.currentTimeMillis() else 0L)
@@ -993,7 +1004,21 @@ class AshramRepository(context: Context) {
                 put("status", TokenStatus.WAITING.name)
             }
         }
-        db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
+        val ok = db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
+        if (ok && tokenNum > 0) {
+            val newStatus = if (completed) TokenStatus.COMPLETED else TokenStatus.WAITING
+            try {
+                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.updateLiveTokenStatusInGitHub(
+                    appContext, tokenNum, darbarDate, newStatus
+                )
+            } catch (e: Exception) {}
+            try {
+                com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.updateTokenStatusInSheet(
+                    appContext, darbarDate, tokenNum, newStatus.name
+                )
+            } catch (e: Exception) {}
+        }
+        ok
     }
 
     suspend fun updateTokenStatus(tokenId: Long, status: TokenStatus): Boolean = withContext(Dispatchers.IO) {
@@ -1226,6 +1251,9 @@ class AshramRepository(context: Context) {
             try {
                 publishPaymentsToGitHub()
             } catch (e: Exception) {}
+            try {
+                com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.postPaymentToSheet(appContext, payment)
+            } catch (e: Exception) {}
         }
         id
     }
@@ -1435,7 +1463,22 @@ class AshramRepository(context: Context) {
             put("expense_date", DatabaseHelper.getTodayDateString())
             put("created_at", System.currentTimeMillis())
         }
-        db.insert("yatra_expenses", null, cv) > 0
+        val ok = db.insert("yatra_expenses", null, cv) > 0
+        if (ok) {
+            try {
+                val expObj = YatraExpense(
+                    title = title,
+                    category = category,
+                    amount = amount,
+                    receiptUri = receiptUri,
+                    addedByAdminName = addedBy,
+                    expenseDate = DatabaseHelper.getTodayDateString(),
+                    createdAt = System.currentTimeMillis()
+                )
+                com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.postExpenseToSheet(appContext, expObj)
+            } catch (e: Exception) {}
+        }
+        ok
     }
 
     suspend fun getYatraFinancialSummary(): Triple<Double, Double, Double> = withContext(Dispatchers.IO) {
@@ -2165,6 +2208,11 @@ class AshramRepository(context: Context) {
                     appContext, tokenNum, darbarDate, TokenStatus.CANCELLED
                 )
             } catch (e: Exception) {}
+            try {
+                com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.updateTokenStatusInSheet(
+                    appContext, darbarDate, tokenNum, TokenStatus.CANCELLED.name, "रद्द (CANCELLED)"
+                )
+            } catch (e: Exception) {}
         }
         updated
     }
@@ -2185,6 +2233,12 @@ class AshramRepository(context: Context) {
             try {
                 com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.removeLiveTokenFromGitHub(
                     appContext, tokenNum, darbarDate
+                )
+            } catch (e: Exception) {}
+            try {
+                // Keep immutable audit trail in Google Sheet
+                com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.updateTokenStatusInSheet(
+                    appContext, darbarDate, tokenNum, "CANCELLED", "एडमिन द्वारा हटाया गया"
                 )
             } catch (e: Exception) {}
         }
@@ -3847,6 +3901,9 @@ class AshramRepository(context: Context) {
         try {
             val all = getAllArziRecords()
             com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveArziRecords(appContext, all, record.recordedBy)
+        } catch (e: Exception) {}
+        try {
+            com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.postArziToSheet(appContext, record)
         } catch (e: Exception) {}
         id
     }

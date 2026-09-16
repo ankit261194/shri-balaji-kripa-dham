@@ -3,10 +3,14 @@ package com.example.shribalajikripadham.data.network
 import android.content.ContentValues
 import android.content.Context
 import com.example.shribalajikripadham.data.local.DatabaseHelper
+import com.example.shribalajikripadham.data.model.ArziDistributionRecord
+import com.example.shribalajikripadham.data.model.PaymentRecord
 import com.example.shribalajikripadham.data.model.Token
 import com.example.shribalajikripadham.data.model.TokenStatus
+import com.example.shribalajikripadham.data.model.YatraExpense
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -69,36 +73,10 @@ object GoogleSheetTokenSyncManager {
     }
 
     /**
-     * Post a newly created token to the central Google Spreadsheet.
-     * Works for both devotee-created and admin-created tokens.
+     * Reusable HTTP POST handler with automatic Google Apps Script 302 redirect following.
      */
-    suspend fun postTokenToSheet(
-        context: Context,
-        token: Token
-    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
-        val webhookUrl = getWebhookUrl(context)
-        if (webhookUrl.isBlank() || !webhookUrl.startsWith("https://script.google.com/")) {
-            return@withContext Pair(false, "Google Sheet वेबहुक लिंक कॉन्फ़िगर नहीं है")
-        }
-
-        try {
-            val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
-            val timeStr = timeFormatter.format(Date(token.createdAt))
-
-            val payload = JSONObject().apply {
-                put("token_number", token.tokenNumber)
-                put("darbar_date", token.darbarDate)
-                put("time_str", timeStr)
-                put("patient_name", token.patientName)
-                put("phone_number", token.phoneNumber)
-                put("city", token.city)
-                put("registered_by", token.registeredBy)
-                put("distance_km", token.distanceKm)
-                put("status", token.status.name)
-                put("has_photo", token.photoUri.isNotBlank())
-                put("photo_uri", token.photoUri)
-            }
-
+    private fun executePost(webhookUrl: String, payload: JSONObject, timeoutMs: Int = 12000): Pair<Boolean, String> {
+        return try {
             var currentUrl = webhookUrl
             var redirectCount = 0
             var finalCode = -1
@@ -106,10 +84,10 @@ object GoogleSheetTokenSyncManager {
             while (redirectCount < 4) {
                 val url = URL(currentUrl)
                 val conn = url.openConnection() as HttpURLConnection
-                conn.connectTimeout = 8000
-                conn.readTimeout = 8000
+                conn.connectTimeout = timeoutMs
+                conn.readTimeout = timeoutMs
                 conn.instanceFollowRedirects = true
-                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.6")
+                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.34.4")
 
                 if (redirectCount == 0) {
                     conn.requestMethod = "POST"
@@ -134,34 +112,75 @@ object GoogleSheetTokenSyncManager {
 
                 if (finalCode in 200..299) {
                     val respText = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-                    return@withContext Pair(true, "टोकन Google Sheet में सफलतापूर्वक दर्ज हुआ!")
+                    return Pair(true, respText)
                 } else {
                     break
                 }
             }
 
-            Pair(false, "Google Sheet सर्वर रिस्पॉन्स: HTTP $finalCode")
+            Pair(false, "HTTP " + finalCode)
         } catch (e: Exception) {
-            Pair(false, "सिंक त्रुटि: ${e.localizedMessage ?: "नेटवर्क उपलब्ध नहीं"}")
+            Pair(false, e.localizedMessage ?: "नेटवर्क त्रुटि")
         }
     }
 
     /**
-     * Post a batch of tokens (e.g. from Paper Register Scan) to Google Spreadsheet.
+     * Post a single newly generated token to Sunday_Tokens sheet.
+     */
+    suspend fun postTokenToSheet(
+        context: Context,
+        token: Token
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val webhookUrl = getWebhookUrl(context)
+        if (!isConfigured(context)) {
+            return@withContext Pair(false, "Google Sheet वेबहुक लिंक कॉन्फ़िगर नहीं है")
+        }
+
+        try {
+            val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
+            val timeStr = timeFormatter.format(Date(token.createdAt))
+
+            val payload = JSONObject().apply {
+                put("action", "RECORD_TOKEN")
+                put("token_number", token.tokenNumber)
+                put("darbar_date", token.darbarDate)
+                put("time_str", timeStr)
+                put("patient_name", token.patientName)
+                put("phone_number", token.phoneNumber)
+                put("city", token.city)
+                put("registered_by", token.registeredBy)
+                put("distance_km", token.distanceKm)
+                put("status", token.status.name)
+                put("has_photo", token.photoUri.isNotBlank())
+            }
+
+            val (success, resp) = executePost(webhookUrl, payload)
+            if (success) {
+                Pair(true, "टोकन #" + token.tokenNumber + " Google Sheet में दर्ज हुआ!")
+            } else {
+                Pair(false, "Google Sheet सिंक विफल: " + resp)
+            }
+        } catch (e: Exception) {
+            Pair(false, "त्रुटि: " + (e.localizedMessage ?: "अज्ञात"))
+        }
+    }
+
+    /**
+     * Post a batch of tokens (e.g. from Paper Register OCR Scan) to Google Spreadsheet.
      */
     suspend fun postBatchTokensToSheet(
         context: Context,
         tokens: List<Token>
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val webhookUrl = getWebhookUrl(context)
-        if (webhookUrl.isBlank() || !webhookUrl.startsWith("https://script.google.com/")) {
+        if (!isConfigured(context)) {
             return@withContext Pair(false, "Google Sheet वेबहुक लिंक कॉन्फ़िगर नहीं है")
         }
         if (tokens.isEmpty()) return@withContext Pair(true, "कोई टोकन नहीं")
 
         try {
             val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
-            val tokenArray = org.json.JSONArray()
+            val tokenArray = JSONArray()
 
             for (token in tokens) {
                 val timeStr = timeFormatter.format(Date(token.createdAt))
@@ -176,7 +195,6 @@ object GoogleSheetTokenSyncManager {
                     put("distance_km", token.distanceKm)
                     put("status", token.status.name)
                     put("has_photo", token.photoUri.isNotBlank())
-                    put("photo_uri", token.photoUri)
                 }
                 tokenArray.put(item)
             }
@@ -186,68 +204,176 @@ object GoogleSheetTokenSyncManager {
                 put("tokens", tokenArray)
             }
 
-            var currentUrl = webhookUrl
-            var redirectCount = 0
-            var finalCode = -1
-
-            while (redirectCount < 4) {
-                val url = URL(currentUrl)
-                val conn = url.openConnection() as HttpURLConnection
-                conn.connectTimeout = 12000
-                conn.readTimeout = 12000
-                conn.instanceFollowRedirects = true
-                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.9")
-
-                if (redirectCount == 0) {
-                    conn.requestMethod = "POST"
-                    conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-                    conn.doOutput = true
-                    conn.outputStream.use { os ->
-                        os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
-                    }
-                } else {
-                    conn.requestMethod = "GET"
-                }
-
-                finalCode = conn.responseCode
-                if (finalCode in 300..399) {
-                    val newLocation = conn.getHeaderField("Location")
-                    if (!newLocation.isNullOrBlank()) {
-                        currentUrl = newLocation
-                        redirectCount++
-                        continue
-                    }
-                }
-
-                if (finalCode in 200..299) {
-                    return@withContext Pair(true, "${tokens.size} टोकन Google Sheet में सफलतापूर्वक दर्ज हुए!")
-                } else {
-                    break
-                }
+            val (success, resp) = executePost(webhookUrl, payload, timeoutMs = 15000)
+            if (success) {
+                Pair(true, "" + tokens.size + " टोकन Google Sheet में सफलतापूर्वक दर्ज हुए!")
+            } else {
+                Pair(false, "Google Sheet सिंक विफल: " + resp)
             }
-
-            Pair(false, "Google Sheet सर्वर रिस्पॉन्स: HTTP $finalCode")
         } catch (e: Exception) {
-            Pair(false, "सिंक त्रुटि: ${e.localizedMessage ?: "नेटवर्क उपलब्ध नहीं"}")
+            Pair(false, "सिंक त्रुटि: " + (e.localizedMessage ?: "अज्ञात"))
         }
     }
 
     /**
-     * Fetch all tokens from Google Spreadsheet for today.
-     * Allows Admin to sync all devotee submissions into Admin app.
+     * Update token status in Google Sheet without deleting the row (Audit Ledger Compliant).
+     */
+    suspend fun updateTokenStatusInSheet(
+        context: Context,
+        darbarDate: String,
+        tokenNumber: Int,
+        newStatus: String,
+        cancelReason: String = ""
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val webhookUrl = getWebhookUrl(context)
+        if (!isConfigured(context)) {
+            return@withContext Pair(false, "Google Sheet वेबहुक लिंक कॉन्फ़िगर नहीं है")
+        }
+
+        try {
+            val payload = JSONObject().apply {
+                put("action", "UPDATE_TOKEN_STATUS")
+                put("darbar_date", darbarDate)
+                put("token_number", tokenNumber)
+                put("new_status", newStatus)
+                put("cancel_reason", cancelReason)
+            }
+
+            val (success, resp) = executePost(webhookUrl, payload)
+            if (success) {
+                Pair(true, "टोकन #" + tokenNumber + " का स्टेटस शीट में अपडेट हुआ: " + newStatus)
+            } else {
+                Pair(false, "शीट स्टेटस अपडेट त्रुटि: " + resp)
+            }
+        } catch (e: Exception) {
+            Pair(false, "त्रुटि: " + (e.localizedMessage ?: "अज्ञात"))
+        }
+    }
+
+    /**
+     * Post a Payment Record (Dharmashala room, Donation, Bus) to Dharmashala_Payments sheet.
+     */
+    suspend fun postPaymentToSheet(
+        context: Context,
+        payment: PaymentRecord
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val webhookUrl = getWebhookUrl(context)
+        if (!isConfigured(context)) {
+            return@withContext Pair(false, "Google Sheet वेबहुक लिंक कॉन्फ़िगर नहीं है")
+        }
+
+        try {
+            val payload = JSONObject().apply {
+                put("action", "RECORD_PAYMENT")
+                put("payment_id", payment.paymentId)
+                put("devotee_name", payment.devoteeName)
+                put("devotee_phone", payment.devoteePhone)
+                put("purpose", payment.purpose)
+                put("amount", payment.amount)
+                put("payment_mode", payment.paymentMode)
+                put("transaction_id", payment.transactionId)
+                put("verified_by", payment.verifiedBy)
+                put("notes", payment.notes)
+            }
+
+            val (success, resp) = executePost(webhookUrl, payload)
+            if (success) {
+                Pair(true, "पेमेंट रसीद ₹" + payment.amount + " Google Sheet में दर्ज हुई!")
+            } else {
+                Pair(false, "पेमेंट शीट सिंक त्रुटि: " + resp)
+            }
+        } catch (e: Exception) {
+            Pair(false, "त्रुटि: " + (e.localizedMessage ?: "अज्ञात"))
+        }
+    }
+
+    /**
+     * Post an Arzi distribution record to Arzi_Box_Ledger sheet.
+     */
+    suspend fun postArziToSheet(
+        context: Context,
+        arzi: ArziDistributionRecord
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val webhookUrl = getWebhookUrl(context)
+        if (!isConfigured(context)) {
+            return@withContext Pair(false, "Google Sheet वेबहुक लिंक कॉन्फ़िगर नहीं है")
+        }
+
+        try {
+            val payload = JSONObject().apply {
+                put("action", "RECORD_ARZI")
+                put("darbar_date", arzi.darbarDate)
+                put("devotee_name", arzi.devoteeName)
+                put("phone_number", arzi.phoneNumber)
+                put("big_arzi_qty", arzi.bigArziQty)
+                put("small_arzi_qty", arzi.smallArziQty)
+                put("total_amount", arzi.totalAmount)
+                put("is_paid", arzi.isPaid)
+                put("payment_mode", arzi.paymentMode)
+                put("recorded_by", arzi.recordedBy)
+                put("notes", arzi.notes)
+            }
+
+            val (success, resp) = executePost(webhookUrl, payload)
+            if (success) {
+                Pair(true, "अर्जी विवरण Google Sheet में दर्ज हुआ!")
+            } else {
+                Pair(false, "अर्जी शीट सिंक त्रुटि: " + resp)
+            }
+        } catch (e: Exception) {
+            Pair(false, "त्रुटि: " + (e.localizedMessage ?: "अज्ञात"))
+        }
+    }
+
+    /**
+     * Post an expense to Daily_Expenses sheet.
+     */
+    suspend fun postExpenseToSheet(
+        context: Context,
+        expense: YatraExpense
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val webhookUrl = getWebhookUrl(context)
+        if (!isConfigured(context)) {
+            return@withContext Pair(false, "Google Sheet वेबहुक लिंक कॉन्फ़िगर नहीं है")
+        }
+
+        try {
+            val payload = JSONObject().apply {
+                put("action", "RECORD_EXPENSE")
+                put("expense_date", expense.expenseDate)
+                put("title", expense.title)
+                put("category", expense.category.displayNameHindi)
+                put("amount", expense.amount)
+                put("added_by", expense.addedByAdminName)
+                put("receipt_uri", expense.receiptUri)
+            }
+
+            val (success, resp) = executePost(webhookUrl, payload)
+            if (success) {
+                Pair(true, "खर्च विवरण Google Sheet में दर्ज हुआ!")
+            } else {
+                Pair(false, "खर्च शीट सिंक त्रुटि: " + resp)
+            }
+        } catch (e: Exception) {
+            Pair(false, "त्रुटि: " + (e.localizedMessage ?: "अज्ञात"))
+        }
+    }
+
+    /**
+     * Fetch all tokens from Google Spreadsheet for a given date.
      */
     suspend fun fetchTokensFromSheet(
         context: Context,
         date: String = ""
     ): List<Token> = withContext(Dispatchers.IO) {
         val webhookUrl = getWebhookUrl(context)
-        if (webhookUrl.isBlank() || !webhookUrl.startsWith("https://script.google.com/")) {
+        if (!isConfigured(context)) {
             return@withContext emptyList()
         }
 
         val list = mutableListOf<Token>()
         try {
-            var currentUrl = if (date.isNotBlank()) "$webhookUrl?date=$date" else webhookUrl
+            var currentUrl = if (date.isNotBlank()) webhookUrl + "?date=" + date else webhookUrl
             var redirectCount = 0
 
             while (redirectCount < 4) {
@@ -256,7 +382,7 @@ object GoogleSheetTokenSyncManager {
                 conn.connectTimeout = 8000
                 conn.readTimeout = 8000
                 conn.requestMethod = "GET"
-                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.6")
+                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.34.4")
 
                 val code = conn.responseCode
                 if (code in 300..399) {
@@ -283,9 +409,11 @@ object GoogleSheetTokenSyncManager {
                             val regBy = item.optString("registered_by", "GOOGLE_SHEET")
                             val dist = item.optDouble("distance_km", 0.0).toFloat()
                             val statusStr = item.optString("status", "WAITING")
-                            val status = try {
-                                TokenStatus.valueOf(statusStr)
-                            } catch (e: Exception) {
+                            val status = if (statusStr.contains("दर्शन") || statusStr.contains("COMPLETED")) {
+                                TokenStatus.COMPLETED
+                            } else if (statusStr.contains("रद्द") || statusStr.contains("CANCELLED")) {
+                                TokenStatus.CANCELLED
+                            } else {
                                 TokenStatus.WAITING
                             }
 
@@ -320,5 +448,52 @@ object GoogleSheetTokenSyncManager {
             // Return empty list on failure
         }
         list
+    }
+
+    /**
+     * Test connection to the webhook. Returns (Success, SpreadsheetName/Message).
+     */
+    suspend fun testConnection(context: Context): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val webhookUrl = getWebhookUrl(context)
+        if (!isConfigured(context)) {
+            return@withContext Pair(false, "कृपया वैध Google Apps Script URL दर्ज करें")
+        }
+
+        try {
+            var currentUrl = webhookUrl + "?action=get_summary"
+            var redirectCount = 0
+
+            while (redirectCount < 4) {
+                val url = URL(currentUrl)
+                val conn = url.openConnection() as HttpURLConnection
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                conn.requestMethod = "GET"
+                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.34.4")
+
+                val code = conn.responseCode
+                if (code in 300..399) {
+                    val newLocation = conn.getHeaderField("Location")
+                    if (!newLocation.isNullOrBlank()) {
+                        currentUrl = newLocation
+                        redirectCount++
+                        continue
+                    }
+                }
+
+                if (code in 200..299) {
+                    val jsonStr = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                    val root = JSONObject(jsonStr)
+                    val ssName = root.optString("spreadsheet_name", "Google Spreadsheet")
+                    val totTokens = root.optInt("total_tokens", 0)
+                    return@withContext Pair(true, "सफल कनेक्शन! शीट: " + ssName + " (कुल टोकन: " + totTokens + ")")
+                } else {
+                    return@withContext Pair(false, "सर्वर रिस्पॉन्स कोड: HTTP " + code)
+                }
+            }
+            Pair(false, "कनेक्शन टाइमआउट या रीडायरेक्ट सीमा पार")
+        } catch (e: Exception) {
+            Pair(false, "कनेक्शन विफल: " + (e.localizedMessage ?: "नेटवर्क अनुपलब्ध"))
+        }
     }
 }
