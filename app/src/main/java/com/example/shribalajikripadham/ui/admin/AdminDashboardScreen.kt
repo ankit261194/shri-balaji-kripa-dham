@@ -1012,7 +1012,7 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊")
             }
             if (isSuper) {
-                allowedTabs.add(if (isHindi) "Google Sheet बही-खाता 📊" else "Google Sheet 📊")
+                allowedTabs.add(if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️")
             }
             if (isSuper) {
                 allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
@@ -1522,7 +1522,7 @@ fun AdminDashboardScreen(
                                 context = context
                             )
                         }
-                        currentTabTitle == "Google Sheet 📊" || currentTabTitle == "Google Sheet बही-खाता 📊" -> {
+                        currentTabTitle == "त्रिमूर्ति क्लाउड सिंक ☁️" || currentTabTitle == "Triple Cloud Sync ☁️" || currentTabTitle == "Google Sheet 📊" || currentTabTitle == "Google Sheet बही-खाता 📊" -> {
                             GoogleSheetLedgerTab(
                                 isHindi = isHindi,
                                 repository = repository

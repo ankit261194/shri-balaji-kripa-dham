@@ -392,6 +392,19 @@ class AshramRepository(context: Context) {
 
         // Broadcast to cloud (GitHub Live Sync) so all users' apps automatically receive the new coordinates
         if (updated) {
+            // Push to Hostinger Central MySQL Server
+            try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateLiveConfig(
+                    radiusMeters = clampedRadius,
+                    isGeofenceEnforced = isGeofenceEnforced,
+                    isOutstationAllowed = isOutstationAdvanceAllowed,
+                    outstationKm = clampedOutstationKm,
+                    lat = newLat,
+                    long = newLong
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             try {
                 val existing = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveConfig()
                 val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
@@ -732,12 +745,39 @@ class AshramRepository(context: Context) {
                 }
             }
 
+            var centralTokenNumber: Int? = null
+            if (customTokenNumber == null || customTokenNumber <= 0) {
+                try {
+                    val (centralOk, centralNum) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
+                        patientName = patientName,
+                        phoneNumber = phoneNumber,
+                        city = safeCity,
+                        deviceId = deviceId,
+                        latitude = latitude,
+                        longitude = longitude,
+                        distanceKm = calculatedDistance,
+                        photoUrl = photoUri,
+                        registeredBy = registeredBy,
+                        originAddress = safeOrigin,
+                        destinationAddress = destinationAddress,
+                        darbarDate = today
+                    )
+                    if (centralOk && centralNum > 0) {
+                        centralTokenNumber = centralNum
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
             db.beginTransaction()
             try {
                 nextTokenNum = if (customTokenNumber != null && customTokenNumber > 0) {
                     // If replacing a previously cancelled token with this number, remove old entry
                     db.delete("tokens", "darbar_date = ? AND token_number = ? AND status = 'CANCELLED'", arrayOf(today, customTokenNumber.toString()))
                     customTokenNumber
+                } else if (centralTokenNumber != null && centralTokenNumber > 0) {
+                    centralTokenNumber
                 } else {
                     val maxTokenCursor = db.rawQuery(
                         "SELECT MAX(token_number) FROM tokens WHERE darbar_date = ?",
@@ -971,6 +1011,38 @@ class AshramRepository(context: Context) {
         val today = DatabaseHelper.getTodayDateString()
         val list = mutableListOf<Token>()
         val cursor = db.rawQuery("SELECT * FROM tokens WHERE darbar_date = ? ORDER BY token_number ASC", arrayOf(today))
+        while (cursor.moveToNext()) {
+            list.add(
+                Token(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    tokenNumber = cursor.getInt(cursor.getColumnIndexOrThrow("token_number")),
+                    darbarDate = cursor.getString(cursor.getColumnIndexOrThrow("darbar_date")),
+                    patientName = cursor.getString(cursor.getColumnIndexOrThrow("patient_name")),
+                    phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow("phone_number")),
+                    city = try { cursor.getString(cursor.getColumnIndexOrThrow("city")) } catch (e: Exception) { "डूँगरा जाट (स्थानीय)" },
+                    deviceId = cursor.getString(cursor.getColumnIndexOrThrow("device_id")),
+                    latitude = cursor.getDouble(cursor.getColumnIndexOrThrow("latitude")),
+                    longitude = cursor.getDouble(cursor.getColumnIndexOrThrow("longitude")),
+                    status = TokenStatus.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("status"))),
+                    registeredBy = cursor.getString(cursor.getColumnIndexOrThrow("registered_by")),
+                    photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) ?: "",
+                    isDarshanCompleted = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_darshan_completed")) == 1 } catch (e: Exception) { false },
+                    darshanCompletedAt = try { cursor.getLong(cursor.getColumnIndexOrThrow("darshan_completed_at")) } catch (e: Exception) { 0L },
+                    originAddress = try { cursor.getString(cursor.getColumnIndexOrThrow("origin_address")) } catch (e: Exception) { "" }.ifEmpty { cursor.getString(cursor.getColumnIndexOrThrow("city")) },
+                    destinationAddress = try { cursor.getString(cursor.getColumnIndexOrThrow("destination_address")) } catch (e: Exception) { "श्री बालाजी कृपा धाम, डुंगरा जाट" },
+                    distanceKm = try { cursor.getFloat(cursor.getColumnIndexOrThrow("distance_km")) } catch (e: Exception) { -1f },
+                    createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
+                )
+            )
+        }
+        cursor.close()
+        list
+    }
+
+    suspend fun getAllTokens(): List<Token> = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val list = mutableListOf<Token>()
+        val cursor = db.rawQuery("SELECT * FROM tokens ORDER BY id ASC", null)
         while (cursor.moveToNext()) {
             list.add(
                 Token(
@@ -2761,6 +2833,24 @@ class AshramRepository(context: Context) {
 
     // --- Central GitHub Live Sync Methods ---
     suspend fun syncLiveConfigFromGitHub(): Pair<Boolean, LiveUiConfigDto?> = withContext(Dispatchers.IO) {
+        // Pull from Hostinger Central MySQL Server
+        try {
+            val hostingerJson = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveConfig()
+            if (hostingerJson != null && hostingerJson.optBoolean("success", false)) {
+                val db = dbHelper.writableDatabase
+                val cv = ContentValues().apply {
+                    put("allowed_radius_meters", hostingerJson.optDouble("allowed_radius_meters", 200.0).coerceIn(10.0, 50000.0))
+                    put("is_geofence_enforced", if (hostingerJson.optBoolean("is_geofence_enforced", true)) 1 else 0)
+                    put("is_outstation_advance_allowed", if (hostingerJson.optBoolean("is_outstation_advance_allowed", true)) 1 else 0)
+                    put("outstation_min_distance_km", hostingerJson.optDouble("outstation_min_distance_km", 30.0).coerceIn(1.0, 500.0))
+                    put("running_token_number", hostingerJson.optInt("current_serving_token", 0))
+                }
+                db.update("ashram_settings", cv, "id = 1", null)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         val remoteConfig = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveConfig()
         if (remoteConfig != null) {
             if (remoteConfig.sections.isNotEmpty()) {
