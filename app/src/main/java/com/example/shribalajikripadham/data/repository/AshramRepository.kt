@@ -728,6 +728,31 @@ class AshramRepository(context: Context) {
         var nextTokenNum = 1
         var insertedId: Long = -1
 
+        var centralTokenNumber: Int? = null
+        if (customTokenNumber == null || customTokenNumber <= 0) {
+            try {
+                val (centralOk, centralNum) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
+                    patientName = patientName,
+                    phoneNumber = phoneNumber,
+                    city = safeCity,
+                    deviceId = deviceId,
+                    latitude = latitude,
+                    longitude = longitude,
+                    distanceKm = calculatedDistance.toDouble(),
+                    photoUrl = photoUri,
+                    registeredBy = registeredBy,
+                    originAddress = safeOrigin,
+                    destinationAddress = destinationAddress,
+                    darbarDate = today
+                )
+                if (centralOk && centralNum > 0) {
+                    centralTokenNumber = centralNum
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
         // Strict Thread & Atomic SQLite Lock to eliminate Token Race Conditions
         synchronized(tokenGenerationLock) {
             if (settings.maxDailyTokens > 0) {
@@ -742,31 +767,6 @@ class AshramRepository(context: Context) {
                 countCursor.close()
                 if (todayCount >= settings.maxDailyTokens) {
                     throw IllegalStateException("आज की अधिकतम टोकन सीमा (${settings.maxDailyTokens}) पूरी हो चुकी है। कृपया अगले दरबार में प्रयास करें।")
-                }
-            }
-
-            var centralTokenNumber: Int? = null
-            if (customTokenNumber == null || customTokenNumber <= 0) {
-                try {
-                    val (centralOk, centralNum) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
-                        patientName = patientName,
-                        phoneNumber = phoneNumber,
-                        city = safeCity,
-                        deviceId = deviceId,
-                        latitude = latitude,
-                        longitude = longitude,
-                        distanceKm = calculatedDistance,
-                        photoUrl = photoUri,
-                        registeredBy = registeredBy,
-                        originAddress = safeOrigin,
-                        destinationAddress = destinationAddress,
-                        darbarDate = today
-                    )
-                    if (centralOk && centralNum > 0) {
-                        centralTokenNumber = centralNum
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
             }
 

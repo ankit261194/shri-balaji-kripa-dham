@@ -256,7 +256,7 @@ object HostingerCentralSyncManager {
                 deviceId = token.deviceId,
                 latitude = token.latitude,
                 longitude = token.longitude,
-                distanceKm = token.distanceKm,
+                distanceKm = token.distanceKm.toDouble(),
                 photoUrl = token.photoUri,
                 registeredBy = token.registeredBy,
                 originAddress = token.originAddress,
