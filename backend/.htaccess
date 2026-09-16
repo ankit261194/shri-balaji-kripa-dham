@@ -1,4 +1,6 @@
 RewriteEngine On
+RewriteRule ^app\.apk$ download.php [L]
+RewriteRule ^download/?$ download.php [L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 Options -Indexes
