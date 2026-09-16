@@ -128,6 +128,10 @@ fun FaceTokenRegistrationScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        FaceEmbeddingEngine.init(context)
+    }
+
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->

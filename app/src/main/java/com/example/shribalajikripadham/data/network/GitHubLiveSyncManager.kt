@@ -75,15 +75,52 @@ object GitHubLiveSyncManager {
     private const val API_ARZI_URL =
         "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/contents/$FILE_ARZI"
 
-    // Active PAT token
-    private const val DEFAULT_TOKEN_PART_A = "ghp_xqbYU7Ugyp"
-    private const val DEFAULT_TOKEN_PART_B = "VOxraWVXAlVgOI1DAK2y1Rgo6i"
-
+    // Server-Side Secure GitHub Sync: Client APK holds ZERO hardcoded credentials!
     fun getActiveToken(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val saved = prefs.getString(KEY_SYNC_TOKEN, null)
-        if (!saved.isNullOrBlank()) return saved.trim()
-        return DEFAULT_TOKEN_PART_A + DEFAULT_TOKEN_PART_B
+        return saved?.trim() ?: ""
+    }
+
+    /**
+     * Executes GitHub commit through Hostinger Server-Side Proxy.
+     * The GitHub Personal Access Token is held securely in Hostinger PHP environment.
+     * ZERO credentials in APK bytecode!
+     */
+    suspend fun pushViaHostingerProxy(path: String, content: String, message: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("https://shribalajikripadham.online/api/github_proxy.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 12000
+            conn.readTimeout = 12000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.37.0")
+
+            val json = JSONObject().apply {
+                put("path", path)
+                put("content", content)
+                put("message", message)
+                put("branch", "main")
+            }
+
+            conn.outputStream.use { os ->
+                os.write(json.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            val code = conn.responseCode
+            if (code in 200..201) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val resObj = JSONObject(resp)
+                if (resObj.optBoolean("success", false)) {
+                    return@withContext Pair(true, resObj.optString("message", "GitHub पर सर्वर प्रॉक्सी द्वारा 100% सुरक्षित रूप से सेव हुआ!"))
+                }
+            }
+            Pair(false, "सर्वर प्रॉक्सी रिस्पॉन्स: HTTP $code")
+        } catch (e: Exception) {
+            Pair(false, "प्रॉक्सी सिंक त्रुटि: ${e.localizedMessage}")
+        }
     }
 
     fun saveCustomToken(context: Context, token: String) {
@@ -226,7 +263,15 @@ object GitHubLiveSyncManager {
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val token = getActiveToken(context)
         if (token.isBlank()) {
-            return@withContext Pair(false, "सिंक टोकन अनुपलब्ध है")
+            val noticeObj = JSONObject().apply {
+                put("id", System.currentTimeMillis())
+                put("title", title)
+                put("message", message)
+                put("priority", priority)
+                put("sent_by", sentBy)
+                put("timestamp", System.currentTimeMillis())
+            }
+            return@withContext pushViaHostingerProxy(FILE_BROADCASTS, noticeObj.toString(2), "Broadcast: $title")
         }
 
         try {
@@ -1318,7 +1363,7 @@ object GitHubLiveSyncManager {
     suspend fun fetchLiveAdminSessions(context: Context? = null): Map<String, AdminSession> = withContext(Dispatchers.IO) {
         // Step 1: Query REST API Contents endpoint with no-cache (bypasses Fastly CDN cache completely)
         try {
-            val patToken = if (context != null) getActiveToken(context) else (DEFAULT_TOKEN_PART_A + DEFAULT_TOKEN_PART_B)
+            val patToken = if (context != null) getActiveToken(context) else ""
             val getUrl = URL(API_SESSIONS_URL)
             val getConn = getUrl.openConnection() as HttpURLConnection
             getConn.requestMethod = "GET"

@@ -11,8 +11,12 @@ android {
         applicationId = "com.example.shribalajikripadham"
         minSdk = 24
         targetSdk = 34
-        versionCode = 50
-        versionName = "2.36.1"
+        versionCode = 51
+        versionName = "2.37.0"
+    }
+
+    androidResources {
+        noCompress += "tflite"
     }
 
     signingConfigs {
@@ -121,4 +125,7 @@ dependencies {
 
   // Google ML Kit On-Device Face Detection
   implementation("com.google.mlkit:face-detection:16.1.7")
+
+  // TensorFlow Lite for Deep Learning MobileFaceNet AI Face Recognition
+  implementation("org.tensorflow:tensorflow-lite:2.16.1")
 }

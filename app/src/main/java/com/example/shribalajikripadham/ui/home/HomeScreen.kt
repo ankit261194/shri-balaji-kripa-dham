@@ -227,6 +227,41 @@ fun HomeScreen(
             }
         }
 
+        // ⚡ INSTANT REAL-TIME BROADCAST LISTENER (Every 3 seconds):
+        // Whenever SuperAdmin toggles Token Service ON/OFF, updates Running Token, or posts Emergency Notice,
+        // it reflects on devotee's screen within 3 seconds!
+        scope.launch {
+            while (isActive) {
+                delay(3000)
+                try {
+                    val liveCfg = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveConfig()
+                    if (liveCfg != null && liveCfg.optBoolean("success", false)) {
+                        val currentServing = liveCfg.optInt("current_serving_token", settings.runningTokenNumber)
+                        val tokEnabled = liveCfg.optBoolean("is_token_service_enabled", settings.isTokenServiceEnabled)
+                        val busLive = liveCfg.optBoolean("is_bus_booking_live", settings.isBusBookingLive)
+                        val emNotice = liveCfg.optString("emergency_notice", settings.emergencyNoticeText)
+                        val emVis = liveCfg.optBoolean("is_emergency_notice_visible", settings.isEmergencyNoticeVisible)
+
+                        if (currentServing != settings.runningTokenNumber ||
+                            tokEnabled != settings.isTokenServiceEnabled ||
+                            busLive != settings.isBusBookingLive ||
+                            emNotice != settings.emergencyNoticeText ||
+                            emVis != settings.isEmergencyNoticeVisible
+                        ) {
+                            val fresh = repository.getSettings()
+                            settings = fresh.copy(
+                                runningTokenNumber = currentServing,
+                                isTokenServiceEnabled = tokEnabled,
+                                isBusBookingLive = busLive,
+                                emergencyNoticeText = emNotice,
+                                isEmergencyNoticeVisible = emVis
+                            )
+                        }
+                    }
+                } catch (e: Exception) {}
+            }
+        }
+
         // 🔄 Continuous live sync loop (every 20 seconds) while screen is open
         scope.launch {
             while (isActive) {

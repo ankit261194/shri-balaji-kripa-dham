@@ -432,11 +432,26 @@ fun AdminDashboardScreen(
         if (loggedInAdmin != null) {
             refreshData()
             try {
+                repository.syncFullHostingerToLocal()
                 repository.syncLiveConfigFromGitHub()
                 repository.syncLiveTokensFromCloud()
                 repository.syncAdminsFromGitHub()
                 refreshData()
             } catch (e: Exception) {}
+
+            // ⚡ REAL-TIME ADMIN AUTO-SYNC (Every 4 seconds):
+            // All tokens booked by devotees, bills/expenses, and payments update LIVE without clicking refresh!
+            scope.launch {
+                while (true) {
+                    delay(4000)
+                    try {
+                        val (tokCount, expCount, payCount) = repository.syncFullHostingerToLocal()
+                        if (tokCount > 0 || expCount > 0 || payCount > 0) {
+                            refreshData()
+                        }
+                    } catch (e: Exception) {}
+                }
+            }
 
             // Record admin device telemetry heartbeat
             kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {

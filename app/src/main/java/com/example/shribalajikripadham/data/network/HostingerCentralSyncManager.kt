@@ -15,6 +15,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.util.Date
+import java.util.Locale
 
 object HostingerCentralSyncManager {
 
@@ -463,4 +465,284 @@ object HostingerCentralSyncManager {
             Pair(false, "सिंक त्रुटि: ${e.localizedMessage}")
         }
     }
+
+    // ========================================================================
+    // EXPENSES & BILLS (HISAB-KITAB) LIVE SYNC
+    // ========================================================================
+
+    suspend fun fetchLiveExpenses(): Pair<Boolean, List<JSONObject>> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}get_expenses.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.37.0")
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false)) {
+                    val arr = json.optJSONArray("expenses") ?: JSONArray()
+                    val list = mutableListOf<JSONObject>()
+                    for (i in 0 until arr.length()) {
+                        list.add(arr.getJSONObject(i))
+                    }
+                    return@withContext Pair(true, list)
+                }
+            }
+            Pair(false, emptyList())
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchLiveExpenses error: ${e.message}")
+            Pair(false, emptyList())
+        }
+    }
+
+    suspend fun saveExpense(
+        title: String,
+        amount: Double,
+        category: String = "सामान्य आश्रम खर्च",
+        expenseDate: String = "",
+        spentBy: String = "आश्रम व्यवस्थापक",
+        receiptPhotoUrl: String = "",
+        paymentMode: String = "CASH",
+        notes: String = "",
+        id: Long = 0L
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}save_expense.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.37.0")
+
+            val json = JSONObject().apply {
+                if (id > 0) put("id", id)
+                put("title", title)
+                put("amount", amount)
+                put("category", category)
+                put("expense_date", if (expenseDate.isNotBlank()) expenseDate else java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()))
+                put("spent_by", spentBy)
+                put("receipt_photo_url", receiptPhotoUrl)
+                put("payment_mode", paymentMode)
+                put("notes", notes)
+            }
+
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            if (code == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val resObj = JSONObject(resp)
+                return@withContext Pair(true, resObj.optString("message", "बिल सफलतापूर्वक सुरक्षित हुआ!"))
+            }
+            Pair(false, "सर्वर रिस्पॉन्स: HTTP $code")
+        } catch (e: Exception) {
+            Pair(false, "बिल सिंक त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun deleteExpense(id: Long): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}delete_expense.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.37.0")
+
+            val json = JSONObject().apply { put("id", id) }
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            if (code == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val resObj = JSONObject(resp)
+                return@withContext Pair(true, resObj.optString("message", "बिल हटा दिया गया।"))
+            }
+            Pair(false, "सर्वर रिस्पॉन्स HTTP $code")
+        } catch (e: Exception) {
+            Pair(false, "बिल हटाने में त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    // ========================================================================
+    // DEVOTEE PAYMENTS & DONATIONS LIVE SYNC
+    // ========================================================================
+
+    suspend fun fetchLivePayments(): Pair<Boolean, List<JSONObject>> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}get_payments.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.37.0")
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false)) {
+                    val arr = json.optJSONArray("payments") ?: JSONArray()
+                    val list = mutableListOf<JSONObject>()
+                    for (i in 0 until arr.length()) {
+                        list.add(arr.getJSONObject(i))
+                    }
+                    return@withContext Pair(true, list)
+                }
+            }
+            Pair(false, emptyList())
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchLivePayments error: ${e.message}")
+            Pair(false, emptyList())
+        }
+    }
+
+    suspend fun savePayment(
+        receiptNumber: String,
+        devoteeName: String,
+        phoneNumber: String,
+        amount: Double,
+        purpose: String = "दान / सहयोग राशि",
+        paymentMode: String = "UPI",
+        transactionId: String = "",
+        status: String = "SUCCESS",
+        collectedBy: String = "ADMIN",
+        notes: String = ""
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}save_payment.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.37.0")
+
+            val json = JSONObject().apply {
+                put("receipt_number", receiptNumber)
+                put("devotee_name", devoteeName)
+                put("phone_number", phoneNumber)
+                put("amount", amount)
+                put("purpose", purpose)
+                put("payment_mode", paymentMode)
+                put("transaction_id", transactionId)
+                put("status", status)
+                put("collected_by", collectedBy)
+                put("notes", notes)
+            }
+
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            if (code == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val resObj = JSONObject(resp)
+                return@withContext Pair(true, resObj.optString("message", "भुगतान/दान सफलतापूर्वक दर्ज हुआ!"))
+            }
+            Pair(false, "सर्वर रिस्पॉन्स: HTTP $code")
+        } catch (e: Exception) {
+            Pair(false, "दान सिंक त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    // ========================================================================
+    // TOKEN STATUS ATOMIC UPDATE (WAITING -> SERVING -> COMPLETED / CANCELLED)
+    // ========================================================================
+
+    suspend fun updateTokenStatus(
+        darbarDate: String,
+        tokenNumber: Int,
+        status: String
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}update_token_status.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.37.0")
+
+            val json = JSONObject().apply {
+                put("darbar_date", darbarDate)
+                put("token_number", tokenNumber)
+                put("status", status)
+            }
+
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            if (code == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val resObj = JSONObject(resp)
+                return@withContext Pair(true, resObj.optString("message", "टोकन स्थिति अपडेट हुई!"))
+            }
+            Pair(false, "सर्वर रिस्पॉन्स HTTP $code")
+        } catch (e: Exception) {
+            Pair(false, "टोकन स्थिति सिंक त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    // ========================================================================
+    // SUPERADMIN FULL LIVE CONFIG BROADCAST (Instant service toggle)
+    // ========================================================================
+
+    suspend fun updateFullLiveConfig(settings: AshramSettings): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}live_config.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.37.0")
+
+            val json = JSONObject().apply {
+                put("ashram_name", settings.ashramName)
+                put("latitude", settings.latitude)
+                put("longitude", settings.longitude)
+                put("allowed_radius_meters", settings.allowedRadiusMeters)
+                put("is_geofence_enforced", if (settings.isGeofenceEnforced) 1 else 0)
+                put("is_outstation_advance_allowed", if (settings.isOutstationAdvanceAllowed) 1 else 0)
+                put("outstation_min_distance_km", settings.outstationMinDistanceKm)
+                put("current_serving_token", settings.runningTokenNumber)
+                put("daily_token_limit", if (settings.maxDailyTokens > 0) settings.maxDailyTokens else 1000)
+                put("is_token_service_enabled", if (settings.isTokenServiceEnabled) 1 else 0)
+                put("is_bus_booking_live", if (settings.isBusBookingLive) 1 else 0)
+                put("is_live_counter_visible", if (settings.isLiveCounterVisible) 1 else 0)
+                put("is_payment_feature_live", if (settings.isPaymentFeatureLive) 1 else 0)
+                put("is_arzi_ledger_live", if (settings.isArziLedgerLive) 1 else 0)
+                put("is_darbar_active", if (settings.isDarbarActive) 1 else 0)
+                put("darbar_date", settings.darbarDate)
+                put("darbar_timings", settings.darbarTimings)
+                put("emergency_notice", settings.emergencyNoticeText)
+                put("is_emergency_notice_visible", if (settings.isEmergencyNoticeVisible) 1 else 0)
+                put("banner_title", settings.bannerTitle)
+                put("banner_subtitle", settings.bannerSubtitle)
+                put("is_banner_visible", if (settings.isBannerVisible) 1 else 0)
+            }
+
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            if (code == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val resObj = JSONObject(resp)
+                return@withContext Pair(true, resObj.optString("message", "सेटिंग्स लाइव प्रसारित हो गईं!"))
+            }
+            Pair(false, "सर्वर रिस्पॉन्स HTTP $code")
+        } catch (e: Exception) {
+            Pair(false, "लाइव सेटिंग्स सिंक त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
 }

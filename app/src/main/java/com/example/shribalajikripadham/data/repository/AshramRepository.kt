@@ -779,8 +779,10 @@ class AshramRepository(context: Context) {
 
         var centralTokenNumber: Int? = null
         if (customTokenNumber == null || customTokenNumber <= 0) {
+            var centralOk = false
+            var centralNum = -1
             try {
-                val (centralOk, centralNum) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
+                val result = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
                     patientName = patientName,
                     phoneNumber = phoneNumber,
                     city = safeCity,
@@ -794,12 +796,18 @@ class AshramRepository(context: Context) {
                     destinationAddress = destinationAddress,
                     darbarDate = today
                 )
-                if (centralOk && centralNum > 0) {
-                    centralTokenNumber = centralNum
-                }
+                centralOk = result.first
+                centralNum = result.second
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+
+            // STRICT "NET NAHI TO TOKEN NAHI" RULE: Zero duplicate guarantee!
+            // Tokens MUST be strictly 1, 2, 3, 4, 5... assigned by central MySQL transaction
+            if (!centralOk || centralNum <= 0) {
+                throw IllegalStateException("⚠️ इंटरनेट कनेक्शन उपलब्ध नहीं है या सेंट्रल सर्वर से संपर्क नहीं हो पा रहा है।\n\nबिना इंटरनेट के टोकन जारी नहीं किया जा सकता ताकि टोकन नंबरों में कोई टकराव या डुप्लीकेट (1, 2, 3...) न हो। कृपया मोबाइल डेटा या वाई-फाई चालू करें और पुनः प्रयास करें।")
+            }
+            centralTokenNumber = centralNum
         }
 
         // Strict Thread & Atomic SQLite Lock to eliminate Token Race Conditions
@@ -1466,6 +1474,20 @@ class AshramRepository(context: Context) {
         val id = db.insertWithOnConflict("payment_records", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
         if (id > 0) {
             try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.savePayment(
+                    receiptNumber = payment.paymentId,
+                    devoteeName = payment.devoteeName,
+                    phoneNumber = payment.devoteePhone,
+                    amount = payment.amount,
+                    purpose = payment.purpose,
+                    paymentMode = payment.paymentMode,
+                    transactionId = payment.transactionId,
+                    status = payment.paymentStatus,
+                    collectedBy = payment.verifiedBy,
+                    notes = payment.notes
+                )
+            } catch (e: Exception) {}
+            try {
                 publishPaymentsToGitHub()
             } catch (e: Exception) {}
             try {
@@ -1737,6 +1759,16 @@ class AshramRepository(context: Context) {
         }
         val ok = db.insert("yatra_expenses", null, cv) > 0
         if (ok) {
+            try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.saveExpense(
+                    title = title,
+                    amount = amount,
+                    category = category.name,
+                    expenseDate = DatabaseHelper.getTodayDateString(),
+                    spentBy = addedBy,
+                    receiptPhotoUrl = receiptUri
+                )
+            } catch (e: Exception) {}
             try {
                 val expObj = YatraExpense(
                     title = title,
@@ -4659,6 +4691,133 @@ class AshramRepository(context: Context) {
             entries = entries
         )
     }
+
+    // ========================================================================
+    // HOSTINGER LIVE ADMIN DATA SYNC
+    // ========================================================================
+
+    suspend fun syncHostingerExpenses(): Int = withContext(Dispatchers.IO) {
+        val (ok, list) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveExpenses()
+        if (!ok || list.isEmpty()) return@withContext 0
+        val db = dbHelper.writableDatabase
+        var count = 0
+        for (item in list) {
+            val title = item.optString("title", "")
+            val amount = item.optDouble("amount", 0.0)
+            val cat = item.optString("category", "GENERAL")
+            val date = item.optString("expense_date", DatabaseHelper.getTodayDateString())
+            val spentBy = item.optString("spent_by", "आश्रम व्यवस्थापक")
+            val receipt = item.optString("receipt_photo_url", "")
+            val createdAt = item.optLong("created_at", System.currentTimeMillis())
+
+            val checkCursor = db.rawQuery("SELECT id FROM yatra_expenses WHERE title = ? AND amount = ? AND expense_date = ?", arrayOf(title, amount.toString(), date))
+            val exists = checkCursor.moveToFirst()
+            checkCursor.close()
+
+            if (!exists) {
+                val cv = ContentValues().apply {
+                    put("title", title)
+                    put("category", cat)
+                    put("amount", amount)
+                    put("receipt_uri", receipt)
+                    put("added_by", spentBy)
+                    put("expense_date", date)
+                    put("created_at", createdAt)
+                }
+                if (db.insert("yatra_expenses", null, cv) > 0) count++
+            }
+        }
+        count
+    }
+
+    suspend fun syncHostingerPayments(): Int = withContext(Dispatchers.IO) {
+        val (ok, list) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLivePayments()
+        if (!ok || list.isEmpty()) return@withContext 0
+        val db = dbHelper.writableDatabase
+        var count = 0
+        for (item in list) {
+            val receiptNo = item.optString("receipt_number", "")
+            if (receiptNo.isBlank()) continue
+
+            val cv = ContentValues().apply {
+                put("payment_id", receiptNo)
+                put("devotee_name", item.optString("devotee_name", ""))
+                put("devotee_phone", item.optString("phone_number", ""))
+                put("payment_app", item.optString("payment_mode", "UPI"))
+                put("transaction_id", item.optString("transaction_id", ""))
+                put("amount", item.optDouble("amount", 0.0))
+                put("purpose", item.optString("purpose", "दान / सहयोग राशि"))
+                put("timestamp", item.optLong("created_at", System.currentTimeMillis()))
+                put("payment_status", item.optString("status", "SUCCESS"))
+                put("payment_mode", item.optString("payment_mode", "UPI"))
+                put("verified_by", item.optString("collected_by", "ADMIN"))
+                put("notes", item.optString("notes", ""))
+            }
+            if (db.insertWithOnConflict("payment_records", null, cv, SQLiteDatabase.CONFLICT_REPLACE) > 0) {
+                count++
+            }
+        }
+        count
+    }
+
+    /**
+     * Master Live Sync for Admin Dashboard:
+     * Pulls latest tokens, bills/expenses, devotee payments, and live settings from Hostinger MySQL.
+     * All Admin phones see changes immediately!
+     */
+    suspend fun syncFullHostingerToLocal(): Triple<Int, Int, Int> = withContext(Dispatchers.IO) {
+        var tokenCount = 0
+        try {
+            val queueJson = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveQueue()
+            if (queueJson != null && queueJson.optBoolean("success", false)) {
+                val tokensArray = queueJson.optJSONArray("tokens")
+                if (tokensArray != null && tokensArray.length() > 0) {
+                    for (i in 0 until tokensArray.length()) {
+                        val t = tokensArray.getJSONObject(i)
+                        val ok = insertOrUpdateCentralToken(
+                            tokenNumber = t.optInt("token_number"),
+                            darbarDate = t.optString("darbar_date"),
+                            patientName = t.optString("patient_name"),
+                            phoneNumber = t.optString("phone_number"),
+                            city = t.optString("city", "डूँगरा जाट (स्थानीय)"),
+                            deviceId = t.optString("device_id", "HOSTINGER"),
+                            latitude = t.optDouble("latitude", 28.3972915),
+                            longitude = t.optDouble("longitude", 78.1460410),
+                            distanceKm = t.optDouble("distance_km", 0.0).toFloat(),
+                            photoUri = t.optString("photo_url", ""),
+                            registeredBy = t.optString("registered_by", "HOSTINGER"),
+                            status = t.optString("status", "WAITING"),
+                            isDarshanCompleted = t.optInt("is_darshan_completed", 0) == 1,
+                            createdAt = t.optLong("created_at", System.currentTimeMillis())
+                        )
+                        if (ok) tokenCount++
+                    }
+                }
+            }
+        } catch (e: Exception) {}
+
+        val expCount = try { syncHostingerExpenses() } catch (e: Exception) { 0 }
+        val payCount = try { syncHostingerPayments() } catch (e: Exception) { 0 }
+
+        // Also refresh live settings
+        try {
+            val cfg = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveConfig()
+            if (cfg != null && cfg.optBoolean("success", false)) {
+                val db = dbHelper.writableDatabase
+                val cv = ContentValues().apply {
+                    if (cfg.has("current_serving_token")) put("running_token_number", cfg.optInt("current_serving_token", 0))
+                    if (cfg.has("is_token_service_enabled")) put("is_token_service_enabled", if (cfg.optBoolean("is_token_service_enabled", true)) 1 else 0)
+                    if (cfg.has("is_bus_booking_live")) put("is_bus_booking_live", if (cfg.optBoolean("is_bus_booking_live", false)) 1 else 0)
+                    if (cfg.has("is_live_counter_visible")) put("is_live_counter_visible", if (cfg.optBoolean("is_live_counter_visible", true)) 1 else 0)
+                    if (cfg.has("is_darbar_active")) put("is_darbar_active", if (cfg.optBoolean("is_darbar_active", true)) 1 else 0)
+                    if (cfg.has("emergency_notice")) put("emergency_notice", cfg.optString("emergency_notice", ""))
+                    if (cfg.has("is_emergency_notice_visible")) put("is_emergency_notice_visible", if (cfg.optBoolean("is_emergency_notice_visible", false)) 1 else 0)
+                }
+                db.update("ashram_settings", cv, "id = 1", null)
+            }
+        } catch (e: Exception) {}
+
+        Triple(tokenCount, expCount, payCount)
+    }
+
 }
-
-
