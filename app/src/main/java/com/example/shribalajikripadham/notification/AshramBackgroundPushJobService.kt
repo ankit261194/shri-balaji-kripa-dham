@@ -110,6 +110,7 @@ class AshramBackgroundPushJobService : JobService() {
                         readTimeout = 6000
                         useCaches = false
                         requestMethod = "GET"
+                        setRequestProperty("X-SBKD-API-KEY", com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.API_SECRET_KEY)
                         setRequestProperty("User-Agent", "BalajiApp-PushCheck")
                     }
                     if (conn.responseCode in 200..299) {
@@ -189,9 +190,40 @@ class AshramBackgroundPushJobService : JobService() {
                         prefs.edit().putBoolean(KEY_LAST_DARBAR_STATUS, isDarbarActive).apply()
                     }
 
-                    // 3C. Live Serving Token Updates
+                    // 3C. Live Serving Token Updates & Devotee Proximity Alerts
                     val currentServingToken = root.optInt("current_serving_token", root.optInt("running_token_number", 0))
                     if (currentServingToken > 0) {
+                        try {
+                            val myTokPrefs = context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
+                            val myToken = myTokPrefs.getInt("my_token_number", 0)
+                            val myTokenDate = myTokPrefs.getString("my_token_date", "") ?: ""
+                            val todayStr = com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
+
+                            if (myToken > 0 && (myTokenDate == todayStr || myTokenDate.isBlank())) {
+                                val lastAlertServing = myTokPrefs.getInt("last_alerted_serving", 0)
+                                if (currentServingToken != lastAlertServing) {
+                                    if (currentServingToken == myToken) {
+                                        NotificationHelper.showSystemNotification(
+                                            context = context,
+                                            title = "🔔 आपका टोकन नंबर $myToken आ चुका है!",
+                                            message = "आपका पावन दर्शन हेतु नंबर आ गया है। कृपया तुरंत पूज्य गुरुजी के समक्ष दरबार में पधारें!",
+                                            notificationId = 10006
+                                        )
+                                        myTokPrefs.edit().putInt("last_alerted_serving", currentServingToken).apply()
+                                    } else if (myToken > currentServingToken && (myToken - currentServingToken) <= 5) {
+                                        val remaining = myToken - currentServingToken
+                                        NotificationHelper.showSystemNotification(
+                                            context = context,
+                                            title = "🚨 आपका टोकन समीप है ($remaining टोकन शेष)",
+                                            message = "वर्तमान में टोकन #$currentServingToken चल रहा है। आपका टोकन #$myToken है। कृपया तुरंत आश्रम हॉल में उपस्थित रहें!",
+                                            notificationId = 10007
+                                        )
+                                        myTokPrefs.edit().putInt("last_alerted_serving", currentServingToken).apply()
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {}
+
                         if (prefs.contains(KEY_LAST_SERVING_TOKEN)) {
                             val lastToken = prefs.getInt(KEY_LAST_SERVING_TOKEN, 0)
                             if (lastToken > 0 && currentServingToken > lastToken) {

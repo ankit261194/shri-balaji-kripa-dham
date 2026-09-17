@@ -2,10 +2,16 @@
 // Secure Server-Side GitHub Proxy
 // Keeps GitHub PAT safe on Hostinger server. Zero secrets in client APK!
 
+if (file_exists(__DIR__ . '/../config/db.php')) {
+    require_once __DIR__ . '/../config/db.php';
+} else {
+    require_once __DIR__ . '/config/db.php';
+}
+
 header('Content-Type: application/json; charset=utf-8');
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-SBKD-API-KEY, x-sbkd-api-key");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -17,6 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(["success" => false, "error" => "Method Not Allowed"]);
     exit;
 }
+
+verifyApiAuth();
 
 $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
 

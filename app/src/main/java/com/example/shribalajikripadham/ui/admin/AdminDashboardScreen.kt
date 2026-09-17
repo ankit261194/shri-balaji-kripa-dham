@@ -76,7 +76,8 @@ data class CreatedSevadarShareData(
 @Composable
 fun AdminDashboardScreen(
     isHindi: Boolean,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToHallDisplay: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val repository = remember { AshramRepository(context) }
@@ -1333,7 +1334,8 @@ fun AdminDashboardScreen(
                                         val (ok, msg) = repository.pushAllTokensToGitHub()
                                         Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                                     }
-                                }
+                                },
+                                onNavigateToHallDisplay = onNavigateToHallDisplay
                             )
                         }
                         currentTabTitle == "मैनुअल टोकन" || currentTabTitle == "Manual" -> {
@@ -3053,7 +3055,8 @@ fun TokenQueueTab(
     onUpdateVoicePreset: ((String) -> Unit)? = null,
     onFillReservedToken: ((Int, String, String, String) -> Unit)? = null,
     onRejectReservedToken: ((Int) -> Unit)? = null,
-    onPushAllTokensToGitHub: (() -> Unit)? = null
+    onPushAllTokensToGitHub: (() -> Unit)? = null,
+    onNavigateToHallDisplay: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -3215,6 +3218,16 @@ fun TokenQueueTab(
                                 fontWeight = FontWeight.Bold
                             )
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = onNavigateToHallDisplay,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("📺 स्मार्ट टीवी व आश्रम हॉल डिस्प्ले मोड (Open TV Board)", fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }

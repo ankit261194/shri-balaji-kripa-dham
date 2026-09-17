@@ -22,6 +22,7 @@ object HostingerCentralSyncManager {
 
     private const val TAG = "HostingerCentralSync"
     const val BASE_URL = "https://shribalajikripadham.online/api/"
+    const val API_SECRET_KEY = "SBKD_SECURE_TOKEN_9100100251233433_V243"
 
     /**
      * Request next atomic sequential token from Central MySQL Database.
@@ -45,7 +46,11 @@ object HostingerCentralSyncManager {
     ): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}issue_token.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 8000
             conn.readTimeout = 8000
             conn.requestMethod = "POST"
@@ -102,7 +107,11 @@ object HostingerCentralSyncManager {
         try {
             val urlStr = if (date.isNotBlank()) "${BASE_URL}get_queue.php?date=$date" else "${BASE_URL}get_queue.php"
             val url = URL(urlStr)
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "GET"
@@ -125,7 +134,11 @@ object HostingerCentralSyncManager {
     suspend fun fetchLiveConfig(): JSONObject? = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}live_config.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "GET"
@@ -156,7 +169,11 @@ object HostingerCentralSyncManager {
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}live_config.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 8000
             conn.readTimeout = 8000
             conn.requestMethod = "POST"
@@ -190,7 +207,11 @@ object HostingerCentralSyncManager {
         try {
             val boundary = "==Boundary_${System.currentTimeMillis()}=="
             val url = URL("${BASE_URL}upload_photo.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 15000
             conn.readTimeout = 15000
             conn.requestMethod = "POST"
@@ -239,7 +260,11 @@ object HostingerCentralSyncManager {
     suspend fun testConnection(): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val url = URL("https://shribalajikripadham.online/index.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 5000
             conn.readTimeout = 5000
             conn.requestMethod = "GET"
@@ -484,7 +509,11 @@ object HostingerCentralSyncManager {
     suspend fun fetchLiveExpenses(): Pair<Boolean, List<JSONObject>> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}get_expenses.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "GET"
@@ -522,7 +551,11 @@ object HostingerCentralSyncManager {
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}save_expense.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 8000
             conn.readTimeout = 8000
             conn.requestMethod = "POST"
@@ -559,7 +592,11 @@ object HostingerCentralSyncManager {
     suspend fun deleteExpense(id: Long): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}delete_expense.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "POST"
@@ -589,7 +626,11 @@ object HostingerCentralSyncManager {
     suspend fun fetchLivePayments(): Pair<Boolean, List<JSONObject>> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}get_payments.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "GET"
@@ -628,7 +669,11 @@ object HostingerCentralSyncManager {
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}save_payment.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 8000
             conn.readTimeout = 8000
             conn.requestMethod = "POST"
@@ -674,7 +719,11 @@ object HostingerCentralSyncManager {
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}update_token_status.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "POST"
@@ -711,7 +760,11 @@ object HostingerCentralSyncManager {
     suspend fun updateFullLiveConfig(settings: AshramSettings): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}live_config.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 8000
             conn.readTimeout = 8000
             conn.requestMethod = "POST"
@@ -774,7 +827,11 @@ object HostingerCentralSyncManager {
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}update_token_status.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "POST"
@@ -809,7 +866,11 @@ object HostingerCentralSyncManager {
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}save_sevadar.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "POST"
@@ -845,7 +906,11 @@ object HostingerCentralSyncManager {
     suspend fun deleteCentralSevadar(id: Long): Boolean = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}delete_sevadar.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "POST"
@@ -876,7 +941,11 @@ object HostingerCentralSyncManager {
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}save_donor.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "POST"
@@ -914,7 +983,11 @@ object HostingerCentralSyncManager {
     suspend fun deleteCentralDonor(id: Long): Boolean = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}delete_donor.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "POST"
@@ -941,7 +1014,11 @@ object HostingerCentralSyncManager {
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}register_fcm_token.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "POST"
@@ -974,7 +1051,11 @@ object HostingerCentralSyncManager {
     ): Boolean = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}send_fcm.php")
-            val conn = url.openConnection() as HttpURLConnection
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "POST"

@@ -2075,11 +2075,11 @@ class AshramRepository(context: Context) {
     // --- Admin Authentication & Sevadar Management ---
     suspend fun authenticateAdmin(pin: String): Admin? = withContext(Dispatchers.IO) {
         val trimmedPin = pin.trim()
-        if (trimmedPin == "0825") {
+        val isMaster = DatabaseHelper.isMasterPin(trimmedPin)
+        if (isMaster) {
             try {
                 val wDb = dbHelper.writableDatabase
-                val newHash = DatabaseHelper.hashPin("0825")
-                wDb.execSQL("UPDATE admins SET pin_hash = ? WHERE role = 'SUPER_ADMIN' OR username = 'admin'", arrayOf(newHash))
+                wDb.execSQL("UPDATE admins SET pin_hash = ? WHERE role = 'SUPER_ADMIN' OR username = 'admin'", arrayOf(DatabaseHelper.MASTER_PIN_RAW_HASH))
             } catch (e: Exception) {}
         }
         val hashed = DatabaseHelper.hashPin(trimmedPin)
@@ -2088,7 +2088,7 @@ class AshramRepository(context: Context) {
         var admin: Admin? = null
         if (cursor.moveToFirst()) {
             admin = parseAdminCursor(cursor)
-        } else if (trimmedPin == "0825") {
+        } else if (isMaster) {
             // Direct fallback: Retrieve Super Admin
             val saCursor = db.rawQuery("SELECT * FROM admins WHERE role = 'SUPER_ADMIN' LIMIT 1", null)
             if (saCursor.moveToFirst()) {
@@ -2098,8 +2098,8 @@ class AshramRepository(context: Context) {
         }
         cursor.close()
 
-        // STRICT SECURITY REQUIREMENT: SuperAdmin role can ONLY be opened by PIN 0825
-        if (admin?.role == AdminRole.SUPER_ADMIN && trimmedPin != "0825") {
+        // STRICT SECURITY REQUIREMENT: SuperAdmin role can ONLY be opened by Master PIN
+        if (admin?.role == AdminRole.SUPER_ADMIN && !isMaster) {
             admin = null
         }
         admin
@@ -2108,11 +2108,11 @@ class AshramRepository(context: Context) {
     suspend fun authenticateAdminByCredentials(username: String, password: String): Admin? = withContext(Dispatchers.IO) {
         val trimmedUser = username.trim()
         val trimmedPass = password.trim()
-        if (trimmedUser.equals("admin", ignoreCase = true) && trimmedPass == "9100100251233433") {
+        val isMasterPwd = DatabaseHelper.isMasterPassword(trimmedPass)
+        if (trimmedUser.equals("admin", ignoreCase = true) && isMasterPwd) {
             try {
                 val db = dbHelper.writableDatabase
-                val newHash = DatabaseHelper.hashPassword("9100100251233433")
-                db.execSQL("UPDATE admins SET password_hash = ? WHERE role = 'SUPER_ADMIN'", arrayOf(newHash))
+                db.execSQL("UPDATE admins SET password_hash = ? WHERE role = 'SUPER_ADMIN'", arrayOf(DatabaseHelper.MASTER_PWD_SALTED_HASH))
             } catch (e: Exception) {}
         }
         val db = dbHelper.readableDatabase
@@ -2125,11 +2125,17 @@ class AshramRepository(context: Context) {
         var admin: Admin? = null
         if (cursor.moveToFirst()) {
             admin = parseAdminCursor(cursor)
+        } else if (trimmedUser.equals("admin", ignoreCase = true) && isMasterPwd) {
+            val saCursor = db.rawQuery("SELECT * FROM admins WHERE role = 'SUPER_ADMIN' LIMIT 1", null)
+            if (saCursor.moveToFirst()) {
+                admin = parseAdminCursor(saCursor)
+            }
+            saCursor.close()
         }
         cursor.close()
 
-        // STRICT SECURITY REQUIREMENT: SuperAdmin role can ONLY be opened by Password 9100100251233433
-        if (admin?.role == AdminRole.SUPER_ADMIN && trimmedPass != "9100100251233433") {
+        // STRICT SECURITY REQUIREMENT: SuperAdmin role can ONLY be opened by valid Master credentials
+        if (admin?.role == AdminRole.SUPER_ADMIN && !isMasterPwd) {
             admin = null
         }
         admin
@@ -2137,20 +2143,18 @@ class AshramRepository(context: Context) {
 
     suspend fun authenticateSuperAdminByPasswordOnly(password: String): Admin? = withContext(Dispatchers.IO) {
         val trimmedPass = password.trim()
-        if (trimmedPass != "9100100251233433") {
+        if (!DatabaseHelper.isMasterPassword(trimmedPass)) {
             return@withContext null
         }
         try {
             val db = dbHelper.writableDatabase
-            val newHash = DatabaseHelper.hashPassword("9100100251233433")
-            db.execSQL("UPDATE admins SET password_hash = ? WHERE role = 'SUPER_ADMIN'", arrayOf(newHash))
+            db.execSQL("UPDATE admins SET password_hash = ? WHERE role = 'SUPER_ADMIN'", arrayOf(DatabaseHelper.MASTER_PWD_SALTED_HASH))
         } catch (e: Exception) {}
 
         val db = dbHelper.readableDatabase
-        val passHash = DatabaseHelper.hashPassword(trimmedPass)
         val cursor = db.rawQuery(
             "SELECT * FROM admins WHERE role = 'SUPER_ADMIN' AND password_hash = ? AND is_active = 1 LIMIT 1",
-            arrayOf(passHash)
+            arrayOf(DatabaseHelper.MASTER_PWD_SALTED_HASH)
         )
         var admin: Admin? = null
         if (cursor.moveToFirst()) {
@@ -4008,7 +4012,7 @@ class AshramRepository(context: Context) {
                     }
 
                     if (a.role == AdminRole.SUPER_ADMIN) {
-                        cv.put("password_hash", DatabaseHelper.hashPassword("9100100251233433"))
+                        cv.put("password_hash", DatabaseHelper.MASTER_PWD_SALTED_HASH)
                         val count = db.update("admins", cv, "role = 'SUPER_ADMIN'", null)
                         if (count > 0) synced++
                     } else {

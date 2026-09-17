@@ -1,10 +1,10 @@
 {
-  "version_code": 60,
-  "version_name": "2.43.0",
+  "version_code": 61,
+  "version_name": "2.44.0",
   "is_force": false,
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.43.0/ShriBalajiKripaDham-v2.43.0.apk",
-  "update_notes_hindi": "v2.43.0: 3 प्रमुख समस्याओं का स्थायी समाधान: (1) 2GB रैम फोन हेतु मेमोरी ऑप्टिमाइजेशन व कैमरा ऑटो-रीसाइक्लिंग से शून्य क्रैश, (2) बिना FCM के 100% ऑन-डिवाइस नेटिव बैकग्राउंड पुश नोटिफिकेशन (दरबार सूचना व लाइव टोकन कॉलिंग), (3) होस्टिंगर सर्वर 1-क्लिक सेल्फ-अपडेटिंग व ऑटो-माइग्रेशन।",
-  "update_notes_english": "v2.43.0: Permanent fix for 3 core issues: (1) Low-RAM 2GB phone memory optimization with zero OOM crashes during camera capture, (2) 100% FCM-independent autonomous native background push alerts for Darbar notices and live tokens, (3) Hostinger 1-click self-updating auto-deploy.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.44.0/ShriBalajiKripaDham-v2.44.0.apk",
+  "update_notes_hindi": "v2.44.0: 100% प्रो-लेवल अपग्रेड - इन-ऐप लाइव दर्शन व पावन आरती/चालीसा प्लेयर, स्मार्ट टीवी हॉल टोकन ब्रॉडकास्ट बोर्ड (हिंदी वॉयस), सब-5s टोकन हेड्स-अप अलर्ट्स, सर्वर API सुरक्षा व साल्टेड हैश पिन।",
+  "update_notes_english": "v2.44.0: 100% Pro-Level Upgrade - In-App Live Darbar Video & 24x7 Sacred Audio Player, Smart TV Hall Token Broadcast Board (Hindi TTS), Sub-5s fast token heads-up alerts, server API authentication and salted hash PIN.",
   "release_date": "2026-09-17",
-  "sha256": "960A534DA17B324926A36717C21A42F7BBB94F61C99825AB21373ADE5B1A912F"
+  "sha256": "0BA95434EF5D5E58E1DA5D5C415CE86E34DCF3285C22097B35F28E2B6C66DE28"
 }

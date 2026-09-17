@@ -119,6 +119,7 @@ try {
 } catch (Exception $e) {}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verifyApiAuth();
     $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
     
     // Fetch existing settings first

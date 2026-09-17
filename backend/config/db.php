@@ -4,7 +4,7 @@
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-SBKD-API-KEY, x-sbkd-api-key");
 
 // Zero-Cache Headers for real-time live data reflection
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
@@ -15,6 +15,35 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
+}
+
+if (!defined('SBKD_API_SECRET')) {
+    define('SBKD_API_SECRET', 'SBKD_SECURE_TOKEN_9100100251233433_V243');
+}
+
+/**
+ * Validates request authentication to secure all mutation APIs from unauthorized access.
+ */
+function verifyApiAuth($allowPublicRead = false) {
+    if ($allowPublicRead && $_SERVER['REQUEST_METHOD'] === 'GET') {
+        return true;
+    }
+    $headers = function_exists('getallheaders') ? getallheaders() : [];
+    $apiKey = $headers['X-SBKD-API-KEY'] ?? 
+              $headers['x-sbkd-api-key'] ?? 
+              $_SERVER['HTTP_X_SBKD_API_KEY'] ?? 
+              $_POST['api_key'] ?? 
+              $_GET['api_key'] ?? '';
+              
+    if (empty($apiKey) || $apiKey !== SBKD_API_SECRET) {
+        http_response_code(401);
+        echo json_encode([
+            "success" => false, 
+            "error" => "अनधिकृत अनुरोध: मान्य X-SBKD-API-KEY अनिवार्य है (Unauthorized API request)."
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    return true;
 }
 
 if (!defined('DB_HOST')) define('DB_HOST', 'localhost');

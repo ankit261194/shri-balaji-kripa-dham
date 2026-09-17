@@ -21,6 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+verifyApiAuth();
+
 $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
 
 $darbarDate = trim($input['darbar_date'] ?? date('Y-m-d'));

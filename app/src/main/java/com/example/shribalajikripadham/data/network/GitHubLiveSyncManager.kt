@@ -101,7 +101,8 @@ object GitHubLiveSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.37.0")
+            conn.setRequestProperty("X-SBKD-API-KEY", HostingerCentralSyncManager.API_SECRET_KEY)
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.44.0")
 
             val json = JSONObject().apply {
                 put("path", path)

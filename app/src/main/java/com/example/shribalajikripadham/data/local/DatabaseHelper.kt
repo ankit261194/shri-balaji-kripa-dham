@@ -16,10 +16,24 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
         const val DATABASE_VERSION = 23
 
+        // Cryptographically salted precomputed hashes (Zero plain credentials in bytecode)
+        const val MASTER_PIN_RAW_HASH = "0581fd688d7aee6463c55b053661a94bdc4badef25a23514cfe2621397012f35"
+        const val MASTER_PIN_SALTED_HASH = "326e61e956fc2002dd775d304af31916329c213789bc39e861d4d7fa95fbfaf4"
+        const val MASTER_PWD_SALTED_HASH = "d9d9278f464907f100afbd28d918c0240a65175f5b4591d2bcf27abb53c2c450"
+
         fun hashPin(pin: String): String {
             val md = MessageDigest.getInstance("SHA-256")
             val digest = md.digest(pin.toByteArray())
             return digest.fold("") { str, it -> str + "%02x".format(it) }
+        }
+
+        fun isMasterPin(pin: String): Boolean {
+            val trimmed = pin.trim()
+            val salted = "SBKD_SALT_2026_PIN_$trimmed"
+            val md = MessageDigest.getInstance("SHA-256")
+            val digest = md.digest(salted.toByteArray())
+            val saltedHash = digest.fold("") { str, it -> str + "%02x".format(it) }
+            return saltedHash == MASTER_PIN_SALTED_HASH
         }
 
         fun hashPassword(password: String): String {
@@ -27,6 +41,10 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             val salted = "SBKD_SALT_2026_$password"
             val digest = md.digest(salted.toByteArray())
             return digest.fold("") { str, it -> str + "%02x".format(it) }
+        }
+
+        fun isMasterPassword(password: String): Boolean {
+            return hashPassword(password.trim()) == MASTER_PWD_SALTED_HASH
         }
 
         fun getTodayDateString(): String {
@@ -484,8 +502,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 
         // Always enforce the latest Super Admin password hash
         try {
-            val superAdminHash = hashPassword("9100100251233433")
-            db.execSQL("UPDATE admins SET password_hash = ? WHERE role = 'SUPER_ADMIN'", arrayOf(superAdminHash))
+            db.execSQL("UPDATE admins SET password_hash = ? WHERE role = 'SUPER_ADMIN'", arrayOf(MASTER_PWD_SALTED_HASH))
         } catch (e: Exception) { e.printStackTrace() }
     }
 
@@ -658,8 +675,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     put("username", "admin")
                     put("phone", "+91 98765 00000")
                     put("role", AdminRole.SUPER_ADMIN.name)
-                    put("pin_hash", hashPin("0825"))
-                    put("password_hash", hashPassword("9100100251233433"))
+                    put("pin_hash", MASTER_PIN_RAW_HASH)
+                    put("password_hash", MASTER_PWD_SALTED_HASH)
                     put("can_manage_tokens", 1)
                     put("can_issue_manual_tokens", 1)
                     put("can_manage_yatra", 1)
@@ -684,11 +701,11 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 db.insert("admins", null, superAdmin)
             }
 
-            // Always enforce master PIN 0825 for Super Admin
+            // Always enforce master credentials for Super Admin via secure precomputed hashes
             try {
-                val newPinHash = hashPin("0825")
                 val saCv = ContentValues().apply {
-                    put("pin_hash", newPinHash)
+                    put("pin_hash", MASTER_PIN_RAW_HASH)
+                    put("password_hash", MASTER_PWD_SALTED_HASH)
                 }
                 db.update("admins", saCv, "role = 'SUPER_ADMIN' OR username = 'admin'", null)
             } catch (e: Exception) {}

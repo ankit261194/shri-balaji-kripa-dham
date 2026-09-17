@@ -42,6 +42,7 @@ import com.example.shribalajikripadham.data.repository.AshramRepository
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.ui.common.SacredAvatar
 import com.example.shribalajikripadham.util.AppUpdateManager
+import com.example.shribalajikripadham.util.NotificationHelper
 import com.example.shribalajikripadham.util.SundayTokenScheduleHelper
 import com.example.shribalajikripadham.util.SundayScheduleState
 import com.example.shribalajikripadham.util.DistanceCalculatorService
@@ -131,6 +132,7 @@ fun HomeScreen(
     onNavigateToAdmin: () -> Unit,
     onNavigateToParchas: () -> Unit = {},
     onNavigateToYatraExpenses: () -> Unit = {},
+    onNavigateToLiveDarbar: () -> Unit = {},
     onToggleLanguage: () -> Unit
 ) {
     val context = LocalContext.current
@@ -250,6 +252,40 @@ fun HomeScreen(
                         val bannerSub = liveCfg.optString("banner_subtitle", settings.bannerSubtitle)
                         val timings = liveCfg.optString("darbar_timings", settings.darbarTimings)
                         val isDarbarActive = if (liveCfg.has("is_darbar_active")) liveCfg.optBoolean("is_darbar_active") else settings.isDarbarActive
+
+                        // ⚡ Instant Devotee Token Calling Alert (< 2 seconds)
+                        if (currentServing != settings.runningTokenNumber && currentServing > 0) {
+                            try {
+                                val myTokPrefs = context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
+                                val myToken = myTokPrefs.getInt("my_token_number", 0)
+                                val myTokenDate = myTokPrefs.getString("my_token_date", "") ?: ""
+                                val todayStr = com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
+
+                                if (myToken > 0 && (myTokenDate == todayStr || myTokenDate.isBlank())) {
+                                    val lastAlertServing = myTokPrefs.getInt("last_alerted_serving", 0)
+                                    if (currentServing != lastAlertServing) {
+                                        if (currentServing == myToken) {
+                                            NotificationHelper.showSystemNotification(
+                                                context = context,
+                                                title = "🔔 आपका टोकन नंबर $myToken आ चुका है!",
+                                                message = "आपका पावन दर्शन हेतु नंबर आ गया है। कृपया तुरंत पूज्य गुरुजी के समक्ष दरबार में पधारें!",
+                                                notificationId = 10006
+                                            )
+                                            myTokPrefs.edit().putInt("last_alerted_serving", currentServing).apply()
+                                        } else if (myToken > currentServing && (myToken - currentServing) <= 5) {
+                                            val remaining = myToken - currentServing
+                                            NotificationHelper.showSystemNotification(
+                                                context = context,
+                                                title = "🚨 आपका टोकन समीप है ($remaining टोकन शेष)",
+                                                message = "वर्तमान में टोकन #$currentServing बुलाया जा रहा है। आपका टोकन #$myToken है। कृपया तुरंत आश्रम हॉल में उपस्थित रहें!",
+                                                notificationId = 10007
+                                            )
+                                            myTokPrefs.edit().putInt("last_alerted_serving", currentServing).apply()
+                                        }
+                                    }
+                                }
+                            } catch (e: Exception) {}
+                        }
 
                         if (currentServing != settings.runningTokenNumber ||
                             tokEnabled != settings.isTokenServiceEnabled ||
@@ -388,6 +424,7 @@ fun HomeScreen(
                     data class NavDrawerItem(val icon: String, val title: String, val action: () -> Unit)
                     val navItems = buildList {
                         add(NavDrawerItem("🏠", if (isHindi) "मुख्य पृष्ठ (Home)" else "Home", { /* Stay on home */ }))
+                        add(NavDrawerItem("🔴", if (isHindi) "🔴 लाइव दर्शन व आरती/भजन" else "🔴 Live Darbar & Bhajans", onNavigateToLiveDarbar))
                         add(NavDrawerItem("🎟️", if (isHindi) "दरबार टोकन जनरेट करें" else "Generate Darbar Token", onNavigateToToken))
                         add(NavDrawerItem("🤳", if (isHindi) "फेस वेरिफिकेशन टोकन" else "Face Token", onNavigateToFaceToken))
                         add(NavDrawerItem("📜", if (isHindi) "डिजिटल पर्चा देखें" else "Digital Parchas", onNavigateToParchas))
@@ -1140,6 +1177,7 @@ fun HomeScreen(
                             onNavigateToInfo = onNavigateToInfo,
                             onNavigateToAdmin = onNavigateToAdmin,
                             onNavigateToParchas = onNavigateToParchas,
+                            onNavigateToLiveDarbar = onNavigateToLiveDarbar,
                             context = context
                         )
                         Spacer(modifier = Modifier.height(14.dp))
@@ -2199,6 +2237,7 @@ fun RenderClassicSection(
     onNavigateToInfo: () -> Unit,
     onNavigateToAdmin: () -> Unit,
     onNavigateToParchas: () -> Unit = {},
+    onNavigateToLiveDarbar: () -> Unit = {},
     context: Context
 ) {
     // Custom announcement / guideline banner customized by Super Admin
@@ -2684,6 +2723,18 @@ fun RenderClassicSection(
                             isPopular = true,
                             modifier = Modifier.fillMaxWidth(),
                             onClick = onNavigateToParchas
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        ActionTile(
+                            title = if (isHindi) "🔴 लाइव दर्शन व पावन भजन" else "🔴 Live Darbar & Bhajans",
+                            subtitle = if (isHindi) "यूट्यूब लाइव स्ट्रीम व 24x7 पावन आरती/चालीसा प्लेयर" else "In-App Live Stream & Sacred Audio Player",
+                            iconBadge = "🔴",
+                            badgeColor = Color(0xFFD32F2F),
+                            isPopular = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = onNavigateToLiveDarbar
                         )
                     }
                     Spacer(modifier = Modifier.height(10.dp))

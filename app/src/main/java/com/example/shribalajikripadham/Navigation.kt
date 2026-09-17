@@ -29,7 +29,9 @@ enum class AppScreen {
     YATRA_EXPENSES,
     ADMIN,
     ASHRAM_INFO,
-    PARCHAS
+    PARCHAS,
+    LIVE_DARBAR,
+    HALL_DISPLAY
 }
 
 @Composable
@@ -111,6 +113,7 @@ fun MainNavigation(
                 onNavigateToInfo = { navigateTo(AppScreen.ASHRAM_INFO) },
                 onNavigateToAdmin = { navigateTo(AppScreen.ADMIN) },
                 onNavigateToParchas = { navigateTo(AppScreen.PARCHAS) },
+                onNavigateToLiveDarbar = { navigateTo(AppScreen.LIVE_DARBAR) },
                 onNavigateToYatraExpenses = {
                     if (settings.isYatraServiceEnabled && settings.canDevoteeViewYatraDiary) {
                         navigateTo(AppScreen.YATRA_EXPENSES)
@@ -174,7 +177,8 @@ fun MainNavigation(
 
             AppScreen.ADMIN -> AdminDashboardScreen(
                 isHindi = isHindi,
-                onBack = { navigateBack() }
+                onBack = { navigateBack() },
+                onNavigateToHallDisplay = { navigateTo(AppScreen.HALL_DISPLAY) }
             )
 
             AppScreen.ASHRAM_INFO -> AshramInfoScreen(
@@ -185,6 +189,16 @@ fun MainNavigation(
             AppScreen.PARCHAS -> com.example.shribalajikripadham.ui.parcha.SacredParchasScreen(
                 isHindi = isHindi,
                 currentAdmin = null,
+                onBack = { navigateBack() }
+            )
+
+            AppScreen.LIVE_DARBAR -> com.example.shribalajikripadham.ui.live.LiveDarbarAndBhajanScreen(
+                isHindi = isHindi,
+                onBack = { navigateBack() }
+            )
+
+            AppScreen.HALL_DISPLAY -> com.example.shribalajikripadham.ui.tv.AshramHallDisplayScreen(
+                isHindi = isHindi,
                 onBack = { navigateBack() }
             )
         }

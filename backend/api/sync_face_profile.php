@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Central Devotee Face Profile Synchronization API
 // Shri Balaji Kripa Dham - Hostinger MySQL
 require_once __DIR__ . '/../config/db.php';
@@ -30,6 +30,8 @@ try {
         INDEX idx_phone (phone_number),
         INDEX idx_name (patient_name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    verifyApiAuth();
 
     $raw = file_get_contents('php://input');
     $input = json_decode($raw, true) ?: $_POST;

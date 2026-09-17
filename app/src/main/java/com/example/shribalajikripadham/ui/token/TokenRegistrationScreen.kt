@@ -1,5 +1,6 @@
 package com.example.shribalajikripadham.ui.token
 
+import android.content.Context
 import android.net.Uri
 import android.widget.Toast
 import java.io.File
@@ -1454,6 +1455,14 @@ fun TokenRegistrationScreen(
                                             } catch (e: Exception) {}
                                         }
                                         existingToken = created
+                                        try {
+                                            val myTokPrefs = context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
+                                            myTokPrefs.edit()
+                                                .putInt("my_token_number", created.tokenNumber)
+                                                .putString("my_token_date", created.darbarDate)
+                                                .putString("my_patient_name", created.patientName)
+                                                .apply()
+                                        } catch (e: Exception) {}
                                         try {
                                             com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.registerDevoteePhone(
                                                 context, phoneNumber.trim()

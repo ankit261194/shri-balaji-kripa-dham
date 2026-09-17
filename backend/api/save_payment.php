@@ -21,6 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+verifyApiAuth();
+
 $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
 
 $receiptNumber = trim($input['receipt_number'] ?? ('REC-' . time() . '-' . rand(100, 999)));

@@ -40,7 +40,8 @@ object CentralFaceSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.41.0")
+            conn.setRequestProperty("X-SBKD-API-KEY", HostingerCentralSyncManager.API_SECRET_KEY)
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.44.0")
 
             val b64Vector = FaceEmbeddingEngine.vectorToBase64(faceVector)
             val devId = if (deviceId.isNotBlank()) deviceId else DeviceFingerprintManager.getDeviceId(context)
@@ -94,7 +95,8 @@ object CentralFaceSyncManager {
             conn.connectTimeout = 8000
             conn.readTimeout = 8000
             conn.requestMethod = "GET"
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.41.0")
+            conn.setRequestProperty("X-SBKD-API-KEY", HostingerCentralSyncManager.API_SECRET_KEY)
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.44.0")
 
             val code = conn.responseCode
             if (code != 200) {
