@@ -1261,7 +1261,7 @@ fun AdminDashboardScreen(
                                     color = Color(0xFF4A148C)
                                 )
                                 Text(
-                                    text = if (isHindi) "समस्त कार्यप्रणाली, 2-VIP टोकन कोटा, टीवी बोर्ड व नियम - यहाँ पढ़ें व डाउनलोड करें" else "Complete operations guide, VIP 2-token quota, TV board & rules",
+                                    text = if (isHindi) "समस्त कार्यप्रणाली, कतार कॉलिंग, टीवी बोर्ड व नियम - यहाँ पढ़ें व डाउनलोड करें" else "Complete operations guide, queue calling, TV board & rules",
                                     fontSize = 10.sp,
                                     color = Color.DarkGray
                                 )
