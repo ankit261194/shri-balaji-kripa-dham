@@ -635,6 +635,20 @@ fun AdminDashboardScreen(
                 },
                 actions = {
                     if (loggedInAdmin != null) {
+                        IconButton(onClick = {
+                            val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
+                            if (file != null) {
+                                com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
+                                    context,
+                                    file,
+                                    if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
+                                )
+                            } else {
+                                Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                            }
+                        }) {
+                            Text("📖", fontSize = 18.sp)
+                        }
                         TextButton(onClick = {
                             showLogoutExitDialog = true
                         }) {
@@ -1213,6 +1227,70 @@ fun AdminDashboardScreen(
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+
+                // 📘 व्यवस्थापक एवं सेवादार कार्यप्रणाली मार्गदर्शिका (PDF) - EXCLUSIVE TO ADMIN DASHBOARD
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 3.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE7F6)),
+                    border = BorderStroke(1.dp, Color(0xFFB39DDB))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("📘", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "व्यवस्थापक एवं सेवादार कार्यप्रणाली मार्गदर्शिका (PDF)" else "Admin & Sevadar Manual (PDF)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.5.sp,
+                                    color = Color(0xFF4A148C)
+                                )
+                                Text(
+                                    text = if (isHindi) "समस्त कार्यप्रणाली, 2-VIP टोकन कोटा, टीवी बोर्ड व नियम - यहाँ पढ़ें व डाउनलोड करें" else "Complete operations guide, VIP 2-token quota, TV board & rules",
+                                    fontSize = 10.sp,
+                                    color = Color.DarkGray
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
+                                if (file != null) {
+                                    com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
+                                        context,
+                                        file,
+                                        if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
+                                    )
+                                } else {
+                                    Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A1B9A)),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (isHindi) "PDF पढ़ें" else "Open PDF",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
                         }
                     }
                 }

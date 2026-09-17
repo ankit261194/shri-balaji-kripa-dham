@@ -18,9 +18,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import com.example.shribalajikripadham.data.repository.AshramRepository
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.util.AppUpdateManager
+import com.example.shribalajikripadham.util.AshramManualPdfGenerator
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +69,73 @@ fun AshramInfoScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
+            // 📖 BHAKT APP MARGDARSHIKA (USER MANUAL PDF) BANNER
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9E6)),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.2.dp, Color(0xFFFFB300)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 14.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFFECB3)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("📖", fontSize = 22.sp)
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isHindi) "भक्त संपूर्ण ऐप मार्गदर्शिका (PDF)" else "Devotee User Manual (PDF)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                            color = MaroonPrimary
+                        )
+                        Text(
+                            text = if (isHindi) "ऐप के सभी फीचर्स, टोकन नियम व विधियां - संपूर्ण विवरण PDF में पढ़ें व डाउनलोड करें" else "Read complete step-by-step user guide in official PDF",
+                            fontSize = 10.5.sp,
+                            color = TextSecondaryDark,
+                            lineHeight = 14.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            val file = AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
+                            if (file != null) {
+                                AshramManualPdfGenerator.openOrSharePdf(
+                                    context,
+                                    file,
+                                    if (isHindi) "श्री बालाजी कृपा धाम - भक्त संपूर्ण मार्गदर्शिका" else "Shri Balaji Kripa Dham - Devotee User Manual"
+                                )
+                            } else {
+                                Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (isHindi) "PDF देखें" else "Open PDF",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+
             // 1. FREE SERVICE MANIFESTO & PARICHAY
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),

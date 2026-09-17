@@ -435,6 +435,19 @@ fun HomeScreen(
                             }
                         }
                         add(NavDrawerItem("ℹ️", if (isHindi) "आश्रम परिचय व नियम" else "Ashram Info & Rules", onNavigateToInfo))
+                        add(NavDrawerItem("📖", if (isHindi) "ऐप संपूर्ण मार्गदर्शिका (PDF)" else "Devotee User Manual (PDF)", {
+                            scope.launch { drawerState.close() }
+                            val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
+                            if (file != null) {
+                                com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
+                                    context,
+                                    file,
+                                    if (isHindi) "श्री बालाजी कृपा धाम - भक्त संपूर्ण मार्गदर्शिका" else "Shri Balaji Kripa Dham - Devotee User Manual"
+                                )
+                            } else {
+                                Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                            }
+                        }))
                         add(NavDrawerItem("🔄", if (isHindi) "ऐप अपडेट जांचें (Live)" else "Check App Update", {
                             scope.launch {
                                 drawerState.close()
@@ -921,13 +934,29 @@ fun HomeScreen(
                                             else "✅ App is already on the latest version (v${AppUpdateManager.getCurrentVersionName(context)} Build #$currentCode)!",
                                             Toast.LENGTH_SHORT
                                         ).show()
-                                        showWhatsNewDialog = true
                                     }
                                 }
                             }
                         }
                     ) {
                         Text("🔄", fontSize = 19.sp)
+                    }
+
+                    IconButton(
+                        onClick = {
+                            val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
+                            if (file != null) {
+                                com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
+                                    context,
+                                    file,
+                                    if (isHindi) "श्री बालाजी कृपा धाम - भक्त संपूर्ण मार्गदर्शिका" else "Shri Balaji Kripa Dham - Devotee User Manual"
+                                )
+                            } else {
+                                Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        Text("📖", fontSize = 19.sp)
                     }
 
                     Button(
@@ -961,6 +990,73 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
+            // 📖 BHAKT APP MARGDARSHIKA (USER MANUAL PDF) BANNER
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9E6)),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.2.dp, Color(0xFFFFB300)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFFECB3)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("📖", fontSize = 22.sp)
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isHindi) "भक्त संपूर्ण ऐप मार्गदर्शिका (PDF)" else "Devotee User Manual (PDF)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                            color = MaroonPrimary
+                        )
+                        Text(
+                            text = if (isHindi) "ऐप में क्या-क्या है और कैसे उपयोग करें - संपूर्ण विवरण पढ़ें व डाउनलोड करें" else "Learn everything you can do and see in the app",
+                            fontSize = 10.5.sp,
+                            color = TextSecondaryDark,
+                            lineHeight = 14.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
+                            if (file != null) {
+                                com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
+                                    context,
+                                    file,
+                                    if (isHindi) "श्री बालाजी कृपा धाम - भक्त संपूर्ण मार्गदर्शिका" else "Shri Balaji Kripa Dham - Devotee User Manual"
+                                )
+                            } else {
+                                Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (isHindi) "PDF देखें" else "Open PDF",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+
             val currentCode = AppUpdateManager.getCurrentVersionCode(context)
             val isUpdateAvailable = AppUpdateManager.isUpdateAvailable(currentCode, settings.latestVersionCode)
 
