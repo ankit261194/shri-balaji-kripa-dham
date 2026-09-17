@@ -1207,6 +1207,27 @@ class AshramRepository(context: Context) {
         list
     }
 
+    suspend fun getAdminReservedTokensCountToday(adminIdentifier: String): Int = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val today = DatabaseHelper.getTodayDateString()
+        val cleanName = adminIdentifier.replace("ADMIN", "").replace("SUPER_ADMIN", "").replace("(", "").replace(")", "").trim()
+        val matchPattern = if (cleanName.isNotBlank()) "%$cleanName%" else adminIdentifier
+        val cursor = db.rawQuery(
+            """SELECT COUNT(*) FROM tokens 
+               WHERE darbar_date = ? 
+               AND (registered_by LIKE ? OR registered_by = ?) 
+               AND token_number IN (2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
+               AND status != 'CANCELLED'""",
+            arrayOf(today, matchPattern, adminIdentifier)
+        )
+        var count = 0
+        if (cursor.moveToFirst()) {
+            count = cursor.getInt(0)
+        }
+        cursor.close()
+        count
+    }
+
     suspend fun getAllTokens(): List<Token> = withContext(Dispatchers.IO) {
         val db = dbHelper.readableDatabase
         val list = mutableListOf<Token>()
@@ -2143,18 +2164,13 @@ class AshramRepository(context: Context) {
 
     suspend fun authenticateSuperAdminByPasswordOnly(password: String): Admin? = withContext(Dispatchers.IO) {
         val trimmedPass = password.trim()
-        if (!DatabaseHelper.isMasterPassword(trimmedPass)) {
-            return@withContext null
-        }
-        try {
-            val db = dbHelper.writableDatabase
-            db.execSQL("UPDATE admins SET password_hash = ? WHERE role = 'SUPER_ADMIN'", arrayOf(DatabaseHelper.MASTER_PWD_SALTED_HASH))
-        } catch (e: Exception) {}
+        val passHash = DatabaseHelper.hashPassword(trimmedPass)
+        val isMaster = DatabaseHelper.isMasterPassword(trimmedPass)
 
         val db = dbHelper.readableDatabase
         val cursor = db.rawQuery(
-            "SELECT * FROM admins WHERE role = 'SUPER_ADMIN' AND password_hash = ? AND is_active = 1 LIMIT 1",
-            arrayOf(DatabaseHelper.MASTER_PWD_SALTED_HASH)
+            "SELECT * FROM admins WHERE role = 'SUPER_ADMIN' AND (password_hash = ? OR ? = 1) AND is_active = 1 LIMIT 1",
+            arrayOf(passHash, if (isMaster) "1" else "0")
         )
         var admin: Admin? = null
         if (cursor.moveToFirst()) {
@@ -2940,7 +2956,11 @@ class AshramRepository(context: Context) {
         val cv = ContentValues().apply {
             put("password_hash", passHash)
         }
-        db.update("admins", cv, "role = 'SUPER_ADMIN'", null) > 0
+        val ok = db.update("admins", cv, "role = 'SUPER_ADMIN'", null) > 0
+        if (ok) {
+            try { publishAdminsToGitHub() } catch (e: Exception) {}
+        }
+        ok
     }
 
     suspend fun verifySuperAdminPassword(password: String): Boolean = withContext(Dispatchers.IO) {
@@ -4012,7 +4032,11 @@ class AshramRepository(context: Context) {
                     }
 
                     if (a.role == AdminRole.SUPER_ADMIN) {
-                        cv.put("password_hash", DatabaseHelper.MASTER_PWD_SALTED_HASH)
+                        if (a.passwordHash.isNotBlank()) {
+                            cv.put("password_hash", a.passwordHash)
+                        } else {
+                            cv.put("password_hash", DatabaseHelper.MASTER_PWD_SALTED_HASH)
+                        }
                         val count = db.update("admins", cv, "role = 'SUPER_ADMIN'", null)
                         if (count > 0) synced++
                     } else {

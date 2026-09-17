@@ -434,6 +434,17 @@ fun AdminDashboardScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        refreshData()
+        scope.launch {
+            try {
+                repository.syncAdminsFromGitHub()
+                repository.syncLiveConfigFromGitHub()
+                refreshData()
+            } catch (e: Exception) {}
+        }
+    }
+
     LaunchedEffect(loggedInAdmin) {
         if (loggedInAdmin != null) {
             refreshData()
@@ -781,7 +792,13 @@ fun AdminDashboardScreen(
                                             loginError = if (isHindi) "कृपया सुपर एडमिन पासवर्ड दर्ज करें" else "Please enter Super Admin password"
                                             return@launch
                                         }
-                                        val admin = repository.authenticateSuperAdminByPasswordOnly(pass)
+                                        var admin = repository.authenticateSuperAdminByPasswordOnly(pass)
+                                        if (admin == null) {
+                                            try {
+                                                repository.syncAdminsFromGitHub()
+                                            } catch (e: Exception) {}
+                                            admin = repository.authenticateSuperAdminByPasswordOnly(pass)
+                                        }
                                         if (admin != null) {
                                             val loginTime = System.currentTimeMillis()
                                             myLoginTimestamp = loginTime
@@ -953,7 +970,7 @@ fun AdminDashboardScreen(
                                 onClick = {
                                     scope.launch {
                                         loginError = null
-                                        val admin = if (loginWithCreds) {
+                                        var admin = if (loginWithCreds) {
                                             if (usernameInput.isBlank() || passwordInput.isBlank()) {
                                                 loginError = if (isHindi) "कृपया यूजरनेम व पासवर्ड दोनों भरें" else "Please enter both username and password"
                                                 return@launch
@@ -965,6 +982,17 @@ fun AdminDashboardScreen(
                                                 return@launch
                                             }
                                             repository.authenticateAdmin(pinInput)
+                                        }
+
+                                        if (admin == null) {
+                                            try {
+                                                repository.syncAdminsFromGitHub()
+                                            } catch (e: Exception) {}
+                                            admin = if (loginWithCreds) {
+                                                repository.authenticateAdminByCredentials(usernameInput, passwordInput)
+                                            } else {
+                                                repository.authenticateAdmin(pinInput)
+                                            }
                                         }
 
                                         if (admin != null) {
@@ -1143,6 +1171,7 @@ fun AdminDashboardScreen(
                         val rbacBadges = listOf(
                             Triple("टोकन कतार", admin.canManageTokens || isSuper, "🎟️"),
                             Triple("मैनुअल टोकन", admin.canIssueManualTokens || isSuper, "✍️"),
+                            Triple("VIP कोटा (2..20)", isSuper || (admin.canSetCustomTokenNumber && settings.allowAdminReservedTokens), "👑"),
                             Triple("रजिस्टर स्कैन", admin.canScanPaperRegister || isSuper, "📷"),
                             Triple("आश्रम पर्चे", admin.canManageParchas || isSuper, "📜"),
                             Triple("बालाजी यात्रा", admin.canManageYatra || isSuper, "🚌"),
@@ -1281,6 +1310,29 @@ fun AdminDashboardScreen(
                                 },
                                 onFillReservedToken = { tokenNum, name, phone, city ->
                                     scope.launch {
+                                        val isSuper = admin.role == AdminRole.SUPER_ADMIN
+                                        val hasReservedPermission = isSuper || (admin.canSetCustomTokenNumber && settings.allowAdminReservedTokens)
+                                        val adminAttribution = if (isSuper) "SUPER_ADMIN (अंकित चौधरी)" else "ADMIN (${admin.name})"
+                                        val vipNumbers = listOf(2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
+                                        if (!isSuper && tokenNum in vipNumbers) {
+                                            if (!hasReservedPermission) {
+                                                Toast.makeText(
+                                                    context,
+                                                    if (isHindi) "❌ अनुमति अस्वीकृत: आपके पास विशेष आरक्षित VIP टोकन भरने का अधिकार नहीं है। केवल सुपर एडमिन द्वारा अधिकृत एडमिन ही यह टोकन भर सकते हैं।" else "❌ Permission denied: You do not have permission to fill reserved VIP tokens.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                                return@launch
+                                            }
+                                            val myCount = repository.getAdminReservedTokensCountToday(adminAttribution)
+                                            if (myCount >= 2) {
+                                                Toast.makeText(
+                                                    context,
+                                                    if (isHindi) "❌ कोटा समाप्त: आप आज केवल अधिकतम 2 विशेष आरक्षित टोकन भर सकते हैं।" else "❌ Quota exceeded: Maximum 2 reserved tokens per day allowed.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                                return@launch
+                                            }
+                                        }
                                         val today = DatabaseHelper.getTodayDateString()
                                         repository.insertOrUpdateCentralToken(
                                             tokenNumber = tokenNum,
@@ -1288,7 +1340,7 @@ fun AdminDashboardScreen(
                                             patientName = name,
                                             phoneNumber = phone,
                                             city = city.ifEmpty { "डूँगरा जाट (स्थानीय)" },
-                                            registeredBy = if (isSuper) "SUPER_ADMIN (अंकित चौधरी)" else "ADMIN (${admin.name})",
+                                            registeredBy = adminAttribution,
                                             status = "WAITING",
                                             isDarshanCompleted = false
                                         )
@@ -2262,7 +2314,12 @@ fun AdminDashboardScreen(
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = newSevCanCustomTokenNumber, onCheckedChange = { newSevCanCustomTokenNumber = it })
-                        Text(if (isHindi) "🔢 मनचाहा टोकन नंबर डालने की अनुमति (Custom Token #)" else "Allow Custom Token Number", fontSize = 13.sp)
+                        Text(
+                            text = if (isHindi) "👑 विशेष आरक्षित VIP टोकन (2..20, कोटा: 2) व कस्टम टोकन अधिकार" else "Allow Reserved VIP Slots (2..20, Max 2) & Custom Token #",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonPrimary
+                        )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = newSevCanExportPdf, onCheckedChange = { newSevCanExportPdf = it })
@@ -2874,7 +2931,12 @@ fun AdminDashboardScreen(
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = editSevCanCustomTokenNumber, onCheckedChange = { editSevCanCustomTokenNumber = it })
-                        Text(if (isHindi) "🔢 मनचाहा टोकन नंबर डालने की अनुमति (Custom Token #)" else "Allow Custom Token Number", fontSize = 13.sp)
+                        Text(
+                            text = if (isHindi) "👑 विशेष आरक्षित VIP टोकन (2..20, कोटा: 2) व कस्टम टोकन अधिकार" else "Allow Reserved VIP Slots (2..20, Max 2) & Custom Token #",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonPrimary
+                        )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = editSevCanExportPdf, onCheckedChange = { editSevCanExportPdf = it })
@@ -4690,6 +4752,7 @@ fun ManualTokenTab(
     var successMessage by remember { mutableStateOf<String?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isIssuing by remember { mutableStateOf(false) }
+    var myReservedTokensCountToday by remember { mutableIntStateOf(0) }
 
     // Live geofence check for location-restricted admins
     var userLat by remember { mutableDoubleStateOf(settings.latitude) }
@@ -4702,6 +4765,11 @@ fun ManualTokenTab(
             userLng = loc.longitude
         }
         repository.syncDevoteesFromCloud()
+        if (admin.role != AdminRole.SUPER_ADMIN) {
+            try {
+                myReservedTokensCountToday = repository.getAdminReservedTokensCountToday(attribution)
+            } catch (e: Exception) {}
+        }
     }
 
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -4775,6 +4843,29 @@ fun ManualTokenTab(
                 }
 
                 val customNum = formCustomTokenNumber.trim().toIntOrNull()
+                val vipNumbers = listOf(2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
+                val isSuperAdmin = admin.role == AdminRole.SUPER_ADMIN
+                val hasReservedPermission = isSuperAdmin || (admin.canSetCustomTokenNumber && settings.allowAdminReservedTokens)
+                if (customNum != null && customNum in vipNumbers && !isSuperAdmin) {
+                    if (!hasReservedPermission) {
+                        errorMessage = if (isHindi)
+                            "❌ अनुमति अस्वीकृत: आपके पास विशेष आरक्षित VIP टोकन जारी करने की अनुमति नहीं है। यह अधिकार केवल सुपर एडमिन द्वारा विशेष अनुमति प्राप्त एडमिन के पास है।"
+                        else
+                            "❌ Access Denied: You do not have permission to issue reserved VIP tokens. Only Super Admin authorized admins can issue these."
+                        isIssuing = false
+                        return@launch
+                    }
+                    val myCount = repository.getAdminReservedTokensCountToday(attribution)
+                    if (myCount >= 2) {
+                        errorMessage = if (isHindi)
+                            "❌ कोटा समाप्त: आप आज केवल अधिकतम 2 विशेष आरक्षित टोकन (2, 4, 6, 8, 10, 12, 14, 16, 18, 20) जारी कर सकते हैं। सुपर एडमिन द्वारा प्रति एडमिन 2 टोकन की सीमा निर्धारित है।"
+                        else
+                            "❌ Quota exceeded: Maximum 2 reserved VIP tokens per day allowed."
+                        isIssuing = false
+                        return@launch
+                    }
+                }
+
                 val token = repository.registerToken(
                     patientName = pName.trim(),
                     phoneNumber = pPhone.trim(),
@@ -4819,6 +4910,11 @@ fun ManualTokenTab(
                 keyboardController?.hide()
                 focusManager.clearFocus()
                 onTokenIssued()
+                if (!isSuperAdmin) {
+                    try {
+                        myReservedTokensCountToday = repository.getAdminReservedTokensCountToday(attribution)
+                    } catch (e: Exception) {}
+                }
             } catch (e: Exception) {
                 errorMessage = "त्रुटि: ${e.localizedMessage ?: "अज्ञात समस्या"}"
             } finally {
@@ -5132,7 +5228,7 @@ fun ManualTokenTab(
 
                 // VIP Reserved Tokens 2, 4, 6, 8, 10, 12, 14, 16, 18, 20 (Superadmin or Permitted Admin)
                 val isSuperAdmin = admin.role == AdminRole.SUPER_ADMIN
-                val canIssueReserved = isSuperAdmin || settings.allowAdminReservedTokens
+                val canIssueReserved = isSuperAdmin || (admin.canSetCustomTokenNumber && settings.allowAdminReservedTokens)
                 if (canIssueReserved) {
                     Card(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -5176,6 +5272,39 @@ fun ManualTokenTab(
                                     }
                                 }
                             }
+                            if (!isSuperAdmin) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = if (isHindi)
+                                            "👑 आपका दैनिक कोटा: $myReservedTokensCountToday / 2 टोकन प्रयुक्त (शेष: ${(2 - myReservedTokensCountToday).coerceAtLeast(0)})"
+                                        else
+                                            "👑 Your Daily Quota: $myReservedTokensCountToday / 2 used (Remaining: ${(2 - myReservedTokensCountToday).coerceAtLeast(0)})",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (myReservedTokensCountToday >= 2) Color(0xFFC62828) else Color(0xFF2E7D32)
+                                    )
+                                    if (myReservedTokensCountToday >= 2) {
+                                        Surface(
+                                            color = Color(0xFFFFEBEE),
+                                            shape = RoundedCornerShape(4.dp),
+                                            border = BorderStroke(1.dp, Color(0xFFEF9A9A))
+                                        ) {
+                                            Text(
+                                                text = if (isHindi) "कोटा पूर्ण 🔒" else "Quota Full 🔒",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFFC62828),
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                            }
                             Text(
                                 text = if (isHindi) "अपने परिचितों / विशेष मरीजों हेतु तुरंत टोकन चुनें (टैप करते ही नंबर सेट हो जाएगा):" else "Select reserved token number:",
                                 fontSize = 11.sp,
@@ -5189,17 +5318,38 @@ fun ManualTokenTab(
                             ) {
                                 vipNumbers.forEach { num ->
                                     val isSelected = formCustomTokenNumber == num.toString()
+                                    val isQuotaExceeded = !isSuperAdmin && myReservedTokensCountToday >= 2
                                     Surface(
                                         onClick = {
-                                            formCustomTokenNumber = num.toString()
+                                            if (isQuotaExceeded) {
+                                                Toast.makeText(
+                                                    context,
+                                                    if (isHindi) "❌ कोटा समाप्त: आप आज के 2 विशेष आरक्षित टोकन (2..20) पहले ही जारी कर चुके हैं।" else "❌ Quota exceeded: Maximum 2 reserved VIP tokens per day allowed.",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            } else {
+                                                formCustomTokenNumber = num.toString()
+                                            }
                                         },
                                         shape = RoundedCornerShape(8.dp),
-                                        color = if (isSelected) MaroonPrimary else Color.White,
-                                        border = BorderStroke(1.dp, if (isSelected) AmberGold else Color(0xFFFFB74D))
+                                        color = when {
+                                            isSelected -> MaroonPrimary
+                                            isQuotaExceeded -> Color(0xFFEEEEEE)
+                                            else -> Color.White
+                                        },
+                                        border = BorderStroke(1.dp, when {
+                                            isSelected -> AmberGold
+                                            isQuotaExceeded -> Color(0xFFBDBDBD)
+                                            else -> Color(0xFFFFB74D)
+                                        })
                                     ) {
                                         Text(
                                             text = "#$num",
-                                            color = if (isSelected) Color.White else MaroonPrimary,
+                                            color = when {
+                                                isSelected -> Color.White
+                                                isQuotaExceeded -> Color.Gray
+                                                else -> MaroonPrimary
+                                            },
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 12.sp,
                                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -5207,6 +5357,34 @@ fun ManualTokenTab(
                                     }
                                 }
                             }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                } else if (!isSuperAdmin) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("🔒", fontSize = 18.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (!admin.canSetCustomTokenNumber) {
+                                    if (isHindi) "विशेष आरक्षित टोकन (2..20) केवल सुपर एडमिन द्वारा अधिकृत सेवादारों के लिए उपलब्ध हैं।"
+                                    else "Reserved VIP tokens (2..20) are restricted to authorized sevadars only."
+                                } else {
+                                    if (isHindi) "सुपर एडमिन ने वर्तमान में स्टाफ हेतु आरक्षित VIP टोकन जारी करना बंद किया हुआ है।"
+                                    else "Staff reserved VIP token issuance is currently disabled by Super Admin."
+                                },
+                                fontSize = 11.sp,
+                                color = Color.Gray,
+                                lineHeight = 16.sp
+                            )
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
