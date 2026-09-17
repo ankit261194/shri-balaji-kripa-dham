@@ -2,6 +2,7 @@ plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.google.services)
 }
 
 android {
@@ -11,8 +12,8 @@ android {
         applicationId = "com.example.shribalajikripadham"
         minSdk = 24
         targetSdk = 34
-        versionCode = 55
-        versionName = "2.39.1"
+        versionCode = 56
+        versionName = "2.40.0"
 
         ndk {
             abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
@@ -132,4 +133,8 @@ dependencies {
 
   // TensorFlow Lite for Deep Learning MobileFaceNet AI Face Recognition
   implementation("org.tensorflow:tensorflow-lite:2.16.1")
+
+  // Firebase BOM and Cloud Messaging (FCM)
+  implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+  implementation("com.google.firebase:firebase-messaging-ktx")
 }

@@ -829,16 +829,15 @@ class AshramRepository(context: Context) {
 
         if (customTokenNumber == null || customTokenNumber <= 0) {
             if (!centralOk || centralNum <= 0) {
-                if (!isSuperAdmin && !isAdminDesk) {
-                    throw IllegalStateException("⚠️ सेंट्रल सर्वर से संपर्क नहीं हो पा रहा है।\n\nकृपया इंटरनेट कनेक्शन जांचें और पुनः प्रयास करें।")
-                }
-                // Super Admin / Sevadar Desk can generate tokens offline on-device so registration never stops
-                centralTokenNumber = null
+                throw IllegalStateException("⚠️ इंटरनेट कनेक्शन अनिवार्य है!\n\nटोकन नंबर में किसी भी टकराव (Duplicate Token) को रोकने के लिए सेंट्रल सर्वर से सीधा संपर्क अनिवार्य है। कृपया इंटरनेट चालू करें और पुनः प्रयास करें।")
             } else {
                 centralTokenNumber = centralNum
             }
         } else {
-            centralTokenNumber = if (centralOk && centralNum > 0) centralNum else customTokenNumber
+            if (!centralOk || centralNum <= 0) {
+                throw IllegalStateException("⚠️ इंटरनेट कनेक्शन अनिवार्य है!\n\nटोकन नंबर में किसी भी टकराव को रोकने के लिए इंटरनेट चालू होना आवश्यक है।")
+            }
+            centralTokenNumber = centralNum
         }
 
         // Strict Thread & Atomic SQLite Lock to eliminate Token Race Conditions
@@ -2076,6 +2075,11 @@ class AshramRepository(context: Context) {
             saCursor.close()
         }
         cursor.close()
+
+        // STRICT SECURITY REQUIREMENT: SuperAdmin role can ONLY be opened by PIN 0825
+        if (admin?.role == AdminRole.SUPER_ADMIN && trimmedPin != "0825") {
+            admin = null
+        }
         admin
     }
 
@@ -2101,18 +2105,25 @@ class AshramRepository(context: Context) {
             admin = parseAdminCursor(cursor)
         }
         cursor.close()
+
+        // STRICT SECURITY REQUIREMENT: SuperAdmin role can ONLY be opened by Password 9100100251233433
+        if (admin?.role == AdminRole.SUPER_ADMIN && trimmedPass != "9100100251233433") {
+            admin = null
+        }
         admin
     }
 
     suspend fun authenticateSuperAdminByPasswordOnly(password: String): Admin? = withContext(Dispatchers.IO) {
         val trimmedPass = password.trim()
-        if (trimmedPass == "9100100251233433") {
-            try {
-                val db = dbHelper.writableDatabase
-                val newHash = DatabaseHelper.hashPassword("9100100251233433")
-                db.execSQL("UPDATE admins SET password_hash = ? WHERE role = 'SUPER_ADMIN'", arrayOf(newHash))
-            } catch (e: Exception) {}
+        if (trimmedPass != "9100100251233433") {
+            return@withContext null
         }
+        try {
+            val db = dbHelper.writableDatabase
+            val newHash = DatabaseHelper.hashPassword("9100100251233433")
+            db.execSQL("UPDATE admins SET password_hash = ? WHERE role = 'SUPER_ADMIN'", arrayOf(newHash))
+        } catch (e: Exception) {}
+
         val db = dbHelper.readableDatabase
         val passHash = DatabaseHelper.hashPassword(trimmedPass)
         val cursor = db.rawQuery(

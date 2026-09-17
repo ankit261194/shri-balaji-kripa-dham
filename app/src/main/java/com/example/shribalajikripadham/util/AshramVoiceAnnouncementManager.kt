@@ -54,11 +54,11 @@ object AshramVoiceAnnouncementManager {
     val AVAILABLE_VOICE_PRESETS = listOf(
         VoicePresetInfo(
             id = PRESET_NATURAL_MALE,
-            nameHindi = "प्राकृतिक पुरुष स्वर (Natural HD Male)",
-            nameEnglish = "Natural HD Male Voice",
+            nameHindi = "असली इंसानी पुरुष स्वर (Real Human Hindi Voice)",
+            nameEnglish = "Real Human HD Male Voice",
             gender = "MALE",
             category = "MALE",
-            description = "स्पष्ट, धीर-गंभीर व प्राकृतिक पुरुष स्वर (HD नेचुरल ऑडियो)",
+            description = "स्पष्ट, धीर-गंभीर व असली इंसानी पुरुष स्वर (HD नेचुरल ऑडियो)",
             pitch = 0.88f,
             speechRate = 0.90f,
             icon = "👨",
@@ -66,31 +66,19 @@ object AshramVoiceAnnouncementManager {
         ),
         VoicePresetInfo(
             id = PRESET_NATURAL_FEMALE,
-            nameHindi = "प्राकृतिक महिला स्वर (Natural HD Female)",
-            nameEnglish = "Natural HD Female Voice",
+            nameHindi = "असली इंसानी महिला स्वर (Real Human Female Voice)",
+            nameEnglish = "Real Human HD Female Voice",
             gender = "FEMALE",
             category = "FEMALE",
-            description = "अत्यंत मधुर, शांत व वात्सल्यमयी प्राकृतिक महिला स्वर",
+            description = "अत्यंत मधुर, शांत व वात्सल्यमयी असली इंसानी महिला स्वर",
             pitch = 1.05f,
             speechRate = 0.92f,
             icon = "👩",
             speechStyle = "SWEET"
         ),
         VoicePresetInfo(
-            id = PRESET_CUSTOM_RECORDED,
-            nameHindi = "🎙️ आश्रम लाइव रिकॉर्डेड आवाज़ (In-App Recorded)",
-            nameEnglish = "Custom In-App Recorded Voice",
-            gender = "CUSTOM",
-            category = "CUSTOM",
-            description = "आश्रम के मुख्य पंडित जी / सेवादार की अपनी असली रिकॉर्डेड आवाज़",
-            pitch = 1.0f,
-            speechRate = 1.0f,
-            icon = "🎙️",
-            speechStyle = "AUTHENTIC"
-        ),
-        VoicePresetInfo(
             id = PRESET_OFFLINE_DEVICE,
-            nameHindi = "📱 फ़ोन का डिफ़ॉल्ट ऑफ़लाइन स्वर (Device TTS)",
+            nameHindi = "फ़ोन का ऑफ़लाइन स्वर (Device Hindi TTS)",
             nameEnglish = "Offline Device Built-in TTS",
             gender = "DEVICE",
             category = "DEVICE",
@@ -454,6 +442,17 @@ object AshramVoiceAnnouncementManager {
             res >= TextToSpeech.LANG_AVAILABLE
         } catch (e: Exception) {
             false
+        }
+    }
+
+    fun promptInstallHindiVoiceIfNeeded(context: Context) {
+        try {
+            val installIntent = android.content.Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA).apply {
+                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(installIntent)
+        } catch (e: Exception) {
+            Log.w(TAG, "Cannot launch ACTION_INSTALL_TTS_DATA: ${e.message}")
         }
     }
 

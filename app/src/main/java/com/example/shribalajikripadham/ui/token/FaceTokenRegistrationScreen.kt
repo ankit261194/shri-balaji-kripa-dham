@@ -936,13 +936,13 @@ fun FaceTokenRegistrationScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
                                         Text(
-                                            text = if (isHindi) "चेहरा मिलान की पुष्टि करें" else "Confirm Your Identity",
+                                            text = if (isHindi) "✨ पूर्व पंजीकृत भक्त: स्वतः पहचान सफल!" else "Devotee Auto-Fetched Successfully!",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 17.sp,
                                             color = MaroonAccent
                                         )
                                         Text(
-                                            text = if (isHindi) "कृपया विवरण जांचें और पुष्टि करें" else "Please review details before proceeding",
+                                            text = if (isHindi) "समस्त विवरण स्वतः लोड हो गया है। बिना फॉर्म भरे 1-टैप में टोकन लें।" else "All details auto-fetched. Generate token in 1 tap.",
                                             fontSize = 12.sp,
                                             color = TextSecondaryDark
                                         )
@@ -1056,6 +1056,26 @@ fun FaceTokenRegistrationScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Text(
+                                                text = if (isHindi) "शहर / गाँव (City):" else "City / Origin:",
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 13.sp,
+                                                color = TextSecondaryDark
+                                            )
+                                            Text(
+                                                text = match.profile.city,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                color = TextPrimaryDark
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
                                                 text = if (isHindi) "पूर्व दर्शन (Visits):" else "Total Visits:",
                                                 fontWeight = FontWeight.SemiBold,
                                                 fontSize = 13.sp,
@@ -1118,7 +1138,7 @@ fun FaceTokenRegistrationScreen(
                                 Spacer(modifier = Modifier.height(18.dp))
 
                                 Text(
-                                    text = if (isHindi) "क्या ये आप ही हैं?" else "Is this you?",
+                                    text = if (isHindi) "✨ समस्त विवरण स्वतः लोड हो गया है। टोकन जनरेट करें:" else "Details Auto-Fetched! Generate Token:",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = MaroonAccent,
@@ -1189,7 +1209,7 @@ fun FaceTokenRegistrationScreen(
                                     shape = RoundedCornerShape(14.dp)
                                 ) {
                                     Text(
-                                        text = if (isHindi) "✅ हाँ, यह मैं हूँ (टोकन प्राप्त करें)" else "✅ Yes, It's Me (Generate Token)",
+                                        text = if (isHindi) "⚡ 1-टैप में टोकन जनरेट करें (स्वतः विवरण भरा)" else "⚡ 1-Tap Generate Token (Auto-Filled)",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 16.sp
                                     )

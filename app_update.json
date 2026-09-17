@@ -1,10 +1,10 @@
 {
-  "version_code": 55,
-  "version_name": "2.39.1",
+  "version_code": 56,
+  "version_name": "2.40.0",
   "is_force": false,
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.39.1/ShriBalajiKripaDham-v2.39.1.apk",
-  "update_notes_hindi": "v2.39.1: सुपर एडमिन पिन 0825, ऐप साइज़ 50MB कटौती, ऑल-इंडिया मैप ऑटो-कम्प्लीट (हर गाँव-कस्बा), बुकमाईशो 5-मिनट बस सीट होल्ड व ऑफ़लाइन टोकन जनरेशन।",
-  "update_notes_english": "v2.39.1: Super Admin PIN 0825, 50MB APK size cut, Pan-India village map autocomplete, BookMyShow 5-min bus seat hold & resilient offline token generation.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.40.0/ShriBalajiKripaDham-v2.40.0.apk",
+  "update_notes_hindi": "v2.40.0: सुपर एडमिन पिन 0825/पासवर्ड सुरक्षा, शत-प्रतिशत ऑनलाइन टोकन प्रणाली (नो डुप्लीकेट), फायरबेस क्लाउड मैसेजिंग (FCM), इनबिल्ट देवनागरी OCR व AI फेस ऑटो-डिटेक्ट, असली इंसानी आवाज़ में टोकन घोषणा।",
+  "update_notes_english": "v2.40.0: SuperAdmin locked to PIN 0825/Password, 100% online collision-free token generation, Firebase FCM integration, inbuild OCR/Face Vision, real human voice token announcements.",
   "release_date": "2026-09-17",
-  "sha256": ""
+  "sha256": "142940ca8c77506e9ee5cbb243815a65bd77f3f9ce71cb86e2f9bc43162686a4"
 }

@@ -284,18 +284,18 @@ fun TokenRegistrationScreen(
         if (clean.length == 10) {
             val devotee = repository.searchDevoteeByPhone(clean)
             if (devotee != null) {
-                if (patientName.isBlank()) patientName = devotee.patientName
-                if (city.isBlank() || city == "डूँगरा जाट (स्थानीय)") {
+                patientName = devotee.patientName
+                if (devotee.city.isNotBlank()) {
                     city = devotee.city
                     originAddress = devotee.city
                 }
-                if (capturedPhotoUri.isBlank() && devotee.photoUri.isNotBlank()) {
+                if (devotee.photoUri.isNotBlank()) {
                     capturedPhotoUri = devotee.photoUri
                 }
                 autoFillBanner = if (isHindi)
-                    "पूर्व पंजीकृत भक्त: ${devotee.patientName} (${devotee.city}) का विवरण स्वतः भरा गया!"
+                    "✅ पूर्व पंजीकृत भक्त: ${devotee.patientName} (${devotee.city}) का समस्त विवरण स्वतः भर दिया गया है!"
                 else
-                    "Found record: ${devotee.patientName} (${devotee.city}) auto-filled!"
+                    "✅ Devotee Record Found: ${devotee.patientName} (${devotee.city}) auto-filled!"
             }
             directorySuggestions = emptyList()
         } else if (clean.length in 3..9) {

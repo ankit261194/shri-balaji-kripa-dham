@@ -44,11 +44,25 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- Inbuild Google ML Kit Vision Dependencies (Devanagari OCR & Face Detection) -->
+        <meta-data
+            android:name="com.google.ml.vision.DEPENDENCIES"
+            android:value="ocr,face" />
+
         <!-- Native Background Push Notification JobService (Runs periodically when app is closed) -->
         <service
             android:name=".notification.AshramBackgroundPushJobService"
             android:permission="android.permission.BIND_JOB_SERVICE"
             android:exported="true" />
+
+        <!-- Firebase Cloud Messaging (FCM) Service -->
+        <service
+            android:name=".notification.AshramFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <!-- Boot & App Update Receiver to resume background push checks -->
         <receiver

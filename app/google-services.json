@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "313450311438",
+    "project_id": "shribalajikripadham-63e96",
+    "storage_bucket": "shribalajikripadham-63e96.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:313450311438:android:2e67fc1999228785ea715f",
+        "android_client_info": {
+          "package_name": "com.example.shribalajikripadham"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbJQvMUopfPb0at-_upRMnR6MjL6z9lRo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
