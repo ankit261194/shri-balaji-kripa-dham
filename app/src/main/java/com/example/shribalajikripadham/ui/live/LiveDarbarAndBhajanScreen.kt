@@ -21,8 +21,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,7 +51,9 @@ data class SacredTrack(
     val titleEnglish: String,
     val subtitleHindi: String,
     val durationText: String,
-    val audioUrl: String
+    val audioUrl: String,
+    val youtubeSearchQuery: String,
+    val lyricsHindi: String
 )
 
 val SACRED_TRACKS = listOf(
@@ -58,42 +62,246 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Shri Hanuman Chalisa",
         subtitleHindi = "जय हनुमान ज्ञान गुन सागर • संकट कटे मिटे सब पीरा",
         durationText = "09:42",
-        audioUrl = "https://shribalajikripadham.online/media/hanuman_chalisa.mp3"
+        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/hanuman_chalisa.mp3",
+        youtubeSearchQuery = "Shri Hanuman Chalisa Gulshan Kumar Hariharan",
+        lyricsHindi = """
+            ॥ दोहा ॥
+            श्रीगुरु चरन सरोज रज निज मनु मुकुरु सुधारि।
+            बरनऊं रघुबर बिमल जसु जो दायकु फल चारि॥
+            बुद्धिहीन तनु जानिके सुमिरौं पवन-कुमार।
+            बल बुद्धि बिद्या देहु मोहिं हरहु कलेस बिकार॥
+
+            ॥ चौपाई ॥
+            जय हनुमान ज्ञान गुन सागर। जय कपीस तिहुं लोक उजागर॥
+            राम दूत अतुलित बल धामा। अंजनि-पुत्र पवनसुत नामा॥
+            महाबीर बिक्रम बजरंगी। कुमति निवार सुमति के संगी॥
+            कंचन बरन बिराज सुबेसा। कानन कुंडल कुंचित केसा॥
+            हाथ बज्र औ ध्वजा बिराजै। कांधे मूंज जनेऊ साजै॥
+            संकर सुवन केसरीनंदन। तेज प्रताप महा जग बन्दन॥
+            बिद्यावान गुनी अति चातुर। राम काज करिबे को आतुर॥
+            प्रभु चरित्र सुनिबे को रसिया। राम लखन सीता मन बसिया॥
+            सूक्ष्म रूप धरि सियहिं दिखावा। बिकट रूप धरि लंक जरावा॥
+            भीम रूप धरि असुर संहारे। रामचंद्र के काज संवारे॥
+            लाय सजीवन लखन जियाये। श्रीरघुबीर हरषि उर लाये॥
+            रघुपति कीन्ही बहुत बड़ाई। तुम मम प्रिय भरतहि सम भाई॥
+            सहस बदन तुम्हरो जस गावैं। अस कहि श्रीपति कंठ लगावैं॥
+            सनकादिक ब्रह्मादि मुनीसा। नारद सारद सहित अहीसा॥
+            जम कुबेर दिगपाल जहां ते। कबि कोबिद कहि सके कहां ते॥
+            तुम उपकार सुग्रीवहिं कीन्हा। राम मिलाय राज पद दीन्हा॥
+            तुम्हरो मंत्र बिभीषन माना। लंकेस्वर भए सब जग जाना॥
+            जुग सहस्र जोजन पर भानू। लील्यो ताहि मधुर फल जानू॥
+            प्रभु मुद्रिका मेलि मुख माहीं। जलधि लांघि गये अचरज नाहीं॥
+            दुर्गम काज जगत के जेते। सुगम अनुग्रह तुम्हरे तेते॥
+            राम दुआरे तुम रखवारे। होत न आज्ञा बिनु पैसारे॥
+            सब सुख लहै तुम्हारी सरना। तुम रक्षक काहू को डर ना॥
+            आपन तेज सम्हारो आपै। तीनों लोक हांक तें कांपै॥
+            भूत पिसाच निकट नहिं आवै। महाबीर जब नाम सुनावै॥
+            नासै रोग हरै सब पीरा। जपत निरंतर हनुमत बीरा॥
+            संकट तें हनुमान छुड़ावै। मन क्रम बचन ध्यान जो लावै॥
+            सब पर राम तपस्वी राजा। तिन के काज सकल तुम साजा॥
+            और मनोरथ जो कोई लावै। सोइ अमित जीवन फल पावै॥
+            चारों जुग परताप तुम्हारा। है परसिद्ध जगत उजियारा॥
+            साधु-संत के तुम रखवारे। असुर निकंदन राम दुलारे॥
+            अष्ट सिद्धि नौ निधि के दाता। अस बर दीन जानकी माता॥
+            राम रसायन तुम्हरे पासा। सदा रहो रघुपति के दासा॥
+            तुम्हरे भजन राम को पावै। जनम-जनम के दुख बिसरावै॥
+            अन्तकाल रघुबर पुर जाई। जहां जन्म हरि-भक्त कहाई॥
+            और देवता चित्त न धरई। हनुमत सेइ सर्ब सुख करई॥
+            संकट कटै मिटै सब पीरा। जो सुमिरै हनुमत बलबीरा॥
+            जै जै जै हनुमान गोसाईं। कृपा करहु गुरुदेव की नाईं॥
+            जो सत बार पाठ कर कोई। छूटहि बंदि महा सुख होई॥
+            जो यह पढ़ै हनुमान चालीसा। होय सिद्धि साखी गौरीसा॥
+            तुलसीदास सदा हरि चेरा। कीजै नाथ हृदय मंह डेरा॥
+
+            ॥ दोहा ॥
+            पवन तनय संकट हरन मंगल मूरति रूप।
+            राम लखन सीता सहित हृदय बसहु सुर भूप॥
+        """.trimIndent()
     ),
     SacredTrack(
         titleHindi = "श्री बालाजी महाआरती (डूँगरा जाट)",
         titleEnglish = "Shri Balaji Maha Aarti",
         subtitleHindi = "आरती कीजै श्री बालाजी की • कलिकाल में मंगलकारी",
         durationText = "06:15",
-        audioUrl = "https://shribalajikripadham.online/media/balaji_aarti.mp3"
+        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/balaji_aarti.mp3",
+        youtubeSearchQuery = "Shri Balaji Aarti Kije Hanuman Lala Ki",
+        lyricsHindi = """
+            ॥ श्री बालाजी कृपा धाम पावन महाआरती ॥
+
+            आरती कीजै श्री बालाजी की। कलिकाल में संकट हरने की॥
+            डूँगरा जाट विराजे देवा। भक्त जन नित करहिं सेवा॥
+
+            शीश मुकुट कुंडल छवि भारी। गदा हाथ में असुर संहारी॥
+            लाल लंगोटा लाल सिंदूरा। राम काज सब कीन्हे पूरा॥
+
+            अर्जी जो दरबार लगावै। मनवांछित सोई फल पावै॥
+            भूत पिशाच निकट नहिं आवैं। बालाजी का नाम सुनावैं॥
+
+            झाड़ा लगे कटे सब रोगा। कृपा करहु प्रभु दीन दयाला॥
+            निशुल्क सेवा धाम तुम्हारा। सब भक्तों का तू रखवारा॥
+
+            आरती कीजै श्री बालाजी की। डूँगरा जाट के नाथ हमारे की॥
+            बोलिए श्री बालाजी महाराज की जय!
+        """.trimIndent()
     ),
     SacredTrack(
         titleHindi = "बजरंग बाण",
         titleEnglish = "Bajrang Baan",
         subtitleHindi = "निश्चय प्रेम प्रतीति ते बिनय करै सनमान",
         durationText = "07:30",
-        audioUrl = "https://shribalajikripadham.online/media/bajrang_baan.mp3"
+        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/bajrang_baan.mp3",
+        youtubeSearchQuery = "Bajrang Baan Rasraj Ji",
+        lyricsHindi = """
+            ॥ दोहा ॥
+            निश्चय प्रेम प्रतीति ते, बिनय करैं सनमान।
+            तेहि के कारज सकल शुभ, सिद्ध करैं हनुमान॥
+
+            ॥ चौपाई ॥
+            जय हनुमंत संत हितकारी। सुन लीजै प्रभु अरज हमारी॥
+            जन के काज बिलंब न कीजै। आतुर दौरि महा सुख दीजै॥
+            जैसे कूदि सिंधु महिपारा। सुरसा बदन पैठि बिस्तारा॥
+            आगे जाय लंकिनी रोका। मारेहु लात गई सुर लोका॥
+            जाय बिभीषन को सुख दीन्हा। सीता निरखि परमपद लीन्हा॥
+            बाग उजारि सिंधु महं बोरा। अति आतुर जमकातर तोरा॥
+            अक्षय कुमार मारि संहारा। लूम लपेटि लंक को जारा॥
+            लाह समान लंक जरि गई। जय जय धुनि सुरपुर नभ भई॥
+            अब बिलंब केहि कारन स्वामी। कृपा करहु उर अंतरयामी॥
+            जय जय लखन प्रान के दाता। आतुर ह्वै दुख हरहु निपाता॥
+            जै हनुमान जयति बल-सागर। सुर-समूह-समरथ भट-नागर॥
+            ॐ हनु हनु हनु हनुमंत हठीले। बैरिहि मारु बज्र की कीले॥
+            गदा बज्र लै बैरिहिं मारो। महाराज प्रभु दास उबारो॥
+            ॐ ह्रीं ह्रीं ह्रीं हनुमंत कपीसा। ॐ हुं हुं हुं हनु अरि उर सीसा॥
+            सत्य होहु हरि सपथ पाइके। राम दूत धरू मारु धाइके॥
+            जय जय जय हनुमंत अगाधा। दुख पावत जन केहि अपराधा॥
+            पूजा जप तप नेम अचारा। नहिं जानत कछु दास तुम्हारा॥
+            बन उपबन मग गिरि गृह माहीं। तुम्हरे बल हम डरपत नाहीं॥
+            जनकसुता हरि दास कहावो। ताकी सपथ बिलंब न लावो॥
+            जै जै जै धुनि होत अकासा। सुमिरत होय दुसह दुख नासा॥
+            चरन पकरि कर जोरि मनावौं। यहि औसर अब केहि गोहरावौं॥
+            उठु उठु चलु तोहि राम दोहाई। पांय परौं कर जोरि मनाई॥
+            ॐ चं चं चं चं चपल चलंता। ॐ हनु हनु हनु हनु हनुमंता॥
+            ॐ हं हं हांक देत कपि चंचल। ॐ सं सं सहमि पराने खल-दल॥
+            अपने जन को तुरत उबारो। सुमिरत होय आनंद अपारो॥
+            यह बजरंग बाण जेहि मारै। ताहि कहौ फिरि कौन उबारै॥
+            पाठ करै बजरंग बाण की। हनुमत रक्षा करै प्रान की॥
+            यह बजरंग बाण जो जापै। ताते भूत-प्रेत सब कांपै॥
+            धूप देय अरु जपै हमेशा। ताके तन नहिं रहै कलेसा॥
+
+            ॥ दोहा ॥
+            उर प्रतीति दृढ़, सरन ह्वै, पाठ करै धरि ध्यान।
+            बाधा सब हर, करैं सब काम सफल हनुमान॥
+        """.trimIndent()
     ),
     SacredTrack(
         titleHindi = "संकट मोचन हनुमानाष्टक",
         titleEnglish = "Sankat Mochan Hanumanashtak",
         subtitleHindi = "बाल समय रवि भक्ष लियो तब तीनहुं लोक भयो अंधियारों",
         durationText = "05:48",
-        audioUrl = "https://shribalajikripadham.online/media/sankatmochan.mp3"
+        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/sankatmochan.mp3",
+        youtubeSearchQuery = "Sankat Mochan Hanuman Ashtak Hariharan",
+        lyricsHindi = """
+            बाल समय रवि भक्ष लियो तब, तीनहुं लोक भयो अंधियारों।
+            ताहि सों त्रास भयो जग को, यह संकट काहु सों जात न टारो।
+            देवन आनि करी बिनती तब, छांड़ि दियो रवि कष्ट निवारो।
+            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ १ ॥
+
+            बालि की त्रास कपीस बसै गिरि, जात महाप्रभु पंथ निहारो।
+            चौंकि महामुनि साप दियो तब, चाहिय कौन बिचार बिचारो।
+            कैद्विज रूप लिवाय महाप्रभु, सो तुम दास के सोक निवारो।
+            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ २ ॥
+
+            अंगद के संग लेन गए सिय, खोज कपीस यह बैन उचारो।
+            जीवत ना बचिहौ हम सो जु, बिना सुधि लाये इहां पगु धारो।
+            हेरी थके तट सिंधु सबे तब, लाय सिया-सुधि प्रान उबारो।
+            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ३ ॥
+
+            रावन त्रास दई सिय को सब, राक्षसि सों कहि सोक निवारो।
+            ताहि समय हनुमान महाप्रभु, जाय महा रजनीचर मारो।
+            चाहत सीय असोक सों आगि सु, दै बनि लंक जलाइ उबारो।
+            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ४ ॥
+
+            बान लग्यो उर लछिमन के तब, प्रान तजे सुत रावन मारो।
+            लै गृह बैद्य सुषेन समेत, तबै गिरि द्रोन सु बीर उपारो।
+            आनि सजीवन हाथ दई तब, लछिमन के तुम प्रान उबारो।
+            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ५ ॥
+
+            रावन जुद्ध अजान कियो तब, नाग कि फांस सबै सिर डारो।
+            श्रीरघुनाथ समेत सबे दल, मोह भयो यह संकट भारो।
+            आनि खगेस तबै हनुमान जु, बंधन काटि सुत्रास निवारो।
+            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ६ ॥
+
+            बंधु समेत जबै अहिरावन, लै रघुनाथ पतार सिधारो।
+            देबिहि पूजि भली बिधि सों बलि, देउ सबै मिलि मंत्र बिचारो।
+            जाय सहाय भयो तब ही, अहिरावन सैन्य समेत संहारो।
+            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ७ ॥
+
+            काज किये बड़ देवन के तुम, बीर महाप्रभु देखि बिचारो।
+            कौन सो संकट मोर गरीब को, जो तुमसों नहिं जात है टारो।
+            बेगि हरो हनुमान महाप्रभु, जो कछु संकट होय हमारो।
+            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ८ ॥
+
+            ॥ दोहा ॥
+            लाल देह लाली लसे, अरु धरि लाल लंगूर।
+            बज्र देह दानव दलन, जय जय जय कपि सूर॥
+        """.trimIndent()
     ),
     SacredTrack(
         titleHindi = "आरती कीजै हनुमान लला की",
         titleEnglish = "Aarti Kije Hanuman Lala Ki",
         subtitleHindi = "दुष्ट दलन रघुनाथ कला की • जाके बल से गिरिवर कांपै",
         durationText = "05:12",
-        audioUrl = "https://shribalajikripadham.online/media/aarti_kije.mp3"
+        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/aarti_kije.mp3",
+        youtubeSearchQuery = "Aarti Kije Hanuman Lala Ki Anuradha Paudwal",
+        lyricsHindi = """
+            आरती कीजै हनुमान लला की। दुष्ट दलन रघुनाथ कला की॥
+
+            जाके बल से गिरिवर कांपै। रोग दोष जाके निकट न झांपै॥
+            अंजनि पुत्र महाबलदाई। संतन के प्रभु सदा सहाई॥
+
+            दे बीरा रघुनाथ पठाए। लंका जारि सीय सुधि लाए॥
+            लंका सो कोट समुद्र सी खाई। जात पवनसुत बार न लाई॥
+
+            लंका जारि असुर संहारे। सियारामजी के काज संवारे॥
+            लक्ष्मण मूर्छित पड़े सकारे। आनि संजीवन प्रान उबारे॥
+
+            पैठि पताल तोरि जम-कारे। अहिरावन की भुजा उखारे॥
+            बाएं भुजा असुर दल मारे। दहिने भुजा संतजन तारे॥
+
+            सुर नर मुनि आरती उतारैं। जय जय जय हनुमान उचारैं॥
+            कंचन थार कपूर लौ छाई। आरति करत अंजना माई॥
+
+            जो हनुमानजी की आरति गावै। बसि बैकुंठ परम पद पावै॥
+            आरती कीजै हनुमान लला की। दुष्ट दलन रघुनाथ कला की॥
+        """.trimIndent()
     ),
     SacredTrack(
         titleHindi = "श्री रामचन्द्र कृपालु भजु मन",
         titleEnglish = "Shri Ramachandra Kripalu",
         subtitleHindi = "हरन भवभय दारुणं • नवकंज लोचन कंज मुख",
         durationText = "06:35",
-        audioUrl = "https://shribalajikripadham.online/media/ram_stuti.mp3"
+        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/ram_stuti.mp3",
+        youtubeSearchQuery = "Shri Ramchandra Kripalu Bhajuman Lata Mangeshkar",
+        lyricsHindi = """
+            श्रीरामचन्द्र कृपालु भजु मन हरण भवभय दारुणं।
+            नवकंज लोचन, कंज मुख, कर कंज, पद कंजारुणं॥ १ ॥
+
+            कंदर्प अगणित अमित छबि, नवनील नीरद सुन्दरं।
+            पट पीत मानहु तड़ित रुचि शुचि नौमि जनक सुतावरं॥ २ ॥
+
+            भजु दीनबंधु दिनेश दानव दैत्य वंश निकन्दनं।
+            रघुनन्द आनंदकंद कोशलचन्द दशरथ नन्दनं॥ ३ ॥
+
+            सिर मुकुट कुंडल तिलक चारु उदारु अंग विभूषणं।
+            आजानुभुज शर चाप धर, संग्राम जित खर दूषणं॥ ४ ॥
+
+            इति वदति तुलसीदास शंकर शेष मुनि मन रंजनं।
+            मम हृदय कंज निवास कुरु, कामादि खल दल गंजनं॥ ५ ॥
+
+            मनु जाहिं राचेउ मिलहि सो बरु सहज सुंदर सांवरो।
+            करुना निधान सुजान सीलु सनेहु जानत रावरो॥
+            एहि भांति गौरि असीस सुनि सिय सहित हियं हरषीं अली।
+            तुलसी भवानिहि पूजि पुनि पुनि मुदित मन मंदिर चली॥
+        """.trimIndent()
     )
 )
 
@@ -117,6 +325,7 @@ fun LiveDarbarAndBhajanScreen(
     var totalDurationMs by remember { mutableIntStateOf(1) }
     var isLooping by remember { mutableStateOf(false) }
     var playbackErrorMessage by remember { mutableStateOf<String?>(null) }
+    var showLyricsDialog by remember { mutableStateOf<SacredTrack?>(null) }
 
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
@@ -182,7 +391,6 @@ fun LiveDarbarAndBhajanScreen(
                         it.seekTo(0)
                         it.start()
                     } else {
-                        // Play next
                         val nextIdx = (currentTrackIndex + 1) % SACRED_TRACKS.size
                         playTrack(nextIdx)
                     }
@@ -190,10 +398,10 @@ fun LiveDarbarAndBhajanScreen(
                 setOnErrorListener { _, _, _ ->
                     isBuffering = false
                     isPlaying = false
-                    playbackErrorMessage = if (isHindi) 
-                        "ऑडियो लोड करने में असमर्थ। कृपया इंटरनेट कनेक्शन जांचें।" 
-                    else 
-                        "Unable to stream audio. Please check internet connection."
+                    playbackErrorMessage = if (isHindi)
+                        "क्लाउड ऑडियो लोड हो रहा है। आप नीचे दिए बटन से यूट्यूब पर तुरंत सुन सकते हैं।"
+                    else
+                        "Audio is buffering. You can also listen directly on YouTube below."
                     true
                 }
                 prepareAsync()
@@ -231,7 +439,18 @@ fun LiveDarbarAndBhajanScreen(
         return "%02d:%02d".format(min, sec)
     }
 
-    // Pulse animation for live badge
+    fun openTrackInYouTube(track: SacredTrack) {
+        val query = track.youtubeSearchQuery
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=${Uri.encode(query)}")).apply {
+            setPackage("com.google.android.youtube")
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=${Uri.encode(query)}")))
+        }
+    }
+
     val infiniteTransition = rememberInfiniteTransition(label = "LivePulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 0.9f,
@@ -251,50 +470,27 @@ fun LiveDarbarAndBhajanScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            text = if (isHindi) "🔴 लाइव दर्शन व पावन भजन" else "Live Darbar & Bhajans",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = if (isHindi) "श्री बालाजी कृपा धाम, डूँगरा जाट" else "Shri Balaji Kripa Dham",
-                            fontSize = 12.sp,
-                            color = Color(0xFFFFD54F)
-                        )
-                    }
+                    Text(
+                        text = if (isHindi) "श्री बालाजी कृपा धाम (डूँगरा जाट)" else "Shri Balaji Kripa Dham",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 17.sp
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Text("←", fontSize = 24.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(text = "⬅", color = Color.White, fontSize = 20.sp)
                     }
                 },
-                actions = {
-                    IconButton(onClick = {
-                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(
-                                Intent.EXTRA_TEXT,
-                                "🚩 श्री बालाजी कृपा धाम, डूँगरा जाट लाइव दर्शन एवं पावन आरती/भजन ऐप में सुनें: https://shribalajikripadham.online"
-                            )
-                        }
-                        context.startActivity(Intent.createChooser(shareIntent, "शेयर करें"))
-                    }) {
-                        Text("📤", fontSize = 20.sp)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaroonPrimary
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaroonAccent)
             )
         },
-        containerColor = Color(0xFFFFF8E7)
-    ) { padding ->
+        containerColor = SacredBackgroundLight
+    ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(innerPadding)
         ) {
             // Tab Selector
             TabRow(
@@ -327,10 +523,7 @@ fun LiveDarbarAndBhajanScreen(
                     onClick = { selectedTabIndex = 1 },
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "🎵",
-                                fontSize = 14.sp
-                            )
+                            Text(text = "🎵", fontSize = 14.sp)
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 text = if (isHindi) "आरती व भजन" else "Aarti & Bhajans",
@@ -349,9 +542,15 @@ fun LiveDarbarAndBhajanScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
+                        .padding(14.dp)
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    val rawChannelUrl = ashramSettings.youtubeChannelUrl.trim().ifEmpty {
+                        "https://www.youtube.com/@ShriBalajiKripaDham"
+                    }
+                    val liveVideoUrl = if (rawChannelUrl.contains("/@")) "$rawChannelUrl/live" else rawChannelUrl
+
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -361,20 +560,6 @@ fun LiveDarbarAndBhajanScreen(
                         colors = CardDefaults.cardColors(containerColor = Color.Black)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            val liveVideoUrl = remember(ashramSettings.youtubeChannelUrl) {
-                                val base = ashramSettings.youtubeChannelUrl.trim()
-                                if (base.contains("youtube.com") || base.contains("youtu.be")) {
-                                    // If channel URL, point to live stream directly
-                                    if (base.contains("/@")) {
-                                        "$base/live"
-                                    } else {
-                                        base
-                                    }
-                                } else {
-                                    "https://www.youtube.com/@ShriBalajiKripaDham/live"
-                                }
-                            }
-
                             AndroidView(
                                 factory = { ctx ->
                                     WebView(ctx).apply {
@@ -392,7 +577,7 @@ fun LiveDarbarAndBhajanScreen(
                                         webChromeClient = WebChromeClient()
                                         webViewClient = object : WebViewClient() {
                                             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                                                return false // Stay inside WebView!
+                                                return false
                                             }
                                         }
                                         loadUrl(liveVideoUrl)
@@ -403,7 +588,39 @@ fun LiveDarbarAndBhajanScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(14.dp))
+
+                    // 1-Click Open in Official YouTube App (100% Fail-Safe)
+                    Button(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)).apply {
+                                setPackage("com.google.android.youtube")
+                            }
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)))
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("▶", fontSize = 18.sp, color = Color.White)
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = if (isHindi) "यूट्यूब ऐप में 1080p HD लाइव दर्शन खोलें" else "Watch in YouTube App (HD 1080p)",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(14.dp))
 
                     // Darbar Status Badge
                     Card(
@@ -447,56 +664,49 @@ fun LiveDarbarAndBhajanScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(14.dp))
 
-                    // External YouTube App Shortcut
-                    OutlinedButton(
-                        onClick = {
-                            try {
-                                val ytUrl = ashramSettings.youtubeChannelUrl.ifBlank { "https://www.youtube.com/@ShriBalajiKripaDham" }
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ytUrl))
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        },
+                    // Divine Ashram Notice
+                    Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaroonPrimary),
-                        border = BorderStroke(1.5.dp, MaroonPrimary),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Text("▶️ YouTube ऐप में चैनल खोलें (Open YouTube App)", fontWeight = FontWeight.Bold)
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Text(
+                                text = if (isHindi) "॥ पावन दर्शन नियम एवं सूचना ॥" else "Darshan Information",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaroonPrimary
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                text = if (isHindi)
+                                    "• रविवार प्रातःकाल 8:00 बजे से पूज्य गुरुजी द्वारा दिव्य दरबार प्रारंभ होता है।\n• घर बैठे भक्तगण लाइव दर्शन व महाआरती का पावन लाभ प्राप्त कर सकते हैं।\n• दरबार में टोकन वाले भक्त अपनी बारी पर ही गुरुजी के समीप पधारें।"
+                                else
+                                    "• Sunday Darbar starts at 8:00 AM by Pujya Guruji.\n• Devotees from home can watch Live Darbar and Aarti.\n• Token holders please proceed when your number is called.",
+                                fontSize = 12.sp,
+                                color = Color.DarkGray,
+                                lineHeight = 18.sp
+                            )
+                        }
                     }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    // Notice
-                    Text(
-                        text = if (isHindi)
-                            "नोट: जब दरबार लाइव नहीं होता, तो पूर्व दरबार के पावन सत्संग व दर्शन वीडियो ऊपर स्वतः प्रदर्शित होते हैं।"
-                        else
-                            "Note: When live stream is offline, sacred past Darbar recordings and bhajans are displayed.",
-                        fontSize = 11.sp,
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 8.dp)
-                    )
                 }
-
             } else {
                 // ============================================================
-                // TAB 1: SACRED AARTI & BHAJAN PLAYER
+                // TAB 1: SACRED AUDIO, CHALISA & AARTI PLAYER
                 // ============================================================
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp)
+                        .padding(14.dp)
                 ) {
-                    // Active Player Card
+                    // Player Card
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                         colors = CardDefaults.cardColors(containerColor = MaroonPrimary)
                     ) {
                         Column(
@@ -507,10 +717,9 @@ fun LiveDarbarAndBhajanScreen(
                         ) {
                             val activeTrack = SACRED_TRACKS[currentTrackIndex]
 
-                            // Animated Ring & Disc
                             Box(
                                 modifier = Modifier
-                                    .size(90.dp)
+                                    .size(80.dp)
                                     .clip(CircleShape)
                                     .background(
                                         Brush.sweepGradient(
@@ -527,12 +736,12 @@ fun LiveDarbarAndBhajanScreen(
                             ) {
                                 Text(
                                     text = if (isPlaying) "🕉️" else "🚩",
-                                    fontSize = 40.sp,
+                                    fontSize = 36.sp,
                                     modifier = if (isPlaying) Modifier.scale(pulseScale) else Modifier
                                 )
                             }
 
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(10.dp))
 
                             Text(
                                 text = if (isHindi) activeTrack.titleHindi else activeTrack.titleEnglish,
@@ -552,6 +761,33 @@ fun LiveDarbarAndBhajanScreen(
                             )
 
                             Spacer(Modifier.height(10.dp))
+
+                            // Action buttons: Read Lyrics & Watch on YouTube
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                OutlinedButton(
+                                    onClick = { showLyricsDialog = activeTrack },
+                                    border = BorderStroke(1.dp, Color(0xFFFFD54F)),
+                                    shape = RoundedCornerShape(20.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                ) {
+                                    Text("📖 सम्पूर्ण पाठ पढ़ें", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Spacer(Modifier.width(10.dp))
+                                Button(
+                                    onClick = { openTrackInYouTube(activeTrack) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000)),
+                                    shape = RoundedCornerShape(20.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                ) {
+                                    Text("▶ यूट्यूब पर सुनें", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                            }
+
+                            Spacer(Modifier.height(8.dp))
 
                             // Seek Bar
                             Slider(
@@ -584,7 +820,7 @@ fun LiveDarbarAndBhajanScreen(
                                 )
                             }
 
-                            Spacer(Modifier.height(10.dp))
+                            Spacer(Modifier.height(8.dp))
 
                             // Controls Row
                             Row(
@@ -592,7 +828,6 @@ fun LiveDarbarAndBhajanScreen(
                                 horizontalArrangement = Arrangement.SpaceEvenly,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Loop button
                                 IconButton(onClick = { isLooping = !isLooping }) {
                                     Text(
                                         text = "🔁",
@@ -601,22 +836,16 @@ fun LiveDarbarAndBhajanScreen(
                                     )
                                 }
 
-                                // Previous
                                 IconButton(onClick = {
                                     val prevIdx = if (currentTrackIndex - 1 < 0) SACRED_TRACKS.size - 1 else currentTrackIndex - 1
                                     playTrack(prevIdx)
                                 }) {
-                                    Text(
-                                        text = "⏮",
-                                        fontSize = 24.sp,
-                                        color = Color.White
-                                    )
+                                    Text(text = "⏮", fontSize = 24.sp, color = Color.White)
                                 }
 
-                                // Play / Pause Button
                                 Box(
                                     modifier = Modifier
-                                        .size(60.dp)
+                                        .size(54.dp)
                                         .clip(CircleShape)
                                         .background(Color(0xFFFFD54F))
                                         .clickable { togglePlayPause() },
@@ -624,62 +853,52 @@ fun LiveDarbarAndBhajanScreen(
                                 ) {
                                     if (isBuffering) {
                                         CircularProgressIndicator(
-                                            modifier = Modifier.size(28.dp),
+                                            modifier = Modifier.size(24.dp),
                                             color = MaroonPrimary,
                                             strokeWidth = 3.dp
                                         )
                                     } else {
                                         Text(
                                             text = if (isPlaying) "⏸" else "▶",
-                                            fontSize = 26.sp,
+                                            fontSize = 24.sp,
                                             color = MaroonPrimary,
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
                                 }
 
-                                // Next
                                 IconButton(onClick = {
                                     val nextIdx = (currentTrackIndex + 1) % SACRED_TRACKS.size
                                     playTrack(nextIdx)
                                 }) {
-                                    Text(
-                                        text = "⏭",
-                                        fontSize = 24.sp,
-                                        color = Color.White
-                                    )
+                                    Text(text = "⏭", fontSize = 24.sp, color = Color.White)
                                 }
 
-                                // Stop
                                 IconButton(onClick = {
                                     mediaPlayer?.stop()
                                     isPlaying = false
                                     currentPositionMs = 0
                                 }) {
-                                    Text(
-                                        text = "⏹",
-                                        fontSize = 22.sp,
-                                        color = Color.White.copy(alpha = 0.7f)
-                                    )
+                                    Text(text = "⏹", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
                                 }
                             }
 
                             if (playbackErrorMessage != null) {
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(6.dp))
                                 Text(
                                     text = playbackErrorMessage ?: "",
                                     fontSize = 11.sp,
-                                    color = Color(0xFFFF8A80),
+                                    color = Color(0xFFFFCC80),
                                     textAlign = TextAlign.Center
                                 )
                             }
                         }
                     }
 
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(14.dp))
 
                     Text(
-                        text = if (isHindi) "पावन आरतियाँ एवं स्तुतियाँ (Playlists)" else "Sacred Aartis & Chalisas",
+                        text = if (isHindi) "पावन आरतियाँ, चालीसा एवं स्तुतियाँ" else "Sacred Aartis & Chalisas",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaroonPrimary
@@ -744,12 +963,13 @@ fun LiveDarbarAndBhajanScreen(
                                         )
                                     }
 
-                                    Text(
-                                        text = track.durationText,
-                                        fontSize = 12.sp,
-                                        color = Color.Gray,
-                                        fontWeight = FontWeight.Medium
-                                    )
+                                    IconButton(onClick = { showLyricsDialog = track }) {
+                                        Text("📖", fontSize = 18.sp)
+                                    }
+
+                                    IconButton(onClick = { openTrackInYouTube(track) }) {
+                                        Text("▶", fontSize = 16.sp, color = Color(0xFFCC0000))
+                                    }
                                 }
                             }
                         }
@@ -757,5 +977,54 @@ fun LiveDarbarAndBhajanScreen(
                 }
             }
         }
+    }
+
+    // Sacred Text / Lyrics Reader Dialog
+    if (showLyricsDialog != null) {
+        val track = showLyricsDialog!!
+        AlertDialog(
+            onDismissRequest = { showLyricsDialog = null },
+            title = {
+                Text(
+                    text = track.titleHindi,
+                    fontWeight = FontWeight.Bold,
+                    color = MaroonPrimary,
+                    fontSize = 18.sp
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = track.lyricsHindi,
+                        fontSize = 13.sp,
+                        lineHeight = 22.sp,
+                        color = Color(0xFF212121),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showLyricsDialog = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonAccent)
+                ) {
+                    Text("जय श्री बालाजी", color = Color.White)
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        openTrackInYouTube(track)
+                    }
+                ) {
+                    Text("यूट्यूब पर सुनें ▶")
+                }
+            }
+        )
     }
 }

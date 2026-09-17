@@ -1,13 +1,13 @@
 {
-  "latest_version_code": 62,
-  "version_code": 62,
-  "latest_version_name": "2.44.1",
-  "version_name": "2.44.1",
+  "latest_version_code": 63,
+  "version_code": 63,
+  "latest_version_name": "2.45.0",
+  "version_name": "2.45.0",
   "is_force": false,
   "is_force_update": false,
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.44.1/ShriBalajiKripaDham-v2.44.1.apk",
-  "update_notes_hindi": "v2.44.1: संपूर्ण स्क्रीन ऑटो-फिट रेस्पॉन्सिव लेआउट - सभी छोटे व बड़े मोबाइल में बिना किसी अतिरिक्त स्क्रॉल के सभी सेवाएं सामने फिट, भक्त व सेवक संपूर्ण मार्गदर्शिका PDF व इन-ऐप लाइव दर्शन।",
-  "update_notes_english": "v2.44.1: Auto-Fit Responsive Screen Engine - perfectly fits across all display sizes, updated Devotee & Sevadar Manual PDFs and Live Darbar.",
-  "release_date": "2026-09-17",
-  "sha256": "8C434B0600A1C8E2A4625BC9735F2F389ED5E57FC3F55645D65637DC5FFF6148"
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.45.0/ShriBalajiKripaDham-v2.45.0.apk",
+  "update_notes_hindi": "v2.45.0: प्रो एंटरप्राइज अपडेट - थर्मल प्रिंटर देवनागरी हिंदी रास्टर इंजन (स्पष्ट प्रिंटिंग), संपूर्ण 6 पाठ/आरती/चालीसा हिंदी लिरिक्स व 1080p HD लाइव दर्शन, आश्रम टीवी स्क्रीन पर अखिल भारतीय लाइव कतार, सर्वर-साइड 5 मिनट परमाणु बस सीट होल्ड लॉकिंग व ज़ीरो बग स्टेबिलिटी।",
+  "update_notes_english": "v2.45.0: Pro Enterprise Upgrade - ESC/POS Raster Devanagari Hindi thermal printing engine, complete 6 sacred tracks lyrics reader & 1080p HD stream, Pan-India live token queue on Ashram TV, server-side 5-minute atomic bus seat hold lock & zero-bug enterprise stability.",
+  "release_date": "2026-09-18",
+  "sha256": "249CF161EE9B0B06055C55C83451AF043F77B843A97EA80EDBA6DCD3BC4AD193"
 }

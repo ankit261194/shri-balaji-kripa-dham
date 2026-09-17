@@ -1518,6 +1518,23 @@ class AshramRepository(context: Context) {
         seatsToBook: List<BusSeat>,
         paymentRecord: PaymentRecord? = null
     ): Boolean = withContext(Dispatchers.IO) {
+        // 0. Atomic Remote Lock & Collision Check via Central Server
+        for (seat in seatsToBook) {
+            try {
+                val remoteBook = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.bookBusSeatRemote(
+                    seat = seat,
+                    deviceId = if (seat.heldBy.isNotBlank()) seat.heldBy else seat.phoneNumber
+                )
+                if (!remoteBook.first) {
+                    throw IllegalStateException(remoteBook.second)
+                }
+            } catch (e: IllegalStateException) {
+                throw e
+            } catch (e: Exception) {
+                // Offline fallback: allow local check
+            }
+        }
+
         val db = dbHelper.writableDatabase
         db.beginTransaction()
         try {
@@ -1609,6 +1626,20 @@ class AshramRepository(context: Context) {
         heldBy: String,
         holdDurationMs: Long = 300000L
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        // 1. Try remote atomic 5-minute hold on Central Hostinger Server
+        try {
+            val remoteRes = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.holdBusSeatsRemote(
+                yatraDate = "2026-04-15",
+                seatNumbers = seatNumbers,
+                deviceId = heldBy
+            )
+            if (!remoteRes.first) {
+                return@withContext remoteRes
+            }
+        } catch (e: Exception) {
+            // If offline, proceed with local check
+        }
+
         val db = dbHelper.writableDatabase
         val nowMs = System.currentTimeMillis()
         val expireMs = nowMs + holdDurationMs
@@ -1654,6 +1685,14 @@ class AshramRepository(context: Context) {
         seatNumbers: List<Int>,
         heldBy: String
     ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.releaseBusSeatsHoldRemote(
+                yatraDate = "2026-04-15",
+                seatNumbers = seatNumbers,
+                deviceId = heldBy
+            )
+        } catch (e: Exception) {}
+
         val db = dbHelper.writableDatabase
         try {
             for (sNum in seatNumbers) {

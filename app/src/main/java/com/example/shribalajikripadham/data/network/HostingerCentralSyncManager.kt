@@ -3,6 +3,7 @@ package com.example.shribalajikripadham.data.network
 import android.content.Context
 import android.util.Log
 import com.example.shribalajikripadham.data.model.AshramSettings
+import com.example.shribalajikripadham.data.model.BusSeat
 import com.example.shribalajikripadham.data.model.Token
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -1075,6 +1076,163 @@ object HostingerCentralSyncManager {
             conn.responseCode == 200
         } catch (e: Exception) {
             false
+        }
+    }
+
+    /**
+     * Atomic Server-Side Bus Seat Hold (5-Minute Lock via book_bus_seat.php)
+     */
+    suspend fun holdBusSeatsRemote(
+        yatraDate: String,
+        seatNumbers: List<Int>,
+        deviceId: String
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}book_bus_seat.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.45.0")
+
+            val json = JSONObject().apply {
+                put("action", "hold")
+                put("yatra_date", yatraDate)
+                val seatArr = JSONArray()
+                seatNumbers.forEach { seatArr.put(it) }
+                put("seat_numbers", seatArr)
+                put("device_id", deviceId)
+            }
+
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            val stream = if (code in 200..299) conn.inputStream else (conn.errorStream ?: conn.inputStream)
+            val resp = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() } ?: ""
+            if (resp.isNotBlank()) {
+                val resObj = JSONObject(resp)
+                val success = resObj.optBoolean("success", false)
+                val msg = if (success) {
+                    resObj.optString("message", "सीटें 5 मिनट के लिए सफलतापूर्वक होल्ड कर दी गई हैं।")
+                } else {
+                    resObj.optString("error", "सीट होल्ड नहीं हो सकी।")
+                }
+                return@withContext Pair(success, msg)
+            }
+            Pair(false, "सर्वर रिस्पॉन्स HTTP $code")
+        } catch (e: Exception) {
+            Log.w(TAG, "holdBusSeatsRemote error: ${e.message}")
+            Pair(false, "सर्वर से संपर्क नहीं हो सका: ${e.localizedMessage}")
+        }
+    }
+
+    /**
+     * Release Bus Seat Hold on Central Server
+     */
+    suspend fun releaseBusSeatsHoldRemote(
+        yatraDate: String,
+        seatNumbers: List<Int>,
+        deviceId: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}book_bus_seat.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.45.0")
+
+            val json = JSONObject().apply {
+                put("action", "release_hold")
+                put("yatra_date", yatraDate)
+                val seatArr = JSONArray()
+                seatNumbers.forEach { seatArr.put(it) }
+                put("seat_numbers", seatArr)
+                put("device_id", deviceId)
+            }
+
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+            val code = conn.responseCode
+            val stream = if (code in 200..299) conn.inputStream else (conn.errorStream ?: conn.inputStream)
+            val resp = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() } ?: ""
+            if (resp.isNotBlank()) {
+                val resObj = JSONObject(resp)
+                return@withContext resObj.optBoolean("success", false)
+            }
+            code in 200..299
+        } catch (e: Exception) {
+            Log.w(TAG, "releaseBusSeatsHoldRemote error: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Atomic Server-Side Bus Seat Booking (MySQL FOR UPDATE lock)
+     */
+    suspend fun bookBusSeatRemote(
+        seat: BusSeat,
+        deviceId: String
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}book_bus_seat.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.45.0")
+
+            val json = JSONObject().apply {
+                put("action", "book")
+                put("yatra_date", seat.yatraDate.ifBlank { "2026-04-15" })
+                put("seat_number", seat.seatNumber)
+                put("passenger_name", seat.passengerName)
+                put("passenger_phone", seat.phoneNumber)
+                put("passenger_gender", seat.passengerGender)
+                put("passenger_age", seat.passengerAge)
+                put("payment_status", seat.paymentStatus.name)
+                put("fare_amount", seat.fareAmount)
+                put("booked_by", seat.bookedBy)
+                put("device_id", deviceId)
+                put("created_at", if (seat.bookedAt > 0) seat.bookedAt else System.currentTimeMillis())
+            }
+
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            val stream = if (code in 200..299) conn.inputStream else (conn.errorStream ?: conn.inputStream)
+            val resp = stream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() } ?: ""
+            if (resp.isNotBlank()) {
+                val resObj = JSONObject(resp)
+                val success = resObj.optBoolean("success", false)
+                val msg = if (success) {
+                    resObj.optString("message", "सीट संख्या #${seat.seatNumber} सफलतापूर्वक आरक्षित हो गई!")
+                } else {
+                    resObj.optString("error", "सीट आरक्षण विफल रहा।")
+                }
+                return@withContext Pair(success, msg)
+            }
+            Pair(false, "सर्वर रिस्पॉन्स HTTP $code")
+        } catch (e: Exception) {
+            Log.w(TAG, "bookBusSeatRemote error: ${e.message}")
+            Pair(false, "सर्वर से संपर्क नहीं हो सका: ${e.localizedMessage}")
         }
     }
 

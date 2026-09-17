@@ -124,8 +124,56 @@ fun AshramHallDisplayScreen(
                 }
             }
 
+            // Parse live online queue from central Hostinger server
+            val serverTokens = mutableListOf<Token>()
+            if (queueJson != null && queueJson.optBoolean("success", false) && queueJson.has("tokens")) {
+                val tArr = queueJson.optJSONArray("tokens")
+                if (tArr != null) {
+                    for (i in 0 until tArr.length()) {
+                        val obj = tArr.getJSONObject(i)
+                        val tNum = obj.optInt("token_number", 0)
+                        if (tNum > 0) {
+                            val pName = obj.optString("patient_name", "")
+                            val pPhone = obj.optString("phone_number", "")
+                            val pCity = obj.optString("city", "डूँगरा जाट")
+                            val pDate = obj.optString("darbar_date", "")
+                            val stStr = obj.optString("status", "WAITING")
+                            val pStatus = try { TokenStatus.valueOf(stStr) } catch (e: Exception) { TokenStatus.WAITING }
+                            serverTokens.add(
+                                Token(
+                                    tokenNumber = tNum,
+                                    patientName = pName,
+                                    phoneNumber = pPhone,
+                                    city = pCity,
+                                    darbarDate = pDate,
+                                    status = pStatus,
+                                    deviceId = obj.optString("device_id", "ONLINE_SERVER"),
+                                    latitude = obj.optDouble("latitude", 0.0),
+                                    longitude = obj.optDouble("longitude", 0.0),
+                                    registeredBy = obj.optString("registered_by", "ONLINE_DEVOTEE")
+                                )
+                            )
+                        }
+                    }
+                }
+                val qServing = queueJson.optInt("current_serving_token", 0)
+                if (qServing > 0 && qServing != runningToken) {
+                    runningToken = qServing
+                }
+            }
+
             val localTokens = repository.getAllTokensToday()
-            todayTokens = localTokens
+            val mergedMap = mutableMapOf<Int, Token>()
+            localTokens.forEach { mergedMap[it.tokenNumber] = it }
+            serverTokens.forEach { st ->
+                val ex = mergedMap[st.tokenNumber]
+                if (ex == null) {
+                    mergedMap[st.tokenNumber] = st
+                } else if (ex.patientName.isBlank() && st.patientName.isNotBlank()) {
+                    mergedMap[st.tokenNumber] = st
+                }
+            }
+            todayTokens = mergedMap.values.sortedBy { it.tokenNumber }
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
