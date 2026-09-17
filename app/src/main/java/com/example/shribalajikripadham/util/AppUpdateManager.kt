@@ -24,7 +24,7 @@ import org.json.JSONObject
 
 object AppUpdateManager {
 
-    const val DEFAULT_APK_URL = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.11.0/ShriBalajiKripaDham-release.apk"
+    const val DEFAULT_APK_URL = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-v2.42.1.apk"
     const val DEFAULT_VERSION_JSON_URL = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/version.json"
 
     data class OnlineUpdateInfo(
@@ -372,109 +372,138 @@ object AppUpdateManager {
             } catch (_: Exception) {}
 
             val targetFile = File(targetDir, "ShriBalajiKripaDham_update.apk")
-            if (targetFile.exists()) {
-                targetFile.delete()
+            val candidateUrls = mutableListOf<String>()
+            if (finalUrl.isNotBlank()) candidateUrls.add(finalUrl.trim())
+            val fallbacks = listOf(
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-v2.42.1.apk",
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-release.apk",
+                "https://shribalajikripadham.online/download.php",
+                DEFAULT_APK_URL
+            )
+            for (fb in fallbacks) {
+                if (!candidateUrls.contains(fb)) {
+                    candidateUrls.add(fb)
+                }
             }
 
-            var currentUrl = finalUrl
-            var connection: HttpURLConnection? = null
-            var redirects = 0
-            val maxRedirects = 6
+            var lastError: Exception? = null
+            var downloadSuccess = false
 
-            while (redirects < maxRedirects) {
-                val urlObj = URL(currentUrl)
-                connection = (urlObj.openConnection() as HttpURLConnection).apply {
-                    connectTimeout = 15000
-                    readTimeout = 30000
-                    useCaches = false
-                    defaultUseCaches = false
-                    instanceFollowRedirects = true
-                    requestMethod = "GET"
-                    setRequestProperty("User-Agent", "ShriBalajiKripaDham-Updater/2.34")
-                    setRequestProperty("Accept-Encoding", "identity")
-                    setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
-                }
-                connection.connect()
-
-                val code = connection.responseCode
-                if (code == HttpURLConnection.HTTP_MOVED_PERM ||
-                    code == HttpURLConnection.HTTP_MOVED_TEMP ||
-                    code == HttpURLConnection.HTTP_SEE_OTHER ||
-                    code == 307 || code == 308
-                ) {
-                    val location = connection.getHeaderField("Location")
-                    connection.disconnect()
-                    if (location != null) {
-                        currentUrl = location
-                        redirects++
-                        continue
+            for (tryUrl in candidateUrls) {
+                try {
+                    if (targetFile.exists()) {
+                        targetFile.delete()
                     }
-                }
-                break
-            }
 
-            val conn = connection ?: throw Exception("कनेक्शन स्थापित करने में असमर्थ (Connection failed)")
-            val responseCode = conn.responseCode
-            if (responseCode !in 200..299) {
-                conn.disconnect()
-                throw Exception("HTTP Error: $responseCode")
-            }
+                    var currentUrl = tryUrl
+                    var connection: HttpURLConnection? = null
+                    var redirects = 0
+                    val maxRedirects = 6
 
-            val totalBytes = conn.contentLength.toLong()
-            val inputStream = BufferedInputStream(conn.inputStream)
-            val outputStream = FileOutputStream(targetFile)
+                    while (redirects < maxRedirects) {
+                        val urlObj = URL(currentUrl)
+                        connection = (urlObj.openConnection() as HttpURLConnection).apply {
+                            connectTimeout = 15000
+                            readTimeout = 30000
+                            useCaches = false
+                            defaultUseCaches = false
+                            instanceFollowRedirects = true
+                            requestMethod = "GET"
+                            setRequestProperty("User-Agent", "ShriBalajiKripaDham-Updater/2.42.1")
+                            setRequestProperty("Accept-Encoding", "identity")
+                            setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                        }
+                        connection.connect()
 
-            val buffer = ByteArray(8192)
-            var bytesRead: Int
-            var downloadedBytes: Long = 0
-            var lastReportedPercent = -1
+                        val code = connection.responseCode
+                        if (code == HttpURLConnection.HTTP_MOVED_PERM ||
+                            code == HttpURLConnection.HTTP_MOVED_TEMP ||
+                            code == HttpURLConnection.HTTP_SEE_OTHER ||
+                            code == 307 || code == 308
+                        ) {
+                            val location = connection.getHeaderField("Location")
+                            connection.disconnect()
+                            if (location != null) {
+                                currentUrl = location
+                                redirects++
+                                continue
+                            }
+                        }
+                        break
+                    }
 
-            while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                outputStream.write(buffer, 0, bytesRead)
-                downloadedBytes += bytesRead
-                if (totalBytes > 0) {
-                    val percent = ((downloadedBytes * 100) / totalBytes).toInt().coerceIn(0, 100)
-                    if (percent != lastReportedPercent || bytesRead == -1) {
-                        lastReportedPercent = percent
-                        withContext(Dispatchers.Main) {
-                            onProgress(percent, downloadedBytes, totalBytes)
+                    val conn = connection ?: throw Exception("कनेक्शन स्थापित करने में असमर्थ (Connection failed)")
+                    val responseCode = conn.responseCode
+                    if (responseCode !in 200..299) {
+                        conn.disconnect()
+                        throw Exception("HTTP $responseCode")
+                    }
+
+                    val totalBytes = conn.contentLength.toLong()
+                    val inputStream = BufferedInputStream(conn.inputStream)
+                    val outputStream = FileOutputStream(targetFile)
+
+                    val buffer = ByteArray(8192)
+                    var bytesRead: Int
+                    var downloadedBytes: Long = 0
+                    var lastReportedPercent = -1
+
+                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                        outputStream.write(buffer, 0, bytesRead)
+                        downloadedBytes += bytesRead
+                        if (totalBytes > 0) {
+                            val percent = ((downloadedBytes * 100) / totalBytes).toInt().coerceIn(0, 100)
+                            if (percent != lastReportedPercent || bytesRead == -1) {
+                                lastReportedPercent = percent
+                                withContext(Dispatchers.Main) {
+                                    onProgress(percent, downloadedBytes, totalBytes)
+                                }
+                            }
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                onProgress(50, downloadedBytes, 0L)
+                            }
                         }
                     }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        onProgress(50, downloadedBytes, 0L)
+
+                    outputStream.flush()
+                    outputStream.close()
+                    inputStream.close()
+                    conn.disconnect()
+
+                    // Verify download completeness and validity
+                    if (totalBytes > 0 && downloadedBytes < totalBytes) {
+                        targetFile.delete()
+                        throw Exception("डाउनलोड अधूरा रह गया (${formatFileSize(downloadedBytes)} / ${formatFileSize(totalBytes)})")
                     }
+
+                    if (targetFile.length() < 5000000L) {
+                        targetFile.delete()
+                        throw Exception("अमान्य APK फ़ाइल आकार (${formatFileSize(targetFile.length())})")
+                    }
+
+                    targetFile.setReadable(true, false)
+
+                    // Validate that the package is intact
+                    val packageArchive = context.packageManager.getPackageArchiveInfo(targetFile.absolutePath, 0)
+                    if (packageArchive == null) {
+                        targetFile.delete()
+                        throw Exception("डाउनलोड की गई APK पैकेज अमान्य या दूषित है (Invalid APK package)")
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        onProgress(100, targetFile.length(), targetFile.length())
+                        onSuccess(targetFile)
+                    }
+                    downloadSuccess = true
+                    break
+                } catch (e: Exception) {
+                    lastError = e
                 }
             }
 
-            outputStream.flush()
-            outputStream.close()
-            inputStream.close()
-            conn.disconnect()
-
-            // Verify download completeness and validity
-            if (totalBytes > 0 && downloadedBytes < totalBytes) {
-                targetFile.delete()
-                throw Exception("डाउनलोड अधूरा रह गया (${formatFileSize(downloadedBytes)} / ${formatFileSize(totalBytes)})")
-            }
-
-            if (targetFile.length() < 5000000L) {
-                targetFile.delete()
-                throw Exception("अमान्य APK फ़ाइल आकार (${formatFileSize(targetFile.length())})")
-            }
-
-            targetFile.setReadable(true, false)
-
-            // Validate that the package is intact
-            val packageArchive = context.packageManager.getPackageArchiveInfo(targetFile.absolutePath, 0)
-            if (packageArchive == null) {
-                targetFile.delete()
-                throw Exception("डाउनलोड की गई APK पैकेज अमान्य या दूषित है (Invalid APK package)")
-            }
-
-            withContext(Dispatchers.Main) {
-                onProgress(100, targetFile.length(), targetFile.length())
-                onSuccess(targetFile)
+            if (!downloadSuccess) {
+                throw (lastError ?: Exception("अपडेट डाउनलोड में असमर्थ"))
             }
         } catch (e: Exception) {
             // Local fallback check

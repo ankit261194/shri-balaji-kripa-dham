@@ -3399,15 +3399,25 @@ class AshramRepository(context: Context) {
             return@withContext Pair(false, "अमान्य क्लाउड सर्वर URL (Invalid URL, must start with https://)")
         }
 
+        val resolvedUrl = when {
+            trimmed.endsWith("/api/cloud_sync.php") -> trimmed
+            trimmed.endsWith("/cloud_sync.php") -> trimmed
+            trimmed.endsWith("/api/") -> "${trimmed}cloud_sync.php"
+            trimmed.endsWith("/api") -> "$trimmed/cloud_sync.php"
+            trimmed.endsWith("/") -> "${trimmed}api/cloud_sync.php"
+            !trimmed.endsWith(".php") -> "$trimmed/api/cloud_sync.php"
+            else -> trimmed
+        }
+
         try {
             val backupJson = exportFullDatabaseBackupJson()
-            val url = URL(trimmed)
+            val url = URL(resolvedUrl)
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
-            conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.1")
-            conn.connectTimeout = 6000
-            conn.readTimeout = 6000
+            conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.42.1")
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
             conn.doOutput = true
 
             conn.outputStream.use { os ->

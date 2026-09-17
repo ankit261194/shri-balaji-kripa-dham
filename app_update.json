@@ -6,5 +6,5 @@
   "update_notes_hindi": "v2.42.1: 100% स्थायी सेटिंग्स, 1-Click वेबसाइट लाइव पब्लिश फिक्स (HTTP 500 एरर पूरी तरह समाप्त), गुरुजी का फोटो वेबसाइट व ऐप पर लाइव मिररिंग, डायरेक्ट Bluetooth ESC/POS थर्मल प्रिंटर (58mm/80mm) पर्ची प्रिंट सपोर्ट, एक्सेल/CSV लेजर एक्सपोर्ट।",
   "update_notes_english": "v2.42.1: Indestructible settings, 1-Click live publish HTTP 500 error permanently fixed with self-healing DB auto-migration, Guruji photo live mirroring, direct Bluetooth ESC/POS 58mm/80mm thermal printer support, and Excel/CSV ledger export.",
   "release_date": "2026-09-17",
-  "sha256": "C4174543CF898FD25EDF32E0F317D971B44FA9992BF3AE278E3CDF462C840B7A"
+  "sha256": "201DAA8EF9C5C5113EE11C4500E82F7899EF337C46D5B45A44E62B93C5F5244A"
 }
