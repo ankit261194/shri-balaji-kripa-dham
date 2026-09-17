@@ -33,6 +33,8 @@ import com.example.shribalajikripadham.data.repository.AshramRepository
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.util.BusTicketPdfGenerator
 import com.example.shribalajikripadham.util.QrCodeGenerator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import java.io.File
 import java.net.URLEncoder
@@ -132,8 +134,24 @@ fun BalajiYatraScreen(
     val farePerSeat = if (settings.busSeatFareAmount > 0) settings.busSeatFareAmount else 1500
     val totalFare = selectedSeats.size * farePerSeat
 
-    // Generate UPI QR Bitmap when payment sheet opens
+    // Generate UPI QR Bitmap when payment sheet opens or custom QR image is present
     var upiQrBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var customQrBitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+    LaunchedEffect(settings.customUpiQrUri) {
+        if (settings.customUpiQrUri.isNotBlank()) {
+            withContext(Dispatchers.IO) {
+                try {
+                    customQrBitmap = com.example.shribalajikripadham.util.DevoteePhotoHelper.loadBitmap(context, settings.customUpiQrUri)
+                } catch (e: Exception) {
+                    customQrBitmap = null
+                }
+            }
+        } else {
+            customQrBitmap = null
+        }
+    }
+
     LaunchedEffect(showBookingSheet, totalFare, settings.ashramUpiId) {
         if (showBookingSheet && totalFare > 0) {
             val encodedName = try { URLEncoder.encode(settings.ashramUpiName, "UTF-8") } catch (e: Exception) { "ShriBalajiKripaDham" }
@@ -671,8 +689,9 @@ fun BalajiYatraScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // QR Image Box
-                            if (upiQrBitmap != null) {
+                            // QR Image Box (Custom SuperAdmin QR Code or Dynamic UPI QR)
+                            val displayQr = customQrBitmap ?: upiQrBitmap
+                            if (displayQr != null) {
                                 Box(
                                     modifier = Modifier
                                         .size(170.dp)
@@ -681,7 +700,7 @@ fun BalajiYatraScreen(
                                         .padding(6.dp)
                                 ) {
                                     Image(
-                                        bitmap = upiQrBitmap!!.asImageBitmap(),
+                                        bitmap = displayQr.asImageBitmap(),
                                         contentDescription = "Ashram UPI QR Code",
                                         modifier = Modifier.fillMaxSize()
                                     )

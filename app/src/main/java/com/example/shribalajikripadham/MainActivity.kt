@@ -81,6 +81,33 @@ class MainActivity : ComponentActivity() {
                             e.printStackTrace()
                         }
                     }
+
+                    // Firebase Cloud Messaging (FCM) Token Initialization & Registration
+                    try {
+                        com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                            if (task.isSuccessful && !task.result.isNullOrBlank()) {
+                                val token = task.result
+                                val prefs = context.getSharedPreferences(
+                                    com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.PREFS_FCM,
+                                    android.content.Context.MODE_PRIVATE
+                                )
+                                prefs.edit().putString(
+                                    com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.KEY_FCM_TOKEN,
+                                    token
+                                ).apply()
+
+                                val lastPhone = prefs.getString(
+                                    com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.KEY_LAST_PHONE,
+                                    null
+                                )
+                                if (!lastPhone.isNullOrBlank()) {
+                                    com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.registerDevoteePhone(context, lastPhone)
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
 
                 Surface(

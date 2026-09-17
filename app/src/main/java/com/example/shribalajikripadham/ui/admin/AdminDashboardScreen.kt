@@ -270,6 +270,7 @@ fun AdminDashboardScreen(
     var svcCanDevoteeViewPayments by remember { mutableStateOf(false) }
     var svcUpiId by remember { mutableStateOf("shribalajikripadham@upi") }
     var svcUpiName by remember { mutableStateOf("Shri Balaji Kripa Dham") }
+    var svcUpiQrUri by remember { mutableStateOf("") }
     var svcArziLedgerLive by remember { mutableStateOf(false) }
     var svcBadiArziRate by remember { mutableStateOf("100") }
     var svcChhotiArziRate by remember { mutableStateOf("50") }
@@ -402,6 +403,7 @@ fun AdminDashboardScreen(
             svcCanDevoteeViewPayments = s.canDevoteeViewPaymentHistory
             svcUpiId = s.ashramUpiId
             svcUpiName = s.ashramUpiName
+            svcUpiQrUri = s.customUpiQrUri
             svcArziLedgerLive = s.isArziLedgerLive
             svcBadiArziRate = if (s.badiArziRate % 1.0 == 0.0) s.badiArziRate.toInt().toString() else s.badiArziRate.toString()
             svcChhotiArziRate = if (s.chhotiArziRate % 1.0 == 0.0) s.chhotiArziRate.toInt().toString() else s.chhotiArziRate.toString()
@@ -1322,6 +1324,13 @@ fun AdminDashboardScreen(
                                         refreshData()
                                         Toast.makeText(context, if (isHindi) "टोकन #$tokenNum निरस्त कर दिया गया" else "Token #$tokenNum rejected", Toast.LENGTH_SHORT).show()
                                     }
+                                },
+                                onPushAllTokensToGitHub = {
+                                    scope.launch {
+                                        Toast.makeText(context, if (isHindi) "GitHub पर सभी टोकन बैकअप भेजा जा रहा है..." else "Pushing all tokens to GitHub...", Toast.LENGTH_SHORT).show()
+                                        val (ok, msg) = repository.pushAllTokensToGitHub()
+                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                    }
                                 }
                             )
                         }
@@ -1629,6 +1638,8 @@ fun AdminDashboardScreen(
                                 onUpiIdChange = { svcUpiId = it },
                                 upiName = svcUpiName,
                                 onUpiNameChange = { svcUpiName = it },
+                                customUpiQrUri = svcUpiQrUri,
+                                onCustomUpiQrUriChange = { svcUpiQrUri = it },
                                 isArziLedgerLive = svcArziLedgerLive,
                                 onArziLedgerLiveChange = { svcArziLedgerLive = it },
                                 badiArziRate = svcBadiArziRate,
@@ -1676,7 +1687,8 @@ fun AdminDashboardScreen(
                                             canDevoteeViewPaymentHistory = svcCanDevoteeViewPayments,
                                             ashramUpiId = svcUpiId.trim(),
                                             ashramUpiName = svcUpiName.trim(),
-                                            busSeatFareAmount = svcBusFareAmount.toIntOrNull() ?: 1500
+                                            busSeatFareAmount = svcBusFareAmount.toIntOrNull() ?: 1500,
+                                            customUpiQrUri = svcUpiQrUri.trim()
                                         )
                                         repository.updateArziSettings(
                                             isArziLedgerLive = svcArziLedgerLive,
@@ -3038,7 +3050,8 @@ fun TokenQueueTab(
     onSyncFromGoogleSheet: (() -> Unit)? = null,
     onUpdateVoicePreset: ((String) -> Unit)? = null,
     onFillReservedToken: ((Int, String, String, String) -> Unit)? = null,
-    onRejectReservedToken: ((Int) -> Unit)? = null
+    onRejectReservedToken: ((Int) -> Unit)? = null,
+    onPushAllTokensToGitHub: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -3644,6 +3657,23 @@ fun TokenQueueTab(
                                         text = "⚙️ " + (if (isHindi) "शीट सेटिंग्स" else "Sheet Settings"),
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+
+                            if (onPushAllTokensToGitHub != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { onPushAllTokensToGitHub() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "☁️ " + (if (isHindi) "GitHub पर सभी टोकन बैकअप पुश करें" else "Push All Tokens Backup to GitHub"),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
                                     )
                                 }
                             }
@@ -6060,6 +6090,8 @@ fun PublicServiceMatrixTab(
     onUpiIdChange: (String) -> Unit = {},
     upiName: String = "Shri Balaji Kripa Dham",
     onUpiNameChange: (String) -> Unit = {},
+    customUpiQrUri: String = "",
+    onCustomUpiQrUriChange: (String) -> Unit = {},
     isArziLedgerLive: Boolean = false,
     onArziLedgerLiveChange: (Boolean) -> Unit = {},
     badiArziRate: String = "100",
@@ -6075,6 +6107,7 @@ fun PublicServiceMatrixTab(
     successMsg: String?,
     onSave: () -> Unit
 ) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -6327,6 +6360,88 @@ fun PublicServiceMatrixTab(
                     placeholder = { Text("उदा. Shri Balaji Kripa Dham") },
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = if (isHindi) "🖼️ आश्रम का कस्टम UPI QR कोड (वैकल्पिक)" else "Custom UPI QR Code Image (Optional)",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaroonPrimary
+                )
+                Text(
+                    text = if (isHindi) "अपना बैंक/PhonePe/GPay का QR कोड फोटो लगाएं, जो बस टिकट व दान स्क्रीन पर दिखेगा।" else "Upload your custom bank QR code image displayed on booking/donation screens.",
+                    fontSize = 11.sp,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                val customQrPicker = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.GetContent()
+                ) { uri ->
+                    if (uri != null) {
+                        try {
+                            val loaded = com.example.shribalajikripadham.util.DevoteePhotoHelper.loadBitmap(context, uri.toString())
+                            if (loaded != null) {
+                                val savedPath = com.example.shribalajikripadham.util.DevoteePhotoHelper.saveDevoteePhoto(context, loaded, "custom_upi_qr")
+                                onCustomUpiQrUriChange(savedPath)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                if (customUpiQrUri.isNotBlank()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(70.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color.LightGray)
+                        ) {
+                            val bmp = remember(customUpiQrUri) {
+                                try { com.example.shribalajikripadham.util.DevoteePhotoHelper.loadBitmap(context, customUpiQrUri) } catch (e: Exception) { null }
+                            }
+                            if (bmp != null) {
+                                Image(
+                                    bitmap = bmp.asImageBitmap(),
+                                    contentDescription = "Custom QR",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Text("QR", fontWeight = FontWeight.Bold, color = Color.Gray)
+                                }
+                            }
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            OutlinedButton(
+                                onClick = { customQrPicker.launch("image/*") },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(if (isHindi) "🔄 QR बदलें" else "Change QR", fontSize = 11.sp)
+                            }
+                            TextButton(
+                                onClick = { onCustomUpiQrUriChange("") },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(if (isHindi) "❌ QR हटाएं" else "Remove QR", fontSize = 11.sp, color = Color.Red)
+                            }
+                        }
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = { customQrPicker.launch("image/*") },
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (isHindi) "📁 गैलरी से अपना QR कोड फोटो चुनें" else "Pick Custom QR Image from Gallery", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(10.dp))
                 Divider(color = Color(0xFFE0E0E0))

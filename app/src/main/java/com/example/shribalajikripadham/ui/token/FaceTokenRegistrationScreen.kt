@@ -347,6 +347,7 @@ fun FaceTokenRegistrationScreen(
                 }
             }
             try { repository.syncDevoteesFromCloud() } catch (e: Exception) {}
+            try { repository.syncCentralFaceProfiles() } catch (e: Exception) {}
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -1193,6 +1194,10 @@ fun FaceTokenRegistrationScreen(
                                                 generatedToken = token
                                                 isEmbeddingAutoUpdated = updated
                                                 scanState = FaceScanState.TOKEN_GENERATED
+                                                try {
+                                                    val phoneToRegister = token?.phoneNumber ?: match.profile.phoneNumber
+                                                    com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.registerDevoteePhone(context, phoneToRegister)
+                                                } catch (e: Exception) {}
                                             } catch (e: SecurityException) {
                                                 errorMessage = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
                                             } catch (e: Exception) {
@@ -1620,6 +1625,9 @@ fun FaceTokenRegistrationScreen(
                                             generatedToken = token
                                             isEmbeddingAutoUpdated = enrollFaceForFuture
                                             scanState = FaceScanState.TOKEN_GENERATED
+                                            try {
+                                                com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.registerDevoteePhone(context, manualPhone.trim())
+                                            } catch (e: Exception) {}
                                         } catch (e: SecurityException) {
                                             errorMessage = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
                                         } catch (e: Exception) {

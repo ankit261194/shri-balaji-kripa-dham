@@ -110,6 +110,7 @@ class AshramRepository(context: Context) {
                 canDevoteeViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_payment_history")) == 1 } catch (e: Exception) { false },
                 ashramUpiId = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_id")) } catch (e: Exception) { "shribalajikripadham@upi" } ?: "shribalajikripadham@upi",
                 ashramUpiName = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_name")) } catch (e: Exception) { "Shri Balaji Kripa Dham" } ?: "Shri Balaji Kripa Dham",
+                customUpiQrUri = try { cursor.getString(cursor.getColumnIndexOrThrow("custom_upi_qr_uri")) } catch (e: Exception) { "" } ?: "",
                 busSeatFareAmount = try { cursor.getInt(cursor.getColumnIndexOrThrow("bus_seat_fare_amount")) } catch (e: Exception) { 1500 },
                 isArziLedgerLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_arzi_ledger_live")) == 1 } catch (e: Exception) { true },
                 badiArziRate = try { cursor.getDouble(cursor.getColumnIndexOrThrow("badi_arzi_rate")) } catch (e: Exception) { 100.0 },
@@ -953,12 +954,8 @@ class AshramRepository(context: Context) {
             createdAt = System.currentTimeMillis()
         )
 
-        // ☁️ 100% Real-Time Online Central Sync (GitHub Live Tokens)
-        try {
-            com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadTokenToGitHub(appContext, createdToken)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        // ☁️ Smart GitHub Sync Policy: Individual real-time tokens are handled instantly by Hostinger Central MySQL & Google Sheets.
+        // Consolidated token backup is pushed when Super Admin triggers "Push All to GitHub" to prevent GitHub 409 rate-limiting.
 
         // 📊 Universal Real-Time Google Sheets Sync for ALL tokens (Devotees + Admin + Sevadar)
         try {
@@ -1115,10 +1112,8 @@ class AshramRepository(context: Context) {
         }
 
         // 3. Batch GitHub & Hostinger Triple Sync
+        // 3. Batch Hostinger MySQL Central Sync (Guaranteed 0-collision online persistence)
         try {
-            for (t in createdTokens) {
-                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadTokenToGitHub(appContext, t)
-            }
             com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.syncAllTokensToHostinger(createdTokens)
         } catch (e: Exception) {}
 
@@ -1948,7 +1943,8 @@ class AshramRepository(context: Context) {
         canDevoteeViewPaymentHistory: Boolean,
         ashramUpiId: String,
         ashramUpiName: String,
-        busSeatFareAmount: Int
+        busSeatFareAmount: Int,
+        customUpiQrUri: String = ""
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
@@ -1959,6 +1955,7 @@ class AshramRepository(context: Context) {
             put("ashram_upi_id", ashramUpiId)
             put("ashram_upi_name", ashramUpiName)
             put("bus_seat_fare_amount", busSeatFareAmount)
+            if (customUpiQrUri.isNotBlank()) put("custom_upi_qr_uri", customUpiQrUri)
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
@@ -2696,7 +2693,15 @@ class AshramRepository(context: Context) {
             put("last_verified_at", System.currentTimeMillis())
             put("created_at", System.currentTimeMillis())
         }
-        db.insert("devotee_face_profiles", null, cv)
+        val insertId = db.insert("devotee_face_profiles", null, cv)
+        if (insertId > 0) {
+            try {
+                com.example.shribalajikripadham.data.network.CentralFaceSyncManager.uploadFaceProfile(
+                    appContext, name, phone, safeCity, normalized, photoUri
+                )
+            } catch (e: Exception) {}
+        }
+        insertId
     }
 
     /**
@@ -2730,11 +2735,32 @@ class AshramRepository(context: Context) {
                     put("photo_uri", newPhotoUri)
                 }
             }
-            db.update("devotee_face_profiles", cv, "id = ?", arrayOf(profileId.toString())) > 0
+            val updated = db.update("devotee_face_profiles", cv, "id = ?", arrayOf(profileId.toString())) > 0
+            if (updated) {
+                try {
+                    val pCursor = db.rawQuery("SELECT patient_name, phone_number, city FROM devotee_face_profiles WHERE id = ?", arrayOf(profileId.toString()))
+                    if (pCursor.moveToFirst()) {
+                        val pName = pCursor.getString(0) ?: ""
+                        val pPhone = pCursor.getString(1) ?: ""
+                        val pCity = pCursor.getString(2) ?: ""
+                        pCursor.close()
+                        com.example.shribalajikripadham.data.network.CentralFaceSyncManager.uploadFaceProfile(
+                            appContext, pName, pPhone, pCity, enrichedVector, newPhotoUri
+                        )
+                    } else {
+                        pCursor.close()
+                    }
+                } catch (e: Exception) {}
+            }
+            updated
         } else {
             cursor.close()
             false
         }
+    }
+
+    suspend fun syncCentralFaceProfiles(): Int = withContext(Dispatchers.IO) {
+        com.example.shribalajikripadham.data.network.CentralFaceSyncManager.fetchAndSyncFaceProfiles(appContext)
     }
 
     /**
@@ -3546,6 +3572,7 @@ class AshramRepository(context: Context) {
                 cv.put("can_devotee_view_payment_history", if (sc.canDevoteeViewPaymentHistory) 1 else 0)
                 if (sc.ashramUpiId.isNotBlank()) cv.put("ashram_upi_id", sc.ashramUpiId)
                 if (sc.ashramUpiName.isNotBlank()) cv.put("ashram_upi_name", sc.ashramUpiName)
+                if (sc.customUpiQrUri.isNotBlank()) cv.put("custom_upi_qr_uri", sc.customUpiQrUri)
                 if (sc.busSeatFareAmount > 0) cv.put("bus_seat_fare_amount", sc.busSeatFareAmount)
                 if (sc.bannerTitle.isNotBlank()) cv.put("banner_title", sc.bannerTitle)
                 if (sc.bannerSubtitle.isNotBlank()) cv.put("banner_subtitle", sc.bannerSubtitle)
@@ -3718,6 +3745,46 @@ class AshramRepository(context: Context) {
     suspend fun publishCurrentSettingsToGitHub(adminName: String = "Super Admin"): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val sections = getUiSectionConfigs()
         publishLiveConfigToGitHub(sections, adminName)
+    }
+
+    suspend fun getAllTokensForDate(darbarDate: String = DatabaseHelper.getTodayDateString()): List<Token> = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val list = mutableListOf<Token>()
+        val cursor = db.rawQuery("SELECT * FROM tokens WHERE darbar_date = ? ORDER BY token_number ASC", arrayOf(darbarDate))
+        while (cursor.moveToNext()) {
+            list.add(
+                Token(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    tokenNumber = cursor.getInt(cursor.getColumnIndexOrThrow("token_number")),
+                    darbarDate = cursor.getString(cursor.getColumnIndexOrThrow("darbar_date")),
+                    patientName = cursor.getString(cursor.getColumnIndexOrThrow("patient_name")),
+                    phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow("phone_number")),
+                    city = try { cursor.getString(cursor.getColumnIndexOrThrow("city")) } catch (e: Exception) { "डूँगरा जाट (स्थानीय)" },
+                    deviceId = cursor.getString(cursor.getColumnIndexOrThrow("device_id")),
+                    latitude = cursor.getDouble(cursor.getColumnIndexOrThrow("latitude")),
+                    longitude = cursor.getDouble(cursor.getColumnIndexOrThrow("longitude")),
+                    status = TokenStatus.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("status"))),
+                    registeredBy = cursor.getString(cursor.getColumnIndexOrThrow("registered_by")),
+                    photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) ?: "",
+                    isDarshanCompleted = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_darshan_completed")) == 1 } catch (e: Exception) { false },
+                    darshanCompletedAt = try { cursor.getLong(cursor.getColumnIndexOrThrow("darshan_completed_at")) } catch (e: Exception) { 0L },
+                    originAddress = try { cursor.getString(cursor.getColumnIndexOrThrow("origin_address")) } catch (e: Exception) { "" }.ifEmpty { cursor.getString(cursor.getColumnIndexOrThrow("city")) },
+                    destinationAddress = try { cursor.getString(cursor.getColumnIndexOrThrow("destination_address")) } catch (e: Exception) { "श्री बालाजी कृपा धाम, डुंगरा जाट" },
+                    distanceKm = try { cursor.getFloat(cursor.getColumnIndexOrThrow("distance_km")) } catch (e: Exception) { -1f },
+                    createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
+                )
+            )
+        }
+        cursor.close()
+        list
+    }
+
+    suspend fun pushAllTokensToGitHub(darbarDate: String = DatabaseHelper.getTodayDateString()): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val allTokens = getAllTokensForDate(darbarDate)
+        if (allTokens.isEmpty()) {
+            return@withContext Pair(true, "बैकअप हेतु कोई टोकन नहीं मिला।")
+        }
+        com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadAllTokensConsolidated(appContext, allTokens, darbarDate)
     }
 
     suspend fun syncLiveTokensFromCloud(date: String = DatabaseHelper.getTodayDateString()): Pair<Boolean, Int> = withContext(Dispatchers.IO) {

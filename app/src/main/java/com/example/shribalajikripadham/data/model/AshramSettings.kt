@@ -77,6 +77,7 @@ data class AshramSettings(
     val canDevoteeViewPaymentHistory: Boolean = false,
     val ashramUpiId: String = "shribalajikripadham@upi",
     val ashramUpiName: String = "Shri Balaji Kripa Dham",
+    val customUpiQrUri: String = "",
     val busSeatFareAmount: Int = 1500,
     // Sacred Arzi Box Super Admin Controls
     val isArziLedgerLive: Boolean = true,

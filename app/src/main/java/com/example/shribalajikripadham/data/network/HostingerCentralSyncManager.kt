@@ -921,4 +921,72 @@ object HostingerCentralSyncManager {
         }
     }
 
+    /**
+     * Register FCM Device Token for Devotee
+     */
+    suspend fun registerFcmDeviceToken(
+        phoneNumber: String,
+        fcmToken: String,
+        deviceId: String = "",
+        deviceName: String = ""
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}register_fcm_token.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.41.0")
+
+            val json = JSONObject().apply {
+                put("phone_number", phoneNumber)
+                put("fcm_token", fcmToken)
+                put("device_id", deviceId)
+                put("device_name", deviceName)
+            }
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+            conn.responseCode == 200
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Send FCM Push Notification to Devotee
+     */
+    suspend fun sendFcmPushNotification(
+        phoneNumber: String,
+        tokenNumber: Int,
+        patientName: String,
+        title: String = "",
+        body: String = ""
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}send_fcm.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.41.0")
+
+            val json = JSONObject().apply {
+                put("phone_number", phoneNumber)
+                put("token_number", tokenNumber)
+                put("patient_name", patientName)
+                if (title.isNotBlank()) put("title", title)
+                if (body.isNotBlank()) put("body", body)
+                put("type", "TOKEN_CALL")
+            }
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+            conn.responseCode == 200
+        } catch (e: Exception) {
+            false
+        }
+    }
+
 }
+

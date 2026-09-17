@@ -56,6 +56,7 @@ data class ServicesConfigDto(
     val canDevoteeViewPaymentHistory: Boolean = false,
     val ashramUpiId: String = "shribalajikripadham@upi",
     val ashramUpiName: String = "Shri Balaji Kripa Dham",
+    val customUpiQrUri: String = "",
     val busSeatFareAmount: Int = 1500,
     val bannerTitle: String = "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट",
     val bannerSubtitle: String = "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार",
@@ -168,6 +169,7 @@ data class LiveUiConfigDto(
         srvObj.put("can_devotee_view_payment_history", servicesConfig.canDevoteeViewPaymentHistory)
         srvObj.put("ashram_upi_id", servicesConfig.ashramUpiId)
         srvObj.put("ashram_upi_name", servicesConfig.ashramUpiName)
+        srvObj.put("custom_upi_qr_uri", servicesConfig.customUpiQrUri)
         srvObj.put("bus_seat_fare_amount", servicesConfig.busSeatFareAmount)
         srvObj.put("banner_title", servicesConfig.bannerTitle)
         srvObj.put("banner_subtitle", servicesConfig.bannerSubtitle)
@@ -287,6 +289,7 @@ data class LiveUiConfigDto(
                         canDevoteeViewPaymentHistory = srvObj.optBoolean("can_devotee_view_payment_history", false),
                         ashramUpiId = srvObj.optString("ashram_upi_id", "shribalajikripadham@upi"),
                         ashramUpiName = srvObj.optString("ashram_upi_name", "Shri Balaji Kripa Dham"),
+                        customUpiQrUri = srvObj.optString("custom_upi_qr_uri", ""),
                         busSeatFareAmount = srvObj.optInt("bus_seat_fare_amount", 1500),
                         bannerTitle = srvObj.optString("banner_title", "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट"),
                         bannerSubtitle = srvObj.optString("banner_subtitle", "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार"),

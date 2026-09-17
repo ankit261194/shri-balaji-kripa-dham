@@ -503,6 +503,117 @@ object GitHubLiveSyncManager {
     }
 
     /**
+     * Uploads the entire consolidated tokens list to GitHub in a single clean commit.
+     * Prevents GitHub 409 conflict spamming and enforces Smart Push Policy.
+     */
+    suspend fun uploadAllTokensConsolidated(
+        context: Context,
+        tokens: List<Token>,
+        darbarDate: String
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val tokensArray = JSONArray()
+        val timeFormatter = SimpleDateFormat("hh:mm a", Locale.getDefault())
+
+        for (token in tokens) {
+            val timeStr = try { timeFormatter.format(Date(token.createdAt)) } catch (e: Exception) { "" }
+            val tokenObj = JSONObject().apply {
+                put("token_number", token.tokenNumber)
+                put("darbar_date", token.darbarDate)
+                put("time_str", timeStr)
+                put("patient_name", token.patientName)
+                put("phone_number", token.phoneNumber)
+                put("city", token.city)
+                put("device_id", token.deviceId)
+                put("distance_km", token.distanceKm)
+                put("status", token.status.name)
+                put("registered_by", token.registeredBy)
+                put("has_photo", token.photoUri.isNotBlank())
+                put("photo_uri", token.photoUri)
+                put("is_darshan_completed", token.isDarshanCompleted)
+                put("created_at", token.createdAt)
+            }
+            tokensArray.put(tokenObj)
+        }
+
+        val finalRoot = JSONObject().apply {
+            put("date", darbarDate)
+            put("updated_at", System.currentTimeMillis())
+            put("total_count", tokens.size)
+            put("tokens", tokensArray)
+        }
+
+        // Try pushing via secure Hostinger Proxy first (0 hardcoded credentials)
+        val jsonString = finalRoot.toString(2)
+        val (proxyOk, proxyMsg) = pushViaHostingerProxy(
+            FILE_TOKENS,
+            jsonString,
+            "Consolidated Backup of ${tokens.size} tokens for $darbarDate"
+        )
+        if (proxyOk) {
+            return@withContext Pair(true, "✅ सभी ${tokens.size} टोकन GitHub पर सफलतापूर्वक सुरक्षित हो गए!")
+        }
+
+        // Direct GitHub API fallback if PAT exists
+        val patToken = getActiveToken(context)
+        if (patToken.isNotBlank()) {
+            try {
+                var existingSha: String? = null
+                val getUrl = URL(API_TOKENS_URL)
+                val conn = getUrl.openConnection() as HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.setRequestProperty("Authorization", "Bearer $patToken")
+                conn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                conn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.41")
+                conn.connectTimeout = 6000
+                conn.readTimeout = 6000
+
+                if (conn.responseCode in 200..299) {
+                    val respStr = conn.inputStream.bufferedReader().use { it.readText() }
+                    val j = JSONObject(respStr)
+                    existingSha = if (j.has("sha")) j.getString("sha") else null
+                }
+
+                val b64Content = Base64.encodeToString(
+                    jsonString.toByteArray(StandardCharsets.UTF_8),
+                    Base64.NO_WRAP
+                )
+
+                val payload = JSONObject().apply {
+                    put("message", "Consolidated backup: ${tokens.size} tokens for $darbarDate")
+                    put("content", b64Content)
+                    put("branch", "main")
+                    if (!existingSha.isNullOrBlank()) {
+                        put("sha", existingSha)
+                    }
+                }
+
+                val putUrl = URL(API_TOKENS_URL)
+                val putConn = putUrl.openConnection() as HttpURLConnection
+                putConn.requestMethod = "PUT"
+                putConn.setRequestProperty("Authorization", "Bearer $patToken")
+                putConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                putConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                putConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.41")
+                putConn.connectTimeout = 10000
+                putConn.readTimeout = 10000
+                putConn.doOutput = true
+
+                putConn.outputStream.use { os ->
+                    os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+                }
+
+                if (putConn.responseCode in 200..299) {
+                    return@withContext Pair(true, "✅ सभी ${tokens.size} टोकन GitHub पर सुरक्षित हुए!")
+                }
+            } catch (e: Exception) {
+                return@withContext Pair(false, "गिटहब सिंक त्रुटि: ${e.localizedMessage}")
+            }
+        }
+
+        Pair(false, proxyMsg)
+    }
+
+    /**
      * Fast unauthenticated fetch of all tokens from raw CDN
      */
     suspend fun fetchLiveTokensFromGitHub(

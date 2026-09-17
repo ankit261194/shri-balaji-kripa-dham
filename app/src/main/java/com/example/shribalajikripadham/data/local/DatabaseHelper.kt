@@ -567,6 +567,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN is_outstation_advance_allowed INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN outstation_min_distance_km REAL NOT NULL DEFAULT 30.0",
             "ALTER TABLE ashram_settings ADD COLUMN allow_admin_reserved_tokens INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN custom_upi_qr_uri TEXT NOT NULL DEFAULT ''",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_darbar_number ON tokens (darbar_date, token_number)",
             "CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date)"
         )

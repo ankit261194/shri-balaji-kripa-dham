@@ -1443,6 +1443,11 @@ fun TokenRegistrationScreen(
                                             } catch (e: Exception) {}
                                         }
                                         existingToken = created
+                                        try {
+                                            com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.registerDevoteePhone(
+                                                context, phoneNumber.trim()
+                                            )
+                                        } catch (e: Exception) {}
                                     } catch (e: SecurityException) {
                                         errorMessage = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
                                     } catch (e: Exception) {

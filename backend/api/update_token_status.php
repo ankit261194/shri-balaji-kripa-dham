@@ -62,10 +62,90 @@ try {
         ':token_number' => $tokenNumber
     ]);
 
-    // If setting to SERVING, update current_serving_token in ashram_settings
+    // If setting to SERVING, update current_serving_token in ashram_settings and trigger FCM notification
     if ($status === 'SERVING') {
         $upSettings = $pdo->prepare("UPDATE ashram_settings SET current_serving_token = :tok WHERE id = 1");
         $upSettings->execute([':tok' => $tokenNumber]);
+
+        // Fetch devotee details for push notification
+        try {
+            $tokInfo = $pdo->prepare("SELECT patient_name, phone_number FROM tokens WHERE darbar_date = :darbar_date AND token_number = :token_number LIMIT 1");
+            $tokInfo->execute([':darbar_date' => $darbarDate, ':token_number' => $tokenNumber]);
+            $devotee = $tokInfo->fetch(PDO::FETCH_ASSOC);
+            if ($devotee && !empty($devotee['phone_number'])) {
+                $cleanPhone = preg_replace('/[^0-9]/', '', $devotee['phone_number']);
+                if (strlen($cleanPhone) > 10) $cleanPhone = substr($cleanPhone, -10);
+                
+                $title = "🔔 टोकन बुलावा: टोकन #$tokenNumber";
+                $body = "श्री {$devotee['patient_name']} जी, टोकन #$tokenNumber का नंबर आ गया है। कृपया गुरुजी के समीप पधारें।";
+                $now = round(microtime(true) * 1000);
+
+                // Insert into devotee_notifications
+                $pdo->exec("CREATE TABLE IF NOT EXISTS devotee_notifications (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    phone_number VARCHAR(50) NOT NULL,
+                    token_number INT DEFAULT 0,
+                    title VARCHAR(255) NOT NULL,
+                    message TEXT NOT NULL,
+                    type VARCHAR(50) DEFAULT 'TOKEN_CALL',
+                    is_read TINYINT DEFAULT 0,
+                    created_at BIGINT DEFAULT 0,
+                    INDEX idx_phone (phone_number),
+                    INDEX idx_created (created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+                $notifStmt = $pdo->prepare("INSERT INTO devotee_notifications (phone_number, token_number, title, message, type, is_read, created_at)
+                    VALUES (:phone, :tok, :title, :msg, 'TOKEN_CALL', 0, :now)");
+                $notifStmt->execute([
+                    ':phone' => $cleanPhone,
+                    ':tok' => $tokenNumber,
+                    ':title' => $title,
+                    ':msg' => $body,
+                    ':now' => $now
+                ]);
+
+                // Dispatch FCM to device tokens
+                $fcmStmt = $pdo->prepare("SELECT fcm_token FROM fcm_device_tokens WHERE phone_number = :phone");
+                $fcmStmt->execute([':phone' => $cleanPhone]);
+                $fcmTokens = $fcmStmt->fetchAll(PDO::FETCH_COLUMN);
+
+                if (!empty($fcmTokens)) {
+                    $apiKey = 'AIzaSyDbJQvMUopfPb0at-_upRMnR6MjL6z9lRo';
+                    $fields = [
+                        'registration_ids' => $fcmTokens,
+                        'priority' => 'high',
+                        'notification' => [
+                            'title' => $title,
+                            'body' => $body,
+                            'sound' => 'default',
+                            'badge' => '1',
+                            'channel_id' => 'ashram_darbar_channel'
+                        ],
+                        'data' => [
+                            'type' => 'TOKEN_CALL',
+                            'token_number' => strval($tokenNumber),
+                            'patient_name' => $devotee['patient_name'],
+                            'status' => 'SERVING'
+                        ]
+                    ];
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send');
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                        'Authorization: key=' . $apiKey,
+                        'Content-Type: application/json'
+                    ]);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
+                    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+                    curl_exec($ch);
+                    curl_close($ch);
+                }
+            }
+        } catch (Exception $ex) {
+            // Log silently, do not break token update transaction
+        }
     }
 
     $pdo->commit();

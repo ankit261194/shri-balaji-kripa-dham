@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 56,
-  "latest_version_name": "2.40.0",
-  "update_notes_hindi": "v2.40.0: सुपर एडमिन पिन 0825/पासवर्ड सुरक्षा, शत-प्रतिशत ऑनलाइन टोकन प्रणाली (नो डुप्लीकेट), फायरबेस क्लाउड मैसेजिंग (FCM), इनबिल्ट देवनागरी OCR व AI फेस ऑटो-डिटेक्ट, असली इंसानी आवाज़ में टोकन घोषणा।",
-  "update_notes_english": "v2.40.0: SuperAdmin locked to PIN 0825/Password, 100% online collision-free token generation, Firebase FCM integration, inbuild OCR/Face Vision, real human voice token announcements.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.40.0/ShriBalajiKripaDham-v2.40.0.apk",
+  "latest_version_code": 57,
+  "latest_version_name": "2.41.0",
+  "update_notes_hindi": "v2.41.0: रियल-टाइम FCM पुश नोटिफिकेशन (टोकन बुलाने पर भक्त के फोन पर तत्काल सूचना), मल्टी-डिवाइस सेंट्रल AI फेस प्रोफाइल सिंक (होस्टिंगर MySQL), सुपरएडमिन कस्टम UPI QR कोड व VPA सेटिंग, स्मार्ट GitHub बैकअप (टोकन क्लैश मुक्त)।",
+  "update_notes_english": "v2.41.0: Real-time FCM Push Notifications on devotee token call, Multi-Device Central AI Face Profile Sync (Hostinger MySQL), SuperAdmin Custom UPI QR & VPA configuration, Smart GitHub Token Backup without collision.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.41.0/ShriBalajiKripaDham-v2.41.0.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }
