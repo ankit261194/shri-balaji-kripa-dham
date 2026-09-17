@@ -61,11 +61,41 @@ try {
     // ATOMIC TRANSACTION: Lock today's token table to guarantee sequential unique number
     $pdo->beginTransaction();
 
-    // 1. Get next sequential token number using FOR UPDATE row lock
-    $stmt = $pdo->prepare("SELECT COALESCE(MAX(token_number), 0) + 1 AS next_token FROM tokens WHERE darbar_date = :darbar_date FOR UPDATE");
-    $stmt->execute([':darbar_date' => $darbarDate]);
-    $row = $stmt->fetch();
-    $tokenNumber = intval($row['next_token']);
+    $reservedSlots = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
+    $customToken = isset($input['custom_token_number']) ? intval($input['custom_token_number']) : (isset($input['reserved_token_number']) ? intval($input['reserved_token_number']) : 0);
+
+    // Fetch all existing token numbers for today with FOR UPDATE row lock
+    $existingStmt = $pdo->prepare("SELECT token_number FROM tokens WHERE darbar_date = :darbar_date FOR UPDATE");
+    $existingStmt->execute([':darbar_date' => $darbarDate]);
+    $usedNumbers = $existingStmt->fetchAll(PDO::FETCH_COLUMN);
+    $usedSet = array_flip($usedNumbers);
+
+    if ($customToken > 0) {
+        // Admin issuing a specific token (e.g. VIP reserved slot 2, 4, 6... 20)
+        if (isset($usedSet[$customToken])) {
+            http_response_code(409);
+            echo json_encode(["success" => false, "error" => "टोकन संख्या #$customToken आज पहले से जारी हो चुका है।"], JSON_UNESCAPED_UNICODE);
+            $pdo->rollBack();
+            exit;
+        }
+        $tokenNumber = $customToken;
+    } else {
+        // Regular public devotee or standard sequential generation:
+        // MUST strictly skip reserved slots [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+        $candidate = 1;
+        while (true) {
+            if (!isset($usedSet[$candidate])) {
+                // If candidate is in reserved slots, skip it for regular issuance
+                if (in_array($candidate, $reservedSlots)) {
+                    $candidate++;
+                    continue;
+                }
+                $tokenNumber = $candidate;
+                break;
+            }
+            $candidate++;
+        }
+    }
 
     // 2. Insert new token
     $insert = $pdo->prepare("INSERT INTO tokens (

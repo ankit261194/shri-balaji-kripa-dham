@@ -8,8 +8,8 @@
     <meta name="keywords" content="श्री बालाजी कृपा धाम, डूँगरा जाट, बुलन्दशहर, बालाजी टोकन, बालाजी यात्रा, हनुमान मंदिर, Dungra Jaat, Bulandshahr">
     
     <!-- Open Graph for Social Sharing & WhatsApp -->
-    <meta property="og:title" content="श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट - आधिकारिक ऐप डाउनलोड">
-    <meta property="og:description" content="आश्रम की आधिकारिक वेबसाइट से Android ऐप डाउनलोड करें। रविवार टोकन, बस बुकिंग एवं लाइव दर्शन की सुविधा।">
+    <meta property="og:title" content="श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट - आधिकारिक वेबसाइट">
+    <meta property="og:description" content="आश्रम की आधिकारिक वेबसाइट। लाइव दर्शन टोकन, सेवादल, दानदाता मंडल एवं Android ऐप डाउनलोड।">
     <meta property="og:url" content="https://shribalajikripadham.online">
     <meta property="og:type" content="website">
     <meta name="theme-color" content="#800000">
@@ -136,7 +136,7 @@
         /* Hero Section */
         .hero {
             background: linear-gradient(180deg, #FFF3E0 0%, #FFFFFF 100%);
-            padding: 45px 20px 30px;
+            padding: 40px 20px 25px;
             text-align: center;
             position: relative;
             border-bottom: 1px solid #FFE0B2;
@@ -158,7 +158,7 @@
             font-size: 2.3rem;
             font-weight: 800;
             color: var(--primary);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             line-height: 1.25;
         }
 
@@ -181,63 +181,164 @@
             border-left: 4px solid var(--saffron);
         }
 
-        /* Live Status Strip */
-        .live-strip {
-            max-width: 850px;
+        /* Guruji Profile Card in Hero */
+        .guruji-card-container {
+            max-width: 480px;
             margin: 0 auto 30px;
-            background: #ffffff;
-            border-radius: 14px;
-            padding: 16px 20px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
-            border: 2px solid var(--card-border);
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            text-align: center;
+            background: #FFFFFF;
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(128, 0, 0, 0.08);
+            border: 2px solid #FFE082;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            text-align: left;
         }
 
-        .live-item {
-            padding: 8px;
+        .guruji-photo-wrap {
+            width: 105px;
+            height: 105px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid var(--gold);
+            box-shadow: 0 4px 12px rgba(230, 81, 0, 0.25);
+            flex-shrink: 0;
+            background: #FFF3E0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .live-item .label {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            font-weight: 600;
+        .guruji-photo-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .guruji-info h4 {
+            color: var(--primary);
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 2px;
+        }
+
+        .guruji-info p.title {
+            color: var(--saffron-deep);
+            font-weight: 700;
+            font-size: 0.92rem;
             margin-bottom: 4px;
         }
 
-        .live-item .value {
-            font-size: 1.2rem;
-            font-weight: 800;
-            color: var(--primary);
+        .guruji-info p.desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.35;
         }
 
-        .status-pill {
+        /* Glowing Live Running Token Banner */
+        .live-token-banner {
+            max-width: 850px;
+            margin: 0 auto 25px;
+            background: linear-gradient(135deg, #4A0000, #800000);
+            border: 3px solid var(--gold);
+            border-radius: 20px;
+            padding: 22px 25px;
+            color: #FFFFFF;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-around;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(128, 0, 0, 0.35);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .live-token-banner::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .live-token-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-token-title h3 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--gold-light);
+            text-align: left;
+        }
+
+        .live-token-title p {
+            font-size: 0.88rem;
+            color: #FFE082;
+            text-align: left;
+        }
+
+        .glowing-token-box {
+            background: #000000;
+            border: 2px solid var(--gold);
+            border-radius: 14px;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            animation: pulseGlow 2s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+            100% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.85); }
+        }
+
+        .glowing-token-number {
+            font-size: 2.8rem;
+            font-weight: 900;
+            color: var(--gold);
+            line-height: 1;
+            font-family: 'Poppins', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        .darbar-badge {
+            background: #2E7D32;
+            color: #ffffff;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 20px;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            background: #E8F5E9;
-            color: var(--green);
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 0.9rem;
-            font-weight: 700;
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--green);
+        .darbar-badge.closed {
+            background: #C62828;
+        }
+
+        .status-dot-blink {
+            width: 9px;
+            height: 9px;
+            background: #ffffff;
             border-radius: 50%;
             display: inline-block;
-            animation: pulse 1.5s infinite;
+            animation: blinker 1s cubic-bezier(0.5, 0, 1, 1) infinite alternate;
         }
 
-        @keyframes pulse {
-            0% { opacity: 0.4; }
-            50% { opacity: 1; }
-            100% { opacity: 0.4; }
+        @keyframes blinker {
+            from { opacity: 1; }
+            to { opacity: 0.2; }
         }
 
         /* Big Download Hero Card */
@@ -300,7 +401,7 @@
         /* STRICT TOKEN RULE BANNER (User Mandate) */
         .rule-banner {
             max-width: 850px;
-            margin: 0 auto 40px;
+            margin: 0 auto 35px;
             background: #FFF3E0;
             border-left: 6px solid var(--saffron-deep);
             border-radius: 12px;
@@ -325,16 +426,23 @@
             line-height: 1.5;
         }
 
-        /* Services Grid */
+        /* Carousel Sections */
+        .carousel-section {
+            padding: 45px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
         .section-title {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .section-title h3 {
-            font-size: 1.8rem;
+            font-size: 1.85rem;
             color: var(--primary);
             font-weight: 800;
+            margin-bottom: 4px;
         }
 
         .section-title p {
@@ -342,6 +450,196 @@
             font-size: 1rem;
         }
 
+        .carousel-wrapper {
+            position: relative;
+            overflow: hidden;
+            padding: 15px 5px;
+        }
+
+        .carousel-track {
+            display: flex;
+            gap: 20px;
+            transition: transform 0.5s ease-in-out;
+            will-change: transform;
+        }
+
+        /* Sevadar Card - Web Optimized (Good size, not too small) */
+        .sevadar-card {
+            flex: 0 0 260px;
+            background: #ffffff;
+            border-radius: 16px;
+            border: 2px solid var(--card-border);
+            padding: 20px 16px;
+            text-align: center;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+        }
+
+        .sevadar-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(230, 81, 0, 0.15);
+            border-color: var(--saffron);
+        }
+
+        .sevadar-photo {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            overflow: hidden;
+            border: 3px solid var(--saffron);
+            background: #FFF3E0;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .sevadar-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .sevadar-name {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 2px;
+        }
+
+        .sevadar-role {
+            font-size: 0.88rem;
+            color: var(--saffron-deep);
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .sevadar-phone-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #E8F5E9;
+            color: #1B5E20;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            border: 1px solid #A5D6A7;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .sevadar-phone-btn:hover {
+            background: #2E7D32;
+            color: #ffffff;
+        }
+
+        /* Donor Card - STRICT PRIVACY: Photo, Name, City/Address, Title - NO PHONE NUMBER */
+        .donor-card {
+            flex: 0 0 250px;
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFFDF5 100%);
+            border-radius: 16px;
+            border: 2px solid #FFD54F;
+            padding: 22px 16px;
+            text-align: center;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+        }
+
+        .donor-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(255, 193, 7, 0.2);
+            border-color: var(--gold);
+        }
+
+        .donor-badge-top {
+            background: #FFF8E1;
+            color: #E65100;
+            font-size: 0.78rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 12px;
+            border: 1px solid #FFE082;
+        }
+
+        .donor-photo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 0 auto 12px;
+            overflow: hidden;
+            border: 3px solid var(--gold);
+            background: #FFF8E1;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+
+        .donor-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .donor-name {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 2px;
+        }
+
+        .donor-address {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .donor-title {
+            font-size: 0.85rem;
+            color: #B78103;
+            font-weight: 700;
+            background: #FFFDE7;
+            padding: 5px 10px;
+            border-radius: 8px;
+            display: inline-block;
+            border: 1px dashed #FFE082;
+        }
+
+        /* Carousel Navigation Buttons */
+        .carousel-nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ffffff;
+            color: var(--primary);
+            border: 2px solid var(--gold);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10;
+            transition: all 0.2s ease;
+        }
+
+        .carousel-nav-btn:hover {
+            background: var(--saffron);
+            color: #ffffff;
+        }
+
+        .carousel-nav-prev { left: 5px; }
+        .carousel-nav-next { right: 5px; }
+
+        /* Services Grid */
         .services-container {
             max-width: 1200px;
             margin: 0 auto 50px;
@@ -531,7 +829,11 @@
             .hero h2 { font-size: 1.8rem; }
             .btn-main-download { font-size: 1.1rem; padding: 14px 24px; width: 100%; justify-content: center; }
             .nav-container { flex-direction: column; gap: 12px; }
-            .live-strip { grid-template-columns: 1fr; }
+            .live-token-banner { flex-direction: column; text-align: center; }
+            .live-token-title h3, .live-token-title p { text-align: center; }
+            .guruji-card-container { flex-direction: column; text-align: center; }
+            .sevadar-card { flex: 0 0 220px; }
+            .donor-card { flex: 0 0 210px; }
         }
     </style>
 </head>
@@ -570,26 +872,36 @@
             "मनोजवं मारुततुल्यवेगं जितेन्द्रियं बुद्धिमतां वरिष्ठम्। वातात्मजं वानरयूथमुख्यं श्रीरामदूतं शरणं प्रपद्ये॥"
         </div>
 
-        <!-- Live Status Strip (Connected to api/live_config.php) -->
-        <div class="live-strip">
-            <div class="live-item">
-                <div class="label">दरबार स्थिति</div>
-                <div class="value">
-                    <span class="status-pill" id="darbarStatusPill">
-                        <span class="status-dot"></span>
-                        <span id="darbarStatusText">लाइव सक्रिय (Open)</span>
-                    </span>
+        <!-- Guruji Profile Card -->
+        <div class="guruji-card-container">
+            <div class="guruji-photo-wrap">
+                <img id="gurujiPhotoImg" src="uploads/guruji_profile.jpg" alt="पूज्य गुरुदेव जी" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+            </div>
+            <div class="guruji-info">
+                <h4>पूज्य गुरुदेव जी</h4>
+                <p class="title">✨ संस्थापक एवं पीठाधीश्वर</p>
+                <p class="desc">संकट मोचन श्री बालाजी महाराज के अनन्य उपासक एवं पावन कृपा धाम के संरक्षक।</p>
+            </div>
+        </div>
+
+        <!-- Glowing Live Running Token Banner -->
+        <div class="live-token-banner">
+            <div class="live-token-title">
+                <span style="font-size: 2.2rem;">🔴</span>
+                <div>
+                    <h3>लाइव दर्शन एवं पावन दरबार</h3>
+                    <p>कतार में वर्तमान टोकन नंबर (Live Running Token)</p>
                 </div>
             </div>
-            <div class="live-item">
-                <div class="label">वर्तमान टोकन नंबर</div>
-                <div class="value" id="servingTokenNumber">#--</div>
+            <div class="glowing-token-box">
+                <span style="font-size: 1.1rem; color: #FFF3E0; font-weight: 700;">टोकन #</span>
+                <span class="glowing-token-number" id="servingTokenNumber">--</span>
             </div>
-            <div class="live-item">
-                <div class="label">टोकन सेवा स्थिति</div>
-                <div class="value" id="tokenServiceText" style="color: var(--saffron-deep); font-size: 1.05rem;">
-                    सक्रिय (Active)
-                </div>
+            <div>
+                <span class="darbar-badge" id="darbarStatusBadge">
+                    <span class="status-dot-blink"></span>
+                    <span id="darbarStatusText">दरबार खुला है (Open)</span>
+                </span>
             </div>
         </div>
 
@@ -603,7 +915,7 @@
             </a>
 
             <div class="download-meta">
-                <span>✓ संस्करण: v2.38.0 Pro</span>
+                <span>✓ संस्करण: v2.39.0 Pro</span>
                 <span>✓ साइज़: ~107 MB</span>
                 <span>✓ 100% वायरस मुक्त</span>
                 <span>✓ Google Play Protect Verified</span>
@@ -616,6 +928,114 @@
             <p>
                 आश्रम की निष्पक्षता, पारदर्शी कतार, GPS लोकेशन एवं AI बायोमेट्रिक सुरक्षा नियमों के अनुसार <strong>टोकन पंजीकरण केवल और केवल आधिकारिक मोबाइल ऐप से ही संभव है</strong>। वेबसाइट पर कोई टोकन जनरेशन फॉर्म नहीं है। टोकन प्राप्त करने के लिए कृपया ऊपर दिए गए बटन से मोबाइल ऐप इंस्टॉल करें।
             </p>
+        </div>
+    </section>
+
+    <!-- Sevadars Carousel Section (App & Web synchronized) -->
+    <section class="carousel-section">
+        <div class="section-title">
+            <h3>🙏 समर्पित सेवादल मंडल</h3>
+            <p>श्री बालाजी कृपा धाम के कर्मठ एवं निष्ठावान सेवादल बंधु (संपर्क हेतु नंबर पर क्लिक करें)</p>
+        </div>
+
+        <div class="carousel-wrapper">
+            <button class="carousel-nav-btn carousel-nav-prev" onclick="slideCarousel('sevadarTrack', -1)">❮</button>
+            <div class="carousel-track" id="sevadarTrack">
+                <!-- Sevadar cards populated dynamically via live_config.php -->
+                <div class="sevadar-card">
+                    <div class="sevadar-photo">
+                        <img src="uploads/sevadars/sevadar_1.jpg" alt="मुख्य प्रबंधक" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                    </div>
+                    <div class="sevadar-name">अंकित शर्मा</div>
+                    <div class="sevadar-role">मुख्य प्रबंधक एवं व्यवस्थापक</div>
+                    <a href="tel:9876543210" class="sevadar-phone-btn">
+                        📞 9876543210
+                    </a>
+                </div>
+                <div class="sevadar-card">
+                    <div class="sevadar-photo">
+                        <img src="uploads/sevadars/sevadar_2.jpg" alt="कतार प्रभारी" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                    </div>
+                    <div class="sevadar-name">दीपक कुमार</div>
+                    <div class="sevadar-role">टोकन एवं कतार व्यवस्था प्रभारी</div>
+                    <a href="tel:9876543211" class="sevadar-phone-btn">
+                        📞 9876543211
+                    </a>
+                </div>
+                <div class="sevadar-card">
+                    <div class="sevadar-photo">
+                        <img src="uploads/sevadars/sevadar_3.jpg" alt="भंडारा प्रभारी" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                    </div>
+                    <div class="sevadar-name">राहुल सिंह</div>
+                    <div class="sevadar-role">प्रसाद एवं भंडारा सेवा प्रमुख</div>
+                    <a href="tel:9876543212" class="sevadar-phone-btn">
+                        📞 9876543212
+                    </a>
+                </div>
+                <div class="sevadar-card">
+                    <div class="sevadar-photo">
+                        <img src="uploads/sevadars/sevadar_4.jpg" alt="सुरक्षा प्रभारी" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                    </div>
+                    <div class="sevadar-name">सोनू तेवतिया</div>
+                    <div class="sevadar-role">सुरक्षा एवं अनुशासन प्रमुख</div>
+                    <a href="tel:9876543213" class="sevadar-phone-btn">
+                        📞 9876543213
+                    </a>
+                </div>
+            </div>
+            <button class="carousel-nav-btn carousel-nav-next" onclick="slideCarousel('sevadarTrack', 1)">❯</button>
+        </div>
+    </section>
+
+    <!-- Prominent Donors Carousel Section (STRICT PRIVACY: NO PHONE NUMBERS) -->
+    <section class="carousel-section" style="background: #FFFDF5; border-top: 1px solid #FFE082; border-bottom: 1px solid #FFE082;">
+        <div class="section-title">
+            <h3>🌟 प्रमुख दानदाता एवं संरक्षक मंडल</h3>
+            <p>धाम के दिव्य निर्माण एवं सेवा कार्यों में अनमोल सहयोग देने वाले परम सहयोगी</p>
+        </div>
+
+        <div class="carousel-wrapper">
+            <button class="carousel-nav-btn carousel-nav-prev" onclick="slideCarousel('donorTrack', -1)">❮</button>
+            <div class="carousel-track" id="donorTrack">
+                <!-- Donor cards populated dynamically via live_config.php -->
+                <div class="donor-card">
+                    <span class="donor-badge-top">👑 मुख्य संरक्षक</span>
+                    <div class="donor-photo">
+                        <img src="uploads/donors/donor_1.jpg" alt="दानदाता" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                    </div>
+                    <div class="donor-name">सेठ राधेश्याम जी</div>
+                    <div class="donor-address">📍 दिल्ली / बुलन्दशहर</div>
+                    <div class="donor-title">भव्य मंदिर निर्माण महासहयोगी</div>
+                </div>
+                <div class="donor-card">
+                    <span class="donor-badge-top">✨ स्वर्ण कलश दाता</span>
+                    <div class="donor-photo">
+                        <img src="uploads/donors/donor_2.jpg" alt="दानदाता" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                    </div>
+                    <div class="donor-name">चौधरी वीरेन्द्र सिंह जी</div>
+                    <div class="donor-address">📍 हापुड़, उत्तर प्रदेश</div>
+                    <div class="donor-title">स्वर्ण ध्वजा एवं कलश सेवा</div>
+                </div>
+                <div class="donor-card">
+                    <span class="donor-badge-top">🍲 अन्नक्षेत्र संरक्षक</span>
+                    <div class="donor-photo">
+                        <img src="uploads/donors/donor_3.jpg" alt="दानदाता" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                    </div>
+                    <div class="donor-name">श्री रमेश चंद्र गोयल जी</div>
+                    <div class="donor-address">📍 गाजियाबाद, उत्तर प्रदेश</div>
+                    <div class="donor-title">नित्य महाप्रसाद अन्नक्षेत्र सेवा</div>
+                </div>
+                <div class="donor-card">
+                    <span class="donor-badge-top">🚌 यात्रा सेवा दाता</span>
+                    <div class="donor-photo">
+                        <img src="uploads/donors/donor_4.jpg" alt="दानदाता" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                    </div>
+                    <div class="donor-name">श्री अजय तेवतिया जी</div>
+                    <div class="donor-address">📍 स्याना, बुलन्दशहर</div>
+                    <div class="donor-title">श्री बालाजी बस यात्रा सहयोगी</div>
+                </div>
+            </div>
+            <button class="carousel-nav-btn carousel-nav-next" onclick="slideCarousel('donorTrack', 1)">❯</button>
         </div>
     </section>
 
@@ -738,7 +1158,7 @@
         
         <div style="margin-top: 15px;">
             <a href="download.php" style="color: #ffffff; background: var(--saffron-deep); padding: 8px 18px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.88rem;">
-                📲 Android ऐप डाउनलोड करें (v2.38.0)
+                📲 Android ऐप डाउनलोड करें (v2.39.0)
             </a>
         </div>
 
@@ -747,55 +1167,113 @@
         </div>
     </footer>
 
-    <!-- Auto-Updating Live Status Script -->
+    <!-- Scripts for Auto-Slide and Dynamic Updates -->
     <script>
+        // Carousel Sliders Logic
+        const carouselPositions = {
+            sevadarTrack: 0,
+            donorTrack: 0
+        };
+
+        function slideCarousel(trackId, direction) {
+            const track = document.getElementById(trackId);
+            if (!track) return;
+            const cardWidth = 280; // approximate card width + gap
+            const maxScroll = track.scrollWidth - track.clientWidth;
+            
+            carouselPositions[trackId] = (carouselPositions[trackId] || 0) + (direction * cardWidth);
+            if (carouselPositions[trackId] < 0) carouselPositions[trackId] = 0;
+            if (carouselPositions[trackId] > maxScroll) carouselPositions[trackId] = 0; // loop around
+            
+            track.style.transform = `translateX(-${carouselPositions[trackId]}px)`;
+        }
+
+        // Auto slide both carousels every 4.5 seconds
+        setInterval(() => {
+            slideCarousel('sevadarTrack', 1);
+        }, 4500);
+
+        setInterval(() => {
+            slideCarousel('donorTrack', 1);
+        }, 5500);
+
+        // Fetch Live Status & CMS Data from api/live_config.php
         function updateLiveStatus() {
-            fetch('api/live_config.php')
+            fetch('api/live_config.php?t=' + new Date().getTime())
                 .then(response => response.json())
                 .then(data => {
                     if (data && data.status === 'SUCCESS' && data.config) {
                         const cfg = data.config;
                         
-                        // Darbar Status
+                        // 1. Darbar Status
                         const darbarText = document.getElementById('darbarStatusText');
-                        const darbarPill = document.getElementById('darbarStatusPill');
+                        const darbarBadge = document.getElementById('darbarStatusBadge');
                         if (cfg.is_darbar_active) {
-                            darbarText.innerText = 'लाइव सक्रिय (Open)';
-                            darbarPill.style.background = '#E8F5E9';
-                            darbarPill.style.color = '#2E7D32';
+                            darbarText.innerText = 'दरबार खुला है (Open)';
+                            darbarBadge.className = 'darbar-badge';
                         } else {
                             darbarText.innerText = 'विश्राम समय (Closed)';
-                            darbarPill.style.background = '#FFEBEE';
-                            darbarPill.style.color = '#C62828';
+                            darbarBadge.className = 'darbar-badge closed';
                         }
 
-                        // Serving Token
+                        // 2. Serving Token
                         const tokenEl = document.getElementById('servingTokenNumber');
                         if (cfg.running_token_number > 0) {
-                            tokenEl.innerText = '#' + cfg.running_token_number;
+                            tokenEl.innerText = cfg.running_token_number;
                         } else {
-                            tokenEl.innerText = '#--';
+                            tokenEl.innerText = '--';
                         }
 
-                        // Token Service Status
-                        const srvEl = document.getElementById('tokenServiceText');
-                        if (cfg.is_token_service_enabled) {
-                            srvEl.innerText = 'सक्रिय (खुला है)';
-                            srvEl.style.color = '#2E7D32';
-                        } else {
-                            srvEl.innerText = 'बंद (Closed)';
-                            srvEl.style.color = '#C62828';
+                        // 3. Guruji Photo
+                        if (cfg.guruji_photo_url) {
+                            const gurujiImg = document.getElementById('gurujiPhotoImg');
+                            if (gurujiImg && cfg.guruji_photo_url.trim() !== '') {
+                                gurujiImg.src = cfg.guruji_photo_url + '?t=' + (cfg.timestamp || new Date().getTime());
+                            }
+                        }
+
+                        // 4. Render Dynamic Sevadars if returned
+                        if (Array.isArray(cfg.sevadars) && cfg.sevadars.length > 0) {
+                            const sTrack = document.getElementById('sevadarTrack');
+                            sTrack.innerHTML = cfg.sevadars.map(s => `
+                                <div class="sevadar-card">
+                                    <div class="sevadar-photo">
+                                        <img src="${s.photo_url || 'uploads/sevadars/default.jpg'}" alt="${s.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                                    </div>
+                                    <div class="sevadar-name">${s.name}</div>
+                                    <div class="sevadar-role">${s.role || 'सेवादार'}</div>
+                                    <a href="tel:${s.phone}" class="sevadar-phone-btn">
+                                        📞 ${s.phone}
+                                    </a>
+                                </div>
+                            `).join('');
+                        }
+
+                        // 5. Render Dynamic Donors if returned (STRICT PRIVACY: NO PHONE NUMBERS)
+                        if (Array.isArray(cfg.donors) && cfg.donors.length > 0) {
+                            const dTrack = document.getElementById('donorTrack');
+                            dTrack.innerHTML = cfg.donors.map(d => `
+                                <div class="donor-card">
+                                    <span class="donor-badge-top">🌟 परम सहयोगी</span>
+                                    <div class="donor-photo">
+                                        <img src="${d.photo_url || 'uploads/donors/default.jpg'}" alt="${d.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                                    </div>
+                                    <div class="donor-name">${d.name}</div>
+                                    <div class="donor-address">📍 ${d.city_address || 'ग्राम डूँगरा जाट'}</div>
+                                    <div class="donor-title">${d.title || 'मंदिर निर्माण सहयोगी'}</div>
+                                </div>
+                            `).join('');
                         }
                     }
                 })
                 .catch(err => {
-                    console.log('Live status fetch info:', err);
+                    console.log('Live status update error:', err);
                 });
         }
 
-        // Fetch immediately and update every 12 seconds
+        // Fetch on load & poll every 10 seconds for real-time live sync
         updateLiveStatus();
-        setInterval(updateLiveStatus, 12000);
+        setInterval(updateLiveStatus, 10000);
     </script>
 </body>
 </html>
