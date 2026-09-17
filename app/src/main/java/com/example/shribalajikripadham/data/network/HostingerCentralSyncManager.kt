@@ -39,7 +39,8 @@ object HostingerCentralSyncManager {
         registeredBy: String = "ONLINE_DEVOTEE",
         originAddress: String = "",
         destinationAddress: String = "श्री बालाजी कृपा धाम, डूँगरा जाट",
-        darbarDate: String = ""
+        darbarDate: String = "",
+        customTokenNumber: Int? = null
     ): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}issue_token.php")
@@ -65,6 +66,9 @@ object HostingerCentralSyncManager {
             params.append("&destination_address=").append(URLEncoder.encode(destinationAddress, "UTF-8"))
             if (darbarDate.isNotBlank()) {
                 params.append("&darbar_date=").append(URLEncoder.encode(darbarDate, "UTF-8"))
+            }
+            if (customTokenNumber != null && customTokenNumber > 0) {
+                params.append("&custom_token_number=").append(customTokenNumber)
             }
 
             conn.outputStream.use { os ->
@@ -695,6 +699,8 @@ object HostingerCentralSyncManager {
     // SUPERADMIN FULL LIVE CONFIG BROADCAST (Instant service toggle)
     // ========================================================================
 
+    suspend fun syncSettingsToHostinger(settings: AshramSettings): Pair<Boolean, String> = updateFullLiveConfig(settings)
+
     suspend fun updateFullLiveConfig(settings: AshramSettings): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}live_config.php")
@@ -729,6 +735,8 @@ object HostingerCentralSyncManager {
                 put("banner_title", settings.bannerTitle)
                 put("banner_subtitle", settings.bannerSubtitle)
                 put("is_banner_visible", if (settings.isBannerVisible) 1 else 0)
+                put("guruji_photo_url", settings.gurujiPhotoUri)
+                put("allow_admin_reserved_tokens", if (settings.allowAdminReservedTokens) 1 else 0)
             }
 
             conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
@@ -742,6 +750,174 @@ object HostingerCentralSyncManager {
             Pair(false, "सर्वर रिस्पॉन्स HTTP $code")
         } catch (e: Exception) {
             Pair(false, "लाइव सेटिंग्स सिंक त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+
+    /**
+     * Update Token Darshan Status on Central Server
+     */
+    suspend fun updateCentralTokenStatus(
+        tokenNumber: Int,
+        darbarDate: String,
+        status: String,
+        isDarshanCompleted: Boolean
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}update_token_status.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.39.0")
+
+            val params = "token_number=$tokenNumber&darbar_date=${URLEncoder.encode(darbarDate, "UTF-8")}&status=${URLEncoder.encode(status, "UTF-8")}&is_darshan_completed=${if (isDarshanCompleted) 1 else 0}"
+            conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            if (code == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                return@withContext JSONObject(resp).optBoolean("success", false)
+            }
+            false
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Save Sevadar to Central Hostinger MySQL
+     */
+    suspend fun saveCentralSevadar(
+        name: String,
+        role: String,
+        phone: String,
+        photoUrl: String = "",
+        displayOrder: Int = 0,
+        id: Long = 0
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}save_sevadar.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.39.0")
+
+            val params = StringBuilder()
+            params.append("name=").append(URLEncoder.encode(name, "UTF-8"))
+            params.append("&role=").append(URLEncoder.encode(role, "UTF-8"))
+            params.append("&phone=").append(URLEncoder.encode(phone, "UTF-8"))
+            params.append("&photo_url=").append(URLEncoder.encode(photoUrl, "UTF-8"))
+            params.append("&display_order=").append(displayOrder)
+            if (id > 0) params.append("&id=").append(id)
+
+            conn.outputStream.use { it.write(params.toString().toByteArray(StandardCharsets.UTF_8)) }
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val j = JSONObject(resp)
+                Pair(j.optBoolean("success", false), j.optString("message", "सफल"))
+            } else {
+                Pair(false, "HTTP ${conn.responseCode}")
+            }
+        } catch (e: Exception) {
+            Pair(false, e.localizedMessage ?: "त्रुटि")
+        }
+    }
+
+    /**
+     * Delete Sevadar from Central Hostinger MySQL
+     */
+    suspend fun deleteCentralSevadar(id: Long): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}delete_sevadar.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.39.0")
+
+            val params = "id=$id"
+            conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }
+            conn.responseCode == 200
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Save Donor to Central Hostinger MySQL (STRICT PRIVACY: phone is NEVER public)
+     */
+    suspend fun saveCentralDonor(
+        name: String,
+        cityAddress: String,
+        title: String,
+        photoUrl: String = "",
+        phone: String = "",
+        notes: String = "",
+        displayOrder: Int = 0,
+        id: Long = 0
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}save_donor.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.39.0")
+
+            val params = StringBuilder()
+            params.append("name=").append(URLEncoder.encode(name, "UTF-8"))
+            params.append("&city_address=").append(URLEncoder.encode(cityAddress, "UTF-8"))
+            params.append("&title=").append(URLEncoder.encode(title, "UTF-8"))
+            params.append("&photo_url=").append(URLEncoder.encode(photoUrl, "UTF-8"))
+            params.append("&phone=").append(URLEncoder.encode(phone, "UTF-8"))
+            params.append("&notes=").append(URLEncoder.encode(notes, "UTF-8"))
+            params.append("&display_order=").append(displayOrder)
+            if (id > 0) params.append("&id=").append(id)
+
+            conn.outputStream.use { it.write(params.toString().toByteArray(StandardCharsets.UTF_8)) }
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val j = JSONObject(resp)
+                Pair(j.optBoolean("success", false), j.optString("message", "सफल"))
+            } else {
+                Pair(false, "HTTP ${conn.responseCode}")
+            }
+        } catch (e: Exception) {
+            Pair(false, e.localizedMessage ?: "त्रुटि")
+        }
+    }
+
+    /**
+     * Delete Donor from Central Hostinger MySQL
+     */
+    suspend fun deleteCentralDonor(id: Long): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}delete_donor.php")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.39.0")
+
+            val params = "id=$id"
+            conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }
+            conn.responseCode == 200
+        } catch (e: Exception) {
+            false
         }
     }
 

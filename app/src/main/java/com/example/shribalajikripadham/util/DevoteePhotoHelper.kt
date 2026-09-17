@@ -206,16 +206,57 @@ object DevoteePhotoHelper {
     }
 
     /**
+     * Clears cached remote images from the remote_cache directory.
+     * Essential when a new Guruji or Sevadar photo is uploaded so stale images are never loaded.
+     */
+    fun clearNetworkCache(context: Context, urlSubstring: String? = null) {
+        try {
+            val cacheDir = File(context.filesDir, "remote_cache")
+            if (cacheDir.exists() && cacheDir.isDirectory) {
+                if (urlSubstring == null) {
+                    cacheDir.listFiles()?.forEach { it.delete() }
+                } else {
+                    val hash = Math.abs(urlSubstring.hashCode()).toString()
+                    cacheDir.listFiles()?.filter { it.name.contains(hash) }?.forEach { it.delete() }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * Saves Guruji's photo to dedicated internal file 'guruji_profile.jpg'
+     * and clears cache to ensure immediate app-wide refresh.
+     */
+    fun saveGurujiPhoto(context: Context, bitmap: Bitmap): String {
+        return try {
+            clearNetworkCache(context)
+            val safeBitmap = toSoftwareBitmap(bitmap)
+            val photosDir = File(context.filesDir, "devotee_photos")
+            if (!photosDir.exists()) photosDir.mkdirs()
+            val file = File(photosDir, "guruji_profile_${System.currentTimeMillis()}.jpg")
+            FileOutputStream(file).use { out ->
+                safeBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            }
+            file.absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
+    }
+
+    /**
      * Loads a Bitmap from file path, content URI, or remote HTTP/HTTPS URL with automatic disk caching
      * and automatic EXIF upright correction.
      * Ensures returned bitmap is a software bitmap.
      */
-    fun loadBitmap(context: Context, photoUri: String): Bitmap? {
+    fun loadBitmap(context: Context, photoUri: String, forceRefresh: Boolean = false): Bitmap? {
         if (photoUri.isBlank()) return null
         return try {
             val (loadedRaw, exifDegrees) = when {
                 photoUri.startsWith("http://") || photoUri.startsWith("https://") -> {
-                    Pair(loadFromNetworkOrCache(context, photoUri), 0f)
+                    Pair(loadFromNetworkOrCache(context, photoUri, forceRefresh), 0f)
                 }
                 photoUri.startsWith("content://") || photoUri.startsWith("android.resource://") -> {
                     val uri = Uri.parse(photoUri)
@@ -249,7 +290,7 @@ object DevoteePhotoHelper {
         }
     }
 
-    private fun loadFromNetworkOrCache(context: Context, urlString: String): Bitmap? {
+    private fun loadFromNetworkOrCache(context: Context, urlString: String, forceRefresh: Boolean = false): Bitmap? {
         return try {
             val cacheDir = File(context.filesDir, "remote_cache")
             if (!cacheDir.exists()) cacheDir.mkdirs()
@@ -257,18 +298,19 @@ object DevoteePhotoHelper {
             val safeFileName = "img_" + Math.abs(urlString.hashCode()).toString() + ".jpg"
             val cacheFile = File(cacheDir, safeFileName)
 
-            // If cached and valid, return cached image immediately
-            if (cacheFile.exists() && cacheFile.length() > 0) {
-                return BitmapFactory.decodeFile(cacheFile.absolutePath)
+            // If cached and valid, return cached image immediately unless forceRefresh
+            if (!forceRefresh && cacheFile.exists() && cacheFile.length() > 0) {
+                val bmp = BitmapFactory.decodeFile(cacheFile.absolutePath)
+                if (bmp != null) return bmp
             }
 
             // Download from network
             val url = java.net.URL(urlString)
             val conn = url.openConnection() as java.net.HttpURLConnection
-            conn.connectTimeout = 5000
-            conn.readTimeout = 7000
+            conn.connectTimeout = 6000
+            conn.readTimeout = 8000
             conn.requestMethod = "GET"
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.28")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.39.0")
 
             if (conn.responseCode in 200..299) {
                 val bytes = conn.inputStream.use { it.readBytes() }

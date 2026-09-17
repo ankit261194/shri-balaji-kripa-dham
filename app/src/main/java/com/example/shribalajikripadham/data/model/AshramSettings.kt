@@ -89,7 +89,9 @@ data class AshramSettings(
     val ashramParichayHindi: String = "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है। यहाँ किसी भी प्रकार का चढ़ावा या दक्षिणा नहीं ली जाती।",
     val ashramParichayEnglish: String = "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Shikarpur, Bulandshahr, UP), spiritual and mental ailments are healed 100% free under Guruji Tejveer Singh Ji. No fee or donation is ever accepted.",
     val ashramHistoryHindi: String = "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है। पिछले कई वर्षों से डूंगरा जाट धाम पर लाखों पीड़ित भक्तों को नई जिंदगी और शांति मिली है।",
-    val ashramRulesHindi: String = "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।\n4. पूर्ण शांति, स्वच्छता व मर्यादा बनाए रखें।"
+    val ashramRulesHindi: String = "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।\n4. पूर्ण शांति, स्वच्छता व मर्यादा बनाए रखें।",
+    val allowAdminReservedTokens: Boolean = false,
+    val officialWebsiteUrl: String = "https://shribalajikripadham.online"
 )
 
 data class CustomCityDistance(

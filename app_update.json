@@ -1,10 +1,10 @@
 {
-  "version_code": 53,
-  "version_name": "2.38.0",
+  "version_code": 54,
+  "version_name": "2.39.0",
   "is_force": false,
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.38.0/ShriBalajiKripaDham-v2.38.0.apk",
-  "update_notes_hindi": "v2.38.0: प्रो-अपग्रेड - एडमिन-सत्यापित भुगतान, AI लाइवनेस एंटी-स्पूफिंग, बस सीट सुरक्षा, मंदिर घंटी ऑडियो चाइम व क्लाउड बैनर।",
-  "update_notes_english": "v2.38.0: Enterprise Pro - Admin-Verified Payments, AI Facial Liveness, Bus Concurrency Lock, Temple Chime & Cloud Banner.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.39.0/ShriBalajiKripaDham-v2.39.0.apk",
+  "update_notes_hindi": "v2.39.0: वीआईपी आरक्षित टोकन प्रबंधन, लाइव कतार उद्घोषक स्क्रीन, सेवादार 1-क्लिक कॉल स्लाइडर, वेबसाइट लाइव टोकन व सार्वभौमिक सीएमएस कंट्रोल।",
+  "update_notes_english": "v2.39.0: VIP Reserved Token Allocation, Announcer Live Queue Screen, Sevadars 1-Tap Call Slider, Live Running Token & Universal Web CMS Control.",
   "release_date": "2026-09-17",
   "sha256": ""
 }

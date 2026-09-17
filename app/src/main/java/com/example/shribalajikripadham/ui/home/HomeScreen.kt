@@ -139,6 +139,7 @@ fun HomeScreen(
     var settings by remember { mutableStateOf(AshramSettings()) }
     var dynamicEvents by remember { mutableStateOf<List<AshramEvent>>(emptyList()) }
     var activeSevadars by remember { mutableStateOf<List<Admin>>(emptyList()) }
+    var sevadarProfiles by remember { mutableStateOf<List<SevadarProfile>>(emptyList()) }
     var activeLayout by remember { mutableStateOf(AppUiLayout.CLASSIC_DARBAR) }
     var uiSectionConfigs by remember { mutableStateOf<List<UiSectionConfig>>(UiSectionConfig.defaultSections()) }
 
@@ -164,6 +165,7 @@ fun HomeScreen(
                 dynamicEvents = evs
             }
             activeSevadars = repository.getAllActiveSevadars()
+            sevadarProfiles = repository.getAllSevadars()
             val sections = repository.getUiSectionConfigs()
             if (sections.isNotEmpty()) uiSectionConfigs = sections
         } catch (e: Exception) {
@@ -188,6 +190,7 @@ fun HomeScreen(
                     val evs = repository.getAllEvents()
                     if (evs.isNotEmpty()) dynamicEvents = evs
                     activeSevadars = repository.getAllActiveSevadars()
+                    sevadarProfiles = repository.getAllSevadars()
                 }
             } catch (e: Exception) {
                 // Smooth fallback to local SQLite cache
@@ -710,6 +713,30 @@ fun HomeScreen(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
                     )
 
+                    // Official Website Link (Live)
+                    NavigationDrawerItem(
+                        icon = { Text("🌐", fontSize = 20.sp) },
+                        label = {
+                            Text(
+                                if (isHindi) "आधिकारिक वेबसाइट (Live)" else "Official Website (Live)",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1565C0)
+                            )
+                        },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            val webUrl = settings.officialWebsiteUrl.ifEmpty { "https://shribalajikripadham.online" }
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(webUrl))
+                                context.startActivity(intent)
+                            } catch (e: Exception) {}
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color(0xFFE3F2FD)),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                    )
+
                     // Devotee App Share (WhatsApp & Social Media)
                     NavigationDrawerItem(
                         icon = { Text("📲", fontSize = 20.sp) },
@@ -1089,6 +1116,7 @@ fun HomeScreen(
                             isHindi = isHindi,
                             currentTheme = currentTheme,
                             activeSevadars = activeSevadars,
+                            sevadarProfiles = sevadarProfiles,
                             dynamicEvents = dynamicEvents,
                             onNavigateToToken = onNavigateToToken,
                             onNavigateToFaceToken = onNavigateToFaceToken,
@@ -2005,57 +2033,87 @@ fun ActionTile(
 
 @Composable
 fun SevadarCard(sevadar: SevadarProfile, isHindi: Boolean) {
+    val context = LocalContext.current
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(14.dp),
-        elevation = CardDefaults.cardElevation(2.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(3.dp),
+        border = BorderStroke(1.dp, Color(0xFFFFCC80)),
         modifier = Modifier.width(220.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(SaffronPrimary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = sevadar.initials,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
+                SacredAvatar(
+                    photoUri = sevadar.photoUri,
+                    fallbackText = sevadar.name,
+                    size = 50.dp,
+                    primaryColor = SaffronPrimary,
+                    borderColor = GoldDark
+                )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
                         text = sevadar.name,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimaryDark
+                        color = TextPrimaryDark,
+                        maxLines = 1
                     )
                     Text(
-                        text = sevadar.phoneNumber,
+                        text = if (isHindi) sevadar.roleTitleHindi else sevadar.roleTitleEnglish,
                         fontSize = 11.sp,
-                        color = TextSecondaryDark
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaroonPrimary,
+                        maxLines = 1
                     )
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = if (isHindi) sevadar.roleTitleHindi else sevadar.roleTitleEnglish,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = SaffronDark
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = if (isHindi) sevadar.dutyHindi else sevadar.dutyEnglish,
-                fontSize = 11.sp,
-                color = TextSecondaryDark,
-                lineHeight = 15.sp
-            )
+            if (sevadar.dutyHindi.isNotBlank()) {
+                Text(
+                    text = if (isHindi) sevadar.dutyHindi else sevadar.dutyEnglish,
+                    fontSize = 11.sp,
+                    color = TextSecondaryDark,
+                    lineHeight = 14.sp,
+                    maxLines = 2
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+            }
+
+            // 1-Click Direct Phone Dialer Button
+            Surface(
+                onClick = {
+                    try {
+                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${sevadar.phoneNumber.trim()}"))
+                        context.startActivity(intent)
+                    } catch (e: Exception) {}
+                },
+                color = Color(0xFFE8F5E9),
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, Color(0xFF81C784)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text("📞 ", fontSize = 12.sp)
+                    Text(
+                        text = sevadar.phoneNumber,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = Color(0xFF1B5E20)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "(कॉल)",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2E7D32)
+                    )
+                }
+            }
         }
     }
 }
@@ -2117,6 +2175,7 @@ fun RenderClassicSection(
     isHindi: Boolean,
     currentTheme: SacredTheme,
     activeSevadars: List<Admin>,
+    sevadarProfiles: List<SevadarProfile> = emptyList(),
     dynamicEvents: List<AshramEvent>,
     onNavigateToToken: () -> Unit,
     onNavigateToFaceToken: () -> Unit,
@@ -2611,6 +2670,45 @@ fun RenderClassicSection(
                             onClick = onNavigateToParchas
                         )
                     }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Surface(
+                        onClick = {
+                            val webUrl = settings.officialWebsiteUrl.ifEmpty { "https://shribalajikripadham.online" }
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(webUrl))
+                                context.startActivity(intent)
+                            } catch (e: Exception) {}
+                        },
+                        color = Color(0xFFE3F2FD),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, Color(0xFF90CAF9)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🌐", fontSize = 24.sp)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (isHindi) "आश्रम की आधिकारिक वेबसाइट" else "Official Ashram Website",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF0D47A1)
+                                    )
+                                    Text(
+                                        text = "shribalajikripadham.online • लाइव टोकन व दर्शन",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF1976D2)
+                                    )
+                                }
+                            }
+                            Text("खोलें ➔", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF0D47A1))
+                        }
+                    }
                 } else {
                     Row(modifier = Modifier.fillMaxWidth()) {
                         ActionTile(
@@ -2755,96 +2853,35 @@ fun RenderClassicSection(
         }
 
         UiSectionConfig.ID_SEVADAR_TEAM -> {
-            // Ashram Sevadar Showcase
+            // Ashram Sevadar Showcase & Slider
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = if (isHindi) "आश्रम के समर्पित सेवादार" else "Dedicated Ashram Sevadars",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = currentTheme.primaryColor
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isHindi) "🚩 आश्रम के समर्पित सेवादार" else "Dedicated Ashram Sevadars",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = currentTheme.primaryColor
+                    )
+                    Text(
+                        text = if (isHindi) "📞 1-क्लिक कॉल" else "📞 1-Tap Call",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2E7D32)
+                    )
+                }
                 Spacer(modifier = Modifier.height(10.dp))
 
-                if (activeSevadars.isNotEmpty()) {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        contentPadding = PaddingValues(vertical = 4.dp)
-                    ) {
-                        items(activeSevadars) { sevadar ->
-                            Card(
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                shape = RoundedCornerShape(18.dp),
-                                elevation = CardDefaults.cardElevation(4.dp),
-                                border = BorderStroke(1.dp, currentTheme.secondaryColor.copy(alpha = 0.5f)),
-                                modifier = Modifier.width(240.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(14.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        SacredAvatar(
-                                            photoUri = sevadar.photoUri,
-                                            fallbackText = sevadar.name,
-                                            size = 72.dp,
-                                            primaryColor = currentTheme.primaryColor,
-                                            borderColor = currentTheme.secondaryColor
-                                        )
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                        Column {
-                                            Text(
-                                                text = sevadar.name,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 14.5.sp,
-                                                color = TextPrimaryDark,
-                                                maxLines = 1
-                                            )
-                                            Text(
-                                                text = if (isHindi) "अधिकृत सेवादार" else "Authorized Sevadar",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = currentTheme.primaryColor
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(10.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = Color(0xFFF5F5F5),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(
-                                            text = if (isHindi) "📞 ${sevadar.phoneNumber}" else "📞 ${sevadar.phoneNumber}",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = TextSecondaryDark,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("🙏", fontSize = 24.sp)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = if (isHindi)
-                                    "आश्रम सेवादारों की अधिकृत सूची मुख्य व्यवस्थापक (Super Admin) द्वारा जल्द ही जोड़ी जाएगी।"
-                                else
-                                    "Authorized Sevadar list will be added by the Super Admin.",
-                                fontSize = 13.sp,
-                                color = TextSecondaryDark,
-                                lineHeight = 18.sp
-                            )
-                        }
+                val profilesToShow = if (sevadarProfiles.isNotEmpty()) sevadarProfiles else SevadarProfile.defaultProfiles()
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp)
+                ) {
+                    items(profilesToShow) { sProfile ->
+                        SevadarCard(sevadar = sProfile, isHindi = isHindi)
                     }
                 }
             }

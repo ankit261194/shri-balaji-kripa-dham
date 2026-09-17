@@ -126,7 +126,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     is_cloud_sync_enabled INTEGER NOT NULL DEFAULT 0,
                     sunday_token_banner_title TEXT NOT NULL DEFAULT 'हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन',
                     sunday_token_banner_text TEXT NOT NULL DEFAULT 'एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।',
-                    sunday_token_custom_notice TEXT NOT NULL DEFAULT ''
+                    sunday_token_custom_notice TEXT NOT NULL DEFAULT '',
+                    allow_admin_reserved_tokens INTEGER NOT NULL DEFAULT 0
                 )
             """.trimIndent())
         } catch (e: Exception) { e.printStackTrace() }
@@ -443,6 +444,38 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             }
         } catch (e: Exception) { e.printStackTrace() }
 
+                // 16. Dedicated Sevadars Table (App & Web synchronized)
+        try {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS sevadars (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    role TEXT NOT NULL DEFAULT 'सेवादार',
+                    phone TEXT NOT NULL,
+                    photo_uri TEXT NOT NULL DEFAULT '',
+                    display_order INTEGER NOT NULL DEFAULT 0,
+                    is_active INTEGER NOT NULL DEFAULT 1
+                )
+            """.trimIndent())
+        } catch (e: Exception) { e.printStackTrace() }
+
+        // 17. Prominent Donors Table (Patrons & Contributors - STRICT PRIVACY)
+        try {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS donors (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    city_address TEXT NOT NULL DEFAULT 'ग्राम डूँगरा जाट',
+                    title TEXT NOT NULL DEFAULT 'मंदिर निर्माण सहयोगी',
+                    photo_uri TEXT NOT NULL DEFAULT '',
+                    phone TEXT NOT NULL DEFAULT '',
+                    notes TEXT NOT NULL DEFAULT '',
+                    display_order INTEGER NOT NULL DEFAULT 0,
+                    is_active INTEGER NOT NULL DEFAULT 1
+                )
+            """.trimIndent())
+        } catch (e: Exception) { e.printStackTrace() }
+
         // Ensure missing columns in existing tables
         ensureColumns(db)
 
@@ -531,6 +564,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ui_section_configs ADD COLUMN target_audience TEXT NOT NULL DEFAULT 'ALL'",
             "ALTER TABLE ashram_settings ADD COLUMN is_outstation_advance_allowed INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN outstation_min_distance_km REAL NOT NULL DEFAULT 30.0",
+            "ALTER TABLE ashram_settings ADD COLUMN allow_admin_reserved_tokens INTEGER NOT NULL DEFAULT 0",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_darbar_number ON tokens (darbar_date, token_number)",
             "CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date)"
         )

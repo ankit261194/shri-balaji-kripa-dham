@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import com.example.shribalajikripadham.data.local.DatabaseHelper
 import com.example.shribalajikripadham.ai.FaceEmbeddingEngine
@@ -1032,6 +1033,7 @@ fun AdminDashboardScreen(
             if (isSuper) {
                 allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
                 allowedTabs.add(if (isHindi) "सेवाएं ऑन/ऑफ" else "Services")
+                allowedTabs.add(if (isHindi) "🌐 वेबसाइट व CMS" else "Website & CMS")
                 allowedTabs.add(if (isHindi) "ऐप कस्टमाइजर" else "Customizer")
                 allowedTabs.add(if (isHindi) "कस्टम दूरियाँ" else "Distances")
                 allowedTabs.add(if (isHindi) "सुपर कंट्रोल" else "Super Control")
@@ -1270,6 +1272,55 @@ fun AdminDashboardScreen(
                                     scope.launch {
                                         repository.updateTokenVoicePreset(newPreset)
                                         refreshData()
+                                    }
+                                },
+                                onFillReservedToken = { tokenNum, name, phone, city ->
+                                    scope.launch {
+                                        val today = DatabaseHelper.getTodayDateString()
+                                        repository.insertOrUpdateCentralToken(
+                                            tokenNumber = tokenNum,
+                                            darbarDate = today,
+                                            patientName = name,
+                                            phoneNumber = phone,
+                                            city = city.ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                                            registeredBy = if (isSuper) "SUPER_ADMIN (अंकित चौधरी)" else "ADMIN (${admin.name})",
+                                            status = "WAITING",
+                                            isDarshanCompleted = false
+                                        )
+                                        try {
+                                            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
+                                                patientName = name,
+                                                phoneNumber = phone,
+                                                city = city.ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                                                registeredBy = if (isSuper) "SUPER_ADMIN" else "ADMIN",
+                                                darbarDate = today,
+                                                customTokenNumber = tokenNum
+                                            )
+                                        } catch (e: Exception) {}
+                                        refreshData()
+                                        Toast.makeText(context, if (isHindi) "✅ आरक्षित टोकन #$tokenNum भक्त $name को आवंटित किया गया!" else "✅ Reserved token #$tokenNum assigned to $name!", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                onRejectReservedToken = { tokenNum ->
+                                    scope.launch {
+                                        val today = DatabaseHelper.getTodayDateString()
+                                        repository.insertOrUpdateCentralToken(
+                                            tokenNumber = tokenNum,
+                                            darbarDate = today,
+                                            patientName = "व्यवस्थापक द्वारा निरस्त / छोड़ा गया",
+                                            phoneNumber = "",
+                                            city = "निरस्त",
+                                            registeredBy = "ADMIN",
+                                            status = TokenStatus.CANCELLED.name,
+                                            isDarshanCompleted = false
+                                        )
+                                        try {
+                                            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateCentralTokenStatus(
+                                                tokenNum, today, TokenStatus.CANCELLED.name, false
+                                            )
+                                        } catch (e: Exception) {}
+                                        refreshData()
+                                        Toast.makeText(context, if (isHindi) "टोकन #$tokenNum निरस्त कर दिया गया" else "Token #$tokenNum rejected", Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             )
@@ -1655,6 +1706,15 @@ fun AdminDashboardScreen(
                                         refreshData()
                                     }
                                 }
+                            )
+                        }
+                        currentTabTitle == "🌐 वेबसाइट व CMS" || currentTabTitle == "Website & CMS" -> {
+                            WebsiteAndCmsManagerTab(
+                                isHindi = isHindi,
+                                admin = admin,
+                                settings = settings,
+                                repository = repository,
+                                onRefresh = { refreshData() }
                             )
                         }
                         currentTabTitle == "ऐप कस्टमाइजर" || currentTabTitle == "Customizer" -> {
@@ -2976,7 +3036,9 @@ fun TokenQueueTab(
     onDeleteToken: ((Long) -> Unit)? = null,
     onSyncFromCloud: (() -> Unit)? = null,
     onSyncFromGoogleSheet: (() -> Unit)? = null,
-    onUpdateVoicePreset: ((String) -> Unit)? = null
+    onUpdateVoicePreset: ((String) -> Unit)? = null,
+    onFillReservedToken: ((Int, String, String, String) -> Unit)? = null,
+    onRejectReservedToken: ((Int) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -2993,6 +3055,10 @@ fun TokenQueueTab(
     var tokenToCancel by remember { mutableStateOf<Token?>(null) }
     var tokenToDelete by remember { mutableStateOf<Token?>(null) }
     var zoomedPhotoToken by remember { mutableStateOf<Token?>(null) }
+    var reservedTokenToFill by remember { mutableStateOf<Token?>(null) }
+    var fillName by remember { mutableStateOf("") }
+    var fillPhone by remember { mutableStateOf("") }
+    var fillCity by remember { mutableStateOf("डूँगरा जाट (स्थानीय)") }
 
     val filteredTokens = remember(todayTokens, searchQuery, selectedDistanceFilter, selectedSortOrder, settings) {
         TokenDistanceHelper.filterAndSortTokens(
@@ -3772,6 +3838,130 @@ fun TokenQueueTab(
 
         items(filteredTokens) { token ->
             val distBadge = TokenDistanceHelper.formatDistance(token, settings.latitude, settings.longitude)
+            val isReservedSlot = token.id < 0L || token.patientName.contains("व्यवस्थापक आरक्षित") || (token.patientName.contains("प्रतीक्षारत") && token.phoneNumber.isEmpty()) || token.patientName.contains("व्यवस्थापक द्वारा निरस्त")
+            val isCancelledReserved = isReservedSlot && (token.status == TokenStatus.CANCELLED || token.patientName.contains("निरस्त"))
+
+            if (isReservedSlot) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isCancelledReserved) Color(0xFFFFEBEE) else Color(0xFFFFF8E1)
+                    ),
+                    border = BorderStroke(
+                        1.5.dp,
+                        if (isCancelledReserved) Color(0xFFEF9A9A) else Color(0xFFFFB300)
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (isCancelledReserved) Color(0xFFC62828) else Color(0xFFE65100)
+                                ) {
+                                    Text(
+                                        text = "👑 #${token.tokenNumber}",
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (isCancelledReserved) "व्यवस्थापक द्वारा निरस्त / छोड़ा गया" else "व्यवस्थापक आरक्षित (VIP कोटा)",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = if (isCancelledReserved) Color(0xFFC62828) else Color(0xFFBF360C)
+                                    )
+                                    Text(
+                                        text = if (isCancelledReserved) "यह आरक्षित टोकन आज निरस्त/खाली है" else "व्यवस्थापक आरक्षित - प्रतीक्षारत / मरीज अभी उपस्थित नहीं है",
+                                        fontSize = 12.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (!isCancelledReserved) {
+                                Button(
+                                    onClick = {
+                                        fillName = ""
+                                        fillPhone = ""
+                                        fillCity = "डूँगरा जाट (स्थानीय)"
+                                        reservedTokenToFill = token
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.weight(1.2f)
+                                ) {
+                                    Text("🟢 मरीज आया / भरें", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+
+                                OutlinedButton(
+                                    onClick = {
+                                        onRejectReservedToken?.invoke(token.tokenNumber)
+                                    },
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFC62828)),
+                                    border = BorderStroke(1.dp, Color(0xFFEF9A9A)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("🔴 निरस्त / छोड़ें", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = {
+                                        fillName = ""
+                                        fillPhone = ""
+                                        fillCity = "डूँगरा जाट (स्थानीय)"
+                                        reservedTokenToFill = token
+                                    },
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32)),
+                                    border = BorderStroke(1.dp, Color(0xFF81C784)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.weight(1.2f)
+                                ) {
+                                    Text("🔄 पुनः मरीज विवरण भरें", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    AshramVoiceAnnouncementManager.announceNextToken(
+                                        context = context,
+                                        tokenNumber = token.tokenNumber,
+                                        devoteeName = "व्यवस्थापक आरक्षित",
+                                        city = ""
+                                    )
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE65100)),
+                                border = BorderStroke(1.dp, Color(0xFFFFB74D))
+                            ) {
+                                Text("📢 माइक", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            } else {
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = when {
@@ -4070,7 +4260,78 @@ fun TokenQueueTab(
                     }
                 }
             }
+            }
         }
+    }
+
+    // Dialog to fill devotee details in reserved VIP slot
+    if (reservedTokenToFill != null) {
+        val rToken = reservedTokenToFill!!
+        AlertDialog(
+            onDismissRequest = { reservedTokenToFill = null },
+            title = {
+                Text(
+                    text = "👑 आरक्षित टोकन #${rToken.tokenNumber} - विवरण भरें",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = MaroonPrimary
+                )
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                    Text(
+                        text = "व्यवस्थापक आरक्षित स्लॉट में उपस्थित मरीज/भक्त का विवरण दर्ज करें:",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = fillName,
+                        onValueChange = { fillName = it },
+                        label = { Text("भक्त/मरीज का नाम *") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = fillPhone,
+                        onValueChange = { fillPhone = it },
+                        label = { Text("मोबाइल नंबर") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = fillCity,
+                        onValueChange = { fillCity = it },
+                        label = { Text("शहर / ग्राम / पता") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (fillName.isBlank()) {
+                            Toast.makeText(context, "कृपया मरीज का नाम दर्ज करें", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        onFillReservedToken?.invoke(rToken.tokenNumber, fillName.trim(), fillPhone.trim(), fillCity.trim())
+                        reservedTokenToFill = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32))
+                ) {
+                    Text("✅ सुरक्षित करें व जारी करें", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { reservedTokenToFill = null }) {
+                    Text("रद्द करें", color = Color.Gray)
+                }
+            }
+        )
     }
 
     // Full-Screen Devotee Photo Zoom Dialog for Gate Verification
@@ -4804,6 +5065,88 @@ fun ManualTokenTab(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
+
+                // VIP Reserved Tokens 2, 4, 6, 8, 10, 12, 14, 16, 18, 20 (Superadmin or Permitted Admin)
+                val isSuperAdmin = admin.role == AdminRole.SUPER_ADMIN
+                val canIssueReserved = isSuperAdmin || settings.allowAdminReservedTokens
+                if (canIssueReserved) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.2.dp, AmberGold)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("👑", fontSize = 18.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (isHindi) "व्यवस्थापक आरक्षित टोकन (VIP 2..20)" else "Admin Reserved VIP Slots",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = MaroonPrimary
+                                    )
+                                }
+                                if (isSuperAdmin) {
+                                    TextButton(
+                                        onClick = {
+                                            scope.launch {
+                                                repository.updateAllowAdminReservedTokens(!settings.allowAdminReservedTokens)
+                                                Toast.makeText(context, if (!settings.allowAdminReservedTokens) "✓ अन्य एडमिन्स को आरक्षित टोकन अनुमति दी गई" else "✓ अनुमति हटाई गई", Toast.LENGTH_SHORT).show()
+                                                onTokenIssued()
+                                            }
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = if (settings.allowAdminReservedTokens) "🔓 स्टाफ अनुमति: चालू" else "🔒 स्टाफ अनुमति: बंद",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (settings.allowAdminReservedTokens) Color(0xFF2E7D32) else Color(0xFFC62828)
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                text = if (isHindi) "अपने परिचितों / विशेष मरीजों हेतु तुरंत टोकन चुनें (टैप करते ही नंबर सेट हो जाएगा):" else "Select reserved token number:",
+                                fontSize = 11.sp,
+                                color = Color.DarkGray
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            val vipNumbers = listOf(2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
+                            Row(
+                                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                vipNumbers.forEach { num ->
+                                    val isSelected = formCustomTokenNumber == num.toString()
+                                    Surface(
+                                        onClick = {
+                                            formCustomTokenNumber = num.toString()
+                                        },
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (isSelected) MaroonPrimary else Color.White,
+                                        border = BorderStroke(1.dp, if (isSelected) AmberGold else Color(0xFFFFB74D))
+                                    ) {
+                                        Text(
+                                            text = "#$num",
+                                            color = if (isSelected) Color.White else MaroonPrimary,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
                 OutlinedTextField(
                     value = formCustomTokenNumber,
@@ -6342,17 +6685,24 @@ fun AppCustomizerTab(
         contract = TakeAnyPicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
-            val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bitmap, "guruji")
+            val savedPath = DevoteePhotoHelper.saveGurujiPhoto(context, bitmap)
             if (savedPath.isNotBlank()) {
                 onGurujiPhotoUriChange(savedPath)
-                Toast.makeText(context, if (isHindi) "📸 गुरुजी की फोटो कैमरे से सेट हो गई, क्लाउड सिंक जारी..." else "Guruji photo set, syncing to cloud...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, if (isHindi) "📸 गुरुजी की फोटो सुरक्षित, वेबसाइट व ऐप पर लाइव सिंक जारी..." else "Guruji photo saved, syncing...", Toast.LENGTH_SHORT).show()
                 scope.launch(Dispatchers.IO) {
-                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, "guruji_profile.jpg")
-                    if (!cloudUrl.isNullOrBlank()) {
+                    try {
+                        val repo = AshramRepository(context)
+                        repo.updateGurujiPhoto(savedPath)
+                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, "guruji_profile.jpg")
+                        val finalUrl = if (!cloudUrl.isNullOrBlank()) "$cloudUrl?t=${System.currentTimeMillis()}" else savedPath
+                        repo.updateGurujiPhoto(finalUrl)
+                        com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.syncSettingsToHostinger(repo.getSettings())
                         withContext(Dispatchers.Main) {
-                            onGurujiPhotoUriChange(cloudUrl)
-                            Toast.makeText(context, if (isHindi) "☁️ गुरुजी की फोटो सभी भक्तों के लिए क्लाउड पर सिंक हो गई!" else "Guruji photo synced to cloud for all devotees!", Toast.LENGTH_SHORT).show()
+                            onGurujiPhotoUriChange(finalUrl)
+                            Toast.makeText(context, if (isHindi) "✅ गुरुजी की फोटो वेबसाइट व ऐप पर 100% लाइव हो गई!" else "Guruji photo live on app & website!", Toast.LENGTH_SHORT).show()
                         }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
             }
@@ -6365,17 +6715,24 @@ fun AppCustomizerTab(
         if (uri != null) {
             val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
             if (bmp != null) {
-                val savedPath = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "guruji")
+                val savedPath = DevoteePhotoHelper.saveGurujiPhoto(context, bmp)
                 if (savedPath.isNotBlank()) {
                     onGurujiPhotoUriChange(savedPath)
-                    Toast.makeText(context, if (isHindi) "📁 गुरुजी की फोटो गैलरी से चुनी गई, क्लाउड सिंक जारी..." else "Guruji photo selected, syncing to cloud...", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (isHindi) "📁 गुरुजी की फोटो सुरक्षित, वेबसाइट व ऐप पर लाइव सिंक जारी..." else "Guruji photo saved, syncing...", Toast.LENGTH_SHORT).show()
                     scope.launch(Dispatchers.IO) {
-                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, "guruji_profile.jpg")
-                        if (!cloudUrl.isNullOrBlank()) {
+                        try {
+                            val repo = AshramRepository(context)
+                            repo.updateGurujiPhoto(savedPath)
+                            val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, "guruji_profile.jpg")
+                            val finalUrl = if (!cloudUrl.isNullOrBlank()) "$cloudUrl?t=${System.currentTimeMillis()}" else savedPath
+                            repo.updateGurujiPhoto(finalUrl)
+                            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.syncSettingsToHostinger(repo.getSettings())
                             withContext(Dispatchers.Main) {
-                                onGurujiPhotoUriChange(cloudUrl)
-                                Toast.makeText(context, if (isHindi) "☁️ गुरुजी की फोटो सभी भक्तों के लिए क्लाउड पर सिंक हो गई!" else "Guruji photo synced to cloud for all devotees!", Toast.LENGTH_SHORT).show()
+                                onGurujiPhotoUriChange(finalUrl)
+                                Toast.makeText(context, if (isHindi) "✅ गुरुजी की फोटो वेबसाइट व ऐप पर 100% लाइव हो गई!" else "Guruji photo live on app & website!", Toast.LENGTH_SHORT).show()
                             }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
                     }
                 }
@@ -9325,6 +9682,396 @@ fun UiBoxControlTab(
                 ) {
                     Text(if (isHindi) "उत्कृष्ट (OK)" else "OK", fontWeight = FontWeight.Bold)
                 }
+            }
+        )
+    }
+}
+
+
+// =========================================================================
+// 🌐 WEBSITE & CMS MANAGER TAB (Full-featured Superadmin Website & App Control)
+// =========================================================================
+@Composable
+fun WebsiteAndCmsManagerTab(
+    isHindi: Boolean,
+    admin: Admin,
+    settings: AshramSettings,
+    repository: AshramRepository,
+    onRefresh: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var isPublishing by remember { mutableStateOf(false) }
+    var runningToken by remember { mutableIntStateOf(settings.runningTokenNumber) }
+    var isDarbarActive by remember { mutableStateOf(settings.isDarbarActive) }
+    var isTokenServiceEnabled by remember { mutableStateOf(settings.isTokenServiceEnabled) }
+
+    var sevadarsList by remember { mutableStateOf<List<SevadarProfile>>(emptyList()) }
+    var donorsList by remember { mutableStateOf<List<DonorProfile>>(emptyList()) }
+
+    // Dialogs for Adding Sevadar & Donor
+    var showAddSevadarDialog by remember { mutableStateOf(false) }
+    var newSevName by remember { mutableStateOf("") }
+    var newSevRole by remember { mutableStateOf("सेवादार") }
+    var newSevPhone by remember { mutableStateOf("") }
+
+    var showAddDonorDialog by remember { mutableStateOf(false) }
+    var newDonorName by remember { mutableStateOf("") }
+    var newDonorAddress by remember { mutableStateOf("ग्राम डूँगरा जाट") }
+    var newDonorTitle by remember { mutableStateOf("मंदिर निर्माण सहयोगी") }
+
+    fun loadData() {
+        scope.launch {
+            sevadarsList = repository.getAllSevadars()
+            donorsList = repository.getAllDonors()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        loadData()
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 1. MASTER 1-CLICK INSTANT PUBLISH BANNER
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF4A0000)),
+                border = BorderStroke(2.dp, AmberGold),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(6.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "🚀 1-क्लिक में वेबसाइट व ऐप पर लाइव पब्लिश करें",
+                        color = AmberGold,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "वेबसाइट: shribalajikripadham.online • सभी भक्तों के ऐप में तुरंत लाइव होगा",
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                isPublishing = true
+                                val res = repository.publishEverythingToWebsiteAndCloud(admin.name)
+                                isPublishing = false
+                                Toast.makeText(context, res.second, Toast.LENGTH_LONG).show()
+                                onRefresh()
+                            }
+                        },
+                        enabled = !isPublishing,
+                        colors = ButtonDefaults.buttonColors(containerColor = AmberGold),
+                        shape = RoundedCornerShape(25.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                    ) {
+                        Text(
+                            text = if (isPublishing) "🔄 पब्लिश हो रहा है..." else "⚡ अभी तुरंत पब्लिश करें (Instant Live)",
+                            color = Color(0xFF3E2723),
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        // 2. LIVE RUNNING TOKEN & DARBAR CONTROLLER
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, Color(0xFFFFD54F))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🔴 लाइव टोकन व दरबार स्थिति", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaroonPrimary)
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isDarbarActive) Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
+                        ) {
+                            Text(
+                                text = if (isDarbarActive) "दरबार खुला है (Open)" else "विश्राम (Closed)",
+                                color = if (isDarbarActive) Color(0xFF2E7D32) else Color(0xFFC62828),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                if (runningToken > 0) {
+                                    runningToken--
+                                    scope.launch {
+                                        repository.updateRunningTokenNumber(runningToken)
+                                        onRefresh()
+                                    }
+                                }
+                            }
+                        ) { Text("-1 पिछला") }
+
+                        Text("#$runningToken", fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, color = SaffronPrimary)
+
+                        Button(
+                            onClick = {
+                                runningToken++
+                                scope.launch {
+                                    repository.updateRunningTokenNumber(runningToken)
+                                    onRefresh()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
+                        ) { Text("+1 अगला") }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                isDarbarActive = !isDarbarActive
+                                scope.launch {
+                                    repository.updateDarbarActiveStatus(isDarbarActive)
+                                    onRefresh()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = if (isDarbarActive) Color(0xFFC62828) else Color(0xFF2E7D32)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(if (isDarbarActive) "दरबार बंद करें" else "दरबार खोलें")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://shribalajikripadham.online"))
+                                context.startActivity(intent)
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("🌐 वेबसाइट खोलें")
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. SEVADARS MANAGEMENT SECTION
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, Color(0xFFFFD54F))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🙏 सेवादल मंडल (${sevadarsList.size})", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaroonPrimary)
+                        Button(
+                            onClick = { showAddSevadarDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text("+ नया सेवादार", fontSize = 11.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    sevadarsList.forEach { sev ->
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFFF9F9F9),
+                            border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    SacredAvatar(photoUri = sev.photoUri, fallbackText = sev.name, size = 42.dp)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(sev.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("${sev.roleTitleHindi} • 📞 ${sev.phoneNumber}", fontSize = 11.sp, color = Color.DarkGray)
+                                    }
+                                }
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            repository.deleteSevadar(sev.id)
+                                            loadData()
+                                        }
+                                    }
+                                ) {
+                                    Text("🗑️", fontSize = 14.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. PROMINENT DONORS MANAGEMENT (STRICT PRIVACY: NO PHONE NUMBERS PUBLIC)
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDF5)),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, Color(0xFFFFD54F))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("🌟 दानदाता एवं संरक्षक मंडल (${donorsList.size})", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaroonPrimary)
+                            Text("⚠️ प्राइवेसी नियम: फोन नंबर वेबसाइट पर कभी नहीं दिखेगा", fontSize = 10.sp, color = Color(0xFFE65100))
+                        }
+                        Button(
+                            onClick = { showAddDonorDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB78103)),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text("+ नया दानदाता", fontSize = 11.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    donorsList.forEach { donor ->
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFFFE082)),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    SacredAvatar(photoUri = donor.photoUri, fallbackText = donor.name, size = 42.dp)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(donor.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text("📍 ${donor.cityAddress} • ✨ ${donor.title}", fontSize = 11.sp, color = Color.DarkGray)
+                                    }
+                                }
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            repository.deleteDonor(donor.id)
+                                            loadData()
+                                        }
+                                    }
+                                ) {
+                                    Text("🗑️", fontSize = 14.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Add Sevadar Dialog
+    if (showAddSevadarDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddSevadarDialog = false },
+            title = { Text("नया सेवादार जोड़ें", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = newSevName, onValueChange = { newSevName = it }, label = { Text("सेवादार का नाम") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = newSevRole, onValueChange = { newSevRole = it }, label = { Text("सेवा / दायित्व पद") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = newSevPhone, onValueChange = { newSevPhone = it }, label = { Text("फोन नंबर") }, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newSevName.isNotBlank() && newSevPhone.isNotBlank()) {
+                            scope.launch {
+                                repository.saveSevadar(
+                                    SevadarProfile(
+                                        name = newSevName.trim(),
+                                        roleTitleHindi = newSevRole.trim(),
+                                        roleTitleEnglish = newSevRole.trim(),
+                                        phoneNumber = newSevPhone.trim(),
+                                        displayOrder = sevadarsList.size + 1
+                                    )
+                                )
+                                showAddSevadarDialog = false
+                                newSevName = ""
+                                newSevPhone = ""
+                                loadData()
+                            }
+                        }
+                    }
+                ) { Text("जोड़ें व सिंक करें") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddSevadarDialog = false }) { Text("रद्द करें") }
+            }
+        )
+    }
+
+    // Add Donor Dialog
+    if (showAddDonorDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDonorDialog = false },
+            title = { Text("नया दानदाता / संरक्षक जोड़ें", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(value = newDonorName, onValueChange = { newDonorName = it }, label = { Text("दानदाता का नाम") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = newDonorAddress, onValueChange = { newDonorAddress = it }, label = { Text("शहर / पता") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = newDonorTitle, onValueChange = { newDonorTitle = it }, label = { Text("सहयोग पद / सेवा विवरण") }, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newDonorName.isNotBlank()) {
+                            scope.launch {
+                                repository.saveDonor(
+                                    DonorProfile(
+                                        name = newDonorName.trim(),
+                                        cityAddress = newDonorAddress.trim(),
+                                        title = newDonorTitle.trim(),
+                                        displayOrder = donorsList.size + 1
+                                    )
+                                )
+                                showAddDonorDialog = false
+                                newDonorName = ""
+                                loadData()
+                            }
+                        }
+                    }
+                ) { Text("जोड़ें व सिंक करें") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDonorDialog = false }) { Text("रद्द करें") }
             }
         )
     }

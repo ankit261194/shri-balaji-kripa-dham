@@ -97,6 +97,7 @@ class AshramRepository(context: Context) {
                 gurujiPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("guruji_photo_uri")) } catch (e: Exception) { "" } ?: "",
                 activeUiLayout = try { cursor.getString(cursor.getColumnIndexOrThrow("active_ui_layout")) } catch (e: Exception) { "CLASSIC_DARBAR" } ?: "CLASSIC_DARBAR",
                 maxDailyTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("max_daily_tokens")) } catch (e: Exception) { 0 },
+                allowAdminReservedTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("allow_admin_reserved_tokens")) == 1 } catch (e: Exception) { false },
                 isUiLayoutEnforced = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_ui_layout_enforced")) == 1 } catch (e: Exception) { false },
                 cloudSyncUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("cloud_sync_url")) } catch (e: Exception) { "" } ?: "",
                 isCloudSyncEnabled = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_cloud_sync_enabled")) == 1 } catch (e: Exception) { false },
@@ -802,36 +803,37 @@ class AshramRepository(context: Context) {
         var insertedId: Long = -1
 
         var centralTokenNumber: Int? = null
-        if (customTokenNumber == null || customTokenNumber <= 0) {
-            var centralOk = false
-            var centralNum = -1
-            try {
-                val result = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
-                    patientName = patientName,
-                    phoneNumber = phoneNumber,
-                    city = safeCity,
-                    deviceId = deviceId,
-                    latitude = latitude,
-                    longitude = longitude,
-                    distanceKm = calculatedDistance.toDouble(),
-                    photoUrl = photoUri,
-                    registeredBy = registeredBy,
-                    originAddress = safeOrigin,
-                    destinationAddress = destinationAddress,
-                    darbarDate = today
-                )
-                centralOk = result.first
-                centralNum = result.second
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        var centralOk = false
+        var centralNum = -1
+        try {
+            val result = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
+                patientName = patientName,
+                phoneNumber = phoneNumber,
+                city = safeCity,
+                deviceId = deviceId,
+                latitude = latitude,
+                longitude = longitude,
+                distanceKm = calculatedDistance.toDouble(),
+                photoUrl = photoUri,
+                registeredBy = registeredBy,
+                originAddress = safeOrigin,
+                destinationAddress = destinationAddress,
+                darbarDate = today,
+                customTokenNumber = customTokenNumber
+            )
+            centralOk = result.first
+            centralNum = result.second
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
-            // STRICT "NET NAHI TO TOKEN NAHI" RULE: Zero duplicate guarantee!
-            // Tokens MUST be strictly 1, 2, 3, 4, 5... assigned by central MySQL transaction
+        if (customTokenNumber == null || customTokenNumber <= 0) {
             if (!centralOk || centralNum <= 0) {
                 throw IllegalStateException("⚠️ इंटरनेट कनेक्शन उपलब्ध नहीं है या सेंट्रल सर्वर से संपर्क नहीं हो पा रहा है।\n\nबिना इंटरनेट के टोकन जारी नहीं किया जा सकता ताकि टोकन नंबरों में कोई टकराव या डुप्लीकेट (1, 2, 3...) न हो। कृपया मोबाइल डेटा या वाई-फाई चालू करें और पुनः प्रयास करें।")
             }
             centralTokenNumber = centralNum
+        } else {
+            centralTokenNumber = if (centralOk && centralNum > 0) centralNum else customTokenNumber
         }
 
         // Strict Thread & Atomic SQLite Lock to eliminate Token Race Conditions
@@ -869,6 +871,10 @@ class AshramRepository(context: Context) {
                         num = maxTokenCursor.getInt(0) + 1
                     }
                     maxTokenCursor.close()
+                    // Public tokens must skip VIP slots [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+                    while (num <= 20 && num % 2 == 0) {
+                        num++
+                    }
                     num
                 }
 
@@ -1145,6 +1151,33 @@ class AshramRepository(context: Context) {
             )
         }
         cursor.close()
+        val existingNumbers = list.map { it.tokenNumber }.toSet()
+        val maxToken = list.maxOfOrNull { it.tokenNumber } ?: 0
+        if (maxToken > 1) {
+            val reservedSlots = listOf(2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
+            for (num in reservedSlots) {
+                if (num <= maxToken && !existingNumbers.contains(num)) {
+                    list.add(
+                        Token(
+                            id = -num.toLong(),
+                            tokenNumber = num,
+                            darbarDate = today,
+                            patientName = "व्यवस्थापक आरक्षित - प्रतीक्षारत / मरीज अभी उपस्थित नहीं है",
+                            phoneNumber = "",
+                            city = "आरक्षित स्लॉट",
+                            deviceId = "RESERVED",
+                            latitude = 28.3972915,
+                            longitude = 78.1460410,
+                            status = TokenStatus.WAITING,
+                            registeredBy = "ADMIN (आरक्षित)",
+                            originAddress = "व्यवस्थापक आरक्षित",
+                            createdAt = System.currentTimeMillis()
+                        )
+                    )
+                }
+            }
+            list.sortBy { it.tokenNumber }
+        }
         list
     }
 
@@ -1266,16 +1299,56 @@ class AshramRepository(context: Context) {
                     appContext, darbarDate, tokenNum, newStatus.name
                 )
             } catch (e: Exception) {}
+            try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateCentralTokenStatus(
+                    tokenNum, darbarDate, newStatus.name, completed
+                )
+            } catch (e: Exception) {}
         }
         ok
     }
 
     suspend fun updateTokenStatus(tokenId: Long, status: TokenStatus): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
+        var tokenNum = 0
+        var darbarDate = ""
+        try {
+            val cur = db.rawQuery("SELECT token_number, darbar_date FROM tokens WHERE id = ?", arrayOf(tokenId.toString()))
+            if (cur.moveToFirst()) {
+                tokenNum = cur.getInt(0)
+                darbarDate = cur.getString(1)
+            }
+            cur.close()
+        } catch (e: Exception) {}
+
         val cv = ContentValues().apply {
             put("status", status.name)
+            if (status == TokenStatus.COMPLETED) {
+                put("is_darshan_completed", 1)
+                put("darshan_completed_at", System.currentTimeMillis())
+            } else if (status == TokenStatus.CANCELLED) {
+                put("is_darshan_completed", 0)
+            }
         }
-        db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
+        val ok = db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
+        if (ok && tokenNum > 0) {
+            try {
+                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.updateLiveTokenStatusInGitHub(
+                    appContext, tokenNum, darbarDate, status
+                )
+            } catch (e: Exception) {}
+            try {
+                com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.updateTokenStatusInSheet(
+                    appContext, darbarDate, tokenNum, status.name
+                )
+            } catch (e: Exception) {}
+            try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateCentralTokenStatus(
+                    tokenNum, darbarDate, status.name, status == TokenStatus.COMPLETED
+                )
+            } catch (e: Exception) {}
+        }
+        ok
     }
 
     // --- Balaji Yatra Bus Seats ---
@@ -2620,6 +2693,11 @@ class AshramRepository(context: Context) {
             try {
                 com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.updateTokenStatusInSheet(
                     appContext, darbarDate, tokenNum, TokenStatus.CANCELLED.name, "रद्द (CANCELLED)"
+                )
+            } catch (e: Exception) {}
+            try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateCentralTokenStatus(
+                    tokenNum, darbarDate, TokenStatus.CANCELLED.name, false
                 )
             } catch (e: Exception) {}
         }
@@ -4933,6 +5011,208 @@ class AshramRepository(context: Context) {
         } catch (e: Exception) {}
 
         Triple(tokenCount, expCount, payCount)
+    }
+
+
+    // --- VIP Reserved Tokens & Permissions ---
+    suspend fun updateAllowAdminReservedTokens(allow: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("allow_admin_reserved_tokens", if (allow) 1 else 0)
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        try {
+            val s = getSettings()
+            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.syncSettingsToHostinger(s)
+        } catch (ignored: Exception) {}
+        ok
+    }
+
+    // --- Sevadars Management (App & Website Synchronized) ---
+    suspend fun getAllSevadars(): List<SevadarProfile> = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM sevadars WHERE is_active = 1 ORDER BY display_order ASC, id ASC", null)
+        val list = mutableListOf<SevadarProfile>()
+        while (cursor.moveToNext()) {
+            list.add(
+                SevadarProfile(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    name = cursor.getString(cursor.getColumnIndexOrThrow("name")),
+                    roleTitleHindi = cursor.getString(cursor.getColumnIndexOrThrow("role")),
+                    roleTitleEnglish = cursor.getString(cursor.getColumnIndexOrThrow("role")),
+                    phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow("phone")),
+                    photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")),
+                    displayOrder = cursor.getInt(cursor.getColumnIndexOrThrow("display_order")),
+                    isActive = cursor.getInt(cursor.getColumnIndexOrThrow("is_active")) == 1
+                )
+            )
+        }
+        cursor.close()
+
+        if (list.isEmpty()) {
+            // Seed defaults
+            val defaults = AshramDataDefaults.sevadars
+            defaults.forEach { saveSevadar(it) }
+            defaults
+        } else {
+            list
+        }
+    }
+
+    suspend fun saveSevadar(sevadar: SevadarProfile): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("name", sevadar.name)
+            put("role", sevadar.roleTitleHindi)
+            put("phone", sevadar.phoneNumber)
+            put("photo_uri", sevadar.photoUri)
+            put("display_order", sevadar.displayOrder)
+            put("is_active", if (sevadar.isActive) 1 else 0)
+        }
+        val rowId = if (sevadar.id > 0) {
+            db.update("sevadars", cv, "id = ?", arrayOf(sevadar.id.toString()))
+            sevadar.id
+        } else {
+            db.insert("sevadars", null, cv)
+        }
+
+        // Sync to Central Hostinger MySQL
+        try {
+            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.saveCentralSevadar(
+                name = sevadar.name,
+                role = sevadar.roleTitleHindi,
+                phone = sevadar.phoneNumber,
+                photoUrl = sevadar.photoUri,
+                displayOrder = sevadar.displayOrder,
+                id = rowId
+            )
+        } catch (ignored: Exception) {}
+
+        rowId > 0
+    }
+
+    suspend fun deleteSevadar(id: Long): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val deleted = db.delete("sevadars", "id = ?", arrayOf(id.toString())) > 0
+        try {
+            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.deleteCentralSevadar(id)
+        } catch (ignored: Exception) {}
+        deleted
+    }
+
+    // --- Prominent Donors Management (STRICT PRIVACY: NO PHONE NUMBERS ON WEBSITE) ---
+    suspend fun getAllDonors(): List<DonorProfile> = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM donors WHERE is_active = 1 ORDER BY display_order ASC, id ASC", null)
+        val list = mutableListOf<DonorProfile>()
+        while (cursor.moveToNext()) {
+            list.add(
+                DonorProfile(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    name = cursor.getString(cursor.getColumnIndexOrThrow("name")),
+                    cityAddress = cursor.getString(cursor.getColumnIndexOrThrow("city_address")),
+                    title = cursor.getString(cursor.getColumnIndexOrThrow("title")),
+                    photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")),
+                    phone = cursor.getString(cursor.getColumnIndexOrThrow("phone")),
+                    notes = cursor.getString(cursor.getColumnIndexOrThrow("notes")),
+                    displayOrder = cursor.getInt(cursor.getColumnIndexOrThrow("display_order")),
+                    isActive = cursor.getInt(cursor.getColumnIndexOrThrow("is_active")) == 1
+                )
+            )
+        }
+        cursor.close()
+
+        if (list.isEmpty()) {
+            val defaultDonors = listOf(
+                DonorProfile(1, "सेठ राधेश्याम जी", "दिल्ली / बुलन्दशहर", "भव्य मंदिर निर्माण महासहयोगी", "", "", "", 1, true),
+                DonorProfile(2, "चौधरी वीरेन्द्र सिंह जी", "हापुड़, उत्तर प्रदेश", "स्वर्ण ध्वजा एवं कलश सेवा", "", "", "", 2, true),
+                DonorProfile(3, "श्री रमेश चंद्र गोयल जी", "गाजियाबाद, उत्तर प्रदेश", "नित्य महाप्रसाद अन्नक्षेत्र सेवा", "", "", "", 3, true),
+                DonorProfile(4, "श्री अजय तेवतिया जी", "स्याना, बुलन्दशहर", "श्री बालाजी बस यात्रा सहयोगी", "", "", "", 4, true)
+            )
+            defaultDonors.forEach { saveDonor(it) }
+            defaultDonors
+        } else {
+            list
+        }
+    }
+
+    suspend fun saveDonor(donor: DonorProfile): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("name", donor.name)
+            put("city_address", donor.cityAddress)
+            put("title", donor.title)
+            put("photo_uri", donor.photoUri)
+            put("phone", donor.phone)
+            put("notes", donor.notes)
+            put("display_order", donor.displayOrder)
+            put("is_active", if (donor.isActive) 1 else 0)
+        }
+        val rowId = if (donor.id > 0) {
+            db.update("donors", cv, "id = ?", arrayOf(donor.id.toString()))
+            donor.id
+        } else {
+            db.insert("donors", null, cv)
+        }
+
+        // Sync to Central Hostinger MySQL (Excludes phone on website queries!)
+        try {
+            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.saveCentralDonor(
+                name = donor.name,
+                cityAddress = donor.cityAddress,
+                title = donor.title,
+                photoUrl = donor.photoUri,
+                phone = donor.phone,
+                notes = donor.notes,
+                displayOrder = donor.displayOrder,
+                id = rowId
+            )
+        } catch (ignored: Exception) {}
+
+        rowId > 0
+    }
+
+    suspend fun deleteDonor(id: Long): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val deleted = db.delete("donors", "id = ?", arrayOf(id.toString())) > 0
+        try {
+            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.deleteCentralDonor(id)
+        } catch (ignored: Exception) {}
+        deleted
+    }
+
+    suspend fun updateDarbarActiveStatus(isActive: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("is_darbar_active", if (isActive) 1 else 0)
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        try {
+            val s = getSettings()
+            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(s)
+        } catch (e: Exception) {}
+        ok
+    }
+
+    // --- Master 1-Click Publish to Website & Cloud ---
+    suspend fun publishEverythingToWebsiteAndCloud(adminName: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val s = getSettings()
+            val (hOk, hMsg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.syncSettingsToHostinger(s)
+            val (gOk, gMsg) = publishCurrentSettingsToGitHub(adminName)
+            
+            // Re-sync all sevadars and donors to Hostinger
+            getAllSevadars().forEach { saveSevadar(it) }
+            getAllDonors().forEach { saveDonor(it) }
+
+            if (hOk || gOk) {
+                Pair(true, "✅ वेबसाइट (shribalajikripadham.online) और सभी भक्तों के ऐप पर सारा डेटा 100% लाइव पब्लिश हो गया!")
+            } else {
+                Pair(false, "पब्लिश त्रुटि: $hMsg")
+            }
+        } catch (e: Exception) {
+            Pair(false, e.localizedMessage ?: "पब्लिश त्रुटि")
+        }
     }
 
 }
