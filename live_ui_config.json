@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-15T12:16:45Z",
+  "updated_at": "2026-09-17T16:12:30Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -30,9 +30,9 @@
     "allowed_radius_meters": 200,
     "is_geofence_enforced": true,
     "is_outstation_advance_allowed": true,
-    "outstation_min_distance_km": 30.0,
+    "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789474605580
+    "updated_at": 1789661550496
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -53,15 +53,13 @@
     "can_devotee_view_payment_history": false,
     "ashram_upi_id": "shribalajikripadham@upi",
     "ashram_upi_name": "Shri Balaji Kripa Dham",
-    "bus_seat_fare_amount": 1
-  },
-  "app_update": {
-    "latest_version_code": 61,
-    "latest_version_name": "2.44.0",
-    "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.44.0/ShriBalajiKripaDham-v2.44.0.apk",
-    "update_notes_hindi": "v2.44.0: 100% प्रो-लेवल अपग्रेड - इन-ऐप लाइव दर्शन व पावन आरती/चालीसा प्लेयर, स्मार्ट टीवी हॉल टोकन ब्रॉडकास्ट बोर्ड (हिंदी वॉयस), सब-5s टोकन हेड्स-अप अलर्ट्स, सर्वर API सुरक्षा व साल्टेड हैश पिन।",
-    "update_notes_english": "v2.44.0: 100% Pro-Level Upgrade - In-App Live Darbar Video & 24x7 Sacred Audio Player, Smart TV Hall Token Broadcast Board (Hindi TTS), Sub-5s fast token heads-up alerts, server API authentication and salted hash PIN.",
-    "is_force_update": false
+    "custom_upi_qr_uri": "",
+    "bus_seat_fare_amount": 1,
+    "banner_title": "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट",
+    "banner_subtitle": "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार",
+    "banner_photo_uri": "",
+    "is_banner_visible": true,
+    "banner_action_url": ""
   },
   "sections": [
     {
