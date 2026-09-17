@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 58,
-  "latest_version_name": "2.42.0",
-  "update_notes_hindi": "v2.42.0: 100% क्लाउड CDN फोटो अपलोड (सभी डिवाइस पर तत्काल फोटो दृश्यता), होम स्क्रीन सेवादार स्लाइडर पूर्ण संपादन व फोटो पिकर (कैमरा/गैलरी), सुपरएडमिन 1-क्लिक लाइव वेबसाइट एडिटर (बैनर, विशेष सूचना, समय सारणी, पूज्य गुरुदेव फोटो) एवं स्वचालित होस्टिंगर MySQL सिंक।",
-  "update_notes_english": "v2.42.0: 100% Cloud CDN photo upload (instant cross-device photo visibility), Home slider Sevadar full edit & photo picker (Camera/Gallery), SuperAdmin 1-Click Live Website Editor (Banner, Special Notice, Timings, Guruji photo) & Hostinger MySQL live sync.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.0/ShriBalajiKripaDham-v2.42.0.apk",
+  "latest_version_code": 59,
+  "latest_version_name": "2.42.1",
+  "update_notes_hindi": "v2.42.1: सेटिंग्स स्थायीकरण (Indestructible Settings Fix) - ऐप अपडेट, रीस्टार्ट या सिंक के दौरान एडमिन द्वारा की गई सेटिंग्स (दरबार समय, बैनर, सूचना, परिधि, टॉगल्स आदि) कभी भी रीसेट या डिलीट नहीं होंगी। Android SharedPreferences, आंतरिक व बाह्य वॉल्ट तथा होस्टिंगर सर्वर पर 4-स्तरीय सुरक्षा।",
+  "update_notes_english": "v2.42.1: Indestructible Settings Fix - Custom settings (Darbar timings, banners, emergency notice, geofence, toggles, etc.) will never be wiped or reset during app updates, restarts, or syncs. 4-layer persistent fallback across SharedPreferences, internal/external JSON vault, and Hostinger server.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-v2.42.1.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

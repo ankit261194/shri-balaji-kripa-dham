@@ -3,6 +3,7 @@ package com.example.shribalajikripadham.ui.token
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,7 +11,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -345,6 +347,45 @@ fun PremiumRoyalTokenCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = if (isHindi) "टोकन रसीद PDF डाउनलोड / शेयर करें" else "Download / Share Token PDF Receipt",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Direct 1-Click Bluetooth Thermal Printer Button
+            var isPrintingBt by remember { mutableStateOf(false) }
+            val printScope = rememberCoroutineScope()
+
+            Button(
+                onClick = {
+                    printScope.launch {
+                        isPrintingBt = true
+                        val res = com.example.shribalajikripadham.hardware.BluetoothThermalPrinterHelper.printTokenSlip(
+                            context = context,
+                            token = token,
+                            ashramName = settings.ashramName
+                        )
+                        isPrintingBt = false
+                        Toast.makeText(context, res.second, Toast.LENGTH_LONG).show()
+                    }
+                },
+                enabled = !isPrintingBt,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🖨️", fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isPrintingBt) (if (isHindi) "प्रिंट हो रहा है..." else "Printing...")
+                               else (if (isHindi) "⚡ ब्लूटूथ थर्मल प्रिंटर से पर्ची निकालें" else "Print Slip on Bluetooth POS"),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White

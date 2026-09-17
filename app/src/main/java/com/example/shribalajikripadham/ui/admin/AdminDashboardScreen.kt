@@ -13,6 +13,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -4209,6 +4210,25 @@ fun TokenQueueTab(
                                 modifier = Modifier.height(28.dp)
                             ) {
                                 Text("📄 रसीद PDF", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            val printScope = rememberCoroutineScope()
+                            OutlinedButton(
+                                onClick = {
+                                    printScope.launch {
+                                        val res = com.example.shribalajikripadham.hardware.BluetoothThermalPrinterHelper.printTokenSlip(
+                                            context = context,
+                                            token = token,
+                                            ashramName = settings.ashramName
+                                        )
+                                        Toast.makeText(context, res.second, Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.height(28.dp)
+                            ) {
+                                Text("🖨️ POS प्रिंट", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                             Spacer(modifier = Modifier.width(4.dp))
                             OutlinedButton(

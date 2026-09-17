@@ -2,6 +2,7 @@ package com.example.shribalajikripadham.data.repository
 
 import android.content.ContentValues
 import android.content.Context
+import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import com.example.shribalajikripadham.ai.FaceEmbeddingEngine
 import com.example.shribalajikripadham.data.local.DatabaseHelper
@@ -51,94 +52,140 @@ class AshramRepository(context: Context) {
     }
 
     // --- Ashram Settings & Customization ---
+    private fun parseSettingsCursor(cursor: Cursor): AshramSettings {
+        return AshramSettings(
+            id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+            ashramName = cursor.getString(cursor.getColumnIndexOrThrow("ashram_name")),
+            gurujiName = cursor.getString(cursor.getColumnIndexOrThrow("guruji_name")),
+            address = cursor.getString(cursor.getColumnIndexOrThrow("address")),
+            latitude = cursor.getDouble(cursor.getColumnIndexOrThrow("latitude")),
+            longitude = cursor.getDouble(cursor.getColumnIndexOrThrow("longitude")),
+            allowedRadiusMeters = cursor.getDouble(cursor.getColumnIndexOrThrow("allowed_radius_meters")),
+            runningTokenNumber = cursor.getInt(cursor.getColumnIndexOrThrow("running_token_number")),
+            isDarbarActive = cursor.getInt(cursor.getColumnIndexOrThrow("is_darbar_active")) == 1,
+            darbarDate = cursor.getString(cursor.getColumnIndexOrThrow("darbar_date")),
+            darbarTimings = cursor.getString(cursor.getColumnIndexOrThrow("darbar_timings")),
+            freeDisclaimer = cursor.getString(cursor.getColumnIndexOrThrow("free_disclaimer")),
+            contactPhone = cursor.getString(cursor.getColumnIndexOrThrow("contact_phone")),
+            emergencyNoticeText = cursor.getString(cursor.getColumnIndexOrThrow("emergency_notice")),
+            isTokenServiceEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("is_token_service_enabled")) == 1,
+            isYatraServiceEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("is_yatra_service_enabled")) == 1,
+            isLiveCounterVisible = cursor.getInt(cursor.getColumnIndexOrThrow("is_live_counter_visible")) == 1,
+            isEventsVisible = cursor.getInt(cursor.getColumnIndexOrThrow("is_events_visible")) == 1,
+            isAartiTimingsVisible = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_aarti_timings_visible")) == 1 } catch (e: Exception) { true },
+            isGurujiInfoVisible = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_guruji_info_visible")) == 1 } catch (e: Exception) { true },
+            isEmergencyNoticeVisible = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_emergency_notice_visible")) == 1 } catch (e: Exception) { true },
+            scheduledTokenOpenTimestamp = try { cursor.getLong(cursor.getColumnIndexOrThrow("scheduled_token_open_timestamp")) } catch (e: Exception) { 0L },
+            isGeofenceEnforced = cursor.getInt(cursor.getColumnIndexOrThrow("is_geofence_enforced")) == 1,
+            isOutstationAdvanceAllowed = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_outstation_advance_allowed")) == 1 } catch (e: Exception) { true },
+            outstationMinDistanceKm = try { cursor.getDouble(cursor.getColumnIndexOrThrow("outstation_min_distance_km")) } catch (e: Exception) { 30.0 },
+            latestVersionCode = cursor.getInt(cursor.getColumnIndexOrThrow("latest_version_code")),
+            latestVersionName = cursor.getString(cursor.getColumnIndexOrThrow("latest_version_name")),
+            updateNotes = cursor.getString(cursor.getColumnIndexOrThrow("update_notes")),
+            apkDownloadUrl = cursor.getString(cursor.getColumnIndexOrThrow("apk_download_url")),
+            isForceUpdate = cursor.getInt(cursor.getColumnIndexOrThrow("is_force_update")) == 1,
+            whatsappGroupUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_group_url")) } catch (e: Exception) { "https://chat.whatsapp.com/invite" },
+            whatsappNumber = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_number")) } catch (e: Exception) { "+919876543210" },
+            youtubeChannelUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("youtube_channel_url")) } catch (e: Exception) { "https://www.youtube.com/@ShriBalajiKripaDham" },
+            facebookPageUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("facebook_page_url")) } catch (e: Exception) { "https://www.facebook.com/ShriBalajiKripaDham" },
+            instagramUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("instagram_url")) } catch (e: Exception) { "https://www.instagram.com/shribalajikripadham" },
+            appShareUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("app_share_url")) } catch (e: Exception) { "https://shribalajikripadham.org/app" },
+            currentThemeId = try { cursor.getString(cursor.getColumnIndexOrThrow("current_theme_id")) } catch (e: Exception) { "maroon" },
+            gurujiPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("guruji_photo_uri")) } catch (e: Exception) { "" } ?: "",
+            activeUiLayout = try { cursor.getString(cursor.getColumnIndexOrThrow("active_ui_layout")) } catch (e: Exception) { "CLASSIC_DARBAR" } ?: "CLASSIC_DARBAR",
+            maxDailyTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("max_daily_tokens")) } catch (e: Exception) { 0 },
+            allowAdminReservedTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("allow_admin_reserved_tokens")) == 1 } catch (e: Exception) { false },
+            isUiLayoutEnforced = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_ui_layout_enforced")) == 1 } catch (e: Exception) { false },
+            cloudSyncUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("cloud_sync_url")) } catch (e: Exception) { "" } ?: "",
+            isCloudSyncEnabled = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_cloud_sync_enabled")) == 1 } catch (e: Exception) { false },
+            sundayTokenBannerTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_banner_title")) } catch (e: Exception) { "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन" } ?: "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन",
+            sundayTokenBannerText = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_banner_text")) } catch (e: Exception) { "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।" } ?: "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।",
+            sundayTokenCustomNotice = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_custom_notice")) } catch (e: Exception) { "" } ?: "",
+            isBusBookingLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_bus_booking_live")) == 1 } catch (e: Exception) { false },
+            isPaymentFeatureLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_payment_feature_live")) == 1 } catch (e: Exception) { false },
+            canAdminViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_admin_view_payment_history")) == 1 } catch (e: Exception) { false },
+            canDevoteeViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_payment_history")) == 1 } catch (e: Exception) { false },
+            ashramUpiId = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_id")) } catch (e: Exception) { "shribalajikripadham@upi" } ?: "shribalajikripadham@upi",
+            ashramUpiName = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_name")) } catch (e: Exception) { "Shri Balaji Kripa Dham" } ?: "Shri Balaji Kripa Dham",
+            customUpiQrUri = try { cursor.getString(cursor.getColumnIndexOrThrow("custom_upi_qr_uri")) } catch (e: Exception) { "" } ?: "",
+            busSeatFareAmount = try { cursor.getInt(cursor.getColumnIndexOrThrow("bus_seat_fare_amount")) } catch (e: Exception) { 1500 },
+            isArziLedgerLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_arzi_ledger_live")) == 1 } catch (e: Exception) { true },
+            badiArziRate = try { cursor.getDouble(cursor.getColumnIndexOrThrow("badi_arzi_rate")) } catch (e: Exception) { 100.0 },
+            chhotiArziRate = try { cursor.getDouble(cursor.getColumnIndexOrThrow("chhoti_arzi_rate")) } catch (e: Exception) { 50.0 },
+            canAdminViewArziLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_admin_view_arzi_ledger")) == 1 } catch (e: Exception) { true },
+            canDevoteeViewArziLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_arzi_ledger")) == 1 } catch (e: Exception) { false },
+            canDevoteeViewYatraDiary = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_yatra_diary")) == 1 } catch (e: Exception) { false },
+            ashramParichayHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_hindi")) ?: "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" } catch (e: Exception) { "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" },
+            ashramParichayEnglish = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_english")) ?: "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Shikarpur, Bulandshahr, UP), healing is 100% free under Guruji Tejveer Singh Ji." } catch (e: Exception) { "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Shikarpur, Bulandshahr, UP), healing is 100% free under Guruji Tejveer Singh Ji." },
+            ashramHistoryHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_history_hindi")) ?: "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है।" } catch (e: Exception) { "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है।" },
+            ashramRulesHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_rules_hindi")) ?: "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" } catch (e: Exception) { "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" },
+            tokenVoicePreset = try { cursor.getString(cursor.getColumnIndexOrThrow("token_voice_preset")) ?: "GURU_CALM" } catch (e: Exception) { "GURU_CALM" },
+            bannerPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_photo_uri")) ?: "" } catch (e: Exception) { "" },
+            isBannerVisible = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_banner_visible")) == 1 } catch (e: Exception) { true },
+            bannerTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_title")) ?: "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट" } catch (e: Exception) { "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट" },
+            bannerSubtitle = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_subtitle")) ?: "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार" } catch (e: Exception) { "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार" },
+            bannerActionUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_action_url")) ?: "" } catch (e: Exception) { "" },
+            isAdsEnabled = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_ads_enabled")) == 1 } catch (e: Exception) { false },
+            adType = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_type")) ?: "CUSTOM" } catch (e: Exception) { "CUSTOM" },
+            adBannerPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_photo_uri")) ?: "" } catch (e: Exception) { "" },
+            adBannerTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_title")) ?: "आश्रम सेवा व गौशाला सहयोग" } catch (e: Exception) { "आश्रम सेवा व गौशाला सहयोग" },
+            adBannerDescription = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_description")) ?: "धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।" } catch (e: Exception) { "धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।" },
+            adTargetUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_target_url")) ?: "" } catch (e: Exception) { "" },
+            adPlacement = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_placement")) ?: "HOME_BOTTOM" } catch (e: Exception) { "HOME_BOTTOM" }
+        )
+    }
+
     suspend fun getSettings(): AshramSettings = withContext(Dispatchers.IO) {
         val db = dbHelper.readableDatabase
         val cursor = db.rawQuery("SELECT * FROM ashram_settings WHERE id = 1", null)
         var settings = AshramSettings()
-        if (cursor.moveToFirst()) {
-            settings = AshramSettings(
-                id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
-                ashramName = cursor.getString(cursor.getColumnIndexOrThrow("ashram_name")),
-                gurujiName = cursor.getString(cursor.getColumnIndexOrThrow("guruji_name")),
-                address = cursor.getString(cursor.getColumnIndexOrThrow("address")),
-                latitude = cursor.getDouble(cursor.getColumnIndexOrThrow("latitude")),
-                longitude = cursor.getDouble(cursor.getColumnIndexOrThrow("longitude")),
-                allowedRadiusMeters = cursor.getDouble(cursor.getColumnIndexOrThrow("allowed_radius_meters")),
-                runningTokenNumber = cursor.getInt(cursor.getColumnIndexOrThrow("running_token_number")),
-                isDarbarActive = cursor.getInt(cursor.getColumnIndexOrThrow("is_darbar_active")) == 1,
-                darbarDate = cursor.getString(cursor.getColumnIndexOrThrow("darbar_date")),
-                darbarTimings = cursor.getString(cursor.getColumnIndexOrThrow("darbar_timings")),
-                freeDisclaimer = cursor.getString(cursor.getColumnIndexOrThrow("free_disclaimer")),
-                contactPhone = cursor.getString(cursor.getColumnIndexOrThrow("contact_phone")),
-                emergencyNoticeText = cursor.getString(cursor.getColumnIndexOrThrow("emergency_notice")),
-                isTokenServiceEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("is_token_service_enabled")) == 1,
-                isYatraServiceEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("is_yatra_service_enabled")) == 1,
-                isLiveCounterVisible = cursor.getInt(cursor.getColumnIndexOrThrow("is_live_counter_visible")) == 1,
-                isEventsVisible = cursor.getInt(cursor.getColumnIndexOrThrow("is_events_visible")) == 1,
-                isAartiTimingsVisible = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_aarti_timings_visible")) == 1 } catch (e: Exception) { true },
-                isGurujiInfoVisible = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_guruji_info_visible")) == 1 } catch (e: Exception) { true },
-                isEmergencyNoticeVisible = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_emergency_notice_visible")) == 1 } catch (e: Exception) { true },
-                scheduledTokenOpenTimestamp = try { cursor.getLong(cursor.getColumnIndexOrThrow("scheduled_token_open_timestamp")) } catch (e: Exception) { 0L },
-                isGeofenceEnforced = cursor.getInt(cursor.getColumnIndexOrThrow("is_geofence_enforced")) == 1,
-                isOutstationAdvanceAllowed = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_outstation_advance_allowed")) == 1 } catch (e: Exception) { true },
-                outstationMinDistanceKm = try { cursor.getDouble(cursor.getColumnIndexOrThrow("outstation_min_distance_km")) } catch (e: Exception) { 30.0 },
-                latestVersionCode = cursor.getInt(cursor.getColumnIndexOrThrow("latest_version_code")),
-                latestVersionName = cursor.getString(cursor.getColumnIndexOrThrow("latest_version_name")),
-                updateNotes = cursor.getString(cursor.getColumnIndexOrThrow("update_notes")),
-                apkDownloadUrl = cursor.getString(cursor.getColumnIndexOrThrow("apk_download_url")),
-                isForceUpdate = cursor.getInt(cursor.getColumnIndexOrThrow("is_force_update")) == 1,
-                whatsappGroupUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_group_url")) } catch (e: Exception) { "https://chat.whatsapp.com/invite" },
-                whatsappNumber = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_number")) } catch (e: Exception) { "+919876543210" },
-                youtubeChannelUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("youtube_channel_url")) } catch (e: Exception) { "https://www.youtube.com/@ShriBalajiKripaDham" },
-                facebookPageUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("facebook_page_url")) } catch (e: Exception) { "https://www.facebook.com/ShriBalajiKripaDham" },
-                instagramUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("instagram_url")) } catch (e: Exception) { "https://www.instagram.com/shribalajikripadham" },
-                appShareUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("app_share_url")) } catch (e: Exception) { "https://shribalajikripadham.org/app" },
-                currentThemeId = try { cursor.getString(cursor.getColumnIndexOrThrow("current_theme_id")) } catch (e: Exception) { "maroon" },
-                gurujiPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("guruji_photo_uri")) } catch (e: Exception) { "" } ?: "",
-                activeUiLayout = try { cursor.getString(cursor.getColumnIndexOrThrow("active_ui_layout")) } catch (e: Exception) { "CLASSIC_DARBAR" } ?: "CLASSIC_DARBAR",
-                maxDailyTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("max_daily_tokens")) } catch (e: Exception) { 0 },
-                allowAdminReservedTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("allow_admin_reserved_tokens")) == 1 } catch (e: Exception) { false },
-                isUiLayoutEnforced = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_ui_layout_enforced")) == 1 } catch (e: Exception) { false },
-                cloudSyncUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("cloud_sync_url")) } catch (e: Exception) { "" } ?: "",
-                isCloudSyncEnabled = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_cloud_sync_enabled")) == 1 } catch (e: Exception) { false },
-                sundayTokenBannerTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_banner_title")) } catch (e: Exception) { "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन" } ?: "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन",
-                sundayTokenBannerText = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_banner_text")) } catch (e: Exception) { "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।" } ?: "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।",
-                sundayTokenCustomNotice = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_custom_notice")) } catch (e: Exception) { "" } ?: "",
-                isBusBookingLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_bus_booking_live")) == 1 } catch (e: Exception) { false },
-                isPaymentFeatureLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_payment_feature_live")) == 1 } catch (e: Exception) { false },
-                canAdminViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_admin_view_payment_history")) == 1 } catch (e: Exception) { false },
-                canDevoteeViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_payment_history")) == 1 } catch (e: Exception) { false },
-                ashramUpiId = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_id")) } catch (e: Exception) { "shribalajikripadham@upi" } ?: "shribalajikripadham@upi",
-                ashramUpiName = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_name")) } catch (e: Exception) { "Shri Balaji Kripa Dham" } ?: "Shri Balaji Kripa Dham",
-                customUpiQrUri = try { cursor.getString(cursor.getColumnIndexOrThrow("custom_upi_qr_uri")) } catch (e: Exception) { "" } ?: "",
-                busSeatFareAmount = try { cursor.getInt(cursor.getColumnIndexOrThrow("bus_seat_fare_amount")) } catch (e: Exception) { 1500 },
-                isArziLedgerLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_arzi_ledger_live")) == 1 } catch (e: Exception) { true },
-                badiArziRate = try { cursor.getDouble(cursor.getColumnIndexOrThrow("badi_arzi_rate")) } catch (e: Exception) { 100.0 },
-                chhotiArziRate = try { cursor.getDouble(cursor.getColumnIndexOrThrow("chhoti_arzi_rate")) } catch (e: Exception) { 50.0 },
-                canAdminViewArziLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_admin_view_arzi_ledger")) == 1 } catch (e: Exception) { true },
-                canDevoteeViewArziLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_arzi_ledger")) == 1 } catch (e: Exception) { false },
-                canDevoteeViewYatraDiary = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_yatra_diary")) == 1 } catch (e: Exception) { false },
-                ashramParichayHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_hindi")) ?: "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" } catch (e: Exception) { "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" },
-                ashramParichayEnglish = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_english")) ?: "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Shikarpur, Bulandshahr, UP), healing is 100% free under Guruji Tejveer Singh Ji." } catch (e: Exception) { "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Shikarpur, Bulandshahr, UP), healing is 100% free under Guruji Tejveer Singh Ji." },
-                ashramHistoryHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_history_hindi")) ?: "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है।" } catch (e: Exception) { "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है।" },
-                ashramRulesHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_rules_hindi")) ?: "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" } catch (e: Exception) { "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" },
-                tokenVoicePreset = try { cursor.getString(cursor.getColumnIndexOrThrow("token_voice_preset")) ?: "GURU_CALM" } catch (e: Exception) { "GURU_CALM" },
-                bannerPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_photo_uri")) ?: "" } catch (e: Exception) { "" },
-                isBannerVisible = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_banner_visible")) == 1 } catch (e: Exception) { true },
-                bannerTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_title")) ?: "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट" } catch (e: Exception) { "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट" },
-                bannerSubtitle = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_subtitle")) ?: "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार" } catch (e: Exception) { "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार" },
-                bannerActionUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("banner_action_url")) ?: "" } catch (e: Exception) { "" },
-                isAdsEnabled = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_ads_enabled")) == 1 } catch (e: Exception) { false },
-                adType = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_type")) ?: "CUSTOM" } catch (e: Exception) { "CUSTOM" },
-                adBannerPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_photo_uri")) ?: "" } catch (e: Exception) { "" },
-                adBannerTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_title")) ?: "आश्रम सेवा व गौशाला सहयोग" } catch (e: Exception) { "आश्रम सेवा व गौशाला सहयोग" },
-                adBannerDescription = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_description")) ?: "धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।" } catch (e: Exception) { "धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।" },
-                adTargetUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_target_url")) ?: "" } catch (e: Exception) { "" },
-                adPlacement = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_placement")) ?: "HOME_BOTTOM" } catch (e: Exception) { "HOME_BOTTOM" }
-            )
+        val found = cursor.moveToFirst()
+        if (found) {
+            settings = parseSettingsCursor(cursor)
         }
         cursor.close()
+
+        if (!found) {
+            try {
+                val wdb = dbHelper.writableDatabase
+                val restored = com.example.shribalajikripadham.data.local.AppPermanentVault.restoreVault(appContext, wdb, force = true)
+                if (restored) {
+                    val c2 = wdb.rawQuery("SELECT * FROM ashram_settings WHERE id = 1", null)
+                    if (c2.moveToFirst()) {
+                        settings = parseSettingsCursor(c2)
+                    }
+                    c2.close()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
         settings
+    }
+
+    /**
+     * INDESTRUCTIBLE MULTI-LAYER SETTINGS PERSISTENCE:
+     * Guarantees settings survive APK updates, app clearing, crashes, and sync operations.
+     * Writes synchronously to:
+     * 1. Android SharedPreferences ('sbkd_indestructible_settings')
+     * 2. Internal JSON Vault ('sbkd_vault_data.json')
+     * 3. External Download backup JSON
+     * 4. Central Hostinger MySQL Server (live_config.php)
+     * 5. GitHub repository (if PAT configured)
+     */
+    suspend fun persistCurrentSettingsToAllLayers() = withContext(Dispatchers.IO) {
+        try {
+            val fresh = getSettings()
+            com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), fresh)
+            try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
+            } catch (e: Exception) {}
+            try {
+                publishCurrentSettingsToGitHub()
+            } catch (e: Exception) {}
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     suspend fun updateCanDevoteeViewYatraDiary(canView: Boolean): Boolean = withContext(Dispatchers.IO) {
@@ -151,7 +198,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -177,7 +224,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -206,12 +253,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
-            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
-            try {
-                val fresh = getSettings()
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
-            } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -246,7 +288,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -261,7 +303,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -287,9 +329,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try {
-                publishCurrentSettingsToGitHub()
-            } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -299,7 +339,9 @@ class AshramRepository(context: Context) {
         val cv = ContentValues().apply {
             put("contact_phone", contactPhone.trim())
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
 
     suspend fun updateGurujiPhoto(photoUri: String): Boolean = withContext(Dispatchers.IO) {
@@ -307,7 +349,9 @@ class AshramRepository(context: Context) {
         val cv = ContentValues().apply {
             put("guruji_photo_uri", photoUri.trim())
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
 
     suspend fun updateActiveUiLayout(layoutKey: String): Boolean = withContext(Dispatchers.IO) {
@@ -315,8 +359,30 @@ class AshramRepository(context: Context) {
         val cv = ContentValues().apply {
             put("active_ui_layout", layoutKey.trim())
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
+
+    suspend fun updateSettings(s: AshramSettings): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("running_token_number", s.runningTokenNumber)
+            put("is_token_service_enabled", if (s.isTokenServiceEnabled) 1 else 0)
+            put("is_bus_booking_live", if (s.isBusBookingLive) 1 else 0)
+            put("emergency_notice", s.emergencyNoticeText)
+            put("is_emergency_notice_visible", if (s.isEmergencyNoticeVisible) 1 else 0)
+            if (s.gurujiPhotoUri.isNotBlank()) put("guruji_photo_uri", s.gurujiPhotoUri)
+            if (s.bannerTitle.isNotBlank()) put("banner_title", s.bannerTitle)
+            if (s.bannerSubtitle.isNotBlank()) put("banner_subtitle", s.bannerSubtitle)
+            if (s.darbarTimings.isNotBlank()) put("darbar_timings", s.darbarTimings)
+            put("is_darbar_active", if (s.isDarbarActive) 1 else 0)
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
+    }
+
 
     suspend fun updateActiveUiLayoutEnforced(layoutKey: String, isEnforced: Boolean): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
@@ -324,7 +390,9 @@ class AshramRepository(context: Context) {
             put("active_ui_layout", layoutKey.trim())
             put("is_ui_layout_enforced", if (isEnforced) 1 else 0)
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
 
     suspend fun updateMaxDailyTokens(maxTokens: Int): Boolean = withContext(Dispatchers.IO) {
@@ -332,7 +400,9 @@ class AshramRepository(context: Context) {
         val cv = ContentValues().apply {
             put("max_daily_tokens", maxTokens)
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
 
     suspend fun updateCloudSyncSettings(url: String, isEnabled: Boolean): Boolean = withContext(Dispatchers.IO) {
@@ -341,7 +411,9 @@ class AshramRepository(context: Context) {
             put("cloud_sync_url", url.trim())
             put("is_cloud_sync_enabled", if (isEnabled) 1 else 0)
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
 
     suspend fun updateEmergencyNotice(emergencyNotice: String): Boolean = withContext(Dispatchers.IO) {
@@ -351,11 +423,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
-            try {
-                val fresh = getSettings()
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
-            } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -373,12 +441,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
-            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
-            try {
-                val fresh = getSettings()
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
-            } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -404,11 +467,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
-            try {
-                val fresh = getSettings()
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
-            } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -447,43 +506,9 @@ class AshramRepository(context: Context) {
         }
         val updated = db.update("ashram_settings", cv, "id = 1", null) > 0
 
-        // Broadcast to cloud (GitHub Live Sync) so all users' apps automatically receive the new coordinates
+        // Broadcast to cloud and indestructible local layers
         if (updated) {
-            // Push to Hostinger Central MySQL Server
-            try {
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateLiveConfig(
-                    radiusMeters = clampedRadius,
-                    isGeofenceEnforced = isGeofenceEnforced,
-                    isOutstationAllowed = isOutstationAdvanceAllowed,
-                    outstationKm = clampedOutstationKm,
-                    lat = newLat,
-                    long = newLong
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            try {
-                val existing = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveConfig()
-                val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-                    timeZone = TimeZone.getTimeZone("UTC")
-                }
-                val updatedConfig = (existing ?: com.example.shribalajikripadham.data.model.LiveUiConfigDto()).copy(
-                    updatedAt = isoFormat.format(Date()),
-                    updatedBy = requestingAdmin.name,
-                    locationConfig = com.example.shribalajikripadham.data.model.LocationConfigDto(
-                        latitude = newLat,
-                        longitude = newLong,
-                        allowedRadiusMeters = clampedRadius,
-                        isGeofenceEnforced = isGeofenceEnforced,
-                        isOutstationAdvanceAllowed = isOutstationAdvanceAllowed,
-                        outstationMinDistanceKm = clampedOutstationKm,
-                        updatedAt = System.currentTimeMillis()
-                    )
-                )
-                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishLiveConfig(appContext, updatedConfig)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            persistCurrentSettingsToAllLayers()
         }
         updated
     }
@@ -493,7 +518,9 @@ class AshramRepository(context: Context) {
         val cv = ContentValues().apply {
             put("scheduled_token_open_timestamp", timestamp)
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
 
     suspend fun updateMasterVisibilityToggles(
@@ -515,7 +542,9 @@ class AshramRepository(context: Context) {
             put("is_guruji_info_visible", if (isGurujiInfoVisible) 1 else 0)
             put("is_emergency_notice_visible", if (isEmergencyNoticeVisible) 1 else 0)
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
 
     suspend fun updateSocialLinks(
@@ -537,9 +566,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try {
-                publishCurrentSettingsToGitHub()
-            } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -549,7 +576,9 @@ class AshramRepository(context: Context) {
         val cv = ContentValues().apply {
             put("current_theme_id", themeId)
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
 
     suspend fun getAllActiveSevadars(): List<Admin> = withContext(Dispatchers.IO) {
@@ -595,7 +624,9 @@ class AshramRepository(context: Context) {
             put("apk_download_url", apkDownloadUrl)
             put("is_force_update", if (isForceUpdate) 1 else 0)
         }
-        db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
 
     suspend fun updateRunningTokenNumber(tokenNum: Int): Boolean = withContext(Dispatchers.IO) {
@@ -605,21 +636,7 @@ class AshramRepository(context: Context) {
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (ok) {
-            try {
-                val s = getSettings()
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateLiveConfig(
-                    radiusMeters = s.allowedRadiusMeters,
-                    isGeofenceEnforced = s.isGeofenceEnforced,
-                    isOutstationAllowed = s.isOutstationAdvanceAllowed,
-                    outstationKm = s.outstationMinDistanceKm,
-                    currentServingToken = tokenNum,
-                    lat = s.latitude,
-                    long = s.longitude
-                )
-            } catch (e: Exception) {}
-            try {
-                publishCurrentSettingsToGitHub("Live Counter: $tokenNum")
-            } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         ok
     }
@@ -1969,9 +1986,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try {
-                publishCurrentSettingsToGitHub()
-            } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -3516,19 +3531,46 @@ class AshramRepository(context: Context) {
 
     // --- Central GitHub Live Sync Methods ---
     suspend fun syncLiveConfigFromGitHub(): Pair<Boolean, LiveUiConfigDto?> = withContext(Dispatchers.IO) {
-        // Pull from Hostinger Central MySQL Server
+        // Pull from Hostinger Central MySQL Server (Real-time live settings sync)
         try {
             val hostingerJson = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveConfig()
-            if (hostingerJson != null && hostingerJson.optBoolean("success", false)) {
+            if (hostingerJson != null && (hostingerJson.optBoolean("success", false) || hostingerJson.has("ashram_name") || hostingerJson.has("config"))) {
+                val cfg = if (hostingerJson.has("config")) hostingerJson.getJSONObject("config") else hostingerJson
                 val db = dbHelper.writableDatabase
-                val cv = ContentValues().apply {
-                    put("allowed_radius_meters", hostingerJson.optDouble("allowed_radius_meters", 200.0).coerceIn(10.0, 50000.0))
-                    put("is_geofence_enforced", if (hostingerJson.optBoolean("is_geofence_enforced", true)) 1 else 0)
-                    put("is_outstation_advance_allowed", if (hostingerJson.optBoolean("is_outstation_advance_allowed", true)) 1 else 0)
-                    put("outstation_min_distance_km", hostingerJson.optDouble("outstation_min_distance_km", 30.0).coerceIn(1.0, 500.0))
-                    put("running_token_number", hostingerJson.optInt("current_serving_token", 0))
+                val cv = ContentValues()
+
+                val currentServing = cfg.optInt("running_token_number", cfg.optInt("current_serving_token", -1))
+                if (currentServing >= 0) cv.put("running_token_number", currentServing)
+
+                val gurujiPhoto = cfg.optString("guruji_photo_url", "")
+                if (gurujiPhoto.isNotBlank()) cv.put("guruji_photo_uri", gurujiPhoto)
+
+                val bannerTitle = cfg.optString("banner_title", "")
+                if (bannerTitle.isNotBlank()) cv.put("banner_title", bannerTitle)
+
+                val bannerSub = cfg.optString("banner_subtitle", "")
+                if (bannerSub.isNotBlank()) cv.put("banner_subtitle", bannerSub)
+
+                if (cfg.has("is_banner_visible")) cv.put("is_banner_visible", if (cfg.optBoolean("is_banner_visible")) 1 else 0)
+
+                val emNotice = cfg.optString("emergency_notice", "")
+                cv.put("emergency_notice", emNotice)
+                if (cfg.has("is_emergency_notice_visible")) cv.put("is_emergency_notice_visible", if (cfg.optBoolean("is_emergency_notice_visible")) 1 else 0)
+
+                val timings = cfg.optString("darbar_timings", "")
+                if (timings.isNotBlank()) cv.put("darbar_timings", timings)
+
+                val ashName = cfg.optString("ashram_name", "")
+                if (ashName.isNotBlank()) cv.put("ashram_name", ashName)
+
+                if (cfg.has("is_darbar_active")) cv.put("is_darbar_active", if (cfg.optBoolean("is_darbar_active")) 1 else 0)
+                if (cfg.has("is_token_service_enabled")) cv.put("is_token_service_enabled", if (cfg.optBoolean("is_token_service_enabled")) 1 else 0)
+                if (cfg.has("is_bus_booking_live")) cv.put("is_bus_booking_live", if (cfg.optBoolean("is_bus_booking_live")) 1 else 0)
+                if (cfg.has("is_payment_feature_live")) cv.put("is_payment_feature_live", if (cfg.optBoolean("is_payment_feature_live")) 1 else 0)
+
+                if (cv.size() > 0) {
+                    db.update("ashram_settings", cv, "id = 1", null)
                 }
-                db.update("ashram_settings", cv, "id = 1", null)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -3542,6 +3584,14 @@ class AshramRepository(context: Context) {
 
             try {
                 val db = dbHelper.writableDatabase
+
+                val countCursor = db.rawQuery("SELECT COUNT(*) FROM ashram_settings WHERE id = 1", null)
+                var hasSettings = false
+                if (countCursor.moveToFirst()) {
+                    hasSettings = countCursor.getInt(0) > 0
+                }
+                countCursor.close()
+
                 val cv = ContentValues()
 
                 // Synchronize Ashram Details across all devices
@@ -3610,17 +3660,14 @@ class AshramRepository(context: Context) {
                 cv.put("is_banner_visible", if (sc.isBannerVisible) 1 else 0)
                 if (sc.bannerActionUrl.isNotBlank()) cv.put("banner_action_url", sc.bannerActionUrl)
 
-                if (cv.size() > 0) {
+                if (hasSettings) {
                     db.update("ashram_settings", cv, "id = 1", null)
+                } else {
+                    cv.put("id", 1)
+                    db.insertWithOnConflict("ashram_settings", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
                 }
 
-                // Also trigger live bus seats and payments sync
-                try {
-                    syncLiveBusSeatsFromGitHub()
-                    syncLivePaymentsFromGitHub()
-                } catch (e: Exception) {}
-
-                // Synchronize App Auto-Update info from live cloud config
+                // Synchronize App Auto-Update info from live cloud config (always safe)
                 val upd = remoteConfig.appUpdate
                 if (upd != null && upd.latestVersionCode > 0) {
                     val updCv = ContentValues().apply {
@@ -4718,7 +4765,7 @@ class AshramRepository(context: Context) {
         }
         val res = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (res) {
-            try { publishCurrentSettingsToGitHub() } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         res
     }
@@ -5229,10 +5276,9 @@ class AshramRepository(context: Context) {
             put("allow_admin_reserved_tokens", if (allow) 1 else 0)
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
-        try {
-            val s = getSettings()
-            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.syncSettingsToHostinger(s)
-        } catch (ignored: Exception) {}
+        if (ok) {
+            persistCurrentSettingsToAllLayers()
+        }
         ok
     }
 
@@ -5466,10 +5512,7 @@ class AshramRepository(context: Context) {
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (ok) {
-            try {
-                val fresh = getSettings()
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
-            } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         ok
     }
@@ -5482,10 +5525,7 @@ class AshramRepository(context: Context) {
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (ok) {
-            try {
-                val fresh = getSettings()
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
-            } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         ok
     }
@@ -5497,10 +5537,7 @@ class AshramRepository(context: Context) {
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (ok) {
-            try {
-                val fresh = getSettings()
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
-            } catch (e: Exception) {}
+            persistCurrentSettingsToAllLayers()
         }
         ok
     }
@@ -5511,10 +5548,9 @@ class AshramRepository(context: Context) {
             put("is_darbar_active", if (isActive) 1 else 0)
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
-        try {
-            val s = getSettings()
-            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(s)
-        } catch (e: Exception) {}
+        if (ok) {
+            persistCurrentSettingsToAllLayers()
+        }
         ok
     }
 

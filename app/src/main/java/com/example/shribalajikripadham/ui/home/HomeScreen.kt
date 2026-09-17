@@ -230,35 +230,51 @@ fun HomeScreen(
             }
         }
 
-        // ⚡ INSTANT REAL-TIME BROADCAST LISTENER (Every 3 seconds):
-        // Whenever SuperAdmin toggles Token Service ON/OFF, updates Running Token, or posts Emergency Notice,
-        // it reflects on devotee's screen within 3 seconds!
+        // ⚡ INSTANT REAL-TIME BROADCAST LISTENER (Every 2 seconds):
+        // Whenever SuperAdmin updates Guruji Photo, Banner, Timings, Running Token, or Emergency Notice,
+        // it reflects on devotee's screen within 2 seconds!
         scope.launch {
             while (isActive) {
-                delay(3000)
+                delay(2000)
                 try {
-                    val liveCfg = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveConfig()
-                    if (liveCfg != null && liveCfg.optBoolean("success", false)) {
-                        val currentServing = liveCfg.optInt("current_serving_token", settings.runningTokenNumber)
-                        val tokEnabled = liveCfg.optBoolean("is_token_service_enabled", settings.isTokenServiceEnabled)
-                        val busLive = liveCfg.optBoolean("is_bus_booking_live", settings.isBusBookingLive)
+                    val rawCfg = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveConfig()
+                    if (rawCfg != null && (rawCfg.optBoolean("success", false) || rawCfg.has("ashram_name") || rawCfg.has("config"))) {
+                        val liveCfg = if (rawCfg.has("config")) rawCfg.getJSONObject("config") else rawCfg
+                        val currentServing = liveCfg.optInt("running_token_number", liveCfg.optInt("current_serving_token", settings.runningTokenNumber))
+                        val tokEnabled = if (liveCfg.has("is_token_service_enabled")) liveCfg.optBoolean("is_token_service_enabled") else settings.isTokenServiceEnabled
+                        val busLive = if (liveCfg.has("is_bus_booking_live")) liveCfg.optBoolean("is_bus_booking_live") else settings.isBusBookingLive
                         val emNotice = liveCfg.optString("emergency_notice", settings.emergencyNoticeText)
-                        val emVis = liveCfg.optBoolean("is_emergency_notice_visible", settings.isEmergencyNoticeVisible)
+                        val emVis = if (liveCfg.has("is_emergency_notice_visible")) liveCfg.optBoolean("is_emergency_notice_visible") else settings.isEmergencyNoticeVisible
+                        val gurujiPhoto = liveCfg.optString("guruji_photo_url", settings.gurujiPhotoUri)
+                        val bannerTitle = liveCfg.optString("banner_title", settings.bannerTitle)
+                        val bannerSub = liveCfg.optString("banner_subtitle", settings.bannerSubtitle)
+                        val timings = liveCfg.optString("darbar_timings", settings.darbarTimings)
+                        val isDarbarActive = if (liveCfg.has("is_darbar_active")) liveCfg.optBoolean("is_darbar_active") else settings.isDarbarActive
 
                         if (currentServing != settings.runningTokenNumber ||
                             tokEnabled != settings.isTokenServiceEnabled ||
                             busLive != settings.isBusBookingLive ||
                             emNotice != settings.emergencyNoticeText ||
-                            emVis != settings.isEmergencyNoticeVisible
+                            emVis != settings.isEmergencyNoticeVisible ||
+                            (gurujiPhoto.isNotBlank() && gurujiPhoto != settings.gurujiPhotoUri) ||
+                            (bannerTitle.isNotBlank() && bannerTitle != settings.bannerTitle) ||
+                            (bannerSub.isNotBlank() && bannerSub != settings.bannerSubtitle) ||
+                            (timings.isNotBlank() && timings != settings.darbarTimings) ||
+                            isDarbarActive != settings.isDarbarActive
                         ) {
-                            val fresh = repository.getSettings()
-                            settings = fresh.copy(
+                            settings = settings.copy(
                                 runningTokenNumber = currentServing,
                                 isTokenServiceEnabled = tokEnabled,
                                 isBusBookingLive = busLive,
                                 emergencyNoticeText = emNotice,
-                                isEmergencyNoticeVisible = emVis
+                                isEmergencyNoticeVisible = emVis,
+                                gurujiPhotoUri = if (gurujiPhoto.isNotBlank()) gurujiPhoto else settings.gurujiPhotoUri,
+                                bannerTitle = if (bannerTitle.isNotBlank()) bannerTitle else settings.bannerTitle,
+                                bannerSubtitle = if (bannerSub.isNotBlank()) bannerSub else settings.bannerSubtitle,
+                                darbarTimings = if (timings.isNotBlank()) timings else settings.darbarTimings,
+                                isDarbarActive = isDarbarActive
                             )
+                            repository.updateSettings(settings)
                         }
                     }
                 } catch (e: Exception) {}

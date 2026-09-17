@@ -171,7 +171,8 @@ object GitHubLiveSyncManager {
             }
 
             if (fileToUpload != null && fileToUpload.exists()) {
-                val cloudUrl = HostingerCentralSyncManager.uploadPhoto(fileToUpload)
+                val pType = if (remoteFileName.contains("guruji", ignoreCase = true)) "guruji" else "devotee"
+                val cloudUrl = HostingerCentralSyncManager.uploadPhoto(fileToUpload, pType)
                 if (!cloudUrl.isNullOrBlank()) {
                     Log.d(TAG, "Successfully uploaded photo to cloud CDN: $cloudUrl")
                     return@withContext cloudUrl
@@ -214,9 +215,14 @@ object GitHubLiveSyncManager {
         config: LiveUiConfigDto,
         customToken: String? = null
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val jsonString = config.toJsonString()
         val token = if (!customToken.isNullOrBlank()) customToken.trim() else getActiveToken(context)
         if (token.isBlank()) {
-            return@withContext Pair(false, "सिंक टोकन अनुपलब्ध है")
+            return@withContext pushViaHostingerProxy(
+                FILE_CONFIG,
+                jsonString,
+                "Live config update by ${config.updatedBy} at ${config.updatedAt}"
+            )
         }
 
         try {
@@ -227,7 +233,7 @@ object GitHubLiveSyncManager {
                 getConn.requestMethod = "GET"
                 getConn.setRequestProperty("Authorization", "Bearer $token")
                 getConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
-                getConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.18")
+                getConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.42")
                 getConn.connectTimeout = 5000
                 getConn.readTimeout = 5000
 
@@ -238,7 +244,6 @@ object GitHubLiveSyncManager {
                 }
             } catch (e: Exception) {}
 
-            val jsonString = config.toJsonString()
             val base64Content = Base64.encodeToString(
                 jsonString.toByteArray(StandardCharsets.UTF_8),
                 Base64.NO_WRAP
@@ -259,7 +264,7 @@ object GitHubLiveSyncManager {
             putConn.setRequestProperty("Authorization", "Bearer $token")
             putConn.setRequestProperty("Accept", "application/vnd.github.v3+json")
             putConn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            putConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.18")
+            putConn.setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.42")
             putConn.connectTimeout = 8000
             putConn.readTimeout = 8000
             putConn.doOutput = true
@@ -272,11 +277,20 @@ object GitHubLiveSyncManager {
             if (code in 200..299) {
                 Pair(true, "✅ आश्रम विवरण व कस्टमाइज़र सभी भक्तों के फोन पर लाइव अपडेट हो गया!")
             } else {
-                val err = putConn.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
-                Pair(false, "सर्वर त्रुटि ($code): $err")
+                // Fallback to Hostinger proxy on failure
+                val proxyResult = pushViaHostingerProxy(
+                    FILE_CONFIG,
+                    jsonString,
+                    "Live config update by ${config.updatedBy} at ${config.updatedAt}"
+                )
+                if (proxyResult.first) proxyResult else Pair(false, "सर्वर त्रुटि ($code)")
             }
         } catch (e: Exception) {
-            Pair(false, "सिंक विफल: ${e.localizedMessage ?: "नेटवर्क समस्या"}")
+            pushViaHostingerProxy(
+                FILE_CONFIG,
+                jsonString,
+                "Live config update by ${config.updatedBy} at ${config.updatedAt}"
+            )
         }
     }
 

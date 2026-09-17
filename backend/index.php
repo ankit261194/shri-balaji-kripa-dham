@@ -1,3 +1,36 @@
+<?php
+// Shri Balaji Kripa Dham - Live Server-Side Dynamic Render Engine
+if (file_exists(__DIR__ . '/config/db.php')) {
+    require_once __DIR__ . '/config/db.php';
+}
+$pdo = function_exists('getDB') ? getDB() : null;
+$settings = [];
+$sevadars = [];
+$donors = [];
+if ($pdo) {
+    try {
+        $stmt = $pdo->query("SELECT * FROM ashram_settings WHERE id = 1 LIMIT 1");
+        $settings = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    } catch (Exception $e) {}
+    try {
+        $sevadars = $pdo->query("SELECT * FROM sevadars ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Exception $e) {}
+    try {
+        $donors = $pdo->query("SELECT * FROM donors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Exception $e) {}
+}
+
+$ashramName = !empty($settings['ashram_name']) ? $settings['ashram_name'] : 'श्री बालाजी कृपा धाम';
+$bannerTitle = !empty($settings['banner_title']) ? $settings['banner_title'] : 'श्री बालाजी कृपा धाम';
+$bannerSubtitle = !empty($settings['banner_subtitle']) ? $settings['banner_subtitle'] : '📍 ग्राम डूँगरा जाट, तहसील स्याना, जिला बुलन्दशहर (उ.प्र.)';
+$emergencyNotice = !empty($settings['emergency_notice']) ? $settings['emergency_notice'] : '';
+$isEmergencyVisible = (!empty($settings['is_emergency_notice_visible']) && !empty($emergencyNotice));
+$darbarTimings = !empty($settings['darbar_timings']) ? $settings['darbar_timings'] : 'प्रत्येक रविवार प्रातःकाल 8:00 बजे से';
+$darbarDate = !empty($settings['darbar_date']) ? $settings['darbar_date'] : '';
+$currentServing = !empty($settings['current_serving_token']) ? (int)$settings['current_serving_token'] : 0;
+$gurujiPhoto = !empty($settings['guruji_photo_url']) ? $settings['guruji_photo_url'] : 'uploads/guruji_profile.jpg';
+$isDarbarActive = !isset($settings['is_darbar_active']) || $settings['is_darbar_active'] == 1;
+?>
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -863,15 +896,15 @@
     </nav>
  
     <!-- Dynamic Emergency / Special Notice -->
-    <div id="emergencyNoticeBanner" style="display:none; background: #FFEBEE; border-bottom: 2px solid #D32F2F; padding: 12px 20px; text-align: center; font-weight: 700; color: #C62828;">
-        📢 <span id="emergencyNoticeContent"></span>
+    <div id="emergencyNoticeBanner" style="display: <?= $isEmergencyVisible ? 'block' : 'none' ?>; background: #FFEBEE; border-bottom: 2px solid #D32F2F; padding: 12px 20px; text-align: center; font-weight: 700; color: #C62828;">
+        📢 <span id="emergencyNoticeContent"><?= htmlspecialchars($emergencyNotice) ?></span>
     </div>
 
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-badge">🚩 आधिकारिक मंदिर पोर्टल एवं मोबाइल सेवा</div>
-        <h2 id="websiteBannerTitleText">श्री बालाजी कृपा धाम</h2>
-        <p class="location" id="websiteBannerSubtitleText">📍 ग्राम डूँगरा जाट, तहसील स्याना, जिला बुलन्दशहर (उ.प्र.)</p>
+        <h2 id="websiteBannerTitleText"><?= htmlspecialchars($bannerTitle) ?></h2>
+        <p class="location" id="websiteBannerSubtitleText"><?= htmlspecialchars($bannerSubtitle) ?></p>
         
         <div class="shloka">
             "मनोजवं मारुततुल्यवेगं जितेन्द्रियं बुद्धिमतां वरिष्ठम्। वातात्मजं वानरयूथमुख्यं श्रीरामदूतं शरणं प्रपद्ये॥"
@@ -880,7 +913,7 @@
         <!-- Guruji Profile Card -->
         <div class="guruji-card-container">
             <div class="guruji-photo-wrap">
-                <img id="gurujiPhotoImg" src="uploads/guruji_profile.jpg" alt="पूज्य गुरुदेव जी" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                <img id="gurujiPhotoImg" src="<?= htmlspecialchars($gurujiPhoto) ?>?t=<?= time() ?>" alt="पूज्य गुरुदेव जी" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
             </div>
             <div class="guruji-info">
                 <h4>पूज्य गुरुदेव जी</h4>
@@ -900,12 +933,12 @@
             </div>
             <div class="glowing-token-box">
                 <span style="font-size: 1.1rem; color: #FFF3E0; font-weight: 700;">टोकन #</span>
-                <span class="glowing-token-number" id="servingTokenNumber">--</span>
+                <span class="glowing-token-number" id="servingTokenNumber"><?= ($currentServing > 0) ? $currentServing : "--" ?></span>
             </div>
             <div>
-                <span class="darbar-badge" id="darbarStatusBadge">
+                <span class="darbar-badge <?= $isDarbarActive ? '' : 'closed' ?>" id="darbarStatusBadge">
                     <span class="status-dot-blink"></span>
-                    <span id="darbarStatusText">दरबार खुला है (Open)</span>
+                    <span id="darbarStatusText"><?= $isDarbarActive ? 'दरबार खुला है (Open)' : 'विश्राम समय (Closed)' ?></span>
                 </span>
             </div>
         </div>
@@ -920,7 +953,7 @@
             </a>
 
             <div class="download-meta">
-                <span>✓ संस्करण: v2.39.0 Pro</span>
+                <span>✓ संस्करण: v2.42.1 Pro</span>
                 <span>✓ साइज़: ~107 MB</span>
                 <span>✓ 100% वायरस मुक्त</span>
                 <span>✓ Google Play Protect Verified</span>
@@ -946,47 +979,33 @@
         <div class="carousel-wrapper">
             <button class="carousel-nav-btn carousel-nav-prev" onclick="slideCarousel('sevadarTrack', -1)">❮</button>
             <div class="carousel-track" id="sevadarTrack">
-                <!-- Sevadar cards populated dynamically via live_config.php -->
-                <div class="sevadar-card">
-                    <div class="sevadar-photo">
-                        <img src="uploads/sevadars/sevadar_1.jpg" alt="मुख्य प्रबंधक" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                <?php if (!empty($sevadars)): ?>
+                    <?php foreach ($sevadars as $s): ?>
+                        <div class="sevadar-card">
+                            <div class="sevadar-photo">
+                                <img src="<?= htmlspecialchars(!empty($s['photo_url']) ? $s['photo_url'] : 'uploads/sevadars/default.jpg') ?>" alt="<?= htmlspecialchars($s['name']) ?>" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                            </div>
+                            <div class="sevadar-name"><?= htmlspecialchars($s['name']) ?></div>
+                            <div class="sevadar-role"><?= htmlspecialchars(!empty($s['role']) ? $s['role'] : 'सेवादार') ?></div>
+                            <?php if (!empty($s['phone'])): ?>
+                            <a href="tel:<?= htmlspecialchars($s['phone']) ?>" class="sevadar-phone-btn">
+                                📞 <?= htmlspecialchars($s['phone']) ?>
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="sevadar-card">
+                        <div class="sevadar-photo">
+                            <img src="uploads/sevadars/sevadar_1.jpg" alt="मुख्य प्रबंधक" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                        </div>
+                        <div class="sevadar-name">अंकित शर्मा</div>
+                        <div class="sevadar-role">मुख्य प्रबंधक एवं व्यवस्थापक</div>
+                        <a href="tel:9876543210" class="sevadar-phone-btn">
+                            📞 9876543210
+                        </a>
                     </div>
-                    <div class="sevadar-name">अंकित शर्मा</div>
-                    <div class="sevadar-role">मुख्य प्रबंधक एवं व्यवस्थापक</div>
-                    <a href="tel:9876543210" class="sevadar-phone-btn">
-                        📞 9876543210
-                    </a>
-                </div>
-                <div class="sevadar-card">
-                    <div class="sevadar-photo">
-                        <img src="uploads/sevadars/sevadar_2.jpg" alt="कतार प्रभारी" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
-                    </div>
-                    <div class="sevadar-name">दीपक कुमार</div>
-                    <div class="sevadar-role">टोकन एवं कतार व्यवस्था प्रभारी</div>
-                    <a href="tel:9876543211" class="sevadar-phone-btn">
-                        📞 9876543211
-                    </a>
-                </div>
-                <div class="sevadar-card">
-                    <div class="sevadar-photo">
-                        <img src="uploads/sevadars/sevadar_3.jpg" alt="भंडारा प्रभारी" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
-                    </div>
-                    <div class="sevadar-name">राहुल सिंह</div>
-                    <div class="sevadar-role">प्रसाद एवं भंडारा सेवा प्रमुख</div>
-                    <a href="tel:9876543212" class="sevadar-phone-btn">
-                        📞 9876543212
-                    </a>
-                </div>
-                <div class="sevadar-card">
-                    <div class="sevadar-photo">
-                        <img src="uploads/sevadars/sevadar_4.jpg" alt="सुरक्षा प्रभारी" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
-                    </div>
-                    <div class="sevadar-name">सोनू तेवतिया</div>
-                    <div class="sevadar-role">सुरक्षा एवं अनुशासन प्रमुख</div>
-                    <a href="tel:9876543213" class="sevadar-phone-btn">
-                        📞 9876543213
-                    </a>
-                </div>
+                <?php endif; ?>
             </div>
             <button class="carousel-nav-btn carousel-nav-next" onclick="slideCarousel('sevadarTrack', 1)">❯</button>
         </div>
@@ -1002,43 +1021,29 @@
         <div class="carousel-wrapper">
             <button class="carousel-nav-btn carousel-nav-prev" onclick="slideCarousel('donorTrack', -1)">❮</button>
             <div class="carousel-track" id="donorTrack">
-                <!-- Donor cards populated dynamically via live_config.php -->
-                <div class="donor-card">
-                    <span class="donor-badge-top">👑 मुख्य संरक्षक</span>
-                    <div class="donor-photo">
-                        <img src="uploads/donors/donor_1.jpg" alt="दानदाता" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                <?php if (!empty($donors)): ?>
+                    <?php foreach ($donors as $d): ?>
+                        <div class="donor-card">
+                            <span class="donor-badge-top">🌟 परम सहयोगी</span>
+                            <div class="donor-photo">
+                                <img src="<?= htmlspecialchars(!empty($d['photo_url']) ? $d['photo_url'] : 'uploads/donors/default.jpg') ?>" alt="<?= htmlspecialchars($d['name']) ?>" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                            </div>
+                            <div class="donor-name"><?= htmlspecialchars($d['name']) ?></div>
+                            <div class="donor-address">📍 <?= htmlspecialchars(!empty($d['city_address']) ? $d['city_address'] : 'ग्राम डूँगरा जाट') ?></div>
+                            <div class="donor-title"><?= htmlspecialchars(!empty($d['title']) ? $d['title'] : 'मंदिर निर्माण सहयोगी') ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div class="donor-card">
+                        <span class="donor-badge-top">👑 मुख्य संरक्षक</span>
+                        <div class="donor-photo">
+                            <img src="uploads/donors/donor_1.jpg" alt="दानदाता" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                        </div>
+                        <div class="donor-name">सेठ राधेश्याम जी</div>
+                        <div class="donor-address">📍 दिल्ली / बुलन्दशहर</div>
+                        <div class="donor-title">भव्य मंदिर निर्माण महासहयोगी</div>
                     </div>
-                    <div class="donor-name">सेठ राधेश्याम जी</div>
-                    <div class="donor-address">📍 दिल्ली / बुलन्दशहर</div>
-                    <div class="donor-title">भव्य मंदिर निर्माण महासहयोगी</div>
-                </div>
-                <div class="donor-card">
-                    <span class="donor-badge-top">✨ स्वर्ण कलश दाता</span>
-                    <div class="donor-photo">
-                        <img src="uploads/donors/donor_2.jpg" alt="दानदाता" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
-                    </div>
-                    <div class="donor-name">चौधरी वीरेन्द्र सिंह जी</div>
-                    <div class="donor-address">📍 हापुड़, उत्तर प्रदेश</div>
-                    <div class="donor-title">स्वर्ण ध्वजा एवं कलश सेवा</div>
-                </div>
-                <div class="donor-card">
-                    <span class="donor-badge-top">🍲 अन्नक्षेत्र संरक्षक</span>
-                    <div class="donor-photo">
-                        <img src="uploads/donors/donor_3.jpg" alt="दानदाता" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
-                    </div>
-                    <div class="donor-name">श्री रमेश चंद्र गोयल जी</div>
-                    <div class="donor-address">📍 गाजियाबाद, उत्तर प्रदेश</div>
-                    <div class="donor-title">नित्य महाप्रसाद अन्नक्षेत्र सेवा</div>
-                </div>
-                <div class="donor-card">
-                    <span class="donor-badge-top">🚌 यात्रा सेवा दाता</span>
-                    <div class="donor-photo">
-                        <img src="uploads/donors/donor_4.jpg" alt="दानदाता" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
-                    </div>
-                    <div class="donor-name">श्री अजय तेवतिया जी</div>
-                    <div class="donor-address">📍 स्याना, बुलन्दशहर</div>
-                    <div class="donor-title">श्री बालाजी बस यात्रा सहयोगी</div>
-                </div>
+                <?php endif; ?>
             </div>
             <button class="carousel-nav-btn carousel-nav-next" onclick="slideCarousel('donorTrack', 1)">❯</button>
         </div>
@@ -1121,7 +1126,7 @@
             </div>
             <div class="timing-row">
                 <span>रविवार विशेष दरबार</span>
-                <span class="time" id="dynamicDarbarTimings">प्रातः 09:00 बजे से प्रभु इच्छा तक</span>
+                <span class="time" id="dynamicDarbarTimings"><?= htmlspecialchars($darbarTimings) ?></span>
             </div>
             <div class="timing-row">
                 <span>सांध्य महाआरती</span>
@@ -1148,7 +1153,7 @@
                 <a href="https://www.google.com/maps/search/?api=1&query=28.3972915,78.1460410" target="_blank" class="btn-maps">
                     🗺️ गूगल मैप्स पर रास्ता देखें
                 </a>
-                <a href="https://wa.me/919999999999?text=जय%20श्री%20बालाजी%20महाराज" target="_blank" class="btn-whatsapp">
+                <a href="https://wa.me/<?= !empty($settings["whatsapp_number"]) ? preg_replace("/[^0-9]/", "", $settings["whatsapp_number"]) : "918006518960" ?>?text=जय%20श्री%20बालाजी%20महाराज" target="_blank" class="btn-whatsapp">
                     💬 व्हाट्सएप हेल्पलाइन
                 </a>
             </div>
@@ -1163,7 +1168,7 @@
         
         <div style="margin-top: 15px;">
             <a href="download.php" style="color: #ffffff; background: var(--saffron-deep); padding: 8px 18px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.88rem;">
-                📲 Android ऐप डाउनलोड करें (v2.39.0)
+                📲 Android ऐप डाउनलोड करें (v2.42.1 Pro)
             </a>
         </div>
 
@@ -1207,8 +1212,8 @@
             fetch('api/live_config.php?t=' + new Date().getTime())
                 .then(response => response.json())
                 .then(data => {
-                    if (data && data.status === 'SUCCESS' && data.config) {
-                        const cfg = data.config;
+                    if (data) {
+                        const cfg = (data.config && typeof data.config === 'object') ? data.config : data;
                         
                         // 1. Darbar Status
                         const darbarText = document.getElementById('darbarStatusText');
@@ -1223,8 +1228,9 @@
 
                         // 2. Serving Token
                         const tokenEl = document.getElementById('servingTokenNumber');
-                        if (cfg.running_token_number > 0) {
-                            tokenEl.innerText = cfg.running_token_number;
+                        const sNum = (cfg.running_token_number !== undefined) ? cfg.running_token_number : cfg.current_serving_token;
+                        if (sNum && parseInt(sNum) > 0) {
+                            tokenEl.innerText = parseInt(sNum);
                         } else {
                             tokenEl.innerText = '--';
                         }

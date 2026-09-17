@@ -283,6 +283,35 @@ fun UnifiedMasterLedgerTab(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Action Buttons: Add Entry + Download Excel
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = { showAddPaymentDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.weight(1f).height(40.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(if (isHindi) "➕ नया दान/भुगतान" else "➕ Add Payment", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+
+            OutlinedButton(
+                onClick = { exportLedgerToCsv(context, summary.entries) },
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaroonPrimary),
+                border = BorderStroke(1.dp, MaroonPrimary),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.weight(1f).height(40.dp),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(if (isHindi) "📥 एक्सेल/CSV डाउनलोड" else "📥 Export Excel", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         // Category Filter Chips in horizontal scroll
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -591,5 +620,51 @@ private fun UnifiedLedgerEntryRow(
                 )
             }
         }
+    }
+}
+
+private fun exportLedgerToCsv(context: Context, entries: List<UnifiedLedgerEntry>) {
+    try {
+        if (entries.isEmpty()) {
+            Toast.makeText(context, "एक्सपोर्ट करने के लिए कोई लेजर प्रविष्टि नहीं है।", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val fileName = "ShriBalaji_UnifiedLedger_${System.currentTimeMillis()}.csv"
+        val exportDir = java.io.File(context.cacheDir, "exports")
+        if (!exportDir.exists()) exportDir.mkdirs()
+        val file = java.io.File(exportDir, fileName)
+        java.io.FileOutputStream(file).use { fos ->
+            fos.write(byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte())) // UTF-8 BOM for Microsoft Excel
+            fos.bufferedWriter(Charsets.UTF_8).use { w ->
+                w.appendLine("शीर्षक,श्रेणी,राशि (₹),प्रकार,भुगतान माध्यम,तारीख,विवरण")
+                for (e in entries) {
+                    val cat = when (e.category) {
+                        "ARZI_BOX" -> "अर्जी"
+                        "BUS_BOOKING" -> "बस बुकिंग"
+                        "UPI_QR_DONATION" -> "दान/सहयोग"
+                        "ASHRAM_EXPENSE" -> "आश्रम व्यय"
+                        else -> e.category
+                    }
+                    val typ = if (e.isInflow) "आवक (Credit)" else "जावक (Debit)"
+                    val safeTitle = e.devoteeOrPerson.replace("\"", "\"\"")
+                    val safeSub = e.details.replace("\"", "\"\"")
+                    w.appendLine("\"$safeTitle\",\"$cat\",\"${e.amount}\",\"$typ\",\"${e.paymentMode}\",\"${e.date}\",\"$safeSub\"")
+                }
+            }
+        }
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "text/csv"
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            putExtra(android.content.Intent.EXTRA_SUBJECT, "श्री बालाजी कृपा धाम - वित्तीय लेजर")
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(android.content.Intent.createChooser(shareIntent, "लेजर एक्सेल/CSV फाइल खोलें / शेयर करें"))
+    } catch (e: Exception) {
+        Toast.makeText(context, "CSV एक्सपोर्ट विफल: ${e.message}", Toast.LENGTH_SHORT).show()
     }
 }

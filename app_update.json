@@ -1,10 +1,10 @@
 {
-  "version_code": 58,
-  "version_name": "2.42.0",
+  "version_code": 59,
+  "version_name": "2.42.1",
   "is_force": false,
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.0/ShriBalajiKripaDham-v2.42.0.apk",
-  "update_notes_hindi": "v2.42.0: मल्टी-डिवाइस फोटो सिंक (होस्टिंगर CDN), सेवादार और दानदाता विवरण/फोटो एडिट व डिलीट सुविधा, ऐप के अंदर संपूर्ण वेबसाइट CMS एडिटर (हेडलाइन, सबटाइटल, आपातकालीन सूचना, दरबार समय, पूज्य गुरुदेव जी फोटो)।",
-  "update_notes_english": "v2.42.0: Multi-device photo sync with Hostinger CDN, full sevadar & donor edit/delete with photo picker dialogs, in-app Ashram website CMS editor (Hero headline/subtitle, emergency notice banner, timings, Guruji photo) with 1-click live publish.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-v2.42.1.apk",
+  "update_notes_hindi": "v2.42.1: 100% स्थायी सेटिंग्स, 1-Click वेबसाइट लाइव पब्लिश फिक्स (HTTP 500 एरर पूरी तरह समाप्त), गुरुजी का फोटो वेबसाइट व ऐप पर लाइव मिररिंग, डायरेक्ट Bluetooth ESC/POS थर्मल प्रिंटर (58mm/80mm) पर्ची प्रिंट सपोर्ट, एक्सेल/CSV लेजर एक्सपोर्ट।",
+  "update_notes_english": "v2.42.1: Indestructible settings, 1-Click live publish HTTP 500 error permanently fixed with self-healing DB auto-migration, Guruji photo live mirroring, direct Bluetooth ESC/POS 58mm/80mm thermal printer support, and Excel/CSV ledger export.",
   "release_date": "2026-09-17",
-  "sha256": "6321b277323d2030a203de99e810afd43a72bbca574daa8ae62f9df62d9409e1"
+  "sha256": "C4174543CF898FD25EDF32E0F317D971B44FA9992BF3AE278E3CDF462C840B7A"
 }

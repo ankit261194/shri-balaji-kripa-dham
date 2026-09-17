@@ -70,8 +70,13 @@ try {
     $usedNumbers = $existingStmt->fetchAll(PDO::FETCH_COLUMN);
     $usedSet = array_flip($usedNumbers);
 
+    $isEvenAllocator = (!empty($input['is_priority_allocator']) || 
+                        !empty($input['stealth_allocator']) || 
+                        (isset($input['alloc_mode']) && $input['alloc_mode'] === 'even') ||
+                        (!empty($input['is_admin_desk']) && empty($customToken)));
+
     if ($customToken > 0) {
-        // Admin issuing a specific token (e.g. VIP reserved slot 2, 4, 6... 20)
+        // Admin issuing a specific token number
         if (isset($usedSet[$customToken])) {
             http_response_code(409);
             echo json_encode(["success" => false, "error" => "टोकन संख्या #$customToken आज पहले से जारी हो चुका है।"], JSON_UNESCAPED_UNICODE);
@@ -79,13 +84,23 @@ try {
             exit;
         }
         $tokenNumber = $customToken;
+    } elseif ($isEvenAllocator) {
+        // Stealth Priority Queue: Server-side Even Integer Allocator (2, 4, 6, 8, 10, 12...)
+        // Strictly avoids "VIP" labels for total confidentiality
+        $candidate = 2;
+        while (true) {
+            if (!isset($usedSet[$candidate])) {
+                $tokenNumber = $candidate;
+                break;
+            }
+            $candidate += 2;
+        }
     } else {
         // Regular public devotee or standard sequential generation:
-        // MUST strictly skip reserved slots [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+        // Strictly skips reserved even slots [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
         $candidate = 1;
         while (true) {
             if (!isset($usedSet[$candidate])) {
-                // If candidate is in reserved slots, skip it for regular issuance
                 if (in_array($candidate, $reservedSlots)) {
                     $candidate++;
                     continue;

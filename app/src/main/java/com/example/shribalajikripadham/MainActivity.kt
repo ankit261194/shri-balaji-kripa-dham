@@ -125,4 +125,17 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        // Silent Force-Refresh on Resume: Trigger live config & token status sync instantly
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            try {
+                val repo = AshramRepository(applicationContext)
+                repo.syncLiveConfigFromGitHub()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 }

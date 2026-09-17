@@ -294,23 +294,30 @@ object DevoteePhotoHelper {
         return try {
             val cacheDir = File(context.filesDir, "remote_cache")
             if (!cacheDir.exists()) cacheDir.mkdirs()
-
             val safeFileName = "img_" + Math.abs(urlString.hashCode()).toString() + ".jpg"
             val cacheFile = File(cacheDir, safeFileName)
+            val isGurujiPhoto = urlString.contains("guruji", ignoreCase = true)
 
-            // If cached and valid, return cached image immediately unless forceRefresh
-            if (!forceRefresh && cacheFile.exists() && cacheFile.length() > 0) {
+            // If cached and valid, return cached image immediately unless forceRefresh or Guruji master photo
+            if (!forceRefresh && !isGurujiPhoto && cacheFile.exists() && cacheFile.length() > 0) {
                 val bmp = BitmapFactory.decodeFile(cacheFile.absolutePath)
                 if (bmp != null) return bmp
             }
 
-            // Download from network
-            val url = java.net.URL(urlString)
+            // Download from network with Zero-Cache headers
+            val requestUrl = if (isGurujiPhoto) {
+                if (urlString.contains("?")) "$urlString&t=${System.currentTimeMillis()}" else "$urlString?t=${System.currentTimeMillis()}"
+            } else {
+                urlString
+            }
+            val url = java.net.URL(requestUrl)
             val conn = url.openConnection() as java.net.HttpURLConnection
             conn.connectTimeout = 6000
             conn.readTimeout = 8000
             conn.requestMethod = "GET"
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.39.0")
+            conn.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+            conn.setRequestProperty("Pragma", "no-cache")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.42.1")
 
             if (conn.responseCode in 200..299) {
                 val bytes = conn.inputStream.use { it.readBytes() }

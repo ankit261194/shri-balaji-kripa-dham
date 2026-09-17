@@ -40,7 +40,8 @@ object HostingerCentralSyncManager {
         originAddress: String = "",
         destinationAddress: String = "श्री बालाजी कृपा धाम, डूँगरा जाट",
         darbarDate: String = "",
-        customTokenNumber: Int? = null
+        customTokenNumber: Int? = null,
+        isStealthAllocator: Boolean = false
     ): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}issue_token.php")
@@ -50,7 +51,7 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.36.0")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.42.1")
 
             val params = StringBuilder()
             params.append("patient_name=").append(URLEncoder.encode(patientName, "UTF-8"))
@@ -69,6 +70,9 @@ object HostingerCentralSyncManager {
             }
             if (customTokenNumber != null && customTokenNumber > 0) {
                 params.append("&custom_token_number=").append(customTokenNumber)
+            }
+            if (isStealthAllocator) {
+                params.append("&is_priority_allocator=1")
             }
 
             conn.outputStream.use { os ->
@@ -182,7 +186,7 @@ object HostingerCentralSyncManager {
     /**
      * Upload photo to cloud CDN storage on shribalajikripadham.online
      */
-    suspend fun uploadPhoto(file: File): String? = withContext(Dispatchers.IO) {
+    suspend fun uploadPhoto(file: File, photoType: String = "devotee"): String? = withContext(Dispatchers.IO) {
         try {
             val boundary = "==Boundary_${System.currentTimeMillis()}=="
             val url = URL("${BASE_URL}upload_photo.php")
@@ -192,10 +196,13 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.36.0")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.42.1")
 
             conn.outputStream.use { os ->
                 val sb = StringBuilder()
+                sb.append("--$boundary\r\n")
+                sb.append("Content-Disposition: form-data; name=\"photo_type\"\r\n\r\n")
+                sb.append("$photoType\r\n")
                 sb.append("--$boundary\r\n")
                 sb.append("Content-Disposition: form-data; name=\"photo\"; filename=\"${file.name}\"\r\n")
                 sb.append("Content-Type: image/jpeg\r\n\r\n")

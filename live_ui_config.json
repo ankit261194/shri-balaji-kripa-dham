@@ -55,6 +55,14 @@
     "ashram_upi_name": "Shri Balaji Kripa Dham",
     "bus_seat_fare_amount": 1
   },
+  "app_update": {
+    "latest_version_code": 59,
+    "latest_version_name": "2.42.1",
+    "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-v2.42.1.apk",
+    "update_notes_hindi": "v2.42.1: सेटिंग्स स्थायीकरण (Indestructible Settings Fix) - ऐप अपडेट, रीस्टार्ट या सिंक के दौरान एडमिन द्वारा की गई सेटिंग्स (दरबार समय, बैनर, सूचना, परिधि, टॉगल्स आदि) कभी भी रीसेट या डिलीट नहीं होंगी। Android SharedPreferences, आंतरिक व बाह्य वॉल्ट तथा होस्टिंगर सर्वर पर 4-स्तरीय सुरक्षा।",
+    "update_notes_english": "v2.42.1: Indestructible Settings Fix - Custom settings (Darbar timings, banners, emergency notice, geofence, toggles, etc.) will never be wiped or reset during app updates, restarts, or syncs.",
+    "is_force_update": false
+  },
   "sections": [
     {
       "section_id": "GURUJI_BANNER",
