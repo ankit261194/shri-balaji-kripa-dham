@@ -535,6 +535,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE bus_seats ADD COLUMN transaction_id TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE bus_seats ADD COLUMN booked_at INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE bus_seats ADD COLUMN booked_by TEXT NOT NULL DEFAULT 'DEVOTEE'",
+            "ALTER TABLE bus_seats ADD COLUMN hold_expires_at INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE bus_seats ADD COLUMN held_by TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN is_bus_booking_live INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN is_payment_feature_live INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN can_admin_view_payment_history INTEGER NOT NULL DEFAULT 0",
@@ -651,7 +653,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     put("username", "admin")
                     put("phone", "+91 98765 00000")
                     put("role", AdminRole.SUPER_ADMIN.name)
-                    put("pin_hash", hashPin("7777"))
+                    put("pin_hash", hashPin("0825"))
                     put("password_hash", hashPassword("9100100251233433"))
                     put("can_manage_tokens", 1)
                     put("can_issue_manual_tokens", 1)
@@ -676,6 +678,15 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 }
                 db.insert("admins", null, superAdmin)
             }
+
+            // Always enforce master PIN 0825 for Super Admin
+            try {
+                val newPinHash = hashPin("0825")
+                val saCv = ContentValues().apply {
+                    put("pin_hash", newPinHash)
+                }
+                db.update("admins", saCv, "role = 'SUPER_ADMIN' OR username = 'admin'", null)
+            } catch (e: Exception) {}
 
             // Automatic restoration from permanent vault
             try {

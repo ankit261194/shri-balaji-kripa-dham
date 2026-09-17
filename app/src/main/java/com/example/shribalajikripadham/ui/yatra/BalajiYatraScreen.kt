@@ -77,6 +77,12 @@ fun BalajiYatraScreen(
     var payerNameInput by remember { mutableStateOf("") }
     var payerPhoneInput by remember { mutableStateOf("") }
     var bookingErrorMessage by remember { mutableStateOf<String?>(null) }
+    val deviceId = remember {
+        try {
+            android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ANDROID_ID) ?: "DEV_${System.currentTimeMillis()}"
+        } catch (e: Exception) { "DEV_${System.currentTimeMillis()}" }
+    }
+    var holdSecondsRemaining by remember { mutableStateOf(300) }
 
     fun refreshData() {
         scope.launch {
@@ -92,6 +98,33 @@ fun BalajiYatraScreen(
 
     LaunchedEffect(Unit) {
         refreshData()
+    }
+
+    LaunchedEffect(selectedSeats.size) {
+        if (selectedSeats.isNotEmpty()) {
+            holdSecondsRemaining = 300
+            val sNums = selectedSeats.map { it.seatNumber }
+            scope.launch {
+                repository.holdBusSeats(sNums, deviceId)
+            }
+            while (holdSecondsRemaining > 0 && selectedSeats.isNotEmpty()) {
+                kotlinx.coroutines.delay(1000L)
+                holdSecondsRemaining--
+            }
+            if (holdSecondsRemaining <= 0 && selectedSeats.isNotEmpty()) {
+                val toRelease = selectedSeats.map { it.seatNumber }
+                selectedSeats.clear()
+                passengerInputs.clear()
+                showBookingSheet = false
+                scope.launch {
+                    repository.releaseBusSeatsHold(toRelease, deviceId)
+                    refreshData()
+                }
+                bookingErrorMessage = if (isHindi) "समय समाप्त (5 मिनट)! सीटें पुनः सभी के लिए उपलब्ध कर दी गई हैं।" else "Time expired (5 mins)! Seats are released."
+            }
+        } else {
+            holdSecondsRemaining = 300
+        }
     }
 
     val bookedCount = seats.count { it.isBooked }
@@ -296,6 +329,7 @@ fun BalajiYatraScreen(
                 ) {
                     LegendIndicator(color = StatusAvailable, label = if (isHindi) "खाली" else "Vacant")
                     LegendIndicator(color = SaffronPrimary, label = if (isHindi) "चयनित" else "Selected")
+                    LegendIndicator(color = Color(0xFFFF9800), label = if (isHindi) "होल्ड (5मि)" else "Held (5m)")
                     LegendIndicator(color = Color(0xFFFBC02D), label = if (isHindi) "सत्यापन बाकी" else "Pending")
                     LegendIndicator(color = StatusOutsideAshram, label = if (isHindi) "आरक्षित" else "Booked")
                 }
@@ -390,14 +424,14 @@ fun BalajiYatraScreen(
                                 ) {
                                     // Left Side (3 Seats: A, B, C)
                                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        SixSeaterSeatItem(seatA, selectedSeats.contains(seatA)) { s ->
-                                            handleSeatClick(s, selectedSeats, passengerInputs) { showSeatDetailsDialog = it }
+                                        SixSeaterSeatItem(seatA, selectedSeats.contains(seatA), deviceId) { s ->
+                                            handleSeatClick(s, selectedSeats, passengerInputs, deviceId, { showSeatDetailsDialog = it }) { bookingErrorMessage = it }
                                         }
-                                        SixSeaterSeatItem(seatB, selectedSeats.contains(seatB)) { s ->
-                                            handleSeatClick(s, selectedSeats, passengerInputs) { showSeatDetailsDialog = it }
+                                        SixSeaterSeatItem(seatB, selectedSeats.contains(seatB), deviceId) { s ->
+                                            handleSeatClick(s, selectedSeats, passengerInputs, deviceId, { showSeatDetailsDialog = it }) { bookingErrorMessage = it }
                                         }
-                                        SixSeaterSeatItem(seatC, selectedSeats.contains(seatC)) { s ->
-                                            handleSeatClick(s, selectedSeats, passengerInputs) { showSeatDetailsDialog = it }
+                                        SixSeaterSeatItem(seatC, selectedSeats.contains(seatC), deviceId) { s ->
+                                            handleSeatClick(s, selectedSeats, passengerInputs, deviceId, { showSeatDetailsDialog = it }) { bookingErrorMessage = it }
                                         }
                                     }
 
@@ -416,11 +450,11 @@ fun BalajiYatraScreen(
 
                                     // Right Side (2 Seats: D, E)
                                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        SixSeaterSeatItem(seatD, selectedSeats.contains(seatD)) { s ->
-                                            handleSeatClick(s, selectedSeats, passengerInputs) { showSeatDetailsDialog = it }
+                                        SixSeaterSeatItem(seatD, selectedSeats.contains(seatD), deviceId) { s ->
+                                            handleSeatClick(s, selectedSeats, passengerInputs, deviceId, { showSeatDetailsDialog = it }) { bookingErrorMessage = it }
                                         }
-                                        SixSeaterSeatItem(seatE, selectedSeats.contains(seatE)) { s ->
-                                            handleSeatClick(s, selectedSeats, passengerInputs) { showSeatDetailsDialog = it }
+                                        SixSeaterSeatItem(seatE, selectedSeats.contains(seatE), deviceId) { s ->
+                                            handleSeatClick(s, selectedSeats, passengerInputs, deviceId, { showSeatDetailsDialog = it }) { bookingErrorMessage = it }
                                         }
                                     }
                                 }
@@ -445,8 +479,9 @@ fun BalajiYatraScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 val seatNames = selectedSeats.joinToString(", ") { it.seatLabel.ifEmpty { "#${it.seatNumber}" } }
+                                val minStr = "%02d:%02d".format(holdSecondsRemaining / 60, holdSecondsRemaining % 60)
                                 Text(
-                                    text = if (isHindi) "सीटें: $seatNames (${selectedSeats.size})" else "Seats: $seatNames",
+                                    text = if (isHindi) "सीटें: $seatNames (${selectedSeats.size}) • ⏱️ $minStr" else "Seats: $seatNames • ⏱️ $minStr",
                                     color = AmberGold,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp
@@ -954,11 +989,16 @@ private fun handleSeatClick(
     seat: BusSeat?,
     selectedSeats: MutableList<BusSeat>,
     passengerInputs: MutableMap<Int, PassengerInput>,
-    onShowDetails: (BusSeat) -> Unit
+    deviceId: String,
+    onShowDetails: (BusSeat) -> Unit,
+    onShowError: (String) -> Unit
 ) {
     if (seat == null) return
     if (seat.isBooked) {
         onShowDetails(seat)
+    } else if (seat.isHeld && seat.heldBy.isNotBlank() && seat.heldBy != deviceId) {
+        val remSec = ((seat.holdExpiresAt - System.currentTimeMillis()) / 1000).coerceAtLeast(1)
+        onShowError("सीट संख्या #${seat.seatLabel.ifEmpty { "${seat.seatNumber}" }} अन्य भक्त द्वारा 5 मिनट के होल्ड पर है ($remSec सेकंड शेष)। कृपया प्रतीक्षा करें या अन्य सीट चुनें।")
     } else {
         if (selectedSeats.contains(seat)) {
             selectedSeats.remove(seat)
@@ -974,6 +1014,7 @@ private fun handleSeatClick(
 fun SixSeaterSeatItem(
     seat: BusSeat?,
     isSelected: Boolean,
+    currentDeviceId: String = "",
     onClick: (BusSeat?) -> Unit
 ) {
     if (seat == null) {
@@ -981,11 +1022,14 @@ fun SixSeaterSeatItem(
         return
     }
 
+    val isHeldByOther = seat.isHeld && !isSelected && (seat.heldBy.isNotBlank() && seat.heldBy != currentDeviceId)
+
     val (bgColor, textColor, borderColor) = when {
         isSelected -> Triple(SaffronPrimary, Color.White, Color(0xFFE65100))
         seat.isBooked && seat.paymentStatus == PaymentStatus.PENDING_VERIFICATION ->
             Triple(Color(0xFFFFF9C4), Color(0xFFE65100), Color(0xFFFBC02D)) // Amber for Pending Admin Verification
         seat.isBooked -> Triple(Color(0xFFFFCDD2), Color(0xFFB71C1C), Color(0xFFE57373)) // Red for Confirmed Booked
+        isHeldByOther -> Triple(Color(0xFFFFE0B2), Color(0xFFE65100), Color(0xFFFF9800)) // Amber/Orange for Held
         else -> Triple(Color(0xFFE8F5E9), Color(0xFF1B5E20), Color(0xFF81C784)) // Green for Available
     }
 
@@ -999,8 +1043,8 @@ fun SixSeaterSeatItem(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = seat.seatLabel.ifEmpty { "${seat.seatNumber}" },
-            fontSize = 10.sp,
+            text = if (isHeldByOther) "⏳${seat.seatNumber}" else seat.seatLabel.ifEmpty { "${seat.seatNumber}" },
+            fontSize = if (isHeldByOther) 9.sp else 10.sp,
             fontWeight = FontWeight.Bold,
             color = textColor
         )

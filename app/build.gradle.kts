@@ -11,8 +11,12 @@ android {
         applicationId = "com.example.shribalajikripadham"
         minSdk = 24
         targetSdk = 34
-        versionCode = 54
-        versionName = "2.39.0"
+        versionCode = 55
+        versionName = "2.39.1"
+
+        ndk {
+            abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
+        }
     }
 
     androidResources {

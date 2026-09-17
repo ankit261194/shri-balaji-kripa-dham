@@ -1,10 +1,10 @@
 {
-  "version_code": 54,
-  "version_name": "2.39.0",
+  "version_code": 55,
+  "version_name": "2.39.1",
   "is_force": false,
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.39.0/ShriBalajiKripaDham-v2.39.0.apk",
-  "update_notes_hindi": "v2.39.0: वीआईपी आरक्षित टोकन प्रबंधन, लाइव कतार उद्घोषक स्क्रीन, सेवादार 1-क्लिक कॉल स्लाइडर, वेबसाइट लाइव टोकन व सार्वभौमिक सीएमएस कंट्रोल।",
-  "update_notes_english": "v2.39.0: VIP Reserved Token Allocation, Announcer Live Queue Screen, Sevadars 1-Tap Call Slider, Live Running Token & Universal Web CMS Control.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.39.1/ShriBalajiKripaDham-v2.39.1.apk",
+  "update_notes_hindi": "v2.39.1: सुपर एडमिन पिन 0825, ऐप साइज़ 50MB कटौती, ऑल-इंडिया मैप ऑटो-कम्प्लीट (हर गाँव-कस्बा), बुकमाईशो 5-मिनट बस सीट होल्ड व ऑफ़लाइन टोकन जनरेशन।",
+  "update_notes_english": "v2.39.1: Super Admin PIN 0825, 50MB APK size cut, Pan-India village map autocomplete, BookMyShow 5-min bus seat hold & resilient offline token generation.",
   "release_date": "2026-09-17",
   "sha256": ""
 }

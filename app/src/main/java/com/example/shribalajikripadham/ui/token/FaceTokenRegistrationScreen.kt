@@ -118,10 +118,15 @@ fun FaceTokenRegistrationScreen(
             if (localResults.isNotEmpty()) {
                 locationSuggestions = localResults
                 showLocationDropdown = true
-            } else if (q.length >= 3) {
-                locationSuggestions = com.example.shribalajikripadham.util.IndiaLocationsDatabase.searchWithOnlineFallback(q, maxLimit = 8)
-                showLocationDropdown = locationSuggestions.isNotEmpty()
             }
+            // Always fetch online results (villages, hamlets, tehsils across India) and update suggestions
+            try {
+                val fullResults = com.example.shribalajikripadham.util.IndiaLocationsDatabase.searchWithOnlineFallback(q, maxLimit = 15)
+                if (fullResults.isNotEmpty()) {
+                    locationSuggestions = fullResults
+                    showLocationDropdown = true
+                }
+            } catch (e: Exception) {}
         } else {
             locationSuggestions = emptyList()
             showLocationDropdown = false

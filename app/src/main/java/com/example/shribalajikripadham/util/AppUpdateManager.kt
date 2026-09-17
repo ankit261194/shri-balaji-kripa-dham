@@ -40,14 +40,9 @@ object AppUpdateManager {
     suspend fun fetchLatestUpdateFromOnline(urlStr: String = DEFAULT_VERSION_JSON_URL): OnlineUpdateInfo? {
         return withContext(Dispatchers.IO) {
             val fromVersionJson = fetchFromVersionJson(urlStr)
+            val fromAppUpdateJson = fetchFromVersionJson("https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/app_update.json")
             val fromGitHub = fetchFromGitHubReleasesApi()
-            when {
-                fromVersionJson != null && fromGitHub != null -> {
-                    if (fromGitHub.versionCode > fromVersionJson.versionCode) fromGitHub else fromVersionJson
-                }
-                fromVersionJson != null -> fromVersionJson
-                else -> fromGitHub
-            }
+            listOfNotNull(fromVersionJson, fromAppUpdateJson, fromGitHub).maxByOrNull { it.versionCode }
         }
     }
 

@@ -24,5 +24,10 @@ data class BusSeat(
     val yatraDate: String = "",
     val bookedAt: Long = 0L,
     val bookedBy: String = "DEVOTEE",
-    val notes: String = ""
-)
+    val notes: String = "",
+    val holdExpiresAt: Long = 0L,
+    val heldBy: String = ""
+) {
+    val isHeld: Boolean
+        get() = !isBooked && holdExpiresAt > System.currentTimeMillis()
+}

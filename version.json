@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 48,
-  "latest_version_name": "2.35.1",
-  "update_notes_hindi": "200m स्थायी आश्रम परिधि फिक्स, 30 किमी बाहरी भक्त कंट्रोल स्विच एवं क्विक दूरी प्रीसेट बटन",
-  "update_notes_english": "Fixed 200m geofence lock, added 30km outstation switch and quick distance presets",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.35.1/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 55,
+  "latest_version_name": "2.39.1",
+  "update_notes_hindi": "v2.39.1: सुपर एडमिन पिन 0825, ऐप साइज़ 50MB कटौती, ऑल-इंडिया मैप ऑटो-कम्प्लीट (हर गाँव-कस्बा), बुकमाईशो 5-मिनट बस सीट होल्ड व ऑफ़लाइन टोकन जनरेशन।",
+  "update_notes_english": "v2.39.1: Super Admin PIN 0825, 50MB APK size cut, Pan-India village map autocomplete, BookMyShow 5-min bus seat hold & resilient offline token generation.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.39.1/ShriBalajiKripaDham-v2.39.1.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

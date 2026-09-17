@@ -297,7 +297,7 @@ object IndiaLocationsDatabase {
 
     fun getAllLocations(): List<IndiaLocation> = LOCATIONS
 
-    suspend fun searchWithOnlineFallback(query: String, maxLimit: Int = 12): List<IndiaLocation> {
+    suspend fun searchWithOnlineFallback(query: String, maxLimit: Int = 15): List<IndiaLocation> {
         val localMatches = search(query, maxLimit)
         val q = query.trim()
         if (q.length < 2) {
@@ -308,65 +308,136 @@ object IndiaLocationsDatabase {
             val combined = mutableListOf<IndiaLocation>()
             combined.addAll(localMatches)
 
+            // 1. High-speed Komoot Photon Geocoder (OSM Based, free, fast, handles villages/hamlets/kasbas)
             try {
-                val encoded = java.net.URLEncoder.encode("$q, India", "UTF-8")
-                val url = java.net.URL("https://nominatim.openstreetmap.org/search?q=$encoded&format=json&limit=8&countrycodes=in&addressdetails=1")
-                val conn = url.openConnection() as java.net.HttpURLConnection
+                val encoded = java.net.URLEncoder.encode(q, "UTF-8")
+                // Biased near Ashram Dungra Jaat (lat=28.3972, lon=78.1460)
+                val urlStr = "https://photon.komoot.io/api/?q=$encoded&limit=12&lat=28.3972915&lon=78.1460410"
+                val conn = java.net.URL(urlStr).openConnection() as java.net.HttpURLConnection
                 conn.connectTimeout = 3000
                 conn.readTimeout = 3000
-                conn.setRequestProperty("User-Agent", "SBKD-App/2.32")
+                conn.setRequestProperty("User-Agent", "ShriBalajiKripaDham/2.39")
                 if (conn.responseCode in 200..299) {
                     val resp = conn.inputStream.bufferedReader().use { it.readText() }
-                    val arr = org.json.JSONArray(resp)
-                    for (i in 0 until arr.length()) {
-                        val obj = arr.getJSONObject(i)
-                        val name = obj.optString("name", q).ifBlank { q }
-                        val lat = obj.optDouble("lat", 0.0)
-                        val lon = obj.optDouble("lon", 0.0)
-                        val addr = obj.optJSONObject("address")
+                    val root = org.json.JSONObject(resp)
+                    val features = root.optJSONArray("features") ?: org.json.JSONArray()
+                    for (i in 0 until features.length()) {
+                        val feat = features.getJSONObject(i)
+                        val geom = feat.optJSONObject("geometry")
+                        val coords = geom?.optJSONArray("coordinates")
+                        val lon = coords?.optDouble(0, 0.0) ?: 0.0
+                        val lat = coords?.optDouble(1, 0.0) ?: 0.0
 
-                        val village = addr?.optString("village", "").orEmpty()
-                        val hamlet = addr?.optString("hamlet", "").orEmpty()
-                        val suburb = addr?.optString("suburb", addr?.optString("neighbourhood", "")).orEmpty()
-                        val town = addr?.optString("town", addr?.optString("city", "")).orEmpty()
-                        val district = addr?.optString("state_district", addr?.optString("county", addr?.optString("district", ""))).orEmpty()
-                        val state = addr?.optString("state", "भारत") ?: "भारत"
-                        val type = obj.optString("type", "स्थान")
+                        val props = feat.optJSONObject("properties") ?: continue
+                        val name = props.optString("name", "").trim()
+                        if (name.isBlank()) continue
 
-                        val chosenName = when {
-                            village.isNotBlank() -> village
-                            hamlet.isNotBlank() -> hamlet
-                            suburb.isNotBlank() -> suburb
-                            name.isNotBlank() -> name
-                            town.isNotBlank() -> town
-                            else -> q
+                        val country = props.optString("country", "India")
+                        if (!country.equals("India", ignoreCase = true) && !props.optString("countrycode", "IN").equals("IN", ignoreCase = true)) {
+                            continue
                         }
 
-                        val cat = when {
-                            village.isNotBlank() || hamlet.isNotBlank() || type == "village" || type == "hamlet" -> "गाँव"
-                            suburb.isNotBlank() || type == "suburb" || type == "neighbourhood" -> "मोहल्ला / क्षेत्र"
-                            else -> "कस्बा / शहर"
+                        val osmValue = props.optString("osm_value", props.optString("type", ""))
+                        val state = props.optString("state", "").trim().ifEmpty { "भारत" }
+                        val county = props.optString("county", "").trim()
+                        val city = props.optString("city", "").trim()
+                        val district = props.optString("district", "").trim().ifEmpty {
+                            if (city.isNotBlank() && city != name) city else county
                         }
 
-                        val straightKm = DistanceCalculatorService.haversineDistanceKm(lat, lon, DistanceCalculatorService.DESTINATION_LAT, DistanceCalculatorService.DESTINATION_LNG)
-                        val roadKm = (Math.round(straightKm * 1.25f * 10f) / 10f)
+                        val category = when (osmValue.lowercase()) {
+                            "village" -> "गाँव"
+                            "hamlet" -> "मजरा / छोटा गाँव"
+                            "suburb", "neighbourhood", "quarter" -> "मोहल्ला / क्षेत्र"
+                            "town" -> "कस्बा"
+                            "city" -> "शहर"
+                            "district", "county" -> "ज़िला / तहसील"
+                            else -> if (county.isNotBlank()) "कस्बा / क्षेत्र" else "स्थान"
+                        }
+
+                        val straightKm = if (lat != 0.0 && lon != 0.0) {
+                            DistanceCalculatorService.haversineDistanceKm(lat, lon, DistanceCalculatorService.DESTINATION_LAT, DistanceCalculatorService.DESTINATION_LNG)
+                        } else -1f
+                        val roadKm = if (straightKm >= 0f) (Math.round(straightKm * 1.25f * 10f) / 10f) else -1f
 
                         combined.add(
                             IndiaLocation(
-                                nameHindi = chosenName,
+                                nameHindi = name,
                                 nameEnglish = name,
-                                category = cat,
+                                category = category,
                                 stateHindi = state,
                                 distanceKm = roadKm,
                                 districtHindi = district,
-                                districtEnglish = district
+                                districtEnglish = district,
+                                subDistrictOrTehsil = county
                             )
                         )
                     }
                 }
             } catch (ignored: Exception) {}
 
-            // Distinct by Name + District + State (keeps same place names in DIFFERENT districts/states!)
+            // 2. Fallback to OpenStreetMap Nominatim if combined is small
+            if (combined.size <= localMatches.size) {
+                try {
+                    val encoded = java.net.URLEncoder.encode("$q, India", "UTF-8")
+                    val url = java.net.URL("https://nominatim.openstreetmap.org/search?q=$encoded&format=json&limit=8&countrycodes=in&addressdetails=1")
+                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    conn.connectTimeout = 3000
+                    conn.readTimeout = 3000
+                    conn.setRequestProperty("User-Agent", "SBKD-App/2.39")
+                    if (conn.responseCode in 200..299) {
+                        val resp = conn.inputStream.bufferedReader().use { it.readText() }
+                        val arr = org.json.JSONArray(resp)
+                        for (i in 0 until arr.length()) {
+                            val obj = arr.getJSONObject(i)
+                            val name = obj.optString("name", q).ifBlank { q }
+                            val lat = obj.optDouble("lat", 0.0)
+                            val lon = obj.optDouble("lon", 0.0)
+                            val addr = obj.optJSONObject("address")
+
+                            val village = addr?.optString("village", "").orEmpty()
+                            val hamlet = addr?.optString("hamlet", "").orEmpty()
+                            val suburb = addr?.optString("suburb", addr?.optString("neighbourhood", "")).orEmpty()
+                            val town = addr?.optString("town", addr?.optString("city", "")).orEmpty()
+                            val district = addr?.optString("state_district", addr?.optString("county", addr?.optString("district", ""))).orEmpty()
+                            val state = addr?.optString("state", "भारत") ?: "भारत"
+                            val type = obj.optString("type", "स्थान")
+
+                            val chosenName = when {
+                                village.isNotBlank() -> village
+                                hamlet.isNotBlank() -> hamlet
+                                suburb.isNotBlank() -> suburb
+                                name.isNotBlank() -> name
+                                town.isNotBlank() -> town
+                                else -> q
+                            }
+
+                            val cat = when {
+                                village.isNotBlank() || hamlet.isNotBlank() || type == "village" || type == "hamlet" -> "गाँव"
+                                suburb.isNotBlank() || type == "suburb" || type == "neighbourhood" -> "मोहल्ला / क्षेत्र"
+                                else -> "कस्बा / शहर"
+                            }
+
+                            val straightKm = DistanceCalculatorService.haversineDistanceKm(lat, lon, DistanceCalculatorService.DESTINATION_LAT, DistanceCalculatorService.DESTINATION_LNG)
+                            val roadKm = (Math.round(straightKm * 1.25f * 10f) / 10f)
+
+                            combined.add(
+                                IndiaLocation(
+                                    nameHindi = chosenName,
+                                    nameEnglish = name,
+                                    category = cat,
+                                    stateHindi = state,
+                                    distanceKm = roadKm,
+                                    districtHindi = district,
+                                    districtEnglish = district
+                                )
+                            )
+                        }
+                    }
+                } catch (ignored: Exception) {}
+            }
+
+            // Distinct by Name + District + State
             val distinctResults = combined.distinctBy {
                 "${it.nameHindi.trim().lowercase()}|${it.districtHindi.trim().lowercase()}|${it.stateHindi.trim().lowercase()}"
             }
