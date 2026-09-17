@@ -953,7 +953,7 @@ $isDarbarActive = !isset($settings['is_darbar_active']) || $settings['is_darbar_
             </a>
 
             <div class="download-meta">
-                <span>✓ संस्करण: v2.42.1 Pro</span>
+                <span>✓ संस्करण: v2.43.0 Pro</span>
                 <span>✓ साइज़: ~107 MB</span>
                 <span>✓ 100% वायरस मुक्त</span>
                 <span>✓ Google Play Protect Verified</span>
@@ -1168,7 +1168,7 @@ $isDarbarActive = !isset($settings['is_darbar_active']) || $settings['is_darbar_
         
         <div style="margin-top: 15px;">
             <a href="download.php" style="color: #ffffff; background: var(--saffron-deep); padding: 8px 18px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.88rem;">
-                📲 Android ऐप डाउनलोड करें (v2.42.1 Pro)
+                📲 Android ऐप डाउनलोड करें (v2.43.0 Pro)
             </a>
         </div>
 

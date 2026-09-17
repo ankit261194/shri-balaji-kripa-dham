@@ -3,8 +3,8 @@
 // श्री बालाजी कृपा धाम (ग्राम डूँगरा जाट) - आधिकारिक APK डाउनलोड सेवा
 // ==============================================================================
 
-$currentVersion = "v2.42.1";
-$apkFileName = "ShriBalajiKripaDham-v2.42.1.apk";
+$currentVersion = "v2.43.0";
+$apkFileName = "ShriBalajiKripaDham-v2.43.0.apk";
 $localApkPath = __DIR__ . "/" . $apkFileName;
 $altLocalApk = __DIR__ . "/app.apk";
 $altReleaseApk = __DIR__ . "/ShriBalajiKripaDham-release.apk";

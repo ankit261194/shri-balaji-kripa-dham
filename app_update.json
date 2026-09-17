@@ -1,10 +1,10 @@
 {
-  "version_code": 59,
-  "version_name": "2.42.1",
+  "version_code": 60,
+  "version_name": "2.43.0",
   "is_force": false,
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-v2.42.1.apk",
-  "update_notes_hindi": "v2.42.1: 100% स्थायी सेटिंग्स, 1-Click वेबसाइट लाइव पब्लिश फिक्स (HTTP 500 एरर पूरी तरह समाप्त), गुरुजी का फोटो वेबसाइट व ऐप पर लाइव मिररिंग, डायरेक्ट Bluetooth ESC/POS थर्मल प्रिंटर (58mm/80mm) पर्ची प्रिंट सपोर्ट, एक्सेल/CSV लेजर एक्सपोर्ट।",
-  "update_notes_english": "v2.42.1: Indestructible settings, 1-Click live publish HTTP 500 error permanently fixed with self-healing DB auto-migration, Guruji photo live mirroring, direct Bluetooth ESC/POS 58mm/80mm thermal printer support, and Excel/CSV ledger export.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.43.0/ShriBalajiKripaDham-v2.43.0.apk",
+  "update_notes_hindi": "v2.43.0: 3 प्रमुख समस्याओं का स्थायी समाधान: (1) 2GB रैम फोन हेतु मेमोरी ऑप्टिमाइजेशन व कैमरा ऑटो-रीसाइक्लिंग से शून्य क्रैश, (2) बिना FCM के 100% ऑन-डिवाइस नेटिव बैकग्राउंड पुश नोटिफिकेशन (दरबार सूचना व लाइव टोकन कॉलिंग), (3) होस्टिंगर सर्वर 1-क्लिक सेल्फ-अपडेटिंग व ऑटो-माइग्रेशन।",
+  "update_notes_english": "v2.43.0: Permanent fix for 3 core issues: (1) Low-RAM 2GB phone memory optimization with zero OOM crashes during camera capture, (2) 100% FCM-independent autonomous native background push alerts for Darbar notices and live tokens, (3) Hostinger 1-click self-updating auto-deploy.",
   "release_date": "2026-09-17",
-  "sha256": "201DAA8EF9C5C5113EE11C4500E82F7899EF337C46D5B45A44E62B93C5F5244A"
+  "sha256": "960A534DA17B324926A36717C21A42F7BBB94F61C99825AB21373ADE5B1A912F"
 }

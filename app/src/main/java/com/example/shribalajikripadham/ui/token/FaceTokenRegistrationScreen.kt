@@ -253,6 +253,10 @@ fun FaceTokenRegistrationScreen(
             if (safeBmp.width > safeBmp.height) {
                 safeBmp = DevoteePhotoHelper.rotateBitmap(safeBmp, 270f)
             }
+            val oldBmp = capturedBitmap
+            if (oldBmp != null && oldBmp != safeBmp && !oldBmp.isRecycled) {
+                try { oldBmp.recycle() } catch (ignored: Exception) {}
+            }
             capturedBitmap = safeBmp
             capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, safeBmp, "face_token")
             processCapturedFace(safeBmp)
@@ -285,6 +289,10 @@ fun FaceTokenRegistrationScreen(
                 val loaded = DevoteePhotoHelper.loadBitmap(context, uri.toString())
                 if (loaded != null) {
                     val safeBmp = DevoteePhotoHelper.toSoftwareBitmap(loaded)
+                    val oldBmp = capturedBitmap
+                    if (oldBmp != null && oldBmp != safeBmp && !oldBmp.isRecycled) {
+                        try { oldBmp.recycle() } catch (ignored: Exception) {}
+                    }
                     capturedBitmap = safeBmp
                     capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, safeBmp, "face_gallery")
                     processCapturedFace(safeBmp)

@@ -197,6 +197,10 @@ object FaceEmbeddingEngine {
                 rightEyeOpenProb = 0.8f,
                 failureReason = null
             )
+        } finally {
+            if (softwareBitmap != bitmap && !softwareBitmap.isRecycled) {
+                try { softwareBitmap.recycle() } catch (ignored: Exception) {}
+            }
         }
     }
 
@@ -401,8 +405,8 @@ object FaceEmbeddingEngine {
      */
     fun hasRealHumanFace(bitmap: android.graphics.Bitmap?): Boolean {
         if (bitmap == null) return false
+        val softwareBitmap = com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(bitmap)
         return try {
-            val softwareBitmap = com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(bitmap)
             val inputImage = com.google.mlkit.vision.common.InputImage.fromBitmap(softwareBitmap, 0)
             val options = com.google.mlkit.vision.face.FaceDetectorOptions.Builder()
                 .setPerformanceMode(com.google.mlkit.vision.face.FaceDetectorOptions.PERFORMANCE_MODE_FAST)
@@ -415,6 +419,10 @@ object FaceEmbeddingEngine {
             faces.isNotEmpty()
         } catch (e: Exception) {
             true // safe fallback on slow devices
+        } finally {
+            if (softwareBitmap != bitmap && !softwareBitmap.isRecycled) {
+                try { softwareBitmap.recycle() } catch (ignored: Exception) {}
+            }
         }
     }
 
@@ -437,9 +445,14 @@ object FaceEmbeddingEngine {
             initModel(ctx)
         }
 
-        return try {
-            val softwareBitmap = com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+        val softwareBitmap = com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(bitmap)
+        var faceCrop: android.graphics.Bitmap? = null
+        var scaledFace: android.graphics.Bitmap? = null
+        var safeScaledFace: android.graphics.Bitmap? = null
+        var scaled: android.graphics.Bitmap? = null
+        var safeScaled: android.graphics.Bitmap? = null
 
+        return try {
             // 1. Google ML Kit Real Face Detection
             var detectedFace: com.google.mlkit.vision.face.Face? = null
             try {
@@ -460,7 +473,7 @@ object FaceEmbeddingEngine {
             }
 
             // 2. Crop strictly to face bounding box if detected
-            val faceCrop = if (detectedFace != null) {
+            faceCrop = if (detectedFace != null) {
                 val bbox = detectedFace.boundingBox
                 val left = bbox.left.coerceIn(0, softwareBitmap.width - 1)
                 val top = bbox.top.coerceIn(0, softwareBitmap.height - 1)
@@ -476,8 +489,8 @@ object FaceEmbeddingEngine {
             if (interp != null) {
                 try {
                     val inputSize = 112
-                    val scaledFace = android.graphics.Bitmap.createScaledBitmap(faceCrop, inputSize, inputSize, true)
-                    val safeScaledFace = com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(scaledFace)
+                    scaledFace = android.graphics.Bitmap.createScaledBitmap(faceCrop, inputSize, inputSize, true)
+                    safeScaledFace = com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(scaledFace)
 
                     val imgData = ByteBuffer.allocateDirect(1 * inputSize * inputSize * 3 * 4).apply {
                         order(ByteOrder.nativeOrder())
@@ -543,8 +556,8 @@ object FaceEmbeddingEngine {
             }
 
             val targetSize = 64
-            val scaled = android.graphics.Bitmap.createScaledBitmap(faceCrop, targetSize, targetSize, true)
-            val safeScaled = com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(scaled)
+            scaled = android.graphics.Bitmap.createScaledBitmap(faceCrop, targetSize, targetSize, true)
+            safeScaled = com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(scaled)
             val width = safeScaled.width
             val height = safeScaled.height
             val pixels = IntArray(width * height)
@@ -625,6 +638,27 @@ object FaceEmbeddingEngine {
         } catch (t: Throwable) {
             t.printStackTrace()
             FloatArray(EMBEDDING_DIM) { 1.0f / kotlin.math.sqrt(EMBEDDING_DIM.toFloat()) }
+        } finally {
+            try {
+                if (safeScaled != null && safeScaled != scaled && safeScaled != faceCrop && !safeScaled!!.isRecycled) {
+                    safeScaled!!.recycle()
+                }
+                if (scaled != null && scaled != faceCrop && !scaled!!.isRecycled) {
+                    scaled!!.recycle()
+                }
+                if (safeScaledFace != null && safeScaledFace != scaledFace && safeScaledFace != faceCrop && !safeScaledFace!!.isRecycled) {
+                    safeScaledFace!!.recycle()
+                }
+                if (scaledFace != null && scaledFace != faceCrop && !scaledFace!!.isRecycled) {
+                    scaledFace!!.recycle()
+                }
+                if (faceCrop != null && faceCrop != softwareBitmap && !faceCrop!!.isRecycled) {
+                    faceCrop!!.recycle()
+                }
+                if (softwareBitmap != bitmap && !softwareBitmap.isRecycled) {
+                    softwareBitmap.recycle()
+                }
+            } catch (ignored: Exception) {}
         }
     }
 }

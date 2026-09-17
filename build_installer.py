@@ -40,6 +40,29 @@ error_reporting(E_ALL);
 header('Content-Type: application/json; charset=utf-8');
 header("Access-Control-Allow-Origin: *");
 
+// 0. Auto-Update Installer from GitHub if requested
+if (isset($_GET['auto_update']) || isset($_GET['update_from_github'])) {
+    $remoteUrl = 'https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/backend/install.php';
+    $remoteCode = false;
+    if (function_exists('curl_init')) {
+        $ch = curl_init($remoteUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        $remoteCode = curl_exec($ch);
+        curl_close($ch);
+    }
+    if (!$remoteCode) {
+        $remoteCode = @file_get_contents($remoteUrl);
+    }
+    if ($remoteCode && strpos($remoteCode, '<?php') !== false && strlen($remoteCode) > 5000) {
+        file_put_contents(__FILE__, $remoteCode);
+        require __FILE__;
+        exit;
+    }
+}
+
 $baseDir = __DIR__;
 $createdFiles = [];
 
@@ -216,7 +239,51 @@ $queries = [
         status VARCHAR(30) NOT NULL DEFAULT 'CONFIRMED',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_seat_date (darbar_date, seat_number)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+
+    // 7. devotee_face_profiles
+    "CREATE TABLE IF NOT EXISTS devotee_face_profiles (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        patient_name VARCHAR(255) NOT NULL,
+        phone_number VARCHAR(50) NOT NULL UNIQUE,
+        city VARCHAR(255) DEFAULT 'डूँगरा जाट (स्थानीय)',
+        face_vector_b64 LONGTEXT,
+        photo_url LONGTEXT,
+        visit_count INT DEFAULT 1,
+        registered_by VARCHAR(100) DEFAULT 'APP',
+        device_id VARCHAR(100) DEFAULT '',
+        last_verified_at BIGINT DEFAULT 0,
+        created_at BIGINT DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_phone (phone_number),
+        INDEX idx_name (patient_name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+    // 8. fcm_device_tokens
+    "CREATE TABLE IF NOT EXISTS fcm_device_tokens (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        phone_number VARCHAR(50) NOT NULL,
+        fcm_token TEXT NOT NULL,
+        device_id VARCHAR(100) DEFAULT '',
+        device_name VARCHAR(100) DEFAULT '',
+        created_at BIGINT DEFAULT 0,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_phone (phone_number)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+
+    // 9. devotee_notifications
+    "CREATE TABLE IF NOT EXISTS devotee_notifications (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        phone_number VARCHAR(50) NOT NULL,
+        token_number INT DEFAULT 0,
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        type VARCHAR(50) DEFAULT 'TOKEN_CALL',
+        is_read TINYINT DEFAULT 0,
+        created_at BIGINT DEFAULT 0,
+        INDEX idx_phone (phone_number),
+        INDEX idx_created (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
 ];
 
 foreach ($queries as $sql) {

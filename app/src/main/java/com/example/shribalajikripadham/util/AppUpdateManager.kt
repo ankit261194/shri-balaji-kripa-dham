@@ -24,7 +24,7 @@ import org.json.JSONObject
 
 object AppUpdateManager {
 
-    const val DEFAULT_APK_URL = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-v2.42.1.apk"
+    const val DEFAULT_APK_URL = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.43.0/ShriBalajiKripaDham-v2.43.0.apk"
     const val DEFAULT_VERSION_JSON_URL = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/version.json"
 
     data class OnlineUpdateInfo(
@@ -375,8 +375,9 @@ object AppUpdateManager {
             val candidateUrls = mutableListOf<String>()
             if (finalUrl.isNotBlank()) candidateUrls.add(finalUrl.trim())
             val fallbacks = listOf(
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.43.0/ShriBalajiKripaDham-v2.43.0.apk",
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.43.0/ShriBalajiKripaDham-release.apk",
                 "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-v2.42.1.apk",
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-release.apk",
                 "https://shribalajikripadham.online/download.php",
                 DEFAULT_APK_URL
             )
@@ -409,7 +410,7 @@ object AppUpdateManager {
                             defaultUseCaches = false
                             instanceFollowRedirects = true
                             requestMethod = "GET"
-                            setRequestProperty("User-Agent", "ShriBalajiKripaDham-Updater/2.42.1")
+                            setRequestProperty("User-Agent", "ShriBalajiKripaDham-Updater/2.43.0")
                             setRequestProperty("Accept-Encoding", "identity")
                             setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
                         }

@@ -246,10 +246,62 @@ object DevoteePhotoHelper {
         }
     }
 
+    fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val (height: Int, width: Int) = options.outHeight to options.outWidth
+        var inSampleSize = 1
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight: Int = height / 2
+            val halfWidth: Int = width / 2
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize.coerceAtLeast(1)
+    }
+
+    fun decodeSampledBitmapFromFile(filePath: String, reqWidth: Int = 1024, reqHeight: Int = 1024): Bitmap? {
+        return try {
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(filePath, options)
+            options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+            options.inJustDecodeBounds = false
+            BitmapFactory.decodeFile(filePath, options)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun decodeSampledBitmapFromStream(context: Context, uri: Uri, reqWidth: Int = 1024, reqHeight: Int = 1024): Bitmap? {
+        return try {
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            context.contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, options)
+            }
+            options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+            options.inJustDecodeBounds = false
+            context.contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, options)
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun decodeSampledBitmapFromByteArray(bytes: ByteArray, reqWidth: Int = 1024, reqHeight: Int = 1024): Bitmap? {
+        return try {
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+            options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight)
+            options.inJustDecodeBounds = false
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     /**
      * Loads a Bitmap from file path, content URI, or remote HTTP/HTTPS URL with automatic disk caching
-     * and automatic EXIF upright correction.
-     * Ensures returned bitmap is a software bitmap.
+     * and automatic EXIF upright correction. Memory-optimized with smart downsampling.
      */
     fun loadBitmap(context: Context, photoUri: String, forceRefresh: Boolean = false): Bitmap? {
         if (photoUri.isBlank()) return null
@@ -261,8 +313,7 @@ object DevoteePhotoHelper {
                 photoUri.startsWith("content://") || photoUri.startsWith("android.resource://") -> {
                     val uri = Uri.parse(photoUri)
                     val degrees = getExifOrientationDegrees(context, uri)
-                    val input: InputStream? = context.contentResolver.openInputStream(uri)
-                    val bmp = input?.use { BitmapFactory.decodeStream(it) }
+                    val bmp = decodeSampledBitmapFromStream(context, uri, 1024, 1024)
                     Pair(bmp, degrees)
                 }
                 else -> {
@@ -270,7 +321,7 @@ object DevoteePhotoHelper {
                     val file = File(path)
                     if (file.exists()) {
                         val degrees = getExifOrientationDegrees(file.absolutePath)
-                        val bmp = BitmapFactory.decodeFile(file.absolutePath)
+                        val bmp = decodeSampledBitmapFromFile(file.absolutePath, 1024, 1024)
                         Pair(bmp, degrees)
                     } else Pair(null, 0f)
                 }
@@ -300,7 +351,7 @@ object DevoteePhotoHelper {
 
             // If cached and valid, return cached image immediately unless forceRefresh or Guruji master photo
             if (!forceRefresh && !isGurujiPhoto && cacheFile.exists() && cacheFile.length() > 0) {
-                val bmp = BitmapFactory.decodeFile(cacheFile.absolutePath)
+                val bmp = decodeSampledBitmapFromFile(cacheFile.absolutePath, 1024, 1024)
                 if (bmp != null) return bmp
             }
 
@@ -327,7 +378,7 @@ object DevoteePhotoHelper {
                             out.write(bytes)
                         }
                     } catch (ignored: Exception) {}
-                    return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    return decodeSampledBitmapFromByteArray(bytes, 1024, 1024)
                 }
             }
             null
