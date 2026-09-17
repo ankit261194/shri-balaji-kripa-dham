@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -136,6 +137,13 @@ fun HomeScreen(
     onToggleLanguage: () -> Unit
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val screenHeightDp = configuration.screenHeightDp
+    val screenWidthDp = configuration.screenWidthDp
+    val isCompact = screenHeightDp < 740
+    val isUltraCompact = screenHeightDp < 660
+    val responsivePadding = if (isCompact) (if (isUltraCompact) 8.dp else 10.dp) else 16.dp
+    val sectionSpacing = if (isCompact) (if (isUltraCompact) 6.dp else 8.dp) else 14.dp
     val repository = remember { AshramRepository(context) }
     val scope = rememberCoroutineScope()
     var settings by remember { mutableStateOf(AshramSettings()) }
@@ -988,48 +996,52 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(responsivePadding)
         ) {
             // 📖 BHAKT APP MARGDARSHIKA (USER MANUAL PDF) BANNER
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9E6)),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
                 border = BorderStroke(1.2.dp, Color(0xFFFFB300)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp)
+                    .padding(bottom = sectionSpacing)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
+                        .padding(horizontal = if (isCompact) 10.dp else 12.dp, vertical = if (isCompact) 6.dp else 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(42.dp)
+                            .size(if (isCompact) 32.dp else 42.dp)
                             .clip(CircleShape)
                             .background(Color(0xFFFFECB3)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("📖", fontSize = 22.sp)
+                        Text("📖", fontSize = if (isCompact) 17.sp else 22.sp)
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = if (isHindi) "भक्त संपूर्ण ऐप मार्गदर्शिका (PDF)" else "Devotee User Manual (PDF)",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 13.5.sp,
-                            color = MaroonPrimary
+                            fontSize = if (isCompact) 12.sp else 13.5.sp,
+                            color = MaroonPrimary,
+                            maxLines = 1
                         )
-                        Text(
-                            text = if (isHindi) "ऐप में क्या-क्या है और कैसे उपयोग करें - संपूर्ण विवरण पढ़ें व डाउनलोड करें" else "Learn everything you can do and see in the app",
-                            fontSize = 10.5.sp,
-                            color = TextSecondaryDark,
-                            lineHeight = 14.sp
-                        )
+                        if (!isUltraCompact) {
+                            Text(
+                                text = if (isHindi) "ऐप में क्या-क्या है और कैसे उपयोग करें - संपूर्ण विवरण पढ़ें" else "Learn everything you can do and see in the app",
+                                fontSize = if (isCompact) 9.5.sp else 10.5.sp,
+                                color = TextSecondaryDark,
+                                maxLines = 1,
+                                lineHeight = 13.sp
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Button(
                         onClick = {
                             val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
@@ -1045,11 +1057,11 @@ fun HomeScreen(
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
                         shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 10.dp, vertical = if (isCompact) 4.dp else 6.dp)
                     ) {
                         Text(
                             text = if (isHindi) "PDF देखें" else "Open PDF",
-                            fontSize = 11.5.sp,
+                            fontSize = if (isCompact) 10.5.sp else 11.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -1064,48 +1076,48 @@ fun HomeScreen(
             if (isUpdateAvailable) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
                     border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 14.dp)
+                        .padding(bottom = sectionSpacing)
                 ) {
                     Row(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.padding(if (isCompact) 8.dp else 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(42.dp)
+                                .size(if (isCompact) 32.dp else 42.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFFFFB300)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("🔔", fontSize = 22.sp)
+                            Text("🔔", fontSize = if (isCompact) 17.sp else 22.sp)
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = if (isHindi) "नया अपडेट v${settings.latestVersionName} उपलब्ध है!" else "New Update v${settings.latestVersionName} Available!",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
+                                fontSize = if (isCompact) 12.5.sp else 14.sp,
                                 color = MaroonPrimary
                             )
                             Text(
-                                text = if (isHindi) "नए फीचर्स व सुधारों के लिए अभी तुरंत अपडेट करें।" else "Tap to update app immediately.",
-                                fontSize = 11.sp,
+                                text = if (isHindi) "नए फीचर्स व सुधारों के लिए तुरंत अपडेट करें।" else "Tap to update app immediately.",
+                                fontSize = if (isCompact) 10.sp else 11.sp,
                                 color = TextSecondaryDark
                             )
                         }
                         Button(
                             onClick = { showUpdatePopup = true },
                             colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
-                            shape = RoundedCornerShape(10.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 12.dp, vertical = if (isCompact) 4.dp else 6.dp)
                         ) {
                             Text(
                                 text = if (isHindi) "अपडेट करें" else "Update",
-                                fontSize = 12.sp,
+                                fontSize = if (isCompact) 10.5.sp else 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
@@ -1127,9 +1139,9 @@ fun HomeScreen(
                         else -> Color(0xFFFFFBEA)
                     }
                 ),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
                 border = BorderStroke(
-                    2.dp,
+                    if (isCompact) 1.5.dp else 2.dp,
                     when (scheduleState) {
                         is SundayScheduleState.Open -> Color(0xFF2E7D32)
                         is SundayScheduleState.SundayBeforeStart -> Color(0xFFD84315)
@@ -1138,10 +1150,10 @@ fun HomeScreen(
                         else -> Color(0xFF8B0000)
                     }
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = if (isCompact) 2.dp else 4.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 14.dp)
+                    .padding(bottom = sectionSpacing)
                     .clickable {
                         onNavigateToFaceToken()
                     }
@@ -1149,12 +1161,12 @@ fun HomeScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(14.dp),
+                        .padding(horizontal = if (isCompact) 10.dp else 14.dp, vertical = if (isCompact) 8.dp else 14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(if (isCompact) 36.dp else 46.dp)
                             .clip(CircleShape)
                             .background(
                                 when (scheduleState) {
@@ -1175,10 +1187,10 @@ fun HomeScreen(
                                 is SundayScheduleState.NonSunday -> "📅"
                                 else -> "🔒"
                             },
-                            fontSize = 24.sp
+                            fontSize = if (isCompact) 18.sp else 24.sp
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = when (scheduleState) {
@@ -1190,13 +1202,13 @@ fun HomeScreen(
                                 else -> if (isHindi) "🔴 रविवार टोकन वितरण बंद है" else "🔴 Token Service Closed"
                             },
                             fontWeight = FontWeight.ExtraBold,
-                            fontSize = 15.sp,
+                            fontSize = if (isCompact) 13.sp else 15.sp,
                             color = when (scheduleState) {
                                 is SundayScheduleState.Open -> Color(0xFF1B5E20)
                                 else -> Color(0xFF8B0000)
                             }
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = when (scheduleState) {
                                 is SundayScheduleState.Open -> if (isHindi) "👉 अभी टोकन प्राप्त करें (टैप करें ➔)" else "👉 Tap here to get token now ➔"
@@ -1206,16 +1218,16 @@ fun HomeScreen(
                                 is SundayScheduleState.CustomScheduled -> if (isHindi) "खुलने का समय: ${scheduleState.formattedDate}" else "Opens at: ${scheduleState.formattedDate}"
                                 else -> if (isHindi) "आश्रम व्यवस्था अनुसार टोकन सेवा अभी बंद है" else "Token service paused by Ashram"
                             },
-                            fontSize = 13.sp,
+                            fontSize = if (isCompact) 11.sp else 13.sp,
                             fontWeight = FontWeight.SemiBold,
-                            lineHeight = 18.sp,
+                            lineHeight = if (isCompact) 14.sp else 18.sp,
                             color = when (scheduleState) {
                                 is SundayScheduleState.Open -> Color(0xFF1B5E20)
                                 else -> Color(0xFF111111)
                             }
                         )
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Button(
                         onClick = { onNavigateToFaceToken() },
                         colors = ButtonDefaults.buttonColors(
@@ -1224,12 +1236,12 @@ fun HomeScreen(
                                 else -> Color(0xFF8B0000)
                             }
                         ),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 10.dp, vertical = if (isCompact) 4.dp else 6.dp)
                     ) {
                         Text(
                             text = if (isTokenOpen) (if (isHindi) "टोकन लें ➔" else "Get Token ➔") else (if (isHindi) "विवरण ➔" else "Details ➔"),
-                            fontSize = 12.sp,
+                            fontSize = if (isCompact) 10.5.sp else 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -1250,7 +1262,7 @@ fun HomeScreen(
                     secondaryColor = currentTheme.secondaryColor,
                     context = context
                 )
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(sectionSpacing))
             }
 
             // RENDERING BASED ON ACTIVE UI LAYOUT (10 COMPLETE UI LOOKS)
@@ -1274,9 +1286,10 @@ fun HomeScreen(
                             onNavigateToAdmin = onNavigateToAdmin,
                             onNavigateToParchas = onNavigateToParchas,
                             onNavigateToLiveDarbar = onNavigateToLiveDarbar,
-                            context = context
+                            context = context,
+                            isCompact = isCompact
                         )
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(sectionSpacing))
                     }
                 }
                 AppUiLayout.MODERN_CARDS -> {
@@ -2111,21 +2124,23 @@ fun ActionTile(
     badgeColor: Color,
     modifier: Modifier = Modifier,
     isPopular: Boolean = false,
+    isCompact: Boolean = false,
     onClick: () -> Unit
 ) {
+    val cornerRadius = if (isCompact) 13.dp else 18.dp
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(18.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp, pressedElevation = 1.dp),
+        shape = RoundedCornerShape(cornerRadius),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isCompact) 2.5.dp else 4.dp, pressedElevation = 1.dp),
         border = BorderStroke(1.dp, badgeColor.copy(alpha = 0.22f)),
         modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(cornerRadius))
             .clickable { onClick() }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp)
+                .padding(horizontal = if (isCompact) 10.dp else 14.dp, vertical = if (isCompact) 9.dp else 14.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -2133,46 +2148,46 @@ fun ActionTile(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(if (isCompact) 9.dp else 12.dp),
                     color = badgeColor.copy(alpha = 0.12f),
                     border = BorderStroke(1.dp, badgeColor.copy(alpha = 0.25f)),
-                    modifier = Modifier.size(44.dp)
+                    modifier = Modifier.size(if (isCompact) 34.dp else 44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text(text = iconBadge, fontSize = 22.sp)
+                        Text(text = iconBadge, fontSize = if (isCompact) 17.sp else 22.sp)
                     }
                 }
 
                 if (isPopular) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(if (isCompact) 6.dp else 8.dp),
                         color = GoldSecondary.copy(alpha = 0.15f),
                         border = BorderStroke(0.8.dp, GoldDark)
                     ) {
                         Text(
                             text = "★ मुख्य",
-                            fontSize = 10.sp,
+                            fontSize = if (isCompact) 8.5.sp else 10.sp,
                             fontWeight = FontWeight.ExtraBold,
                             color = SaffronDark,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = if (isCompact) 4.dp else 6.dp, vertical = if (isCompact) 1.dp else 2.dp)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(if (isCompact) 6.dp else 12.dp))
 
             Text(
                 text = title,
-                fontSize = 15.sp,
+                fontSize = if (isCompact) 13.sp else 15.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaroonAccent,
                 maxLines = 1
             )
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(if (isCompact) 1.5.dp else 3.dp))
             Text(
                 text = subtitle,
-                fontSize = 11.5.sp,
+                fontSize = if (isCompact) 10.sp else 11.5.sp,
                 color = TextSecondaryDark,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1
@@ -2334,7 +2349,8 @@ fun RenderClassicSection(
     onNavigateToAdmin: () -> Unit,
     onNavigateToParchas: () -> Unit = {},
     onNavigateToLiveDarbar: () -> Unit = {},
-    context: Context
+    context: Context,
+    isCompact: Boolean = false
 ) {
     // Custom announcement / guideline banner customized by Super Admin
     if (sectionConfig != null && (sectionConfig.customContentHindi.isNotBlank() || sectionConfig.customSubtitleHindi.isNotBlank())) {
@@ -2343,25 +2359,25 @@ fun RenderClassicSection(
 
         Card(
             colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9EE)),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp),
             border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.6f)),
-            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+            modifier = Modifier.fillMaxWidth().padding(bottom = if (isCompact) 4.dp else 6.dp)
         ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.padding(if (isCompact) 8.dp else 12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(sectionConfig.icon, fontSize = 16.sp)
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(sectionConfig.icon, fontSize = if (isCompact) 14.sp else 16.sp)
+                    Spacer(modifier = Modifier.width(if (isCompact) 4.dp else 6.dp))
                     Text(
                         text = if (isHindi) sectionConfig.titleHindi else sectionConfig.titleEnglish,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
+                        fontSize = if (isCompact) 11.5.sp else 13.sp,
                         color = MaroonPrimary
                     )
                     if (subtitleText.isNotBlank()) {
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(if (isCompact) 4.dp else 6.dp))
                         Text(
                             text = "• $subtitleText",
-                            fontSize = 11.sp,
+                            fontSize = if (isCompact) 9.5.sp else 11.sp,
                             color = Color.DarkGray
                         )
                     }
@@ -2370,9 +2386,9 @@ fun RenderClassicSection(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = contentText,
-                        fontSize = 12.sp,
+                        fontSize = if (isCompact) 10.5.sp else 12.sp,
                         color = Color(0xFF3E2723),
-                        lineHeight = 16.sp
+                        lineHeight = if (isCompact) 14.sp else 16.sp
                     )
                 }
             }
@@ -2385,7 +2401,7 @@ fun RenderClassicSection(
             Card(
                 colors = CardDefaults.cardColors(containerColor = currentTheme.primaryColor),
                 shape = currentTheme.cardShape,
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = if (isCompact) 4.dp else 6.dp),
                 border = BorderStroke(currentTheme.cardBorderWidth + 0.5.dp, currentTheme.secondaryColor),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -2401,7 +2417,7 @@ fun RenderClassicSection(
                                 )
                             )
                         )
-                        .padding(18.dp)
+                        .padding(if (isCompact) 11.dp else 18.dp)
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(
@@ -2410,7 +2426,7 @@ fun RenderClassicSection(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(76.dp)
+                                    .size(if (isCompact) 56.dp else 76.dp)
                                     .clip(CircleShape)
                                     .background(
                                         Brush.radialGradient(
@@ -2420,7 +2436,7 @@ fun RenderClassicSection(
                                             )
                                         )
                                     )
-                                    .padding(3.dp)
+                                    .padding(if (isCompact) 2.dp else 3.dp)
                                     .clip(CircleShape)
                                     .border(2.dp, Color.White, CircleShape)
                             ) {
@@ -2432,75 +2448,75 @@ fun RenderClassicSection(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.width(14.dp))
+                            Spacer(modifier = Modifier.width(if (isCompact) 10.dp else 14.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = RoundedCornerShape(if (isCompact) 6.dp else 8.dp),
                                     color = Color.White.copy(alpha = 0.16f)
                                 ) {
                                     Text(
                                         text = "🚩 ॥ श्री हनुमते नमः ॥",
-                                        fontSize = 11.sp,
+                                        fontSize = if (isCompact) 9.5.sp else 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = GoldLight,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                        modifier = Modifier.padding(horizontal = if (isCompact) 6.dp else 8.dp, vertical = 2.dp)
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(if (isCompact) 2.dp else 4.dp))
                                 Text(
                                     text = if (isHindi) "श्री बालाजी कृपा धाम" else "Shri Balaji Kripa Dham",
-                                    fontSize = 21.sp,
+                                    fontSize = if (isCompact) 17.5.sp else 21.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = currentTheme.accentGold,
                                     letterSpacing = 0.3.sp
                                 )
                                 Text(
                                     text = if (isHindi) "डूँगरा जाट, बुलन्दशहर (उ.प्र.)" else "Dungra Jaat, Bulandshahr (U.P.)",
-                                    fontSize = 13.sp,
+                                    fontSize = if (isCompact) 11.5.sp else 13.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color.White
                                 )
-                                Spacer(modifier = Modifier.height(2.dp))
+                                Spacer(modifier = Modifier.height(1.dp))
                                 Text(
                                     text = if (isHindi) "परम पूज्य गुरुजी तेजवीर सिंह जी" else "Param Pujya Guruji Tejveer Singh Ji",
-                                    fontSize = 12.sp,
+                                    fontSize = if (isCompact) 10.5.sp else 12.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = currentTheme.secondaryColor
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(if (isCompact) 8.dp else 12.dp))
 
                         // Live Darbar status pill
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp),
                             color = Color.Black.copy(alpha = 0.30f),
                             border = BorderStroke(0.8.dp, currentTheme.secondaryColor.copy(alpha = 0.5f)),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                modifier = Modifier.padding(horizontal = if (isCompact) 8.dp else 12.dp, vertical = if (isCompact) 4.dp else 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
                                         modifier = Modifier
-                                            .size(8.dp)
+                                            .size(if (isCompact) 6.dp else 8.dp)
                                             .clip(CircleShape)
                                             .background(Color(0xFF00E676))
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = if (isHindi) "आगामी दिव्य दरबार: प्रत्येक रविवार प्रातः 7:00 बजे" else "Next Holy Darbar: Sunday 7:00 AM",
-                                        fontSize = 11.5.sp,
+                                        fontSize = if (isCompact) 10.sp else 11.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
                                     )
                                 }
-                                Text("🪔", fontSize = 14.sp)
+                                Text("🪔", fontSize = if (isCompact) 12.sp else 14.sp)
                             }
                         }
                     }
@@ -2513,24 +2529,31 @@ fun RenderClassicSection(
             if (settings.isEmergencyNoticeVisible && settings.emergencyNoticeText.isNotBlank()) {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
-                    shape = RoundedCornerShape(14.dp),
-                    elevation = CardDefaults.cardElevation(3.dp),
-                    border = BorderStroke(1.dp, Color(0xFFEF9A9A)),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.5.dp, Color(0xFFD32F2F)),
+                    elevation = CardDefaults.cardElevation(4.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.padding(if (isCompact) 8.dp else 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("📢", fontSize = 22.sp)
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = settings.emergencyNoticeText,
-                            color = Color(0xFFB71C1C),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            lineHeight = 18.sp
-                        )
+                        Text("🚨", fontSize = if (isCompact) 18.sp else 22.sp)
+                        Spacer(modifier = Modifier.width(if (isCompact) 6.dp else 10.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "आश्रम महत्वपूर्ण सूचना" else "Ashram Urgent Notice",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = if (isCompact) 11.sp else 12.sp,
+                                color = Color(0xFFC62828)
+                            )
+                            Text(
+                                text = settings.emergencyNoticeText,
+                                fontSize = if (isCompact) 11.sp else 12.5.sp,
+                                color = TextPrimaryDark,
+                                lineHeight = if (isCompact) 14.sp else 17.sp
+                            )
+                        }
                     }
                 }
             }
@@ -2540,27 +2563,27 @@ fun RenderClassicSection(
             // 100% FREE TREATMENT CERTIFIED TRUST SEAL
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.cardElevation(5.dp),
+                shape = RoundedCornerShape(if (isCompact) 14.dp else 20.dp),
+                elevation = CardDefaults.cardElevation(if (isCompact) 3.dp else 5.dp),
                 border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(if (isCompact) 10.dp else 16.dp)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
                             color = Color(0xFFFFF3E0),
                             border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.4f)),
-                            modifier = Modifier.size(52.dp)
+                            modifier = Modifier.size(if (isCompact) 40.dp else 52.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Text("🕊️", fontSize = 26.sp)
+                                Text("🕊️", fontSize = if (isCompact) 20.sp else 26.sp)
                             }
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
@@ -2568,23 +2591,23 @@ fun RenderClassicSection(
                             ) {
                                 Text(
                                     text = if (isHindi) "★ पूर्णतः निःशुल्क (100% FREE)" else "★ 100% FREE OF COST",
-                                    fontSize = 10.5.sp,
+                                    fontSize = if (isCompact) 9.5.sp else 10.5.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = Color(0xFF1B5E20),
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
-                            Spacer(modifier = Modifier.height(3.dp))
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = if (isHindi) "आध्यात्मिक कष्ट निवारण सेवा" else "Spiritual Healing Service",
-                                fontSize = 16.sp,
+                                fontSize = if (isCompact) 14.sp else 16.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaroonAccent
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(if (isCompact) 6.dp else 10.dp))
 
                     Text(
                         text = settings.freeDisclaimer.ifEmpty {
@@ -2593,9 +2616,9 @@ fun RenderClassicSection(
                             else
                                 "Treatment for mental afflictions and spiritual disturbances is completely FREE. No money is charged; only divine prayers and spiritual disciplines are prescribed."
                         },
-                        fontSize = 12.5.sp,
+                        fontSize = if (isCompact) 11.sp else 12.5.sp,
                         color = TextPrimaryDark,
-                        lineHeight = 17.5.sp
+                        lineHeight = if (isCompact) 15.sp else 17.5.sp
                     )
                 }
             }
@@ -2608,22 +2631,22 @@ fun RenderClassicSection(
                 val scheduledTimeStr = sdf.format(java.util.Date(settings.scheduledTokenOpenTimestamp))
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(if (isCompact) 12.dp else 18.dp),
                     border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
-                    elevation = CardDefaults.cardElevation(4.dp),
+                    elevation = CardDefaults.cardElevation(if (isCompact) 2.dp else 4.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(14.dp),
+                        modifier = Modifier.padding(if (isCompact) 10.dp else 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("⏳", fontSize = 28.sp)
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("⏳", fontSize = if (isCompact) 22.sp else 28.sp)
+                        Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
                         Column {
                             Text(
                                 text = if (isHindi) "रविवार टोकन पंजीकरण पूर्व-निर्धारित है" else "Token Registration Scheduled",
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = 14.sp,
+                                fontSize = if (isCompact) 12.5.sp else 14.sp,
                                 color = Color(0xFFE65100)
                             )
                             Spacer(modifier = Modifier.height(2.dp))
@@ -2632,7 +2655,7 @@ fun RenderClassicSection(
                                     "टोकन खुलने का समय: $scheduledTimeStr\n(उस समय यह स्वतः खुल जाएगा)"
                                 else
                                     "Opens automatically on: $scheduledTimeStr",
-                                fontSize = 12.sp,
+                                fontSize = if (isCompact) 10.5.sp else 12.sp,
                                 color = TextPrimaryDark
                             )
                         }
@@ -2649,8 +2672,8 @@ fun RenderClassicSection(
                     colors = CardDefaults.cardColors(
                         containerColor = if (isBeforeSchedule) Color(0xFF422018) else Color(0xFF5C001E)
                     ),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(6.dp),
+                    shape = RoundedCornerShape(if (isCompact) 14.dp else 20.dp),
+                    elevation = CardDefaults.cardElevation(if (isCompact) 4.dp else 6.dp),
                     border = BorderStroke(1.5.dp, GoldSecondary),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -2665,7 +2688,7 @@ fun RenderClassicSection(
                                     )
                                 )
                             )
-                            .padding(16.dp)
+                            .padding(if (isCompact) 10.dp else 16.dp)
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -2677,51 +2700,51 @@ fun RenderClassicSection(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Surface(
-                                    shape = RoundedCornerShape(14.dp),
+                                    shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
                                     color = Color.White.copy(alpha = 0.15f),
                                     border = BorderStroke(1.dp, GoldLight.copy(alpha = 0.5f)),
-                                    modifier = Modifier.size(50.dp)
+                                    modifier = Modifier.size(if (isCompact) 38.dp else 50.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
-                                        Text(if (isBeforeSchedule) "⏳" else "⚡", fontSize = 24.sp)
+                                        Text(if (isBeforeSchedule) "⏳" else "⚡", fontSize = if (isCompact) 19.sp else 24.sp)
                                     }
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
                                 Column {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             text = if (isHindi) "स्मार्ट चेहरा टोकन" else "Smart Face Token",
                                             color = GoldLight,
-                                            fontSize = 15.5.sp,
+                                            fontSize = if (isCompact) 13.5.sp else 15.5.sp,
                                             fontWeight = FontWeight.ExtraBold
                                         )
-                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
                                         Surface(
-                                            shape = RoundedCornerShape(6.dp),
+                                            shape = RoundedCornerShape(5.dp),
                                             color = SaffronPrimary
                                         ) {
                                             Text(
                                                 text = "< 1s",
                                                 color = Color.White,
-                                                fontSize = 9.sp,
+                                                fontSize = if (isCompact) 8.sp else 9.sp,
                                                 fontWeight = FontWeight.ExtraBold,
                                                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                                             )
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Spacer(modifier = Modifier.height(1.dp))
                                     Text(
                                         text = if (isBeforeSchedule)
                                             (if (isHindi) "पंजीकरण पूर्व-निर्धारित समय पर खुलेगा" else "Scheduled to open at set time")
                                         else
                                             (if (isHindi) "दाढ़ी/चश्मा अप्रभावित • 1-क्लिक पुष्टि" else "AI facial match • Instant confirmation"),
                                         color = Color.White.copy(alpha = 0.9f),
-                                        fontSize = 11.5.sp
+                                        fontSize = if (isCompact) 10.sp else 11.5.sp
                                     )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
 
                             Button(
                                 onClick = onNavigateToFaceToken,
@@ -2729,14 +2752,14 @@ fun RenderClassicSection(
                                     containerColor = if (isBeforeSchedule) Color.White.copy(alpha = 0.2f) else GoldSecondary,
                                     contentColor = if (isBeforeSchedule) Color.White else Color(0xFF4A0017)
                                 ),
-                                shape = RoundedCornerShape(14.dp),
-                                elevation = ButtonDefaults.buttonElevation(4.dp),
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                                shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
+                                elevation = ButtonDefaults.buttonElevation(if (isCompact) 2.dp else 4.dp),
+                                contentPadding = PaddingValues(horizontal = if (isCompact) 10.dp else 14.dp, vertical = if (isCompact) 5.dp else 8.dp)
                             ) {
                                 Text(
                                     text = if (isBeforeSchedule) (if (isHindi) "देखें" else "View") else (if (isHindi) "स्कैन करें" else "Scan"),
                                     fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 13.sp
+                                    fontSize = if (isCompact) 11.5.sp else 13.sp
                                 )
                             }
                         }
@@ -2746,7 +2769,8 @@ fun RenderClassicSection(
         }
 
         UiSectionConfig.ID_QUICK_SERVICES -> {
-            // Quick Access Action Tiles
+            // Quick Access Action Tiles (Responsive 2-Column Grid)
+            val tileSpacing = if (isCompact) 6.dp else 10.dp
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -2755,20 +2779,21 @@ fun RenderClassicSection(
                 ) {
                     Text(
                         text = if (isHindi) "मुख्य सेवाएं व विकल्प" else "Quick Access Services",
-                        fontSize = 17.sp,
+                        fontSize = if (isCompact) 14.5.sp else 17.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaroonAccent
                     )
                     Text(
-                        text = if (isHindi) "4 मुख्य सेवाएं" else "4 Core Services",
-                        fontSize = 11.sp,
+                        text = if (isHindi) "त्वरित सेवाएं" else "Quick Services",
+                        fontSize = if (isCompact) 10.sp else 11.sp,
                         color = TextSecondaryDark,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(tileSpacing))
 
                 if (settings.isYatraServiceEnabled) {
+                    // Row 1: Sunday Token + Balaji Yatra
                     Row(modifier = Modifier.fillMaxWidth()) {
                         ActionTile(
                             title = if (isHindi) "रविवार टोकन" else "Sunday Token",
@@ -2776,64 +2801,70 @@ fun RenderClassicSection(
                             iconBadge = if (settings.isTokenServiceEnabled) "🏷️" else "🔒",
                             badgeColor = if (settings.isTokenServiceEnabled) SaffronPrimary else Color.Gray,
                             isPopular = settings.isTokenServiceEnabled,
+                            isCompact = isCompact,
                             modifier = Modifier.weight(1f),
                             onClick = onNavigateToToken
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(tileSpacing))
                         ActionTile(
                             title = if (isHindi) "बालाजी यात्रा" else "Balaji Yatra",
                             subtitle = if (isHindi) "बस सीट बुकिंग" else "Bus Seat Booking",
                             iconBadge = "🚌",
                             badgeColor = GoldDark,
+                            isCompact = isCompact,
                             modifier = Modifier.weight(1f),
                             onClick = onNavigateToYatra
                         )
                     }
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(tileSpacing))
+                    // Row 2: Sacred Parchas + Live Darbar (2 columns side-by-side)
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        ActionTile(
+                            title = if (isHindi) "📜 आश्रम पर्चे" else "📜 Sacred Parchas",
+                            subtitle = if (isHindi) "हवन, उतारा व PDF" else "Hawan, Utara & PDF",
+                            iconBadge = "📜",
+                            badgeColor = Color(0xFF6A1B9A),
+                            isPopular = true,
+                            isCompact = isCompact,
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToParchas
+                        )
+                        Spacer(modifier = Modifier.width(tileSpacing))
+                        ActionTile(
+                            title = if (isHindi) "🔴 लाइव दर्शन" else "🔴 Live Darbar",
+                            subtitle = if (isHindi) "लाइव स्ट्रीम व भजन" else "Live Stream & Audio",
+                            iconBadge = "🔴",
+                            badgeColor = Color(0xFFD32F2F),
+                            isPopular = true,
+                            isCompact = isCompact,
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToLiveDarbar
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(tileSpacing))
+                    // Row 3: Ashram Info + Sevadar Portal
                     Row(modifier = Modifier.fillMaxWidth()) {
                         ActionTile(
                             title = if (isHindi) "आश्रम परिचय" else "Ashram Info",
                             subtitle = if (isHindi) "नियम व लोकेशन" else "Rules & GPS Route",
                             iconBadge = "ℹ️",
                             badgeColor = Color(0xFF3949AB),
+                            isCompact = isCompact,
                             modifier = Modifier.weight(1f),
                             onClick = onNavigateToInfo
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(tileSpacing))
                         ActionTile(
                             title = if (isHindi) "सेवादार पोर्टल" else "Admin Portal",
                             subtitle = if (isHindi) "व्यवस्थापक प्रवेश" else "Sevadar & Admin",
                             iconBadge = "🛡️",
                             badgeColor = MaroonAccent,
+                            isCompact = isCompact,
                             modifier = Modifier.weight(1f),
                             onClick = onNavigateToAdmin
                         )
                     }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        ActionTile(
-                            title = if (isHindi) "📜 आश्रम पर्चे व दस्तावेज" else "📜 Sacred Documents & Slips",
-                            subtitle = if (isHindi) "हवन पर्चा, मैया उतारा, अर्जी व A4 PDF डाउनलोड" else "Hawan, Maiya Utara, Arji & A4 PDF",
-                            iconBadge = "📜",
-                            badgeColor = Color(0xFF6A1B9A),
-                            isPopular = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = onNavigateToParchas
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        ActionTile(
-                            title = if (isHindi) "🔴 लाइव दर्शन व पावन भजन" else "🔴 Live Darbar & Bhajans",
-                            subtitle = if (isHindi) "यूट्यूब लाइव स्ट्रीम व 24x7 पावन आरती/चालीसा प्लेयर" else "In-App Live Stream & Sacred Audio Player",
-                            iconBadge = "🔴",
-                            badgeColor = Color(0xFFD32F2F),
-                            isPopular = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = onNavigateToLiveDarbar
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(tileSpacing))
                     Surface(
                         onClick = {
                             val webUrl = settings.officialWebsiteUrl.ifEmpty { "https://shribalajikripadham.online" }
@@ -2843,33 +2874,33 @@ fun RenderClassicSection(
                             } catch (e: Exception) {}
                         },
                         color = Color(0xFFE3F2FD),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
                         border = BorderStroke(1.dp, Color(0xFF90CAF9)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            modifier = Modifier.padding(horizontal = if (isCompact) 10.dp else 14.dp, vertical = if (isCompact) 6.dp else 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("🌐", fontSize = 24.sp)
-                                Spacer(modifier = Modifier.width(10.dp))
+                                Text("🌐", fontSize = if (isCompact) 20.sp else 24.sp)
+                                Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 10.dp))
                                 Column {
                                     Text(
                                         text = if (isHindi) "आश्रम की आधिकारिक वेबसाइट" else "Official Ashram Website",
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
+                                        fontSize = if (isCompact) 12.sp else 14.sp,
                                         color = Color(0xFF0D47A1)
                                     )
                                     Text(
                                         text = "shribalajikripadham.online • लाइव टोकन व दर्शन",
-                                        fontSize = 11.sp,
+                                        fontSize = if (isCompact) 9.5.sp else 11.sp,
                                         color = Color(0xFF1976D2)
                                     )
                                 }
                             }
-                            Text("खोलें ➔", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF0D47A1))
+                            Text("खोलें ➔", fontWeight = FontWeight.Bold, fontSize = if (isCompact) 11.sp else 12.sp, color = Color(0xFF0D47A1))
                         }
                     }
                 } else {
@@ -2880,38 +2911,55 @@ fun RenderClassicSection(
                             iconBadge = if (settings.isTokenServiceEnabled) "🏷️" else "🔒",
                             badgeColor = if (settings.isTokenServiceEnabled) SaffronPrimary else Color.Gray,
                             isPopular = settings.isTokenServiceEnabled,
+                            isCompact = isCompact,
                             modifier = Modifier.weight(1f),
                             onClick = onNavigateToToken
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(tileSpacing))
+                        ActionTile(
+                            title = if (isHindi) "🔴 लाइव दर्शन" else "🔴 Live Darbar",
+                            subtitle = if (isHindi) "लाइव स्ट्रीम व भजन" else "Live Stream & Audio",
+                            iconBadge = "🔴",
+                            badgeColor = Color(0xFFD32F2F),
+                            isPopular = true,
+                            isCompact = isCompact,
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToLiveDarbar
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(tileSpacing))
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        ActionTile(
+                            title = if (isHindi) "📜 आश्रम पर्चे" else "📜 Sacred Parchas",
+                            subtitle = if (isHindi) "हवन, उतारा व PDF" else "Hawan, Utara & PDF",
+                            iconBadge = "📜",
+                            badgeColor = Color(0xFF6A1B9A),
+                            isPopular = true,
+                            isCompact = isCompact,
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToParchas
+                        )
+                        Spacer(modifier = Modifier.width(tileSpacing))
                         ActionTile(
                             title = if (isHindi) "आश्रम परिचय" else "Ashram Info",
                             subtitle = if (isHindi) "नियम व लोकेशन" else "Rules & GPS Route",
                             iconBadge = "ℹ️",
                             badgeColor = Color(0xFF3949AB),
+                            isCompact = isCompact,
                             modifier = Modifier.weight(1f),
                             onClick = onNavigateToInfo
                         )
                     }
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(tileSpacing))
                     Row(modifier = Modifier.fillMaxWidth()) {
                         ActionTile(
                             title = if (isHindi) "सेवादार पोर्टल" else "Admin Portal",
                             subtitle = if (isHindi) "व्यवस्थापक प्रवेश" else "Sevadar & Admin",
                             iconBadge = "🛡️",
                             badgeColor = MaroonAccent,
+                            isCompact = isCompact,
                             modifier = Modifier.weight(1f),
                             onClick = onNavigateToAdmin
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        ActionTile(
-                            title = if (isHindi) "📜 आश्रम पर्चे" else "📜 Sacred Parchas",
-                            subtitle = if (isHindi) "हवन, उतारा व A4 PDF" else "Hawan, Utara & PDF",
-                            iconBadge = "📜",
-                            badgeColor = Color(0xFF6A1B9A),
-                            isPopular = true,
-                            modifier = Modifier.weight(1f),
-                            onClick = onNavigateToParchas
                         )
                     }
                 }

@@ -3,8 +3,8 @@
   "version_name": "2.44.0",
   "is_force": false,
   "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.44.0/ShriBalajiKripaDham-v2.44.0.apk",
-  "update_notes_hindi": "v2.44.0: 100% प्रो-लेवल अपग्रेड - इन-ऐप लाइव दर्शन व पावन आरती/चालीसा प्लेयर, स्मार्ट टीवी हॉल टोकन ब्रॉडकास्ट बोर्ड (हिंदी वॉयस), सब-5s टोकन हेड्स-अप अलर्ट्स, सर्वर API सुरक्षा व साल्टेड हैश पिन।",
-  "update_notes_english": "v2.44.0: 100% Pro-Level Upgrade - In-App Live Darbar Video & 24x7 Sacred Audio Player, Smart TV Hall Token Broadcast Board (Hindi TTS), Sub-5s fast token heads-up alerts, server API authentication and salted hash PIN.",
+  "update_notes_hindi": "v2.44.0: संपूर्ण स्क्रीन ऑटो-फिट रेस्पॉन्सिव लेआउट - सभी छोटे व बड़े मोबाइल में बिना किसी अतिरिक्त स्क्रॉल के सभी सेवाएं सामने फिट, भक्त व सेवक संपूर्ण मार्गदर्शिका PDF व इन-ऐप लाइव दर्शन।",
+  "update_notes_english": "v2.44.0: Auto-Fit Responsive Screen Engine - perfectly fits across all display sizes, updated Devotee & Sevadar Manual PDFs and Live Darbar.",
   "release_date": "2026-09-17",
-  "sha256": "E728D94499582271A40DF663060CFC6B71FB2D41155BF84DE72934066E9AA01C"
+  "sha256": "43101CB5BAB9F186D7907AC5F5D8F3A7CC843E07628B7EC580F7E8DFBA915029"
 }
