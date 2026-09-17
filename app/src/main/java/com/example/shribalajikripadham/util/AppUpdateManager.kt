@@ -72,13 +72,28 @@ object AppUpdateManager {
                     json.has("apk_download_url") && json.optString("apk_download_url").isNotBlank() -> json.optString("apk_download_url")
                     else -> DEFAULT_APK_URL
                 }
+                val parsedCode = when {
+                    json.has("latest_version_code") -> json.optInt("latest_version_code", 1)
+                    json.has("version_code") -> json.optInt("version_code", 1)
+                    else -> 1
+                }
+                val parsedName = when {
+                    json.has("latest_version_name") -> json.optString("latest_version_name", "1.0")
+                    json.has("version_name") -> json.optString("version_name", "1.0")
+                    else -> "1.0"
+                }
+                val parsedForce = when {
+                    json.has("is_force_update") -> json.optBoolean("is_force_update", false)
+                    json.has("is_force") -> json.optBoolean("is_force", false)
+                    else -> false
+                }
                 OnlineUpdateInfo(
-                    versionCode = json.optInt("latest_version_code", 1),
-                    versionName = json.optString("latest_version_name", "1.0"),
+                    versionCode = parsedCode,
+                    versionName = parsedName,
                     updateNotesHindi = json.optString("update_notes_hindi", ""),
                     updateNotesEnglish = json.optString("update_notes_english", ""),
                     apkUrl = parsedApkUrl,
-                    isForce = json.optBoolean("is_force_update", false),
+                    isForce = parsedForce,
                     webhookUrl = json.optString("webhook_url", "")
                 )
             } else {

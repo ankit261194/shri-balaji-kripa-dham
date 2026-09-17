@@ -228,5 +228,13 @@
       "details_english": "Sundarkand Path, Sindoor Arpan, Maha Aarti, Chola offering and community Mahaprasadam.",
       "is_active": true
     }
-  ]
+  ],
+  "app_update": {
+    "latest_version_code": 62,
+    "latest_version_name": "2.44.1",
+    "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.44.1/ShriBalajiKripaDham-v2.44.1.apk",
+    "update_notes_hindi": "v2.44.1: संपूर्ण स्क्रीन ऑटो-फिट रेस्पॉन्सिव लेआउट - सभी छोटे व बड़े मोबाइल में बिना किसी अतिरिक्त स्क्रॉल के सभी सेवाएं सामने फिट, भक्त व सेवक संपूर्ण मार्गदर्शिका PDF व इन-ऐप लाइव दर्शन।",
+    "update_notes_english": "v2.44.1: Auto-Fit Responsive Screen Engine - perfectly fits across all display sizes, updated Devotee & Sevadar Manual PDFs and Live Darbar.",
+    "is_force_update": false
+  }
 }
