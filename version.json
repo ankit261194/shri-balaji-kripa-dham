@@ -1,9 +1,9 @@
 {
-  "latest_version_code": 57,
-  "latest_version_name": "2.41.0",
-  "update_notes_hindi": "v2.41.0: रियल-टाइम FCM पुश नोटिफिकेशन (टोकन बुलाने पर भक्त के फोन पर तत्काल सूचना), मल्टी-डिवाइस सेंट्रल AI फेस प्रोफाइल सिंक (होस्टिंगर MySQL), सुपरएडमिन कस्टम UPI QR कोड व VPA सेटिंग, स्मार्ट GitHub बैकअप (टोकन क्लैश मुक्त)।",
-  "update_notes_english": "v2.41.0: Real-time FCM Push Notifications on devotee token call, Multi-Device Central AI Face Profile Sync (Hostinger MySQL), SuperAdmin Custom UPI QR & VPA configuration, Smart GitHub Token Backup without collision.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.41.0/ShriBalajiKripaDham-v2.41.0.apk",
+  "latest_version_code": 58,
+  "latest_version_name": "2.42.0",
+  "update_notes_hindi": "v2.42.0: 100% क्लाउड CDN फोटो अपलोड (सभी डिवाइस पर तत्काल फोटो दृश्यता), होम स्क्रीन सेवादार स्लाइडर पूर्ण संपादन व फोटो पिकर (कैमरा/गैलरी), सुपरएडमिन 1-क्लिक लाइव वेबसाइट एडिटर (बैनर, विशेष सूचना, समय सारणी, पूज्य गुरुदेव फोटो) एवं स्वचालित होस्टिंगर MySQL सिंक।",
+  "update_notes_english": "v2.42.0: 100% Cloud CDN photo upload (instant cross-device photo visibility), Home slider Sevadar full edit & photo picker (Camera/Gallery), SuperAdmin 1-Click Live Website Editor (Banner, Special Notice, Timings, Guruji photo) & Hostinger MySQL live sync.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.0/ShriBalajiKripaDham-v2.42.0.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

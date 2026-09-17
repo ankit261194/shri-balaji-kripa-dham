@@ -9,6 +9,7 @@ import com.example.shribalajikripadham.hardware.DeviceFingerprintManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
@@ -44,12 +45,22 @@ object CentralFaceSyncManager {
             val b64Vector = FaceEmbeddingEngine.vectorToBase64(faceVector)
             val devId = if (deviceId.isNotBlank()) deviceId else DeviceFingerprintManager.getDeviceId(context)
 
+            val cloudPhotoUrl = if (photoUri.isNotBlank() && !photoUri.startsWith("http://") && !photoUri.startsWith("https://")) {
+                try {
+                    val rawPath = photoUri.removePrefix("file://")
+                    val f = File(rawPath)
+                    if (f.exists() && f.length() > 0) {
+                        HostingerCentralSyncManager.uploadPhoto(f) ?: photoUri
+                    } else photoUri
+                } catch (e: Exception) { photoUri }
+            } else photoUri
+
             val json = JSONObject().apply {
                 put("patient_name", name.trim())
                 put("phone_number", phone.trim())
                 put("city", if (city.isBlank()) "डूँगरा जाट (स्थानीय)" else city.trim())
                 put("face_vector_b64", b64Vector)
-                put("photo_url", photoUri.trim())
+                put("photo_url", cloudPhotoUrl.trim())
                 put("registered_by", "SEVADAR_APP")
                 put("device_id", devId)
             }

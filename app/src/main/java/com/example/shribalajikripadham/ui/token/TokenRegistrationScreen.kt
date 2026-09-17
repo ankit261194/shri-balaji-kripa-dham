@@ -2,6 +2,7 @@ package com.example.shribalajikripadham.ui.token
 
 import android.net.Uri
 import android.widget.Toast
+import java.io.File
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -1412,6 +1413,16 @@ fun TokenRegistrationScreen(
                                         val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: settings.latitude)
                                         val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: settings.longitude)
 
+                                        val cloudPhotoUrl = if (capturedPhotoUri.isNotBlank()) {
+                                            try {
+                                                val rawPath = capturedPhotoUri.removePrefix("file://")
+                                                val f = File(rawPath)
+                                                if (f.exists() && f.length() > 0) {
+                                                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(f) ?: capturedPhotoUri
+                                                } else capturedPhotoUri
+                                            } catch (e: Exception) { capturedPhotoUri }
+                                        } else ""
+
                                         val created = repository.registerToken(
                                             patientName = patientName.trim(),
                                             phoneNumber = phoneNumber.trim(),
@@ -1420,7 +1431,7 @@ fun TokenRegistrationScreen(
                                             longitude = finalLon,
                                             city = city.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
                                             registeredBy = "SELF",
-                                            photoUri = capturedPhotoUri,
+                                            photoUri = if (cloudPhotoUrl.isNotBlank()) cloudPhotoUrl else capturedPhotoUri,
                                             isMockLocation = isMock,
                                             locationAccuracy = accuracy,
                                             originAddress = originAddress.trim().ifEmpty { city.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" } },
@@ -1437,7 +1448,7 @@ fun TokenRegistrationScreen(
                                                     phone = phoneNumber.trim(),
                                                     city = city.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
                                                     faceVector = vector,
-                                                    photoUri = capturedPhotoUri,
+                                                    photoUri = if (cloudPhotoUrl.isNotBlank()) cloudPhotoUrl else capturedPhotoUri,
                                                     registeredBy = "SELF"
                                                 )
                                             } catch (e: Exception) {}

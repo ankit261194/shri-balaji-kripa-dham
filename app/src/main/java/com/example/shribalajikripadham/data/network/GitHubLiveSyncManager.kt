@@ -1,7 +1,11 @@
 package com.example.shribalajikripadham.data.network
 
 import android.content.Context
+import android.net.Uri
 import android.util.Base64
+import android.util.Log
+import java.io.File
+import java.io.FileOutputStream
 import com.example.shribalajikripadham.data.model.Admin
 import com.example.shribalajikripadham.data.model.AdminRole
 import com.example.shribalajikripadham.data.model.LiveUiConfigDto
@@ -19,6 +23,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 object GitHubLiveSyncManager {
+    private const val TAG = "GitHubLiveSyncManager"
     private const val PREFS_NAME = "sbkd_github_sync_prefs"
     private const val KEY_SYNC_TOKEN = "custom_github_pat_token"
 
@@ -142,10 +147,41 @@ object GitHubLiveSyncManager {
         localPathOrUri: String,
         remoteFileName: String
     ): String? = withContext(Dispatchers.IO) {
-        // Privacy protection: Personal photos and identities are never uploaded to public GitHub repository.
-        // Photos remain securely stored only on-device.
         if (localPathOrUri.isBlank()) return@withContext null
-        return@withContext localPathOrUri
+        if (localPathOrUri.startsWith("http://") || localPathOrUri.startsWith("https://")) {
+            return@withContext localPathOrUri
+        }
+        try {
+            val fileToUpload: File? = when {
+                localPathOrUri.startsWith("content://") -> {
+                    val uri = Uri.parse(localPathOrUri)
+                    val tempFile = File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        FileOutputStream(tempFile).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    if (tempFile.exists() && tempFile.length() > 0) tempFile else null
+                }
+                else -> {
+                    val rawPath = localPathOrUri.removePrefix("file://")
+                    val file = File(rawPath)
+                    if (file.exists() && file.length() > 0) file else null
+                }
+            }
+
+            if (fileToUpload != null && fileToUpload.exists()) {
+                val cloudUrl = HostingerCentralSyncManager.uploadPhoto(fileToUpload)
+                if (!cloudUrl.isNullOrBlank()) {
+                    Log.d(TAG, "Successfully uploaded photo to cloud CDN: $cloudUrl")
+                    return@withContext cloudUrl
+                }
+            }
+            localPathOrUri
+        } catch (e: Exception) {
+            Log.e(TAG, "Error uploading photo: ${e.localizedMessage}")
+            localPathOrUri
+        }
     }
 
     // ========================================================================

@@ -1,10 +1,10 @@
 {
-  "version_code": 57,
-  "version_name": "2.41.0",
+  "version_code": 58,
+  "version_name": "2.42.0",
   "is_force": false,
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.41.0/ShriBalajiKripaDham-v2.41.0.apk",
-  "update_notes_hindi": "v2.41.0: रियल-टाइम FCM पुश नोटिफिकेशन (टोकन बुलाने पर भक्त के फोन पर तत्काल सूचना), मल्टी-डिवाइस सेंट्रल AI फेस प्रोफाइल सिंक (होस्टिंगर MySQL), सुपरएडमिन कस्टम UPI QR कोड व VPA सेटिंग, स्मार्ट GitHub बैकअप (टोकन क्लैश मुक्त)।",
-  "update_notes_english": "v2.41.0: Real-time FCM Push Notifications on devotee token call, Multi-Device Central AI Face Profile Sync (Hostinger MySQL), SuperAdmin Custom UPI QR & VPA configuration, Smart GitHub Token Backup without collision.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.0/ShriBalajiKripaDham-v2.42.0.apk",
+  "update_notes_hindi": "v2.42.0: मल्टी-डिवाइस फोटो सिंक (होस्टिंगर CDN), सेवादार और दानदाता विवरण/फोटो एडिट व डिलीट सुविधा, ऐप के अंदर संपूर्ण वेबसाइट CMS एडिटर (हेडलाइन, सबटाइटल, आपातकालीन सूचना, दरबार समय, पूज्य गुरुदेव जी फोटो)।",
+  "update_notes_english": "v2.42.0: Multi-device photo sync with Hostinger CDN, full sevadar & donor edit/delete with photo picker dialogs, in-app Ashram website CMS editor (Hero headline/subtitle, emergency notice banner, timings, Guruji photo) with 1-click live publish.",
   "release_date": "2026-09-17",
-  "sha256": "52bcb583bccf882b1f1b7990081d5c3a2e6817672b44fa9ef214a6baedc0e593"
+  "sha256": "6321b277323d2030a203de99e810afd43a72bbca574daa8ae62f9df62d9409e1"
 }

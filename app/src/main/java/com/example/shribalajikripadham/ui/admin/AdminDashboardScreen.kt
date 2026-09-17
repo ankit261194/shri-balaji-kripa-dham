@@ -32,6 +32,7 @@ import android.widget.Toast
 import com.example.shribalajikripadham.data.local.DatabaseHelper
 import com.example.shribalajikripadham.ai.FaceEmbeddingEngine
 import com.example.shribalajikripadham.data.model.*
+import com.example.shribalajikripadham.data.network.GitHubLiveSyncManager
 import com.example.shribalajikripadham.data.repository.AshramRepository
 import com.example.shribalajikripadham.data.repository.AdminPermissionsUpdate
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
@@ -9821,19 +9822,194 @@ fun WebsiteAndCmsManagerTab(
     var isDarbarActive by remember { mutableStateOf(settings.isDarbarActive) }
     var isTokenServiceEnabled by remember { mutableStateOf(settings.isTokenServiceEnabled) }
 
+    // Website Content States
+    var websiteBannerTitle by remember { mutableStateOf(settings.bannerTitle) }
+    var websiteBannerSubtitle by remember { mutableStateOf(settings.bannerSubtitle) }
+    var isWebsiteBannerVisible by remember { mutableStateOf(settings.isBannerVisible) }
+
+    var emergencyNotice by remember { mutableStateOf(settings.emergencyNoticeText) }
+    var isEmergencyNoticeVisible by remember { mutableStateOf(settings.isEmergencyNoticeVisible) }
+
+    var darbarTimings by remember { mutableStateOf(settings.darbarTimings) }
+    var gurujiPhotoUri by remember { mutableStateOf(settings.gurujiPhotoUri) }
+
     var sevadarsList by remember { mutableStateOf<List<SevadarProfile>>(emptyList()) }
     var donorsList by remember { mutableStateOf<List<DonorProfile>>(emptyList()) }
 
-    // Dialogs for Adding Sevadar & Donor
+    // Dialogs for Adding & Editing Sevadar
     var showAddSevadarDialog by remember { mutableStateOf(false) }
     var newSevName by remember { mutableStateOf("") }
     var newSevRole by remember { mutableStateOf("सेवादार") }
     var newSevPhone by remember { mutableStateOf("") }
+    var newSevPhotoUri by remember { mutableStateOf("") }
 
+    var editingSevadar by remember { mutableStateOf<SevadarProfile?>(null) }
+    var editSevName by remember { mutableStateOf("") }
+    var editSevRole by remember { mutableStateOf("") }
+    var editSevPhone by remember { mutableStateOf("") }
+    var editSevPhotoUri by remember { mutableStateOf("") }
+
+    // Dialogs for Adding & Editing Donor
     var showAddDonorDialog by remember { mutableStateOf(false) }
     var newDonorName by remember { mutableStateOf("") }
     var newDonorAddress by remember { mutableStateOf("ग्राम डूँगरा जाट") }
     var newDonorTitle by remember { mutableStateOf("मंदिर निर्माण सहयोगी") }
+    var newDonorPhotoUri by remember { mutableStateOf("") }
+
+    var editingDonor by remember { mutableStateOf<DonorProfile?>(null) }
+    var editDonorName by remember { mutableStateOf("") }
+    var editDonorAddress by remember { mutableStateOf("") }
+    var editDonorTitle by remember { mutableStateOf("") }
+    var editDonorPhotoUri by remember { mutableStateOf("") }
+
+    // Photo Launchers for Sevadars, Donors & Guruji
+    val newSevPhotoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+            if (bmp != null) {
+                val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
+                newSevPhotoUri = saved
+                scope.launch(Dispatchers.IO) {
+                    val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
+                    if (!cloudUrl.isNullOrBlank()) {
+                        withContext(Dispatchers.Main) { newSevPhotoUri = cloudUrl }
+                    }
+                }
+            }
+        }
+    }
+    val newSevPhotoCamera = rememberLauncherForActivityResult(TakeAnyPicturePreview()) { bmp ->
+        if (bmp != null) {
+            val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
+            newSevPhotoUri = saved
+            scope.launch(Dispatchers.IO) {
+                val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
+                if (!cloudUrl.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) { newSevPhotoUri = cloudUrl }
+                }
+            }
+        }
+    }
+
+    val editSevPhotoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+            if (bmp != null) {
+                val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
+                editSevPhotoUri = saved
+                scope.launch(Dispatchers.IO) {
+                    val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
+                    if (!cloudUrl.isNullOrBlank()) {
+                        withContext(Dispatchers.Main) { editSevPhotoUri = cloudUrl }
+                    }
+                }
+            }
+        }
+    }
+    val editSevPhotoCamera = rememberLauncherForActivityResult(TakeAnyPicturePreview()) { bmp ->
+        if (bmp != null) {
+            val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
+            editSevPhotoUri = saved
+            scope.launch(Dispatchers.IO) {
+                val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
+                if (!cloudUrl.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) { editSevPhotoUri = cloudUrl }
+                }
+            }
+        }
+    }
+
+    val newDonorPhotoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+            if (bmp != null) {
+                val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "donor")
+                newDonorPhotoUri = saved
+                scope.launch(Dispatchers.IO) {
+                    val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "donor_${System.currentTimeMillis()}.jpg")
+                    if (!cloudUrl.isNullOrBlank()) {
+                        withContext(Dispatchers.Main) { newDonorPhotoUri = cloudUrl }
+                    }
+                }
+            }
+        }
+    }
+    val newDonorPhotoCamera = rememberLauncherForActivityResult(TakeAnyPicturePreview()) { bmp ->
+        if (bmp != null) {
+            val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "donor")
+            newDonorPhotoUri = saved
+            scope.launch(Dispatchers.IO) {
+                val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "donor_${System.currentTimeMillis()}.jpg")
+                if (!cloudUrl.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) { newDonorPhotoUri = cloudUrl }
+                }
+            }
+        }
+    }
+
+    val editDonorPhotoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+            if (bmp != null) {
+                val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "donor")
+                editDonorPhotoUri = saved
+                scope.launch(Dispatchers.IO) {
+                    val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "donor_${System.currentTimeMillis()}.jpg")
+                    if (!cloudUrl.isNullOrBlank()) {
+                        withContext(Dispatchers.Main) { editDonorPhotoUri = cloudUrl }
+                    }
+                }
+            }
+        }
+    }
+    val editDonorPhotoCamera = rememberLauncherForActivityResult(TakeAnyPicturePreview()) { bmp ->
+        if (bmp != null) {
+            val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "donor")
+            editDonorPhotoUri = saved
+            scope.launch(Dispatchers.IO) {
+                val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "donor_${System.currentTimeMillis()}.jpg")
+                if (!cloudUrl.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) { editDonorPhotoUri = cloudUrl }
+                }
+            }
+        }
+    }
+
+    val gurujiPhotoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            val bmp = DevoteePhotoHelper.loadBitmap(context, uri.toString())
+            if (bmp != null) {
+                val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "guruji")
+                gurujiPhotoUri = saved
+                scope.launch(Dispatchers.IO) {
+                    val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "guruji_profile.jpg")
+                    if (!cloudUrl.isNullOrBlank()) {
+                        repository.updateGurujiPhoto(cloudUrl)
+                        withContext(Dispatchers.Main) {
+                            gurujiPhotoUri = cloudUrl
+                            Toast.makeText(context, "✅ पूज्य गुरुदेव जी फोटो क्लाउड पर सुरक्षित हो गई!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    val gurujiPhotoCamera = rememberLauncherForActivityResult(TakeAnyPicturePreview()) { bmp ->
+        if (bmp != null) {
+            val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "guruji")
+            gurujiPhotoUri = saved
+            scope.launch(Dispatchers.IO) {
+                val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "guruji_profile.jpg")
+                if (!cloudUrl.isNullOrBlank()) {
+                    repository.updateGurujiPhoto(cloudUrl)
+                    withContext(Dispatchers.Main) {
+                        gurujiPhotoUri = cloudUrl
+                        Toast.makeText(context, "✅ पूज्य गुरुदेव जी फोटो क्लाउड पर सुरक्षित हो गई!", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
 
     fun loadData() {
         scope.launch {
@@ -9878,6 +10054,9 @@ fun WebsiteAndCmsManagerTab(
                         onClick = {
                             scope.launch {
                                 isPublishing = true
+                                repository.updateWebsiteHeroBanner(websiteBannerTitle, websiteBannerSubtitle, isWebsiteBannerVisible)
+                                repository.updateEmergencyNoticeBanner(emergencyNotice, isEmergencyNoticeVisible)
+                                repository.updateDarbarScheduleTimings(darbarTimings)
                                 val res = repository.publishEverythingToWebsiteAndCloud(admin.name)
                                 isPublishing = false
                                 Toast.makeText(context, res.second, Toast.LENGTH_LONG).show()
@@ -9987,7 +10166,158 @@ fun WebsiteAndCmsManagerTab(
             }
         }
 
-        // 3. SEVADARS MANAGEMENT SECTION
+        // 3. 🌐 WEBSITE HERO BANNER EDITOR
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, Color(0xFFFFD54F))
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("🌐 वेबसाइट मुख्य बैनर (Hero Banner)", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaroonPrimary)
+                    OutlinedTextField(
+                        value = websiteBannerTitle,
+                        onValueChange = { websiteBannerTitle = it },
+                        label = { Text("मुख्य शीर्षक (Banner Title)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = websiteBannerSubtitle,
+                        onValueChange = { websiteBannerSubtitle = it },
+                        label = { Text("उप-शीर्षक / स्थान (Banner Subtitle)") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("वेबसाइट पर बैनर दिखाएं", fontSize = 13.sp)
+                        Switch(checked = isWebsiteBannerVisible, onCheckedChange = { isWebsiteBannerVisible = it })
+                    }
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                repository.updateWebsiteHeroBanner(websiteBannerTitle, websiteBannerSubtitle, isWebsiteBannerVisible)
+                                Toast.makeText(context, "✅ वेबसाइट बैनर अपडेट हो गया!", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("💾 बैनर सेटिंग्स सेव करें")
+                    }
+                }
+            }
+        }
+
+        // 4. 📢 EMERGENCY / SPECIAL NOTICE EDITOR
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, Color(0xFFFFD54F))
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("📢 आपातकालीन / विशेष सूचना (Emergency Notice)", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaroonPrimary)
+                    OutlinedTextField(
+                        value = emergencyNotice,
+                        onValueChange = { emergencyNotice = it },
+                        label = { Text("विशेष सूचना का संदेश") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("वेबसाइट पर सूचना प्रदर्शित करें", fontSize = 13.sp)
+                        Switch(checked = isEmergencyNoticeVisible, onCheckedChange = { isEmergencyNoticeVisible = it })
+                    }
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                repository.updateEmergencyNoticeBanner(emergencyNotice, isEmergencyNoticeVisible)
+                                Toast.makeText(context, "✅ विशेष सूचना अपडेट हो गई!", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("💾 विशेष सूचना सेव करें")
+                    }
+                }
+            }
+        }
+
+        // 5. ⏰ DARBAR SCHEDULE & TIMINGS
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, Color(0xFFFFD54F))
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("⏰ दरबार समय सारणी (Schedule & Timings)", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaroonPrimary)
+                    OutlinedTextField(
+                        value = darbarTimings,
+                        onValueChange = { darbarTimings = it },
+                        label = { Text("दरबार व दर्शन समय") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                repository.updateDarbarScheduleTimings(darbarTimings)
+                                Toast.makeText(context, "✅ समय सारणी अपडेट हो गई!", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("💾 समय सारणी सेव करें")
+                    }
+                }
+            }
+        }
+
+        // 6. 🙏 GURUJI PROFILE PHOTO (APP & WEBSITE)
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDF5)),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, Color(0xFFFFD54F))
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text("🙏 पूज्य गुरुदेव जी प्रोफाइल फोटो (वेबसाइट व ऐप)", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaroonPrimary)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        SacredAvatar(photoUri = gurujiPhotoUri, fallbackText = "गुरुदेव", size = 64.dp)
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Button(
+                                onClick = { gurujiPhotoCamera.launch(null) },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("📸 कैमरा से फोटो लें", fontSize = 12.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { gurujiPhotoPicker.launch("image/*") },
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("📁 गैलरी से चुनें", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 7. SEVADARS MANAGEMENT SECTION
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -10002,7 +10332,13 @@ fun WebsiteAndCmsManagerTab(
                     ) {
                         Text("🙏 सेवादल मंडल (${sevadarsList.size})", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaroonPrimary)
                         Button(
-                            onClick = { showAddSevadarDialog = true },
+                            onClick = {
+                                newSevName = ""
+                                newSevRole = "सेवादार"
+                                newSevPhone = ""
+                                newSevPhotoUri = ""
+                                showAddSevadarDialog = true
+                            },
                             colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                         ) {
@@ -10022,23 +10358,39 @@ fun WebsiteAndCmsManagerTab(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    SacredAvatar(photoUri = sev.photoUri, fallbackText = sev.name, size = 42.dp)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    SacredAvatar(photoUri = sev.photoUri, fallbackText = sev.name, size = 44.dp)
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column {
                                         Text(sev.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                         Text("${sev.roleTitleHindi} • 📞 ${sev.phoneNumber}", fontSize = 11.sp, color = Color.DarkGray)
                                     }
                                 }
-                                IconButton(
-                                    onClick = {
-                                        scope.launch {
-                                            repository.deleteSevadar(sev.id)
-                                            loadData()
+                                Row {
+                                    IconButton(
+                                        onClick = {
+                                            editingSevadar = sev
+                                            editSevName = sev.name
+                                            editSevRole = sev.roleTitleHindi
+                                            editSevPhone = sev.phoneNumber
+                                            editSevPhotoUri = sev.photoUri
                                         }
+                                    ) {
+                                        Text("✏️", fontSize = 16.sp)
                                     }
-                                ) {
-                                    Text("🗑️", fontSize = 14.sp)
+                                    IconButton(
+                                        onClick = {
+                                            scope.launch {
+                                                repository.deleteSevadar(sev.id)
+                                                loadData()
+                                            }
+                                        }
+                                    ) {
+                                        Text("🗑️", fontSize = 16.sp)
+                                    }
                                 }
                             }
                         }
@@ -10047,7 +10399,7 @@ fun WebsiteAndCmsManagerTab(
             }
         }
 
-        // 4. PROMINENT DONORS MANAGEMENT (STRICT PRIVACY: NO PHONE NUMBERS PUBLIC)
+        // 8. PROMINENT DONORS MANAGEMENT (STRICT PRIVACY: NO PHONE NUMBERS PUBLIC)
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDF5)),
@@ -10065,7 +10417,13 @@ fun WebsiteAndCmsManagerTab(
                             Text("⚠️ प्राइवेसी नियम: फोन नंबर वेबसाइट पर कभी नहीं दिखेगा", fontSize = 10.sp, color = Color(0xFFE65100))
                         }
                         Button(
-                            onClick = { showAddDonorDialog = true },
+                            onClick = {
+                                newDonorName = ""
+                                newDonorAddress = "ग्राम डूँगरा जाट"
+                                newDonorTitle = "मंदिर निर्माण सहयोगी"
+                                newDonorPhotoUri = ""
+                                showAddDonorDialog = true
+                            },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB78103)),
                             contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                         ) {
@@ -10085,23 +10443,39 @@ fun WebsiteAndCmsManagerTab(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    SacredAvatar(photoUri = donor.photoUri, fallbackText = donor.name, size = 42.dp)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    SacredAvatar(photoUri = donor.photoUri, fallbackText = donor.name, size = 44.dp)
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Column {
                                         Text(donor.name, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                         Text("📍 ${donor.cityAddress} • ✨ ${donor.title}", fontSize = 11.sp, color = Color.DarkGray)
                                     }
                                 }
-                                IconButton(
-                                    onClick = {
-                                        scope.launch {
-                                            repository.deleteDonor(donor.id)
-                                            loadData()
+                                Row {
+                                    IconButton(
+                                        onClick = {
+                                            editingDonor = donor
+                                            editDonorName = donor.name
+                                            editDonorAddress = donor.cityAddress
+                                            editDonorTitle = donor.title
+                                            editDonorPhotoUri = donor.photoUri
                                         }
+                                    ) {
+                                        Text("✏️", fontSize = 16.sp)
                                     }
-                                ) {
-                                    Text("🗑️", fontSize = 14.sp)
+                                    IconButton(
+                                        onClick = {
+                                            scope.launch {
+                                                repository.deleteDonor(donor.id)
+                                                loadData()
+                                            }
+                                        }
+                                    ) {
+                                        Text("🗑️", fontSize = 16.sp)
+                                    }
                                 }
                             }
                         }
@@ -10111,13 +10485,40 @@ fun WebsiteAndCmsManagerTab(
         }
     }
 
-    // Add Sevadar Dialog
+    // Add Sevadar Dialog with Photo Picker
     if (showAddSevadarDialog) {
         AlertDialog(
             onDismissRequest = { showAddSevadarDialog = false },
             title = { Text("नया सेवादार जोड़ें", fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SacredAvatar(photoUri = newSevPhotoUri, fallbackText = newSevName.ifEmpty { "सेवादार" }, size = 50.dp)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Button(
+                                    onClick = { newSevPhotoCamera.launch(null) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text("📸 कैमरा", fontSize = 11.sp)
+                                }
+                                OutlinedButton(
+                                    onClick = { newSevPhotoPicker.launch("image/*") },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text("📁 गैलरी", fontSize = 11.sp)
+                                }
+                            }
+                            if (newSevPhotoUri.isNotBlank()) {
+                                Text("✓ फोटो चयनित", fontSize = 10.sp, color = Color(0xFF2E7D32))
+                            }
+                        }
+                    }
                     OutlinedTextField(value = newSevName, onValueChange = { newSevName = it }, label = { Text("सेवादार का नाम") }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = newSevRole, onValueChange = { newSevRole = it }, label = { Text("सेवा / दायित्व पद") }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = newSevPhone, onValueChange = { newSevPhone = it }, label = { Text("फोन नंबर") }, modifier = Modifier.fillMaxWidth())
@@ -10134,12 +10535,14 @@ fun WebsiteAndCmsManagerTab(
                                         roleTitleHindi = newSevRole.trim(),
                                         roleTitleEnglish = newSevRole.trim(),
                                         phoneNumber = newSevPhone.trim(),
+                                        photoUri = newSevPhotoUri.trim(),
                                         displayOrder = sevadarsList.size + 1
                                     )
                                 )
                                 showAddSevadarDialog = false
                                 newSevName = ""
                                 newSevPhone = ""
+                                newSevPhotoUri = ""
                                 loadData()
                             }
                         }
@@ -10152,13 +10555,107 @@ fun WebsiteAndCmsManagerTab(
         )
     }
 
-    // Add Donor Dialog
+    // Edit Sevadar Dialog with Photo Picker
+    if (editingSevadar != null) {
+        AlertDialog(
+            onDismissRequest = { editingSevadar = null },
+            title = { Text("सेवादार विवरण संपादित करें", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SacredAvatar(photoUri = editSevPhotoUri, fallbackText = editSevName.ifEmpty { "सेवादार" }, size = 50.dp)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Button(
+                                    onClick = { editSevPhotoCamera.launch(null) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text("📸 कैमरा", fontSize = 11.sp)
+                                }
+                                OutlinedButton(
+                                    onClick = { editSevPhotoPicker.launch("image/*") },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text("📁 गैलरी", fontSize = 11.sp)
+                                }
+                            }
+                            if (editSevPhotoUri.isNotBlank()) {
+                                Text("✓ फोटो चयनित", fontSize = 10.sp, color = Color(0xFF2E7D32))
+                            }
+                        }
+                    }
+                    OutlinedTextField(value = editSevName, onValueChange = { editSevName = it }, label = { Text("सेवादार का नाम") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = editSevRole, onValueChange = { editSevRole = it }, label = { Text("सेवा / दायित्व पद") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = editSevPhone, onValueChange = { editSevPhone = it }, label = { Text("फोन नंबर") }, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val curr = editingSevadar
+                        if (curr != null && editSevName.isNotBlank() && editSevPhone.isNotBlank()) {
+                            scope.launch {
+                                repository.saveSevadar(
+                                    curr.copy(
+                                        name = editSevName.trim(),
+                                        roleTitleHindi = editSevRole.trim(),
+                                        roleTitleEnglish = editSevRole.trim(),
+                                        phoneNumber = editSevPhone.trim(),
+                                        photoUri = editSevPhotoUri.trim()
+                                    )
+                                )
+                                editingSevadar = null
+                                loadData()
+                            }
+                        }
+                    }
+                ) { Text("सेव करें व सिंक करें") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingSevadar = null }) { Text("रद्द करें") }
+            }
+        )
+    }
+
+    // Add Donor Dialog with Photo Picker
     if (showAddDonorDialog) {
         AlertDialog(
             onDismissRequest = { showAddDonorDialog = false },
             title = { Text("नया दानदाता / संरक्षक जोड़ें", fontWeight = FontWeight.Bold) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SacredAvatar(photoUri = newDonorPhotoUri, fallbackText = newDonorName.ifEmpty { "दानदाता" }, size = 50.dp)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Button(
+                                    onClick = { newDonorPhotoCamera.launch(null) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB78103)),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text("📸 कैमरा", fontSize = 11.sp)
+                                }
+                                OutlinedButton(
+                                    onClick = { newDonorPhotoPicker.launch("image/*") },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text("📁 गैलरी", fontSize = 11.sp)
+                                }
+                            }
+                            if (newDonorPhotoUri.isNotBlank()) {
+                                Text("✓ फोटो चयनित", fontSize = 10.sp, color = Color(0xFF2E7D32))
+                            }
+                        }
+                    }
                     OutlinedTextField(value = newDonorName, onValueChange = { newDonorName = it }, label = { Text("दानदाता का नाम") }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = newDonorAddress, onValueChange = { newDonorAddress = it }, label = { Text("शहर / पता") }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(value = newDonorTitle, onValueChange = { newDonorTitle = it }, label = { Text("सहयोग पद / सेवा विवरण") }, modifier = Modifier.fillMaxWidth())
@@ -10174,11 +10671,13 @@ fun WebsiteAndCmsManagerTab(
                                         name = newDonorName.trim(),
                                         cityAddress = newDonorAddress.trim(),
                                         title = newDonorTitle.trim(),
+                                        photoUri = newDonorPhotoUri.trim(),
                                         displayOrder = donorsList.size + 1
                                     )
                                 )
                                 showAddDonorDialog = false
                                 newDonorName = ""
+                                newDonorPhotoUri = ""
                                 loadData()
                             }
                         }
@@ -10187,6 +10686,72 @@ fun WebsiteAndCmsManagerTab(
             },
             dismissButton = {
                 TextButton(onClick = { showAddDonorDialog = false }) { Text("रद्द करें") }
+            }
+        )
+    }
+
+    // Edit Donor Dialog with Photo Picker
+    if (editingDonor != null) {
+        AlertDialog(
+            onDismissRequest = { editingDonor = null },
+            title = { Text("दानदाता विवरण संपादित करें", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        SacredAvatar(photoUri = editDonorPhotoUri, fallbackText = editDonorName.ifEmpty { "दानदाता" }, size = 50.dp)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Button(
+                                    onClick = { editDonorPhotoCamera.launch(null) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB78103)),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text("📸 कैमरा", fontSize = 11.sp)
+                                }
+                                OutlinedButton(
+                                    onClick = { editDonorPhotoPicker.launch("image/*") },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text("📁 गैलरी", fontSize = 11.sp)
+                                }
+                            }
+                            if (editDonorPhotoUri.isNotBlank()) {
+                                Text("✓ फोटो चयनित", fontSize = 10.sp, color = Color(0xFF2E7D32))
+                            }
+                        }
+                    }
+                    OutlinedTextField(value = editDonorName, onValueChange = { editDonorName = it }, label = { Text("दानदाता का नाम") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = editDonorAddress, onValueChange = { editDonorAddress = it }, label = { Text("शहर / पता") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = editDonorTitle, onValueChange = { editDonorTitle = it }, label = { Text("सहयोग पद / सेवा विवरण") }, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val curr = editingDonor
+                        if (curr != null && editDonorName.isNotBlank()) {
+                            scope.launch {
+                                repository.saveDonor(
+                                    curr.copy(
+                                        name = editDonorName.trim(),
+                                        cityAddress = editDonorAddress.trim(),
+                                        title = editDonorTitle.trim(),
+                                        photoUri = editDonorPhotoUri.trim()
+                                    )
+                                )
+                                editingDonor = null
+                                loadData()
+                            }
+                        }
+                    }
+                ) { Text("सेव करें व सिंक करें") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingDonor = null }) { Text("रद्द करें") }
             }
         )
     }

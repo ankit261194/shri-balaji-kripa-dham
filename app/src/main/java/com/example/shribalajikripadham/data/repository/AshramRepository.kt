@@ -803,6 +803,16 @@ class AshramRepository(context: Context) {
         var nextTokenNum = 1
         var insertedId: Long = -1
 
+        val finalPhotoUri = if (photoUri.isNotBlank() && !photoUri.startsWith("http://") && !photoUri.startsWith("https://")) {
+            try {
+                val rawPath = photoUri.removePrefix("file://")
+                val f = java.io.File(rawPath)
+                if (f.exists() && f.length() > 0) {
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(f) ?: photoUri
+                } else photoUri
+            } catch (e: Exception) { photoUri }
+        } else photoUri
+
         var centralTokenNumber: Int? = null
         var centralOk = false
         var centralNum = -1
@@ -815,7 +825,7 @@ class AshramRepository(context: Context) {
                 latitude = latitude,
                 longitude = longitude,
                 distanceKm = calculatedDistance.toDouble(),
-                photoUrl = photoUri,
+                photoUrl = finalPhotoUri,
                 registeredBy = registeredBy,
                 originAddress = safeOrigin,
                 destinationAddress = destinationAddress,
@@ -894,7 +904,7 @@ class AshramRepository(context: Context) {
                     put("longitude", longitude)
                     put("status", TokenStatus.WAITING.name)
                     put("registered_by", registeredBy)
-                    put("photo_uri", photoUri)
+                    put("photo_uri", finalPhotoUri)
                     put("is_darshan_completed", 0)
                     put("darshan_completed_at", 0L)
                     put("origin_address", safeOrigin)
@@ -928,7 +938,7 @@ class AshramRepository(context: Context) {
             name = patientName,
             phone = phoneNumber,
             city = safeCity,
-            photoUri = photoUri,
+            photoUri = finalPhotoUri,
             sourceModule = "TOKEN",
             lastVisitDate = today
         )
@@ -945,7 +955,7 @@ class AshramRepository(context: Context) {
             longitude = longitude,
             status = TokenStatus.WAITING,
             registeredBy = registeredBy,
-            photoUri = photoUri,
+            photoUri = finalPhotoUri,
             isDarshanCompleted = false,
             darshanCompletedAt = 0L,
             originAddress = safeOrigin,
@@ -2682,12 +2692,22 @@ class AshramRepository(context: Context) {
         val db = dbHelper.writableDatabase
         val normalized = FaceEmbeddingEngine.l2Normalize(faceVector)
         val safeCity = if (city.isBlank()) "डूँगरा जाट (स्थानीय)" else city.trim()
+        val cloudPhotoUrl = if (photoUri.isNotBlank() && !photoUri.startsWith("http://") && !photoUri.startsWith("https://")) {
+            try {
+                val rawPath = photoUri.removePrefix("file://")
+                val f = java.io.File(rawPath)
+                if (f.exists() && f.length() > 0) {
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(f) ?: photoUri
+                } else photoUri
+            } catch (e: Exception) { photoUri }
+        } else photoUri
+
         val cv = ContentValues().apply {
             put("patient_name", name)
             put("phone_number", phone)
             put("city", safeCity)
             put("face_vector", FaceEmbeddingEngine.vectorToBlob(normalized))
-            put("photo_uri", photoUri)
+            put("photo_uri", cloudPhotoUrl)
             put("visit_count", 1)
             put("last_confidence", 1.0f)
             put("last_verified_at", System.currentTimeMillis())
@@ -2697,7 +2717,7 @@ class AshramRepository(context: Context) {
         if (insertId > 0) {
             try {
                 com.example.shribalajikripadham.data.network.CentralFaceSyncManager.uploadFaceProfile(
-                    appContext, name, phone, safeCity, normalized, photoUri
+                    appContext, name, phone, safeCity, normalized, cloudPhotoUrl
                 )
             } catch (e: Exception) {}
         }
@@ -2726,13 +2746,23 @@ class AshramRepository(context: Context) {
             val enrichedVector = FaceEmbeddingEngine.enrichEmbedding(existingVector, newCandidateVector)
             val enrichedBlob = FaceEmbeddingEngine.vectorToBlob(enrichedVector)
 
+            val cloudPhotoUrl = if (newPhotoUri.isNotBlank() && !newPhotoUri.startsWith("http://") && !newPhotoUri.startsWith("https://")) {
+                try {
+                    val rawPath = newPhotoUri.removePrefix("file://")
+                    val f = java.io.File(rawPath)
+                    if (f.exists() && f.length() > 0) {
+                        com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(f) ?: newPhotoUri
+                    } else newPhotoUri
+                } catch (e: Exception) { newPhotoUri }
+            } else newPhotoUri
+
             val cv = ContentValues().apply {
                 put("face_vector", enrichedBlob)
                 put("visit_count", currentVisitCount + 1)
                 put("last_confidence", confidence)
                 put("last_verified_at", System.currentTimeMillis())
-                if (newPhotoUri.isNotBlank()) {
-                    put("photo_uri", newPhotoUri)
+                if (cloudPhotoUrl.isNotBlank()) {
+                    put("photo_uri", cloudPhotoUrl)
                 }
             }
             val updated = db.update("devotee_face_profiles", cv, "id = ?", arrayOf(profileId.toString())) > 0
@@ -2745,7 +2775,7 @@ class AshramRepository(context: Context) {
                         val pCity = pCursor.getString(2) ?: ""
                         pCursor.close()
                         com.example.shribalajikripadham.data.network.CentralFaceSyncManager.uploadFaceProfile(
-                            appContext, pName, pPhone, pCity, enrichedVector, newPhotoUri
+                            appContext, pName, pPhone, pCity, enrichedVector, cloudPhotoUrl
                         )
                     } else {
                         pCursor.close()
@@ -5228,10 +5258,27 @@ class AshramRepository(context: Context) {
         cursor.close()
 
         if (list.isEmpty()) {
-            // Seed defaults
+            // Seed defaults into real SQLite database
             val defaults = AshramDataDefaults.sevadars
             defaults.forEach { saveSevadar(it) }
-            defaults
+            val reloadedCursor = db.rawQuery("SELECT * FROM sevadars WHERE is_active = 1 ORDER BY display_order ASC, id ASC", null)
+            val reloadedList = mutableListOf<SevadarProfile>()
+            while (reloadedCursor.moveToNext()) {
+                reloadedList.add(
+                    SevadarProfile(
+                        id = reloadedCursor.getLong(reloadedCursor.getColumnIndexOrThrow("id")),
+                        name = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("name")),
+                        roleTitleHindi = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("role")),
+                        roleTitleEnglish = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("role")),
+                        phoneNumber = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("phone")),
+                        photoUri = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("photo_uri")),
+                        displayOrder = reloadedCursor.getInt(reloadedCursor.getColumnIndexOrThrow("display_order")),
+                        isActive = reloadedCursor.getInt(reloadedCursor.getColumnIndexOrThrow("is_active")) == 1
+                    )
+                )
+            }
+            reloadedCursor.close()
+            reloadedList.ifEmpty { defaults }
         } else {
             list
         }
@@ -5239,17 +5286,33 @@ class AshramRepository(context: Context) {
 
     suspend fun saveSevadar(sevadar: SevadarProfile): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
+
+        val cloudPhotoUrl = if (sevadar.photoUri.isNotBlank() && !sevadar.photoUri.startsWith("http://") && !sevadar.photoUri.startsWith("https://")) {
+            try {
+                val rawPath = sevadar.photoUri.removePrefix("file://")
+                val f = java.io.File(rawPath)
+                if (f.exists() && f.length() > 0) {
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(f) ?: sevadar.photoUri
+                } else sevadar.photoUri
+            } catch (e: Exception) { sevadar.photoUri }
+        } else sevadar.photoUri
+
         val cv = ContentValues().apply {
             put("name", sevadar.name)
             put("role", sevadar.roleTitleHindi)
             put("phone", sevadar.phoneNumber)
-            put("photo_uri", sevadar.photoUri)
+            put("photo_uri", cloudPhotoUrl)
             put("display_order", sevadar.displayOrder)
             put("is_active", if (sevadar.isActive) 1 else 0)
         }
         val rowId = if (sevadar.id > 0) {
-            db.update("sevadars", cv, "id = ?", arrayOf(sevadar.id.toString()))
-            sevadar.id
+            val updated = db.update("sevadars", cv, "id = ?", arrayOf(sevadar.id.toString()))
+            if (updated > 0) {
+                sevadar.id
+            } else {
+                cv.put("id", sevadar.id)
+                db.insertWithOnConflict("sevadars", null, cv, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+            }
         } else {
             db.insert("sevadars", null, cv)
         }
@@ -5260,7 +5323,7 @@ class AshramRepository(context: Context) {
                 name = sevadar.name,
                 role = sevadar.roleTitleHindi,
                 phone = sevadar.phoneNumber,
-                photoUrl = sevadar.photoUri,
+                photoUrl = cloudPhotoUrl,
                 displayOrder = sevadar.displayOrder,
                 id = rowId
             )
@@ -5308,7 +5371,25 @@ class AshramRepository(context: Context) {
                 DonorProfile(4, "श्री अजय तेवतिया जी", "स्याना, बुलन्दशहर", "श्री बालाजी बस यात्रा सहयोगी", "", "", "", 4, true)
             )
             defaultDonors.forEach { saveDonor(it) }
-            defaultDonors
+            val reloadedCursor = db.rawQuery("SELECT * FROM donors WHERE is_active = 1 ORDER BY display_order ASC, id ASC", null)
+            val reloadedList = mutableListOf<DonorProfile>()
+            while (reloadedCursor.moveToNext()) {
+                reloadedList.add(
+                    DonorProfile(
+                        id = reloadedCursor.getLong(reloadedCursor.getColumnIndexOrThrow("id")),
+                        name = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("name")),
+                        cityAddress = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("city_address")),
+                        title = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("title")),
+                        photoUri = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("photo_uri")),
+                        phone = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("phone")),
+                        notes = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("notes")),
+                        displayOrder = reloadedCursor.getInt(reloadedCursor.getColumnIndexOrThrow("display_order")),
+                        isActive = reloadedCursor.getInt(reloadedCursor.getColumnIndexOrThrow("is_active")) == 1
+                    )
+                )
+            }
+            reloadedCursor.close()
+            reloadedList.ifEmpty { defaultDonors }
         } else {
             list
         }
@@ -5316,19 +5397,35 @@ class AshramRepository(context: Context) {
 
     suspend fun saveDonor(donor: DonorProfile): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
+
+        val cloudPhotoUrl = if (donor.photoUri.isNotBlank() && !donor.photoUri.startsWith("http://") && !donor.photoUri.startsWith("https://")) {
+            try {
+                val rawPath = donor.photoUri.removePrefix("file://")
+                val f = java.io.File(rawPath)
+                if (f.exists() && f.length() > 0) {
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(f) ?: donor.photoUri
+                } else donor.photoUri
+            } catch (e: Exception) { donor.photoUri }
+        } else donor.photoUri
+
         val cv = ContentValues().apply {
             put("name", donor.name)
             put("city_address", donor.cityAddress)
             put("title", donor.title)
-            put("photo_uri", donor.photoUri)
+            put("photo_uri", cloudPhotoUrl)
             put("phone", donor.phone)
             put("notes", donor.notes)
             put("display_order", donor.displayOrder)
             put("is_active", if (donor.isActive) 1 else 0)
         }
         val rowId = if (donor.id > 0) {
-            db.update("donors", cv, "id = ?", arrayOf(donor.id.toString()))
-            donor.id
+            val updated = db.update("donors", cv, "id = ?", arrayOf(donor.id.toString()))
+            if (updated > 0) {
+                donor.id
+            } else {
+                cv.put("id", donor.id)
+                db.insertWithOnConflict("donors", null, cv, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+            }
         } else {
             db.insert("donors", null, cv)
         }
@@ -5339,7 +5436,7 @@ class AshramRepository(context: Context) {
                 name = donor.name,
                 cityAddress = donor.cityAddress,
                 title = donor.title,
-                photoUrl = donor.photoUri,
+                photoUrl = cloudPhotoUrl,
                 phone = donor.phone,
                 notes = donor.notes,
                 displayOrder = donor.displayOrder,
@@ -5357,6 +5454,55 @@ class AshramRepository(context: Context) {
             com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.deleteCentralDonor(id)
         } catch (ignored: Exception) {}
         deleted
+    }
+
+    // --- Website CMS Dynamic Editor Operations ---
+    suspend fun updateWebsiteHeroBanner(title: String, subtitle: String, isVisible: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("banner_title", title.trim())
+            put("banner_subtitle", subtitle.trim())
+            put("is_banner_visible", if (isVisible) 1 else 0)
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) {
+            try {
+                val fresh = getSettings()
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
+            } catch (e: Exception) {}
+        }
+        ok
+    }
+
+    suspend fun updateEmergencyNoticeBanner(notice: String, isVisible: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("emergency_notice", notice.trim())
+            put("is_emergency_notice_visible", if (isVisible) 1 else 0)
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) {
+            try {
+                val fresh = getSettings()
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
+            } catch (e: Exception) {}
+        }
+        ok
+    }
+
+    suspend fun updateDarbarScheduleTimings(darbarTimings: String, aartiTimings: String = ""): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("darbar_timings", darbarTimings.trim())
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) {
+            try {
+                val fresh = getSettings()
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
+            } catch (e: Exception) {}
+        }
+        ok
     }
 
     suspend fun updateDarbarActiveStatus(isActive: Boolean): Boolean = withContext(Dispatchers.IO) {

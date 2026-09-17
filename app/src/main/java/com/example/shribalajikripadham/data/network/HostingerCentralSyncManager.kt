@@ -737,6 +737,8 @@ object HostingerCentralSyncManager {
                 put("is_banner_visible", if (settings.isBannerVisible) 1 else 0)
                 put("guruji_photo_url", settings.gurujiPhotoUri)
                 put("allow_admin_reserved_tokens", if (settings.allowAdminReservedTokens) 1 else 0)
+                put("can_admin_issue_reserved_tokens", if (settings.allowAdminReservedTokens) 1 else 0)
+                put("aarti_timings", "प्रातः 05:30 मंगला आरती • सायं 07:00 महाआरती")
             }
 
             conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }

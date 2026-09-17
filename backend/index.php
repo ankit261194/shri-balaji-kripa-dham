@@ -861,12 +861,17 @@
             </div>
         </div>
     </nav>
+ 
+    <!-- Dynamic Emergency / Special Notice -->
+    <div id="emergencyNoticeBanner" style="display:none; background: #FFEBEE; border-bottom: 2px solid #D32F2F; padding: 12px 20px; text-align: center; font-weight: 700; color: #C62828;">
+        📢 <span id="emergencyNoticeContent"></span>
+    </div>
 
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-badge">🚩 आधिकारिक मंदिर पोर्टल एवं मोबाइल सेवा</div>
-        <h2>श्री बालाजी कृपा धाम</h2>
-        <p class="location">📍 ग्राम डूँगरा जाट, तहसील स्याना, जिला बुलन्दशहर (उ.प्र.)</p>
+        <h2 id="websiteBannerTitleText">श्री बालाजी कृपा धाम</h2>
+        <p class="location" id="websiteBannerSubtitleText">📍 ग्राम डूँगरा जाट, तहसील स्याना, जिला बुलन्दशहर (उ.प्र.)</p>
         
         <div class="shloka">
             "मनोजवं मारुततुल्यवेगं जितेन्द्रियं बुद्धिमतां वरिष्ठम्। वातात्मजं वानरयूथमुख्यं श्रीरामदूतं शरणं प्रपद्ये॥"
@@ -1116,7 +1121,7 @@
             </div>
             <div class="timing-row">
                 <span>रविवार विशेष दरबार</span>
-                <span class="time">प्रातः 09:00 बजे से प्रभु इच्छा तक</span>
+                <span class="time" id="dynamicDarbarTimings">प्रातः 09:00 बजे से प्रभु इच्छा तक</span>
             </div>
             <div class="timing-row">
                 <span>सांध्य महाआरती</span>
@@ -1263,6 +1268,34 @@
                                     <div class="donor-title">${d.title || 'मंदिर निर्माण सहयोगी'}</div>
                                 </div>
                             `).join('');
+                        }
+
+                        // 6. Banner Headline & Subtitle
+                        if (cfg.banner_title && cfg.banner_title.trim() !== '') {
+                            const bTitle = document.getElementById('websiteBannerTitleText');
+                            if (bTitle) bTitle.innerText = cfg.banner_title;
+                        }
+                        if (cfg.banner_subtitle && cfg.banner_subtitle.trim() !== '') {
+                            const bSub = document.getElementById('websiteBannerSubtitleText');
+                            if (bSub) bSub.innerText = cfg.banner_subtitle;
+                        }
+
+                        // 7. Emergency Notice Banner
+                        const emBanner = document.getElementById('emergencyNoticeBanner');
+                        const emContent = document.getElementById('emergencyNoticeContent');
+                        if (emBanner && emContent) {
+                            if (cfg.is_emergency_notice_visible && cfg.emergency_notice && cfg.emergency_notice.trim() !== '') {
+                                emContent.innerText = cfg.emergency_notice;
+                                emBanner.style.display = 'block';
+                            } else {
+                                emBanner.style.display = 'none';
+                            }
+                        }
+
+                        // 8. Dynamic Darbar Timings
+                        if (cfg.darbar_timings && cfg.darbar_timings.trim() !== '') {
+                            const dTimings = document.getElementById('dynamicDarbarTimings');
+                            if (dTimings) dTimings.innerText = cfg.darbar_timings;
                         }
                     }
                 })
