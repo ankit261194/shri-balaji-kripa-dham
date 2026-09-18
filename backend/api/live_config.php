@@ -60,6 +60,12 @@ $targetCols = [
     "guruji_photo_url" => "VARCHAR(500) DEFAULT ''",
     "can_admin_issue_reserved_tokens" => "TINYINT(1) NOT NULL DEFAULT 0",
     "allow_admin_reserved_tokens" => "TINYINT(1) NOT NULL DEFAULT 0",
+    "badi_arzi_rate" => "DECIMAL(10, 2) NOT NULL DEFAULT 100.0",
+    "chhoti_arzi_rate" => "DECIMAL(10, 2) NOT NULL DEFAULT 50.0",
+    "contact_phone" => "VARCHAR(50) NOT NULL DEFAULT '+91 97206 91090'",
+    "whatsapp_number" => "VARCHAR(50) NOT NULL DEFAULT '+91 97206 91090'",
+    "upi_id" => "VARCHAR(100) NOT NULL DEFAULT 'shribalajikripadham@upi'",
+    "upi_name" => "VARCHAR(150) NOT NULL DEFAULT 'श्री बालाजी कृपा धाम'",
     "aarti_timings" => "TEXT",
     "config_version" => "INT NOT NULL DEFAULT 1"
 ];
@@ -160,6 +166,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'guruji_photo_url' => trim($input['guruji_photo_url'] ?? ($current['guruji_photo_url'] ?? '')),
         'can_admin_issue_reserved_tokens' => isset($input['can_admin_issue_reserved_tokens']) ? intval($input['can_admin_issue_reserved_tokens']) : (isset($input['allow_admin_reserved_tokens']) ? intval($input['allow_admin_reserved_tokens']) : intval($current['can_admin_issue_reserved_tokens'] ?? 0)),
         'allow_admin_reserved_tokens' => isset($input['allow_admin_reserved_tokens']) ? intval($input['allow_admin_reserved_tokens']) : (isset($input['can_admin_issue_reserved_tokens']) ? intval($input['can_admin_issue_reserved_tokens']) : intval($current['allow_admin_reserved_tokens'] ?? 0)),
+        'badi_arzi_rate' => isset($input['badi_arzi_rate']) ? floatval($input['badi_arzi_rate']) : floatval($current['badi_arzi_rate'] ?? 100.0),
+        'chhoti_arzi_rate' => isset($input['chhoti_arzi_rate']) ? floatval($input['chhoti_arzi_rate']) : floatval($current['chhoti_arzi_rate'] ?? 50.0),
         'aarti_timings' => trim($input['aarti_timings'] ?? ($current['aarti_timings'] ?? ''))
     ];
 
@@ -190,11 +198,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Synchronize full Sevadars list if provided in payload
+    if (isset($input['sevadars']) && is_array($input['sevadars'])) {
+        try {
+            $inSevList = $input['sevadars'];
+            $activeIds = [];
+            foreach ($inSevList as $s) {
+                $sName = trim($s['name'] ?? '');
+                if (empty($sName)) continue;
+                $sId = intval($s['id'] ?? 0);
+                $sRole = trim($s['role'] ?? ($s['roleTitleHindi'] ?? 'आश्रम सेवादार'));
+                $sPhone = trim($s['phone'] ?? ($s['phoneNumber'] ?? ''));
+                $sPhoto = trim($s['photo_url'] ?? ($s['photoUri'] ?? ''));
+                $sOrder = intval($s['display_order'] ?? ($s['displayOrder'] ?? 0));
+                $sActive = isset($s['is_active']) ? intval($s['is_active']) : (isset($s['isActive']) ? ($s['isActive'] ? 1 : 0) : 1);
+                $sCreated = intval($s['created_at'] ?? (time() * 1000));
+
+                if ($sId > 0) {
+                    $uStmt = $pdo->prepare("INSERT INTO sevadars (id, name, role, phone, photo_url, display_order, is_active, created_at)
+                        VALUES (:id, :name, :role, :phone, :photo_url, :display_order, :is_active, :created_at)
+                        ON DUPLICATE KEY UPDATE name = VALUES(name), role = VALUES(role), phone = VALUES(phone), photo_url = VALUES(photo_url), display_order = VALUES(display_order), is_active = VALUES(is_active)");
+                    $uStmt->execute([
+                        ':id' => $sId,
+                        ':name' => $sName,
+                        ':role' => $sRole,
+                        ':phone' => $sPhone,
+                        ':photo_url' => $sPhoto,
+                        ':display_order' => $sOrder,
+                        ':is_active' => $sActive,
+                        ':created_at' => $sCreated
+                    ]);
+                    $activeIds[] = $sId;
+                } else {
+                    $iStmt = $pdo->prepare("INSERT INTO sevadars (name, role, phone, photo_url, display_order, is_active, created_at)
+                        VALUES (:name, :role, :phone, :photo_url, :display_order, :is_active, :created_at)");
+                    $iStmt->execute([
+                        ':name' => $sName,
+                        ':role' => $sRole,
+                        ':phone' => $sPhone,
+                        ':photo_url' => $sPhoto,
+                        ':display_order' => $sOrder,
+                        ':is_active' => $sActive,
+                        ':created_at' => $sCreated
+                    ]);
+                    $activeIds[] = intval($pdo->lastInsertId());
+                }
+            }
+
+            // Deactivate / remove any sevadars that were deleted by admin in the app
+            if (!empty($activeIds)) {
+                $inClause = implode(',', array_map('intval', $activeIds));
+                $pdo->exec("UPDATE sevadars SET is_active = 0 WHERE id NOT IN ($inClause)");
+            } else {
+                // Admin intentionally cleared all sevadars
+                $pdo->exec("UPDATE sevadars SET is_active = 0");
+            }
+        } catch (Exception $sevEx) {}
+    }
+
     echo json_encode([
         "success" => true,
         "status" => "SUCCESS",
         "message" => "सुपरएडमिन सेटिंग्स सफलतापूर्वक अपडेट व लाइव प्रसारित हुईं!",
         "current_serving_token" => $fields['current_serving_token'],
+        "badi_arzi_rate" => $fields['badi_arzi_rate'],
+        "chhoti_arzi_rate" => $fields['chhoti_arzi_rate'],
         "guruji_photo_url" => $fields['guruji_photo_url'],
         "is_token_service_enabled" => boolval($fields['is_token_service_enabled']),
         "is_bus_booking_live" => boolval($fields['is_bus_booking_live']),
@@ -210,6 +278,16 @@ try {
         $stmt = $pdo->query("SELECT * FROM ashram_settings WHERE id = 1 LIMIT 1");
         $row = $stmt->fetch() ?: [];
     } catch (Exception $ex) {}
+
+    $configVersion = intval($row['config_version'] ?? 1);
+    $servingNum = intval($row['current_serving_token'] ?? 0);
+    $etag = '"sbkd_' . $configVersion . '_' . $servingNum . '"';
+
+    header("ETag: $etag");
+    if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
+        http_response_code(304);
+        exit;
+    }
 
     // Fetch Sevadars
     $sevadars = [];
@@ -243,6 +321,8 @@ try {
         "is_live_counter_visible" => boolval($row['is_live_counter_visible'] ?? true),
         "is_payment_feature_live" => boolval($row['is_payment_feature_live'] ?? false),
         "is_arzi_ledger_live" => boolval($row['is_arzi_ledger_live'] ?? true),
+        "badi_arzi_rate" => floatval($row['badi_arzi_rate'] ?? 100.0),
+        "chhoti_arzi_rate" => floatval($row['chhoti_arzi_rate'] ?? 50.0),
         "is_darbar_active" => boolval($row['is_darbar_active'] ?? true),
         "darbar_date" => $row['darbar_date'] ?? date('Y-m-d'),
         "darbar_timings" => $row['darbar_timings'] ?? 'प्रत्येक रविवार प्रातःकाल 8:00 बजे से',
@@ -281,4 +361,4 @@ try {
         "darbar_timings" => "प्रत्येक रविवार प्रातःकाल 8:00 बजे से",
         "server_time" => time()
     ], JSON_UNESCAPED_UNICODE);
-}\n
+}
