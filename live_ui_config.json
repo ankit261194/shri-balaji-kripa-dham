@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-18T18:53:13Z",
-  "updated_by": "Ankit Chaudhary (Super Admin)",
+  "updated_at": "2026-09-18T18:53:35Z",
+  "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
   "ashram_details": {
@@ -17,7 +17,7 @@
     "facebook_page_url": "https:\/\/www.facebook.com\/ShriBalajiKripaDham",
     "instagram_url": "https:\/\/www.instagram.com\/shribalajikripadham",
     "app_share_url": "https:\/\/shribalajikripadham.org\/app",
-    "guruji_photo_url": ""
+    "guruji_photo_url": "https:\/\/shribalajikripadham.online\/uploads\/guruji_1789757616_1a65fd.jpg"
   },
   "emergency_notice": {
     "is_enabled": true,
@@ -32,7 +32,7 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789757593782
+    "updated_at": 1789757615815
   },
   "services_config": {
     "is_token_service_enabled": true,
