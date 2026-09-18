@@ -23,6 +23,7 @@ if (isset($_GET['auto_update']) || isset($_GET['update_from_github'])) {
     }
     if ($remoteCode && strpos($remoteCode, '<?php') !== false && strlen($remoteCode) > 5000) {
         file_put_contents(__FILE__, $remoteCode);
+        unset($_GET['auto_update'], $_GET['update_from_github']);
         require __FILE__;
         exit;
     }
