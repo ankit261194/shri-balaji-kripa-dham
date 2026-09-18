@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-18T18:53:38Z",
+  "updated_at": "2026-09-18T18:55:45Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -7,7 +7,7 @@
     "ashram_name": "श्री बालाजी कृपा धाम",
     "guruji_name": "परम पूज्य गुरुजी",
     "address": "ग्राम डूंगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.)",
-    "contact_phone": "+91 98765 00000",
+    "contact_phone": "+91 8533955333\n",
     "contact_phone_secondary": "",
     "whatsapp_number": "+919876543210",
     "darbar_timings": "प्रत्येक रविवार प्रातःकाल 8:30 बजे से",
@@ -32,7 +32,7 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789757618855
+    "updated_at": 1789757745433
   },
   "services_config": {
     "is_token_service_enabled": true,
