@@ -1,10 +1,10 @@
 <?php
 // ==============================================================================
 // श्री बालाजी कृपा धाम (ग्राम डूँगरा जाट) - आधिकारिक हाई-स्पीड APK डाउनलोड सेवा
-// High-Speed Direct Ashram Server APK Delivery Engine (v2.49.0)
+// High-Speed Direct Ashram Server APK Delivery Engine (v2.50.0)
 // ==============================================================================
 
-$version = "v2.49.0";
+$version = "v2.50.0";
 $localReleaseApk = __DIR__ . '/downloads/ShriBalajiKripaDham-release.apk';
 $localVersionApk = __DIR__ . "/downloads/ShriBalajiKripaDham-{$version}.apk";
 

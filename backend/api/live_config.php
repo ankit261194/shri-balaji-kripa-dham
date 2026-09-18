@@ -204,64 +204,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // GET Request: Return full live settings including Sevadars and Donors
-$stmt = $pdo->query("SELECT * FROM ashram_settings WHERE id = 1 LIMIT 1");
-$row = $stmt->fetch() ?: [];
-
-// Fetch Sevadars
-$sevadars = [];
 try {
-    $sevStmt = $pdo->query("SELECT id, name, role, phone, photo_url, bio, display_order FROM sevadars WHERE is_active = 1 ORDER BY display_order ASC, id ASC");
-    $sevadars = $sevStmt->fetchAll() ?: [];
-} catch (Exception $e) {}
+    $row = [];
+    try {
+        $stmt = $pdo->query("SELECT * FROM ashram_settings WHERE id = 1 LIMIT 1");
+        $row = $stmt->fetch() ?: [];
+    } catch (Exception $ex) {}
 
-// Fetch Donors (strictly NO phone number!)
-$donors = [];
-try {
-    $donStmt = $pdo->query("SELECT id, name, city_address, title, photo_url, notes, display_order FROM donors WHERE is_active = 1 ORDER BY display_order ASC, id ASC");
-    $donors = $donStmt->fetchAll() ?: [];
-} catch (Exception $e) {}
+    // Fetch Sevadars
+    $sevadars = [];
+    try {
+        $sevStmt = $pdo->query("SELECT id, name, role, phone, photo_url, bio, display_order FROM sevadars WHERE is_active = 1 ORDER BY display_order ASC, id ASC");
+        $sevadars = $sevStmt->fetchAll() ?: [];
+    } catch (Exception $e) {}
 
-$servingNum = intval($row['current_serving_token'] ?? 0);
+    // Fetch Donors (strictly NO phone number!)
+    $donors = [];
+    try {
+        $donStmt = $pdo->query("SELECT id, name, city_address, title, photo_url, notes, display_order FROM donors WHERE is_active = 1 ORDER BY display_order ASC, id ASC");
+        $donors = $donStmt->fetchAll() ?: [];
+    } catch (Exception $e) {}
 
-$configData = [
-    "ashram_name" => $row['ashram_name'] ?? 'श्री बालाजी कृपा धाम',
-    "latitude" => floatval($row['ashram_latitude'] ?? 28.3972915),
-    "longitude" => floatval($row['ashram_longitude'] ?? 78.1460410),
-    "allowed_radius_meters" => floatval($row['allowed_radius_meters'] ?? 200.0),
-    "is_geofence_enforced" => boolval($row['is_geofence_enforced'] ?? true),
-    "is_outstation_advance_allowed" => boolval($row['is_outstation_advance_allowed'] ?? true),
-    "outstation_min_distance_km" => floatval($row['outstation_min_distance_km'] ?? 30.0),
-    "running_token_number" => $servingNum,
-    "current_serving_token" => $servingNum,
-    "daily_token_limit" => intval($row['daily_token_limit'] ?? 1000),
-    "is_token_service_enabled" => boolval($row['is_token_service_enabled'] ?? true),
-    "is_bus_booking_live" => boolval($row['is_bus_booking_live'] ?? false),
-    "is_live_counter_visible" => boolval($row['is_live_counter_visible'] ?? true),
-    "is_payment_feature_live" => boolval($row['is_payment_feature_live'] ?? false),
-    "is_arzi_ledger_live" => boolval($row['is_arzi_ledger_live'] ?? true),
-    "is_darbar_active" => boolval($row['is_darbar_active'] ?? true),
-    "darbar_date" => $row['darbar_date'] ?? date('Y-m-d'),
-    "darbar_timings" => $row['darbar_timings'] ?? 'प्रत्येक रविवार प्रातःकाल 8:00 बजे से',
-    "emergency_notice" => $row['emergency_notice'] ?? '',
-    "is_emergency_notice_visible" => boolval($row['is_emergency_notice_visible'] ?? false),
-    "banner_title" => $row['banner_title'] ?? '🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट',
-    "banner_subtitle" => $row['banner_subtitle'] ?? 'परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार',
-    "is_banner_visible" => boolval($row['is_banner_visible'] ?? true),
-    "guruji_photo_url" => $row['guruji_photo_url'] ?? '',
-    "can_admin_issue_reserved_tokens" => boolval($row['can_admin_issue_reserved_tokens'] ?? false),
-    "allow_admin_reserved_tokens" => boolval($row['allow_admin_reserved_tokens'] ?? false),
-    "aarti_timings" => $row['aarti_timings'] ?? '',
-    "config_version" => intval($row['config_version'] ?? 1),
-    "server_time" => time(),
-    "sevadars" => $sevadars,
-    "donors" => $donors
-];
+    $servingNum = intval($row['current_serving_token'] ?? 0);
 
-// Dual layout: root keys for legacy/simple clients + config object for rich clients
-$response = array_merge([
-    "success" => true,
-    "status" => "SUCCESS"
-], $configData);
-$response["config"] = $configData;
+    $configData = [
+        "ashram_name" => $row['ashram_name'] ?? 'श्री बालाजी कृपा धाम',
+        "latitude" => floatval($row['ashram_latitude'] ?? 28.3972915),
+        "longitude" => floatval($row['ashram_longitude'] ?? 78.1460410),
+        "allowed_radius_meters" => floatval($row['allowed_radius_meters'] ?? 200.0),
+        "is_geofence_enforced" => boolval($row['is_geofence_enforced'] ?? true),
+        "is_outstation_advance_allowed" => boolval($row['is_outstation_advance_allowed'] ?? true),
+        "outstation_min_distance_km" => floatval($row['outstation_min_distance_km'] ?? 30.0),
+        "running_token_number" => $servingNum,
+        "current_serving_token" => $servingNum,
+        "daily_token_limit" => intval($row['daily_token_limit'] ?? 1000),
+        "is_token_service_enabled" => boolval($row['is_token_service_enabled'] ?? true),
+        "is_bus_booking_live" => boolval($row['is_bus_booking_live'] ?? false),
+        "is_live_counter_visible" => boolval($row['is_live_counter_visible'] ?? true),
+        "is_payment_feature_live" => boolval($row['is_payment_feature_live'] ?? false),
+        "is_arzi_ledger_live" => boolval($row['is_arzi_ledger_live'] ?? true),
+        "is_darbar_active" => boolval($row['is_darbar_active'] ?? true),
+        "darbar_date" => $row['darbar_date'] ?? date('Y-m-d'),
+        "darbar_timings" => $row['darbar_timings'] ?? 'प्रत्येक रविवार प्रातःकाल 8:00 बजे से',
+        "emergency_notice" => $row['emergency_notice'] ?? '',
+        "is_emergency_notice_visible" => boolval($row['is_emergency_notice_visible'] ?? false),
+        "banner_title" => $row['banner_title'] ?? '🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट',
+        "banner_subtitle" => $row['banner_subtitle'] ?? 'परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार',
+        "is_banner_visible" => boolval($row['is_banner_visible'] ?? true),
+        "guruji_photo_url" => $row['guruji_photo_url'] ?? '',
+        "can_admin_issue_reserved_tokens" => boolval($row['can_admin_issue_reserved_tokens'] ?? false),
+        "allow_admin_reserved_tokens" => boolval($row['allow_admin_reserved_tokens'] ?? false),
+        "aarti_timings" => $row['aarti_timings'] ?? '',
+        "config_version" => intval($row['config_version'] ?? 1),
+        "server_time" => time(),
+        "sevadars" => $sevadars,
+        "donors" => $donors
+    ];
 
-echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);\n
+    // Dual layout: root keys for legacy/simple clients + config object for rich clients
+    $response = array_merge([
+        "success" => true,
+        "status" => "SUCCESS"
+    ], $configData);
+    $response["config"] = $configData;
+
+    echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+} catch (Exception $fatal) {
+    echo json_encode([
+        "success" => true,
+        "status" => "FALLBACK_ACTIVE",
+        "ashram_name" => "श्री बालाजी कृपा धाम",
+        "current_serving_token" => 0,
+        "is_token_service_enabled" => true,
+        "is_darbar_active" => true,
+        "banner_title" => "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट",
+        "darbar_timings" => "प्रत्येक रविवार प्रातःकाल 8:00 बजे से",
+        "server_time" => time()
+    ], JSON_UNESCAPED_UNICODE);
+}\n
