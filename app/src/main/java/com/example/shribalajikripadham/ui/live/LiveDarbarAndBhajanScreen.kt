@@ -4,8 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
-import android.media.MediaPlayer
 import android.net.Uri
+import com.example.shribalajikripadham.service.BhajanAudioService
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
@@ -317,118 +317,50 @@ fun LiveDarbarAndBhajanScreen(
 
     var selectedTabIndex by remember { mutableIntStateOf(0) } // 0: Live Video, 1: Sacred Audio
 
-    // Audio Player State
+    // Foreground Media Service State Binding
+    val svcTrackIndex by BhajanAudioService.currentTrackIndex.collectAsState()
+    val isPlaying by BhajanAudioService.isPlaying.collectAsState()
+    val isBuffering by BhajanAudioService.isBuffering.collectAsState()
+    val currentPositionMs by BhajanAudioService.currentPositionMs.collectAsState()
+    val totalDurationMs by BhajanAudioService.durationMs.collectAsState()
+
     var currentTrackIndex by remember { mutableIntStateOf(0) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var isBuffering by remember { mutableStateOf(false) }
-    var currentPositionMs by remember { mutableIntStateOf(0) }
-    var totalDurationMs by remember { mutableIntStateOf(1) }
     var isLooping by remember { mutableStateOf(false) }
     var playbackErrorMessage by remember { mutableStateOf<String?>(null) }
     var showLyricsDialog by remember { mutableStateOf<SacredTrack?>(null) }
 
-    var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
+    LaunchedEffect(svcTrackIndex) {
+        if (svcTrackIndex in SACRED_TRACKS.indices) {
+            currentTrackIndex = svcTrackIndex
+        }
+    }
 
     LaunchedEffect(Unit) {
         ashramSettings = repository.getSettings()
-    }
-
-    // Release player on exit
-    DisposableEffect(Unit) {
-        onDispose {
-            try {
-                mediaPlayer?.stop()
-                mediaPlayer?.release()
-                mediaPlayer = null
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    // Playback Progress Timer
-    LaunchedEffect(isPlaying) {
-        while (isActive && isPlaying) {
-            try {
-                mediaPlayer?.let { mp ->
-                    if (mp.isPlaying) {
-                        currentPositionMs = mp.currentPosition
-                        totalDurationMs = mp.duration.coerceAtLeast(1)
-                    }
-                }
-            } catch (e: Exception) {}
-            delay(500)
-        }
     }
 
     fun playTrack(index: Int) {
         try {
             playbackErrorMessage = null
             currentTrackIndex = index
-            isBuffering = true
-
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
-            mediaPlayer = null
-
             val track = SACRED_TRACKS[index]
-            val mp = MediaPlayer().apply {
-                setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .build()
-                )
-                setDataSource(track.audioUrl)
-                setOnPreparedListener { player ->
-                    isBuffering = false
-                    totalDurationMs = player.duration
-                    player.start()
-                    isPlaying = true
-                }
-                setOnCompletionListener {
-                    if (isLooping) {
-                        it.seekTo(0)
-                        it.start()
-                    } else {
-                        val nextIdx = (currentTrackIndex + 1) % SACRED_TRACKS.size
-                        playTrack(nextIdx)
-                    }
-                }
-                setOnErrorListener { _, _, _ ->
-                    isBuffering = false
-                    isPlaying = false
-                    playbackErrorMessage = if (isHindi)
-                        "क्लाउड ऑडियो लोड हो रहा है। आप नीचे दिए बटन से यूट्यूब पर तुरंत सुन सकते हैं।"
-                    else
-                        "Audio is buffering. You can also listen directly on YouTube below."
-                    true
-                }
-                prepareAsync()
-            }
-            mediaPlayer = mp
+            BhajanAudioService.playTrack(
+                context = context,
+                trackIndex = index,
+                title = if (isHindi) track.titleHindi else track.titleEnglish,
+                artist = "श्री बालाजी कृपा धाम (डूँगरा जाट)",
+                audioUrl = track.audioUrl
+            )
         } catch (e: Exception) {
-            isBuffering = false
-            isPlaying = false
             playbackErrorMessage = e.localizedMessage
         }
     }
 
     fun togglePlayPause() {
-        mediaPlayer?.let { mp ->
-            try {
-                if (mp.isPlaying) {
-                    mp.pause()
-                    isPlaying = false
-                } else {
-                    mp.start()
-                    isPlaying = true
-                }
-            } catch (e: Exception) {
-                playTrack(currentTrackIndex)
-            }
-        } ?: run {
+        if (svcTrackIndex != currentTrackIndex) {
             playTrack(currentTrackIndex)
+        } else {
+            BhajanAudioService.togglePlayPause(context)
         }
     }
 
@@ -550,73 +482,233 @@ fun LiveDarbarAndBhajanScreen(
                         "https://www.youtube.com/@ShriBalajiKripaDham"
                     }
                     val liveVideoUrl = if (rawChannelUrl.contains("/@")) "$rawChannelUrl/live" else rawChannelUrl
+                    val isDarbarLive = ashramSettings.isDarbarActive && ashramSettings.isDarbarLiveNow
 
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(16f / 9f),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.Black)
-                    ) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            AndroidView(
-                                factory = { ctx ->
-                                    WebView(ctx).apply {
-                                        layoutParams = ViewGroup.LayoutParams(
-                                            ViewGroup.LayoutParams.MATCH_PARENT,
-                                            ViewGroup.LayoutParams.MATCH_PARENT
+                    if (isDarbarLive) {
+                        // 🟢 LIVE STREAM DETECTOR: Darbar is actively broadcasting!
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(16f / 9f),
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.Black)
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                AndroidView(
+                                    factory = { ctx ->
+                                        WebView(ctx).apply {
+                                            layoutParams = ViewGroup.LayoutParams(
+                                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                                ViewGroup.LayoutParams.MATCH_PARENT
+                                            )
+                                            @SuppressLint("SetJavaScriptEnabled")
+                                            val webConfig = this.settings
+                                            webConfig.javaScriptEnabled = true
+                                            webConfig.domStorageEnabled = true
+                                            webConfig.mediaPlaybackRequiresUserGesture = false
+                                            webConfig.loadWithOverviewMode = true
+                                            webConfig.useWideViewPort = true
+                                            webChromeClient = WebChromeClient()
+                                            webViewClient = object : WebViewClient() {
+                                                override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                                                    return false
+                                                }
+                                            }
+                                            loadUrl(liveVideoUrl)
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(14.dp))
+
+                        // 1-Click Open in Official YouTube App (100% Fail-Safe)
+                        Button(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)).apply {
+                                    setPackage("com.google.android.youtube")
+                                }
+                                try {
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)))
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("▶", fontSize = 18.sp, color = Color.White)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = if (isHindi) "यूट्यूब ऐप में 1080p HD लाइव दर्शन खोलें" else "Watch in YouTube App (HD 1080p)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    } else {
+                        // 🪔 DIVINE OFFLINE CARD: No broken/empty video frames!
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                            border = BorderStroke(1.5.dp, SaffronPrimary)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(76.dp)
+                                        .clip(CircleShape)
+                                        .background(Brush.radialGradient(listOf(Color(0xFFFFECB3), SaffronPrimary.copy(alpha = 0.3f))))
+                                        .border(2.dp, SaffronPrimary, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("🚩", fontSize = 36.sp)
+                                }
+
+                                Spacer(Modifier.height(12.dp))
+
+                                Text(
+                                    text = if (isHindi) "॥ श्री बालाजी महाराज पावन दिव्य दरबार ॥" else "॥ Shri Balaji Maharaj Darbar ॥",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 17.sp,
+                                    color = MaroonPrimary,
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = if (isHindi) "डूँगरा जाट, बुलन्दशहर • परम पूज्य गुरुजी तेजवीर सिंह जी" else "Dungra Jaat, Bulandshahr • Pujya Guruji",
+                                    fontSize = 12.sp,
+                                    color = Color.DarkGray,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Spacer(Modifier.height(12.dp))
+
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = Color(0xFFFFF3E0),
+                                    border = BorderStroke(1.dp, SaffronPrimary)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("⏳", fontSize = 14.sp)
+                                        Spacer(Modifier.width(6.dp))
+                                        Text(
+                                            text = if (isHindi) "वर्तमान में लाइव दर्शन विश्राम पर हैं" else "Live broadcast currently on recess",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFE65100)
                                         )
-                                        @SuppressLint("SetJavaScriptEnabled")
-                                        val webConfig = this.settings
-                                        webConfig.javaScriptEnabled = true
-                                        webConfig.domStorageEnabled = true
-                                        webConfig.mediaPlaybackRequiresUserGesture = false
-                                        webConfig.loadWithOverviewMode = true
-                                        webConfig.useWideViewPort = true
-                                        webChromeClient = WebChromeClient()
-                                        webViewClient = object : WebViewClient() {
-                                            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                                                return false
+                                    }
+                                }
+
+                                Spacer(Modifier.height(16.dp))
+
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDE7)),
+                                    border = BorderStroke(1.dp, Color(0xFFFFF176))
+                                ) {
+                                    Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+                                        Text(
+                                            text = if (isHindi) "🪔 दैनिक पावन आरती एवं दरबार समय-सारणी" else "🪔 Daily Aarti & Darbar Timings",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 13.sp,
+                                            color = MaroonPrimary
+                                        )
+                                        Spacer(Modifier.height(8.dp))
+                                        val timings = listOf(
+                                            Pair("🌅 प्रातः मंगला आरती", "प्रातः 05:30 बजे"),
+                                            Pair("☀️ दोपहर राजभोग आरती", "दोपहर 12:00 बजे"),
+                                            Pair("🌆 सायं संध्या महाआरती", "सायं 07:00 बजे"),
+                                            Pair("🚩 रविवार दिव्य दरबार व झाड़ा", "रविवार प्रातः 08:00 बजे से")
+                                        )
+                                        timings.forEach { (title, time) ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 3.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(title, fontSize = 12.sp, color = Color(0xFF333333), fontWeight = FontWeight.Medium)
+                                                Text(time, fontSize = 12.sp, color = MaroonPrimary, fontWeight = FontWeight.Bold)
                                             }
                                         }
-                                        loadUrl(liveVideoUrl)
                                     }
-                                },
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                    }
+                                }
 
-                    Spacer(Modifier.height(14.dp))
+                                Spacer(Modifier.height(14.dp))
 
-                    // 1-Click Open in Official YouTube App (100% Fail-Safe)
-                    Button(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)).apply {
-                                setPackage("com.google.android.youtube")
+                                Text(
+                                    text = if (isHindi) "दरबार अथवा आरती लाइव शुरू होते ही यह स्क्रीन स्वतः लाइव वीडियो में बदल जाएगी। तब तक आप पावन चालीसा व भजन सुन सकते हैं।"
+                                    else "When Live Darbar or Aarti begins, this screen automatically switches to Live video.",
+                                    fontSize = 11.5.sp,
+                                    color = Color.DarkGray,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 16.sp
+                                )
+
+                                Spacer(Modifier.height(16.dp))
+
+                                Button(
+                                    onClick = { selectedTabIndex = 1 },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(46.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        text = if (isHindi) "🎵 पावन चालीसा व भजन सुनें (बैकग्राउंड प्लेयर)" else "🎵 Listen to Sacred Chalisas",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                }
+
+                                Spacer(Modifier.height(8.dp))
+
+                                OutlinedButton(
+                                    onClick = {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(ashramSettings.youtubeChannelUrl.ifEmpty { "https://www.youtube.com/@ShriBalajiKripaDham" })).apply {
+                                            setPackage("com.google.android.youtube")
+                                        }
+                                        try {
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(ashramSettings.youtubeChannelUrl.ifEmpty { "https://www.youtube.com/@ShriBalajiKripaDham" })))
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(46.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.2.dp, Color(0xFFCC0000))
+                                ) {
+                                    Text(
+                                        text = if (isHindi) "▶ यूट्यूब चैनल पर पिछले पावन वीडियो देखें" else "▶ Watch Past Videos on YouTube",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFFCC0000)
+                                    )
+                                }
                             }
-                            try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)))
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000)),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("▶", fontSize = 18.sp, color = Color.White)
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = if (isHindi) "यूट्यूब ऐप में 1080p HD लाइव दर्शन खोलें" else "Watch in YouTube App (HD 1080p)",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp,
-                                color = Color.White
-                            )
                         }
                     }
 
@@ -791,12 +883,11 @@ fun LiveDarbarAndBhajanScreen(
 
                             // Seek Bar
                             Slider(
-                                value = currentPositionMs.toFloat().coerceIn(0f, totalDurationMs.toFloat()),
+                                value = currentPositionMs.toFloat().coerceIn(0f, totalDurationMs.coerceAtLeast(1).toFloat()),
                                 onValueChange = { newPos ->
-                                    currentPositionMs = newPos.toInt()
-                                    mediaPlayer?.seekTo(newPos.toInt())
+                                    BhajanAudioService.seekTo(context, newPos.toInt())
                                 },
-                                valueRange = 0f..totalDurationMs.toFloat(),
+                                valueRange = 0f..totalDurationMs.coerceAtLeast(1).toFloat(),
                                 colors = SliderDefaults.colors(
                                     thumbColor = Color(0xFFFFD54F),
                                     activeTrackColor = Color(0xFFFFD54F),
@@ -875,9 +966,7 @@ fun LiveDarbarAndBhajanScreen(
                                 }
 
                                 IconButton(onClick = {
-                                    mediaPlayer?.stop()
-                                    isPlaying = false
-                                    currentPositionMs = 0
+                                    BhajanAudioService.stopPlayback(context)
                                 }) {
                                     Text(text = "⏹", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
                                 }

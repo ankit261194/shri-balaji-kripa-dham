@@ -62,6 +62,7 @@ fun AshramHallDisplayScreen(
     var currentTimeString by remember { mutableStateOf("") }
     var isAutoAnnounceEnabled by remember { mutableStateOf(true) }
     var isSyncing by remember { mutableStateOf(false) }
+    var isOnlineConnected by remember { mutableStateOf(true) }
 
     // Keep screen on for TV display
     DisposableEffect(Unit) {
@@ -72,12 +73,15 @@ fun AshramHallDisplayScreen(
         }
     }
 
-    // Initialize voice engine
+    // Initialize voice engine and local cache
     LaunchedEffect(Unit) {
         AshramVoiceAnnouncementManager.initIfNeeded(context)
         settings = repository.getSettings()
-        runningToken = settings.runningTokenNumber
-        todayTokens = repository.getAllTokensToday()
+        val cachedTokens = repository.getAllTokensToday()
+        if (cachedTokens.isNotEmpty()) {
+            todayTokens = cachedTokens
+        }
+        runningToken = if (settings.runningTokenNumber > 0) settings.runningTokenNumber else (cachedTokens.firstOrNull()?.tokenNumber ?: 1)
     }
 
     // Clock ticker (every second)
@@ -173,9 +177,17 @@ fun AshramHallDisplayScreen(
                     mergedMap[st.tokenNumber] = st
                 }
             }
-            todayTokens = mergedMap.values.sortedBy { it.tokenNumber }
+            val computed = mergedMap.values.sortedBy { it.tokenNumber }
+            if (computed.isNotEmpty()) {
+                todayTokens = computed
+            }
+            isOnlineConnected = (queueJson != null || configJson != null)
         } catch (e: Exception) {
-            e.printStackTrace()
+            isOnlineConnected = false
+            // Failsafe: Preserve existing tokens or load local sqlite tokens without blanking
+            if (todayTokens.isEmpty()) {
+                todayTokens = repository.getAllTokensToday()
+            }
         } finally {
             isSyncing = false
         }
@@ -291,13 +303,24 @@ fun AshramHallDisplayScreen(
                             Box(
                                 modifier = Modifier
                                     .size(8.dp)
-                                    .background(if (isSyncing) Color.Yellow else Color.Green, CircleShape)
+                                    .background(
+                                        when {
+                                            isSyncing -> Color.Yellow
+                                            isOnlineConnected -> Color.Green
+                                            else -> Color(0xFFFF9800)
+                                        },
+                                        CircleShape
+                                    )
                             )
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = if (isSyncing) "सिंक हो रहा है..." else "लाइव कनेक्टेड (2.5s)",
+                                text = when {
+                                    isSyncing -> "सिंक हो रहा है..."
+                                    isOnlineConnected -> "लाइव कनेक्टेड (2.5s)"
+                                    else -> "ऑफ़लाइन सुरक्षित मोड (लोकल कैश)"
+                                },
                                 fontSize = 11.sp,
-                                color = Color.LightGray
+                                color = if (isOnlineConnected) Color.LightGray else Color(0xFFFFCC80)
                             )
                         }
                     }

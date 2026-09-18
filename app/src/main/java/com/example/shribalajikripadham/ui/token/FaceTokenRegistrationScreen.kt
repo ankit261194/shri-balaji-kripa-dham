@@ -671,26 +671,33 @@ fun FaceTokenRegistrationScreen(
 
                             Spacer(modifier = Modifier.height(18.dp))
 
-                            // Security & Accuracy Badge
+                            // AI Liveness & 3D Anti-Spoofing Badge
                             Surface(
-                                color = Color(0xFFFFF3E0),
-                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFE8F5E9),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, Color(0xFF81C784)),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("🛡️", fontSize = 16.sp)
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("👁️", fontSize = 16.sp)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = if (isHindi) "AI जीवंतता व 3D एंटी-स्पूफिंग सक्रिय" else "AI Liveness & 3D Anti-Spoofing Active",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF1B5E20)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(3.dp))
                                     Text(
                                         text = if (isHindi)
-                                            "शून्य गलत पहचान नीति: न्यूनतम 95% बायोमेट्रिक सटीकता लागू है। नया भक्त होने पर तुरंत पंजीकरण होगा।"
+                                            "🟡 सीधे कैमरे में देखें ➔ 🔵 3D बायोमेट्रिक ब्लिंक सत्यापन ➔ 🟢 प्रामाणिक जीवित भक्त। स्क्रीन व फोटो से टोकन लेना स्वतः ब्लॉक होगा।"
                                         else
-                                            "Zero False-Match Policy: Strict 95% accuracy enforced. First-time devotees auto-directed to registration.",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color(0xFFE65100)
+                                            "Look straight ➔ 3D Biometric blink verified ➔ Genuine live devotee. Photo/Screen replay strictly blocked.",
+                                        fontSize = 10.5.sp,
+                                        color = Color(0xFF2E7D32),
+                                        lineHeight = 15.sp
                                     )
                                 }
                             }
@@ -1185,6 +1192,14 @@ fun FaceTokenRegistrationScreen(
                                             try {
                                                 val loc = GeofenceLocationManager.getLastKnownLocation(context)
                                                 val isMock = GeofenceLocationManager.isMockLocation(loc, context)
+                                                if (isMock) {
+                                                    errorMessage = if (isHindi)
+                                                        "⚠️ फ़ेक जीपीएस चेतावनी: आपके डिवाइस में नकली लोकेशन / Fake GPS स्पूफिंग का उपयोग पकड़ा गया है। श्री बालाजी कृपा धाम के नियमों के अनुसार केवल वास्तविक जीपीएस से ही टोकन मान्य है। कृपया फ़ेक ऐप बंद करके पुनः प्रयास करें।"
+                                                    else
+                                                        "⚠️ Fake GPS Alert: Mock location or spoofing detected. Please disable Fake GPS and use genuine location."
+                                                    isSubmitting = false
+                                                    return@launch
+                                                }
                                                 val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
                                                 val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: settings.latitude)
                                                 val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: settings.longitude)
@@ -1602,6 +1617,14 @@ fun FaceTokenRegistrationScreen(
 
                                             val loc = GeofenceLocationManager.getLastKnownLocation(context)
                                             val isMock = GeofenceLocationManager.isMockLocation(loc, context)
+                                            if (isMock) {
+                                                errorMessage = if (isHindi)
+                                                    "⚠️ फ़ेक जीपीएस चेतावनी: आपके डिवाइस में नकली लोकेशन / Fake GPS स्पूफिंग का उपयोग पकड़ा गया है। श्री बालाजी कृपा धाम के नियमों के अनुसार केवल वास्तविक जीपीएस से ही टोकन मान्य है। कृपया फ़ेक ऐप बंद करके पुनः प्रयास करें।"
+                                                else
+                                                    "⚠️ Fake GPS Alert: Mock location or spoofing detected. Please disable Fake GPS and use genuine location."
+                                                isSubmitting = false
+                                                return@launch
+                                            }
                                             val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
                                             val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: settings.latitude)
                                             val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: settings.longitude)

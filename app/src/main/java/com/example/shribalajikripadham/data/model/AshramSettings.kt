@@ -92,6 +92,7 @@ data class AshramSettings(
     val ashramHistoryHindi: String = "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है। पिछले कई वर्षों से डूंगरा जाट धाम पर लाखों पीड़ित भक्तों को नई जिंदगी और शांति मिली है।",
     val ashramRulesHindi: String = "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।\n4. पूर्ण शांति, स्वच्छता व मर्यादा बनाए रखें।",
     val allowAdminReservedTokens: Boolean = false,
+    val isDarbarLiveNow: Boolean = false,
     val officialWebsiteUrl: String = "https://shribalajikripadham.online"
 )
 

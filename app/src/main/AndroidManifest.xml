@@ -19,6 +19,9 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+    <!-- Background Audio Playback Service Permissions -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application
         android:allowBackup="true"
@@ -55,6 +58,12 @@
         <meta-data
             android:name="com.google.ml.vision.DEPENDENCIES"
             android:value="ocr,face" />
+
+        <!-- Foreground Service for Background Bhajan & Aarti Playback -->
+        <service
+            android:name=".service.BhajanAudioService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="false" />
 
         <!-- Native Background Push Notification JobService (Runs periodically when app is closed) -->
         <service

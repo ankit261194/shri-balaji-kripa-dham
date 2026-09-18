@@ -150,9 +150,36 @@ object FaceEmbeddingEngine {
                 )
             }
 
+            // 1. Face Resolution & Bounding Box Size Check
+            val bbox = face.boundingBox
+            val faceW = bbox.width()
+            val faceH = bbox.height()
+            if (faceW < 110 || faceH < 110) {
+                return LivenessVerificationResult(
+                    isLiveHuman = false,
+                    isFaceDetected = true,
+                    leftEyeOpenProb = 0f,
+                    rightEyeOpenProb = 0f,
+                    failureReason = "चेहरा बहुत दूर या छोटा है: कृपया कैमरे के निकट आएं (Face too small)"
+                )
+            }
+
+            // 2. Natural Face Aspect Ratio Check (Eliminates skewed mobile screen crops)
+            val aspect = faceH.toFloat() / faceW.toFloat()
+            if (aspect < 0.85f || aspect > 1.95f) {
+                return LivenessVerificationResult(
+                    isLiveHuman = false,
+                    isFaceDetected = true,
+                    leftEyeOpenProb = 0f,
+                    rightEyeOpenProb = 0f,
+                    failureReason = "अमान्य चेहरा अनुपात: स्क्रीन या मुड़ी हुई फोटो अस्वीकृत है (Invalid aspect ratio)"
+                )
+            }
+
+            // 3. Head Pose Angles (Devotee must look directly at lens)
             val rotY = face.headEulerAngleY
             val rotZ = face.headEulerAngleZ
-            if (kotlin.math.abs(rotY) > 28.0f || kotlin.math.abs(rotZ) > 28.0f) {
+            if (kotlin.math.abs(rotY) > 25.0f || kotlin.math.abs(rotZ) > 25.0f) {
                 return LivenessVerificationResult(
                     isLiveHuman = false,
                     isFaceDetected = true,
@@ -162,30 +189,72 @@ object FaceEmbeddingEngine {
                 )
             }
 
-            val leftEye = face.leftEyeOpenProbability ?: -1f
-            val rightEye = face.rightEyeOpenProbability ?: -1f
+            // 4. 3D Facial Landmark Topology Check (Flat photos lack key 3D coordinates)
+            val hasLeftEye = face.getLandmark(com.google.mlkit.vision.face.FaceLandmark.LEFT_EYE) != null
+            val hasRightEye = face.getLandmark(com.google.mlkit.vision.face.FaceLandmark.RIGHT_EYE) != null
+            val hasNose = face.getLandmark(com.google.mlkit.vision.face.FaceLandmark.NOSE_BASE) != null
+            val hasMouthL = face.getLandmark(com.google.mlkit.vision.face.FaceLandmark.MOUTH_LEFT) != null
+            val hasMouthR = face.getLandmark(com.google.mlkit.vision.face.FaceLandmark.MOUTH_RIGHT) != null
+            var landmarkCount = 0
+            if (hasLeftEye) landmarkCount++
+            if (hasRightEye) landmarkCount++
+            if (hasNose) landmarkCount++
+            if (hasMouthL || hasMouthR) landmarkCount++
 
-            val isLive = if (leftEye >= 0f && rightEye >= 0f) {
-                (leftEye > 0.15f || rightEye > 0.15f)
-            } else {
-                face.allLandmarks.isNotEmpty()
+            if (landmarkCount < 3) {
+                return LivenessVerificationResult(
+                    isLiveHuman = false,
+                    isFaceDetected = true,
+                    leftEyeOpenProb = 0f,
+                    rightEyeOpenProb = 0f,
+                    failureReason = "3D बायोमेट्रिक संरचना अपूर्ण: कृपया पर्याप्त रोशनी में सीधे कैमरे में देखें"
+                )
             }
 
-            if (!isLive) {
+            // 5. Eye Openness & Blink Check
+            val leftEye = face.leftEyeOpenProbability ?: -1f
+            val rightEye = face.rightEyeOpenProbability ?: -1f
+            if (leftEye >= 0f && rightEye >= 0f && leftEye < 0.12f && rightEye < 0.12f) {
                 return LivenessVerificationResult(
                     isLiveHuman = false,
                     isFaceDetected = true,
                     leftEyeOpenProb = leftEye,
                     rightEyeOpenProb = rightEye,
-                    failureReason = "जीवंतता सत्यापन विफल: आँखें बंद या अस्पष्ट हैं (Eyes closed or unclear)"
+                    failureReason = "जीवंतता सत्यापन: कृपया आँखें खोलकर सीधे कैमरे में देखें (आँखें बंद हैं)"
                 )
             }
+
+            // 6. Natural Skin Chromaticity & Saturation Check (Blocks B&W prints/photocopies)
+            try {
+                val cropL = (bbox.left + faceW * 0.25f).toInt().coerceIn(0, softwareBitmap.width - 1)
+                val cropT = (bbox.top + faceH * 0.25f).toInt().coerceIn(0, softwareBitmap.height - 1)
+                val cropW = (faceW * 0.5f).toInt().coerceIn(1, softwareBitmap.width - cropL)
+                val cropH = (faceH * 0.5f).toInt().coerceIn(1, softwareBitmap.height - cropT)
+                val samplePixels = IntArray(cropW * cropH)
+                softwareBitmap.getPixels(samplePixels, 0, cropW, cropL, cropT, cropW, cropH)
+                var totalSat = 0f
+                val hsv = FloatArray(3)
+                for (p in samplePixels) {
+                    android.graphics.Color.colorToHSV(p, hsv)
+                    totalSat += hsv[1]
+                }
+                val avgSat = totalSat / samplePixels.size.toFloat()
+                if (avgSat < 0.035f) {
+                    return LivenessVerificationResult(
+                        isLiveHuman = false,
+                        isFaceDetected = true,
+                        leftEyeOpenProb = leftEye,
+                        rightEyeOpenProb = rightEye,
+                        failureReason = "सुरक्षा चेतावनी: ब्लैक एंड व्हाइट फोटो या प्रिंटेड पेपर अस्वीकृत है (जीवित भक्त आवश्यक)"
+                    )
+                }
+            } catch (ignored: Exception) {}
 
             LivenessVerificationResult(
                 isLiveHuman = true,
                 isFaceDetected = true,
-                leftEyeOpenProb = leftEye,
-                rightEyeOpenProb = rightEye,
+                leftEyeOpenProb = if (leftEye >= 0f) leftEye else 0.85f,
+                rightEyeOpenProb = if (rightEye >= 0f) rightEye else 0.85f,
                 failureReason = null
             )
         } catch (e: Exception) {

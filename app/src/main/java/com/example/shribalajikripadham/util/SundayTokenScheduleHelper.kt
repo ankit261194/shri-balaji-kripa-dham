@@ -126,4 +126,89 @@ object SundayTokenScheduleHelper {
 
         return SundayScheduleState.Open
     }
+
+    fun calculateQueueEta(
+        myToken: Int,
+        currentServing: Int,
+        averageMinutesPerToken: Double = 2.5
+    ): QueueEtaResult {
+        if (myToken <= 0 || currentServing <= 0) {
+            return QueueEtaResult(
+                myToken = myToken,
+                currentServing = currentServing,
+                peopleAhead = 0,
+                estimatedMinutesRemaining = 0,
+                estimatedDarshanTimeStr = "--",
+                statusTextHindi = if (currentServing > 0) "वर्तमान में टोकन #$currentServing का दर्शन चल रहा है" else "दरबार प्रारंभ होने की प्रतीक्षा है",
+                statusTextEnglish = if (currentServing > 0) "Currently serving Token #$currentServing" else "Waiting for Darbar to start",
+                isNowServing = false,
+                hasPassed = false,
+                isWaiting = false
+            )
+        }
+
+        if (myToken < currentServing) {
+            val passedCount = currentServing - myToken
+            return QueueEtaResult(
+                myToken = myToken,
+                currentServing = currentServing,
+                peopleAhead = 0,
+                estimatedMinutesRemaining = 0,
+                estimatedDarshanTimeStr = "निकल चुका / Passed",
+                statusTextHindi = "आपका टोकन #$myToken निकल चुका है ($passedCount टोकन पहले)। कृपया तुरंत आश्रम सेवादार से संपर्क करें।",
+                statusTextEnglish = "Your token #$myToken has passed. Please contact Ashram Sevadar.",
+                isNowServing = false,
+                hasPassed = true,
+                isWaiting = false
+            )
+        }
+
+        if (myToken == currentServing) {
+            return QueueEtaResult(
+                myToken = myToken,
+                currentServing = currentServing,
+                peopleAhead = 0,
+                estimatedMinutesRemaining = 0,
+                estimatedDarshanTimeStr = "अभी / Right Now",
+                statusTextHindi = "🔔 आपका नंबर आ चुका है! कृपया तुरंत दरबार हॉल में पूज्य गुरुजी के समक्ष पधारें।",
+                statusTextEnglish = "🔔 Your turn is now! Please enter Darbar Hall immediately.",
+                isNowServing = true,
+                hasPassed = false,
+                isWaiting = false
+            )
+        }
+
+        val peopleAhead = myToken - currentServing
+        val minutesRemaining = Math.max(1, Math.round(peopleAhead * averageMinutesPerToken).toInt())
+        val etaCal = Calendar.getInstance()
+        etaCal.add(Calendar.MINUTE, minutesRemaining)
+        val timeFmt = SimpleDateFormat("hh:mm a", Locale("hi", "IN"))
+        val etaTimeStr = timeFmt.format(etaCal.time)
+
+        return QueueEtaResult(
+            myToken = myToken,
+            currentServing = currentServing,
+            peopleAhead = peopleAhead,
+            estimatedMinutesRemaining = minutesRemaining,
+            estimatedDarshanTimeStr = etaTimeStr,
+            statusTextHindi = "आपसे आगे $peopleAhead भक्त हैं • संभावित दर्शन समय: $etaTimeStr (लगभग $minutesRemaining मिनट शेष)",
+            statusTextEnglish = "$peopleAhead devotees ahead • Est. darshan: $etaTimeStr (~$minutesRemaining min remaining)",
+            isNowServing = false,
+            hasPassed = false,
+            isWaiting = true
+        )
+    }
 }
+
+data class QueueEtaResult(
+    val myToken: Int,
+    val currentServing: Int,
+    val peopleAhead: Int,
+    val estimatedMinutesRemaining: Int,
+    val estimatedDarshanTimeStr: String,
+    val statusTextHindi: String,
+    val statusTextEnglish: String,
+    val isNowServing: Boolean,
+    val hasPassed: Boolean,
+    val isWaiting: Boolean
+)

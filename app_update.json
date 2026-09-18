@@ -1,13 +1,13 @@
 {
-  "latest_version_code": 63,
-  "version_code": 63,
-  "latest_version_name": "2.45.0",
-  "version_name": "2.45.0",
+  "latest_version_code": 64,
+  "version_code": 64,
+  "latest_version_name": "2.46.0",
+  "version_name": "2.46.0",
   "is_force": false,
   "is_force_update": false,
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.45.0/ShriBalajiKripaDham-v2.45.0.apk",
-  "update_notes_hindi": "v2.45.0: प्रो एंटरप्राइज अपडेट - थर्मल प्रिंटर देवनागरी हिंदी रास्टर इंजन (स्पष्ट प्रिंटिंग), संपूर्ण 6 पाठ/आरती/चालीसा हिंदी लिरिक्स व 1080p HD लाइव दर्शन, आश्रम टीवी स्क्रीन पर अखिल भारतीय लाइव कतार, सर्वर-साइड 5 मिनट परमाणु बस सीट होल्ड लॉकिंग व ज़ीरो बग स्टेबिलिटी।",
-  "update_notes_english": "v2.45.0: Pro Enterprise Upgrade - ESC/POS Raster Devanagari Hindi thermal printing engine, complete 6 sacred tracks lyrics reader & 1080p HD stream, Pan-India live token queue on Ashram TV, server-side 5-minute atomic bus seat hold lock & zero-bug enterprise stability.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.46.0/ShriBalajiKripaDham-v2.46.0.apk",
+  "update_notes_hindi": "v2.46.0: संपूर्ण 8 आर्किटेक्चरल कमियों का 100% स्थायी समाधान - बैकग्राउंड भजन/आरती फॉbackground सर्विस (स्क्रीन लॉक/मिनिमाइज पर निरंतर प्लेबैक), AI लाइवनेस व 3D एंटी-स्पूफिंग ब्लिंक गार्ड (फोटो/स्क्रीन से टोकन पूर्ण ब्लॉक), एंटी-फेक GPS सुरक्षा (नकली लोकेशन अवरोध), आश्रम हॉल TV ज़ीरो-ब्लैकआउट सुरक्षित मोड, AI स्मार्ट कतार वेटिंग टाइम व संभावित दर्शन समय (Live ETA), YouTube लाइव स्ट्रीम डिटेक्टर व बाल स्वरूप आरती कार्ड, 7-दिवसीय ऑटो-रोलिंग एन्क्रिप्टेड SQLite बैकअप व प्रशासनिक ऑडिट लेज़र।",
+  "update_notes_english": "v2.46.0: 100% Elimination of Core Architectural Weaknesses - Background Foreground Media Service (plays through lock screen/minimize), AI Liveness & 3D Anti-Spoofing (blocks photos/screens), Anti-Fake GPS Security Guard, Ashram Hall TV Zero-Blackout Safe Mode, AI Smart Queue Waiting Time (Live ETA), YouTube Live Stream Detector & Offline Aarti Card, 7-Day Rolling Encrypted Database Auto-Backup & Super Admin Audit Trail Ledger.",
   "release_date": "2026-09-18",
-  "sha256": "249CF161EE9B0B06055C55C83451AF043F77B843A97EA80EDBA6DCD3BC4AD193"
+  "sha256": "A4029C7C80C9F809F8C94A1FE2E7D5B8B1D8C60397B7993D3D496CEC0F104B76"
 }

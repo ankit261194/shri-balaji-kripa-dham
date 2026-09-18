@@ -131,7 +131,8 @@ class AshramRepository(context: Context) {
             adBannerTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_title")) ?: "आश्रम सेवा व गौशाला सहयोग" } catch (e: Exception) { "आश्रम सेवा व गौशाला सहयोग" },
             adBannerDescription = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_description")) ?: "धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।" } catch (e: Exception) { "धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।" },
             adTargetUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_target_url")) ?: "" } catch (e: Exception) { "" },
-            adPlacement = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_placement")) ?: "HOME_BOTTOM" } catch (e: Exception) { "HOME_BOTTOM" }
+            adPlacement = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_placement")) ?: "HOME_BOTTOM" } catch (e: Exception) { "HOME_BOTTOM" },
+            isDarbarLiveNow = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_darbar_live_now")) == 1 } catch (e: Exception) { false }
         )
     }
 
@@ -377,6 +378,7 @@ class AshramRepository(context: Context) {
             if (s.bannerSubtitle.isNotBlank()) put("banner_subtitle", s.bannerSubtitle)
             if (s.darbarTimings.isNotBlank()) put("darbar_timings", s.darbarTimings)
             put("is_darbar_active", if (s.isDarbarActive) 1 else 0)
+            put("is_darbar_live_now", if (s.isDarbarLiveNow) 1 else 0)
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (ok) persistCurrentSettingsToAllLayers()
@@ -2908,8 +2910,8 @@ class AshramRepository(context: Context) {
         Pair(token, updated)
     }
 
-    // --- Token Cancellation & Permanent Deletion ---
-    suspend fun cancelToken(tokenId: Long): Boolean = withContext(Dispatchers.IO) {
+    // --- Token Cancellation & Permanent Deletion with Complete Audit Ledger ---
+    suspend fun cancelToken(tokenId: Long, adminName: String = "SEVADAR", reason: String = "भक्त अनुपस्थित / निरस्त"): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
         var tokenNum = 0
         var darbarDate = ""
@@ -2926,6 +2928,20 @@ class AshramRepository(context: Context) {
         }
         val updated = db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
         if (updated && tokenNum > 0) {
+            // 📜 Log to Audit Trail Ledger
+            try {
+                val role = if (adminName.contains("SUPER", true) || adminName.contains("अंकित", true)) "SUPER_ADMIN" else "SEVADAR"
+                dbHelper.insertAuditLog(
+                    action = "TOKEN_CANCELLED",
+                    tokenNumber = tokenNum,
+                    performedBy = adminName,
+                    role = role,
+                    reason = reason,
+                    darbarDate = darbarDate,
+                    details = "टोकन #$tokenNum निरस्त किया गया (Reason: $reason)"
+                )
+            } catch (e: Exception) {}
+
             try {
                 com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.updateLiveTokenStatusInGitHub(
                     appContext, tokenNum, darbarDate, TokenStatus.CANCELLED
@@ -2945,7 +2961,7 @@ class AshramRepository(context: Context) {
         updated
     }
 
-    suspend fun deleteToken(tokenId: Long): Boolean = withContext(Dispatchers.IO) {
+    suspend fun deleteToken(tokenId: Long, adminName: String = "SEVADAR", reason: String = "रिकॉर्ड हटाया गया"): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
         var tokenNum = 0
         var darbarDate = ""
@@ -2958,6 +2974,20 @@ class AshramRepository(context: Context) {
 
         val deleted = db.delete("tokens", "id = ?", arrayOf(tokenId.toString())) > 0
         if (deleted && tokenNum > 0) {
+            // 📜 Log to Audit Trail Ledger
+            try {
+                val role = if (adminName.contains("SUPER", true) || adminName.contains("अंकित", true)) "SUPER_ADMIN" else "SEVADAR"
+                dbHelper.insertAuditLog(
+                    action = "TOKEN_DELETED",
+                    tokenNumber = tokenNum,
+                    performedBy = adminName,
+                    role = role,
+                    reason = reason,
+                    darbarDate = darbarDate,
+                    details = "टोकन #$tokenNum डेटाबेस से स्थायी रूप से हटाया गया"
+                )
+            } catch (e: Exception) {}
+
             try {
                 com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.removeLiveTokenFromGitHub(
                     appContext, tokenNum, darbarDate
@@ -2966,11 +2996,52 @@ class AshramRepository(context: Context) {
             try {
                 // Keep immutable audit trail in Google Sheet
                 com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.updateTokenStatusInSheet(
-                    appContext, darbarDate, tokenNum, "CANCELLED", "एडमिन द्वारा हटाया गया"
+                    appContext, darbarDate, tokenNum, "CANCELLED", "एडमिन द्वारा हटाया गया ($adminName)"
                 )
             } catch (e: Exception) {}
         }
         deleted
+    }
+
+    // =========================================================================
+    // 📜 AUDIT TRAIL, DATABASE BACKUP & LIVE DARBAR CONTROLS
+    // =========================================================================
+
+    suspend fun logAuditEvent(
+        action: String,
+        tokenNumber: Int = 0,
+        performedBy: String = "SYSTEM",
+        role: String = "SEVADAR",
+        reason: String = "",
+        details: String = ""
+    ): Long = withContext(Dispatchers.IO) {
+        dbHelper.insertAuditLog(
+            action = action,
+            tokenNumber = tokenNumber,
+            performedBy = performedBy,
+            role = role,
+            reason = reason,
+            darbarDate = DatabaseHelper.getTodayDateString(),
+            details = details
+        )
+    }
+
+    suspend fun getAuditLogs(limit: Int = 150): List<AuditLogEntry> = withContext(Dispatchers.IO) {
+        dbHelper.getAuditLogs(limit)
+    }
+
+    suspend fun exportDatabaseBackup(context: Context): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        dbHelper.exportDatabaseBackup(context)
+    }
+
+    suspend fun updateDarbarLiveNow(isLive: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("is_darbar_live_now", if (isLive) 1 else 0)
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
 
     suspend fun getTodayActiveTokenCount(): Int = withContext(Dispatchers.IO) {

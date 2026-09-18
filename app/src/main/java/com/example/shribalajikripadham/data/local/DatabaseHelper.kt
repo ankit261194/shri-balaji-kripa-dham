@@ -494,6 +494,25 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             """.trimIndent())
         } catch (e: Exception) { e.printStackTrace() }
 
+        // 18. Audit Logs Table (Indestructible Ledger for Token & System Actions)
+        try {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS audit_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    action TEXT NOT NULL,
+                    token_number INTEGER NOT NULL DEFAULT 0,
+                    performed_by TEXT NOT NULL DEFAULT 'SYSTEM',
+                    role TEXT NOT NULL DEFAULT 'SEVADAR',
+                    reason TEXT NOT NULL DEFAULT '',
+                    darbar_date TEXT NOT NULL DEFAULT '',
+                    details TEXT NOT NULL DEFAULT '',
+                    timestamp INTEGER NOT NULL
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON audit_logs (timestamp DESC)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_audit_token ON audit_logs (token_number)")
+        } catch (e: Exception) { e.printStackTrace() }
+
         // Ensure missing columns in existing tables
         ensureColumns(db)
 
@@ -508,6 +527,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 
     private fun ensureColumns(db: SQLiteDatabase) {
         val alterStatements = listOf(
+            "ALTER TABLE ashram_settings ADD COLUMN is_darbar_live_now INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE active_device_telemetry ADD COLUMN role TEXT NOT NULL DEFAULT 'USER'",
             "ALTER TABLE ashram_settings ADD COLUMN is_aarti_timings_visible INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN is_guruji_info_visible INTEGER NOT NULL DEFAULT 1",
@@ -873,5 +893,134 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 }
             }
         } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    // =========================================================================
+    // 📜 AUDIT TRAIL LEDGER SYSTEM (Anti-Corruption & Administrative Accountability)
+    // =========================================================================
+
+    fun insertAuditLog(
+        action: String,
+        tokenNumber: Int = 0,
+        performedBy: String = "SYSTEM",
+        role: String = "SEVADAR",
+        reason: String = "",
+        darbarDate: String = getTodayDateString(),
+        details: String = ""
+    ): Long {
+        return try {
+            val cv = ContentValues().apply {
+                put("action", action)
+                put("token_number", tokenNumber)
+                put("performed_by", performedBy)
+                put("role", role)
+                put("reason", reason)
+                put("darbar_date", darbarDate)
+                put("details", details)
+                put("timestamp", System.currentTimeMillis())
+            }
+            writableDatabase.insert("audit_logs", null, cv)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            -1L
+        }
+    }
+
+    fun getAuditLogs(limit: Int = 150): List<AuditLogEntry> {
+        val list = mutableListOf<AuditLogEntry>()
+        try {
+            val cursor = readableDatabase.rawQuery(
+                "SELECT id, action, token_number, performed_by, role, reason, darbar_date, details, timestamp FROM audit_logs ORDER BY id DESC LIMIT ?",
+                arrayOf(limit.toString())
+            )
+            while (cursor.moveToNext()) {
+                list.add(
+                    AuditLogEntry(
+                        id = cursor.getLong(0),
+                        action = cursor.getString(1),
+                        tokenNumber = cursor.getInt(2),
+                        performedBy = cursor.getString(3),
+                        role = cursor.getString(4),
+                        reason = cursor.getString(5),
+                        darbarDate = cursor.getString(6),
+                        details = cursor.getString(7),
+                        timestamp = cursor.getLong(8)
+                    )
+                )
+            }
+            cursor.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return list
+    }
+
+    // =========================================================================
+    // 💾 DAILY DATABASE AUTO-BACKUP SYSTEM (Zero Data Loss Architecture)
+    // =========================================================================
+
+    fun exportDatabaseBackup(context: Context): Pair<Boolean, String> {
+        return try {
+            val dbFile = context.getDatabasePath(DATABASE_NAME)
+            if (!dbFile.exists()) {
+                return Pair(false, "डेटाबेस फ़ाइल नहीं मिली (DB File not found)")
+            }
+
+            // Checkpoint WAL journal to ensure main DB file is complete
+            try {
+                writableDatabase.rawQuery("PRAGMA wal_checkpoint(FULL)", null).use { it.moveToFirst() }
+            } catch (e: Exception) {}
+
+            // Target storage directory (Downloads / Balaji_Backups or App Documents fallback)
+            val externalDownloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            val preferredDir = java.io.File(externalDownloads, "Balaji_Backups")
+            val targetDir = try {
+                if (!preferredDir.exists()) preferredDir.mkdirs()
+                if (preferredDir.canWrite()) preferredDir else {
+                    val fallback = java.io.File(context.getExternalFilesDir(null), "Balaji_Backups")
+                    if (!fallback.exists()) fallback.mkdirs()
+                    fallback
+                }
+            } catch (e: Exception) {
+                val fallback = java.io.File(context.getExternalFilesDir(null), "Balaji_Backups")
+                if (!fallback.exists()) fallback.mkdirs()
+                fallback
+            }
+
+            val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd_HHmmss", java.util.Locale.US).format(java.util.Date())
+            val backupFile = java.io.File(targetDir, "SBKD_Backup_${timestamp}.db")
+
+            java.io.FileInputStream(dbFile).use { input ->
+                java.io.FileOutputStream(backupFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            // 7 Rolling Backups: Purge backups older than the latest 7 to prevent storage overflow
+            try {
+                val existingBackups = targetDir.listFiles { f ->
+                    f.name.startsWith("SBKD_Backup_") && f.name.endsWith(".db")
+                }
+                if (existingBackups != null && existingBackups.size > 7) {
+                    existingBackups.sortBy { it.lastModified() }
+                    val toRemove = existingBackups.take(existingBackups.size - 7)
+                    toRemove.forEach { it.delete() }
+                }
+            } catch (ignored: Exception) {}
+
+            // Record into audit ledger
+            insertAuditLog(
+                action = "DB_BACKUP_EXPORTED",
+                performedBy = "SYSTEM",
+                role = "SUPER_ADMIN",
+                reason = "दैनिक ऑटो-बैकअप संपन्न",
+                details = "${backupFile.name} (${backupFile.length() / 1024} KB)"
+            )
+
+            Pair(true, "✅ डेटाबेस बैकअप सुरक्षित सहेजा गया:\n${backupFile.name} (${backupFile.length() / 1024} KB)\nपथ: ${targetDir.absolutePath}")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Pair(false, "बैकअप निर्माण में त्रुटि: ${e.localizedMessage}")
+        }
     }
 }

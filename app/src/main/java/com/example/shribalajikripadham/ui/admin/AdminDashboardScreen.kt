@@ -1078,6 +1078,7 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️")
             }
             if (isSuper) {
+                allowedTabs.add(if (isHindi) "📜 ऑडिट लेज़र" else "Audit Trail")
                 allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
                 allowedTabs.add(if (isHindi) "सेवाएं ऑन/ऑफ" else "Services")
                 allowedTabs.add(if (isHindi) "🌐 वेबसाइट व CMS" else "Website & CMS")
@@ -1598,6 +1599,17 @@ fun AdminDashboardScreen(
                                         notifMsg = ""
                                         refreshData()
                                     }
+                                }
+                            )
+                        }
+                        currentTabTitle == "📜 ऑडिट लेज़र" || currentTabTitle == "Audit Trail" -> {
+                            AuditTrailTab(
+                                isHindi = isHindi,
+                                repository = repository,
+                                settings = settings,
+                                onSettingsUpdated = { newSettings ->
+                                    settings = newSettings
+                                    scope.launch { repository.updateSettings(newSettings) }
                                 }
                             )
                         }
@@ -11045,3 +11057,388 @@ fun WebsiteAndCmsManagerTab(
         )
     }
 }
+
+@Composable
+fun AuditTrailTab(
+    isHindi: Boolean,
+    repository: AshramRepository,
+    settings: AshramSettings,
+    onSettingsUpdated: (AshramSettings) -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var auditLogs by remember { mutableStateOf<List<com.example.shribalajikripadham.data.model.AuditLogEntry>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var selectedFilter by remember { mutableStateOf("ALL") }
+    var backupStatusMsg by remember { mutableStateOf<String?>(null) }
+    var isBackingUp by remember { mutableStateOf(false) }
+    var liveBroadcastState by remember { mutableStateOf(settings.isDarbarLiveNow) }
+
+    fun loadLogs() {
+        scope.launch {
+            isLoading = true
+            try {
+                auditLogs = repository.getAuditLogs(200)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        loadLogs()
+    }
+
+    val filteredLogs = remember(auditLogs, selectedFilter) {
+        when (selectedFilter) {
+            "CANCEL" -> auditLogs.filter { it.action == "TOKEN_CANCELLED" }
+            "DELETE" -> auditLogs.filter { it.action == "TOKEN_DELETED" }
+            "BACKUP" -> auditLogs.filter { it.action.contains("BACKUP") }
+            "LIVE" -> auditLogs.filter { it.action.contains("LIVE") }
+            "VIP" -> auditLogs.filter { it.action.contains("VIP") }
+            else -> auditLogs
+        }
+    }
+
+    val sdf = remember { java.text.SimpleDateFormat("dd MMM yyyy, hh:mm:ss a", java.util.Locale.getDefault()) }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // CARD 1: 💾 DATABASE BACKUP & 7-DAY ROLLING RESTORATION
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE7F6)),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color(0xFFB39DDB)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("💾", fontSize = 24.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "डेटाबेस बैकअप व 7-दिवसीय ऑटो-रोलिंग सुरक्षा" else "Database Backup & 7-Day Auto-Rotation",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = Color(0xFF4A148C)
+                            )
+                            Text(
+                                text = if (isHindi) "समस्त टोकन, सेवादार व सेटिंग्स का पूर्ण एन्क्रिप्टेड SQLite बैकअप" else "Full SQLite database backup to Downloads/Balaji_Backups",
+                                fontSize = 11.sp,
+                                color = Color.DarkGray
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = if (isHindi)
+                            "यह सिस्टम पिछले 7 दिनों के रोलिंग बैकअप सुरक्षित रखता है। पुराना बैकअप स्वतः चक्रीय आधार पर साफ़ होता है।"
+                        else
+                            "Maintains last 7 rolling backups automatically in Downloads/Balaji_Backups.",
+                        fontSize = 12.sp,
+                        color = Color(0xFF311B92)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                isBackingUp = true
+                                try {
+                                    val (isSuccess, backupPath) = repository.exportDatabaseBackup(context)
+                                    if (isSuccess) {
+                                        backupStatusMsg = if (isHindi)
+                                            "✅ बैकअप सफल:\n$backupPath"
+                                        else
+                                            "✅ Backup created: $backupPath"
+                                        loadLogs()
+                                    } else {
+                                        backupStatusMsg = if (isHindi) "⚠️ बैकअप निर्माण विफल: $backupPath" else "Failed to export backup: $backupPath"
+                                    }
+                                } catch (e: Exception) {
+                                    backupStatusMsg = "त्रुटि: ${e.message}"
+                                } finally {
+                                    isBackingUp = false
+                                }
+                            }
+                        },
+                        enabled = !isBackingUp,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A1B9A)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (isBackingUp) (if (isHindi) "बैकअप तैयार हो रहा है..." else "Exporting...") else (if (isHindi) "💾 अभी नया SQLite बैकअप लें" else "Export SQLite Backup Now"),
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    if (backupStatusMsg != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = backupStatusMsg!!,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (backupStatusMsg!!.startsWith("✅")) Color(0xFF2E7D32) else Color(0xFFC62828)
+                        )
+                    }
+                }
+            }
+        }
+
+        // CARD 2: 🔴 YOUTUBE LIVE DARBAR STATUS TOGGLE
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color(0xFFFFCDD2)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("🔴", fontSize = 24.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "यूट्यूब लाइव दरबार प्रसारण स्थिति" else "YouTube Live Broadcast Status",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = Color(0xFFB71C1C)
+                            )
+                            Text(
+                                text = if (liveBroadcastState)
+                                    (if (isHindi) "लाइव चालू: भक्तों के ऐप में तुरंत HD वीडियो चलेगा" else "Broadcast is LIVE now")
+                                else
+                                    (if (isHindi) "ऑफ़लाइन: दिव्य बाल स्वरूप कार्ड व आरती समय दिखेगा" else "Broadcast is OFFLINE (Aarti timings card active)"),
+                                fontSize = 11.5.sp,
+                                color = if (liveBroadcastState) Color(0xFF2E7D32) else Color.Gray
+                            )
+                        }
+                    }
+
+                    Switch(
+                        checked = liveBroadcastState,
+                        onCheckedChange = { newVal ->
+                            liveBroadcastState = newVal
+                            val updated = settings.copy(isDarbarLiveNow = newVal)
+                            onSettingsUpdated(updated)
+                            scope.launch {
+                                repository.updateDarbarLiveNow(newVal)
+                                loadLogs()
+                            }
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFFD32F2F)
+                        )
+                    )
+                }
+            }
+        }
+
+        // SECTION 3: 📜 AUDIT TRAIL LOGS WITH FILTER CHIPS
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("📜", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isHindi) "ऑडिट लेज़र (Audit Trail)" else "Audit Trail Ledger",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = MaroonPrimary
+                            )
+                        }
+                        IconButton(onClick = { loadLogs() }) {
+                            Text("🔄", fontSize = 16.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Filter chips
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        val filters = listOf(
+                            "ALL" to (if (isHindi) "समस्त (${auditLogs.size})" else "All (${auditLogs.size})"),
+                            "CANCEL" to (if (isHindi) "निरस्त" else "Cancelled"),
+                            "DELETE" to (if (isHindi) "डिलीट" else "Deleted"),
+                            "BACKUP" to (if (isHindi) "बैकअप" else "Backups"),
+                            "LIVE" to (if (isHindi) "लाइव" else "Live"),
+                            "VIP" to (if (isHindi) "VIP" else "VIP")
+                        )
+                        items(filters) { (key, label) ->
+                            FilterChip(
+                                selected = selectedFilter == key,
+                                onClick = { selectedFilter = key },
+                                label = { Text(label, fontSize = 11.5.sp) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (isLoading) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = MaroonPrimary)
+                }
+            }
+        } else if (filteredLogs.isEmpty()) {
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = if (isHindi) "कोई ऑडिट रिकॉर्ड नहीं मिला" else "No audit logs found",
+                            color = Color.Gray,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            }
+        } else {
+            items(filteredLogs) { log ->
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(
+                        1.dp,
+                        when {
+                            log.action.contains("DELETE") -> Color(0xFFFFCDD2)
+                            log.action.contains("CANCEL") -> Color(0xFFFFE0B2)
+                            log.action.contains("BACKUP") -> Color(0xFFD1C4E9)
+                            else -> Color(0xFFE0E0E0)
+                        }
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = when {
+                                        log.action.contains("DELETE") -> "🗑️"
+                                        log.action.contains("CANCEL") -> "❌"
+                                        log.action.contains("BACKUP") -> "💾"
+                                        log.action.contains("LIVE") -> "🔴"
+                                        log.action.contains("VIP") -> "👑"
+                                        else -> "📝"
+                                    },
+                                    fontSize = 16.sp
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = when (log.action) {
+                                        "TOKEN_CANCELLED" -> if (isHindi) "टोकन निरस्त" else "Token Cancelled"
+                                        "TOKEN_DELETED" -> if (isHindi) "टोकन डिलीट" else "Token Deleted"
+                                        "DB_BACKUP_EXPORTED" -> if (isHindi) "डेटाबेस बैकअप एक्सपोर्ट" else "Database Backup Exported"
+                                        "DARBAR_LIVE_STATUS_CHANGED" -> if (isHindi) "लाइव प्रसारण स्थिति परिवर्तन" else "Live Stream Changed"
+                                        "VIP_TOKEN_ISSUED" -> if (isHindi) "VIP टोकन जारी" else "VIP Token Issued"
+                                        else -> log.action
+                                    },
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.5.sp,
+                                    color = when {
+                                        log.action.contains("DELETE") -> Color(0xFFC62828)
+                                        log.action.contains("CANCEL") -> Color(0xFFE65100)
+                                        log.action.contains("BACKUP") -> Color(0xFF4A148C)
+                                        else -> MaroonPrimary
+                                    }
+                                )
+                                if (log.tokenNumber > 0) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Surface(
+                                        color = Color(0xFFFBE9E7),
+                                        shape = RoundedCornerShape(4.dp)
+                                    ) {
+                                        Text(
+                                            text = "#${log.tokenNumber}",
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFD84315),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Text(
+                                text = sdf.format(java.util.Date(log.timestamp)),
+                                fontSize = 10.sp,
+                                color = Color.Gray
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "👤 कर्ता: ${log.performedBy}",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF37474F)
+                            )
+                            if (log.role.isNotBlank()) {
+                                Text(
+                                    text = " (${log.role})",
+                                    fontSize = 11.sp,
+                                    color = Color.DarkGray
+                                )
+                            }
+                        }
+
+                        if (log.reason.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "📌 कारण/विवरण: ${log.reason}",
+                                fontSize = 11.5.sp,
+                                color = Color(0xFF424242)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

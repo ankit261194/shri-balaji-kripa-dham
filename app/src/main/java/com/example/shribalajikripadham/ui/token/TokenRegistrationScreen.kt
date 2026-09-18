@@ -1410,6 +1410,14 @@ fun TokenRegistrationScreen(
                                     try {
                                         val loc = GeofenceLocationManager.getLastKnownLocation(context)
                                         val isMock = GeofenceLocationManager.isMockLocation(loc, context)
+                                        if (isMock) {
+                                            errorMessage = if (isHindi)
+                                                "⚠️ फ़ेक जीपीएस चेतावनी: आपके डिवाइस में नकली लोकेशन / Fake GPS स्पूफिंग का उपयोग पकड़ा गया है। श्री बालाजी कृपा धाम के नियमों के अनुसार केवल वास्तविक जीपीएस से ही टोकन मान्य है। कृपया फ़ेक ऐप बंद करके पुनः प्रयास करें।"
+                                            else
+                                                "⚠️ Fake GPS Alert: Mock location or spoofing detected. Please disable Fake GPS and use genuine location."
+                                            isSubmitting = false
+                                            return@launch
+                                        }
                                         val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
                                         val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: settings.latitude)
                                         val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: settings.longitude)

@@ -1265,6 +1265,32 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(sectionSpacing))
             }
 
+            // 🎯 AI SMART QUEUE & LIVE DARSHAN WAITING TIME (LIVE ETA)
+            val myTokPrefs = remember { context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE) }
+            val devoteeMyToken = remember(settings.runningTokenNumber) { myTokPrefs.getInt("my_token_number", 0) }
+            val devoteeMyTokenDate = remember(settings.runningTokenNumber) { myTokPrefs.getString("my_token_date", "") ?: "" }
+            val todayDateStr = remember { com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString() }
+            val isMyTokenToday = devoteeMyToken > 0 && (devoteeMyTokenDate == todayDateStr || devoteeMyTokenDate.isBlank())
+
+            if (settings.runningTokenNumber > 0 || isMyTokenToday) {
+                val queueEta = remember(devoteeMyToken, settings.runningTokenNumber, isMyTokenToday) {
+                    com.example.shribalajikripadham.util.SundayTokenScheduleHelper.calculateQueueEta(
+                        myToken = if (isMyTokenToday) devoteeMyToken else 0,
+                        currentServing = settings.runningTokenNumber
+                    )
+                }
+
+                DevoteeSmartQueueEtaCard(
+                    queueEta = queueEta,
+                    runningTokenNumber = settings.runningTokenNumber,
+                    devoteeToken = if (isMyTokenToday) devoteeMyToken else 0,
+                    isHindi = isHindi,
+                    isCompact = isCompact,
+                    onNavigateToToken = onNavigateToToken
+                )
+                Spacer(modifier = Modifier.height(sectionSpacing))
+            }
+
             // RENDERING BASED ON ACTIVE UI LAYOUT (10 COMPLETE UI LOOKS)
             when (activeLayout) {
                 AppUiLayout.CLASSIC_DARBAR -> {
@@ -3523,6 +3549,198 @@ fun DevoteeSponsorAdBanner(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = primaryColor
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DevoteeSmartQueueEtaCard(
+    queueEta: com.example.shribalajikripadham.util.QueueEtaResult,
+    runningTokenNumber: Int,
+    devoteeToken: Int,
+    isHindi: Boolean,
+    isCompact: Boolean,
+    onNavigateToToken: () -> Unit
+) {
+    val isServingMe = queueEta.isNowServing
+    val isWaiting = queueEta.isWaiting
+    val hasPassed = queueEta.hasPassed
+
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                isServingMe -> Color(0xFFE8F5E9)
+                hasPassed -> Color(0xFFFFEBEE)
+                isWaiting -> Color(0xFFFFF8E1)
+                else -> Color(0xFFFFF9EE)
+            }
+        ),
+        shape = RoundedCornerShape(if (isCompact) 14.dp else 18.dp),
+        border = BorderStroke(
+            1.5.dp,
+            when {
+                isServingMe -> Color(0xFF2E7D32)
+                hasPassed -> Color(0xFFC62828)
+                isWaiting -> Color(0xFFFFB300)
+                else -> SaffronPrimary.copy(alpha = 0.7f)
+            }
+        ),
+        elevation = CardDefaults.cardElevation(if (isCompact) 3.dp else 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onNavigateToToken() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(if (isCompact) 10.dp else 14.dp)
+        ) {
+            // Header Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = when {
+                            isServingMe -> "🔔"
+                            hasPassed -> "⚠️"
+                            isWaiting -> "⏳"
+                            else -> "🚩"
+                        },
+                        fontSize = if (isCompact) 18.sp else 22.sp
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = when {
+                            isServingMe -> if (isHindi) "आपका दर्शन समय आ चुका है!" else "Your Turn Now!"
+                            hasPassed -> if (isHindi) "टोकन निकल चुका है" else "Token Number Passed"
+                            isWaiting -> if (isHindi) "स्मार्ट कतार व संभावित समय (Live ETA)" else "Smart Queue & Live ETA"
+                            else -> if (isHindi) "दरबार लाइव टोकन स्थिति" else "Live Darbar Queue Status"
+                        },
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = if (isCompact) 13.sp else 15.sp,
+                        color = when {
+                            isServingMe -> Color(0xFF1B5E20)
+                            hasPassed -> Color(0xFFB71C1C)
+                            isWaiting -> Color(0xFFE65100)
+                            else -> MaroonPrimary
+                        }
+                    )
+                }
+
+                Surface(
+                    color = when {
+                        isServingMe -> Color(0xFF2E7D32)
+                        hasPassed -> Color(0xFFC62828)
+                        isWaiting -> Color(0xFFF57C00)
+                        else -> MaroonPrimary
+                    },
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Text(
+                        text = if (isHindi) "लाइव अपडेट" else "LIVE",
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Token Numbers Comparison Badges
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Currently Serving Box
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    color = Color.White,
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, Color(0xFFFFD54F))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = if (isHindi) "वर्तमान में सेवारत" else "Now Calling",
+                            fontSize = 10.5.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = if (runningTokenNumber > 0) "#$runningTokenNumber" else "--",
+                            fontSize = if (isCompact) 20.sp else 24.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFFB71C1C)
+                        )
+                    }
+                }
+
+                // Devotee's Personal Token Box
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    color = if (devoteeToken > 0) Color(0xFFFFFDE7) else Color.White,
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, if (devoteeToken > 0) Color(0xFFFFA000) else Color.LightGray)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(vertical = 8.dp, horizontal = 10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = if (isHindi) "आपका टोकन" else "Your Token",
+                            fontSize = 10.5.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = if (devoteeToken > 0) "#$devoteeToken" else if (isHindi) "उपलब्ध नहीं" else "None",
+                            fontSize = if (isCompact) 18.sp else 22.sp,
+                            fontWeight = FontWeight.Black,
+                            color = if (devoteeToken > 0) Color(0xFF1B5E20) else Color.DarkGray
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ETA Status Details
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White.copy(alpha = 0.85f),
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(0.5.dp, Color.LightGray.copy(alpha = 0.5f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (isHindi) queueEta.statusTextHindi else queueEta.statusTextEnglish,
+                        fontSize = if (isCompact) 11.5.sp else 12.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF263238),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = " ➔",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonPrimary
                     )
                 }
             }
