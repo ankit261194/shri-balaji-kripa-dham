@@ -24,8 +24,9 @@ import org.json.JSONObject
 
 object AppUpdateManager {
 
-    const val DEFAULT_APK_URL = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.43.0/ShriBalajiKripaDham-v2.43.0.apk"
-    const val DEFAULT_VERSION_JSON_URL = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/version.json"
+    const val DEFAULT_APK_URL = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk"
+    const val DEFAULT_VERSION_JSON_URL = "https://shribalajikripadham.online/version.json"
+    const val GITHUB_VERSION_JSON_URL = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/version.json"
 
     data class OnlineUpdateInfo(
         val versionCode: Int,
@@ -39,10 +40,11 @@ object AppUpdateManager {
 
     suspend fun fetchLatestUpdateFromOnline(urlStr: String = DEFAULT_VERSION_JSON_URL): OnlineUpdateInfo? {
         return withContext(Dispatchers.IO) {
-            val fromVersionJson = fetchFromVersionJson(urlStr)
+            val fromAshram = fetchFromVersionJson(urlStr)
+            val fromGitHubVersion = fetchFromVersionJson(GITHUB_VERSION_JSON_URL)
             val fromAppUpdateJson = fetchFromVersionJson("https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/app_update.json")
             val fromGitHub = fetchFromGitHubReleasesApi()
-            listOfNotNull(fromVersionJson, fromAppUpdateJson, fromGitHub).maxByOrNull { it.versionCode }
+            listOfNotNull(fromAshram, fromGitHubVersion, fromAppUpdateJson, fromGitHub).maxByOrNull { it.versionCode }
         }
     }
 
@@ -388,12 +390,17 @@ object AppUpdateManager {
 
             val targetFile = File(targetDir, "ShriBalajiKripaDham_update.apk")
             val candidateUrls = mutableListOf<String>()
-            if (finalUrl.isNotBlank()) candidateUrls.add(finalUrl.trim())
+            // Always prioritize direct Ashram High-Speed Server download first!
+            candidateUrls.add("https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk")
+            candidateUrls.add("https://shribalajikripadham.online/download.php")
+            if (finalUrl.isNotBlank() && !candidateUrls.contains(finalUrl.trim())) {
+                candidateUrls.add(finalUrl.trim())
+            }
             val fallbacks = listOf(
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.43.0/ShriBalajiKripaDham-v2.43.0.apk",
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.43.0/ShriBalajiKripaDham-release.apk",
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-v2.42.1.apk",
-                "https://shribalajikripadham.online/download.php",
+                "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-v2.48.0.apk",
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.48.0/ShriBalajiKripaDham-release.apk",
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.48.0/ShriBalajiKripaDham-v2.48.0.apk",
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk",
                 DEFAULT_APK_URL
             )
             for (fb in fallbacks) {
@@ -425,8 +432,9 @@ object AppUpdateManager {
                             defaultUseCaches = false
                             instanceFollowRedirects = true
                             requestMethod = "GET"
-                            setRequestProperty("User-Agent", "ShriBalajiKripaDham-Updater/2.43.0")
+                            setRequestProperty("User-Agent", "ShriBalajiKripaDham-Updater/2.48.0")
                             setRequestProperty("Accept-Encoding", "identity")
+                            setRequestProperty("Connection", "Keep-Alive")
                             setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
                         }
                         connection.connect()
@@ -456,28 +464,37 @@ object AppUpdateManager {
                     }
 
                     val totalBytes = conn.contentLength.toLong()
-                    val inputStream = BufferedInputStream(conn.inputStream)
+                    val inputStream = BufferedInputStream(conn.inputStream, 65536)
                     val outputStream = FileOutputStream(targetFile)
 
-                    val buffer = ByteArray(8192)
+                    // 64 KB high-speed buffer: drastically reduces I/O context switching and CPU overhead
+                    val buffer = ByteArray(65536)
                     var bytesRead: Int
                     var downloadedBytes: Long = 0
                     var lastReportedPercent = -1
+                    var lastReportTimeMs = 0L
 
                     while (inputStream.read(buffer).also { bytesRead = it } != -1) {
                         outputStream.write(buffer, 0, bytesRead)
                         downloadedBytes += bytesRead
+                        val now = System.currentTimeMillis()
+
                         if (totalBytes > 0) {
                             val percent = ((downloadedBytes * 100) / totalBytes).toInt().coerceIn(0, 100)
-                            if (percent != lastReportedPercent || bytesRead == -1) {
+                            // Throttle progress updates to at most once per 150ms to prevent UI coroutine starvation
+                            if ((now - lastReportTimeMs >= 150L && percent != lastReportedPercent) || percent == 100 || downloadedBytes >= totalBytes) {
                                 lastReportedPercent = percent
+                                lastReportTimeMs = now
                                 withContext(Dispatchers.Main) {
                                     onProgress(percent, downloadedBytes, totalBytes)
                                 }
                             }
                         } else {
-                            withContext(Dispatchers.Main) {
-                                onProgress(50, downloadedBytes, 0L)
+                            if (now - lastReportTimeMs >= 250L) {
+                                lastReportTimeMs = now
+                                withContext(Dispatchers.Main) {
+                                    onProgress(50, downloadedBytes, 0L)
+                                }
                             }
                         }
                     }

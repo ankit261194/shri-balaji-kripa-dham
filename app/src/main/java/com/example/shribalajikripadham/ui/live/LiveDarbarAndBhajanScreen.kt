@@ -62,7 +62,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Shri Hanuman Chalisa",
         subtitleHindi = "जय हनुमान ज्ञान गुन सागर • संकट कटे मिटे सब पीरा",
         durationText = "09:42",
-        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/hanuman_chalisa.mp3",
+        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=hanuman_chalisa",
         youtubeSearchQuery = "Shri Hanuman Chalisa Gulshan Kumar Hariharan",
         lyricsHindi = """
             ॥ दोहा ॥
@@ -123,7 +123,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Shri Balaji Maha Aarti",
         subtitleHindi = "आरती कीजै श्री बालाजी की • कलिकाल में मंगलकारी",
         durationText = "06:15",
-        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/balaji_aarti.mp3",
+        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=balaji_aarti",
         youtubeSearchQuery = "Shri Balaji Aarti Kije Hanuman Lala Ki",
         lyricsHindi = """
             ॥ श्री बालाजी कृपा धाम पावन महाआरती ॥
@@ -149,7 +149,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Bajrang Baan",
         subtitleHindi = "निश्चय प्रेम प्रतीति ते बिनय करै सनमान",
         durationText = "07:30",
-        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/bajrang_baan.mp3",
+        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=bajrang_baan",
         youtubeSearchQuery = "Bajrang Baan Rasraj Ji",
         lyricsHindi = """
             ॥ दोहा ॥
@@ -197,7 +197,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Sankat Mochan Hanumanashtak",
         subtitleHindi = "बाल समय रवि भक्ष लियो तब तीनहुं लोक भयो अंधियारों",
         durationText = "05:48",
-        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/sankatmochan.mp3",
+        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=sankatmochan",
         youtubeSearchQuery = "Sankat Mochan Hanuman Ashtak Hariharan",
         lyricsHindi = """
             बाल समय रवि भक्ष लियो तब, तीनहुं लोक भयो अंधियारों।
@@ -250,7 +250,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Aarti Kije Hanuman Lala Ki",
         subtitleHindi = "दुष्ट दलन रघुनाथ कला की • जाके बल से गिरिवर कांपै",
         durationText = "05:12",
-        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/aarti_kije.mp3",
+        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=aarti_kije",
         youtubeSearchQuery = "Aarti Kije Hanuman Lala Ki Anuradha Paudwal",
         lyricsHindi = """
             आरती कीजै हनुमान लला की। दुष्ट दलन रघुनाथ कला की॥
@@ -279,7 +279,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Shri Ramachandra Kripalu",
         subtitleHindi = "हरन भवभय दारुणं • नवकंज लोचन कंज मुख",
         durationText = "06:35",
-        audioUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/media/ram_stuti.mp3",
+        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=ram_stuti",
         youtubeSearchQuery = "Shri Ramchandra Kripalu Bhajuman Lata Mangeshkar",
         lyricsHindi = """
             श्रीरामचन्द्र कृपालु भजु मन हरण भवभय दारुणं।

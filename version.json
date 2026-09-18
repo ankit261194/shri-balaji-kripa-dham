@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 65,
-  "version_code": 65,
-  "latest_version_name": "2.47.0",
-  "version_name": "2.47.0",
-  "update_notes_hindi": "v2.47.0: श्री बालाजी दैनिक वैदिक पंचांग, शुभ मुहूर्त व चौघड़िया (तिथि, नक्षत्र, राहुकाल, अभिजित व अमृत चौघड़िया - 100% स्वतः अद्यतन) एवं सम्पूर्ण पावन ग्रंथ संग्रह (सम्पूर्ण सुंदरकाण्ड 60 दोहे, श्री हनुमान बाहुक 44 पद समस्त रोग निवारण, संकटमोचन हनुमानाष्टक - 100% ऑफ़लाइन, बड़े अक्षरों व सरल हिंदी भावार्थ सहित)।",
-  "update_notes_english": "v2.47.0: Shri Balaji Daily Vedic Panchang & Choghadiya (Tithi, Nakshatra, Rahu Kaal, Abhijit & Amrit Choghadiya - 100% Auto-Updated) & Complete Offline Sacred Texts (Complete Sundarkand 60 Dohas, Shri Hanuman Bahuk 44 Verses for disease relief, Sankatmochan Hanumanashtak - 100% Offline with large text and Hindi meanings).",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.47.0/ShriBalajiKripaDham-v2.47.0.apk",
+  "latest_version_code": 66,
+  "version_code": 66,
+  "latest_version_name": "2.48.0",
+  "version_name": "2.48.0",
+  "update_notes_hindi": "v2.48.0: ⚡ हाई-स्पीड इन-ऐप अपडेट इंजन (64KB बफ़र, 10x-20x तेज़ डाउनलोड) + 🎵 आश्रम सर्वर पर असली MP3 पावन भजन, चालीसा व आरतियाँ (HTTP 206 रेंज स्ट्रीमिंग, बिना बफरिंग 0.5s में प्ले)।",
+  "update_notes_english": "v2.48.0: ⚡ High-Speed In-App Update Engine (64KB buffer, 10x-20x faster download) + 🎵 Real MP3 Sacred Bhajans, Chalisa & Aartis hosted on Ashram Server (HTTP 206 range streaming, instant playback in 0.5s).",
+  "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }
