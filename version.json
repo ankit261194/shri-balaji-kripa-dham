@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 64,
-  "version_code": 64,
-  "latest_version_name": "2.46.0",
-  "version_name": "2.46.0",
-  "update_notes_hindi": "v2.46.0: संपूर्ण 8 आर्किटेक्चरल कमियों का 100% स्थायी समाधान - बैकग्राउंड भजन/आरती फॉbackground सर्विस (स्क्रीन लॉक/मिनिमाइज पर निरंतर प्लेबैक), AI लाइवनेस व 3D एंटी-स्पूफिंग ब्लिंक गार्ड (फोटो/स्क्रीन से टोकन पूर्ण ब्लॉक), एंटी-फेक GPS सुरक्षा (नकली लोकेशन अवरोध), आश्रम हॉल TV ज़ीरो-ब्लैकआउट सुरक्षित मोड, AI स्मार्ट कतार वेटिंग टाइम व संभावित दर्शन समय (Live ETA), YouTube लाइव स्ट्रीम डिटेक्टर व बाल स्वरूप आरती कार्ड, 7-दिवसीय ऑटो-रोलिंग एन्क्रिप्टेड SQLite बैकअप व प्रशासनिक ऑडिट लेज़र।",
-  "update_notes_english": "v2.46.0: 100% Elimination of Core Architectural Weaknesses - Background Foreground Media Service (plays through lock screen/minimize), AI Liveness & 3D Anti-Spoofing (blocks photos/screens), Anti-Fake GPS Security Guard, Ashram Hall TV Zero-Blackout Safe Mode, AI Smart Queue Waiting Time (Live ETA), YouTube Live Stream Detector & Offline Aarti Card, 7-Day Rolling Encrypted Database Auto-Backup & Super Admin Audit Trail Ledger.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.46.0/ShriBalajiKripaDham-v2.46.0.apk",
+  "latest_version_code": 65,
+  "version_code": 65,
+  "latest_version_name": "2.47.0",
+  "version_name": "2.47.0",
+  "update_notes_hindi": "v2.47.0: श्री बालाजी दैनिक वैदिक पंचांग, शुभ मुहूर्त व चौघड़िया (तिथि, नक्षत्र, राहुकाल, अभिजित व अमृत चौघड़िया - 100% स्वतः अद्यतन) एवं सम्पूर्ण पावन ग्रंथ संग्रह (सम्पूर्ण सुंदरकाण्ड 60 दोहे, श्री हनुमान बाहुक 44 पद समस्त रोग निवारण, संकटमोचन हनुमानाष्टक - 100% ऑफ़लाइन, बड़े अक्षरों व सरल हिंदी भावार्थ सहित)।",
+  "update_notes_english": "v2.47.0: Shri Balaji Daily Vedic Panchang & Choghadiya (Tithi, Nakshatra, Rahu Kaal, Abhijit & Amrit Choghadiya - 100% Auto-Updated) & Complete Offline Sacred Texts (Complete Sundarkand 60 Dohas, Shri Hanuman Bahuk 44 Verses for disease relief, Sankatmochan Hanumanashtak - 100% Offline with large text and Hindi meanings).",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.47.0/ShriBalajiKripaDham-v2.47.0.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

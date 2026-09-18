@@ -19,6 +19,8 @@ import com.example.shribalajikripadham.ui.token.FaceTokenRegistrationScreen
 import com.example.shribalajikripadham.ui.token.TokenRegistrationScreen
 import com.example.shribalajikripadham.ui.yatra.BalajiYatraScreen
 import com.example.shribalajikripadham.ui.yatra.YatraExpenseScreen
+import com.example.shribalajikripadham.ui.panchang.PanchangScreen
+import com.example.shribalajikripadham.ui.granth.SacredGranthScreen
 
 enum class AppScreen {
     SPLASH,
@@ -31,7 +33,9 @@ enum class AppScreen {
     ASHRAM_INFO,
     PARCHAS,
     LIVE_DARBAR,
-    HALL_DISPLAY
+    HALL_DISPLAY,
+    PANCHANG,
+    SACRED_GRANTH
 }
 
 @Composable
@@ -114,6 +118,8 @@ fun MainNavigation(
                 onNavigateToAdmin = { navigateTo(AppScreen.ADMIN) },
                 onNavigateToParchas = { navigateTo(AppScreen.PARCHAS) },
                 onNavigateToLiveDarbar = { navigateTo(AppScreen.LIVE_DARBAR) },
+                onNavigateToPanchang = { navigateTo(AppScreen.PANCHANG) },
+                onNavigateToSacredGranth = { navigateTo(AppScreen.SACRED_GRANTH) },
                 onNavigateToYatraExpenses = {
                     if (settings.isYatraServiceEnabled && settings.canDevoteeViewYatraDiary) {
                         navigateTo(AppScreen.YATRA_EXPENSES)
@@ -198,6 +204,16 @@ fun MainNavigation(
             )
 
             AppScreen.HALL_DISPLAY -> com.example.shribalajikripadham.ui.tv.AshramHallDisplayScreen(
+                isHindi = isHindi,
+                onBack = { navigateBack() }
+            )
+
+            AppScreen.PANCHANG -> PanchangScreen(
+                isHindi = isHindi,
+                onBack = { navigateBack() }
+            )
+
+            AppScreen.SACRED_GRANTH -> SacredGranthScreen(
                 isHindi = isHindi,
                 onBack = { navigateBack() }
             )

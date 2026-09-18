@@ -134,6 +134,8 @@ fun HomeScreen(
     onNavigateToParchas: () -> Unit = {},
     onNavigateToYatraExpenses: () -> Unit = {},
     onNavigateToLiveDarbar: () -> Unit = {},
+    onNavigateToPanchang: () -> Unit = {},
+    onNavigateToSacredGranth: () -> Unit = {},
     onToggleLanguage: () -> Unit
 ) {
     val context = LocalContext.current
@@ -1290,6 +1292,20 @@ fun HomeScreen(
                 )
                 Spacer(modifier = Modifier.height(sectionSpacing))
             }
+
+            // 🕉️ LIVE VEDIC PANCHANG & CHOGHADIYA CARD
+            DevoteePanchangQuickCard(
+                isHindi = isHindi,
+                onNavigateToPanchang = onNavigateToPanchang
+            )
+            Spacer(modifier = Modifier.height(sectionSpacing))
+
+            // 📖 SACRED GRANTHA (SUNDARKAND, BAHUK, HANUMANASHTAK) CARD
+            DevoteeSacredGranthQuickCard(
+                isHindi = isHindi,
+                onNavigateToSacredGranth = onNavigateToSacredGranth
+            )
+            Spacer(modifier = Modifier.height(sectionSpacing))
 
             // RENDERING BASED ON ACTIVE UI LAYOUT (10 COMPLETE UI LOOKS)
             when (activeLayout) {
@@ -3742,6 +3758,209 @@ fun DevoteeSmartQueueEtaCard(
                         fontWeight = FontWeight.Bold,
                         color = MaroonPrimary
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DevoteePanchangQuickCard(
+    isHindi: Boolean,
+    onNavigateToPanchang: () -> Unit
+) {
+    val panchangData = remember { com.example.shribalajikripadham.panchang.VedicPanchangEngine.calculatePanchang() }
+    val currentChog = panchangData.currentChoghadiya
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, AmberGold.copy(alpha = 0.5f)),
+        elevation = CardDefaults.cardElevation(4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onNavigateToPanchang() }
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🕉️", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isHindi) "दैनिक पंचांग व शुभ चौघड़िया" else "Daily Panchang & Choghadiya",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaroonPrimary
+                    )
+                }
+
+                Surface(
+                    color = Color(0xFFE8F5E9),
+                    shape = RoundedCornerShape(6.dp),
+                    border = BorderStroke(0.5.dp, Color(0xFFA5D6A7))
+                ) {
+                    Text(
+                        text = if (isHindi) "१०८% स्वतः अद्यतन" else "Auto-Updated",
+                        fontSize = 10.sp,
+                        color = Color(0xFF2E7D32),
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            // Date & Tithi summary
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${panchangData.dayOfWeekHindi} • ${panchangData.tithiHindi}",
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF4A148C)
+                )
+                Text(
+                    text = "नक्षत्र: ${panchangData.nakshatraHindi}",
+                    fontSize = 11.5.sp,
+                    color = Color.DarkGray,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // Quick Muhurat line
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "⚠️ राहुकाल: ${panchangData.rahuKaalTime}",
+                    fontSize = 11.sp,
+                    color = Color(0xFFC62828),
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (currentChog != null) {
+                    Text(
+                        text = "सक्रिय: ${currentChog.nature.labelHindi.split(" ")[0]} 🟢",
+                        fontSize = 11.sp,
+                        color = Color(0xFF2E7D32),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // View full button line
+            Surface(
+                color = AmberGold.copy(alpha = 0.12f),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isHindi) "आज का सम्पूर्ण पंचांग, चौघड़िया व आरती समय देखें" else "View Full Panchang, Choghadiya & Aarti Times",
+                        fontSize = 11.5.sp,
+                        color = MaroonPrimary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text("➔", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DevoteeSacredGranthQuickCard(
+    isHindi: Boolean,
+    onNavigateToSacredGranth: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDF5)),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Color(0xFFD7CCC8)),
+        elevation = CardDefaults.cardElevation(4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onNavigateToSacredGranth() }
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("📖", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isHindi) "पावन ग्रंथ (सुंदरकाण्ड, बाहुक, हनुमानाष्टक)" else "Sacred Texts (Sundarkand, Bahuk)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaroonPrimary
+                    )
+                }
+
+                Surface(
+                    color = Color(0xFFFFF3E0),
+                    shape = RoundedCornerShape(6.dp),
+                    border = BorderStroke(0.5.dp, Color(0xFFFFB74D))
+                ) {
+                    Text(
+                        text = if (isHindi) "१०८% ऑफ़लाइन" else "100% Offline",
+                        fontSize = 10.sp,
+                        color = Color(0xFFE65100),
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = if (isHindi)
+                    "• सम्पूर्ण सुन्दरकाण्ड (६० दोहे अर्थ सहित)\n• श्री हनुमान बाहुक (४४ पद - समस्त रोग निवारण)\n• संकटमोचन हनुमानाष्टक (८ छंद भावार्थ सहित)"
+                else
+                    "• Complete Sundarkand (60 Dohas with meanings)\n• Shri Hanuman Bahuk (44 Verses - Disease Relief)\n• Sankatmochan Hanumanashtak (8 Stanzas)",
+                fontSize = 12.sp,
+                color = Color(0xFF424242),
+                lineHeight = 17.sp
+            )
+
+            Surface(
+                color = MaroonPrimary,
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isHindi) "बड़े अक्षरों में पावन पाठ पढ़ें (ऑटो-स्क्रॉल सहित)" else "Read Sacred Texts (Large Text & Auto-Scroll)",
+                        fontSize = 11.5.sp,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text("➔", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AmberGold)
                 }
             }
         }
