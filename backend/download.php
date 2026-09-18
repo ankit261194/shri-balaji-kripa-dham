@@ -1,29 +1,19 @@
 <?php
 // ==============================================================================
 // श्री बालाजी कृपा धाम (ग्राम डूँगरा जाट) - आधिकारिक हाई-स्पीड APK डाउनलोड सेवा
-// High-Speed Direct Ashram Server APK Delivery Engine (v2.50.0)
+// High-Speed Direct Ashram Server APK Delivery Engine (v2.54.0 Build 72)
 // ==============================================================================
 
-$version = "v2.50.0";
-$localReleaseApk = __DIR__ . '/downloads/ShriBalajiKripaDham-release.apk';
-$localVersionApk = __DIR__ . "/downloads/ShriBalajiKripaDham-{$version}.apk";
+$cdnUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.54.0/ShriBalajiKripaDham-release.apk";
+header("Location: " . $cdnUrl, true, 302);
+exit;
 
-// Determine best local file candidate
-$targetFile = null;
-if (file_exists($localReleaseApk) && filesize($localReleaseApk) > 10000000) {
-    $targetFile = $localReleaseApk;
-} elseif (file_exists($localVersionApk) && filesize($localVersionApk) > 10000000) {
-    $targetFile = $localVersionApk;
-}
-
-// Fallback GitHub release CDN url
-$githubFallback = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/{$version}/ShriBalajiKripaDham-release.apk";
-
-// If stream requested or direct client download without static server redirect
-if (isset($_GET['stream']) && $targetFile) {
+// 1. Direct High-Speed Download Delivery if file exists on server
+if ($targetFile && file_exists($targetFile)) {
     $filesize = filesize($targetFile);
-    $filename = basename($targetFile);
+    $filename = "ShriBalajiKripaDham-release.apk";
 
+    // Set headers for APK download
     header("Content-Type: application/vnd.android.package-archive");
     header("Content-Disposition: attachment; filename=\"{$filename}\"");
     header("Accept-Ranges: bytes");
@@ -61,18 +51,35 @@ if (isset($_GET['stream']) && $targetFile) {
     exit;
 }
 
-// Redirect to direct static file path for maximum web server sendfile speed
+// 2. If APK is temporarily pending upload on server, show clean download portal
 $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . ($_SERVER['HTTP_HOST'] ?? 'shribalajikripadham.online');
-if ($targetFile) {
-    $publicPath = "{$baseUrl}/downloads/" . basename($targetFile);
-    header("HTTP/1.1 302 Found");
-    header("Location: " . $publicPath);
-    header("Cache-Control: no-cache, must-revalidate");
-    exit;
-}
-
-// Fallback to GitHub Release
-header("HTTP/1.1 302 Found");
-header("Location: " . $githubFallback);
-header("Cache-Control: no-cache, must-revalidate");
-exit;
+?>
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>श्री बालाजी कृपा धाम - ऐप डाउनलोड (v2.51.0)</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #FFF8E7; color: #212121; text-align: center; padding: 40px 20px; }
+        .card { max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 20px; padding: 30px; box-shadow: 0 8px 30px rgba(128,0,0,0.12); border: 2px solid #FFD54F; }
+        h1 { color: #800000; font-size: 1.5rem; margin-bottom: 8px; }
+        p { color: #424242; font-size: 0.95rem; line-height: 1.6; }
+        .btn { display: inline-block; background: #FF8F00; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 30px; font-weight: bold; font-size: 1.1rem; margin-top: 15px; box-shadow: 0 4px 15px rgba(255,143,0,0.4); }
+        .btn:hover { background: #E65100; }
+        .note { font-size: 0.82rem; color: #757575; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div style="font-size: 3rem; margin-bottom: 10px;">🚩</div>
+        <h1>श्री बालाजी कृपा धाम</h1>
+        <p><strong>आधिकारिक मोबाइल ऐप (v2.51.0 - Build 69)</strong></p>
+        <p>रविवार दरबार टोकन, लाइव दर्शन, आरती व संपूर्ण आश्रम सेवाओं के लिए ऐप डाउनलोड करें।</p>
+        <a href="<?= $baseUrl ?>/downloads/ShriBalajiKripaDham-release.apk" class="btn">📲 ऐप डाउनलोड करें (Direct APK)</a>
+        <div class="note">
+            यदि डाउनलोड स्वतः शुरू न हो, तो कृपया कुछ क्षण बाद पुनः प्रयास करें अथवा आश्रम व्यवस्थापक से संपर्क करें।
+        </div>
+    </div>
+</body>
+</html>
