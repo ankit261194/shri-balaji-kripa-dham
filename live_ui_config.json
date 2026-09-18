@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-18T16:02:25Z",
+  "updated_at": "2026-09-18T18:20:13Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -32,7 +32,7 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1789747345192
+    "updated_at": 1789755613679
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -55,6 +55,12 @@
     "ashram_upi_name": "Shri Balaji Kripa Dham",
     "custom_upi_qr_uri": "",
     "bus_seat_fare_amount": 1,
+    "is_arzi_ledger_live": true,
+    "badi_arzi_rate": 100,
+    "chhoti_arzi_rate": 50,
+    "can_admin_view_arzi_ledger": true,
+    "can_devotee_view_arzi_ledger": false,
+    "can_devotee_view_yatra_diary": false,
     "banner_title": "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट",
     "banner_subtitle": "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार",
     "banner_photo_uri": "",
