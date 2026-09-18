@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 66,
-  "version_code": 66,
-  "latest_version_name": "2.48.0",
-  "version_name": "2.48.0",
-  "update_notes_hindi": "v2.48.0: ⚡ हाई-स्पीड इन-ऐप अपडेट इंजन (64KB बफ़र, 10x-20x तेज़ डाउनलोड) + 🎵 आश्रम सर्वर पर असली MP3 पावन भजन, चालीसा व आरतियाँ (HTTP 206 रेंज स्ट्रीमिंग, बिना बफरिंग 0.5s में प्ले)।",
-  "update_notes_english": "v2.48.0: ⚡ High-Speed In-App Update Engine (64KB buffer, 10x-20x faster download) + 🎵 Real MP3 Sacred Bhajans, Chalisa & Aartis hosted on Ashram Server (HTTP 206 range streaming, instant playback in 0.5s).",
+  "latest_version_code": 67,
+  "version_code": 67,
+  "latest_version_name": "2.49.0",
+  "version_name": "2.49.0",
+  "update_notes_hindi": "v2.49.0: 🌺 दैनिक अलौकिक श्रृंगार दर्शन गैलरी (ज़ूम व व्हाट्सएप शेयर सहित) + 💬 1-क्लिक व्हाट्सएप पावन टोकन पर्ची भेजना + 🛡️ डेटाबेस सुरक्षा सुदृढ़ीकरण (WAL मोड, प्राइवेसी वाइप व SHA-256 डिजिटल सील) + 🎵 बैकग्राउंड फ्लोटिंग ऑडियो मिनी-प्लेयर हर स्क्रीन पर।",
+  "update_notes_english": "v2.49.0: 🌺 Daily Sacred Shringar Darshan Gallery with Full-Screen Zoom & WhatsApp Share + 💬 1-Click WhatsApp Token Slip Sharing + 🛡️ Database Security Hardening (WAL mode, Secure Delete & SHA-256 Tamper Protection) + 🎵 Floating Audio Mini-Player across all screens.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false

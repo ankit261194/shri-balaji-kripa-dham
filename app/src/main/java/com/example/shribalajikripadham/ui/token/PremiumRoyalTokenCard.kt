@@ -427,7 +427,42 @@ fun PremiumRoyalTokenCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            // 5.5. 💬 1-CLICK WHATSAPP TOKEN SLIP SHARING (OPTION 5)
+            Button(
+                onClick = {
+                    com.example.shribalajikripadham.util.TokenCardExporter.shareTokenViaWhatsApp(
+                        context = context,
+                        token = token,
+                        settings = settings,
+                        existingUri = savedImageUri
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF25D366),
+                    contentColor = Color.White
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text("💬", fontSize = 18.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "WhatsApp पर पावन पर्ची भेजें" else "Send Token Slip on WhatsApp",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // 6. ACTION BUTTONS: View in Gallery, Share, Back to Home
             Row(

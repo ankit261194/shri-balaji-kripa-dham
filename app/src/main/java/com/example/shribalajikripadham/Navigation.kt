@@ -6,8 +6,11 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.example.shribalajikripadham.theme.SacredTheme
@@ -76,7 +79,8 @@ fun MainNavigation(
         navigateBack()
     }
 
-    AnimatedContent(
+    Box(modifier = Modifier.fillMaxSize()) {
+        AnimatedContent(
         targetState = currentScreen,
         transitionSpec = { fadeIn() togetherWith fadeOut() },
         label = "ScreenTransition",
@@ -219,4 +223,31 @@ fun MainNavigation(
             )
         }
     }
+
+    // Persistent Floating Bhajan Mini-Player (Active across all screens when playing, except Live Darbar and Splash)
+    val currentTrackIdx by com.example.shribalajikripadham.service.BhajanAudioService.currentTrackIndex.collectAsState()
+    val isPlayingAudio by com.example.shribalajikripadham.service.BhajanAudioService.isPlaying.collectAsState()
+    val audioTitle by com.example.shribalajikripadham.service.BhajanAudioService.currentTitle.collectAsState()
+    val isBufferingAudio by com.example.shribalajikripadham.service.BhajanAudioService.isBuffering.collectAsState()
+
+    if (currentTrackIdx >= 0 && currentScreen != AppScreen.LIVE_DARBAR && currentScreen != AppScreen.SPLASH) {
+        com.example.shribalajikripadham.ui.common.FloatingBhajanMiniPlayer(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding(),
+            title = audioTitle,
+            isPlaying = isPlayingAudio,
+            isBuffering = isBufferingAudio,
+            onPlayPauseToggle = {
+                com.example.shribalajikripadham.service.BhajanAudioService.togglePlayPause(context)
+            },
+            onClose = {
+                com.example.shribalajikripadham.service.BhajanAudioService.stopPlayback(context)
+            },
+            onClick = {
+                navigateTo(AppScreen.LIVE_DARBAR)
+            }
+        )
+    }
+}
 }

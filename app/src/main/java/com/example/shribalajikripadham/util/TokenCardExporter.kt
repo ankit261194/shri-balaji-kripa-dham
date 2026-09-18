@@ -2,6 +2,7 @@ package com.example.shribalajikripadham.util
 
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.graphics.*
 import android.media.MediaScannerConnection
 import android.net.Uri
@@ -360,7 +361,13 @@ object TokenCardExporter {
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        val verificationCode = "SBKD-PASS-TOKEN-${token.tokenNumber}-HASH-${Math.abs(token.createdAt.hashCode()).toString().take(6)}"
+        val integritySig = com.example.shribalajikripadham.data.local.DatabaseHelper.generateTokenIntegrityHash(
+            token.tokenNumber,
+            token.patientName,
+            token.darbarDate,
+            token.createdAt
+        )
+        val verificationCode = "SBKD-PASS-TOKEN-${token.tokenNumber}-SHA256-${integritySig}"
         canvas.drawText(verificationCode, (CARD_WIDTH / 2).toFloat(), 1345f, hashPaint)
 
         val cautionPaint = Paint().apply {
@@ -383,6 +390,119 @@ object TokenCardExporter {
         canvas.drawText("Developer: Ankit Chaudhary (Anti Gravity) • Native Android Architecture", (CARD_WIDTH / 2).toFloat(), 1480f, creditPaint)
 
         return bitmap
+    }
+
+    /**
+     * Exports the high-resolution Token Card bitmap to the app cache directory for instant sharing.
+     */
+    fun exportTokenToCache(
+        context: Context,
+        token: Token,
+        settings: AshramSettings
+    ): Uri? {
+        return try {
+            val bitmap = renderRoyalTokenCardBitmap(context, token, settings)
+            val shareDir = File(context.cacheDir, "token_shares")
+            if (!shareDir.exists()) {
+                shareDir.mkdirs()
+            }
+            val shareFile = File(shareDir, "ShriBalaji_Token_${token.tokenNumber}.png")
+            FileOutputStream(shareFile).use { fos ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+                fos.flush()
+            }
+            androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                shareFile
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * 1-Click Direct WhatsApp Share for Token Slip (Option 5)
+     * Directly opens WhatsApp with the high-resolution token card image and formatted caption.
+     * Gracefully falls back to WhatsApp Business or system share chooser if not found.
+     */
+    fun shareTokenViaWhatsApp(
+        context: Context,
+        token: Token,
+        settings: AshramSettings,
+        existingUri: Uri? = null
+    ) {
+        try {
+            val uri = existingUri ?: exportTokenToCache(context, token, settings)
+            val sdfDate = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
+            val formattedTimestamp = sdfDate.format(Date(token.createdAt))
+
+            val shareCaption = """
+🚩 *श्री बालाजी कृपा धाम, डूँगरा जाट* 🚩
+*परम पूज्य गुरुजी तेजवीर सिंह जी*
+══════════════════════════
+🎫 *रविवार दर्शन पावन पर्ची*
+🔢 *टोकन क्रमांक:* #${token.tokenNumber}
+👤 *भक्त का नाम:* ${token.patientName}
+📍 *आगमन स्थान:* ${token.city}
+📅 *दरबार तिथि:* ${token.darbarDate}
+⏰ *समय:* $formattedTimestamp
+══════════════════════════
+🙏 *भूत-प्रेत व असाध्य मानसिक समस्याओं का पूर्णतः निःशुल्क इलाज, केवल पूजा-पाठ द्वारा।*
+🌐 आश्रम लाइव दर्शन व टोकन सेवा हेतु ऐप डाउनलोड करें:
+https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk
+            """.trimIndent()
+
+            val whatsappIntent = Intent(Intent.ACTION_SEND).apply {
+                if (uri != null) {
+                    type = "image/png"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                } else {
+                    type = "text/plain"
+                }
+                putExtra(Intent.EXTRA_TEXT, shareCaption)
+                setPackage("com.whatsapp")
+            }
+
+            try {
+                context.startActivity(whatsappIntent)
+            } catch (e: Exception) {
+                // Try WhatsApp Business
+                try {
+                    val businessIntent = Intent(Intent.ACTION_SEND).apply {
+                        if (uri != null) {
+                            type = "image/png"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        } else {
+                            type = "text/plain"
+                        }
+                        putExtra(Intent.EXTRA_TEXT, shareCaption)
+                        setPackage("com.whatsapp.w4b")
+                    }
+                    context.startActivity(businessIntent)
+                } catch (e2: Exception) {
+                    // Fallback to standard share chooser
+                    val chooserIntent = Intent(Intent.ACTION_SEND).apply {
+                        if (uri != null) {
+                            type = "image/png"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        } else {
+                            type = "text/plain"
+                        }
+                        putExtra(Intent.EXTRA_SUBJECT, "श्री बालाजी कृपा धाम टोकन #${token.tokenNumber}")
+                        putExtra(Intent.EXTRA_TEXT, shareCaption)
+                    }
+                    context.startActivity(Intent.createChooser(chooserIntent, "पावन पर्ची शेयर करें"))
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "शेयर करने में त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     /**

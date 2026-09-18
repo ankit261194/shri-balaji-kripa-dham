@@ -1307,6 +1307,13 @@ fun HomeScreen(
             )
             Spacer(modifier = Modifier.height(sectionSpacing))
 
+            // 🌺 दैनिक अलौकिक श्रृंगार दर्शन (OPTION 2: DAILY SACRED DARSHAN GALLERY)
+            DailyDarshanQuickCard(
+                isHindi = isHindi,
+                ashramSettings = settings
+            )
+            Spacer(modifier = Modifier.height(sectionSpacing))
+
             // RENDERING BASED ON ACTIVE UI LAYOUT (10 COMPLETE UI LOOKS)
             when (activeLayout) {
                 AppUiLayout.CLASSIC_DARBAR -> {

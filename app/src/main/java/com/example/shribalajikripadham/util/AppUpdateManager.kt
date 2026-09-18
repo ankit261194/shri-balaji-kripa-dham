@@ -397,9 +397,9 @@ object AppUpdateManager {
                 candidateUrls.add(finalUrl.trim())
             }
             val fallbacks = listOf(
-                "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-v2.48.0.apk",
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.48.0/ShriBalajiKripaDham-release.apk",
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.48.0/ShriBalajiKripaDham-v2.48.0.apk",
+                "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-v2.49.0.apk",
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.49.0/ShriBalajiKripaDham-release.apk",
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.49.0/ShriBalajiKripaDham-v2.49.0.apk",
                 "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk",
                 DEFAULT_APK_URL
             )
@@ -432,7 +432,7 @@ object AppUpdateManager {
                             defaultUseCaches = false
                             instanceFollowRedirects = true
                             requestMethod = "GET"
-                            setRequestProperty("User-Agent", "ShriBalajiKripaDham-Updater/2.48.0")
+                            setRequestProperty("User-Agent", "ShriBalajiKripaDham-Updater/2.49.0")
                             setRequestProperty("Accept-Encoding", "identity")
                             setRequestProperty("Connection", "Keep-Alive")
                             setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -464,11 +464,11 @@ object AppUpdateManager {
                     }
 
                     val totalBytes = conn.contentLength.toLong()
-                    val inputStream = BufferedInputStream(conn.inputStream, 65536)
-                    val outputStream = FileOutputStream(targetFile)
+                    val inputStream = BufferedInputStream(conn.inputStream, 131072)
+                    val outputStream = java.io.BufferedOutputStream(FileOutputStream(targetFile), 131072)
 
-                    // 64 KB high-speed buffer: drastically reduces I/O context switching and CPU overhead
-                    val buffer = ByteArray(65536)
+                    // 128 KB ultra-high-speed buffer: maximizes TCP throughput and minimizes disk I/O
+                    val buffer = ByteArray(131072)
                     var bytesRead: Int
                     var downloadedBytes: Long = 0
                     var lastReportedPercent = -1
