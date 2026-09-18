@@ -1,13 +1,12 @@
 {
-  "latest_version_code": 67,
-  "version_code": 67,
-  "latest_version_name": "2.49.0",
-  "version_name": "2.49.0",
-  "is_force": false,
-  "is_force_update": false,
+  "latest_version_code": 72,
+  "version_code": 72,
+  "latest_version_name": "2.54.0",
+  "version_name": "2.54.0",
+  "is_force": true,
+  "is_force_update": true,
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
-  "update_notes_hindi": "v2.49.0: 🌺 दैनिक अलौकिक श्रृंगार दर्शन गैलरी (ज़ूम व व्हाट्सएप शेयर सहित) + 💬 1-क्लिक व्हाट्सएप पावन टोकन पर्ची भेजना + 🛡️ डेटाबेस सुरक्षा सुदृढ़ीकरण (WAL मोड, प्राइवेसी वाइप व SHA-256 डिजिटल सील) + 🎵 बैकग्राउंड फ्लोटिंग ऑडियो मिनी-प्लेयर हर स्क्रीन पर।",
-  "update_notes_english": "v2.49.0: 🌺 Daily Sacred Shringar Darshan Gallery with Full-Screen Zoom & WhatsApp Share + 💬 1-Click WhatsApp Token Slip Sharing + 🛡️ Database Security Hardening (WAL mode, Secure Delete & SHA-256 Tamper Protection) + 🎵 Floating Audio Mini-Player across all screens.",
-  "release_date": "2026-09-18",
-  "sha256": "0617796C826081B7C9CD42A6B5614C65D18F2F78D681258FFA1CC5DA9452CFA9"
+  "update_notes_hindi": "v2.54.0: 📿 15 सम्पूर्ण प्रामाणिक आरतियाँ व चालीसाएँ (दुर्गा व विंध्येश्वरी चालीसा सहित) + ⚡ 0.0s बफरिंग हिडन ऑडियो ऑटो-कैश (.sacred_vani) + 📱 4-पेज साइड-टॉगल आधुनिक UI (नो अंतहीन स्क्रॉल) + 🌐 वेबसाइट लाइव एडिटर + 👁️ गहरा व सुस्पष्ट बोल्ड टेक्स्ट।",
+  "update_notes_english": "v2.54.0: 📿 15 Complete Authentic Aartis & Chalisas (incl. Durga & Vindheshwari) + ⚡ 0.0s Buffering Hidden Audio Cache (.sacred_vani) + 📱 4-Page Side-Toggle UI + 🌐 Website Live Editor + 👁️ High Contrast Bold Typography.",
+  "release_date": "2026-09-18"
 }
