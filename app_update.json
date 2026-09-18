@@ -1,13 +1,13 @@
 {
-  "latest_version_code": 67,
-  "version_code": 67,
-  "latest_version_name": "2.49.0",
-  "version_name": "2.49.0",
+  "latest_version_code": 68,
+  "version_code": 68,
+  "latest_version_name": "2.50.0",
+  "version_name": "2.50.0",
   "is_force": false,
   "is_force_update": false,
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
-  "update_notes_hindi": "v2.49.0: 🌺 दैनिक अलौकिक श्रृंगार दर्शन गैलरी (ज़ूम व व्हाट्सएप शेयर सहित) + 💬 1-क्लिक व्हाट्सएप पावन टोकन पर्ची भेजना + 🛡️ डेटाबेस सुरक्षा सुदृढ़ीकरण (WAL मोड, प्राइवेसी वाइप व SHA-256 डिजिटल सील) + 🎵 बैकग्राउंड फ्लोटिंग ऑडियो मिनी-प्लेयर हर स्क्रीन पर।",
-  "update_notes_english": "v2.49.0: 🌺 Daily Sacred Shringar Darshan Gallery with Full-Screen Zoom & WhatsApp Share + 💬 1-Click WhatsApp Token Slip Sharing + 🛡️ Database Security Hardening (WAL mode, Secure Delete & SHA-256 Tamper Protection) + 🎵 Floating Audio Mini-Player across all screens.",
+  "update_notes_hindi": "v2.50.0: 🛡️ अखंड ज़ीरो-टच ऑटो-बैकअप (बिना किसी बटन के स्वतः Google Drive व क्लाउड में हर सेकंड डेटा सुरक्षा) + 🔄 शून्य डाउनटाइम माइग्रेशन इंजन (नई होस्टिंग पर 1 सेकंड में पूर्ण प्रोजेक्ट शिफ्ट) + 📺 ऐप के अंदर लाइव व पावन दर्शन वीडियो प्लेयर + 👑 सुपरएडमिन अखंड डेटा वॉल्ट।",
+  "update_notes_english": "v2.50.0: 🛡️ Autonomous Zero-Touch Cloud & Google Drive Auto-Sync (automatic real-time database safety without pressing buttons) + 🔄 Zero-Downtime Server Migration Engine (shift entire project to new hosting in 1-second) + 📺 In-App Sacred Live Video Player + 👑 Superadmin Dedicated Data Vault.",
   "release_date": "2026-09-18",
-  "sha256": "0617796C826081B7C9CD42A6B5614C65D18F2F78D681258FFA1CC5DA9452CFA9"
+  "sha256": "4E5CC75A5E92B968F80A9457B218EE8A7764F0B21AB0C75E70ABBF2876564CF4"
 }

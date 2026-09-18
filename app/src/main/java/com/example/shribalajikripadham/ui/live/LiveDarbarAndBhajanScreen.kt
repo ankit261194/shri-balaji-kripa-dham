@@ -62,7 +62,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Shri Hanuman Chalisa",
         subtitleHindi = "जय हनुमान ज्ञान गुन सागर • संकट कटे मिटे सब पीरा",
         durationText = "09:42",
-        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=hanuman_chalisa",
+        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=hanuman_chalisa",
         youtubeSearchQuery = "Shri Hanuman Chalisa Gulshan Kumar Hariharan",
         lyricsHindi = """
             ॥ दोहा ॥
@@ -123,7 +123,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Shri Balaji Maha Aarti",
         subtitleHindi = "आरती कीजै श्री बालाजी की • कलिकाल में मंगलकारी",
         durationText = "06:15",
-        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=balaji_aarti",
+        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=balaji_aarti",
         youtubeSearchQuery = "Shri Balaji Aarti Kije Hanuman Lala Ki",
         lyricsHindi = """
             ॥ श्री बालाजी कृपा धाम पावन महाआरती ॥
@@ -149,7 +149,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Bajrang Baan",
         subtitleHindi = "निश्चय प्रेम प्रतीति ते बिनय करै सनमान",
         durationText = "07:30",
-        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=bajrang_baan",
+        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=bajrang_baan",
         youtubeSearchQuery = "Bajrang Baan Rasraj Ji",
         lyricsHindi = """
             ॥ दोहा ॥
@@ -197,7 +197,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Sankat Mochan Hanumanashtak",
         subtitleHindi = "बाल समय रवि भक्ष लियो तब तीनहुं लोक भयो अंधियारों",
         durationText = "05:48",
-        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=sankatmochan",
+        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=sankatmochan",
         youtubeSearchQuery = "Sankat Mochan Hanuman Ashtak Hariharan",
         lyricsHindi = """
             बाल समय रवि भक्ष लियो तब, तीनहुं लोक भयो अंधियारों।
@@ -250,7 +250,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Aarti Kije Hanuman Lala Ki",
         subtitleHindi = "दुष्ट दलन रघुनाथ कला की • जाके बल से गिरिवर कांपै",
         durationText = "05:12",
-        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=aarti_kije",
+        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=aarti_kije",
         youtubeSearchQuery = "Aarti Kije Hanuman Lala Ki Anuradha Paudwal",
         lyricsHindi = """
             आरती कीजै हनुमान लला की। दुष्ट दलन रघुनाथ कला की॥
@@ -279,7 +279,7 @@ val SACRED_TRACKS = listOf(
         titleEnglish = "Shri Ramachandra Kripalu",
         subtitleHindi = "हरन भवभय दारुणं • नवकंज लोचन कंज मुख",
         durationText = "06:35",
-        audioUrl = "https://shribalajikripadham.online/backend/api/stream_audio.php?track=ram_stuti",
+        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=ram_stuti",
         youtubeSearchQuery = "Shri Ramchandra Kripalu Bhajuman Lata Mangeshkar",
         lyricsHindi = """
             श्रीरामचन्द्र कृपालु भजु मन हरण भवभय दारुणं।
@@ -483,9 +483,10 @@ fun LiveDarbarAndBhajanScreen(
                     }
                     val liveVideoUrl = if (rawChannelUrl.contains("/@")) "$rawChannelUrl/live" else rawChannelUrl
                     val isDarbarLive = ashramSettings.isDarbarActive && ashramSettings.isDarbarLiveNow
+                    var showInAppPlayer by remember { mutableStateOf(false) }
 
-                    if (isDarbarLive) {
-                        // 🟢 LIVE STREAM DETECTOR: Darbar is actively broadcasting!
+                    if (isDarbarLive || showInAppPlayer) {
+                        // 🟢 IN-APP HIGH-PERFORMANCE VIDEO PLAYER
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -523,39 +524,41 @@ fun LiveDarbarAndBhajanScreen(
                             }
                         }
 
-                        Spacer(Modifier.height(14.dp))
+                        Spacer(Modifier.height(10.dp))
 
-                        // 1-Click Open in Official YouTube App (100% Fail-Safe)
-                        Button(
-                            onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)).apply {
-                                    setPackage("com.google.android.youtube")
-                                }
-                                try {
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)))
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000)),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp)
+                        // In-App player controls
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("▶", fontSize = 18.sp, color = Color.White)
-                                Spacer(Modifier.width(8.dp))
-                                Text(
-                                    text = if (isHindi) "यूट्यूब ऐप में 1080p HD लाइव दर्शन खोलें" else "Watch in YouTube App (HD 1080p)",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = Color.White
-                                )
+                            OutlinedButton(
+                                onClick = { showInAppPlayer = false },
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(if (isHindi) "वीडियो बंद करें" else "Close Video", fontSize = 12.sp)
+                            }
+
+                            Button(
+                                onClick = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)).apply {
+                                        setPackage("com.google.android.youtube")
+                                    }
+                                    try {
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)))
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000)),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.weight(1.5f)
+                            ) {
+                                Text(if (isHindi) "▶ YouTube में खोलें" else "▶ Open in YouTube", fontSize = 12.sp, color = Color.White)
                             }
                         }
                     } else {
-                        // 🪔 DIVINE OFFLINE CARD: No broken/empty video frames!
+                        // 🪔 DIVINE DARBAR CARD: With Instant In-App Video Play Button!
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(20.dp),
@@ -569,6 +572,17 @@ fun LiveDarbarAndBhajanScreen(
                                     .padding(20.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
+                                Button(
+                                    onClick = { showInAppPlayer = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                                ) {
+                                    Text("📺 ऐप के अंदर लाइव व पावन दर्शन वीडियो चलाएं", fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+
+                                Spacer(Modifier.height(14.dp))
+
                                 Box(
                                     modifier = Modifier
                                         .size(76.dp)

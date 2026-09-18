@@ -10,7 +10,7 @@ downloads_dir = r'C:\Users\hp\Downloads'
 bundle_files = {}
 
 # 1. Root files
-root_files = ['.htaccess', 'download.php', 'index.php', 'schema.sql']
+root_files = ['.htaccess', 'download.php', 'index.php', 'schema.sql', 'version.json']
 for rf in root_files:
     p = os.path.join(backend_dir, rf)
     if os.path.exists(p):

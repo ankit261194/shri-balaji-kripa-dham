@@ -24,6 +24,7 @@ import com.example.shribalajikripadham.ui.yatra.BalajiYatraScreen
 import com.example.shribalajikripadham.ui.yatra.YatraExpenseScreen
 import com.example.shribalajikripadham.ui.panchang.PanchangScreen
 import com.example.shribalajikripadham.ui.granth.SacredGranthScreen
+import com.example.shribalajikripadham.ui.admin.DataVaultScreen
 
 enum class AppScreen {
     SPLASH,
@@ -38,7 +39,8 @@ enum class AppScreen {
     LIVE_DARBAR,
     HALL_DISPLAY,
     PANCHANG,
-    SACRED_GRANTH
+    SACRED_GRANTH,
+    DATA_VAULT
 }
 
 @Composable
@@ -188,7 +190,12 @@ fun MainNavigation(
             AppScreen.ADMIN -> AdminDashboardScreen(
                 isHindi = isHindi,
                 onBack = { navigateBack() },
-                onNavigateToHallDisplay = { navigateTo(AppScreen.HALL_DISPLAY) }
+                onNavigateToHallDisplay = { navigateTo(AppScreen.HALL_DISPLAY) },
+                onNavigateToDataVault = { navigateTo(AppScreen.DATA_VAULT) }
+            )
+
+            AppScreen.DATA_VAULT -> DataVaultScreen(
+                onNavigateBack = { navigateBack() }
             )
 
             AppScreen.ASHRAM_INFO -> AshramInfoScreen(

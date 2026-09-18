@@ -77,7 +77,8 @@ data class CreatedSevadarShareData(
 fun AdminDashboardScreen(
     isHindi: Boolean,
     onBack: () -> Unit,
-    onNavigateToHallDisplay: () -> Unit = {}
+    onNavigateToHallDisplay: () -> Unit = {},
+    onNavigateToDataVault: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val repository = remember { AshramRepository(context) }
@@ -1466,7 +1467,8 @@ fun AdminDashboardScreen(
                                         Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                                     }
                                 },
-                                onNavigateToHallDisplay = onNavigateToHallDisplay
+                                onNavigateToHallDisplay = onNavigateToHallDisplay,
+                                onNavigateToDataVault = onNavigateToDataVault
                             )
                         }
                         currentTabTitle == "मैनुअल टोकन" || currentTabTitle == "Manual" -> {
@@ -3208,7 +3210,8 @@ fun TokenQueueTab(
     onFillReservedToken: ((Int, String, String, String) -> Unit)? = null,
     onRejectReservedToken: ((Int) -> Unit)? = null,
     onPushAllTokensToGitHub: (() -> Unit)? = null,
-    onNavigateToHallDisplay: () -> Unit = {}
+    onNavigateToHallDisplay: () -> Unit = {},
+    onNavigateToDataVault: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -3380,6 +3383,16 @@ fun TokenQueueTab(
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Text("📺 स्मार्ट टीवी व आश्रम हॉल डिस्प्ले मोड (Open TV Board)", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = onNavigateToDataVault,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("🔐 अखंड डेटा वॉल्ट व ऑटो-बैकअप (Real-Time Cloud Vault)", fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
