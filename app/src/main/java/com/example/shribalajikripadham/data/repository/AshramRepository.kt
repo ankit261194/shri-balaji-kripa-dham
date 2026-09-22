@@ -804,11 +804,8 @@ class AshramRepository(context: Context) {
             checkCursor.close()
         }
 
-        if (isDevoteeRequest && city.trim().isBlank() && originAddress.trim().isBlank()) {
-            throw IllegalArgumentException("कृपया अपने गाँव या शहर का नाम अवश्य दर्ज करें।")
-        }
         val safeCity = if (city.isBlank()) {
-            if (originAddress.isNotBlank()) originAddress.trim() else "डूँगरा जाट (स्थानीय)"
+            if (originAddress.isNotBlank()) originAddress.trim() else "स्थानीय"
         } else city.trim()
         val safeOrigin = if (originAddress.isNotBlank()) originAddress.trim() else safeCity
 

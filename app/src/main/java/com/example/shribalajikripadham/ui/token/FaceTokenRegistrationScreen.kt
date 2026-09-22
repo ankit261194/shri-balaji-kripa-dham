@@ -154,7 +154,7 @@ fun FaceTokenRegistrationScreen(
 
     val distanceMeters = remember(userLatitude, userLongitude, settings) {
         if (userLatitude == 0.0 && userLongitude == 0.0) {
-            if (!settings.isGeofenceEnforced) 0.0 else 999999.0
+            if (!settings.isGeofenceEnforced) 0.0 else -1.0
         } else {
             GeofenceLocationManager.calculateDistanceMeters(
                 userLatitude, userLongitude,
@@ -1201,8 +1201,14 @@ fun FaceTokenRegistrationScreen(
                                                     return@launch
                                                 }
                                                 val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
-                                                val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: settings.latitude)
-                                                val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: settings.longitude)
+                                                val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: 0.0)
+                                                val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: 0.0)
+
+                                                if (settings.isGeofenceEnforced && (finalLat == 0.0 || finalLon == 0.0)) {
+                                                    errorMessage = if (isHindi) "⚠️ वैध जीपीएस लोकेशन नहीं मिली। कृपया GPS चालू करें और पुनः प्रयास करें।" else "Valid GPS location required."
+                                                    isSubmitting = false
+                                                    return@launch
+                                                }
 
                                                 val (token, updated) = repository.confirmFaceAndGenerateToken(
                                                     matchedProfile = match.profile,

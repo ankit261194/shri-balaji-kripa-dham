@@ -241,17 +241,6 @@ fun TokenRegistrationScreen(
             if (loc != null) {
                 userLatitude = loc.latitude
                 userLongitude = loc.longitude
-                if (city.isBlank() || originAddress.isBlank() || city == "डूँगरा जाट (स्थानीय)") {
-                    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                        val detectedPlace = GeofenceLocationManager.resolveVillageAndCity(context, loc.latitude, loc.longitude)
-                        if (detectedPlace.isNotBlank()) {
-                            withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                city = detectedPlace
-                                originAddress = detectedPlace
-                            }
-                        }
-                    }
-                }
             }
         }
     }
@@ -1017,8 +1006,8 @@ fun TokenRegistrationScreen(
                                 originAddress = it
                                 city = it
                             },
-                            label = { Text(text = if (isHindi) "कहाँ से आए हैं / कहाँ के निवासी हैं *" else "Resident Address / Origin *", fontWeight = FontWeight.SemiBold) },
-                            placeholder = { Text(text = if (isHindi) "उदा. डूँगरा जाट, बुलन्दशहर, खुर्जा, नोएडा, दिल्ली..." else "e.g. Dungra Jaat, Bulandshahr, Delhi...", color = Color(0xFF757575)) },
+                            label = { Text(text = if (isHindi) "गाँव / कस्बा / शहर (ऐच्छिक)" else "Village / Town / City (Optional)", fontWeight = FontWeight.SemiBold) },
+                            placeholder = { Text(text = if (isHindi) "उदा. अपना गाँव, कस्बा, मजरा या शहर का नाम लिखें..." else "e.g. Enter your village, town or city...", color = Color(0xFF757575)) },
                             textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
@@ -1259,15 +1248,6 @@ fun TokenRegistrationScreen(
                                                 if (loc != null) {
                                                     userLatitude = loc.latitude
                                                     userLongitude = loc.longitude
-                                                    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                                                        val detectedPlace = GeofenceLocationManager.resolveVillageAndCity(context, loc.latitude, loc.longitude)
-                                                        if (detectedPlace.isNotBlank()) {
-                                                            withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                                                if (city.isBlank() || city == "डूँगरा जाट (स्थानीय)") city = detectedPlace
-                                                                if (originAddress.isBlank() || originAddress == "डूँगरा जाट (स्थानीय)") originAddress = detectedPlace
-                                                            }
-                                                        }
-                                                    }
                                                 }
                                                 isRefreshingLocation = false
                                             }
@@ -1620,11 +1600,7 @@ fun TokenRegistrationScreen(
                                     errorMessage = if (isHindi) "कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।" else "Please enter valid 10-digit mobile number."
                                     return@Button
                                 }
-                                val devoteeVillageOrCity = originAddress.trim().ifEmpty { city.trim() }
-                                if (devoteeVillageOrCity.isBlank()) {
-                                    errorMessage = if (isHindi) "कृपया अपने गाँव या शहर का नाम अवश्य दर्ज करें।" else "Please enter your village or city name."
-                                    return@Button
-                                }
+                                val devoteeVillageOrCity = originAddress.trim().ifEmpty { city.trim() }.ifEmpty { if (isHindi) "स्थानीय" else "Local" }
 
                                 isSubmitting = true
                                 errorMessage = null

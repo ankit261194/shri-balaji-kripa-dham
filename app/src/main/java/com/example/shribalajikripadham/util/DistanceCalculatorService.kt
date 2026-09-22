@@ -348,20 +348,17 @@ object DistanceCalculatorService {
             }
         }
 
-        // 3. Fallback to Device GPS Coordinates ONLY if origin was empty or user explicitly requested GPS
+        // 3. Fallback to Device GPS Coordinates if town is unknown or query was GPS-based
         if (deviceLat != null && deviceLng != null && deviceLat > 0 && deviceLng > 0) {
-            val isGpsQuery = trimmed.isEmpty() || trimmed.contains("gps", ignoreCase = true) || trimmed.contains("स्थान", ignoreCase = true) || trimmed.contains("वर्तमान", ignoreCase = true)
-            if (isGpsQuery) {
-                val straightKm = haversineDistanceKm(deviceLat, deviceLng, DESTINATION_LAT, DESTINATION_LNG)
-                val roadEstimated = straightKm * 1.28f
-                val rounded = (round(roadEstimated * 10) / 10)
-                return@withContext DistanceResult(
-                    distanceKm = rounded,
-                    isEstimated = true,
-                    origin = if (trimmed.isNotEmpty()) trimmed else "वर्तमान GPS स्थान",
-                    destination = DESTINATION_NAME
-                )
-            }
+            val straightKm = haversineDistanceKm(deviceLat, deviceLng, DESTINATION_LAT, DESTINATION_LNG)
+            val roadEstimated = straightKm * 1.28f
+            val rounded = (round(roadEstimated * 10) / 10)
+            return@withContext DistanceResult(
+                distanceKm = rounded,
+                isEstimated = true,
+                origin = if (trimmed.isNotEmpty()) trimmed else "वर्तमान GPS स्थान",
+                destination = DESTINATION_NAME
+            )
         }
 
         return@withContext DistanceResult(
