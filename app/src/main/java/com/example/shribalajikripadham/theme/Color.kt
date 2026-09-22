@@ -18,8 +18,11 @@ val MaroonSurface = Color(0xFFFAF7F0)
 val SacredSurfaceLight = Color(0xFFFFFDF8)
 val SacredBackgroundLight = Color(0xFFFAF7F0)
 
-val TextPrimaryDark = Color(0xFF1E1E1E)
-val TextSecondaryDark = Color(0xFF5A5A5A)
+val TextPrimaryDark = Color(0xFF111111) // Jet Black High-Contrast
+val TextSecondaryDark = Color(0xFF222222) // Deep Charcoal High-Contrast
+val HighContrastTitle = Color(0xFF4A0000) // Deep Dark Maroon
+val HighContrastGold = Color(0xFFFFD700) // Bright Gold
+val HighContrastWhite = Color(0xFFFFFFFF) // Crisp Pure White
 
 // Status Colors
 val StatusInsideAshram = Color(0xFF2E7D32) // Forest Green

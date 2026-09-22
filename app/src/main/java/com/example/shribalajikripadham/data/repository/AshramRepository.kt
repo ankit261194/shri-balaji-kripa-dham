@@ -179,7 +179,7 @@ class AshramRepository(context: Context) {
             val fresh = getSettings()
             com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), fresh)
             try {
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh)
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh, getAllSevadars())
             } catch (e: Exception) {}
             try {
                 publishCurrentSettingsToGitHub()
@@ -804,7 +804,12 @@ class AshramRepository(context: Context) {
             checkCursor.close()
         }
 
-        val safeCity = if (city.isBlank()) "डूँगरा जाट (स्थानीय)" else city.trim()
+        if (isDevoteeRequest && city.trim().isBlank() && originAddress.trim().isBlank()) {
+            throw IllegalArgumentException("कृपया अपने गाँव या शहर का नाम अवश्य दर्ज करें।")
+        }
+        val safeCity = if (city.isBlank()) {
+            if (originAddress.isNotBlank()) originAddress.trim() else "डूँगरा जाट (स्थानीय)"
+        } else city.trim()
         val safeOrigin = if (originAddress.isNotBlank()) originAddress.trim() else safeCity
 
         // Automatic Road/Driving Distance Calculation to Shri Balaji Kripa Dham, Dungra Jaat
@@ -1023,6 +1028,11 @@ class AshramRepository(context: Context) {
                     registeredBy = registeredBy
                 )
             }
+        } catch (e: Exception) {}
+
+        // Auto-save local snapshot and trigger cloud vault backup
+        try {
+            com.example.shribalajikripadham.util.GoogleDriveSyncHelper.autoPushTrigger(appContext)
         } catch (e: Exception) {}
 
         // 🛡️ ANTI-BYPASS: Save hardware-bound persistent receipt into public device storage
@@ -3711,6 +3721,15 @@ class AshramRepository(context: Context) {
                 if (cfg.has("is_token_service_enabled")) cv.put("is_token_service_enabled", if (cfg.optBoolean("is_token_service_enabled")) 1 else 0)
                 if (cfg.has("is_bus_booking_live")) cv.put("is_bus_booking_live", if (cfg.optBoolean("is_bus_booking_live")) 1 else 0)
                 if (cfg.has("is_payment_feature_live")) cv.put("is_payment_feature_live", if (cfg.optBoolean("is_payment_feature_live")) 1 else 0)
+                if (cfg.has("badi_arzi_rate")) {
+                    val bRate = cfg.optDouble("badi_arzi_rate", 0.0)
+                    if (bRate > 0) cv.put("badi_arzi_rate", bRate)
+                }
+                if (cfg.has("chhoti_arzi_rate")) {
+                    val cRate = cfg.optDouble("chhoti_arzi_rate", 0.0)
+                    if (cRate > 0) cv.put("chhoti_arzi_rate", cRate)
+                }
+                if (cfg.has("is_arzi_ledger_live")) cv.put("is_arzi_ledger_live", if (cfg.optBoolean("is_arzi_ledger_live")) 1 else 0)
 
                 if (cv.size() > 0) {
                     db.update("ashram_settings", cv, "id = 1", null)
@@ -3803,6 +3822,12 @@ class AshramRepository(context: Context) {
                 if (sc.bannerPhotoUri.isNotBlank()) cv.put("banner_photo_uri", sc.bannerPhotoUri)
                 cv.put("is_banner_visible", if (sc.isBannerVisible) 1 else 0)
                 if (sc.bannerActionUrl.isNotBlank()) cv.put("banner_action_url", sc.bannerActionUrl)
+                if (sc.badiArziRate > 0) cv.put("badi_arzi_rate", sc.badiArziRate)
+                if (sc.chhotiArziRate > 0) cv.put("chhoti_arzi_rate", sc.chhotiArziRate)
+                cv.put("is_arzi_ledger_live", if (sc.isArziLedgerLive) 1 else 0)
+                cv.put("can_admin_view_arzi_ledger", if (sc.canAdminViewArziLedger) 1 else 0)
+                cv.put("can_devotee_view_arzi_ledger", if (sc.canDevoteeViewArziLedger) 1 else 0)
+                cv.put("can_devotee_view_yatra_diary", if (sc.canDevoteeViewYatraDiary) 1 else 0)
 
                 if (hasSettings) {
                     db.update("ashram_settings", cv, "id = 1", null)
@@ -3868,7 +3893,7 @@ class AshramRepository(context: Context) {
         }
         var finalGurujiPhotoUrl = currentSettings.gurujiPhotoUri
         if (finalGurujiPhotoUrl.isNotBlank() && !finalGurujiPhotoUrl.startsWith("http://") && !finalGurujiPhotoUrl.startsWith("https://")) {
-            val uploadedUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(
+            val uploadedUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(
                 appContext,
                 finalGurujiPhotoUrl,
                 "guruji_profile.jpg"
@@ -3947,7 +3972,14 @@ class AshramRepository(context: Context) {
                 canDevoteeViewPaymentHistory = currentSettings.canDevoteeViewPaymentHistory,
                 ashramUpiId = currentSettings.ashramUpiId,
                 ashramUpiName = currentSettings.ashramUpiName,
+                customUpiQrUri = currentSettings.customUpiQrUri,
                 busSeatFareAmount = currentSettings.busSeatFareAmount,
+                isArziLedgerLive = currentSettings.isArziLedgerLive,
+                badiArziRate = currentSettings.badiArziRate,
+                chhotiArziRate = currentSettings.chhotiArziRate,
+                canAdminViewArziLedger = currentSettings.canAdminViewArziLedger,
+                canDevoteeViewArziLedger = currentSettings.canDevoteeViewArziLedger,
+                canDevoteeViewYatraDiary = currentSettings.canDevoteeViewYatraDiary,
                 bannerTitle = currentSettings.bannerTitle,
                 bannerSubtitle = currentSettings.bannerSubtitle,
                 bannerPhotoUri = currentSettings.bannerPhotoUri,
@@ -4091,7 +4123,7 @@ class AshramRepository(context: Context) {
             if (a.photoUri.isNotBlank() && !a.photoUri.startsWith("http://") && !a.photoUri.startsWith("https://")) {
                 val safeUsername = a.username.replace(Regex("[^a-zA-Z0-9_]"), "_")
                 val safeFileName = "sevadar_${safeUsername}.jpg"
-                val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(
+                val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(
                     appContext,
                     a.photoUri,
                     safeFileName
@@ -4736,7 +4768,8 @@ class AshramRepository(context: Context) {
     }
 
     suspend fun syncLiveParchasFromGitHub(): Pair<Boolean, List<com.example.shribalajikripadham.data.model.SacredParcha>> = withContext(Dispatchers.IO) {
-        val remoteList = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveParchas()
+        val remoteList = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveParchas()
+            ?: com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveParchas()
         if (remoteList != null) {
             try {
                 val db = dbHelper.writableDatabase
@@ -5451,8 +5484,12 @@ class AshramRepository(context: Context) {
         }
         cursor.close()
 
-        if (list.isEmpty()) {
-            // Seed defaults into real SQLite database
+        val prefs = appContext.getSharedPreferences("ashram_vault_prefs", Context.MODE_PRIVATE)
+        val hasSeeded = prefs.getBoolean("has_seeded_initial_sevadars", false)
+
+        if (list.isEmpty() && !hasSeeded) {
+            // Seed defaults ONLY ONCE into real SQLite database on very first install
+            prefs.edit().putBoolean("has_seeded_initial_sevadars", true).apply()
             val defaults = AshramDataDefaults.sevadars
             defaults.forEach { saveSevadar(it) }
             val reloadedCursor = db.rawQuery("SELECT * FROM sevadars WHERE is_active = 1 ORDER BY display_order ASC, id ASC", null)
@@ -5474,8 +5511,52 @@ class AshramRepository(context: Context) {
             reloadedCursor.close()
             reloadedList.ifEmpty { defaults }
         } else {
+            if (list.isNotEmpty() && !hasSeeded) {
+                prefs.edit().putBoolean("has_seeded_initial_sevadars", true).apply()
+            }
             list
         }
+    }
+
+    /**
+     * Synchronize Sevadars from Hostinger Central MySQL to Local SQLite
+     * Ensures devotee phones immediately reflect removals or additions!
+     */
+    suspend fun syncSevadarsFromCloud(): List<SevadarProfile> = withContext(Dispatchers.IO) {
+        val remoteSevadars = try {
+            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchCentralSevadars()
+        } catch (e: Exception) {
+            emptyList()
+        }
+
+        if (remoteSevadars.isNotEmpty()) {
+            val db = dbHelper.writableDatabase
+            db.beginTransaction()
+            try {
+                // Clear local and replace with authoritative server sevadars
+                db.delete("sevadars", null, null)
+                remoteSevadars.forEach { sev ->
+                    val cv = ContentValues().apply {
+                        put("id", sev.id)
+                        put("name", sev.name)
+                        put("role", sev.roleTitleHindi)
+                        put("phone", sev.phoneNumber)
+                        put("photo_uri", sev.photoUri)
+                        put("display_order", sev.displayOrder)
+                        put("is_active", if (sev.isActive) 1 else 0)
+                    }
+                    db.insertWithOnConflict("sevadars", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                }
+                db.setTransactionSuccessful()
+                val prefs = appContext.getSharedPreferences("ashram_vault_prefs", Context.MODE_PRIVATE)
+                prefs.edit().putBoolean("has_seeded_initial_sevadars", true).apply()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                db.endTransaction()
+            }
+        }
+        getAllSevadars()
     }
 
     suspend fun saveSevadar(sevadar: SevadarProfile): Boolean = withContext(Dispatchers.IO) {
@@ -5557,7 +5638,11 @@ class AshramRepository(context: Context) {
         }
         cursor.close()
 
-        if (list.isEmpty()) {
+        val prefs = appContext.getSharedPreferences("ashram_vault_prefs", Context.MODE_PRIVATE)
+        val hasSeeded = prefs.getBoolean("has_seeded_initial_donors", false)
+
+        if (list.isEmpty() && !hasSeeded) {
+            prefs.edit().putBoolean("has_seeded_initial_donors", true).apply()
             val defaultDonors = listOf(
                 DonorProfile(1, "सेठ राधेश्याम जी", "दिल्ली / बुलन्दशहर", "भव्य मंदिर निर्माण महासहयोगी", "", "", "", 1, true),
                 DonorProfile(2, "चौधरी वीरेन्द्र सिंह जी", "हापुड़, उत्तर प्रदेश", "स्वर्ण ध्वजा एवं कलश सेवा", "", "", "", 2, true),
@@ -5585,6 +5670,9 @@ class AshramRepository(context: Context) {
             reloadedCursor.close()
             reloadedList.ifEmpty { defaultDonors }
         } else {
+            if (list.isNotEmpty() && !hasSeeded) {
+                prefs.edit().putBoolean("has_seeded_initial_donors", true).apply()
+            }
             list
         }
     }
@@ -5706,7 +5794,7 @@ class AshramRepository(context: Context) {
     suspend fun publishEverythingToWebsiteAndCloud(adminName: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val s = getSettings()
-            val (hOk, hMsg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.syncSettingsToHostinger(s)
+            val (hOk, hMsg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(s, getAllSevadars())
             val (gOk, gMsg) = publishCurrentSettingsToGitHub(adminName)
             
             // Re-sync all sevadars and donors to Hostinger

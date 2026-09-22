@@ -129,30 +129,47 @@ object HostingerCentralSyncManager {
         }
     }
 
+    @Volatile
+    private var lastLiveConfigEtag: String? = null
+
+    @Volatile
+    private var cachedLiveConfig: JSONObject? = null
+
     /**
-     * Fetch Live Config (200m radius, 30km outstation, current serving token)
+     * Fetch Live Config (with HTTP ETag / 304 conditional caching to prevent server overload)
      */
     suspend fun fetchLiveConfig(): JSONObject? = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}live_config.php")
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
-                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
-                setRequestProperty("Pragma", "no-cache")
+                lastLiveConfigEtag?.let { etag ->
+                    setRequestProperty("If-None-Match", etag)
+                }
             }
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "GET"
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.36.0")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.52.0")
 
-            if (conn.responseCode == 200) {
+            val code = conn.responseCode
+            if (code == 304) {
+                // 304 Not Modified: zero bytes transferred, return cached config
+                return@withContext cachedLiveConfig
+            } else if (code == 200) {
+                val etag = conn.getHeaderField("ETag")
+                if (!etag.isNullOrBlank()) {
+                    lastLiveConfigEtag = etag
+                }
                 val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-                return@withContext JSONObject(resp)
+                val json = JSONObject(resp)
+                cachedLiveConfig = json
+                return@withContext json
             }
-            null
+            cachedLiveConfig
         } catch (e: Exception) {
             Log.e(TAG, "fetchLiveConfig failed: ${e.message}")
-            null
+            cachedLiveConfig
         }
     }
 
@@ -198,6 +215,40 @@ object HostingerCentralSyncManager {
         } catch (e: Exception) {
             Log.e(TAG, "updateLiveConfig failed: ${e.message}")
             false
+        }
+    }
+
+    /**
+     * Overloaded uploadPhoto accepting Context, localPath (file path or content URI), and fileName.
+     */
+    suspend fun uploadPhoto(
+        context: Context,
+        localPath: String,
+        fileName: String,
+        photoType: String = "devotee"
+    ): String? = withContext(Dispatchers.IO) {
+        try {
+            val file = if (localPath.startsWith("content://") || localPath.startsWith("file://")) {
+                val tempFile = File(context.cacheDir, fileName.ifBlank { "temp_upload_${System.currentTimeMillis()}.jpg" })
+                val uri = android.net.Uri.parse(localPath)
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    tempFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                tempFile
+            } else {
+                val direct = File(localPath)
+                if (direct.exists()) direct else null
+            }
+            if (file != null && file.exists()) {
+                uploadPhoto(file, photoType)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "uploadPhoto(Context, ...) failed: ${e.message}")
+            null
         }
     }
 
@@ -758,7 +809,10 @@ object HostingerCentralSyncManager {
 
     suspend fun syncSettingsToHostinger(settings: AshramSettings): Pair<Boolean, String> = updateFullLiveConfig(settings)
 
-    suspend fun updateFullLiveConfig(settings: AshramSettings): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+    suspend fun updateFullLiveConfig(
+        settings: AshramSettings,
+        sevadars: List<com.example.shribalajikripadham.data.model.SevadarProfile>? = null
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}live_config.php")
             val conn = (url.openConnection() as HttpURLConnection).apply {
@@ -771,9 +825,10 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.37.0")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.52.0")
 
             val json = JSONObject().apply {
+                put("api_key", API_SECRET_KEY)
                 put("ashram_name", settings.ashramName)
                 put("latitude", settings.latitude)
                 put("longitude", settings.longitude)
@@ -788,6 +843,11 @@ object HostingerCentralSyncManager {
                 put("is_live_counter_visible", if (settings.isLiveCounterVisible) 1 else 0)
                 put("is_payment_feature_live", if (settings.isPaymentFeatureLive) 1 else 0)
                 put("is_arzi_ledger_live", if (settings.isArziLedgerLive) 1 else 0)
+                put("badi_arzi_rate", settings.badiArziRate)
+                put("chhoti_arzi_rate", settings.chhotiArziRate)
+                put("can_admin_view_arzi_ledger", if (settings.canAdminViewArziLedger) 1 else 0)
+                put("can_devotee_view_arzi_ledger", if (settings.canDevoteeViewArziLedger) 1 else 0)
+                put("can_devotee_view_yatra_diary", if (settings.canDevoteeViewYatraDiary) 1 else 0)
                 put("is_darbar_active", if (settings.isDarbarActive) 1 else 0)
                 put("darbar_date", settings.darbarDate)
                 put("darbar_timings", settings.darbarTimings)
@@ -800,6 +860,23 @@ object HostingerCentralSyncManager {
                 put("allow_admin_reserved_tokens", if (settings.allowAdminReservedTokens) 1 else 0)
                 put("can_admin_issue_reserved_tokens", if (settings.allowAdminReservedTokens) 1 else 0)
                 put("aarti_timings", "प्रातः 05:30 मंगला आरती • सायं 07:00 महाआरती")
+
+                if (sevadars != null) {
+                    val sArr = JSONArray()
+                    sevadars.forEach { sev ->
+                        val sObj = JSONObject().apply {
+                            put("id", sev.id)
+                            put("name", sev.name)
+                            put("role", sev.roleTitleHindi)
+                            put("phone", sev.phoneNumber)
+                            put("photo_url", sev.photoUri)
+                            put("display_order", sev.displayOrder)
+                            put("is_active", if (sev.isActive) 1 else 0)
+                        }
+                        sArr.put(sObj)
+                    }
+                    put("sevadars", sArr)
+                }
             }
 
             conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
@@ -885,6 +962,7 @@ object HostingerCentralSyncManager {
             params.append("&phone=").append(URLEncoder.encode(phone, "UTF-8"))
             params.append("&photo_url=").append(URLEncoder.encode(photoUrl, "UTF-8"))
             params.append("&display_order=").append(displayOrder)
+            params.append("&api_key=").append(URLEncoder.encode(API_SECRET_KEY, "UTF-8"))
             if (id > 0) params.append("&id=").append(id)
 
             conn.outputStream.use { it.write(params.toString().toByteArray(StandardCharsets.UTF_8)) }
@@ -917,14 +995,58 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.39.0")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.52.0")
 
-            val params = "id=$id"
+            val params = "id=$id&api_key=" + URLEncoder.encode(API_SECRET_KEY, "UTF-8")
             conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }
             conn.responseCode == 200
         } catch (e: Exception) {
             false
         }
+    }
+
+    /**
+     * Fetch active Sevadars from Central Hostinger MySQL
+     */
+    suspend fun fetchCentralSevadars(): List<com.example.shribalajikripadham.data.model.SevadarProfile> = withContext(Dispatchers.IO) {
+        val list = mutableListOf<com.example.shribalajikripadham.data.model.SevadarProfile>()
+        try {
+            val url = URL("${BASE_URL}get_sevadars.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.52.0")
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val j = JSONObject(resp)
+                val arr = j.optJSONArray("sevadars")
+                if (arr != null) {
+                    for (i in 0 until arr.length()) {
+                        val s = arr.getJSONObject(i)
+                        list.add(
+                            com.example.shribalajikripadham.data.model.SevadarProfile(
+                                id = s.optLong("id", 0L),
+                                name = s.optString("name", ""),
+                                roleTitleHindi = s.optString("role", "सेवादार"),
+                                roleTitleEnglish = s.optString("role", "Sevadar"),
+                                phoneNumber = s.optString("phone", ""),
+                                photoUri = s.optString("photo_url", ""),
+                                displayOrder = s.optInt("display_order", 0),
+                                isActive = s.optInt("is_active", 1) == 1
+                            )
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching central sevadars: ${e.message}")
+        }
+        list
     }
 
     /**
@@ -1233,6 +1355,56 @@ object HostingerCentralSyncManager {
         } catch (e: Exception) {
             Log.w(TAG, "bookBusSeatRemote error: ${e.message}")
             Pair(false, "सर्वर से संपर्क नहीं हो सका: ${e.localizedMessage}")
+        }
+    }
+
+    /**
+     * Fetch Live Parchas directly from Hostinger MySQL API
+     */
+    suspend fun fetchLiveParchas(): List<com.example.shribalajikripadham.data.model.SacredParcha>? = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("https://shribalajikripadham.online/api/get_parchas.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 8000
+                readTimeout = 8000
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("User-Agent", "ShriBalajiApp/2.53.0")
+            }
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false)) {
+                    val arr = json.optJSONArray("parchas") ?: JSONArray()
+                    val list = mutableListOf<com.example.shribalajikripadham.data.model.SacredParcha>()
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        list.add(
+                            com.example.shribalajikripadham.data.model.SacredParcha(
+                                id = obj.optLong("id", 0L),
+                                parchaId = obj.optString("parcha_id", "PARCHA_${obj.optLong("id", 0L)}"),
+                                title = obj.optString("title", obj.optString("devotee_name", "पावन पर्चा")),
+                                category = com.example.shribalajikripadham.data.model.ParchaCategory.fromString(obj.optString("category", "OTHER")),
+                                subtitle = obj.optString("subtitle", ""),
+                                mantraText = obj.optString("mantra_text", ""),
+                                imageUri = obj.optString("image_uri", obj.optString("parcha_photo_url", "")),
+                                isPublished = obj.optInt("is_published", 1) == 1,
+                                isHidden = obj.optInt("is_hidden", 0) == 1,
+                                viewCount = obj.optInt("view_count", 0),
+                                downloadCount = obj.optInt("download_count", 0),
+                                createdBy = obj.optString("created_by", "SUPER_ADMIN"),
+                                createdAt = obj.optLong("created_at", System.currentTimeMillis()),
+                                updatedAt = obj.optLong("updated_at", System.currentTimeMillis())
+                            )
+                        )
+                    }
+                    return@withContext list
+                }
+            }
+            null
+        } catch (e: Exception) {
+            Log.w(TAG, "fetchLiveParchas failed: ${e.message}")
+            null
         }
     }
 

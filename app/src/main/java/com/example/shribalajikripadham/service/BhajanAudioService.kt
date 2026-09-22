@@ -1,4 +1,4 @@
-﻿package com.example.shribalajikripadham.service
+package com.example.shribalajikripadham.service
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -41,6 +41,7 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
         const val EXTRA_TRACK_TITLE = "extra_track_title"
         const val EXTRA_TRACK_ARTIST = "extra_track_artist"
         const val EXTRA_TRACK_URL = "extra_track_url"
+        const val EXTRA_TRACK_KEY = "extra_track_key"
         const val EXTRA_SEEK_POS = "extra_seek_pos"
 
         private val _currentTrackIndex = MutableStateFlow(-1)
@@ -64,13 +65,14 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
         private val _currentArtist = MutableStateFlow("")
         val currentArtist = _currentArtist.asStateFlow()
 
-        fun playTrack(context: Context, trackIndex: Int, title: String, artist: String, audioUrl: String) {
+        fun playTrack(context: Context, trackIndex: Int, title: String, artist: String, audioUrl: String, trackKey: String = "") {
             val intent = Intent(context, BhajanAudioService::class.java).apply {
                 action = ACTION_PLAY
                 putExtra(EXTRA_TRACK_INDEX, trackIndex)
                 putExtra(EXTRA_TRACK_TITLE, title)
                 putExtra(EXTRA_TRACK_ARTIST, artist)
                 putExtra(EXTRA_TRACK_URL, audioUrl)
+                putExtra(EXTRA_TRACK_KEY, trackKey)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
@@ -128,6 +130,8 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
                 val artist = intent.getStringExtra(EXTRA_TRACK_ARTIST) ?: "श्री बालाजी कृपा धाम"
                 val url = intent.getStringExtra(EXTRA_TRACK_URL) ?: ""
 
+                val trackKey = intent.getStringExtra(EXTRA_TRACK_KEY) ?: ""
+
                 trackIndex = index
                 trackTitle = title
                 trackArtist = artist
@@ -138,7 +142,7 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
                 _currentArtist.value = artist
 
                 startForeground(NOTIFICATION_ID, buildNotification(isPlaying = true))
-                startAudioPlayback(url)
+                startAudioPlayback(url, trackKey)
             }
             ACTION_TOGGLE -> {
                 if (mediaPlayer?.isPlaying == true) {
@@ -171,10 +175,15 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
         return START_NOT_STICKY
     }
 
-    private fun startAudioPlayback(url: String) {
+    private fun startAudioPlayback(url: String, trackKey: String) {
         if (url.isBlank()) return
 
-        _isBuffering.value = true
+        val playableSource = com.example.shribalajikripadham.util.DevotionalAudioCacheManager.getPlayableSource(
+            applicationContext, trackKey, url
+        )
+        val isLocalOfflineFile = java.io.File(playableSource).exists()
+
+        _isBuffering.value = !isLocalOfflineFile
         _isPlaying.value = false
 
         try {
@@ -187,11 +196,31 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
                         .setUsage(AudioAttributes.USAGE_MEDIA)
                         .build()
                 )
-                setDataSource(url)
+                setDataSource(playableSource)
                 setOnPreparedListener(this@BhajanAudioService)
                 setOnCompletionListener(this@BhajanAudioService)
                 setOnErrorListener(this@BhajanAudioService)
-                prepareAsync()
+
+                if (isLocalOfflineFile) {
+                    // Synchronous instant 0.0s preparation for offline files
+                    prepare()
+                    start()
+                    _isBuffering.value = false
+                    _isPlaying.value = true
+                    _durationMs.value = duration
+                    updateNotification(true)
+                    startProgressTracker()
+                } else {
+                    prepareAsync()
+                    // Silently download in background so next time is instant 0ms offline
+                    serviceScope.launch(Dispatchers.IO) {
+                        try {
+                            com.example.shribalajikripadham.util.DevotionalAudioCacheManager.downloadTrackForOffline(
+                                applicationContext, trackKey, url
+                            )
+                        } catch (ignored: Exception) {}
+                    }
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error starting playback: ${e.message}")

@@ -9,6 +9,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -70,15 +71,15 @@ fun PaperRegisterScanTab(
     val processBitmapWithOcr: (Bitmap) -> Unit = { safeBmp ->
         capturedBitmap = safeBmp
         isOcrProcessing = true
-        Toast.makeText(context, if (isHindi) "🔍 Google ML Kit से रजिस्टर स्कैन हो रहा है..." else "Scanning paper text with ML Kit...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, if (isHindi) "🔍 हाथ की लिखावट व देवनागरी OCR स्कैन हो रहा है..." else "Scanning handwriting with contrast filter...", Toast.LENGTH_SHORT).show()
         scope.launch(Dispatchers.Default) {
-            val ocrResult = PaperRegisterScannerEngine.recognizeTextFromBitmap(safeBmp)
+            val ocrResult = PaperRegisterScannerEngine.recognizeTextFromBitmap(safeBmp, enhanceForHandwriting = true)
             withContext(Dispatchers.Main) {
                 isOcrProcessing = false
                 if (ocrResult.isNotBlank()) {
                     rawTextInput = ocrResult
                     parsedEntries = PaperRegisterScannerEngine.parseRegisterText(ocrResult)
-                    Toast.makeText(context, if (isHindi) "✅ Google ML Kit ने ${parsedEntries.size} नाम सफलतापूर्वक पढ़ लिए!" else "Parsed ${parsedEntries.size} entries with ML Kit!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, if (isHindi) "✅ OCR ने ${parsedEntries.size} नाम सफलतापूर्वक पढ़ लिए!" else "Parsed ${parsedEntries.size} entries!", Toast.LENGTH_LONG).show()
                 } else {
                     if (rawTextInput.isBlank()) {
                         rawTextInput = "1. \n2. \n3. "
@@ -558,17 +559,42 @@ fun PaperRegisterScanTab(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaroonAccent
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Text(
-                                    text = "टोकन #$proposedTokenNum",
-                                    color = AmberGold,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaroonAccent
+                                ) {
+                                    Text(
+                                        text = "टोकन #$proposedTokenNum",
+                                        color = AmberGold,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
+
+                                val conf = entry.confidence
+                                val confColor = when {
+                                    conf >= 80 -> Color(0xFF2E7D32)
+                                    conf >= 60 -> Color(0xFFEF6C00)
+                                    else -> Color(0xFFC62828)
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = confColor.copy(alpha = 0.12f),
+                                    border = BorderStroke(1.dp, confColor)
+                                ) {
+                                    Text(
+                                        text = "🎯 ${conf}% सटीक",
+                                        color = confColor,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 10.sp,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
                             }
 
                             Text(
@@ -636,6 +662,49 @@ fun PaperRegisterScanTab(
                                 modifier = Modifier.weight(1f),
                                 singleLine = true,
                                 shape = RoundedCornerShape(8.dp)
+                            )
+                        }
+
+                        // 1-Click Quick City Chips
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 5.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            val cityChips = listOf("डूँगरा जाट", "बुलंदशहर", "मेरठ", "दिल्ली", "स्याना")
+                            cityChips.forEach { chipName ->
+                                val isSelected = entry.city.trim() == chipName
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (isSelected) MaroonAccent else Color(0xFFF1F3F4),
+                                    border = BorderStroke(0.5.dp, if (isSelected) AmberGold else Color(0xFFDDDDDD)),
+                                    modifier = Modifier.clickable {
+                                        val updated = parsedEntries.toMutableList()
+                                        updated[index] = entry.copy(city = chipName)
+                                        parsedEntries = updated
+                                    }
+                                ) {
+                                    Text(
+                                        text = chipName,
+                                        fontSize = 10.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) AmberGold else Color.DarkGray,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        val isPhoneInvalid = entry.phoneNumber.isNotBlank() && entry.phoneNumber.length != 10
+                        val isPhoneMissing = entry.phoneNumber.isBlank()
+                        if (isPhoneInvalid || isPhoneMissing) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isPhoneMissing) "ℹ️ फोन नंबर नहीं मिला (हाथ से जाँचकर भरें)" else "⚠️ मोबाइल नंबर 10 अंक का होना चाहिए (वर्तमान: ${entry.phoneNumber.length} अंक)",
+                                fontSize = 10.5.sp,
+                                color = if (isPhoneInvalid) Color(0xFFD32F2F) else Color(0xFFE65100),
+                                fontWeight = FontWeight.Medium
                             )
                         }
                     }

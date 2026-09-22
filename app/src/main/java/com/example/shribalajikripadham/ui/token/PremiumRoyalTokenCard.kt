@@ -29,6 +29,9 @@ import com.example.shribalajikripadham.data.model.AshramSettings
 import com.example.shribalajikripadham.data.model.Token
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.util.TokenPdfExporter
+import com.example.shribalajikripadham.util.BluetoothThermalPrinterHelper
+import android.annotation.SuppressLint
+import androidx.compose.foundation.clickable
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -42,6 +45,9 @@ fun PremiumRoyalTokenCard(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var showPrinterDialog by remember { mutableStateOf(false) }
+    var isPrinting by remember { mutableStateOf(false) }
 
     val sdfDate = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
     val formattedTimestamp = sdfDate.format(Date(token.createdAt))
@@ -538,6 +544,22 @@ fun PremiumRoyalTokenCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Thermal Printer Button
+            Button(
+                onClick = { showPrinterDialog = true },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20))
+            ) {
+                Text(
+                    text = "🖨️ " + (if (isHindi) "थर्मल प्रिंटर से पर्ची निकालें" else "Print Thermal Token Slip"),
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             // Back to Home Button
             Button(
                 onClick = onBackToHome,
@@ -548,6 +570,108 @@ fun PremiumRoyalTokenCard(
                 Text(if (isHindi) "मुख्य पृष्ठ पर लौटें (Back to Home)" else "Back to Home", fontWeight = FontWeight.Bold)
             }
         }
+    }
+
+    if (showPrinterDialog) {
+        val pairedDevices = remember { BluetoothThermalPrinterHelper.getPairedDevices(context) }
+
+        AlertDialog(
+            onDismissRequest = { if (!isPrinting) showPrinterDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🖨️ ", fontSize = 22.sp)
+                    Text(
+                        text = if (isHindi) "थर्मल प्रिंटर से टोकन पर्ची" else "Print Thermal Token Slip",
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonPrimary
+                    )
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "टोकन #${token.tokenNumber} | ${token.patientName}",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    if (!BluetoothThermalPrinterHelper.hasBluetoothPermission(context)) {
+                        Text(
+                            text = if (isHindi) "कृपया सेटिंग्स में ब्लूटूथ अनुमति प्रदान करें।" else "Bluetooth permission required.",
+                            color = Color.Red,
+                            fontSize = 12.sp
+                        )
+                    } else if (pairedDevices.isEmpty()) {
+                        Surface(
+                            color = Color(0xFFFFF3E0),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = if (isHindi) "⚠️ कोई पेयर किया हुआ ब्लूटूथ प्रिंटर नहीं मिला।" else "⚠️ No paired printer found.",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFE65100)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (isHindi) "कृपया फोन की Bluetooth Settings में जाकर अपने थर्मल प्रिंटर को पहले पेयर करें।" else "Please pair your POS printer in settings first.",
+                                    fontSize = 11.sp,
+                                    color = Color.DarkGray
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = if (isHindi) "प्रिंट करने के लिए प्रिंटर चुनें:" else "Select printer:",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        pairedDevices.forEach { device ->
+                            @SuppressLint("MissingPermission")
+                            val devName = device.name ?: "Unknown Device"
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clickable(enabled = !isPrinting) {
+                                        isPrinting = true
+                                        scope.launch {
+                                            val bmp = BluetoothThermalPrinterHelper.generateTokenSlipBitmap(token)
+                                            val res = BluetoothThermalPrinterHelper.printBitmap(device, bmp)
+                                            isPrinting = false
+                                            showPrinterDialog = false
+                                            Toast.makeText(context, res.second, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("🖨️", fontSize = 20.sp)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(devName, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text(device.address, fontSize = 10.sp, color = Color.Gray)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showPrinterDialog = false }, enabled = !isPrinting) {
+                    Text(if (isHindi) "बंद करें" else "Close")
+                }
+            }
+        )
     }
 }
 

@@ -390,22 +390,32 @@ object AppUpdateManager {
 
             val targetFile = File(targetDir, "ShriBalajiKripaDham_update.apk")
             val candidateUrls = mutableListOf<String>()
-            // Always prioritize direct Ashram High-Speed Server download first!
-            candidateUrls.add("https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk")
-            candidateUrls.add("https://shribalajikripadham.online/download.php")
+
+            // 1. Prioritize the exact release APK URL provided dynamically in version.json / app_update.json
             if (finalUrl.isNotBlank() && !candidateUrls.contains(finalUrl.trim())) {
                 candidateUrls.add(finalUrl.trim())
             }
-            val fallbacks = listOf(
-                "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-v2.49.0.apk",
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.49.0/ShriBalajiKripaDham-release.apk",
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.49.0/ShriBalajiKripaDham-v2.49.0.apk",
+
+            // 2. Direct GitHub Release official assets (Always clean, immutable, non-cached)
+            val gitHubReleaseFallbacks = listOf(
                 "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk",
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.54.0/ShriBalajiKripaDham-release.apk"
+            )
+            for (gh in gitHubReleaseFallbacks) {
+                if (!candidateUrls.contains(gh)) {
+                    candidateUrls.add(gh)
+                }
+            }
+
+            // 3. Fallback to direct Ashram server endpoints
+            val ashramFallbacks = listOf(
+                "https://shribalajikripadham.online/download.php",
+                "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
                 DEFAULT_APK_URL
             )
-            for (fb in fallbacks) {
-                if (!candidateUrls.contains(fb)) {
-                    candidateUrls.add(fb)
+            for (af in ashramFallbacks) {
+                if (!candidateUrls.contains(af)) {
+                    candidateUrls.add(af)
                 }
             }
 
@@ -522,6 +532,19 @@ object AppUpdateManager {
                     if (packageArchive == null) {
                         targetFile.delete()
                         throw Exception("डाउनलोड की गई APK पैकेज अमान्य या दूषित है (Invalid APK package)")
+                    }
+
+                    // Validate that the downloaded APK is strictly newer than the currently installed version
+                    val downloadedVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        packageArchive.longVersionCode.toInt()
+                    } else {
+                        @Suppress("DEPRECATION")
+                        packageArchive.versionCode
+                    }
+                    val currentVersionCode = getCurrentVersionCode(context)
+                    if (downloadedVersionCode <= currentVersionCode) {
+                        targetFile.delete()
+                        throw Exception("डाउनलोड किया गया APK वर्ज़न (Build #$downloadedVersionCode) वर्तमान वर्ज़न (Build #$currentVersionCode) से नया नहीं है, अगले सर्वर से प्रयास किया जा रहा है...")
                     }
 
                     withContext(Dispatchers.Main) {

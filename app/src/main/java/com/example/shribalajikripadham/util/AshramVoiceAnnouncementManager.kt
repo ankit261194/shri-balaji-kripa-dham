@@ -1,21 +1,22 @@
 package com.example.shribalajikripadham.util
 
 import android.content.Context
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
+import android.media.ToneGenerator
 import android.os.Build
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
-import java.net.URLEncoder
 import java.util.Locale
 
 data class VoicePresetInfo(
@@ -54,35 +55,47 @@ object AshramVoiceAnnouncementManager {
     val AVAILABLE_VOICE_PRESETS = listOf(
         VoicePresetInfo(
             id = PRESET_NATURAL_MALE,
-            nameHindi = "असली इंसानी पुरुष स्वर (Real Human Hindi Voice)",
-            nameEnglish = "Real Human HD Male Voice",
+            nameHindi = "धीर-गंभीर पुरुष स्वर (HD Hindi Male Voice)",
+            nameEnglish = "HD Devotional Male Voice",
             gender = "MALE",
             category = "MALE",
-            description = "स्पष्ट, धीर-गंभीर व असली इंसानी पुरुष स्वर (HD नेचुरल ऑडियो)",
+            description = "स्पष्ट, धीर-गंभीर उद्घोषक स्वर (Google HD देववाणी)",
             pitch = 0.88f,
-            speechRate = 0.90f,
+            speechRate = 0.86f,
             icon = "👨",
             speechStyle = "DEVOTIONAL"
         ),
         VoicePresetInfo(
             id = PRESET_NATURAL_FEMALE,
-            nameHindi = "असली इंसानी महिला स्वर (Real Human Female Voice)",
-            nameEnglish = "Real Human HD Female Voice",
+            nameHindi = "मधुर सेविका महिला स्वर (HD Hindi Female Voice)",
+            nameEnglish = "HD Devotional Female Voice",
             gender = "FEMALE",
             category = "FEMALE",
-            description = "अत्यंत मधुर, शांत व वात्सल्यमयी असली इंसानी महिला स्वर",
+            description = "अत्यंत मधुर, शांत व वात्सल्यमयी स्वर (Google HD देववाणी)",
             pitch = 1.05f,
-            speechRate = 0.92f,
+            speechRate = 0.88f,
             icon = "👩",
             speechStyle = "SWEET"
         ),
         VoicePresetInfo(
+            id = PRESET_CUSTOM_RECORDED,
+            nameHindi = "आश्रम की वास्तविक रिकॉर्डेड आवाज़ (Ashram Real Voice)",
+            nameEnglish = "Ashram Custom Recorded Voice",
+            gender = "CUSTOM",
+            category = "CUSTOM",
+            description = "आश्रम के माइक से स्वयं रिकॉर्ड की गई 100% असली इंसानी आवाज़",
+            pitch = 1.0f,
+            speechRate = 1.0f,
+            icon = "🎙️",
+            speechStyle = "REAL_HUMAN"
+        ),
+        VoicePresetInfo(
             id = PRESET_OFFLINE_DEVICE,
-            nameHindi = "फ़ोन का ऑफ़लाइन स्वर (Device Hindi TTS)",
+            nameHindi = "डिवाइस का सामान्य ऑफ़लाइन स्वर (Device Hindi TTS)",
             nameEnglish = "Offline Device Built-in TTS",
             gender = "DEVICE",
             category = "DEVICE",
-            description = "बिना इंटरनेट के फोन का सामान्य ऑफलाइन स्वर",
+            description = "फ़ोन का अंतर्निर्मित ऑफ़लाइन हिंदी स्वर",
             pitch = 1.0f,
             speechRate = 1.0f,
             icon = "📱",
@@ -268,11 +281,23 @@ object AshramVoiceAnnouncementManager {
             tts?.setSpeechRate(preset.speechRate)
 
             tts?.voices?.let { allVoices ->
-                val hindiVoices = allVoices.filter { it.locale.language == "hi" }
+                val hindiVoices = allVoices.filter { 
+                    it.locale.language.equals("hi", ignoreCase = true) || 
+                    it.locale.toLanguageTag().startsWith("hi", ignoreCase = true) 
+                }
                 if (hindiVoices.isNotEmpty()) {
                     val matchingVoice = when (preset.gender) {
-                        "FEMALE" -> hindiVoices.find { it.name.contains("female", ignoreCase = true) || it.name.contains("-c-", ignoreCase = true) || it.name.contains("-a-", ignoreCase = true) } ?: hindiVoices.first()
-                        else -> hindiVoices.find { it.name.contains("male", ignoreCase = true) || it.name.contains("-b-", ignoreCase = true) || it.name.contains("-d-", ignoreCase = true) } ?: hindiVoices.first()
+                        "FEMALE" -> hindiVoices.find {
+                            it.name.contains("female", ignoreCase = true) ||
+                            it.name.contains("-c-", ignoreCase = true) ||
+                            it.name.contains("-a-", ignoreCase = true)
+                        } ?: hindiVoices.first()
+                        "MALE" -> hindiVoices.find {
+                            it.name.contains("male", ignoreCase = true) ||
+                            it.name.contains("-b-", ignoreCase = true) ||
+                            it.name.contains("-d-", ignoreCase = true)
+                        } ?: hindiVoices.first()
+                        else -> hindiVoices.first()
                     }
                     tts?.voice = matchingVoice
                 }
@@ -282,43 +307,27 @@ object AshramVoiceAnnouncementManager {
         }
     }
 
-    private fun streamNaturalSpeech(context: Context, text: String, onFallback: () -> Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val cacheDir = File(context.cacheDir, "tts_cache")
-                if (!cacheDir.exists()) cacheDir.mkdirs()
-                val safeHash = text.hashCode().toUInt().toString()
-                val cacheFile = File(cacheDir, "speech_$safeHash.mp3")
-
-                if (!cacheFile.exists() || cacheFile.length() < 200L) {
-                    val encoded = URLEncoder.encode(text, "UTF-8")
-                    val endpoint = "https://translate.google.com/translate_tts?ie=UTF-8&q=$encoded&tl=hi&client=tw-ob"
-                    val url = URL(endpoint)
-                    val conn = url.openConnection() as HttpURLConnection
-                    conn.setRequestProperty("User-Agent", "Mozilla/5.0")
-                    conn.connectTimeout = 4000
-                    conn.readTimeout = 6000
-                    if (conn.responseCode == 200) {
-                        conn.inputStream.use { input ->
-                            FileOutputStream(cacheFile).use { output ->
-                                input.copyTo(output)
-                            }
-                        }
-                    } else {
-                        withContext(Dispatchers.Main) { onFallback() }
-                        return@launch
-                    }
-                }
-
+    /**
+     * Sacred Dual-Tone Temple Bell Chime:
+     * Plays a resonant sacred temple bell chime tone to alert the darbar hall before calling a token.
+     */
+    fun playTempleChime(onFinished: (() -> Unit)? = null) {
+        try {
+            val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 95)
+            // Resonant sacred chime tone
+            toneGen.startTone(ToneGenerator.TONE_PROP_BEEP2, 380)
+            CoroutineScope(Dispatchers.IO).launch {
+                delay(420)
+                try {
+                    toneGen.release()
+                } catch (e: Exception) {}
                 withContext(Dispatchers.Main) {
-                    playAudioFile(cacheFile) {
-                        // playback finished
-                    }
+                    onFinished?.invoke()
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "Natural stream failed, falling back to local TTS: ${e.message}")
-                withContext(Dispatchers.Main) { onFallback() }
             }
+        } catch (e: Exception) {
+            Log.w(TAG, "Temple chime fallback: ${e.message}")
+            onFinished?.invoke()
         }
     }
 
@@ -348,46 +357,41 @@ object AshramVoiceAnnouncementManager {
         lastAnnouncementText = fullAnnouncementText
         val activePreset = getSelectedVoicePreset(context)
 
-        if (activePreset == PRESET_CUSTOM_RECORDED && hasCustomRecording(context)) {
-            // First play the authentic custom recorded announcement
-            playCustomRecording(context) {
-                // If devotee name exists, announce it clearly after custom clip
-                if (cleanName.isNotBlank()) {
-                    speakRaw("श्री $cleanName जी, कृपया पधारें।")
+        // 🔔 Play sacred temple bell chime first, then announce clearly
+        playTempleChime {
+            if (activePreset == PRESET_CUSTOM_RECORDED && hasCustomRecording(context)) {
+                // Play authentic custom recorded human announcement from ashram
+                playCustomRecording(context) {
+                    if (cleanName.isNotBlank()) {
+                        speakWithCurrentPreset(context, "श्री $cleanName जी, कृपया पधारें।")
+                    }
                 }
-            }
-        } else if (activePreset == PRESET_NATURAL_MALE || activePreset == PRESET_NATURAL_FEMALE) {
-            streamNaturalSpeech(context, fullAnnouncementText) {
+            } else {
                 speakWithCurrentPreset(context, fullAnnouncementText)
             }
-        } else {
-            speakWithCurrentPreset(context, fullAnnouncementText)
         }
     }
 
     fun testVoice(context: Context, presetId: String) {
         if (presetId == PRESET_CUSTOM_RECORDED) {
             if (hasCustomRecording(context)) {
-                playCustomRecording(context)
+                playTempleChime {
+                    playCustomRecording(context)
+                }
             } else {
                 initIfNeeded(context)
-                speakRaw("कृपया नीचे 'माइक रिकॉर्ड' बटन दबाकर आश्रम की अपनी खुद की आवाज़ रिकॉर्ड करें।")
+                speakRaw("कृपया नीचे दिए गए माइक रिकॉर्ड बटन से आश्रम की अपनी वास्तविक आवाज़ रिकॉर्ड करें।")
             }
             return
         }
 
         val testText = when (presetId) {
             PRESET_NATURAL_FEMALE -> "जय श्री बालाजी! टोकन नंबर एक, श्री रमेश कुमार जी, आपका नंबर आ गया है। कृपया गुरुजी के समीप पधारें।"
+            PRESET_NATURAL_MALE -> "जय श्री बालाजी! टोकन नंबर एक, श्री रमेश कुमार जी, आपका नंबर आ गया है। कृपया गुरुजी के समीप पधारें।"
             else -> "जय श्री बालाजी! टोकन नंबर एक, श्री रमेश कुमार जी, आपका नंबर आ गया है। कृपया गुरुजी के समीप पधारें।"
         }
 
-        if (presetId == PRESET_NATURAL_MALE || presetId == PRESET_NATURAL_FEMALE) {
-            streamNaturalSpeech(context, testText) {
-                initIfNeeded(context)
-                applyVoiceSettings(context, presetId)
-                speakRaw(testText)
-            }
-        } else {
+        playTempleChime {
             initIfNeeded(context)
             applyVoiceSettings(context, presetId)
             speakRaw(testText)
@@ -401,14 +405,7 @@ object AshramVoiceAnnouncementManager {
     }
 
     fun speak(context: Context, text: String) {
-        val activePreset = getSelectedVoicePreset(context)
-        if (activePreset == PRESET_NATURAL_MALE || activePreset == PRESET_NATURAL_FEMALE) {
-            streamNaturalSpeech(context, text) {
-                speakWithCurrentPreset(context, text)
-            }
-        } else {
-            speakWithCurrentPreset(context, text)
-        }
+        speakWithCurrentPreset(context, text)
     }
 
     private fun speakWithCurrentPreset(context: Context, text: String) {
@@ -420,19 +417,6 @@ object AshramVoiceAnnouncementManager {
             pendingSpeech = text
         } else {
             speakRaw(text)
-        }
-    }
-
-    fun playTempleChime() {
-        try {
-            val toneGen = android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 90)
-            toneGen.startTone(android.media.ToneGenerator.TONE_PROP_BEEP2, 380)
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                kotlinx.coroutines.delay(450)
-                try { toneGen.release() } catch (e: Exception) {}
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Temple chime synth fallback: ${e.message}")
         }
     }
 
@@ -458,7 +442,6 @@ object AshramVoiceAnnouncementManager {
 
     private fun speakRaw(text: String) {
         try {
-            playTempleChime()
             tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "token_announcement_${System.currentTimeMillis()}")
         } catch (e: Exception) {
             Log.e(TAG, "Error executing speakRaw", e)

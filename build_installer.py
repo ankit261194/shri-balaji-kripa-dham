@@ -58,6 +58,7 @@ if (isset($_GET['auto_update']) || isset($_GET['update_from_github'])) {
     }
     if ($remoteCode && strpos($remoteCode, '<?php') !== false && strlen($remoteCode) > 5000) {
         file_put_contents(__FILE__, $remoteCode);
+        unset($_GET['auto_update'], $_GET['update_from_github']);
         require __FILE__;
         exit;
     }
@@ -67,13 +68,15 @@ $baseDir = __DIR__;
 $createdFiles = [];
 
 // 1. Create Directories
-$dirs = ['api', 'config', 'uploads', 'uploads/sevadars', 'uploads/donors', 'downloads'];
+$dirs = ['api', 'config', 'uploads', 'uploads/sevadars', 'uploads/donors', 'downloads', 'media'];
 foreach ($dirs as $d) {
     $p = $baseDir . '/' . $d;
     if (!is_dir($p)) {
         mkdir($p, 0755, true);
     }
 }
+
+// 1.5 CDN APK Redirect config ready
 
 // 2. Deploy Files
 $files = [
@@ -321,7 +324,8 @@ $targetCols = [
     "is_banner_visible" => "TINYINT(1) NOT NULL DEFAULT 1",
     "guruji_photo_url" => "VARCHAR(500) DEFAULT ''",
     "can_admin_issue_reserved_tokens" => "TINYINT(1) NOT NULL DEFAULT 0",
-    "allow_admin_reserved_tokens" => "TINYINT(1) NOT NULL DEFAULT 0",
+    "badi_arzi_rate" => "DECIMAL(10, 2) NOT NULL DEFAULT 100.0",
+    "chhoti_arzi_rate" => "DECIMAL(10, 2) NOT NULL DEFAULT 50.0",
     "aarti_timings" => "TEXT",
     "whatsapp_number" => "VARCHAR(20) DEFAULT '+918006518960'",
     "whatsapp_group_url" => "VARCHAR(500) DEFAULT ''",

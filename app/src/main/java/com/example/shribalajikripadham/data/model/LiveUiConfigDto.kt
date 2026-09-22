@@ -58,6 +58,12 @@ data class ServicesConfigDto(
     val ashramUpiName: String = "Shri Balaji Kripa Dham",
     val customUpiQrUri: String = "",
     val busSeatFareAmount: Int = 1500,
+    val isArziLedgerLive: Boolean = true,
+    val badiArziRate: Double = 100.0,
+    val chhotiArziRate: Double = 50.0,
+    val canAdminViewArziLedger: Boolean = true,
+    val canDevoteeViewArziLedger: Boolean = false,
+    val canDevoteeViewYatraDiary: Boolean = false,
     val bannerTitle: String = "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट",
     val bannerSubtitle: String = "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार",
     val bannerPhotoUri: String = "",
@@ -171,6 +177,12 @@ data class LiveUiConfigDto(
         srvObj.put("ashram_upi_name", servicesConfig.ashramUpiName)
         srvObj.put("custom_upi_qr_uri", servicesConfig.customUpiQrUri)
         srvObj.put("bus_seat_fare_amount", servicesConfig.busSeatFareAmount)
+        srvObj.put("is_arzi_ledger_live", servicesConfig.isArziLedgerLive)
+        srvObj.put("badi_arzi_rate", servicesConfig.badiArziRate)
+        srvObj.put("chhoti_arzi_rate", servicesConfig.chhotiArziRate)
+        srvObj.put("can_admin_view_arzi_ledger", servicesConfig.canAdminViewArziLedger)
+        srvObj.put("can_devotee_view_arzi_ledger", servicesConfig.canDevoteeViewArziLedger)
+        srvObj.put("can_devotee_view_yatra_diary", servicesConfig.canDevoteeViewYatraDiary)
         srvObj.put("banner_title", servicesConfig.bannerTitle)
         srvObj.put("banner_subtitle", servicesConfig.bannerSubtitle)
         srvObj.put("banner_photo_uri", servicesConfig.bannerPhotoUri)
@@ -291,6 +303,12 @@ data class LiveUiConfigDto(
                         ashramUpiName = srvObj.optString("ashram_upi_name", "Shri Balaji Kripa Dham"),
                         customUpiQrUri = srvObj.optString("custom_upi_qr_uri", ""),
                         busSeatFareAmount = srvObj.optInt("bus_seat_fare_amount", 1500),
+                        isArziLedgerLive = srvObj.optBoolean("is_arzi_ledger_live", true),
+                        badiArziRate = srvObj.optDouble("badi_arzi_rate", 100.0),
+                        chhotiArziRate = srvObj.optDouble("chhoti_arzi_rate", 50.0),
+                        canAdminViewArziLedger = srvObj.optBoolean("can_admin_view_arzi_ledger", true),
+                        canDevoteeViewArziLedger = srvObj.optBoolean("can_devotee_view_arzi_ledger", false),
+                        canDevoteeViewYatraDiary = srvObj.optBoolean("can_devotee_view_yatra_diary", false),
                         bannerTitle = srvObj.optString("banner_title", "🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट"),
                         bannerSubtitle = srvObj.optString("banner_subtitle", "परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार"),
                         bannerPhotoUri = srvObj.optString("banner_photo_uri", ""),

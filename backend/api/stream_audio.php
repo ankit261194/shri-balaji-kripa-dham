@@ -18,35 +18,101 @@ $trackKey = strtolower(trim($_GET['track'] ?? ''));
 
 // Map of sacred tracks to local filenames and high-speed spiritual CDN streams
 $trackMap = [
-    'hanuman_chalisa' => [
-        'title' => 'Shri Hanuman Chalisa',
-        'local_file' => 'hanuman_chalisa.mp3',
-        'cdn_url' => 'https://ia800808.us.archive.org/5/items/05-shri-hanuman-chalisa/05%20SHRI%20HANUMAN%20CHALISA.mp3'
+    'ganesh_aarti' => [
+        'title' => 'Shri Ganesh Ji Ki Aarti',
+        'local_file' => 'ganesh_aarti.mp3',
+        'cdn_url' => 'https://archive.org/download/jai-ganesha-jai-ganesha-aarti/Aarti%20-%20Jai%20Ganesh%20Deva.mp3'
+    ],
+    'guru_vandana' => [
+        'title' => 'Shri Guru Vandana',
+        'local_file' => 'guru_vandana.mp3',
+        'cdn_url' => 'https://archive.org/download/guru-stotram/Guru%20Stotram.mp3'
     ],
     'balaji_aarti' => [
         'title' => 'Shri Balaji Maha Aarti (Dungra Jat)',
         'local_file' => 'balaji_aarti.mp3',
-        'cdn_url' => 'https://ia800808.us.archive.org/5/items/05-shri-hanuman-chalisa/07%20AARTI%20KIJAI%20HANUMAN%20LALA%20KI.mp3'
+        'cdn_url' => 'https://archive.org/download/05-shri-hanuman-chalisa/07%20AARTI%20KIJAI%20HANUMAN%20LALA%20KI.mp3'
+    ],
+    'durga_aarti' => [
+        'title' => 'Shri Maiya Ki Aarti (Durga Aarti)',
+        'local_file' => 'durga_aarti.mp3',
+        'cdn_url' => 'https://archive.org/download/jai-ganesha-jai-ganesha-aarti/Ambe%20Maa%20Ki%20Aarti%20By%20Shankar%20Singh%20Thakur.mp3'
+    ],
+    'shiv_aarti' => [
+        'title' => 'Shri Bhole Baba Ki Aarti (Shiv Aarti)',
+        'local_file' => 'shiv_aarti.mp3',
+        'cdn_url' => 'https://archive.org/download/aarti-om-jai-shiv-omkara-lord-shiva-aarti-anuradha-paudwal/Aarti_Om_Jai_Shiv_Omkara_Lord_Shiva_Aarti_ANURADHA_PAUDWAL.mp3'
+    ],
+    'bhairav_aarti' => [
+        'title' => 'Shri Bhairav Baba Ki Aarti',
+        'local_file' => 'bhairav_aarti.mp3',
+        'cdn_url' => 'https://archive.org/download/NakodanathBhairavcd/bhairav%20aarti.mp3'
+    ],
+    'pretraj_chalisa' => [
+        'title' => 'Shri Pretraj Sarkar Ki Chalisa',
+        'local_file' => 'pretraj_chalisa.mp3',
+        'cdn_url' => 'https://archive.org/download/05-shri-hanuman-chalisa/03%20Jai%20Jai%20Hanuman%20Gusanyee%20-%20Kripa%20Karo%20Maharaj.mp3'
+    ],
+    'hanuman_chalisa' => [
+        'title' => 'Shri Hanuman Chalisa',
+        'local_file' => 'hanuman_chalisa.mp3',
+        'cdn_url' => 'https://archive.org/download/05-shri-hanuman-chalisa/05%20SHRI%20HANUMAN%20CHALISA.mp3'
     ],
     'bajrang_baan' => [
         'title' => 'Bajrang Baan',
         'local_file' => 'bajrang_baan.mp3',
-        'cdn_url' => 'https://ia801509.us.archive.org/7/items/bajrang-baan_202606/Bajrang%20Baan.mp3'
+        'cdn_url' => 'https://archive.org/download/bajrang-baan_202606/Bajrang%20Baan.mp3'
     ],
     'sankatmochan' => [
         'title' => 'Sankat Mochan Hanumanashtak',
         'local_file' => 'sankatmochan.mp3',
-        'cdn_url' => 'https://ia800808.us.archive.org/5/items/05-shri-hanuman-chalisa/06%20SANKATMOCHAN%28HANUMAN%20ASHTAK%29.mp3'
+        'cdn_url' => 'https://archive.org/download/05-shri-hanuman-chalisa/06%20SANKATMOCHAN%28HANUMAN%20ASHTAK%29.mp3'
     ],
+    'durga_chalisa' => [
+        'title' => 'Shri Durga Chalisa (Sampoorna)',
+        'local_file' => 'durga_chalisa.mp3',
+        'cdn_url' => 'https://archive.org/download/jai-ganesha-jai-ganesha-aarti/Ambe%20Maa%20Ki%20Aarti%20By%20Shankar%20Singh%20Thakur.mp3'
+    ],
+    'vindheshwari_chalisa' => [
+        'title' => 'Shri Vindhweshwari Chalisa (Sampoorna)',
+        'local_file' => 'vindheshwari_chalisa.mp3',
+        'cdn_url' => 'https://archive.org/download/jai-ganesha-jai-ganesha-aarti/Ambe%20Maa%20Ki%20Aarti%20By%20Shankar%20Singh%20Thakur.mp3'
+    ],
+    'guruve_namah' => [
+        'title' => 'Shri Guruve Namah',
+        'local_file' => 'guruve_namah.mp3',
+        'cdn_url' => 'https://archive.org/download/guru-stotram/Guru%20Stotram.mp3'
+    ],
+    'bhairav_pretraj_aarti' => [
+        'title' => 'Aarti Shri Bhairavnath Ji & Pretraj Sarkar',
+        'local_file' => 'bhairav_pretraj_aarti.mp3',
+        'cdn_url' => 'https://archive.org/download/NakodanathBhairavcd/bhairav%20aarti.mp3'
+    ],
+    'shabar_mantra' => [
+        'title' => 'Shri Ram Vandana & Shabar Mantra',
+        'local_file' => 'shabar_mantra.mp3',
+        'cdn_url' => 'https://archive.org/download/05-shri-hanuman-chalisa/02%20Mangal%20Moorti%20Maruti%20Nandan%20-%20Jai%20Jai%20Bajrang%20Bali.mp3'
+    ],
+    'balaji_chalisa' => [
+        'title' => 'Shri Balaji Chalisa',
+        'local_file' => 'balaji_chalisa.mp3',
+        'cdn_url' => 'https://archive.org/download/05-shri-hanuman-chalisa/03%20Jai%20Jai%20Hanuman%20Gusanyee%20-%20Kripa%20Karo%20Maharaj.mp3'
+    ],
+    'lakshmi_aarti' => [
+        'title' => 'Shri Lakshmi Ji Ki Aarti',
+        'local_file' => 'lakshmi_aarti.mp3',
+        'cdn_url' => 'https://archive.org/download/jai-ganesha-jai-ganesha-aarti/Aarti%20-%20Jai%20Ganesh%20Deva.mp3'
+    ],
+    // Backwards compatibility aliases
     'aarti_kije' => [
         'title' => 'Aarti Kije Hanuman Lala Ki',
         'local_file' => 'aarti_kije.mp3',
-        'cdn_url' => 'https://ia800808.us.archive.org/5/items/05-shri-hanuman-chalisa/07%20AARTI%20KIJAI%20HANUMAN%20LALA%20KI.mp3'
+        'cdn_url' => 'https://archive.org/download/05-shri-hanuman-chalisa/07%20AARTI%20KIJAI%20HANUMAN%20LALA%20KI.mp3'
     ],
     'ram_stuti' => [
         'title' => 'Shri Ramchandra Kripalu Bhajuman',
         'local_file' => 'ram_stuti.mp3',
-        'cdn_url' => 'https://ia800808.us.archive.org/5/items/05-shri-hanuman-chalisa/02%20Mangal%20Moorti%20Maruti%20Nandan%20-%20Jai%20Jai%20Bajrang%20Bali.mp3'
+        'cdn_url' => 'https://archive.org/download/05-shri-hanuman-chalisa/02%20Mangal%20Moorti%20Maruti%20Nandan%20-%20Jai%20Jai%20Bajrang%20Bali.mp3'
     ]
 ];
 

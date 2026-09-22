@@ -665,9 +665,15 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             cursor.close()
 
             if (count == 0) {
-                // Check if indestructible vault or SharedPreferences has existing user settings first!
-                val restored = AppPermanentVault.restoreVault(context, db, force = true)
-                if (!restored) {
+                // First try auto-restoring from public backup JSON in Downloads/ShriBalajiKripaDham_Backups
+                val backupRestored = try {
+                    com.example.shribalajikripadham.util.GoogleDriveSyncHelper.restoreFromBackupJson(context, null, db)
+                } catch (e: Exception) { false }
+
+                if (!backupRestored) {
+                    // Check if indestructible vault or SharedPreferences has existing user settings first!
+                    val restored = AppPermanentVault.restoreVault(context, db, force = true)
+                    if (!restored) {
                     val settingsValues = ContentValues().apply {
                         put("id", 1)
                         put("ashram_name", "श्री बालाजी कृपा धाम")
@@ -716,7 +722,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     db.insert("ashram_settings", null, settingsValues)
                 }
             }
-        } catch (e: Exception) { e.printStackTrace() }
+        }
+    } catch (e: Exception) { e.printStackTrace() }
 
         // 2. Seed Super Admin if not exists
         try {
@@ -929,6 +936,17 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 }
             }
         } catch (e: Exception) { e.printStackTrace() }
+
+        // 8. Auto-restore tokens and data from public backup on fresh install or reinstall
+        try {
+            val tokenCursor = db.rawQuery("SELECT COUNT(*) FROM tokens", null)
+            var tokenCount = 0
+            if (tokenCursor.moveToFirst()) tokenCount = tokenCursor.getInt(0)
+            tokenCursor.close()
+            if (tokenCount == 0) {
+                com.example.shribalajikripadham.util.GoogleDriveSyncHelper.restoreFromBackupJson(context, null, db)
+            }
+        } catch (ignored: Exception) {}
     }
 
     // =========================================================================

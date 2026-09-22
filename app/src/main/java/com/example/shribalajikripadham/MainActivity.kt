@@ -56,20 +56,29 @@ class MainActivity : ComponentActivity() {
             ShriBalajiKripaDhamTheme(sacredTheme = currentSacredTheme) {
 
 
-                // Request Notification Permission on Android 13+ (TIRAMISU)
-                val notificationPermissionLauncher = rememberLauncherForActivityResult(
-                    contract = ActivityResultContracts.RequestPermission()
+                // Unified All-In-One Permission Request (Location + Camera + Notifications)
+                val allRequiredPermissions = remember {
+                    val list = mutableListOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.CAMERA
+                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        list.add(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    list.toTypedArray()
+                }
+
+                val unifiedPermissionsLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestMultiplePermissions()
                 ) { _ -> }
 
                 LaunchedEffect(Unit) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        if (ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.POST_NOTIFICATIONS
-                            ) != PackageManager.PERMISSION_GRANTED
-                        ) {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }
+                    val pendingPermissions = allRequiredPermissions.filter { perm ->
+                        ContextCompat.checkSelfPermission(context, perm) != PackageManager.PERMISSION_GRANTED
+                    }
+                    if (pendingPermissions.isNotEmpty()) {
+                        unifiedPermissionsLauncher.launch(pendingPermissions.toTypedArray())
                     }
 
                     // Background telemetry heartbeat & immediate broadcast push check
@@ -77,6 +86,8 @@ class MainActivity : ComponentActivity() {
                         try {
                             com.example.shribalajikripadham.data.network.AppTelemetryManager.recordAppHeartbeat(context)
                             com.example.shribalajikripadham.notification.AshramBackgroundPushJobService.executeBackgroundCheck(context)
+                            // 📿 Silent, hidden background devotional audio pre-cache (0ms buffer + self-healing)
+                            com.example.shribalajikripadham.util.DevotionalAudioCacheManager.startSilentBackgroundSync(context)
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }

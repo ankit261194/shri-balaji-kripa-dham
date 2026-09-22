@@ -39,6 +39,7 @@ object GeofenceLocationManager {
         outstationMinDistanceKm: Double = 30.0
     ): Boolean {
         if (!isGeofenceEnforced) return true
+        if (distanceMeters < 0.0) return false // Negative distance = no GPS fix, strictly not permitted!
         val outstationMinMeters = outstationMinDistanceKm * 1000.0
         val isOutstationPermitted = isOutstationAdvanceAllowed && (distanceMeters > outstationMinMeters)
         val isLocalPermitted = (distanceMeters <= allowedRadiusMeters)
@@ -376,4 +377,56 @@ object GeofenceLocationManager {
             onLocationResult(last)
         }
     }
+
+    /**
+     * Resolves human-readable village, town, or city name from GPS coordinates
+     * using Android Geocoder with multi-locale fallback (Hindi and English).
+     */
+    fun resolveVillageAndCity(context: Context, lat: Double, lon: Double): String {
+        if (lat == 0.0 && lon == 0.0) return ""
+        try {
+            if (!android.location.Geocoder.isPresent()) return ""
+            // 1. Try Hindi locale for authentic Devotee / Indian village names
+            val hindiGeocoder = android.location.Geocoder(context, java.util.Locale("hi", "IN"))
+            @Suppress("DEPRECATION")
+            val hindiAddresses = hindiGeocoder.getFromLocation(lat, lon, 1)
+            if (!hindiAddresses.isNullOrEmpty()) {
+                val addr = hindiAddresses[0]
+                val subLocality = addr.subLocality?.trim().orEmpty()
+                val locality = addr.locality?.trim().orEmpty()
+                val subAdmin = addr.subAdminArea?.trim().orEmpty()
+                val primaryPlace = if (subLocality.isNotBlank()) subLocality else locality
+                val secondaryPlace = if (subLocality.isNotBlank() && locality.isNotBlank() && !locality.equals(subLocality, ignoreCase = true)) locality else subAdmin
+                if (primaryPlace.isNotBlank()) {
+                    return if (secondaryPlace.isNotBlank() && !primaryPlace.contains(secondaryPlace)) {
+                        "$primaryPlace ($secondaryPlace)"
+                    } else {
+                        primaryPlace
+                    }
+                }
+            }
+
+            // 2. Fallback to default / English locale if Hindi didn't yield specific village
+            val defGeocoder = android.location.Geocoder(context, java.util.Locale.getDefault())
+            @Suppress("DEPRECATION")
+            val defAddresses = defGeocoder.getFromLocation(lat, lon, 1)
+            if (!defAddresses.isNullOrEmpty()) {
+                val addr = defAddresses[0]
+                val subLocality = addr.subLocality?.trim().orEmpty()
+                val locality = addr.locality?.trim().orEmpty()
+                val subAdmin = addr.subAdminArea?.trim().orEmpty()
+                val primaryPlace = if (subLocality.isNotBlank()) subLocality else locality
+                val secondaryPlace = if (subLocality.isNotBlank() && locality.isNotBlank()) locality else subAdmin
+                if (primaryPlace.isNotBlank()) {
+                    return if (secondaryPlace.isNotBlank() && !primaryPlace.contains(secondaryPlace)) {
+                        "$primaryPlace ($secondaryPlace)"
+                    } else {
+                        primaryPlace
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+        return ""
+    }
 }
+

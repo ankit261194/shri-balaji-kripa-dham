@@ -257,6 +257,11 @@ object AppPermanentVault {
                 }
             } catch (e: Exception) {}
 
+            // Also automatically refresh external public backup in Downloads/ShriBalajiKripaDham_Backups
+            try {
+                com.example.shribalajikripadham.util.GoogleDriveSyncHelper.generateLocalVaultDump(context)
+            } catch (e: Exception) {}
+
             Log.d(TAG, "Permanent vault saved with ${admins.size} admins and complete settings")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save permanent vault: ${e.message}")

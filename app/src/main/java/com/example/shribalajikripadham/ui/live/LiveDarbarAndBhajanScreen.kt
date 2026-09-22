@@ -11,6 +11,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebResourceRequest
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
@@ -45,265 +46,14 @@ import com.example.shribalajikripadham.data.repository.AshramRepository
 import com.example.shribalajikripadham.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
-data class SacredTrack(
-    val titleHindi: String,
-    val titleEnglish: String,
-    val subtitleHindi: String,
-    val durationText: String,
-    val audioUrl: String,
-    val youtubeSearchQuery: String,
-    val lyricsHindi: String
-)
+import com.example.shribalajikripadham.data.sacred.SacredTrack
+import com.example.shribalajikripadham.data.sacred.SACRED_TRACKS
+import com.example.shribalajikripadham.util.DevotionalAudioCacheManager
+import com.example.shribalajikripadham.util.SacredOfflineVaniEngine
+import android.widget.Toast
 
-val SACRED_TRACKS = listOf(
-    SacredTrack(
-        titleHindi = "श्री हनुमान चालीसा",
-        titleEnglish = "Shri Hanuman Chalisa",
-        subtitleHindi = "जय हनुमान ज्ञान गुन सागर • संकट कटे मिटे सब पीरा",
-        durationText = "09:42",
-        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=hanuman_chalisa",
-        youtubeSearchQuery = "Shri Hanuman Chalisa Gulshan Kumar Hariharan",
-        lyricsHindi = """
-            ॥ दोहा ॥
-            श्रीगुरु चरन सरोज रज निज मनु मुकुरु सुधारि।
-            बरनऊं रघुबर बिमल जसु जो दायकु फल चारि॥
-            बुद्धिहीन तनु जानिके सुमिरौं पवन-कुमार।
-            बल बुद्धि बिद्या देहु मोहिं हरहु कलेस बिकार॥
-
-            ॥ चौपाई ॥
-            जय हनुमान ज्ञान गुन सागर। जय कपीस तिहुं लोक उजागर॥
-            राम दूत अतुलित बल धामा। अंजनि-पुत्र पवनसुत नामा॥
-            महाबीर बिक्रम बजरंगी। कुमति निवार सुमति के संगी॥
-            कंचन बरन बिराज सुबेसा। कानन कुंडल कुंचित केसा॥
-            हाथ बज्र औ ध्वजा बिराजै। कांधे मूंज जनेऊ साजै॥
-            संकर सुवन केसरीनंदन। तेज प्रताप महा जग बन्दन॥
-            बिद्यावान गुनी अति चातुर। राम काज करिबे को आतुर॥
-            प्रभु चरित्र सुनिबे को रसिया। राम लखन सीता मन बसिया॥
-            सूक्ष्म रूप धरि सियहिं दिखावा। बिकट रूप धरि लंक जरावा॥
-            भीम रूप धरि असुर संहारे। रामचंद्र के काज संवारे॥
-            लाय सजीवन लखन जियाये। श्रीरघुबीर हरषि उर लाये॥
-            रघुपति कीन्ही बहुत बड़ाई। तुम मम प्रिय भरतहि सम भाई॥
-            सहस बदन तुम्हरो जस गावैं। अस कहि श्रीपति कंठ लगावैं॥
-            सनकादिक ब्रह्मादि मुनीसा। नारद सारद सहित अहीसा॥
-            जम कुबेर दिगपाल जहां ते। कबि कोबिद कहि सके कहां ते॥
-            तुम उपकार सुग्रीवहिं कीन्हा। राम मिलाय राज पद दीन्हा॥
-            तुम्हरो मंत्र बिभीषन माना। लंकेस्वर भए सब जग जाना॥
-            जुग सहस्र जोजन पर भानू। लील्यो ताहि मधुर फल जानू॥
-            प्रभु मुद्रिका मेलि मुख माहीं। जलधि लांघि गये अचरज नाहीं॥
-            दुर्गम काज जगत के जेते। सुगम अनुग्रह तुम्हरे तेते॥
-            राम दुआरे तुम रखवारे। होत न आज्ञा बिनु पैसारे॥
-            सब सुख लहै तुम्हारी सरना। तुम रक्षक काहू को डर ना॥
-            आपन तेज सम्हारो आपै। तीनों लोक हांक तें कांपै॥
-            भूत पिसाच निकट नहिं आवै। महाबीर जब नाम सुनावै॥
-            नासै रोग हरै सब पीरा। जपत निरंतर हनुमत बीरा॥
-            संकट तें हनुमान छुड़ावै। मन क्रम बचन ध्यान जो लावै॥
-            सब पर राम तपस्वी राजा। तिन के काज सकल तुम साजा॥
-            और मनोरथ जो कोई लावै। सोइ अमित जीवन फल पावै॥
-            चारों जुग परताप तुम्हारा। है परसिद्ध जगत उजियारा॥
-            साधु-संत के तुम रखवारे। असुर निकंदन राम दुलारे॥
-            अष्ट सिद्धि नौ निधि के दाता। अस बर दीन जानकी माता॥
-            राम रसायन तुम्हरे पासा। सदा रहो रघुपति के दासा॥
-            तुम्हरे भजन राम को पावै। जनम-जनम के दुख बिसरावै॥
-            अन्तकाल रघुबर पुर जाई। जहां जन्म हरि-भक्त कहाई॥
-            और देवता चित्त न धरई। हनुमत सेइ सर्ब सुख करई॥
-            संकट कटै मिटै सब पीरा। जो सुमिरै हनुमत बलबीरा॥
-            जै जै जै हनुमान गोसाईं। कृपा करहु गुरुदेव की नाईं॥
-            जो सत बार पाठ कर कोई। छूटहि बंदि महा सुख होई॥
-            जो यह पढ़ै हनुमान चालीसा। होय सिद्धि साखी गौरीसा॥
-            तुलसीदास सदा हरि चेरा। कीजै नाथ हृदय मंह डेरा॥
-
-            ॥ दोहा ॥
-            पवन तनय संकट हरन मंगल मूरति रूप।
-            राम लखन सीता सहित हृदय बसहु सुर भूप॥
-        """.trimIndent()
-    ),
-    SacredTrack(
-        titleHindi = "श्री बालाजी महाआरती (डूँगरा जाट)",
-        titleEnglish = "Shri Balaji Maha Aarti",
-        subtitleHindi = "आरती कीजै श्री बालाजी की • कलिकाल में मंगलकारी",
-        durationText = "06:15",
-        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=balaji_aarti",
-        youtubeSearchQuery = "Shri Balaji Aarti Kije Hanuman Lala Ki",
-        lyricsHindi = """
-            ॥ श्री बालाजी कृपा धाम पावन महाआरती ॥
-
-            आरती कीजै श्री बालाजी की। कलिकाल में संकट हरने की॥
-            डूँगरा जाट विराजे देवा। भक्त जन नित करहिं सेवा॥
-
-            शीश मुकुट कुंडल छवि भारी। गदा हाथ में असुर संहारी॥
-            लाल लंगोटा लाल सिंदूरा। राम काज सब कीन्हे पूरा॥
-
-            अर्जी जो दरबार लगावै। मनवांछित सोई फल पावै॥
-            भूत पिशाच निकट नहिं आवैं। बालाजी का नाम सुनावैं॥
-
-            झाड़ा लगे कटे सब रोगा। कृपा करहु प्रभु दीन दयाला॥
-            निशुल्क सेवा धाम तुम्हारा। सब भक्तों का तू रखवारा॥
-
-            आरती कीजै श्री बालाजी की। डूँगरा जाट के नाथ हमारे की॥
-            बोलिए श्री बालाजी महाराज की जय!
-        """.trimIndent()
-    ),
-    SacredTrack(
-        titleHindi = "बजरंग बाण",
-        titleEnglish = "Bajrang Baan",
-        subtitleHindi = "निश्चय प्रेम प्रतीति ते बिनय करै सनमान",
-        durationText = "07:30",
-        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=bajrang_baan",
-        youtubeSearchQuery = "Bajrang Baan Rasraj Ji",
-        lyricsHindi = """
-            ॥ दोहा ॥
-            निश्चय प्रेम प्रतीति ते, बिनय करैं सनमान।
-            तेहि के कारज सकल शुभ, सिद्ध करैं हनुमान॥
-
-            ॥ चौपाई ॥
-            जय हनुमंत संत हितकारी। सुन लीजै प्रभु अरज हमारी॥
-            जन के काज बिलंब न कीजै। आतुर दौरि महा सुख दीजै॥
-            जैसे कूदि सिंधु महिपारा। सुरसा बदन पैठि बिस्तारा॥
-            आगे जाय लंकिनी रोका। मारेहु लात गई सुर लोका॥
-            जाय बिभीषन को सुख दीन्हा। सीता निरखि परमपद लीन्हा॥
-            बाग उजारि सिंधु महं बोरा। अति आतुर जमकातर तोरा॥
-            अक्षय कुमार मारि संहारा। लूम लपेटि लंक को जारा॥
-            लाह समान लंक जरि गई। जय जय धुनि सुरपुर नभ भई॥
-            अब बिलंब केहि कारन स्वामी। कृपा करहु उर अंतरयामी॥
-            जय जय लखन प्रान के दाता। आतुर ह्वै दुख हरहु निपाता॥
-            जै हनुमान जयति बल-सागर। सुर-समूह-समरथ भट-नागर॥
-            ॐ हनु हनु हनु हनुमंत हठीले। बैरिहि मारु बज्र की कीले॥
-            गदा बज्र लै बैरिहिं मारो। महाराज प्रभु दास उबारो॥
-            ॐ ह्रीं ह्रीं ह्रीं हनुमंत कपीसा। ॐ हुं हुं हुं हनु अरि उर सीसा॥
-            सत्य होहु हरि सपथ पाइके। राम दूत धरू मारु धाइके॥
-            जय जय जय हनुमंत अगाधा। दुख पावत जन केहि अपराधा॥
-            पूजा जप तप नेम अचारा। नहिं जानत कछु दास तुम्हारा॥
-            बन उपबन मग गिरि गृह माहीं। तुम्हरे बल हम डरपत नाहीं॥
-            जनकसुता हरि दास कहावो। ताकी सपथ बिलंब न लावो॥
-            जै जै जै धुनि होत अकासा। सुमिरत होय दुसह दुख नासा॥
-            चरन पकरि कर जोरि मनावौं। यहि औसर अब केहि गोहरावौं॥
-            उठु उठु चलु तोहि राम दोहाई। पांय परौं कर जोरि मनाई॥
-            ॐ चं चं चं चं चपल चलंता। ॐ हनु हनु हनु हनु हनुमंता॥
-            ॐ हं हं हांक देत कपि चंचल। ॐ सं सं सहमि पराने खल-दल॥
-            अपने जन को तुरत उबारो। सुमिरत होय आनंद अपारो॥
-            यह बजरंग बाण जेहि मारै। ताहि कहौ फिरि कौन उबारै॥
-            पाठ करै बजरंग बाण की। हनुमत रक्षा करै प्रान की॥
-            यह बजरंग बाण जो जापै। ताते भूत-प्रेत सब कांपै॥
-            धूप देय अरु जपै हमेशा। ताके तन नहिं रहै कलेसा॥
-
-            ॥ दोहा ॥
-            उर प्रतीति दृढ़, सरन ह्वै, पाठ करै धरि ध्यान।
-            बाधा सब हर, करैं सब काम सफल हनुमान॥
-        """.trimIndent()
-    ),
-    SacredTrack(
-        titleHindi = "संकट मोचन हनुमानाष्टक",
-        titleEnglish = "Sankat Mochan Hanumanashtak",
-        subtitleHindi = "बाल समय रवि भक्ष लियो तब तीनहुं लोक भयो अंधियारों",
-        durationText = "05:48",
-        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=sankatmochan",
-        youtubeSearchQuery = "Sankat Mochan Hanuman Ashtak Hariharan",
-        lyricsHindi = """
-            बाल समय रवि भक्ष लियो तब, तीनहुं लोक भयो अंधियारों।
-            ताहि सों त्रास भयो जग को, यह संकट काहु सों जात न टारो।
-            देवन आनि करी बिनती तब, छांड़ि दियो रवि कष्ट निवारो।
-            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ १ ॥
-
-            बालि की त्रास कपीस बसै गिरि, जात महाप्रभु पंथ निहारो।
-            चौंकि महामुनि साप दियो तब, चाहिय कौन बिचार बिचारो।
-            कैद्विज रूप लिवाय महाप्रभु, सो तुम दास के सोक निवारो।
-            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ २ ॥
-
-            अंगद के संग लेन गए सिय, खोज कपीस यह बैन उचारो।
-            जीवत ना बचिहौ हम सो जु, बिना सुधि लाये इहां पगु धारो।
-            हेरी थके तट सिंधु सबे तब, लाय सिया-सुधि प्रान उबारो।
-            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ३ ॥
-
-            रावन त्रास दई सिय को सब, राक्षसि सों कहि सोक निवारो।
-            ताहि समय हनुमान महाप्रभु, जाय महा रजनीचर मारो।
-            चाहत सीय असोक सों आगि सु, दै बनि लंक जलाइ उबारो।
-            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ४ ॥
-
-            बान लग्यो उर लछिमन के तब, प्रान तजे सुत रावन मारो।
-            लै गृह बैद्य सुषेन समेत, तबै गिरि द्रोन सु बीर उपारो।
-            आनि सजीवन हाथ दई तब, लछिमन के तुम प्रान उबारो।
-            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ५ ॥
-
-            रावन जुद्ध अजान कियो तब, नाग कि फांस सबै सिर डारो।
-            श्रीरघुनाथ समेत सबे दल, मोह भयो यह संकट भारो।
-            आनि खगेस तबै हनुमान जु, बंधन काटि सुत्रास निवारो।
-            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ६ ॥
-
-            बंधु समेत जबै अहिरावन, लै रघुनाथ पतार सिधारो।
-            देबिहि पूजि भली बिधि सों बलि, देउ सबै मिलि मंत्र बिचारो।
-            जाय सहाय भयो तब ही, अहिरावन सैन्य समेत संहारो।
-            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ७ ॥
-
-            काज किये बड़ देवन के तुम, बीर महाप्रभु देखि बिचारो।
-            कौन सो संकट मोर गरीब को, जो तुमसों नहिं जात है टारो।
-            बेगि हरो हनुमान महाप्रभु, जो कछु संकट होय हमारो।
-            को नहिं जानत है जग में कपि, संकटमोचन नाम तिहारो॥ ८ ॥
-
-            ॥ दोहा ॥
-            लाल देह लाली लसे, अरु धरि लाल लंगूर।
-            बज्र देह दानव दलन, जय जय जय कपि सूर॥
-        """.trimIndent()
-    ),
-    SacredTrack(
-        titleHindi = "आरती कीजै हनुमान लला की",
-        titleEnglish = "Aarti Kije Hanuman Lala Ki",
-        subtitleHindi = "दुष्ट दलन रघुनाथ कला की • जाके बल से गिरिवर कांपै",
-        durationText = "05:12",
-        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=aarti_kije",
-        youtubeSearchQuery = "Aarti Kije Hanuman Lala Ki Anuradha Paudwal",
-        lyricsHindi = """
-            आरती कीजै हनुमान लला की। दुष्ट दलन रघुनाथ कला की॥
-
-            जाके बल से गिरिवर कांपै। रोग दोष जाके निकट न झांपै॥
-            अंजनि पुत्र महाबलदाई। संतन के प्रभु सदा सहाई॥
-
-            दे बीरा रघुनाथ पठाए। लंका जारि सीय सुधि लाए॥
-            लंका सो कोट समुद्र सी खाई। जात पवनसुत बार न लाई॥
-
-            लंका जारि असुर संहारे। सियारामजी के काज संवारे॥
-            लक्ष्मण मूर्छित पड़े सकारे। आनि संजीवन प्रान उबारे॥
-
-            पैठि पताल तोरि जम-कारे। अहिरावन की भुजा उखारे॥
-            बाएं भुजा असुर दल मारे। दहिने भुजा संतजन तारे॥
-
-            सुर नर मुनि आरती उतारैं। जय जय जय हनुमान उचारैं॥
-            कंचन थार कपूर लौ छाई। आरति करत अंजना माई॥
-
-            जो हनुमानजी की आरति गावै। बसि बैकुंठ परम पद पावै॥
-            आरती कीजै हनुमान लला की। दुष्ट दलन रघुनाथ कला की॥
-        """.trimIndent()
-    ),
-    SacredTrack(
-        titleHindi = "श्री रामचन्द्र कृपालु भजु मन",
-        titleEnglish = "Shri Ramachandra Kripalu",
-        subtitleHindi = "हरन भवभय दारुणं • नवकंज लोचन कंज मुख",
-        durationText = "06:35",
-        audioUrl = "https://shribalajikripadham.online/api/stream_audio.php?track=ram_stuti",
-        youtubeSearchQuery = "Shri Ramchandra Kripalu Bhajuman Lata Mangeshkar",
-        lyricsHindi = """
-            श्रीरामचन्द्र कृपालु भजु मन हरण भवभय दारुणं।
-            नवकंज लोचन, कंज मुख, कर कंज, पद कंजारुणं॥ १ ॥
-
-            कंदर्प अगणित अमित छबि, नवनील नीरद सुन्दरं।
-            पट पीत मानहु तड़ित रुचि शुचि नौमि जनक सुतावरं॥ २ ॥
-
-            भजु दीनबंधु दिनेश दानव दैत्य वंश निकन्दनं।
-            रघुनन्द आनंदकंद कोशलचन्द दशरथ नन्दनं॥ ३ ॥
-
-            सिर मुकुट कुंडल तिलक चारु उदारु अंग विभूषणं।
-            आजानुभुज शर चाप धर, संग्राम जित खर दूषणं॥ ४ ॥
-
-            इति वदति तुलसीदास शंकर शेष मुनि मन रंजनं।
-            मम हृदय कंज निवास कुरु, कामादि खल दल गंजनं॥ ५ ॥
-
-            मनु जाहिं राचेउ मिलहि सो बरु सहज सुंदर सांवरो।
-            करुना निधान सुजान सीलु सनेहु जानत रावरो॥
-            एहि भांति गौरि असीस सुनि सिय सहित हियं हरषीं अली।
-            तुलसी भवानिहि पूजि पुनि पुनि मुदित मन मंदिर चली॥
-        """.trimIndent()
-    )
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -312,6 +62,7 @@ fun LiveDarbarAndBhajanScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val repository = remember { AshramRepository(context) }
     var ashramSettings by remember { mutableStateOf(AshramSettings()) }
 
@@ -328,6 +79,15 @@ fun LiveDarbarAndBhajanScreen(
     var isLooping by remember { mutableStateOf(false) }
     var playbackErrorMessage by remember { mutableStateOf<String?>(null) }
     var showLyricsDialog by remember { mutableStateOf<SacredTrack?>(null) }
+    var cacheRefreshCounter by remember { mutableIntStateOf(0) }
+
+    val isVaniReciting by SacredOfflineVaniEngine.isReciting.collectAsState()
+
+    DisposableEffect(Unit) {
+        onDispose {
+            SacredOfflineVaniEngine.stop()
+        }
+    }
 
     LaunchedEffect(svcTrackIndex) {
         if (svcTrackIndex in SACRED_TRACKS.indices) {
@@ -349,7 +109,8 @@ fun LiveDarbarAndBhajanScreen(
                 trackIndex = index,
                 title = if (isHindi) track.titleHindi else track.titleEnglish,
                 artist = "श्री बालाजी कृपा धाम (डूँगरा जाट)",
-                audioUrl = track.audioUrl
+                audioUrl = track.audioUrl,
+                trackKey = track.trackKey
             )
         } catch (e: Exception) {
             playbackErrorMessage = e.localizedMessage
@@ -481,12 +242,45 @@ fun LiveDarbarAndBhajanScreen(
                     val rawChannelUrl = ashramSettings.youtubeChannelUrl.trim().ifEmpty {
                         "https://www.youtube.com/@ShriBalajiKripaDham"
                     }
-                    val liveVideoUrl = if (rawChannelUrl.contains("/@")) "$rawChannelUrl/live" else rawChannelUrl
+                    val liveVideoUrl = if (rawChannelUrl.contains("/@") && !rawChannelUrl.endsWith("/live")) "$rawChannelUrl/live" else rawChannelUrl
                     val isDarbarLive = ashramSettings.isDarbarActive && ashramSettings.isDarbarLiveNow
                     var showInAppPlayer by remember { mutableStateOf(false) }
 
+                    // Clean YouTube Embed URL Generator (Zero-cookie, no redirects)
+                    fun getYouTubeEmbedUrl(url: String): String {
+                        val clean = url.trim()
+                        if (clean.contains("youtube.com/embed/")) {
+                            return clean.substringBefore("?") + "?autoplay=1&modestbranding=1&rel=0&playsinline=1&controls=1"
+                        }
+                        val shortMatch = Regex("""youtu\.be/([a-zA-Z0-9_\-]+)""").find(clean)
+                        if (shortMatch != null) {
+                            val vid = shortMatch.groupValues[1]
+                            return "https://www.youtube-nocookie.com/embed/$vid?autoplay=1&modestbranding=1&rel=0&playsinline=1&controls=1"
+                        }
+                        val watchMatch = Regex("""[?&]v=([a-zA-Z0-9_\-]+)""").find(clean)
+                        if (watchMatch != null) {
+                            val vid = watchMatch.groupValues[1]
+                            return "https://www.youtube-nocookie.com/embed/$vid?autoplay=1&modestbranding=1&rel=0&playsinline=1&controls=1"
+                        }
+                        val liveMatch = Regex("""youtube\.com/live/([a-zA-Z0-9_\-]+)""").find(clean)
+                        if (liveMatch != null) {
+                            val vid = liveMatch.groupValues[1]
+                            return "https://www.youtube-nocookie.com/embed/$vid?autoplay=1&modestbranding=1&rel=0&playsinline=1&controls=1"
+                        }
+                        if (clean.contains("/channel/")) {
+                            val chId = clean.substringAfter("/channel/").substringBefore("/").substringBefore("?")
+                            return "https://www.youtube-nocookie.com/embed/live_stream?channel=$chId&autoplay=1&modestbranding=1&rel=0&playsinline=1"
+                        }
+                        val handle = if (clean.contains("/@")) clean.substringAfter("/@").substringBefore("/").substringBefore("?") else ""
+                        return if (handle.isNotBlank()) {
+                            "https://www.youtube-nocookie.com/embed/live_stream?channel=$handle&autoplay=1&modestbranding=1&rel=0&playsinline=1"
+                        } else {
+                            "https://www.youtube-nocookie.com/embed/live_stream?autoplay=1&modestbranding=1&rel=0&playsinline=1"
+                        }
+                    }
+
                     if (isDarbarLive || showInAppPlayer) {
-                        // 🟢 IN-APP HIGH-PERFORMANCE VIDEO PLAYER
+                        // 🟢 IN-APP HIGH-PERFORMANCE VIDEO PLAYER (CLEAN EMBED)
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -512,11 +306,43 @@ fun LiveDarbarAndBhajanScreen(
                                             webConfig.useWideViewPort = true
                                             webChromeClient = WebChromeClient()
                                             webViewClient = object : WebViewClient() {
-                                                override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
-                                                    return false
+                                                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                                                    val reqUrl = request?.url?.toString() ?: ""
+                                                    if (reqUrl.contains("youtube.com") || reqUrl.contains("googlevideo.com") || reqUrl.contains("youtube-nocookie.com")) {
+                                                        return false
+                                                    }
+                                                    try {
+                                                        val extIntent = Intent(Intent.ACTION_VIEW, Uri.parse(reqUrl))
+                                                        ctx.startActivity(extIntent)
+                                                    } catch (e: Exception) {}
+                                                    return true
                                                 }
                                             }
-                                            loadUrl(liveVideoUrl)
+
+                                            val embedUrl = getYouTubeEmbedUrl(liveVideoUrl)
+                                            val html = """
+                                                <!DOCTYPE html>
+                                                <html>
+                                                <head>
+                                                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                                                    <style>
+                                                        * { margin:0; padding:0; box-sizing:border-box; }
+                                                        html, body { width:100%; height:100%; background-color:#000000; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+                                                        iframe { width:100%; height:100%; border:none; }
+                                                    </style>
+                                                </head>
+                                                <body>
+                                                    <iframe 
+                                                        src="$embedUrl" 
+                                                        title="Shri Balaji Live Darbar"
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                                        allowfullscreen>
+                                                    </iframe>
+                                                </body>
+                                                </html>
+                                            """.trimIndent()
+
+                                            loadDataWithBaseURL("https://www.youtube-nocookie.com", html, "text/html", "UTF-8", null)
                                         }
                                     },
                                     modifier = Modifier.fillMaxSize()
@@ -1000,22 +826,99 @@ fun LiveDarbarAndBhajanScreen(
 
                     Spacer(Modifier.height(14.dp))
 
-                    Text(
-                        text = if (isHindi) "पावन आरतियाँ, चालीसा एवं स्तुतियाँ" else "Sacred Aartis & Chalisas",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaroonPrimary
-                    )
+                    // Offline Fast Cache Status Card
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)),
+                        border = BorderStroke(1.dp, Color(0xFF81C784))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text(
+                                    text = "⚡ 0.0s बफरिंग ऑफ़लाइन ऑडियो",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.5.sp,
+                                    color = Color(0xFF1B5E20)
+                                )
+                                Text(
+                                    text = "डिवाइस में सुरक्षित: ${DevotionalAudioCacheManager.getTotalCacheSizeFormatted(context)} (बिना इंटरनेट 100% चलेगा)",
+                                    fontSize = 10.5.sp,
+                                    color = Color.DarkGray
+                                )
+                            }
+                            TextButton(
+                                onClick = {
+                                    scope.launch {
+                                        Toast.makeText(context, "📥 सभी 10 आरतियाँ ऑफ़लाइन डाउनलोड हो रही हैं...", Toast.LENGTH_SHORT).show()
+                                        for (t in SACRED_TRACKS) {
+                                            if (!DevotionalAudioCacheManager.isTrackCached(context, t.trackKey)) {
+                                                DevotionalAudioCacheManager.downloadTrackForOffline(context, t.trackKey, t.audioUrl)
+                                            }
+                                        }
+                                        cacheRefreshCounter++
+                                        Toast.makeText(context, "✅ सभी पावन आरतियाँ ऑफ़लाइन सुरक्षित हो गईं!", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            ) {
+                                Text("📥 सभी सेव करें", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isHindi) "पावन 10 आरतियाँ, चालीसा एवं स्तुतियाँ" else "10 Sacred Aartis & Chalisas",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonPrimary
+                        )
+
+                        if (isVaniReciting) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = SaffronPrimary,
+                                modifier = Modifier.clickable {
+                                    SacredOfflineVaniEngine.stop()
+                                }
+                            ) {
+                                Text(
+                                    text = "⏹ वाणी पाठ रोकें",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
 
                     Spacer(Modifier.height(8.dp))
 
-                    // Track List
+                    // Track List (10 Sacred Tracks in Strict Sequential Order)
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         itemsIndexed(SACRED_TRACKS) { index, track ->
                             val isCurrent = currentTrackIndex == index
+                            val isOfflineCached = remember(track.trackKey, cacheRefreshCounter) {
+                                DevotionalAudioCacheManager.isTrackCached(context, track.trackKey)
+                            }
+                            var isDownloadingThis by remember { mutableStateOf(false) }
+
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1051,19 +954,65 @@ fun LiveDarbarAndBhajanScreen(
                                     Spacer(Modifier.width(12.dp))
 
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = if (isHindi) track.titleHindi else track.titleEnglish,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 14.sp,
-                                            color = if (isCurrent) MaroonPrimary else Color.Black
-                                        )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = if (isHindi) track.titleHindi else track.titleEnglish,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                color = if (isCurrent) MaroonPrimary else Color.Black
+                                            )
+                                            if (isOfflineCached) {
+                                                Spacer(Modifier.width(6.dp))
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFFE8F5E9)
+                                                ) {
+                                                    Text(
+                                                        text = "⚡ 0s ऑफ़लाइन",
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color(0xFF2E7D32),
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
                                         Text(
                                             text = track.subtitleHindi,
-                                            fontSize = 11.sp,
-                                            color = Color.Gray,
+                                            fontSize = 11.5.sp,
+                                            color = Color(0xFF333333),
+                                            fontWeight = FontWeight.Medium,
                                             maxLines = 1,
                                             overflow = TextOverflow.Ellipsis
                                         )
+                                    }
+
+                                    if (!isOfflineCached) {
+                                        if (isDownloadingThis) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(20.dp),
+                                                strokeWidth = 2.dp,
+                                                color = MaroonPrimary
+                                            )
+                                        } else {
+                                            IconButton(onClick = {
+                                                isDownloadingThis = true
+                                                scope.launch {
+                                                    val ok = DevotionalAudioCacheManager.downloadTrackForOffline(
+                                                        context, track.trackKey, track.audioUrl
+                                                    )
+                                                    isDownloadingThis = false
+                                                    if (ok) {
+                                                        cacheRefreshCounter++
+                                                        Toast.makeText(context, "✅ '${track.titleHindi}' ऑफ़लाइन सुरक्षित हो गई (0s बफरिंग)!", Toast.LENGTH_SHORT).show()
+                                                    } else {
+                                                        Toast.makeText(context, "डाउनलोड विफल। कृपया इंटरनेट जांचें।", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }) {
+                                                Text("📥", fontSize = 16.sp)
+                                            }
+                                        }
                                     }
 
                                     IconButton(onClick = { showLyricsDialog = track }) {
@@ -1120,12 +1069,24 @@ fun LiveDarbarAndBhajanScreen(
                 }
             },
             dismissButton = {
-                OutlinedButton(
-                    onClick = {
-                        openTrackInYouTube(track)
+                Row {
+                    Button(
+                        onClick = {
+                            SacredOfflineVaniEngine.startRecitation(context, track.lyricsHindi)
+                            Toast.makeText(context, "🪔 100% ऑफ़लाइन पाठ वाचन प्रारंभ हो गया...", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
+                    ) {
+                        Text("🪔 पाठ वाचन", color = Color.White, fontSize = 12.sp)
                     }
-                ) {
-                    Text("यूट्यूब पर सुनें ▶")
+                    Spacer(Modifier.width(6.dp))
+                    OutlinedButton(
+                        onClick = {
+                            openTrackInYouTube(track)
+                        }
+                    ) {
+                        Text("▶", color = Color(0xFFCC0000))
+                    }
                 }
             }
         )

@@ -1,5 +1,6 @@
 package com.example.shribalajikripadham.ui.admin
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -38,6 +39,8 @@ import com.example.shribalajikripadham.theme.MaroonAccent
 import com.example.shribalajikripadham.theme.MaroonPrimary
 import com.example.shribalajikripadham.theme.SaffronPrimary
 import com.example.shribalajikripadham.util.ArziVoiceParser
+import com.example.shribalajikripadham.util.BluetoothThermalPrinterHelper
+import android.bluetooth.BluetoothDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -88,6 +91,21 @@ fun ArziLedgerTab(
         loadData()
     }
 
+    // Dedicated AI Voice Result Modal State
+    var showVoiceResultModal by remember { mutableStateOf(false) }
+    var voiceSpokenText by remember { mutableStateOf("") }
+    var voiceParsedDevoteeName by remember { mutableStateOf("") }
+    var voiceParsedPhone by remember { mutableStateOf("") }
+    var voiceParsedBadiQty by remember { mutableStateOf(1) }
+    var voiceParsedChhotiQty by remember { mutableStateOf(0) }
+    var voiceParsedIsPaid by remember { mutableStateOf(false) }
+    var voiceParsedPaymentMode by remember { mutableStateOf("CASH") }
+
+    // Bluetooth Thermal Receipt Printer State
+    var showPrinterModal by remember { mutableStateOf(false) }
+    var printTargetRecord by remember { mutableStateOf<ArziDistributionRecord?>(null) }
+    var isPrinting by remember { mutableStateOf(false) }
+
     // Speech Recognizer Launcher for Hindi Voice Input
     val speechLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -97,15 +115,14 @@ fun ArziLedgerTab(
             val spokenText = spokenMatches?.firstOrNull() ?: ""
             if (spokenText.isNotBlank()) {
                 val parsed = ArziVoiceParser.parseSpeech(spokenText)
-                dialogRecordId = 0L
-                dialogDevoteeName = parsed.devoteeName
-                dialogPhoneNumber = parsed.phoneNumber
-                dialogBadiQty = if (parsed.bigArziQty > 0) parsed.bigArziQty else 1
-                dialogChhotiQty = parsed.smallArziQty
-                dialogIsPaid = false
-                dialogPaymentMode = "CASH"
-                dialogNotes = "🎙️ बोलकर दर्ज: \"$spokenText\""
-                showConfirmDialog = true
+                voiceSpokenText = spokenText
+                voiceParsedDevoteeName = parsed.devoteeName
+                voiceParsedPhone = parsed.phoneNumber
+                voiceParsedBadiQty = if (parsed.bigArziQty > 0) parsed.bigArziQty else 1
+                voiceParsedChhotiQty = parsed.smallArziQty
+                voiceParsedIsPaid = parsed.isPaid
+                voiceParsedPaymentMode = parsed.paymentMode
+                showVoiceResultModal = true
             }
         }
     }
@@ -145,11 +162,12 @@ fun ArziLedgerTab(
     val totalPaidAmount = records.filter { it.isPaid }.sumOf { it.totalAmount }
     val totalPendingAmount = totalAmount - totalPaidAmount
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(bottom = 16.dp)
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 16.dp)
+        ) {
         // 1. Header Banner with Voice Mic & Actions
         Card(
             colors = CardDefaults.cardColors(containerColor = MaroonPrimary),
@@ -399,11 +417,274 @@ fun ArziLedgerTab(
                                 loadData()
                                 Toast.makeText(context, if (isHindi) "रिकॉर्ड हटाया गया" else "Record deleted", Toast.LENGTH_SHORT).show()
                             }
+                        },
+                        onPrint = {
+                            printTargetRecord = record
+                            showPrinterModal = true
                         }
                     )
                 }
             }
         }
+    }
+
+        // Floating Action Button for Real-Time Voice Entry
+        FloatingActionButton(
+            onClick = { launchVoiceRecognition() },
+            containerColor = SaffronPrimary,
+            contentColor = Color.White,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 20.dp, end = 16.dp),
+            shape = RoundedCornerShape(16.dp),
+            elevation = FloatingActionButtonDefaults.elevation(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("🎙️", fontSize = 20.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isHindi) "बोलकर अर्जी भरें" else "Voice Arzi Entry",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
+        }
+    }
+
+    // ========================================================================
+    // 🎙️ DEDICATED AI VOICE LEDGER INSTANT RESULT MODAL
+    // ========================================================================
+    if (showVoiceResultModal) {
+        val voiceTotal = (voiceParsedBadiQty * settings.badiArziRate) + (voiceParsedChhotiQty * settings.chhotiArziRate)
+
+        AlertDialog(
+            onDismissRequest = { showVoiceResultModal = false },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("🎙️", fontSize = 24.sp)
+                    Column {
+                        Text(
+                            text = if (isHindi) "AI वॉयस लेजर पहचान" else "AI Voice Ledger Recognized",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = MaroonPrimary
+                        )
+                        Text(
+                            text = if (isHindi) "आवाज़ से स्वतः अर्जी डेटा तैयार" else "Auto-parsed from spoken speech",
+                            fontSize = 11.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // Spoken sentence quote box
+                    Surface(
+                        color = Color(0xFFF3E5F5),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFFCE93D8)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = if (isHindi) "🗣️ आपकी बोली गई आवाज़:" else "🗣️ Spoken Input:",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF6A1B9A)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "\"$voiceSpokenText\"",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF4A148C)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Parsed breakdown
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            // Devotee Name
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(if (isHindi) "👤 भक्त का नाम:" else "👤 Devotee:", fontSize = 13.sp, color = Color.Gray)
+                                Text(
+                                    text = voiceParsedDevoteeName.ifBlank { if (isHindi) "अज्ञात भक्त" else "Devotee" },
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaroonPrimary
+                                )
+                            }
+
+                            if (voiceParsedPhone.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(if (isHindi) "📱 मोबाइल:" else "📱 Phone:", fontSize = 13.sp, color = Color.Gray)
+                                    Text(voiceParsedPhone, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFEEEEEE))
+
+                            // Quantities
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(if (isHindi) "📦 बड़ी अर्जी:" else "📦 Big Arzi:", fontSize = 12.sp, color = Color.DarkGray)
+                                    Text(
+                                        "$voiceParsedBadiQty डिब्बे (₹${(voiceParsedBadiQty * settings.badiArziRate).toInt()})",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFFB71C1C)
+                                    )
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(if (isHindi) "📦 छोटी अर्जी:" else "📦 Small Arzi:", fontSize = 12.sp, color = Color.DarkGray)
+                                    Text(
+                                        "$voiceParsedChhotiQty डिब्बे (₹${(voiceParsedChhotiQty * settings.chhotiArziRate).toInt()})",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFFB71C1C)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Total
+                            Surface(
+                                color = Color(0xFFFFF8E1),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(if (isHindi) "कुल राशि:" else "Total:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text("₹${voiceTotal.toInt()}", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = MaroonPrimary)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Paid / Unpaid 1-Tap Toggle
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (voiceParsedIsPaid) Color(0xFFE8F5E9) else Color(0xFFFFF3E0))
+                                    .clickable { voiceParsedIsPaid = !voiceParsedIsPaid }
+                                    .padding(8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (voiceParsedIsPaid)
+                                        (if (isHindi) "✅ राशि प्राप्त (चुकता)" else "✅ Paid (Cash/UPI)")
+                                    else
+                                        (if (isHindi) "⏳ बकाया (बाद में भुगतान)" else "⏳ Pending Due"),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = if (voiceParsedIsPaid) Color(0xFF2E7D32) else Color(0xFFE65100)
+                                )
+                                Text(if (isHindi) "टैप कर बदलें" else "Tap to toggle", fontSize = 10.sp, color = Color.Gray)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val newRec = ArziDistributionRecord(
+                                id = 0L,
+                                devoteeName = voiceParsedDevoteeName.ifBlank { "अज्ञात भक्त" },
+                                phoneNumber = voiceParsedPhone,
+                                bigArziQty = voiceParsedBadiQty,
+                                smallArziQty = voiceParsedChhotiQty,
+                                bigArziRate = settings.badiArziRate,
+                                smallArziRate = settings.chhotiArziRate,
+                                totalAmount = voiceTotal,
+                                isPaid = voiceParsedIsPaid,
+                                paymentMode = voiceParsedPaymentMode,
+                                recordedBy = if (isSuper) "SUPER_ADMIN" else "SEVADAR",
+                                darbarDate = settings.darbarDate.ifBlank { DatabaseHelper.getTodayDateString() },
+                                timestamp = System.currentTimeMillis(),
+                                notes = "🎙️ बोलकर दर्ज: \"$voiceSpokenText\""
+                            )
+                            repository.upsertArziRecord(newRec)
+                            loadData()
+                            showVoiceResultModal = false
+                            Toast.makeText(
+                                context,
+                                if (isHindi) "✅ ${newRec.devoteeName} की अर्जी लेजर में सुरक्षित!" else "✅ Arzi record saved!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(if (isHindi) "✅ तुरंत लेजर में जोड़ें" else "✅ Save to Ledger", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    TextButton(
+                        onClick = {
+                            showVoiceResultModal = false
+                            launchVoiceRecognition()
+                        }
+                    ) {
+                        Text(if (isHindi) "🔄 फिर बोलें" else "Speak again", fontSize = 12.sp)
+                    }
+
+                    TextButton(
+                        onClick = {
+                            showVoiceResultModal = false
+                            dialogRecordId = 0L
+                            dialogDevoteeName = voiceParsedDevoteeName
+                            dialogPhoneNumber = voiceParsedPhone
+                            dialogBadiQty = voiceParsedBadiQty
+                            dialogChhotiQty = voiceParsedChhotiQty
+                            dialogIsPaid = voiceParsedIsPaid
+                            dialogPaymentMode = voiceParsedPaymentMode
+                            dialogNotes = "🎙️ बोलकर दर्ज: \"$voiceSpokenText\""
+                            showConfirmDialog = true
+                        }
+                    ) {
+                        Text(if (isHindi) "✏️ सुधारें" else "Edit", fontSize = 12.sp)
+                    }
+                }
+            }
+        )
     }
 
     // ========================================================================
@@ -433,6 +714,11 @@ fun ArziLedgerTab(
                         value = dialogDevoteeName,
                         onValueChange = { dialogDevoteeName = it },
                         label = { Text(if (isHindi) "भक्त / मरीज का नाम *" else "Devotee Name *") },
+                        trailingIcon = {
+                            IconButton(onClick = { launchVoiceRecognition() }) {
+                                Text("🎙️", fontSize = 18.sp)
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -457,8 +743,8 @@ fun ArziLedgerTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(if (isHindi) "बड़ी अर्जी डिब्बा" else "Big Arzi Box", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text("दर: ₹${settings.badiArziRate.toInt()}/डिब्बा", fontSize = 11.sp, color = Color.Gray)
+                            Text(if (isHindi) "बड़ी अर्जी डिब्बा" else "Big Arzi Box", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1B1B1B))
+                            Text("दर: ₹${settings.badiArziRate.toInt()}/डिब्बा", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFB71C1C))
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(
@@ -491,8 +777,8 @@ fun ArziLedgerTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(if (isHindi) "छोटी अर्जी डिब्बा" else "Small Arzi Box", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text("दर: ₹${settings.chhotiArziRate.toInt()}/डिब्बा", fontSize = 11.sp, color = Color.Gray)
+                            Text(if (isHindi) "छोटी अर्जी डिब्बा" else "Small Arzi Box", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1B1B1B))
+                            Text("दर: ₹${settings.chhotiArziRate.toInt()}/डिब्बा", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFB71C1C))
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(
@@ -660,7 +946,12 @@ fun ArziLedgerTab(
                                 canDevoteeViewArziLedger = settings.canDevoteeViewArziLedger
                             )
                             showRateConfigDialog = false
-                            Toast.makeText(context, if (isHindi) "दरें अपडेट हो गईं" else "Rates updated", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                if (isHindi) "✅ अर्जी दरें (बड़ी: ₹${bRate.toInt()}, छोटी: ₹${cRate.toInt()}) सुरक्षित व लाइव लागू!"
+                                else "Arzi rates (Big: ₹${bRate.toInt()}, Small: ₹${cRate.toInt()}) saved & live!",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
@@ -675,6 +966,112 @@ fun ArziLedgerTab(
             }
         )
     }
+
+    // ========================================================================
+    // 🖨️ BLUETOOTH THERMAL PRINTER MODAL
+    // ========================================================================
+    if (showPrinterModal && printTargetRecord != null) {
+        val target = printTargetRecord!!
+        val pairedDevices = remember { BluetoothThermalPrinterHelper.getPairedDevices(context) }
+
+        AlertDialog(
+            onDismissRequest = { if (!isPrinting) showPrinterModal = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🖨️ ", fontSize = 22.sp)
+                    Text(
+                        text = if (isHindi) "थर्मल प्रिंटर से रसीद निकालें" else "Print Thermal Receipt",
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonPrimary
+                    )
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = if (isHindi) "भक्त: ${target.devoteeName} | कुल: ₹${target.totalAmount.toInt()}" else "Devotee: ${target.devoteeName} | Total: ₹${target.totalAmount.toInt()}",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (!BluetoothThermalPrinterHelper.hasBluetoothPermission(context)) {
+                        Text(
+                            text = if (isHindi) "कृपया सेटिंग्स में जाकर ऐप को ब्लूटूथ अनुमति (Bluetooth Permission) प्रदान करें।" else "Bluetooth permission required.",
+                            color = Color.Red,
+                            fontSize = 12.sp
+                        )
+                    } else if (pairedDevices.isEmpty()) {
+                        Surface(
+                            color = Color(0xFFFFF3E0),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = if (isHindi) "⚠️ कोई पेयर किया हुआ ब्लूटूथ प्रिंटर नहीं मिला।" else "⚠️ No paired Bluetooth printer found.",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFE65100)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (isHindi) "कृपया फोन की 'Bluetooth Settings' में जाकर अपने 58mm/80mm थर्मल प्रिंटर को पहले पेयर करें।" else "Please pair your POS printer in phone settings first.",
+                                    fontSize = 11.sp,
+                                    color = Color.DarkGray
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = if (isHindi) "प्रिंट करने के लिए अपना प्रिंटर चुनें:" else "Select your printer to print:",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        pairedDevices.forEach { device ->
+                            @SuppressLint("MissingPermission")
+                            val devName = device.name ?: "Unknown Device"
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clickable(enabled = !isPrinting) {
+                                        isPrinting = true
+                                        scope.launch {
+                                            val bmp = BluetoothThermalPrinterHelper.generateArziReceiptBitmap(target, settings)
+                                            val res = BluetoothThermalPrinterHelper.printBitmap(device, bmp)
+                                            isPrinting = false
+                                            showPrinterModal = false
+                                            Toast.makeText(context, res.second, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("🖨️", fontSize = 20.sp)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(devName, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                        Text(device.address, fontSize = 10.sp, color = Color.Gray)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showPrinterModal = false }, enabled = !isPrinting) {
+                    Text(if (isHindi) "बंद करें" else "Close")
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -683,7 +1080,8 @@ private fun ArziRecordRowItem(
     isHindi: Boolean,
     onTogglePaid: (Boolean) -> Unit,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onPrint: () -> Unit
 ) {
     val sdf = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
     val timeStr = sdf.format(Date(record.timestamp))
@@ -812,6 +1210,9 @@ private fun ArziRecordRowItem(
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    IconButton(onClick = onPrint, modifier = Modifier.size(32.dp)) {
+                        Text("🖨️", fontSize = 16.sp)
+                    }
                     IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
                         Text("✏️", fontSize = 16.sp)
                     }

@@ -10,69 +10,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-function sendFcmToTokens($tokens, $title, $body, $data = [], $apiKey = '') {
-    if (empty($tokens)) return ["sent" => 0, "failed" => 0];
+const FIREBASE_PROJECT_ID = 'shribalajikripadham-63e96';
 
-    // Default legacy FCM server key or API key if configured
-    if (empty($apiKey)) {
-        // Fallback key
-        $apiKey = 'AIzaSyDbJQvMUopfPb0at-_upRMnR6MjL6z9lRo';
+/**
+ * Generates Google OAuth2 Access Token using Service Account JSON via JWT signing.
+ */
+function getFirebaseAccessToken() {
+    $saFile = __DIR__ . '/../config/firebase_service_account.json';
+    if (!file_exists($saFile)) {
+        return null;
     }
 
-    $url = 'https://fcm.googleapis.com/fcm/send';
-    $results = ["sent" => 0, "failed" => 0, "responses" => []];
-
-    // Chunk into 500 max per FCM request
-    $tokenChunks = array_chunk($tokens, 500);
-
-    foreach ($tokenChunks as $chunk) {
-        $fields = [
-            'registration_ids' => $chunk,
-            'priority' => 'high',
-            'notification' => [
-                'title' => $title,
-                'body' => $body,
-                'sound' => 'default',
-                'badge' => '1',
-                'channel_id' => 'ashram_darbar_channel'
-            ],
-            'data' => array_merge([
-                'title' => $title,
-                'body' => $body,
-                'click_action' => 'FLUTTER_NOTIFICATION_CLICK'
-            ], $data)
-        ];
-
-        $headers = [
-            'Authorization: key=' . $apiKey,
-            'Content-Type: application/json'
-        ];
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-
-        $result = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($result && $httpCode == 200) {
-            $resp = json_decode($result, true);
-            $results["sent"] += intval($resp['success'] ?? 0);
-            $results["failed"] += intval($resp['failure'] ?? 0);
-            $results["responses"][] = $resp;
-        } else {
-            $results["failed"] += count($chunk);
-            $results["responses"][] = ["http_code" => $httpCode, "raw" => $result];
+    $tokenCacheFile = __DIR__ . '/../vault/fcm_oauth_token.json';
+    if (file_exists($tokenCacheFile)) {
+        $cached = json_decode(file_get_contents($tokenCacheFile), true);
+        if ($cached && isset($cached['access_token']) && isset($cached['expires_at'])) {
+            if ($cached['expires_at'] > (time() + 120)) {
+                return $cached['access_token'];
+            }
         }
     }
 
-    return $results;
+    $sa = json_decode(file_get_contents($saFile), true);
+    if (!$sa || empty($sa['private_key']) || empty($sa['client_email'])) {
+        return null;
+    }
+
+    $now = time();
+    $jwtHeader = base64UrlEncode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+    $jwtClaim = base64UrlEncode(json_encode([
+        'iss' => $sa['client_email'],
+        'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+        'aud' => 'https://oauth2.googleapis.com/token',
+        'exp' => $now + 3600,
+        'iat' => $now
+    ]));
+
+    $dataToSign = $jwtHeader . '.' . $jwtClaim;
+    $signature = '';
+    $privateKey = openssl_pkey_get_private($sa['private_key']);
+    if (!$privateKey || !openssl_sign($dataToSign, $signature, $privateKey, 'SHA256')) {
+        return null;
+    }
+
+    $jwt = $dataToSign . '.' . base64UrlEncode($signature);
+
+    // Exchange JWT for Bearer token
+    $ch = curl_init('https://oauth2.googleapis.com/token');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+        'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        'assertion' => $jwt
+    ]));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $res = curl_exec($ch);
+    curl_close($ch);
+
+    $tokenData = json_decode($res, true);
+    if (!empty($tokenData['access_token'])) {
+        $cacheDir = dirname($tokenCacheFile);
+        if (!is_dir($cacheDir)) @mkdir($cacheDir, 0755, true);
+        @file_put_contents($tokenCacheFile, json_encode([
+            'access_token' => $tokenData['access_token'],
+            'expires_at' => $now + intval($tokenData['expires_in'] ?? 3600)
+        ]));
+        return $tokenData['access_token'];
+    }
+
+    return null;
+}
+
+function base64UrlEncode($data) {
+    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+}
+
+/**
+ * Sends push notification to a device token using FCM HTTP v1 API.
+ */
+function sendFcmV1($deviceToken, $title, $body, $data = [], $accessToken = null) {
+    if (!$accessToken) return ['success' => false, 'error' => 'No OAuth2 token'];
+
+    $url = "https://fcm.googleapis.com/v1/projects/" . FIREBASE_PROJECT_ID . "/messages:send";
+
+    $payload = [
+        'message' => [
+            'token' => $deviceToken,
+            'notification' => [
+                'title' => $title,
+                'body' => $body
+            ],
+            'data' => array_map('strval', $data),
+            'android' => [
+                'priority' => 'HIGH',
+                'notification' => [
+                    'sound' => 'default',
+                    'channel_id' => 'ashram_darbar_channel',
+                    'default_sound' => true,
+                    'default_vibrate_timings' => true
+                ]
+            ]
+        ]
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $accessToken,
+        'Content-Type: application/json; UTF-8'
+    ]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+    $resp = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return [
+        'http_code' => $httpCode,
+        'success' => ($httpCode >= 200 && $httpCode < 300),
+        'response' => json_decode($resp, true) ?: $resp
+    ];
 }
 
 try {
@@ -125,7 +186,7 @@ try {
         $cleanPhone = substr($cleanPhone, -10);
     }
 
-    // 1. Save notification record in database
+    // 1. Save notification record in database for 100% reliable in-app mirroring
     $now = round(microtime(true) * 1000);
     $stmt = $pdo->prepare("INSERT INTO devotee_notifications (phone_number, token_number, title, message, type, is_read, created_at)
         VALUES (:phone, :tok, :title, :msg, :type, 0, :now)");
@@ -138,22 +199,34 @@ try {
         ':now' => $now
     ]);
 
-    // 2. Query FCM tokens for this phone
+    // 2. Query registered FCM tokens for this phone
     $tokens = [];
     if (!empty($cleanPhone)) {
-        $tokStmt = $pdo->prepare("SELECT fcm_token FROM fcm_device_tokens WHERE phone_number = :phone");
+        $tokStmt = $pdo->prepare("SELECT fcm_token FROM fcm_device_tokens WHERE phone_number = :phone ORDER BY id DESC LIMIT 5");
         $tokStmt->execute([':phone' => $cleanPhone]);
         $tokens = $tokStmt->fetchAll(PDO::FETCH_COLUMN);
     }
 
-    $fcmResult = ["sent" => 0, "failed" => 0];
-    if (!empty($tokens)) {
-        $fcmResult = sendFcmToTokens($tokens, $title, $body, [
-            "type" => $type,
-            "token_number" => strval($tokenNumber),
-            "patient_name" => $patientName,
-            "timestamp" => strval($now)
-        ]);
+    $accessToken = getFirebaseAccessToken();
+    $fcmDispatchResults = [];
+    $sentCount = 0;
+    $failCount = 0;
+
+    if (!empty($tokens) && $accessToken) {
+        foreach ($tokens as $t) {
+            $res = sendFcmV1($t, $title, $body, [
+                'type' => $type,
+                'token_number' => strval($tokenNumber),
+                'patient_name' => $patientName,
+                'timestamp' => strval($now)
+            ], $accessToken);
+            if ($res['success']) {
+                $sentCount++;
+            } else {
+                $failCount++;
+            }
+            $fcmDispatchResults[] = $res;
+        }
     }
 
     echo json_encode([
@@ -161,8 +234,11 @@ try {
         "phone_number" => $cleanPhone,
         "token_number" => $tokenNumber,
         "registered_devices_found" => count($tokens),
-        "fcm_dispatch" => $fcmResult,
-        "message" => "Devotee notification recorded and push triggered."
+        "fcm_http_v1_active" => ($accessToken !== null),
+        "fcm_sent" => $sentCount,
+        "fcm_failed" => $failCount,
+        "database_notification_id" => $pdo->lastInsertId(),
+        "message" => "Devotee notification saved in database and dispatched via FCM HTTP v1."
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {

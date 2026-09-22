@@ -103,8 +103,6 @@ fun AshramHallDisplayScreen(
     fun announceCurrentToken(tokenNum: Int, devoteeName: String, devoteeCity: String) {
         if (!isAutoAnnounceEnabled) return
         scope.launch {
-            playSacredChime()
-            delay(300)
             AshramVoiceAnnouncementManager.announceNextToken(
                 context = context,
                 tokenNumber = tokenNum,

@@ -54,6 +54,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.io.File
+import com.example.shribalajikripadham.data.sacred.SACRED_TRACKS
+import com.example.shribalajikripadham.data.sacred.SacredTrack
+import com.example.shribalajikripadham.service.BhajanAudioService
+import com.example.shribalajikripadham.util.DevotionalAudioCacheManager
+import android.content.ClipData
+import android.content.ClipboardManager
+
+enum class HomeTab(val titleHindi: String, val titleEnglish: String, val icon: String) {
+    DARSHAN_TOKEN("दर्शन व टोकन", "Darshan & Token", "🚩"),
+    BHAKTI_AARTI("नित्य भक्ति", "Bhakti & Aarti", "📿"),
+    DHARAMSHALA_YATRA("आवास व यात्रा", "Stay & Yatra", "🏨"),
+    ASHRAM_ABOUT("आश्रम परिचय", "About Ashram", "📜")
+}
 
 fun openSocialMediaLink(
     context: Context,
@@ -136,6 +149,7 @@ fun HomeScreen(
     onNavigateToLiveDarbar: () -> Unit = {},
     onNavigateToPanchang: () -> Unit = {},
     onNavigateToSacredGranth: () -> Unit = {},
+    onNavigateToDharamshala: () -> Unit = {},
     onToggleLanguage: () -> Unit
 ) {
     val context = LocalContext.current
@@ -164,6 +178,10 @@ fun HomeScreen(
     var downloadedApkFile by remember { mutableStateOf<java.io.File?>(null) }
     var downloadErrorMsg by remember { mutableStateOf<String?>(null) }
 
+    var selectedHomeTab by remember { mutableStateOf(HomeTab.DARSHAN_TOKEN) }
+    val homeScrollState = rememberScrollState()
+    var viewingLyricsTrack by remember { mutableStateOf<SacredTrack?>(null) }
+
     LaunchedEffect(Unit) {
         var s = settings
         try {
@@ -190,6 +208,11 @@ fun HomeScreen(
                 val (synced, liveConfig) = repository.syncLiveConfigFromGitHub()
                 try { repository.syncAdminsFromGitHub() } catch (e: Exception) {}
                 try { repository.syncLiveParchasFromGitHub() } catch (e: Exception) {}
+                try {
+                    repository.syncSevadarsFromCloud()
+                    activeSevadars = repository.getAllActiveSevadars()
+                    sevadarProfiles = repository.getAllSevadars()
+                } catch (e: Exception) {}
                 if (synced && liveConfig != null) {
                     if (liveConfig.sections.isNotEmpty()) {
                         uiSectionConfigs = liveConfig.sections
@@ -228,13 +251,25 @@ fun HomeScreen(
                             isForceUpdate = onlineInfo.isForce
                         )
                         settings = repository.getSettings()
-                        showUpdatePopup = true
+                        val updatePrefs = context.getSharedPreferences("sbkd_update_snooze", android.content.Context.MODE_PRIVATE)
+                        val snoozedCode = updatePrefs.getInt("snoozed_version_code", 0)
+                        val snoozeUntil = updatePrefs.getLong("snooze_until_timestamp", 0L)
+                        val isSnoozed = (snoozedCode >= onlineInfo.versionCode && System.currentTimeMillis() < snoozeUntil)
+                        if (!isSnoozed || onlineInfo.isForce) {
+                            showUpdatePopup = true
+                        }
                     }
                 } else {
                     val fresh = repository.getSettings()
                     if (AppUpdateManager.isUpdateAvailable(currentCode, fresh.latestVersionCode)) {
                         settings = fresh
-                        showUpdatePopup = true
+                        val updatePrefs = context.getSharedPreferences("sbkd_update_snooze", android.content.Context.MODE_PRIVATE)
+                        val snoozedCode = updatePrefs.getInt("snoozed_version_code", 0)
+                        val snoozeUntil = updatePrefs.getLong("snooze_until_timestamp", 0L)
+                        val isSnoozed = (snoozedCode >= fresh.latestVersionCode && System.currentTimeMillis() < snoozeUntil)
+                        if (!isSnoozed || fresh.isForceUpdate) {
+                            showUpdatePopup = true
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -242,15 +277,35 @@ fun HomeScreen(
             }
         }
 
-        // ⚡ INSTANT REAL-TIME BROADCAST LISTENER (Every 2 seconds):
-        // Whenever SuperAdmin updates Guruji Photo, Banner, Timings, Running Token, or Emergency Notice,
-        // it reflects on devotee's screen within 2 seconds!
+        // ⚡ ADAPTIVE INTELLIGENT LIVE BROADCAST SYNC:
+        // Adjusts polling frequency adaptively:
+        // - 5s when darbar is active or devotee holds today's token (rapid alerts!)
+        // - 15s to 18s during regular/inactive hours (protects server & battery!)
+        // - Exponential backoff on network failures
         scope.launch {
+            var consecutiveErrors = 0
             while (isActive) {
-                delay(2000)
+                val myTokPrefs = try {
+                    context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
+                } catch (e: Exception) { null }
+                val myToken = myTokPrefs?.getInt("my_token_number", 0) ?: 0
+                val myTokenDate = myTokPrefs?.getString("my_token_date", "") ?: ""
+                val todayStr = com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
+                val hasActiveTokenToday = myToken > 0 && (myTokenDate == todayStr || myTokenDate.isBlank())
+
+                // Dynamic interval calculation:
+                val baseDelayMs = when {
+                    consecutiveErrors > 0 -> (10_000L * consecutiveErrors.coerceAtMost(3))
+                    hasActiveTokenToday || settings.isDarbarActive -> 5_000L
+                    else -> 18_000L
+                }
+
+                delay(baseDelayMs)
+
                 try {
                     val rawCfg = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveConfig()
                     if (rawCfg != null && (rawCfg.optBoolean("success", false) || rawCfg.has("ashram_name") || rawCfg.has("config"))) {
+                        consecutiveErrors = 0
                         val liveCfg = if (rawCfg.has("config")) rawCfg.getJSONObject("config") else rawCfg
                         val currentServing = liveCfg.optInt("running_token_number", liveCfg.optInt("current_serving_token", settings.runningTokenNumber))
                         val tokEnabled = if (liveCfg.has("is_token_service_enabled")) liveCfg.optBoolean("is_token_service_enabled") else settings.isTokenServiceEnabled
@@ -263,15 +318,10 @@ fun HomeScreen(
                         val timings = liveCfg.optString("darbar_timings", settings.darbarTimings)
                         val isDarbarActive = if (liveCfg.has("is_darbar_active")) liveCfg.optBoolean("is_darbar_active") else settings.isDarbarActive
 
-                        // ⚡ Instant Devotee Token Calling Alert (< 2 seconds)
+                        // ⚡ Instant Devotee Token Calling Alert
                         if (currentServing != settings.runningTokenNumber && currentServing > 0) {
                             try {
-                                val myTokPrefs = context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
-                                val myToken = myTokPrefs.getInt("my_token_number", 0)
-                                val myTokenDate = myTokPrefs.getString("my_token_date", "") ?: ""
-                                val todayStr = com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
-
-                                if (myToken > 0 && (myTokenDate == todayStr || myTokenDate.isBlank())) {
+                                if (myTokPrefs != null && hasActiveTokenToday) {
                                     val lastAlertServing = myTokPrefs.getInt("last_alerted_serving", 0)
                                     if (currentServing != lastAlertServing) {
                                         if (currentServing == myToken) {
@@ -322,8 +372,12 @@ fun HomeScreen(
                             )
                             repository.updateSettings(settings)
                         }
+                    } else {
+                        consecutiveErrors++
                     }
-                } catch (e: Exception) {}
+                } catch (e: Exception) {
+                    consecutiveErrors++
+                }
             }
         }
 
@@ -343,9 +397,7 @@ fun HomeScreen(
                             isForceUpdate = onlineInfo.isForce
                         )
                         settings = repository.getSettings()
-                        if (!showUpdatePopup && !isDownloadingUpdate) {
-                            showUpdatePopup = true
-                        }
+                        // Keep settings updated in state; do not interrupt active user session with modal popup
                     }
                 } catch (e: Exception) {}
             }
@@ -423,6 +475,58 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
+                        text = if (isHindi) "📑 मुख्य पृष्ठ अनुभाग (Page Toggles)" else "📑 Home Pages",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = currentTheme.primaryColor,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                    )
+
+                    HomeTab.values().forEach { tab ->
+                        val isSelected = selectedHomeTab == tab
+                        NavigationDrawerItem(
+                            icon = { Text(tab.icon, fontSize = 20.sp) },
+                            label = {
+                                Text(
+                                    text = if (isHindi) {
+                                        when (tab) {
+                                            HomeTab.DARSHAN_TOKEN -> "पेज 1: मुख्य दर्शन व टोकन"
+                                            HomeTab.BHAKTI_AARTI -> "पेज 2: नित्य सेवा व भक्ति (15 पाठ)"
+                                            HomeTab.DHARAMSHALA_YATRA -> "पेज 3: आश्रम आवास व यात्रा"
+                                            HomeTab.ASHRAM_ABOUT -> "पेज 4: आश्रम परिचय व नियम"
+                                        }
+                                    } else {
+                                        when (tab) {
+                                            HomeTab.DARSHAN_TOKEN -> "Page 1: Darshan & Token"
+                                            HomeTab.BHAKTI_AARTI -> "Page 2: Sacred Bhakti (15 Aartis)"
+                                            HomeTab.DHARAMSHALA_YATRA -> "Page 3: Stay & Yatra"
+                                            HomeTab.ASHRAM_ABOUT -> "Page 4: Ashram Info & Rules"
+                                        }
+                                    },
+                                    fontSize = 13.5.sp,
+                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                                    color = if (isSelected) MaroonPrimary else TextPrimaryDark
+                                )
+                            },
+                            selected = isSelected,
+                            onClick = {
+                                selectedHomeTab = tab
+                                scope.launch {
+                                    drawerState.close()
+                                    homeScrollState.scrollTo(0)
+                                }
+                            },
+                            colors = NavigationDrawerItemDefaults.colors(
+                                selectedContainerColor = GoldSecondary.copy(alpha = 0.25f),
+                                unselectedContainerColor = Color.Transparent
+                            ),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                        )
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), color = Color(0xFFEEEEEE))
+
+                    Text(
                         text = if (isHindi) "🚩 मुख्य सेवाएं व स्क्रीन" else "🚩 Main Screens & Services",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -433,7 +537,13 @@ fun HomeScreen(
                     // Navigation Items
                     data class NavDrawerItem(val icon: String, val title: String, val action: () -> Unit)
                     val navItems = buildList {
-                        add(NavDrawerItem("🏠", if (isHindi) "मुख्य पृष्ठ (Home)" else "Home", { /* Stay on home */ }))
+                        add(NavDrawerItem("🏠", if (isHindi) "मुख्य पृष्ठ (Home)" else "Home", {
+                            selectedHomeTab = HomeTab.DARSHAN_TOKEN
+                            scope.launch {
+                                drawerState.close()
+                                homeScrollState.scrollTo(0)
+                            }
+                        }))
                         add(NavDrawerItem("🔴", if (isHindi) "🔴 लाइव दर्शन व आरती/भजन" else "🔴 Live Darbar & Bhajans", onNavigateToLiveDarbar))
                         add(NavDrawerItem("🎟️", if (isHindi) "दरबार टोकन जनरेट करें" else "Generate Darbar Token", onNavigateToToken))
                         add(NavDrawerItem("🤳", if (isHindi) "फेस वेरिफिकेशन टोकन" else "Face Token", onNavigateToFaceToken))
@@ -445,6 +555,7 @@ fun HomeScreen(
                             }
                         }
                         add(NavDrawerItem("ℹ️", if (isHindi) "आश्रम परिचय व नियम" else "Ashram Info & Rules", onNavigateToInfo))
+                        add(NavDrawerItem("🏨", if (isHindi) "धर्मशाला व कमरा आरक्षण" else "Dharamshala Room Booking", onNavigateToDharamshala))
                         add(NavDrawerItem("📖", if (isHindi) "ऐप संपूर्ण मार्गदर्शिका (PDF)" else "Devotee User Manual (PDF)", {
                             scope.launch { drawerState.close() }
                             val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
@@ -997,180 +1108,193 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .padding(responsivePadding)
         ) {
-            // 📖 BHAKT APP MARGDARSHIKA (USER MANUAL PDF) BANNER
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9E6)),
-                shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
-                border = BorderStroke(1.2.dp, Color(0xFFFFB300)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = sectionSpacing)
+            // 🌟 PINNED SACRED GOLDEN TAB BAR (Side-Toggle & Page Selector)
+            ScrollableTabRow(
+                selectedTabIndex = selectedHomeTab.ordinal,
+                containerColor = Color.White,
+                contentColor = MaroonPrimary,
+                edgePadding = 8.dp,
+                divider = {
+                    HorizontalDivider(color = currentTheme.secondaryColor.copy(alpha = 0.3f), thickness = 1.dp)
+                }
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = if (isCompact) 10.dp else 12.dp, vertical = if (isCompact) 6.dp else 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(if (isCompact) 32.dp else 42.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFFFECB3)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("📖", fontSize = if (isCompact) 17.sp else 22.sp)
-                    }
-                    Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 10.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = if (isHindi) "भक्त संपूर्ण ऐप मार्गदर्शिका (PDF)" else "Devotee User Manual (PDF)",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = if (isCompact) 12.sp else 13.5.sp,
-                            color = MaroonPrimary,
-                            maxLines = 1
-                        )
-                        if (!isUltraCompact) {
-                            Text(
-                                text = if (isHindi) "ऐप में क्या-क्या है और कैसे उपयोग करें - संपूर्ण विवरण पढ़ें" else "Learn everything you can do and see in the app",
-                                fontSize = if (isCompact) 9.5.sp else 10.5.sp,
-                                color = TextSecondaryDark,
-                                maxLines = 1,
-                                lineHeight = 13.sp
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Button(
+                HomeTab.values().forEach { tab ->
+                    Tab(
+                        selected = selectedHomeTab == tab,
                         onClick = {
-                            val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
-                            if (file != null) {
-                                com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
-                                    context,
-                                    file,
-                                    if (isHindi) "श्री बालाजी कृपा धाम - भक्त संपूर्ण मार्गदर्शिका" else "Shri Balaji Kripa Dham - Devotee User Manual"
-                                )
-                            } else {
-                                Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
-                            }
+                            selectedHomeTab = tab
+                            scope.launch { homeScrollState.scrollTo(0) }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 10.dp, vertical = if (isCompact) 4.dp else 6.dp)
-                    ) {
-                        Text(
-                            text = if (isHindi) "PDF देखें" else "Open PDF",
-                            fontSize = if (isCompact) 10.5.sp else 11.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(tab.icon, fontSize = if (isCompact) 13.sp else 15.sp)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isHindi) tab.titleHindi else tab.titleEnglish,
+                                    fontWeight = if (selectedHomeTab == tab) FontWeight.ExtraBold else FontWeight.SemiBold,
+                                    fontSize = if (isCompact) 12.sp else 13.5.sp,
+                                    color = if (selectedHomeTab == tab) MaroonPrimary else TextSecondaryDark
+                                )
+                            }
+                        }
+                    )
                 }
             }
 
-            val currentCode = AppUpdateManager.getCurrentVersionCode(context)
-            val isUpdateAvailable = AppUpdateManager.isUpdateAvailable(currentCode, settings.latestVersionCode)
-
-            // UPDATE ALERT BANNER (Active whenever an update is available)
-            if (isUpdateAvailable) {
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                    shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
-                    border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = sectionSpacing)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(if (isCompact) 8.dp else 14.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(if (isCompact) 32.dp else 42.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFFB300)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("🔔", fontSize = if (isCompact) 17.sp else 22.sp)
-                        }
-                        Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = if (isHindi) "नया अपडेट v${settings.latestVersionName} उपलब्ध है!" else "New Update v${settings.latestVersionName} Available!",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = if (isCompact) 12.5.sp else 14.sp,
-                                color = MaroonPrimary
-                            )
-                            Text(
-                                text = if (isHindi) "नए फीचर्स व सुधारों के लिए तुरंत अपडेट करें।" else "Tap to update app immediately.",
-                                fontSize = if (isCompact) 10.sp else 11.sp,
-                                color = TextSecondaryDark
-                            )
-                        }
-                        Button(
-                            onClick = { showUpdatePopup = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 12.dp, vertical = if (isCompact) 4.dp else 6.dp)
-                        ) {
-                            Text(
-                                text = if (isHindi) "अपडेट करें" else "Update",
-                                fontSize = if (isCompact) 10.5.sp else 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 🌟 GRAND LIVE TOKEN STATUS ANNOUNCEMENT BANNER (Sunday 8:30 AM to 5:00 PM Schedule)
-            val scheduleState = remember(settings) {
-                SundayTokenScheduleHelper.evaluateSchedule(settings)
-            }
-            val isTokenOpen = scheduleState is SundayScheduleState.Open
-
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = when (scheduleState) {
-                        is SundayScheduleState.Open -> Color(0xFFE8F5E9)
-                        else -> Color(0xFFFFFBEA)
-                    }
-                ),
-                shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
-                border = BorderStroke(
-                    if (isCompact) 1.5.dp else 2.dp,
-                    when (scheduleState) {
-                        is SundayScheduleState.Open -> Color(0xFF2E7D32)
-                        is SundayScheduleState.SundayBeforeStart -> Color(0xFFD84315)
-                        is SundayScheduleState.SundayClosedEvening -> Color(0xFF8B0000)
-                        is SundayScheduleState.NonSunday -> Color(0xFFD84315)
-                        else -> Color(0xFF8B0000)
-                    }
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = if (isCompact) 2.dp else 4.dp),
+            // Scrollable Content for the Selected Tab
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = sectionSpacing)
-                    .clickable {
-                        onNavigateToFaceToken()
-                    }
+                    .fillMaxSize()
+                    .verticalScroll(homeScrollState)
+                    .padding(responsivePadding)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = if (isCompact) 10.dp else 14.dp, vertical = if (isCompact) 8.dp else 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(if (isCompact) 36.dp else 46.dp)
-                            .clip(CircleShape)
-                            .background(
+                when (selectedHomeTab) {
+                    HomeTab.DARSHAN_TOKEN -> {
+                        // 📖 BHAKT APP MARGDARSHIKA (USER MANUAL PDF) BANNER
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9E6)),
+                            shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
+                            border = BorderStroke(1.2.dp, Color(0xFFFFB300)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = sectionSpacing)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = if (isCompact) 10.dp else 12.dp, vertical = if (isCompact) 6.dp else 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(if (isCompact) 32.dp else 42.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFFFECB3)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("📖", fontSize = if (isCompact) 17.sp else 22.sp)
+                                }
+                                Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isHindi) "भक्त संपूर्ण ऐप मार्गदर्शिका (PDF)" else "Devotee User Manual (PDF)",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = if (isCompact) 12.sp else 13.5.sp,
+                                        color = MaroonPrimary,
+                                        maxLines = 1
+                                    )
+                                    if (!isUltraCompact) {
+                                        Text(
+                                            text = if (isHindi) "ऐप में क्या-क्या है और कैसे उपयोग करें - संपूर्ण विवरण पढ़ें" else "Learn everything you can do and see in the app",
+                                            fontSize = if (isCompact) 9.5.sp else 10.5.sp,
+                                            color = TextSecondaryDark,
+                                            maxLines = 1,
+                                            lineHeight = 13.sp
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Button(
+                                    onClick = {
+                                        val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
+                                        if (file != null) {
+                                            com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
+                                                context,
+                                                file,
+                                                if (isHindi) "श्री बालाजी कृपा धाम - भक्त संपूर्ण मार्गदर्शिका" else "Shri Balaji Kripa Dham - Devotee User Manual"
+                                            )
+                                        } else {
+                                            Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 10.dp, vertical = if (isCompact) 4.dp else 6.dp)
+                                ) {
+                                    Text(
+                                        text = if (isHindi) "PDF देखें" else "Open PDF",
+                                        fontSize = if (isCompact) 10.5.sp else 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+
+                        val currentCode = AppUpdateManager.getCurrentVersionCode(context)
+                        val isUpdateAvailable = AppUpdateManager.isUpdateAvailable(currentCode, settings.latestVersionCode)
+
+                        // UPDATE ALERT BANNER
+                        if (isUpdateAvailable) {
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                                shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
+                                border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = sectionSpacing)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(if (isCompact) 8.dp else 14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(if (isCompact) 32.dp else 42.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFFFB300)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text("🔔", fontSize = if (isCompact) 17.sp else 22.sp)
+                                    }
+                                    Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = if (isHindi) "नया अपडेट v${settings.latestVersionName} उपलब्ध है!" else "New Update v${settings.latestVersionName} Available!",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = if (isCompact) 12.5.sp else 14.sp,
+                                            color = MaroonPrimary
+                                        )
+                                        Text(
+                                            text = if (isHindi) "नए फीचर्स व सुधारों के लिए तुरंत अपडेट करें।" else "Tap to update app immediately.",
+                                            fontSize = if (isCompact) 10.sp else 11.sp,
+                                            color = TextSecondaryDark
+                                        )
+                                    }
+                                    Button(
+                                        onClick = { showUpdatePopup = true },
+                                        colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 12.dp, vertical = if (isCompact) 4.dp else 6.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isHindi) "अपडेट करें" else "Update",
+                                            fontSize = if (isCompact) 10.5.sp else 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // 🌟 GRAND LIVE TOKEN STATUS ANNOUNCEMENT BANNER
+                        val scheduleState = remember(settings) {
+                            SundayTokenScheduleHelper.evaluateSchedule(settings)
+                        }
+                        val isTokenOpen = scheduleState is SundayScheduleState.Open
+
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = when (scheduleState) {
+                                    is SundayScheduleState.Open -> Color(0xFFE8F5E9)
+                                    else -> Color(0xFFFFFBEA)
+                                }
+                            ),
+                            shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
+                            border = BorderStroke(
+                                if (isCompact) 1.5.dp else 2.dp,
                                 when (scheduleState) {
                                     is SundayScheduleState.Open -> Color(0xFF2E7D32)
                                     is SundayScheduleState.SundayBeforeStart -> Color(0xFFD84315)
@@ -1179,581 +1303,283 @@ fun HomeScreen(
                                     else -> Color(0xFF8B0000)
                                 }
                             ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = when (scheduleState) {
-                                is SundayScheduleState.Open -> "🎟️"
-                                is SundayScheduleState.SundayBeforeStart -> "⏳"
-                                is SundayScheduleState.SundayClosedEvening -> "🔴"
-                                is SundayScheduleState.NonSunday -> "📅"
-                                else -> "🔒"
-                            },
-                            fontSize = if (isCompact) 18.sp else 24.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = when (scheduleState) {
-                                is SundayScheduleState.Open -> if (isHindi) "🟢 रविवार टोकन वितरण चालू है!" else "🟢 Sunday Token Generation OPEN!"
-                                is SundayScheduleState.SundayBeforeStart -> if (isHindi) "⏳ टोकन आज सुबह 8:30 बजे खुलेंगे" else "⏳ Opens Today at 8:30 AM"
-                                is SundayScheduleState.SundayClosedEvening -> if (isHindi) "🔴 आज के टोकन पूरे हो गए हैं" else "🔴 Today's Tokens Closed"
-                                is SundayScheduleState.NonSunday -> if (isHindi) "📅 रविवार टोकन वितरण सूचना" else "📅 Sunday Token Schedule"
-                                is SundayScheduleState.CustomScheduled -> if (isHindi) "⏳ टोकन पूर्व-निर्धारित है" else "⏳ Token Scheduled"
-                                else -> if (isHindi) "🔴 रविवार टोकन वितरण बंद है" else "🔴 Token Service Closed"
-                            },
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = if (isCompact) 13.sp else 15.sp,
-                            color = when (scheduleState) {
-                                is SundayScheduleState.Open -> Color(0xFF1B5E20)
-                                else -> Color(0xFF8B0000)
+                            elevation = CardDefaults.cardElevation(defaultElevation = if (isCompact) 2.dp else 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = sectionSpacing)
+                                .clickable { onNavigateToFaceToken() }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = if (isCompact) 10.dp else 14.dp, vertical = if (isCompact) 8.dp else 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(if (isCompact) 36.dp else 46.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            when (scheduleState) {
+                                                is SundayScheduleState.Open -> Color(0xFF2E7D32)
+                                                is SundayScheduleState.SundayBeforeStart -> Color(0xFFD84315)
+                                                is SundayScheduleState.SundayClosedEvening -> Color(0xFF8B0000)
+                                                is SundayScheduleState.NonSunday -> Color(0xFFD84315)
+                                                else -> Color(0xFF8B0000)
+                                            }
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = when (scheduleState) {
+                                            is SundayScheduleState.Open -> "🎟️"
+                                            is SundayScheduleState.SundayBeforeStart -> "⏳"
+                                            is SundayScheduleState.SundayClosedEvening -> "🔴"
+                                            is SundayScheduleState.NonSunday -> "📅"
+                                            else -> "🔒"
+                                        },
+                                        fontSize = if (isCompact) 18.sp else 24.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = when (scheduleState) {
+                                            is SundayScheduleState.Open -> if (isHindi) "🟢 रविवार टोकन वितरण चालू है!" else "🟢 Sunday Token Generation OPEN!"
+                                            is SundayScheduleState.SundayBeforeStart -> if (isHindi) "⏳ टोकन आज सुबह 8:30 बजे खुलेंगे" else "⏳ Opens Today at 8:30 AM"
+                                            is SundayScheduleState.SundayClosedEvening -> if (isHindi) "🔴 आज के टोकन पूरे हो गए हैं" else "🔴 Today's Tokens Closed"
+                                            is SundayScheduleState.NonSunday -> if (isHindi) "📅 रविवार टोकन वितरण सूचना" else "📅 Sunday Token Schedule"
+                                            is SundayScheduleState.CustomScheduled -> if (isHindi) "⏳ टोकन पूर्व-निर्धारित है" else "⏳ Token Scheduled"
+                                            else -> if (isHindi) "🔴 रविवार टोकन वितरण बंद है" else "🔴 Token Service Closed"
+                                        },
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = if (isCompact) 13.sp else 15.sp,
+                                        color = when (scheduleState) {
+                                            is SundayScheduleState.Open -> Color(0xFF1B5E20)
+                                            else -> Color(0xFF8B0000)
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = when (scheduleState) {
+                                            is SundayScheduleState.Open -> if (isHindi) "👉 अभी टोकन प्राप्त करें (टैप करें ➔)" else "👉 Tap here to get token now ➔"
+                                            is SundayScheduleState.SundayBeforeStart -> if (isHindi) "सुबह 8:30 बजे आश्रम लोकेशन पर टोकन प्राप्त करें" else "Available from 8:30 AM at Ashram"
+                                            is SundayScheduleState.SundayClosedEvening -> if (isHindi) "अब टोकन आगामी रविवार, ${scheduleState.nextSundayDateStr} को 8:30 AM से मिलेंगे" else "Next tokens on Sunday, ${scheduleState.nextSundayDateStr} 8:30 AM"
+                                            is SundayScheduleState.NonSunday -> if (isHindi) "आगामी रविवार, ${scheduleState.nextSundayDateStr} को 8:30 AM से मिलेंगे" else "Next tokens on Sunday, ${scheduleState.nextSundayDateStr} 8:30 AM"
+                                            is SundayScheduleState.CustomScheduled -> if (isHindi) "खुलने का समय: ${scheduleState.formattedDate}" else "Opens at: ${scheduleState.formattedDate}"
+                                            else -> if (isHindi) "आश्रम व्यवस्था अनुसार टोकन सेवा अभी बंद है" else "Token service paused by Ashram"
+                                        },
+                                        fontSize = if (isCompact) 11.sp else 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        lineHeight = if (isCompact) 14.sp else 18.sp,
+                                        color = when (scheduleState) {
+                                            is SundayScheduleState.Open -> Color(0xFF1B5E20)
+                                            else -> Color(0xFF111111)
+                                        }
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Button(
+                                    onClick = { onNavigateToFaceToken() },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = when (scheduleState) {
+                                            is SundayScheduleState.Open -> Color(0xFF2E7D32)
+                                            else -> Color(0xFF8B0000)
+                                        }
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 10.dp, vertical = if (isCompact) 4.dp else 6.dp)
+                                ) {
+                                    Text(
+                                        text = if (isTokenOpen) (if (isHindi) "टोकन लें ➔" else "Get Token ➔") else (if (isHindi) "विवरण ➔" else "Details ➔"),
+                                        fontSize = if (isCompact) 10.5.sp else 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
                             }
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = when (scheduleState) {
-                                is SundayScheduleState.Open -> if (isHindi) "👉 अभी टोकन प्राप्त करें (टैप करें ➔)" else "👉 Tap here to get token now ➔"
-                                is SundayScheduleState.SundayBeforeStart -> if (isHindi) "सुबह 8:30 बजे आश्रम लोकेशन पर टोकन प्राप्त करें" else "Available from 8:30 AM at Ashram"
-                                is SundayScheduleState.SundayClosedEvening -> if (isHindi) "अब टोकन आगामी रविवार, ${scheduleState.nextSundayDateStr} को 8:30 AM से मिलेंगे" else "Next tokens on Sunday, ${scheduleState.nextSundayDateStr} 8:30 AM"
-                                is SundayScheduleState.NonSunday -> if (isHindi) "आगामी रविवार, ${scheduleState.nextSundayDateStr} को 8:30 AM से मिलेंगे" else "Next tokens on Sunday, ${scheduleState.nextSundayDateStr} 8:30 AM"
-                                is SundayScheduleState.CustomScheduled -> if (isHindi) "खुलने का समय: ${scheduleState.formattedDate}" else "Opens at: ${scheduleState.formattedDate}"
-                                else -> if (isHindi) "आश्रम व्यवस्था अनुसार टोकन सेवा अभी बंद है" else "Token service paused by Ashram"
-                            },
-                            fontSize = if (isCompact) 11.sp else 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            lineHeight = if (isCompact) 14.sp else 18.sp,
-                            color = when (scheduleState) {
-                                is SundayScheduleState.Open -> Color(0xFF1B5E20)
-                                else -> Color(0xFF111111)
+                        }
+
+                        // 🚩 ASHRAM MAIN HERO BANNER
+                        if (settings.isBannerVisible && settings.bannerPhotoUri.isNotBlank()) {
+                            AshramHomeHeroBanner(
+                                bannerPhotoUri = settings.bannerPhotoUri,
+                                title = settings.bannerTitle,
+                                subtitle = settings.bannerSubtitle,
+                                actionUrl = settings.bannerActionUrl,
+                                primaryColor = currentTheme.primaryColor,
+                                secondaryColor = currentTheme.secondaryColor,
+                                context = context
+                            )
+                            Spacer(modifier = Modifier.height(sectionSpacing))
+                        }
+
+                        // 🎯 AI SMART QUEUE & LIVE DARSHAN WAITING TIME (LIVE ETA)
+                        val myTokPrefs = remember { context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE) }
+                        val devoteeMyToken = remember(settings.runningTokenNumber) { myTokPrefs.getInt("my_token_number", 0) }
+                        val devoteeMyTokenDate = remember(settings.runningTokenNumber) { myTokPrefs.getString("my_token_date", "") ?: "" }
+                        val todayDateStr = remember { com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString() }
+                        val isMyTokenToday = devoteeMyToken > 0 && (devoteeMyTokenDate == todayDateStr || devoteeMyTokenDate.isBlank())
+
+                        if (settings.runningTokenNumber > 0 || isMyTokenToday) {
+                            val queueEta = remember(devoteeMyToken, settings.runningTokenNumber, isMyTokenToday) {
+                                com.example.shribalajikripadham.util.SundayTokenScheduleHelper.calculateQueueEta(
+                                    myToken = if (isMyTokenToday) devoteeMyToken else 0,
+                                    currentServing = settings.runningTokenNumber
+                                )
                             }
+
+                            DevoteeSmartQueueEtaCard(
+                                queueEta = queueEta,
+                                runningTokenNumber = settings.runningTokenNumber,
+                                devoteeToken = if (isMyTokenToday) devoteeMyToken else 0,
+                                isHindi = isHindi,
+                                isCompact = isCompact,
+                                onNavigateToToken = onNavigateToToken
+                            )
+                            Spacer(modifier = Modifier.height(sectionSpacing))
+                        }
+
+                        // 🌺 दैनिक अलौकिक श्रृंगार दर्शन
+                        DailyDarshanQuickCard(
+                            isHindi = isHindi,
+                            ashramSettings = settings
                         )
-                    }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Button(
-                        onClick = { onNavigateToFaceToken() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = when (scheduleState) {
-                                is SundayScheduleState.Open -> Color(0xFF2E7D32)
-                                else -> Color(0xFF8B0000)
+                        Spacer(modifier = Modifier.height(sectionSpacing))
+
+                        // IF CLASSIC_DARBAR: render core darbar sections
+                        if (activeLayout == AppUiLayout.CLASSIC_DARBAR) {
+                            val classicDarbarSectionIds = listOf(
+                                UiSectionConfig.ID_EMERGENCY_NOTICE,
+                                UiSectionConfig.ID_FREE_TREATMENT_BOX,
+                                UiSectionConfig.ID_TOKEN_COUNTDOWN,
+                                UiSectionConfig.ID_SMART_FACE_TOKEN,
+                                UiSectionConfig.ID_QUICK_SERVICES
+                            )
+                            for (secId in classicDarbarSectionIds) {
+                                RenderClassicSection(
+                                    sectionId = secId,
+                                    settings = settings,
+                                    isHindi = isHindi,
+                                    currentTheme = currentTheme,
+                                    activeSevadars = activeSevadars,
+                                    sevadarProfiles = sevadarProfiles,
+                                    dynamicEvents = dynamicEvents,
+                                    onNavigateToToken = onNavigateToToken,
+                                    onNavigateToFaceToken = onNavigateToFaceToken,
+                                    onNavigateToYatra = onNavigateToYatra,
+                                    onNavigateToInfo = onNavigateToInfo,
+                                    onNavigateToAdmin = onNavigateToAdmin,
+                                    onNavigateToParchas = onNavigateToParchas,
+                                    onNavigateToLiveDarbar = onNavigateToLiveDarbar,
+                                    onNavigateToDharamshala = onNavigateToDharamshala,
+                                    context = context,
+                                    isCompact = isCompact
+                                )
+                                Spacer(modifier = Modifier.height(sectionSpacing))
                             }
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 10.dp, vertical = if (isCompact) 4.dp else 6.dp)
-                    ) {
-                        Text(
-                            text = if (isTokenOpen) (if (isHindi) "टोकन लें ➔" else "Get Token ➔") else (if (isHindi) "विवरण ➔" else "Details ➔"),
-                            fontSize = if (isCompact) 10.5.sp else 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        } else {
+                            // Render chosen alternative layout
+                            when (activeLayout) {
+                                AppUiLayout.MODERN_CARDS -> ModernCardsLayout(settings, isHindi, currentTheme, activeSevadars, dynamicEvents, onNavigateToToken, onNavigateToFaceToken, onNavigateToYatra, onNavigateToInfo, onNavigateToAdmin, onNavigateToParchas, onNavigateToYatraExpenses, onThemeChanged)
+                                AppUiLayout.VEDIC_GRID -> VedicGridLayout(settings, isHindi, currentTheme, activeSevadars, dynamicEvents, onNavigateToToken, onNavigateToFaceToken, onNavigateToYatra, onNavigateToInfo, onNavigateToAdmin, onNavigateToParchas, onNavigateToYatraExpenses, onThemeChanged)
+                                AppUiLayout.COMPACT_LIST -> CompactListLayout(settings, isHindi, currentTheme, activeSevadars, dynamicEvents, onNavigateToToken, onNavigateToFaceToken, onNavigateToYatra, onNavigateToInfo, onNavigateToAdmin, onNavigateToParchas, onNavigateToYatraExpenses, onThemeChanged)
+                                AppUiLayout.DIVINE_FEED -> DivineFeedLayout(settings, isHindi, currentTheme, activeSevadars, dynamicEvents, onNavigateToToken, onNavigateToFaceToken, onNavigateToYatra, onNavigateToInfo, onNavigateToAdmin, onNavigateToParchas, onNavigateToYatraExpenses, onThemeChanged)
+                                AppUiLayout.MAHABALI_HERO -> MahabaliHeroLayout(settings, isHindi, currentTheme, activeSevadars, dynamicEvents, onNavigateToToken, onNavigateToFaceToken, onNavigateToYatra, onNavigateToInfo, onNavigateToAdmin, onNavigateToParchas, onNavigateToYatraExpenses, onThemeChanged)
+                                AppUiLayout.BHAKTI_ACCORDION -> BhaktiAccordionLayout(settings, isHindi, currentTheme, activeSevadars, dynamicEvents, onNavigateToToken, onNavigateToFaceToken, onNavigateToYatra, onNavigateToInfo, onNavigateToAdmin, onNavigateToParchas, onNavigateToYatraExpenses, onThemeChanged)
+                                AppUiLayout.PARIKRAMA_FLOW -> MandirParikramaLayout(settings, isHindi, currentTheme, activeSevadars, dynamicEvents, onNavigateToToken, onNavigateToFaceToken, onNavigateToYatra, onNavigateToInfo, onNavigateToAdmin, onNavigateToParchas, onNavigateToYatraExpenses, onThemeChanged)
+                                AppUiLayout.GOLDEN_LOTUS -> GoldenLotusLayout(settings, isHindi, currentTheme, activeSevadars, dynamicEvents, onNavigateToToken, onNavigateToFaceToken, onNavigateToYatra, onNavigateToInfo, onNavigateToAdmin, onNavigateToParchas, onNavigateToYatraExpenses, onThemeChanged)
+                                AppUiLayout.SIDDHA_PEETH_PORTAL -> SiddhaPeethPortalLayout(settings, isHindi, currentTheme, activeSevadars, dynamicEvents, onNavigateToToken, onNavigateToFaceToken, onNavigateToYatra, onNavigateToInfo, onNavigateToAdmin, onNavigateToParchas, onNavigateToYatraExpenses, onThemeChanged)
+                                else -> {}
+                            }
+                        }
+
+                        // 📢 SPONSORED ADS / ASHRAM SEVA SAHYOG BANNER
+                        if (settings.isAdsEnabled && (settings.adBannerPhotoUri.isNotBlank() || settings.adBannerTitle.isNotBlank())) {
+                            DevoteeSponsorAdBanner(
+                                photoUri = settings.adBannerPhotoUri,
+                                title = settings.adBannerTitle,
+                                description = settings.adBannerDescription,
+                                targetUrl = settings.adTargetUrl,
+                                primaryColor = currentTheme.primaryColor,
+                                secondaryColor = currentTheme.secondaryColor,
+                                context = context
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                        }
                     }
-                }
-            }
 
-
-
-            // 🚩 ASHRAM MAIN HERO BANNER (Super Admin 100% Controlled)
-            if (settings.isBannerVisible && settings.bannerPhotoUri.isNotBlank()) {
-                AshramHomeHeroBanner(
-                    bannerPhotoUri = settings.bannerPhotoUri,
-                    title = settings.bannerTitle,
-                    subtitle = settings.bannerSubtitle,
-                    actionUrl = settings.bannerActionUrl,
-                    primaryColor = currentTheme.primaryColor,
-                    secondaryColor = currentTheme.secondaryColor,
-                    context = context
-                )
-                Spacer(modifier = Modifier.height(sectionSpacing))
-            }
-
-            // 🎯 AI SMART QUEUE & LIVE DARSHAN WAITING TIME (LIVE ETA)
-            val myTokPrefs = remember { context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE) }
-            val devoteeMyToken = remember(settings.runningTokenNumber) { myTokPrefs.getInt("my_token_number", 0) }
-            val devoteeMyTokenDate = remember(settings.runningTokenNumber) { myTokPrefs.getString("my_token_date", "") ?: "" }
-            val todayDateStr = remember { com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString() }
-            val isMyTokenToday = devoteeMyToken > 0 && (devoteeMyTokenDate == todayDateStr || devoteeMyTokenDate.isBlank())
-
-            if (settings.runningTokenNumber > 0 || isMyTokenToday) {
-                val queueEta = remember(devoteeMyToken, settings.runningTokenNumber, isMyTokenToday) {
-                    com.example.shribalajikripadham.util.SundayTokenScheduleHelper.calculateQueueEta(
-                        myToken = if (isMyTokenToday) devoteeMyToken else 0,
-                        currentServing = settings.runningTokenNumber
-                    )
-                }
-
-                DevoteeSmartQueueEtaCard(
-                    queueEta = queueEta,
-                    runningTokenNumber = settings.runningTokenNumber,
-                    devoteeToken = if (isMyTokenToday) devoteeMyToken else 0,
-                    isHindi = isHindi,
-                    isCompact = isCompact,
-                    onNavigateToToken = onNavigateToToken
-                )
-                Spacer(modifier = Modifier.height(sectionSpacing))
-            }
-
-            // 🕉️ LIVE VEDIC PANCHANG & CHOGHADIYA CARD
-            DevoteePanchangQuickCard(
-                isHindi = isHindi,
-                onNavigateToPanchang = onNavigateToPanchang
-            )
-            Spacer(modifier = Modifier.height(sectionSpacing))
-
-            // 📖 SACRED GRANTHA (SUNDARKAND, BAHUK, HANUMANASHTAK) CARD
-            DevoteeSacredGranthQuickCard(
-                isHindi = isHindi,
-                onNavigateToSacredGranth = onNavigateToSacredGranth
-            )
-            Spacer(modifier = Modifier.height(sectionSpacing))
-
-            // 🌺 दैनिक अलौकिक श्रृंगार दर्शन (OPTION 2: DAILY SACRED DARSHAN GALLERY)
-            DailyDarshanQuickCard(
-                isHindi = isHindi,
-                ashramSettings = settings
-            )
-            Spacer(modifier = Modifier.height(sectionSpacing))
-
-            // RENDERING BASED ON ACTIVE UI LAYOUT (10 COMPLETE UI LOOKS)
-            when (activeLayout) {
-                AppUiLayout.CLASSIC_DARBAR -> {
-                    val sortedVisibleSections = uiSectionConfigs.filter { it.isVisible }.sortedBy { it.orderIndex }
-                    for (section in sortedVisibleSections) {
-                        RenderClassicSection(
-                            sectionId = section.sectionId,
-                            sectionConfig = section,
-                            settings = settings,
+                    HomeTab.BHAKTI_AARTI -> {
+                        DevoteeSacredAartiBhaktiTab(
                             isHindi = isHindi,
                             currentTheme = currentTheme,
+                            context = context,
+                            isCompact = isCompact,
+                            onNavigateToLiveDarbar = onNavigateToLiveDarbar,
+                            onNavigateToPanchang = onNavigateToPanchang,
+                            onNavigateToSacredGranth = onNavigateToSacredGranth,
+                            onOpenLyrics = { track -> viewingLyricsTrack = track }
+                        )
+                    }
+
+                    HomeTab.DHARAMSHALA_YATRA -> {
+                        DevoteeDharamshalaYatraTab(
+                            isHindi = isHindi,
+                            currentTheme = currentTheme,
+                            context = context,
+                            isCompact = isCompact,
+                            onNavigateToDharamshala = onNavigateToDharamshala,
+                            onNavigateToYatra = onNavigateToYatra,
+                            onNavigateToYatraExpenses = onNavigateToYatraExpenses
+                        )
+                    }
+
+                    HomeTab.ASHRAM_ABOUT -> {
+                        DevoteeAshramAboutTab(
+                            isHindi = isHindi,
+                            currentTheme = currentTheme,
+                            settings = settings,
                             activeSevadars = activeSevadars,
                             sevadarProfiles = sevadarProfiles,
                             dynamicEvents = dynamicEvents,
+                            context = context,
+                            isCompact = isCompact,
+                            onNavigateToParchas = onNavigateToParchas,
+                            onNavigateToInfo = onNavigateToInfo,
                             onNavigateToToken = onNavigateToToken,
                             onNavigateToFaceToken = onNavigateToFaceToken,
                             onNavigateToYatra = onNavigateToYatra,
-                            onNavigateToInfo = onNavigateToInfo,
-                            onNavigateToAdmin = onNavigateToAdmin,
-                            onNavigateToParchas = onNavigateToParchas,
-                            onNavigateToLiveDarbar = onNavigateToLiveDarbar,
-                            context = context,
-                            isCompact = isCompact
+                            onNavigateToAdmin = onNavigateToAdmin
                         )
-                        Spacer(modifier = Modifier.height(sectionSpacing))
                     }
                 }
-                AppUiLayout.MODERN_CARDS -> {
-                    ModernCardsLayout(
-                        settings = settings,
-                        isHindi = isHindi,
-                        currentTheme = currentTheme,
-                        activeSevadars = activeSevadars,
-                        dynamicEvents = dynamicEvents,
-                        onNavigateToToken = onNavigateToToken,
-                        onNavigateToFaceToken = onNavigateToFaceToken,
-                        onNavigateToYatra = onNavigateToYatra,
-                        onNavigateToInfo = onNavigateToInfo,
-                        onNavigateToAdmin = onNavigateToAdmin,
-                        onNavigateToParchas = onNavigateToParchas,
-                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
-                        onThemeChanged = onThemeChanged
-                    )
-                }
-                AppUiLayout.VEDIC_GRID -> {
-                    VedicGridLayout(
-                        settings = settings,
-                        isHindi = isHindi,
-                        currentTheme = currentTheme,
-                        activeSevadars = activeSevadars,
-                        dynamicEvents = dynamicEvents,
-                        onNavigateToToken = onNavigateToToken,
-                        onNavigateToFaceToken = onNavigateToFaceToken,
-                        onNavigateToYatra = onNavigateToYatra,
-                        onNavigateToInfo = onNavigateToInfo,
-                        onNavigateToAdmin = onNavigateToAdmin,
-                        onNavigateToParchas = onNavigateToParchas,
-                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
-                        onThemeChanged = onThemeChanged
-                    )
-                }
-                AppUiLayout.COMPACT_LIST -> {
-                    CompactListLayout(
-                        settings = settings,
-                        isHindi = isHindi,
-                        currentTheme = currentTheme,
-                        activeSevadars = activeSevadars,
-                        dynamicEvents = dynamicEvents,
-                        onNavigateToToken = onNavigateToToken,
-                        onNavigateToFaceToken = onNavigateToFaceToken,
-                        onNavigateToYatra = onNavigateToYatra,
-                        onNavigateToInfo = onNavigateToInfo,
-                        onNavigateToAdmin = onNavigateToAdmin,
-                        onNavigateToParchas = onNavigateToParchas,
-                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
-                        onThemeChanged = onThemeChanged
-                    )
-                }
-                AppUiLayout.DIVINE_FEED -> {
-                    DivineFeedLayout(
-                        settings = settings,
-                        isHindi = isHindi,
-                        currentTheme = currentTheme,
-                        activeSevadars = activeSevadars,
-                        dynamicEvents = dynamicEvents,
-                        onNavigateToToken = onNavigateToToken,
-                        onNavigateToFaceToken = onNavigateToFaceToken,
-                        onNavigateToYatra = onNavigateToYatra,
-                        onNavigateToInfo = onNavigateToInfo,
-                        onNavigateToAdmin = onNavigateToAdmin,
-                        onNavigateToParchas = onNavigateToParchas,
-                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
-                        onThemeChanged = onThemeChanged
-                    )
-                }
-                AppUiLayout.MAHABALI_HERO -> {
-                    MahabaliHeroLayout(
-                        settings = settings,
-                        isHindi = isHindi,
-                        currentTheme = currentTheme,
-                        activeSevadars = activeSevadars,
-                        dynamicEvents = dynamicEvents,
-                        onNavigateToToken = onNavigateToToken,
-                        onNavigateToFaceToken = onNavigateToFaceToken,
-                        onNavigateToYatra = onNavigateToYatra,
-                        onNavigateToInfo = onNavigateToInfo,
-                        onNavigateToAdmin = onNavigateToAdmin,
-                        onNavigateToParchas = onNavigateToParchas,
-                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
-                        onThemeChanged = onThemeChanged
-                    )
-                }
-                AppUiLayout.BHAKTI_ACCORDION -> {
-                    BhaktiAccordionLayout(
-                        settings = settings,
-                        isHindi = isHindi,
-                        currentTheme = currentTheme,
-                        activeSevadars = activeSevadars,
-                        dynamicEvents = dynamicEvents,
-                        onNavigateToToken = onNavigateToToken,
-                        onNavigateToFaceToken = onNavigateToFaceToken,
-                        onNavigateToYatra = onNavigateToYatra,
-                        onNavigateToInfo = onNavigateToInfo,
-                        onNavigateToAdmin = onNavigateToAdmin,
-                        onNavigateToParchas = onNavigateToParchas,
-                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
-                        onThemeChanged = onThemeChanged
-                    )
-                }
-                AppUiLayout.PARIKRAMA_FLOW -> {
-                    MandirParikramaLayout(
-                        settings = settings,
-                        isHindi = isHindi,
-                        currentTheme = currentTheme,
-                        activeSevadars = activeSevadars,
-                        dynamicEvents = dynamicEvents,
-                        onNavigateToToken = onNavigateToToken,
-                        onNavigateToFaceToken = onNavigateToFaceToken,
-                        onNavigateToYatra = onNavigateToYatra,
-                        onNavigateToInfo = onNavigateToInfo,
-                        onNavigateToAdmin = onNavigateToAdmin,
-                        onNavigateToParchas = onNavigateToParchas,
-                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
-                        onThemeChanged = onThemeChanged
-                    )
-                }
-                AppUiLayout.GOLDEN_LOTUS -> {
-                    GoldenLotusLayout(
-                        settings = settings,
-                        isHindi = isHindi,
-                        currentTheme = currentTheme,
-                        activeSevadars = activeSevadars,
-                        dynamicEvents = dynamicEvents,
-                        onNavigateToToken = onNavigateToToken,
-                        onNavigateToFaceToken = onNavigateToFaceToken,
-                        onNavigateToYatra = onNavigateToYatra,
-                        onNavigateToInfo = onNavigateToInfo,
-                        onNavigateToAdmin = onNavigateToAdmin,
-                        onNavigateToParchas = onNavigateToParchas,
-                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
-                        onThemeChanged = onThemeChanged
-                    )
-                }
-                AppUiLayout.SIDDHA_PEETH_PORTAL -> {
-                    SiddhaPeethPortalLayout(
-                        settings = settings,
-                        isHindi = isHindi,
-                        currentTheme = currentTheme,
-                        activeSevadars = activeSevadars,
-                        dynamicEvents = dynamicEvents,
-                        onNavigateToToken = onNavigateToToken,
-                        onNavigateToFaceToken = onNavigateToFaceToken,
-                        onNavigateToYatra = onNavigateToYatra,
-                        onNavigateToInfo = onNavigateToInfo,
-                        onNavigateToAdmin = onNavigateToAdmin,
-                        onNavigateToParchas = onNavigateToParchas,
-                        onNavigateToYatraExpenses = onNavigateToYatraExpenses,
-                        onThemeChanged = onThemeChanged
-                    )
-                }
-            }
 
+                Spacer(modifier = Modifier.height(18.dp))
 
-
-            // 7. SOCIAL MEDIA & APP SHARE HUB (Only for alternative layouts, since Classic Darbar renders it dynamically)
-            if (activeLayout != AppUiLayout.CLASSIC_DARBAR) {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = currentTheme.cardShape,
-                elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
-                border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.secondaryColor),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("🌐", fontSize = 24.sp)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = if (isHindi) "आश्रम से सोशल मीडिया पर जुड़ें" else "Connect with Ashram",
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = currentTheme.primaryColor
-                            )
-                            Text(
-                                text = if (isHindi) "लाइव दर्शन, आरती, सूचनाएं व ऍप शेयर करें" else "Live Darshan, Aarti, Updates & Share App",
-                                fontSize = 12.sp,
-                                color = TextSecondaryDark
-                            )
-                        }
+                // Bottom Page Switcher / Quick Navigation Pills
+                HomeTabBottomSwitcher(
+                    currentTab = selectedHomeTab,
+                    isHindi = isHindi,
+                    onSelectTab = { tab ->
+                        selectedHomeTab = tab
+                        scope.launch { homeScrollState.scrollTo(0) }
                     }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // WhatsApp Group
-                        Button(
-                            onClick = {
-                                openSocialMediaLink(
-                                    context = context,
-                                    rawUrl = settings.whatsappGroupUrl,
-                                    defaultUrl = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4",
-                                    isWhatsApp = true,
-                                    errorMessage = if (isHindi) "व्हाट्सएप्प लिंक या ऐप खोलने में असमर्थ" else "Unable to open WhatsApp"
-                                )
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(vertical = 10.dp)
-                        ) {
-                            Text(
-                                text = if (isHindi) "💬 व्हाट्सएप्प" else "💬 WhatsApp",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-
-                        // YouTube Channel
-                        Button(
-                            onClick = {
-                                openSocialMediaLink(
-                                    context = context,
-                                    rawUrl = settings.youtubeChannelUrl,
-                                    defaultUrl = "https://www.youtube.com/@ShriBalajiKripaDham",
-                                    isWhatsApp = false,
-                                    errorMessage = if (isHindi) "यूट्यूब चैनल खोलने में असमर्थ" else "Unable to open YouTube"
-                                )
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000)),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(vertical = 10.dp)
-                        ) {
-                            Text(
-                                text = if (isHindi) "▶️ यूट्यूब" else "▶️ YouTube",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // Facebook Page
-                        Button(
-                            onClick = {
-                                openSocialMediaLink(
-                                    context = context,
-                                    rawUrl = settings.facebookPageUrl,
-                                    defaultUrl = "https://www.facebook.com/ShriBalajiKripaDham",
-                                    isWhatsApp = false,
-                                    errorMessage = if (isHindi) "फेसबुक पेज खोलने में असमर्थ" else "Unable to open Facebook"
-                                )
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1877F2)),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(vertical = 10.dp)
-                        ) {
-                            Text(
-                                text = if (isHindi) "📘 फेसबुक" else "📘 Facebook",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-
-                        // Instagram
-                        Button(
-                            onClick = {
-                                openSocialMediaLink(
-                                    context = context,
-                                    rawUrl = settings.instagramUrl,
-                                    defaultUrl = "https://www.instagram.com/shribalajikripadham",
-                                    isWhatsApp = false,
-                                    errorMessage = if (isHindi) "इंस्टाग्राम पेज खोलने में असमर्थ" else "Unable to open Instagram"
-                                )
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE1306C)),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(vertical = 10.dp)
-                        ) {
-                            Text(
-                                text = if (isHindi) "📸 इंस्टाग्राम" else "📸 Instagram",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Master Share App Button with Pre-filled Devotional Message
-                    Button(
-                        onClick = {
-                            val shareUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.org/app" }
-                            val shareMessage = if (isHindi) {
-                                """
-                                🚩 श्री बालाजी कृपा धाम, डूँगरा जाट (बुलन्दशहर, उ.प्र.) 🚩
-                                
-                                परम पूज्य गुरुजी तेजवीर सिंह जी के पावन सानिध्य में:
-                                ✨ भूत-प्रेत व मानसिक समस्याओं का 100% निःशुल्क (FREE) इलाज!
-                                ✨ प्रत्येक रविवार दिव्य दरबार एवं ऑनलाइन टोकन सुविधा
-                                ✨ आरती, दर्शन व आश्रम की सभी सेवाओं की अधिकृत जानकारी
-                                
-                                📲 अभी श्री बालाजी कृपा धाम ऍप डाउनलोड करें व परिजनों को शेयर करें:
-                                $shareUrl
-                                
-                                ॥ जय श्री बालाजी महाराज ॥
-                                """.trimIndent()
-                            } else {
-                                """
-                                🚩 Shri Balaji Kripa Dham, Dungra Jaat (Bulandshahr, U.P.) 🚩
-                                
-                                Under the divine grace of Param Pujya Guruji Tejveer Singh Ji:
-                                ✨ 100% FREE spiritual healing for afflictions & distress!
-                                ✨ Online Sunday Darbar Token & Queue Management
-                                ✨ Live Aarti, Darshan & Ashram services
-                                
-                                📲 Download Shri Balaji Kripa Dham Official App:
-                                $shareUrl
-                                
-                                || Jai Shri Balaji Maharaj ||
-                                """.trimIndent()
-                            }
-
-                            shareAppContent(
-                                context = context,
-                                shareMessage = shareMessage,
-                                title = if (isHindi) "श्री बालाजी कृपा धाम ऍप शेयर करें" else "Share Ashram App"
-                            )
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
-                        shape = RoundedCornerShape(14.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(vertical = 12.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("📤", fontSize = 18.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (isHindi) "ऍप को व्हाट्सएप्प व अन्य सोशल मीडिया पर शेयर करें" else "Share App on WhatsApp & Social Media",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 📢 SPONSORED ADS / ASHRAM SEVA SAHYOG BANNER (Super Admin 100% Controlled)
-            if (settings.isAdsEnabled && (settings.adBannerPhotoUri.isNotBlank() || settings.adBannerTitle.isNotBlank())) {
-                DevoteeSponsorAdBanner(
-                    photoUri = settings.adBannerPhotoUri,
-                    title = settings.adBannerTitle,
-                    description = settings.adBannerDescription,
-                    targetUrl = settings.adTargetUrl,
-                    primaryColor = currentTheme.primaryColor,
-                    secondaryColor = currentTheme.secondaryColor,
-                    context = context
                 )
-                Spacer(modifier = Modifier.height(14.dp))
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 8. OFFICIAL APP BRANDING & DEVELOPER CREDIT FOOTER (PRD Requirement)
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(2.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(18.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "🚩 श्री बालाजी कृपा धाम 🚩",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaroonAccent
-                    )
-                    Text(
-                        text = "ग्राम डूँगरा जाट, जिला बुलन्दशहर (उ०प्र०)",
-                        fontSize = 12.sp,
-                        color = TextSecondaryDark,
-                        textAlign = TextAlign.Center
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFFEEEEEE))
-                    Text(
-                        text = "Developer: Ankit Chaudhary",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SaffronDark
-                    )
-                    Text(
-                        text = "Anti Gravity • High-Performance Native Android Engineering",
-                        fontSize = 11.sp,
-                        color = TextSecondaryDark
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
+
+    // Sacred Lyrics Full Viewer Modal Dialog
+    viewingLyricsTrack?.let { track ->
+        SacredLyricsViewerDialog(
+            track = track,
+            isHindi = isHindi,
+            onDismiss = { viewingLyricsTrack = null }
+        )
+    }
+
 
             }
     // IN-APP UPDATE POPUP DIALOG (Pops up directly on Home Screen!)
@@ -1761,6 +1587,11 @@ fun HomeScreen(
         Dialog(
             onDismissRequest = {
                 if (!settings.isForceUpdate && !isDownloadingUpdate) {
+                    val updatePrefs = context.getSharedPreferences("sbkd_update_snooze", android.content.Context.MODE_PRIVATE)
+                    updatePrefs.edit()
+                        .putInt("snoozed_version_code", settings.latestVersionCode)
+                        .putLong("snooze_until_timestamp", System.currentTimeMillis() + (24 * 60 * 60 * 1000L))
+                        .apply()
                     showUpdatePopup = false
                 }
             },
@@ -2035,7 +1866,14 @@ fun HomeScreen(
                         if (!settings.isForceUpdate) {
                             Spacer(modifier = Modifier.height(8.dp))
                             TextButton(
-                                onClick = { showUpdatePopup = false },
+                                onClick = {
+                                    val updatePrefs = context.getSharedPreferences("sbkd_update_snooze", android.content.Context.MODE_PRIVATE)
+                                    updatePrefs.edit()
+                                        .putInt("snoozed_version_code", settings.latestVersionCode)
+                                        .putLong("snooze_until_timestamp", System.currentTimeMillis() + (24 * 60 * 60 * 1000L))
+                                        .apply()
+                                    showUpdatePopup = false
+                                },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(
@@ -2162,7 +2000,6 @@ fun HomeScreen(
             }
         }
     }
-}
 }
 
 @Composable
@@ -2398,6 +2235,7 @@ fun RenderClassicSection(
     onNavigateToAdmin: () -> Unit,
     onNavigateToParchas: () -> Unit = {},
     onNavigateToLiveDarbar: () -> Unit = {},
+    onNavigateToDharamshala: () -> Unit = {},
     context: Context,
     isCompact: Boolean = false
 ) {
@@ -2914,6 +2752,19 @@ fun RenderClassicSection(
                         )
                     }
                     Spacer(modifier = Modifier.height(tileSpacing))
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        ActionTile(
+                            title = if (isHindi) "धर्मशाला व आवास" else "Dharamshala",
+                            subtitle = if (isHindi) "कमरा व बेड आरक्षण (AC / Non-AC)" else "Room & Bed Booking",
+                            iconBadge = "🏨",
+                            badgeColor = Color(0xFF00796B),
+                            isPopular = true,
+                            isCompact = isCompact,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = onNavigateToDharamshala
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(tileSpacing))
                     Surface(
                         onClick = {
                             val webUrl = settings.officialWebsiteUrl.ifEmpty { "https://shribalajikripadham.online" }
@@ -3009,6 +2860,17 @@ fun RenderClassicSection(
                             isCompact = isCompact,
                             modifier = Modifier.weight(1f),
                             onClick = onNavigateToAdmin
+                        )
+                        Spacer(modifier = Modifier.width(tileSpacing))
+                        ActionTile(
+                            title = if (isHindi) "धर्मशाला व आवास" else "Dharamshala",
+                            subtitle = if (isHindi) "कमरा व बेड आरक्षण" else "Room & Bed Booking",
+                            iconBadge = "🏨",
+                            badgeColor = Color(0xFF00796B),
+                            isPopular = true,
+                            isCompact = isCompact,
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToDharamshala
                         )
                     }
                 }
@@ -3968,6 +3830,1099 @@ fun DevoteeSacredGranthQuickCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text("➔", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AmberGold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DevoteeSacredAartiBhaktiTab(
+    isHindi: Boolean,
+    currentTheme: SacredTheme,
+    context: Context,
+    isCompact: Boolean,
+    onNavigateToLiveDarbar: () -> Unit,
+    onNavigateToPanchang: () -> Unit,
+    onNavigateToSacredGranth: () -> Unit,
+    onOpenLyrics: (SacredTrack) -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    val isPlaying by BhajanAudioService.isPlaying.collectAsState()
+    val currentTitle by BhajanAudioService.currentTitle.collectAsState()
+    val currentTrackIndex by BhajanAudioService.currentTrackIndex.collectAsState()
+
+    var cachedCount by remember { mutableIntStateOf(DevotionalAudioCacheManager.getCachedTrackCount(context)) }
+    var isSyncing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        cachedCount = DevotionalAudioCacheManager.getCachedTrackCount(context)
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // 1. Grand Header Card with Offline Status
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(18.dp),
+            elevation = CardDefaults.cardElevation(4.dp),
+            border = BorderStroke(1.5.dp, GoldSecondary),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = SaffronPrimary.copy(alpha = 0.15f),
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("📿", fontSize = 24.sp)
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "नित्य सेवा व आरती संग्रह" else "Daily Aarti & Chalisa",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaroonPrimary
+                            )
+                            Text(
+                                text = if (isHindi) "१५ संपूर्ण पावन पाठ • बफर-मुक्त ध्वनि" else "15 Complete Tracks • Zero Buffering",
+                                fontSize = 11.5.sp,
+                                color = TextSecondaryDark
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFE8F5E9),
+                        border = BorderStroke(1.dp, Color(0xFF81C784))
+                    ) {
+                        Text(
+                            text = "🟢 $cachedCount/15 " + (if (isHindi) "ऑफ़लाइन" else "Offline"),
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1B5E20),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = if (isHindi)
+                        "⚡ सभी १५ पावन आरती व चालीसा आपके फोन में गुप्त आंतरिक बैकअप (.nomedia) में स्वतः सुरक्षित हैं। फोन की गैलरी भरे बिना और इंटरनेट धीमा होने पर भी ० सेकंड में बजेंगी।"
+                    else
+                        "⚡ All 15 sacred tracks are silently cached in hidden internal storage for 0ms offline playback with zero buffering.",
+                    fontSize = 11.5.sp,
+                    color = Color(0xFF333333),
+                    lineHeight = 16.sp
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            isSyncing = true
+                            scope.launch {
+                                DevotionalAudioCacheManager.startSilentBackgroundSync(context)
+                                delay(2000)
+                                cachedCount = DevotionalAudioCacheManager.getCachedTrackCount(context)
+                                isSyncing = false
+                                Toast.makeText(context, if (isHindi) "✅ ऑफ़लाइन बैकअप अद्यतन किया जा रहा है" else "Offline cache syncing...", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (isSyncing) "🔄 सिंक जारी..." else "🔄 बैकअप सिंक",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonPrimary
+                        )
+                    }
+
+                    Button(
+                        onClick = onNavigateToLiveDarbar,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1.3f),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "🔴 " + (if (isHindi) "बड़ा प्लेयर खोलें ➔" else "Open Player ➔"),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+
+        // 2. Active Now Playing Bar (if playing)
+        if (isPlaying || currentTitle.isNotBlank()) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.2.dp, SaffronPrimary),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("🔊", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = currentTitle.ifEmpty { "श्री बालाजी भजन" },
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaroonPrimary,
+                                maxLines = 1
+                            )
+                            Text(
+                                text = if (isPlaying) (if (isHindi) "बज रहा है • 0s ऑफ़लाइन" else "Playing Offline") else (if (isHindi) "रुका हुआ है" else "Paused"),
+                                fontSize = 10.5.sp,
+                                color = Color(0xFF1B5E20),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = { BhajanAudioService.togglePlayPause(context) },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Text(if (isPlaying) "⏸" else "▶", fontSize = 18.sp, color = MaroonPrimary)
+                        }
+                        IconButton(
+                            onClick = { BhajanAudioService.stopPlayback(context) },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Text("⏹", fontSize = 16.sp, color = Color.Red)
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 3. List of All 15 Sacred Tracks
+        Text(
+            text = if (isHindi) "📜 संपूर्ण आरती व चालीसा संग्रह (१५ पावन पाठ)" else "All 15 Sacred Tracks & Lyrics",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaroonAccent,
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        SACRED_TRACKS.forEachIndexed { index, track ->
+            val isThisPlaying = (currentTrackIndex == index && isPlaying)
+            val isCached = remember(track.trackKey, cachedCount) {
+                DevotionalAudioCacheManager.isTrackCached(context, track.trackKey)
+            }
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isThisPlaying) Color(0xFFFFF8E1) else Color.White
+                ),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(
+                    if (isThisPlaying) 1.5.dp else 1.dp,
+                    if (isThisPlaying) GoldDark else Color(0xFFEEEEEE)
+                ),
+                elevation = CardDefaults.cardElevation(if (isThisPlaying) 4.dp else 2.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (isThisPlaying) SaffronPrimary else Color(0xFFF5F5F5),
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = "${index + 1}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isThisPlaying) Color.White else MaroonPrimary
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) track.titleHindi else track.titleEnglish,
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaroonPrimary
+                                )
+                                Text(
+                                    text = track.subtitleHindi,
+                                    fontSize = 10.5.sp,
+                                    color = TextSecondaryDark,
+                                    maxLines = 1
+                                )
+                            }
+                        }
+
+                        if (isCached) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFE8F5E9)
+                            ) {
+                                Text(
+                                    text = "🟢 0s Play",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF2E7D32),
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Play Button
+                        Button(
+                            onClick = {
+                                if (isThisPlaying) {
+                                    BhajanAudioService.togglePlayPause(context)
+                                } else {
+                                    BhajanAudioService.playTrack(
+                                        context = context,
+                                        trackIndex = index,
+                                        title = track.titleHindi,
+                                        artist = "श्री बालाजी कृपा धाम",
+                                        audioUrl = track.audioUrl,
+                                        trackKey = track.trackKey
+                                    )
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isThisPlaying) Color(0xFF2E7D32) else currentTheme.primaryColor
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = if (isThisPlaying) "⏸ रोकें" else "▶ बजाएं (${track.durationText})",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+
+                        // Lyrics Button
+                        OutlinedButton(
+                            onClick = { onOpenLyrics(track) },
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "📖 संपूर्ण पाठ",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaroonPrimary
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 4. DevoteePanchangQuickCard
+        DevoteePanchangQuickCard(isHindi = isHindi, onNavigateToPanchang = onNavigateToPanchang)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 5. DevoteeSacredGranthQuickCard
+        DevoteeSacredGranthQuickCard(isHindi = isHindi, onNavigateToSacredGranth = onNavigateToSacredGranth)
+    }
+}
+
+@Composable
+fun DevoteeDharamshalaYatraTab(
+    isHindi: Boolean,
+    currentTheme: SacredTheme,
+    context: Context,
+    isCompact: Boolean,
+    onNavigateToDharamshala: () -> Unit,
+    onNavigateToYatra: () -> Unit,
+    onNavigateToYatraExpenses: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // 1. Dharamshala Room Booking Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(18.dp),
+            elevation = CardDefaults.cardElevation(4.dp),
+            border = BorderStroke(1.2.dp, Color(0xFF00796B)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFE0F2F1),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("🏨", fontSize = 24.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (isHindi) "धर्मशाला व कमरा आरक्षण" else "Dharamshala Room Booking",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF004D40)
+                        )
+                        Text(
+                            text = if (isHindi) "आश्रम में रात्रि विश्राम एवं आवास व्यवस्था" else "Clean Rooms & Rest Facilities",
+                            fontSize = 11.5.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = if (isHindi)
+                        "• वातानुकूलित (AC) एवं नॉन-एसी सुविधायुक्त कमरे\n• स्वच्छ बिस्तर, २४ घंटे बिजली एवं स्वच्छ जल व्यवस्था\n• आश्रम महाप्रसाद एवं भोजनालय की उत्तम सुविधा\n• पारिवारिक एवं व्यक्तिगत कक्ष अग्रिम बुकिंग उपलब्ध"
+                    else
+                        "• AC and Non-AC clean rooms available\n• 24-hr electricity, clean water & bedding\n• Ashram Bhandara & Bhojanalaya facilities\n• Advance booking available for families and individuals",
+                    fontSize = 12.sp,
+                    color = Color(0xFF333333),
+                    lineHeight = 18.sp
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Button(
+                    onClick = onNavigateToDharamshala,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 11.dp)
+                ) {
+                    Text(
+                        text = if (isHindi) "🏨 धर्मशाला कमरा / बेड आरक्षित करें ➔" else "Book Dharamshala Room ➔",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 2. Balaji Yatra & Bus Booking Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(18.dp),
+            elevation = CardDefaults.cardElevation(4.dp),
+            border = BorderStroke(1.2.dp, GoldDark),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFFFF8E1),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("🚌", fontSize = 24.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (isHindi) "श्री बालाजी यात्रा व बस सेवा" else "Balaji Yatra & Bus Booking",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaroonAccent
+                        )
+                        Text(
+                            text = if (isHindi) "आश्रम हेतु सीधी बस व सीट आरक्षण" else "Direct Bus Service to Ashram",
+                            fontSize = 11.5.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = if (isHindi)
+                        "प्रत्येक रविवार एवं विशेष पर्वों पर दिल्ली, बुलन्दशहर एवं आस-पास के क्षेत्रों से सीधी बस सेवा उपलब्ध है। अपनी सीट पहले से बुक करें।"
+                    else
+                        "Direct buses from Delhi, Bulandshahr and nearby areas on Sundays and festive occasions. Reserve your seat early.",
+                    fontSize = 12.sp,
+                    color = Color(0xFF333333),
+                    lineHeight = 17.sp
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onNavigateToYatra,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonAccent),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = if (isHindi) "🚌 यात्रा सीट बुक करें" else "Book Bus Seat",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = onNavigateToYatraExpenses,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = if (isHindi) "💰 खर्च डायरी" else "Expense Diary",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonAccent
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 3. Distance & GPS Route Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(18.dp),
+            elevation = CardDefaults.cardElevation(4.dp),
+            border = BorderStroke(1.2.dp, Color(0xFF3949AB).copy(alpha = 0.5f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFE8EAF6),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("📍", fontSize = 24.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (isHindi) "आश्रम दूरी व सड़क मार्ग (GPS Route)" else "Ashram Route & Distance",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF1A237E)
+                        )
+                        Text(
+                            text = "ग्राम डूँगरा जाट, बुलन्दशहर (उ.प्र.)",
+                            fontSize = 11.5.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Major City Distances
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val cities = listOf(
+                        "दिल्ली" to "85 KM",
+                        "बुलन्दशहर" to "32 KM",
+                        "मेरठ" to "78 KM",
+                        "नोएडा" to "72 KM"
+                    )
+                    cities.forEach { (city, dist) ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFF5F5F5),
+                            border = BorderStroke(0.8.dp, Color(0xFFE0E0E0)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(vertical = 6.dp, horizontal = 2.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(city, fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold, color = TextSecondaryDark)
+                                Text(dist, fontSize = 11.5.sp, fontWeight = FontWeight.ExtraBold, color = MaroonPrimary)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Button(
+                    onClick = {
+                        try {
+                            val mapUri = Uri.parse("geo:28.4070,77.8498?q=Shri+Balaji+Kripa+Dham+Dungra+Jaat")
+                            val mapIntent = Intent(Intent.ACTION_VIEW, mapUri)
+                            mapIntent.setPackage("com.google.android.apps.maps")
+                            context.startActivity(mapIntent)
+                        } catch (e: Exception) {
+                            val webMapIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://maps.google.com/?q=28.4070,77.8498"))
+                            context.startActivity(webMapIntent)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3949AB)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 11.dp)
+                ) {
+                    Text(
+                        text = if (isHindi) "🗺️ गूगल मैप्स पर लाइव रास्ता देखें ➔" else "Open in Google Maps ➔",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DevoteeAshramAboutTab(
+    isHindi: Boolean,
+    currentTheme: SacredTheme,
+    settings: AshramSettings,
+    activeSevadars: List<Admin>,
+    sevadarProfiles: List<SevadarProfile>,
+    dynamicEvents: List<AshramEvent>,
+    context: Context,
+    isCompact: Boolean,
+    onNavigateToParchas: () -> Unit,
+    onNavigateToInfo: () -> Unit,
+    onNavigateToToken: () -> Unit,
+    onNavigateToFaceToken: () -> Unit,
+    onNavigateToYatra: () -> Unit,
+    onNavigateToAdmin: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // 1. Digital Sacred Parchas Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(18.dp),
+            elevation = CardDefaults.cardElevation(4.dp),
+            border = BorderStroke(1.2.dp, Color(0xFF6A1B9A)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF3E5F5),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("📜", fontSize = 24.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (isHindi) "आश्रम के पावन पर्चे व नियम" else "Sacred Parchas & Rules",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF4A148C)
+                        )
+                        Text(
+                            text = if (isHindi) "हवन सामग्री, उतारा विधि व विशेष नियम" else "Hawan Samagri, Utara & Ritual Rules",
+                            fontSize = 11.5.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = if (isHindi)
+                        "आश्रम द्वारा जारी किए गए सभी अधिकृत पर्चे, हवन विधि, उतारा की सामग्री एवं प्रेत बाधा निवारण के नियमों को मोबाइल पर देखें एवं PDF में डाउनलोड करें।"
+                    else
+                        "View and download official Ashram parchas, hawan guides, utara items, and spiritual rules in PDF format.",
+                    fontSize = 12.sp,
+                    color = Color(0xFF333333),
+                    lineHeight = 17.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = onNavigateToParchas,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A1B9A)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 11.dp)
+                ) {
+                    Text(
+                        text = if (isHindi) "📜 संपूर्ण पर्चे देखें व PDF डाउनलोड करें ➔" else "View Parchas & Download PDF ➔",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 2. Ashram Rules & Info Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(18.dp),
+            elevation = CardDefaults.cardElevation(4.dp),
+            border = BorderStroke(1.2.dp, Color(0xFF3949AB)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFE8EAF6),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("ℹ️", fontSize = 24.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (isHindi) "आश्रम परिचय एवं दरबार नियम" else "Ashram Info & Darbar Rules",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF1A237E)
+                        )
+                        Text(
+                            text = if (isHindi) "इतिहास, मर्यादा एवं दर्शन दिशा-निर्देश" else "History, Discipline & Guidelines",
+                            fontSize = 11.5.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = if (isHindi)
+                        "श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट का संपूर्ण इतिहास, पूज्य गुरुजी के नियम, दर्शन व्यवस्था, स्वच्छता व अनुशासन संबंधी सभी आवश्यक नियम पढ़ें।"
+                    else
+                        "Complete history of Shri Balaji Kripa Dham, Dungra Jaat, Guruji's guidelines, discipline, and darbar rules.",
+                    fontSize = 12.sp,
+                    color = Color(0xFF333333),
+                    lineHeight = 17.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = onNavigateToInfo,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3949AB)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 11.dp)
+                ) {
+                    Text(
+                        text = if (isHindi) "ℹ️ आश्रम परिचय व नियम पढ़ें ➔" else "Read Ashram Info & Rules ➔",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 3. Guruji Profile & Darbar Mission
+        RenderClassicSection(
+            sectionId = UiSectionConfig.ID_DARBAR_STATUS,
+            settings = settings,
+            isHindi = isHindi,
+            currentTheme = currentTheme,
+            activeSevadars = activeSevadars,
+            sevadarProfiles = sevadarProfiles,
+            dynamicEvents = dynamicEvents,
+            onNavigateToToken = onNavigateToToken,
+            onNavigateToFaceToken = onNavigateToFaceToken,
+            onNavigateToYatra = onNavigateToYatra,
+            onNavigateToInfo = onNavigateToInfo,
+            onNavigateToAdmin = onNavigateToAdmin,
+            context = context,
+            isCompact = isCompact
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 4. Sevadar Team Showcase
+        RenderClassicSection(
+            sectionId = UiSectionConfig.ID_SEVADAR_TEAM,
+            settings = settings,
+            isHindi = isHindi,
+            currentTheme = currentTheme,
+            activeSevadars = activeSevadars,
+            sevadarProfiles = sevadarProfiles,
+            dynamicEvents = dynamicEvents,
+            onNavigateToToken = onNavigateToToken,
+            onNavigateToFaceToken = onNavigateToFaceToken,
+            onNavigateToYatra = onNavigateToYatra,
+            onNavigateToInfo = onNavigateToInfo,
+            onNavigateToAdmin = onNavigateToAdmin,
+            context = context,
+            isCompact = isCompact
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 5. Dynamic Events
+        RenderClassicSection(
+            sectionId = UiSectionConfig.ID_DYNAMIC_EVENTS,
+            settings = settings,
+            isHindi = isHindi,
+            currentTheme = currentTheme,
+            activeSevadars = activeSevadars,
+            sevadarProfiles = sevadarProfiles,
+            dynamicEvents = dynamicEvents,
+            onNavigateToToken = onNavigateToToken,
+            onNavigateToFaceToken = onNavigateToFaceToken,
+            onNavigateToYatra = onNavigateToYatra,
+            onNavigateToInfo = onNavigateToInfo,
+            onNavigateToAdmin = onNavigateToAdmin,
+            context = context,
+            isCompact = isCompact
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 6. Official Website Card
+        Surface(
+            onClick = {
+                val webUrl = settings.officialWebsiteUrl.ifEmpty { "https://shribalajikripadham.online" }
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(webUrl))
+                    context.startActivity(intent)
+                } catch (e: Exception) {}
+            },
+            color = Color(0xFFE3F2FD),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, Color(0xFF90CAF9)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🌐", fontSize = 24.sp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = if (isHindi) "आश्रम की आधिकारिक वेबसाइट" else "Official Ashram Website",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color(0xFF0D47A1)
+                        )
+                        Text(
+                            text = "shribalajikripadham.online • लाइव टोकन व दर्शन",
+                            fontSize = 11.sp,
+                            color = Color(0xFF1976D2)
+                        )
+                    }
+                }
+                Text("खोलें ➔", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF0D47A1))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 7. Social Media Hub
+        RenderClassicSection(
+            sectionId = UiSectionConfig.ID_SOCIAL_MEDIA_HUB,
+            settings = settings,
+            isHindi = isHindi,
+            currentTheme = currentTheme,
+            activeSevadars = activeSevadars,
+            sevadarProfiles = sevadarProfiles,
+            dynamicEvents = dynamicEvents,
+            onNavigateToToken = onNavigateToToken,
+            onNavigateToFaceToken = onNavigateToFaceToken,
+            onNavigateToYatra = onNavigateToYatra,
+            onNavigateToInfo = onNavigateToInfo,
+            onNavigateToAdmin = onNavigateToAdmin,
+            context = context,
+            isCompact = isCompact
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 8. Contact & Developer Credit Footer
+        RenderClassicSection(
+            sectionId = UiSectionConfig.ID_CONTACT_FOOTER,
+            settings = settings,
+            isHindi = isHindi,
+            currentTheme = currentTheme,
+            activeSevadars = activeSevadars,
+            sevadarProfiles = sevadarProfiles,
+            dynamicEvents = dynamicEvents,
+            onNavigateToToken = onNavigateToToken,
+            onNavigateToFaceToken = onNavigateToFaceToken,
+            onNavigateToYatra = onNavigateToYatra,
+            onNavigateToInfo = onNavigateToInfo,
+            onNavigateToAdmin = onNavigateToAdmin,
+            context = context,
+            isCompact = isCompact
+        )
+    }
+}
+
+@Composable
+fun HomeTabBottomSwitcher(
+    currentTab: HomeTab,
+    isHindi: Boolean,
+    onSelectTab: (HomeTab) -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9E6)),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, GoldDark.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = if (isHindi) "📑 अन्य मुख्य पृष्ठ देखें (Direct Page Switch):" else "📑 Direct Page Switch:",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaroonPrimary
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                HomeTab.values().filter { it != currentTab }.forEach { tab ->
+                    Surface(
+                        onClick = { onSelectTab(tab) },
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.dp, MaroonPrimary.copy(alpha = 0.3f)),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(tab.icon, fontSize = 16.sp)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (isHindi) tab.titleHindi else tab.titleEnglish,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaroonPrimary,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SacredLyricsViewerDialog(
+    track: SacredTrack,
+    isHindi: Boolean,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    var fontSizeSp by remember { mutableFloatStateOf(16f) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDF5)),
+            border = BorderStroke(2.dp, GoldSecondary),
+            elevation = CardDefaults.cardElevation(10.dp),
+            modifier = Modifier
+                .fillMaxWidth(0.94f)
+                .fillMaxHeight(0.88f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isHindi) track.titleHindi else track.titleEnglish,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaroonPrimary
+                        )
+                        Text(
+                            text = track.subtitleHindi,
+                            fontSize = 12.sp,
+                            color = TextSecondaryDark,
+                            maxLines = 1
+                        )
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Font Size Controls
+                        IconButton(
+                            onClick = { if (fontSizeSp > 12f) fontSizeSp -= 2f },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Text("A-", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaroonPrimary)
+                        }
+                        IconButton(
+                            onClick = { if (fontSizeSp < 26f) fontSizeSp += 2f },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Text("A+", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaroonPrimary)
+                        }
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Text("✕", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Gray)
+                        }
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = AmberGold.copy(alpha = 0.5f))
+
+                // Scrollable Lyrics Content
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+                        .padding(14.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = track.lyricsHindi,
+                        fontSize = fontSizeSp.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF111111), // High-contrast jet black
+                        lineHeight = (fontSizeSp * 1.5f).sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Bottom actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val clip = ClipData.newPlainText("Sacred Track Lyrics", track.lyricsHindi)
+                            clipboard.setPrimaryClip(clip)
+                            Toast.makeText(context, if (isHindi) "पाठ कॉपी किया गया!" else "Lyrics copied!", Toast.LENGTH_SHORT).show()
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("📋 " + (if (isHindi) "कॉपी करें" else "Copy"), fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                    }
+
+                    Button(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(if (isHindi) "🙏 बन्द करें" else "Close", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
                 }
             }
         }

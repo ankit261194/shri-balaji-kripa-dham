@@ -1,13 +1,17 @@
 package com.example.shribalajikripadham.util
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.example.shribalajikripadham.data.local.DatabaseHelper
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -68,6 +72,18 @@ object GoogleDriveSyncHelper {
     }
 
     /**
+     * Non-blocking trigger called whenever critical data (like tokens) changes.
+     */
+    fun autoPushTrigger(context: Context) {
+        try {
+            generateLocalVaultDump(context)
+            CoroutineScope(Dispatchers.IO).launch {
+                triggerZeroTouchSync(context)
+            }
+        } catch (e: Exception) {}
+    }
+
+    /**
      * Generates a complete JSON backup of all SQLite tables onto device storage.
      */
     fun generateLocalVaultDump(context: Context): File? {
@@ -84,7 +100,12 @@ object GoogleDriveSyncHelper {
             }
 
             val tablesObj = JSONObject()
-            val targetTables = listOf("tokens", "ashram_settings", "sevadars", "donors", "expenses", "bus_seats", "daily_darshan")
+            val targetTables = listOf(
+                "tokens", "ashram_settings", "admins", "sevadars", "donors",
+                "sacred_parchas", "arzi_distribution_records", "payment_records",
+                "devotee_directory", "custom_city_distances", "ui_section_configs",
+                "yatra_expenses", "bus_seats", "app_notifications", "ashram_events"
+            )
 
             for (tbl in targetTables) {
                 val arr = JSONArray()
@@ -136,6 +157,94 @@ object GoogleDriveSyncHelper {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to generate local vault dump: ${e.message}")
             null
+        }
+    }
+
+    /**
+     * Indestructible Auto-Restore:
+     * Restores all tables and settings from local persistent JSON backup
+     * (e.g. after uninstall/reinstall or device data reset).
+     */
+    fun restoreFromBackupJson(context: Context, jsonFile: File? = null, targetDb: SQLiteDatabase? = null): Boolean {
+        return try {
+            val fileToRead: File? = jsonFile ?: run {
+                val backupDir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "ShriBalajiKripaDham_Backups")
+                val latest = File(backupDir, "SBKD_Latest_Backup.json")
+                if (latest.exists() && latest.length() > 50) {
+                    latest
+                } else if (backupDir.exists()) {
+                    val files = backupDir.listFiles { f -> f.name.startsWith("SBKD_") && f.extension == "json" }
+                    files?.maxByOrNull { it.lastModified() }
+                } else {
+                    null
+                } ?: run {
+                    val internal = File(context.filesDir, "sbkd_vault_latest.json")
+                    if (internal.exists() && internal.length() > 50) internal else null
+                }
+            }
+
+            if (fileToRead == null || !fileToRead.exists()) {
+                Log.d(TAG, "No backup file found to restore from.")
+                return false
+            }
+
+            Log.d(TAG, "Restoring database from backup file: ${fileToRead.absolutePath}")
+            val jsonContent = fileToRead.readText(Charsets.UTF_8)
+            val root = JSONObject(jsonContent)
+            val tablesObj = root.optJSONObject("tables") ?: return false
+
+            val db = targetDb ?: DatabaseHelper(context).writableDatabase
+
+            db.beginTransaction()
+            try {
+                val tableNames = tablesObj.keys()
+                while (tableNames.hasNext()) {
+                    val tbl = tableNames.next()
+                    val arr = tablesObj.optJSONArray(tbl) ?: continue
+                    if (arr.length() == 0) continue
+
+                    for (i in 0 until arr.length()) {
+                        val row = arr.getJSONObject(i)
+                        val cv = ContentValues()
+                        val keys = row.keys()
+                        while (keys.hasNext()) {
+                            val key = keys.next()
+                            if (row.isNull(key)) {
+                                cv.putNull(key)
+                            } else {
+                                val v = row.get(key)
+                                when (v) {
+                                    is Long -> cv.put(key, v)
+                                    is Int -> cv.put(key, v)
+                                    is Double -> cv.put(key, v)
+                                    is Float -> cv.put(key, v)
+                                    is Boolean -> cv.put(key, if (v) 1 else 0)
+                                    is String -> {
+                                        if (v != "[BLOB]") {
+                                            cv.put(key, v)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (cv.size() > 0) {
+                            try {
+                                db.insertWithOnConflict(tbl, null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Failed to insert row in $tbl during restore: ${e.message}")
+                            }
+                        }
+                    }
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+            Log.d(TAG, "Successfully restored all tables from ${fileToRead.name}")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to restore database from backup JSON: ${e.message}")
+            false
         }
     }
 

@@ -30,6 +30,11 @@ $darbarDate = !empty($settings['darbar_date']) ? $settings['darbar_date'] : '';
 $currentServing = !empty($settings['current_serving_token']) ? (int)$settings['current_serving_token'] : 0;
 $gurujiPhoto = !empty($settings['guruji_photo_url']) ? $settings['guruji_photo_url'] : 'uploads/guruji_profile.jpg';
 $isDarbarActive = !isset($settings['is_darbar_active']) || $settings['is_darbar_active'] == 1;
+$contactPhone = !empty($settings['contact_phone']) ? $settings['contact_phone'] : '+91 97206 91090';
+$whatsappNumber = !empty($settings['whatsapp_number']) ? $settings['whatsapp_number'] : '+91 97206 91090';
+$upiId = !empty($settings['upi_id']) ? $settings['upi_id'] : 'shribalajikripadham@upi';
+$badiArziRate = !empty($settings['badi_arzi_rate']) ? (float)$settings['badi_arzi_rate'] : 100.0;
+$chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chhoti_arzi_rate'] : 50.0;
 ?>
 <!DOCTYPE html>
 <html lang="hi">
@@ -1153,8 +1158,11 @@ $isDarbarActive = !isset($settings['is_darbar_active']) || $settings['is_darbar_
                 <a href="https://www.google.com/maps/search/?api=1&query=28.3972915,78.1460410" target="_blank" class="btn-maps">
                     🗺️ गूगल मैप्स पर रास्ता देखें
                 </a>
-                <a href="https://wa.me/<?= !empty($settings["whatsapp_number"]) ? preg_replace("/[^0-9]/", "", $settings["whatsapp_number"]) : "918006518960" ?>?text=जय%20श्री%20बालाजी%20महाराज" target="_blank" class="btn-whatsapp">
-                    💬 व्हाट्सएप हेल्पलाइन
+                <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $whatsappNumber) ?>?text=जय%20श्री%20बालाजी%20महाराज" target="_blank" class="btn-whatsapp">
+                    💬 व्हाट्सएप हेल्पलाइन (<?= htmlspecialchars($whatsappNumber) ?>)
+                </a>
+                <a href="tel:<?= htmlspecialchars($contactPhone) ?>" class="btn-maps" style="background: #E65100;">
+                    📞 कॉल सेवा (<?= htmlspecialchars($contactPhone) ?>)
                 </a>
             </div>
         </div>
@@ -1168,7 +1176,7 @@ $isDarbarActive = !isset($settings['is_darbar_active']) || $settings['is_darbar_
         
         <div style="margin-top: 15px;">
             <a href="download.php" style="color: #ffffff; background: var(--saffron-deep); padding: 8px 18px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.88rem;">
-                📲 Android ऐप डाउनलोड करें (v2.43.0 Pro)
+                📲 Android ऐप डाउनलोड करें (v2.54.0 Pro)
             </a>
         </div>
 

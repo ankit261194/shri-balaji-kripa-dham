@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 68,
-  "version_code": 68,
-  "latest_version_name": "2.50.0",
-  "version_name": "2.50.0",
-  "update_notes_hindi": "v2.50.0: 🛡️ अखंड ज़ीरो-टच ऑटो-बैकअप (बिना किसी बटन के स्वतः Google Drive व क्लाउड में हर सेकंड डेटा सुरक्षा) + 🔄 शून्य डाउनटाइम माइग्रेशन इंजन (नई होस्टिंग पर 1 सेकंड में पूर्ण प्रोजेक्ट शिफ्ट) + 📺 ऐप के अंदर लाइव व पावन दर्शन वीडियो प्लेयर + 👑 सुपरएडमिन अखंड डेटा वॉल्ट।",
-  "update_notes_english": "v2.50.0: 🛡️ Autonomous Zero-Touch Cloud & Google Drive Auto-Sync (automatic real-time database safety without pressing buttons) + 🔄 Zero-Downtime Server Migration Engine (shift entire project to new hosting in 1-second) + 📺 In-App Sacred Live Video Player + 👑 Superadmin Dedicated Data Vault.",
-  "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 73,
+  "version_code": 73,
+  "latest_version_name": "2.55.0",
+  "version_name": "2.55.0",
+  "update_notes_hindi": "v2.55.0: 🔒 सख्त जीपीएस व आश्रम दूरी सुरक्षा नियम (200मी आश्रम परिसर अथवा 30किमी+ दूरस्थ अग्रिम टोकन) + 🏡 वास्तविक गाँव/शहर का नाम चयन व स्वतः जीपीएस डिटेक्ट अनिवार्य + ⚡ 100% सटीक लाइव टोकन व दर्शन सुरक्षा।",
+  "update_notes_english": "v2.55.0: 🔒 Strict GPS Geofence & Ashram Distance Enforcement (<=200m Ashram or >30km Outstation) + 🏡 Mandatory Real Village/City Detection & Input + ⚡ 100% Reliable Live Tokens.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.55.0/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

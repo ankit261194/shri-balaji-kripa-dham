@@ -48,6 +48,7 @@ import com.example.shribalajikripadham.util.TokenCardExporter
 import com.example.shribalajikripadham.util.SundayTokenScheduleHelper
 import com.example.shribalajikripadham.util.SundayScheduleState
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -144,6 +145,8 @@ fun TokenRegistrationScreen(
         }
     }
 
+    var showPermissionSettingsDialog by remember { mutableStateOf(false) }
+
     fun launchCameraSafely() {
         val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(
             context,
@@ -158,6 +161,7 @@ fun TokenRegistrationScreen(
             }
         } else {
             cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+            showPermissionSettingsDialog = true
         }
     }
 
@@ -193,24 +197,111 @@ fun TokenRegistrationScreen(
     var scheduleAlertMessage by remember { mutableStateOf("") }
 
 
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val granted = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                      permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (granted) {
-            GeofenceLocationManager.requestFreshLocation(context) { loc ->
-                if (loc != null) {
-                    userLatitude = loc.latitude
-                    userLongitude = loc.longitude
+    val requiredPermissions = remember {
+        val list = mutableListOf(
+            android.Manifest.permission.ACCESS_FINE_LOCATION,
+            android.Manifest.permission.ACCESS_COARSE_LOCATION,
+            android.Manifest.permission.CAMERA
+        )
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            list.add(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+        list.toTypedArray()
+    }
+
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.CAMERA
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    fun triggerFreshLocationFix() {
+        val locManager = context.getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager
+        val isHardwareGpsOn = locManager?.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) == true ||
+                              locManager?.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER) == true
+        if (!isHardwareGpsOn) {
+            return
+        }
+        isRefreshingLocation = true
+        GeofenceLocationManager.requestFreshLocation(context) { loc ->
+            isRefreshingLocation = false
+            if (loc != null) {
+                userLatitude = loc.latitude
+                userLongitude = loc.longitude
+                if (city.isBlank() || originAddress.isBlank() || city == "डूँगरा जाट (स्थानीय)") {
+                    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                        val detectedPlace = GeofenceLocationManager.resolveVillageAndCity(context, loc.latitude, loc.longitude)
+                        if (detectedPlace.isNotBlank()) {
+                            withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                city = detectedPlace
+                                originAddress = detectedPlace
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 
+    val unifiedPermissionLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineLoc = permissions[android.Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val coarseLoc = permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        val cam = permissions[android.Manifest.permission.CAMERA] == true
+        hasLocationPermission = fineLoc || coarseLoc
+        hasCameraPermission = cam
+
+        if (hasLocationPermission) {
+            triggerFreshLocationFix()
+        }
+        if (!hasLocationPermission || !hasCameraPermission) {
+            showPermissionSettingsDialog = true
+        }
+    }
+
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.ACCESS_FINE_LOCATION
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                val coarseGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                val camGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.CAMERA
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                hasLocationPermission = fineGranted || coarseGranted
+                hasCameraPermission = camGranted
+                if (hasLocationPermission) {
+                    triggerFreshLocationFix()
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     val distanceMeters = remember(userLatitude, userLongitude, settings) {
         if (userLatitude == 0.0 && userLongitude == 0.0) {
-            if (!settings.isGeofenceEnforced) 0.0 else 999999.0
+            if (!settings.isGeofenceEnforced) 0.0 else -1.0
         } else {
             GeofenceLocationManager.calculateDistanceMeters(
                 userLatitude, userLongitude,
@@ -219,13 +310,17 @@ fun TokenRegistrationScreen(
         }
     }
     val isDistanceEligible = remember(distanceMeters, settings) {
-        GeofenceLocationManager.isTokenDistancePermitted(
-            distanceMeters = distanceMeters,
-            isGeofenceEnforced = settings.isGeofenceEnforced,
-            allowedRadiusMeters = settings.allowedRadiusMeters,
-            isOutstationAdvanceAllowed = settings.isOutstationAdvanceAllowed,
-            outstationMinDistanceKm = settings.outstationMinDistanceKm
-        )
+        if (distanceMeters < 0.0) {
+            false
+        } else {
+            GeofenceLocationManager.isTokenDistancePermitted(
+                distanceMeters = distanceMeters,
+                isGeofenceEnforced = settings.isGeofenceEnforced,
+                allowedRadiusMeters = settings.allowedRadiusMeters,
+                isOutstationAdvanceAllowed = settings.isOutstationAdvanceAllowed,
+                outstationMinDistanceKm = settings.outstationMinDistanceKm
+            )
+        }
     }
     val isInsideGeofence = isDistanceEligible
     val isQuotaExceeded = remember(settings.maxDailyTokens, todayActiveTokens) {
@@ -246,29 +341,19 @@ fun TokenRegistrationScreen(
             existingToken = repository.checkDeviceRegisteredToday(id)
             todayActiveTokens = repository.getTodayActiveTokenCount()
 
-            // Check & request location permissions
-            val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-            val coarseGranted = androidx.core.content.ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-
-            if (!fineGranted && !coarseGranted) {
-                locationPermissionLauncher.launch(
-                    arrayOf(
-                        android.Manifest.permission.ACCESS_FINE_LOCATION,
-                        android.Manifest.permission.ACCESS_COARSE_LOCATION
-                    )
-                )
+            // Check & request unified permissions (Location + Camera + Notifications)
+            val missingPerms = requiredPermissions.filter { perm ->
+                androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, perm
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
             }
 
-            // Actively acquire fresh GPS coordinates
-            GeofenceLocationManager.requestFreshLocation(context) { loc ->
-                if (loc != null) {
-                    userLatitude = loc.latitude
-                    userLongitude = loc.longitude
-                }
+            if (missingPerms.isNotEmpty()) {
+                unifiedPermissionLauncher.launch(missingPerms.toTypedArray())
+            } else {
+                hasLocationPermission = true
+                hasCameraPermission = true
+                triggerFreshLocationFix()
             }
 
             // Background cloud sync to pull all devotee profiles from any phone
@@ -666,6 +751,102 @@ fun TokenRegistrationScreen(
                     Spacer(modifier = Modifier.height(14.dp))
                 }
 
+                // Device GPS Hardware Off Warning
+                val locManager = context.getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager
+                val isHardwareGpsOn = locManager?.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) == true ||
+                                      locManager?.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER) == true
+
+                if (!isHardwareGpsOn) {
+                    Surface(
+                        color = Color(0xFFFFEBEE),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFE57373)),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "📍", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (isHindi) "फोन का GPS (लोकेशन) बंद है" else "Phone GPS is OFF",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFC62828)
+                                )
+                                Text(
+                                    text = if (isHindi)
+                                        "टोकन व आश्रम दूरी सत्यापन हेतु GPS चालू करना अनिवार्य है।"
+                                    else
+                                        "Please turn ON location for token verification.",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF7F0000)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Button(
+                                onClick = {
+                                    try {
+                                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                                    } catch (e: Exception) {}
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(if (isHindi) "GPS ऑन करें" else "Turn ON", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                // Missing Core Permissions Banner
+                if (!hasLocationPermission || !hasCameraPermission) {
+                    Surface(
+                        color = Color(0xFFFFF3E0),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFFFB74D)),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(text = "🔐", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (isHindi) "आवश्यक अनुमतियाँ बंद हैं" else "Permissions Disabled",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFE65100)
+                                )
+                                Text(
+                                    text = if (isHindi)
+                                        "टोकन व फोटो हेतु लोकेशन और कैमरा अनुमति चालू करें।"
+                                    else
+                                        "Location & Camera permissions are required.",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFBF360C)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Button(
+                                onClick = {
+                                    showPermissionSettingsDialog = true
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(if (isHindi) "अनुमति दें" else "Allow", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
                 // REGISTRATION FORM
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -979,7 +1160,7 @@ fun TokenRegistrationScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         val quickCities = listOf(
-                            "डूँगरा जाट (स्थानीय)", "बुलन्दशहर", "खुर्जा", "नोएडा", "दिल्ली", "मेरठ", "अलीगढ़", "हापुड़", "गाजियाबाद"
+                            "डूँगरा जाट", "जहाँगीरपुर", "झाझर", "जेवर", "खुर्जा", "बुलन्दशहर", "शिकारपुर", "पहासू", "अरनिया", "छतारी", "दानपुर", "डिबाई", "अनूपशहर", "स्याना", "गुलावठी", "सिकंदराबाद", "ककोड", "अलीगढ़", "हापुड़", "मेरठ", "नोएडा", "दिल्ली", "गाजियाबाद"
                         )
                         Row(
                             modifier = Modifier
@@ -1053,6 +1234,8 @@ fun TokenRegistrationScreen(
                                         Text(
                                             text = if (!settings.isGeofenceEnforced) {
                                                 if (isHindi) "जियोफेंस: सभी स्थानों से खुला है" else "Geofence: Open everywhere"
+                                            } else if (distanceMeters < 0.0) {
+                                                if (isHindi) "⚠️ जीपीएस प्रतीक्षारत (कृपया GPS चालू करें)" else "Waiting for GPS signal"
                                             } else if (settings.isOutstationAdvanceAllowed && distanceMeters > (settings.outstationMinDistanceKm * 1000.0)) {
                                                 val kmStr = String.format(java.util.Locale.US, "%.1f km", distanceMeters/1000.0)
                                                 if (isHindi) "🟢 दूरस्थ भक्त ($kmStr): अग्रिम टोकन मान्य" else "🟢 Outstation ($kmStr): Advance Token Eligible"
@@ -1060,7 +1243,7 @@ fun TokenRegistrationScreen(
                                                 val radText = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(java.util.Locale.US, "%.1f", settings.allowedRadiusMeters/1000.0)}km" else "${settings.allowedRadiusMeters.toInt()}m"
                                                 if (isHindi) "🟢 आश्रम परिसर में उपस्थित ($radText सत्यापित)" else "🟢 Inside Ashram Premises ($radText Verified)"
                                             } else {
-                                                val kmStr = if (distanceMeters < 999990.0) String.format(java.util.Locale.US, "%.1f km", distanceMeters/1000.0) else "अज्ञात"
+                                                val kmStr = String.format(java.util.Locale.US, "%.1f km", distanceMeters/1000.0)
                                                 if (isHindi) "🔴 स्थानीय दायरा ($kmStr): आश्रम परिसर में आकर लें" else "🔴 Local ($kmStr): Collect at Ashram"
                                             },
                                             fontSize = 11.sp,
@@ -1076,6 +1259,15 @@ fun TokenRegistrationScreen(
                                                 if (loc != null) {
                                                     userLatitude = loc.latitude
                                                     userLongitude = loc.longitude
+                                                    scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                                        val detectedPlace = GeofenceLocationManager.resolveVillageAndCity(context, loc.latitude, loc.longitude)
+                                                        if (detectedPlace.isNotBlank()) {
+                                                            withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                if (city.isBlank() || city == "डूँगरा जाट (स्थानीय)") city = detectedPlace
+                                                                if (originAddress.isBlank() || originAddress == "डूँगरा जाट (स्थानीय)") originAddress = detectedPlace
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                                 isRefreshingLocation = false
                                             }
@@ -1360,24 +1552,49 @@ fun TokenRegistrationScreen(
                                     SundayScheduleState.Open -> { /* Open! Proceed */ }
                                 }
 
-                                // 2. Check Ashram Location & Dual-Distance Geofence Policy
-                                if (settings.isGeofenceEnforced && !isDistanceEligible) {
-                                    val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
-                                    val outKm = settings.outstationMinDistanceKm.toInt()
-                                    val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
-                                    locationAlertTitle = if (isHindi) "📍 आश्रम दूरी नियम (स्थानीय भक्त)" else "📍 Ashram Distance Policy"
-                                    locationAlertMessage = if (isHindi) {
-                                        if (settings.isOutstationAdvanceAllowed) {
-                                            "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: जो भक्त $outKm किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु $outKm किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल आश्रम परिसर ($radM के भीतर) में आकर ही मिलेगा।\n\nकृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि व्यवस्था सुचारू रहे।"
-                                        } else {
-                                            "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: टोकन केवल आश्रम परिसर ($radM के भीतर) में उपस्थित होने पर ही मिलेगा।"
-                                        }
-                                    } else {
-                                        "⚠️ You are $distKm away from Ashram! Must be within $radM of Ashram premises to register."
-                                    }
-                                    showLocationAlertDialog = true
-                                    errorMessage = if (isHindi) "⚠️ $outKm किमी दायरे वाले स्थानीय भक्त आश्रम परिसर ($radM) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Must be at Ashram (within $radM)."
+                                // 1b. Check Required Permissions
+                                if (!hasLocationPermission) {
+                                    showPermissionSettingsDialog = true
+                                    errorMessage = if (isHindi) "टोकन पंजीकरण हेतु लोकेशन अनुमति आवश्यक है।" else "Location permission is required."
                                     return@Button
+                                }
+                                if (!hasCameraPermission) {
+                                    showPermissionSettingsDialog = true
+                                    errorMessage = if (isHindi) "टोकन पंजीकरण हेतु कैमरा अनुमति आवश्यक है।" else "Camera permission is required."
+                                    return@Button
+                                }
+
+                                // 2. Check Ashram Location & Dual-Distance Geofence Policy
+                                if (settings.isGeofenceEnforced) {
+                                    if (userLatitude == 0.0 || userLongitude == 0.0 || distanceMeters < 0.0) {
+                                        val msg = if (isHindi)
+                                            "⚠️ जीपीएस लोकेशन प्राप्त नहीं हो सकी!\n\nटोकन प्राप्त करने हेतु आपके फोन का GPS चालू होना अनिवार्य है।\n\nकृपया अपने फोन की लोकेशन (GPS) चालू करें और '🔄 GPS रीफ्रेश' बटन दबाएँ।"
+                                        else
+                                            "⚠️ GPS location required! Please turn on device GPS and tap '🔄 GPS Refresh'."
+                                        locationAlertTitle = if (isHindi) "📍 जीपीएस लोकेशन अनिवार्य है" else "📍 GPS Required"
+                                        locationAlertMessage = msg
+                                        showLocationAlertDialog = true
+                                        errorMessage = msg
+                                        return@Button
+                                    }
+                                    if (!isDistanceEligible) {
+                                        val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
+                                        val outKm = settings.outstationMinDistanceKm.toInt()
+                                        val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
+                                        locationAlertTitle = if (isHindi) "📍 आश्रम दूरी नियम (स्थानीय भक्त)" else "📍 Ashram Distance Policy"
+                                        locationAlertMessage = if (isHindi) {
+                                            if (settings.isOutstationAdvanceAllowed) {
+                                                "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: जो भक्त $outKm किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु $outKm किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल आश्रम परिसर ($radM के भीतर) में आकर ही मिलेगा।\n\nकृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि व्यवस्था सुचारू रहे।"
+                                            } else {
+                                                "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: टोकन केवल आश्रम परिसर ($radM के भीतर) में उपस्थित होने पर ही मिलेगा।"
+                                            }
+                                        } else {
+                                            "⚠️ You are $distKm away from Ashram! Must be within $radM of Ashram premises to register."
+                                        }
+                                        showLocationAlertDialog = true
+                                        errorMessage = if (isHindi) "⚠️ $outKm किमी दायरे वाले स्थानीय भक्त आश्रम परिसर ($radM) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Must be at Ashram (within $radM)."
+                                        return@Button
+                                    }
                                 }
 
                                 // 3. Check Daily Quota
@@ -1403,6 +1620,11 @@ fun TokenRegistrationScreen(
                                     errorMessage = if (isHindi) "कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।" else "Please enter valid 10-digit mobile number."
                                     return@Button
                                 }
+                                val devoteeVillageOrCity = originAddress.trim().ifEmpty { city.trim() }
+                                if (devoteeVillageOrCity.isBlank()) {
+                                    errorMessage = if (isHindi) "कृपया अपने गाँव या शहर का नाम अवश्य दर्ज करें।" else "Please enter your village or city name."
+                                    return@Button
+                                }
 
                                 isSubmitting = true
                                 errorMessage = null
@@ -1419,8 +1641,14 @@ fun TokenRegistrationScreen(
                                             return@launch
                                         }
                                         val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
-                                        val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: settings.latitude)
-                                        val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: settings.longitude)
+                                        val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: 0.0)
+                                        val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: 0.0)
+
+                                        if (settings.isGeofenceEnforced && (finalLat == 0.0 || finalLon == 0.0)) {
+                                            errorMessage = if (isHindi) "⚠️ वैध जीपीएस लोकेशन नहीं मिली। कृपया GPS चालू करें और पुनः प्रयास करें।" else "Valid GPS location required. Please turn on GPS."
+                                            isSubmitting = false
+                                            return@launch
+                                        }
 
                                         val cloudPhotoUrl = if (capturedPhotoUri.isNotBlank()) {
                                             try {
@@ -1438,12 +1666,12 @@ fun TokenRegistrationScreen(
                                             deviceId = deviceId,
                                             latitude = finalLat,
                                             longitude = finalLon,
-                                            city = city.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                                            city = devoteeVillageOrCity,
                                             registeredBy = "SELF",
                                             photoUri = if (cloudPhotoUrl.isNotBlank()) cloudPhotoUrl else capturedPhotoUri,
                                             isMockLocation = isMock,
                                             locationAccuracy = accuracy,
-                                            originAddress = originAddress.trim().ifEmpty { city.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" } },
+                                            originAddress = devoteeVillageOrCity,
                                             destinationAddress = "श्री बालाजी कृपा धाम, डुंगरा जाट",
                                             distanceKm = estimatedDistanceKm
                                         )
@@ -1455,7 +1683,7 @@ fun TokenRegistrationScreen(
                                                 repository.upsertDevoteeProfile(
                                                     name = patientName.trim(),
                                                     phone = phoneNumber.trim(),
-                                                    city = city.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                                                    city = devoteeVillageOrCity,
                                                     faceVector = vector,
                                                     photoUri = if (cloudPhotoUrl.isNotBlank()) cloudPhotoUrl else capturedPhotoUri,
                                                     registeredBy = "SELF"
@@ -1592,6 +1820,77 @@ fun TokenRegistrationScreen(
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Text(if (isHindi) "समझ गया / ठीक है" else "Got It", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 15.sp)
+                    }
+                }
+            )
+        }
+
+        // Alert Dialog: Mandatory Permissions Required
+        if (showPermissionSettingsDialog) {
+            AlertDialog(
+                onDismissRequest = { showPermissionSettingsDialog = false },
+                containerColor = Color.White,
+                icon = { Text("🔐", fontSize = 36.sp) },
+                title = {
+                    Text(
+                        text = if (isHindi) "अनुमतियाँ आवश्यक हैं" else "Permissions Required",
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF8B0000),
+                        fontSize = 18.sp
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = if (isHindi)
+                                "श्री बालाजी कृपा धाम के नियमों के अनुसार टोकन जनरेट करने के लिए निम्नलिखित अनुमतियाँ अनिवार्य हैं:"
+                            else
+                                "The following permissions are strictly required to generate your token:",
+                            fontSize = 14.sp,
+                            color = Color(0xFF212121)
+                        )
+                        Text(
+                            text = if (isHindi)
+                                "📍 1. लोकेशन (GPS): आश्रम दूरी (200मी / 30किमी) नियम सत्यापन हेतु।\n📷 2. कैमरा: भक्त की लाइव फोटो व टोकन दर्शन हेतु।"
+                            else
+                                "📍 1. Location (GPS): To verify Ashram distance policy.\n📷 2. Camera: For devotee live verification photo.",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
+                            color = Color(0xFF333333)
+                        )
+                        Text(
+                            text = if (isHindi)
+                                "कृपया '⚙️ सेटिंग्स में अनुमति दें' बटन दबाएं और Permissions में Location तथा Camera को Allow करें।"
+                            else
+                                "Please tap 'Open Settings' and allow Location and Camera permissions.",
+                            fontSize = 12.sp,
+                            color = Color.DarkGray
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showPermissionSettingsDialog = false
+                            try {
+                                val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = android.net.Uri.fromParts("package", context.packageName, null)
+                                    flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(if (isHindi) "⚙️ सेटिंग्स में अनुमति दें" else "⚙️ Open Settings", fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPermissionSettingsDialog = false }) {
+                        Text(if (isHindi) "रद्द करें" else "Cancel", color = Color.Gray)
                     }
                 }
             )

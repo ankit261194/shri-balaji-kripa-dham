@@ -40,7 +40,8 @@ enum class AppScreen {
     HALL_DISPLAY,
     PANCHANG,
     SACRED_GRANTH,
-    DATA_VAULT
+    DATA_VAULT,
+    DHARAMSHALA
 }
 
 @Composable
@@ -126,6 +127,7 @@ fun MainNavigation(
                 onNavigateToLiveDarbar = { navigateTo(AppScreen.LIVE_DARBAR) },
                 onNavigateToPanchang = { navigateTo(AppScreen.PANCHANG) },
                 onNavigateToSacredGranth = { navigateTo(AppScreen.SACRED_GRANTH) },
+                onNavigateToDharamshala = { navigateTo(AppScreen.DHARAMSHALA) },
                 onNavigateToYatraExpenses = {
                     if (settings.isYatraServiceEnabled && settings.canDevoteeViewYatraDiary) {
                         navigateTo(AppScreen.YATRA_EXPENSES)
@@ -225,6 +227,11 @@ fun MainNavigation(
             )
 
             AppScreen.SACRED_GRANTH -> SacredGranthScreen(
+                isHindi = isHindi,
+                onBack = { navigateBack() }
+            )
+
+            AppScreen.DHARAMSHALA -> com.example.shribalajikripadham.ui.dharamshala.DharamshalaBookingScreen(
                 isHindi = isHindi,
                 onBack = { navigateBack() }
             )

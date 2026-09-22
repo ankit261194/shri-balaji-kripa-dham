@@ -72,11 +72,15 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
     if ($id > 0) {
-        $stmt = $pdo->prepare("UPDATE sevadars SET
-            name = :name, role = :role, phone = :phone, photo_url = :photo_url,
-            bio = :bio, display_order = :display_order, is_active = :is_active
-            WHERE id = :id");
+        $stmt = $pdo->prepare("INSERT INTO sevadars (
+            id, name, role, phone, photo_url, bio, display_order, is_active, created_at
+        ) VALUES (
+            :id, :name, :role, :phone, :photo_url, :bio, :display_order, :is_active, :created_at
+        ) ON DUPLICATE KEY UPDATE
+            name = VALUES(name), role = VALUES(role), phone = VALUES(phone), photo_url = VALUES(photo_url),
+            bio = VALUES(bio), display_order = VALUES(display_order), is_active = VALUES(is_active)");
         $stmt->execute([
+            ':id' => $id,
             ':name' => $name,
             ':role' => $role,
             ':phone' => $phone,
@@ -84,7 +88,7 @@ try {
             ':bio' => $bio,
             ':display_order' => $displayOrder,
             ':is_active' => $isActive,
-            ':id' => $id
+            ':created_at' => $createdAt
         ]);
         $savedId = $id;
         $msg = "सेवादार विवरण सफलतापूर्वक अपडेट हुआ!";

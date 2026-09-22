@@ -110,7 +110,7 @@ fun AdminDashboardScreen(
                 Toast.makeText(context, if (isHindi) "📸 सेवादार फोटो सेट, क्लाउड सिंक जारी..." else "Photo set, syncing to cloud...", Toast.LENGTH_SHORT).show()
                 scope.launch(Dispatchers.IO) {
                     val safeName = "sevadar_" + System.currentTimeMillis() + ".jpg"
-                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, savedPath, safeName)
                     if (!cloudUrl.isNullOrBlank()) {
                         withContext(Dispatchers.Main) {
                             newSevPhotoUri = cloudUrl
@@ -133,7 +133,7 @@ fun AdminDashboardScreen(
                     Toast.makeText(context, if (isHindi) "📁 गैलरी से फोटो चुनी गई, क्लाउड सिंक जारी..." else "Photo selected, syncing to cloud...", Toast.LENGTH_SHORT).show()
                     scope.launch(Dispatchers.IO) {
                         val safeName = "sevadar_" + System.currentTimeMillis() + ".jpg"
-                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                        val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, savedPath, safeName)
                         if (!cloudUrl.isNullOrBlank()) {
                             withContext(Dispatchers.Main) {
                                 newSevPhotoUri = cloudUrl
@@ -155,7 +155,7 @@ fun AdminDashboardScreen(
                 Toast.makeText(context, if (isHindi) "📸 सेवादार फोटो सेट, क्लाउड सिंक जारी..." else "Photo set, syncing to cloud...", Toast.LENGTH_SHORT).show()
                 scope.launch(Dispatchers.IO) {
                     val safeName = "sevadar_" + (editingAdmin?.username ?: System.currentTimeMillis().toString()) + ".jpg"
-                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, savedPath, safeName)
                     if (!cloudUrl.isNullOrBlank()) {
                         withContext(Dispatchers.Main) {
                             editSevPhotoUri = cloudUrl
@@ -178,7 +178,7 @@ fun AdminDashboardScreen(
                     Toast.makeText(context, if (isHindi) "📁 गैलरी से फोटो चुनी गई, क्लाउड सिंक जारी..." else "Photo selected, syncing to cloud...", Toast.LENGTH_SHORT).show()
                     scope.launch(Dispatchers.IO) {
                         val safeName = "sevadar_" + (editingAdmin?.username ?: System.currentTimeMillis().toString()) + ".jpg"
-                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                        val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, savedPath, safeName)
                         if (!cloudUrl.isNullOrBlank()) {
                             withContext(Dispatchers.Main) {
                                 editSevPhotoUri = cloudUrl
@@ -1076,6 +1076,7 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊")
             }
             if (isSuper) {
+                allowedTabs.add(if (isHindi) "🌐 वेबसाइट लाइव एडिटर" else "Website Live Editor")
                 allowedTabs.add(if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️")
             }
             if (isSuper) {
@@ -1868,6 +1869,16 @@ fun AdminDashboardScreen(
                                 }
                             )
                         }
+                        currentTabTitle == "🌐 वेबसाइट लाइव एडिटर" || currentTabTitle == "Website Live Editor" -> {
+                            WebsiteLiveEditorTab(
+                                isHindi = isHindi,
+                                settings = settings,
+                                onSettingsUpdated = { updatedS ->
+                                    settings = updatedS
+                                    refreshData()
+                                }
+                            )
+                        }
                         currentTabTitle == "🌐 वेबसाइट व CMS" || currentTabTitle == "Website & CMS" -> {
                             WebsiteAndCmsManagerTab(
                                 isHindi = isHindi,
@@ -2302,7 +2313,7 @@ fun AdminDashboardScreen(
                                                 Toast.makeText(context, if (isHindi) "🔄 फोटो 90° सीधी हो गई!" else "🔄 Photo rotated 90°!", Toast.LENGTH_SHORT).show()
                                                 scope.launch(Dispatchers.IO) {
                                                     val safeName = "sevadar_" + System.currentTimeMillis() + ".jpg"
-                                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, rotated, safeName)
+                                                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, rotated, safeName)
                                                     if (!cloudUrl.isNullOrBlank()) {
                                                         withContext(Dispatchers.Main) {
                                                             newSevPhotoUri = cloudUrl
@@ -2925,7 +2936,7 @@ fun AdminDashboardScreen(
                                                 Toast.makeText(context, if (isHindi) "🔄 फोटो 90° सीधी हो गई!" else "🔄 Photo rotated 90°!", Toast.LENGTH_SHORT).show()
                                                 scope.launch(Dispatchers.IO) {
                                                     val safeName = "sevadar_" + (editingAdmin?.username ?: System.currentTimeMillis().toString()) + ".jpg"
-                                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, rotated, safeName)
+                                                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, rotated, safeName)
                                                     if (!cloudUrl.isNullOrBlank()) {
                                                         withContext(Dispatchers.Main) {
                                                             editSevPhotoUri = cloudUrl
@@ -6423,6 +6434,8 @@ fun PublicServiceMatrixTab(
     onSave: () -> Unit
 ) {
     val context = LocalContext.current
+    var showSaveConfirmationDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -6430,6 +6443,52 @@ fun PublicServiceMatrixTab(
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // ⚡ TOP QUICK SAVE BAR (Always Visible at the Top)
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.5.dp, SaffronPrimary),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (isHindi) "⚡ त्वरित सेटिंग्स सुरक्षित करें" else "⚡ Quick Save Changes",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = MaroonPrimary
+                    )
+                    Text(
+                        text = if (isHindi) "बड़ी अर्जी: ₹$badiArziRate • छोटी अर्जी: ₹$chhotiArziRate" else "Badi: ₹$badiArziRate • Chhoti: ₹$chhotiArziRate",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF1B1B1B)
+                    )
+                }
+                Button(
+                    onClick = {
+                        onSave()
+                        showSaveConfirmationDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = if (isHindi) "💾 सुरक्षित करें" else "💾 Save",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Color.White
+                    )
+                }
+            }
+        }
         // SECTION 1: PRE-SCHEDULED TOKEN OPENING (Timing Control)
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -6853,7 +6912,7 @@ fun PublicServiceMatrixTab(
                 ) {
                     Text(
                         text = if (isArziLedgerLive)
-                            (if (isHindi) "🟢 सक्रिय: अर्जी वितरण व लेजर रिकॉर्डिंग की सुविधा चालू है।" else "🟢 LIVE: Arzi distribution & voice ledger are active.")
+                            (if (isHindi) "🟢 सक्रिय: अर्जी वितरण व AI वॉयस लेजर (बोलकर सीधे अर्जी दर्ज करने की सुविधा) चालू है।" else "🟢 LIVE: Arzi distribution & AI voice ledger (speech-to-text recording) are active.")
                         else
                             (if (isHindi) "🔒 गुप्त/छिपा हुआ (Hidden): अर्जी सेवा छिपी हुई है। केवल सुपर एडमिन ही आवश्यकता पड़ने पर चालू कर सकते हैं।" else "🔒 HIDDEN: Arzi service is hidden from non-super admins."),
                         fontSize = 11.sp,
@@ -6905,12 +6964,14 @@ fun PublicServiceMatrixTab(
                         Text(
                             text = if (isHindi) "👥 अधिकृत सेवादारों को अर्जी लेजर देखने दें" else "Allow Assigned Sevadars to view Arzi Ledger",
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF212121)
                         )
                         Text(
                             text = if (isHindi) "अक्रिय होने पर केवल सुपर एडमिन ही अर्जी लेजर देख सकेंगे।" else "If off, only Super Admin can view Arzi ledger.",
-                            fontSize = 10.sp,
-                            color = Color.Gray
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF424242)
                         )
                     }
                     Switch(checked = canAdminViewArzi, onCheckedChange = onCanAdminViewArziChange)
@@ -6926,12 +6987,14 @@ fun PublicServiceMatrixTab(
                         Text(
                             text = if (isHindi) "📱 भक्तों को उनका अर्जी हिसाब देखने दें" else "Allow Devotees to view their Arzi Status",
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF212121)
                         )
                         Text(
                             text = if (isHindi) "भक्त अपने फोन पर अर्जी रसीद देख सकेंगे।" else "Devotees can view Arzi receipt.",
-                            fontSize = 10.sp,
-                            color = Color.Gray
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFF424242)
                         )
                     }
                     Switch(checked = canDevoteeViewArzi, onCheckedChange = onCanDevoteeViewArziChange)
@@ -6961,8 +7024,8 @@ fun PublicServiceMatrixTab(
                         "सुपर एडमिन ऐप के किसी भी फीचर को आम भक्तों के लिए ऑन या ऑफ कर सकते हैं।"
                     else
                         "Super Admin can dynamically hide or show ANY feature across the entire devotee application.",
-                    fontSize = 12.sp,
-                    color = Color.Gray,
+                    fontSize = 13.sp,
+                    color = Color(0xFF212121),
                     modifier = Modifier.padding(top = 4.dp)
                 )
 
@@ -7020,8 +7083,8 @@ fun PublicServiceMatrixTab(
                                             (if (isHindi) "🔓 खुला: भक्त व सेवादार भी यात्रा खर्च डायरी देख सकते हैं।" else "🔓 PUBLIC: Devotees can view expenses.")
                                         else
                                             (if (isHindi) "🔒 केवल सुपर एडमिन (अनुशंसित): भक्तों से पूर्णतः छिपा हुआ।" else "🔒 PRIVATE: Super Admin exclusive privilege."),
-                                        fontSize = 11.sp,
-                                        color = Color.DarkGray
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF212121)
                                     )
                                 }
                             }
@@ -7032,7 +7095,10 @@ fun PublicServiceMatrixTab(
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = onSave,
+                    onClick = {
+                        onSave()
+                        showSaveConfirmationDialog = true
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -7043,6 +7109,53 @@ fun PublicServiceMatrixTab(
                 }
             }
         }
+    }
+
+    if (showSaveConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showSaveConfirmationDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("✅", fontSize = 22.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "सेटिंग्स सुरक्षित व लाइव लागू!" else "Settings Saved & Live!",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFF1B5E20)
+                    )
+                }
+            },
+            text = {
+                Column {
+                    Text(
+                        text = if (isHindi) "सभी सेटिंग्स क्लाउड सर्वर व ऐप में तुरंत लागू हो गई हैं:" else "Settings saved and updated across app and server:",
+                        fontSize = 13.sp,
+                        color = Color(0xFF212121)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("• बड़ी अर्जी दर: ₹$badiArziRate", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFB71C1C))
+                    Text("• छोटी अर्जी दर: ₹$chhotiArziRate", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFB71C1C))
+                    Text("• बस बुकिंग: ${if (isBusBookingLive) "🟢 चालू" else "🔴 बंद"}", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFF212121))
+                    Text("• Yatra डायरी: ${if (canDevoteeViewYatraDiary) "🟢 खुली" else "🔒 केवल सुपर एडमिन"}", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFF212121))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = if (isHindi) "✓ सभी भक्तों के फोन पर यह बदलाव 100% लाइव हो चुका है।" else "✓ Live on all devotees' devices.",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2E7D32)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showSaveConfirmationDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20))
+                ) {
+                    Text(if (isHindi) "ठीक है (OK)" else "OK", fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 }
 
@@ -7055,7 +7168,7 @@ private fun ServiceSwitchRow(title: String, checked: Boolean, onCheckedChange: (
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(title, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Text(title, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1B1B1B), modifier = Modifier.weight(1f))
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
@@ -7123,7 +7236,7 @@ fun AppCustomizerTab(
                     try {
                         val repo = AshramRepository(context)
                         repo.updateGurujiPhoto(savedPath)
-                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, "guruji_profile.jpg")
+                        val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, savedPath, "guruji_profile.jpg")
                         val finalUrl = if (!cloudUrl.isNullOrBlank()) "$cloudUrl?t=${System.currentTimeMillis()}" else savedPath
                         repo.updateGurujiPhoto(finalUrl)
                         com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.syncSettingsToHostinger(repo.getSettings())
@@ -7153,7 +7266,7 @@ fun AppCustomizerTab(
                         try {
                             val repo = AshramRepository(context)
                             repo.updateGurujiPhoto(savedPath)
-                            val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, "guruji_profile.jpg")
+                            val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, savedPath, "guruji_profile.jpg")
                             val finalUrl = if (!cloudUrl.isNullOrBlank()) "$cloudUrl?t=${System.currentTimeMillis()}" else savedPath
                             repo.updateGurujiPhoto(finalUrl)
                             com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.syncSettingsToHostinger(repo.getSettings())
@@ -7252,7 +7365,7 @@ fun AppCustomizerTab(
                                                 onGurujiPhotoUriChange(rotated)
                                                 Toast.makeText(context, if (isHindi) "🔄 गुरुजी की फोटो 90° सीधी हो गई!" else "🔄 Photo rotated 90°!", Toast.LENGTH_SHORT).show()
                                                 scope.launch(Dispatchers.IO) {
-                                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, rotated, "guruji_profile.jpg")
+                                                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, rotated, "guruji_profile.jpg")
                                                     if (!cloudUrl.isNullOrBlank()) {
                                                         withContext(Dispatchers.Main) {
                                                             onGurujiPhotoUriChange(cloudUrl)
@@ -8020,7 +8133,7 @@ fun SuperControlTab(
                 Toast.makeText(context, if (isHindi) "📸 सुपर एडमिन फोटो सेट, क्लाउड सिंक जारी..." else "Photo set, syncing...", Toast.LENGTH_SHORT).show()
                 kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                     val safeName = "super_admin_${System.currentTimeMillis()}.jpg"
-                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, savedPath, safeName)
                     if (!cloudUrl.isNullOrBlank()) {
                         withContext(Dispatchers.Main) {
                             superPhotoUri = cloudUrl
@@ -8043,7 +8156,7 @@ fun SuperControlTab(
                     Toast.makeText(context, if (isHindi) "📁 गैलरी से फोटो चुनी गई, क्लाउड सिंक जारी..." else "Photo selected, syncing...", Toast.LENGTH_SHORT).show()
                     kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                         val safeName = "super_admin_${System.currentTimeMillis()}.jpg"
-                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                        val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, savedPath, safeName)
                         if (!cloudUrl.isNullOrBlank()) {
                             withContext(Dispatchers.Main) {
                                 superPhotoUri = cloudUrl
@@ -8101,7 +8214,7 @@ fun SuperControlTab(
                     Toast.makeText(context, if (isHindi) "बैनर फोटो सेट, क्लाउड सिंक जारी..." else "Banner photo set, syncing...", Toast.LENGTH_SHORT).show()
                     kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                         val safeName = "banner_" + System.currentTimeMillis() + ".jpg"
-                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                        val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, savedPath, safeName)
                         if (!cloudUrl.isNullOrBlank()) {
                             withContext(Dispatchers.Main) {
                                 bannerPhotoUriInput = cloudUrl
@@ -8135,7 +8248,7 @@ fun SuperControlTab(
                     Toast.makeText(context, if (isHindi) "विज्ञापन बैनर फोटो सेट!" else "Ad banner photo set!", Toast.LENGTH_SHORT).show()
                     kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                         val safeName = "ad_banner_" + System.currentTimeMillis() + ".jpg"
-                        val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, savedPath, safeName)
+                        val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, savedPath, safeName)
                         if (!cloudUrl.isNullOrBlank()) {
                             withContext(Dispatchers.Main) {
                                 adBannerPhotoUriInput = cloudUrl
@@ -8290,7 +8403,7 @@ fun SuperControlTab(
                                                 Toast.makeText(context, if (isHindi) "🔄 फोटो 90° सीधी हो गई!" else "🔄 Photo rotated 90°!", Toast.LENGTH_SHORT).show()
                                                 kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                                                     val safeName = "super_admin_${System.currentTimeMillis()}.jpg"
-                                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, rotated, safeName)
+                                                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, rotated, safeName)
                                                     if (!cloudUrl.isNullOrBlank()) {
                                                         withContext(Dispatchers.Main) {
                                                             superPhotoUri = cloudUrl
@@ -8966,7 +9079,7 @@ fun SuperControlTab(
                                         Toast.makeText(context, if (isHindi) "क्लाउड पर फोटो अपलोड हो रही है..." else "Uploading photo to cloud...", Toast.LENGTH_SHORT).show()
                                     }
                                     val safeName = "banner_" + System.currentTimeMillis() + ".jpg"
-                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, targetUri, safeName)
+                                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, targetUri, safeName)
                                     if (!cloudUrl.isNullOrBlank()) {
                                         targetUri = cloudUrl
                                     }
@@ -9112,7 +9225,7 @@ fun SuperControlTab(
                                         Toast.makeText(context, if (isHindi) "क्लाउड पर विज्ञापन फोटो अपलोड हो रही है..." else "Uploading ad photo to cloud...", Toast.LENGTH_SHORT).show()
                                     }
                                     val safeName = "ad_banner_" + System.currentTimeMillis() + ".jpg"
-                                    val cloudUrl = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.uploadPhotoToGitHub(context, targetUri, safeName)
+                                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, targetUri, safeName)
                                     if (!cloudUrl.isNullOrBlank()) {
                                         targetUri = cloudUrl
                                     }
@@ -10150,6 +10263,10 @@ fun WebsiteAndCmsManagerTab(
     var sevadarsList by remember { mutableStateOf<List<SevadarProfile>>(emptyList()) }
     var donorsList by remember { mutableStateOf<List<DonorProfile>>(emptyList()) }
 
+    var showPublishResultDialog by remember { mutableStateOf(false) }
+    var publishResult by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
+    var sevadarToDelete by remember { mutableStateOf<SevadarProfile?>(null) }
+
     // Dialogs for Adding & Editing Sevadar
     var showAddSevadarDialog by remember { mutableStateOf(false) }
     var newSevName by remember { mutableStateOf("") }
@@ -10184,7 +10301,7 @@ fun WebsiteAndCmsManagerTab(
                 val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
                 newSevPhotoUri = saved
                 scope.launch(Dispatchers.IO) {
-                    val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
+                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
                     if (!cloudUrl.isNullOrBlank()) {
                         withContext(Dispatchers.Main) { newSevPhotoUri = cloudUrl }
                     }
@@ -10197,7 +10314,7 @@ fun WebsiteAndCmsManagerTab(
             val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
             newSevPhotoUri = saved
             scope.launch(Dispatchers.IO) {
-                val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
+                val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
                 if (!cloudUrl.isNullOrBlank()) {
                     withContext(Dispatchers.Main) { newSevPhotoUri = cloudUrl }
                 }
@@ -10212,7 +10329,7 @@ fun WebsiteAndCmsManagerTab(
                 val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
                 editSevPhotoUri = saved
                 scope.launch(Dispatchers.IO) {
-                    val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
+                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
                     if (!cloudUrl.isNullOrBlank()) {
                         withContext(Dispatchers.Main) { editSevPhotoUri = cloudUrl }
                     }
@@ -10225,7 +10342,7 @@ fun WebsiteAndCmsManagerTab(
             val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "sevadar")
             editSevPhotoUri = saved
             scope.launch(Dispatchers.IO) {
-                val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
+                val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, saved, "sevadar_${System.currentTimeMillis()}.jpg")
                 if (!cloudUrl.isNullOrBlank()) {
                     withContext(Dispatchers.Main) { editSevPhotoUri = cloudUrl }
                 }
@@ -10240,7 +10357,7 @@ fun WebsiteAndCmsManagerTab(
                 val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "donor")
                 newDonorPhotoUri = saved
                 scope.launch(Dispatchers.IO) {
-                    val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "donor_${System.currentTimeMillis()}.jpg")
+                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, saved, "donor_${System.currentTimeMillis()}.jpg")
                     if (!cloudUrl.isNullOrBlank()) {
                         withContext(Dispatchers.Main) { newDonorPhotoUri = cloudUrl }
                     }
@@ -10253,7 +10370,7 @@ fun WebsiteAndCmsManagerTab(
             val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "donor")
             newDonorPhotoUri = saved
             scope.launch(Dispatchers.IO) {
-                val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "donor_${System.currentTimeMillis()}.jpg")
+                val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, saved, "donor_${System.currentTimeMillis()}.jpg")
                 if (!cloudUrl.isNullOrBlank()) {
                     withContext(Dispatchers.Main) { newDonorPhotoUri = cloudUrl }
                 }
@@ -10268,7 +10385,7 @@ fun WebsiteAndCmsManagerTab(
                 val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "donor")
                 editDonorPhotoUri = saved
                 scope.launch(Dispatchers.IO) {
-                    val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "donor_${System.currentTimeMillis()}.jpg")
+                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, saved, "donor_${System.currentTimeMillis()}.jpg")
                     if (!cloudUrl.isNullOrBlank()) {
                         withContext(Dispatchers.Main) { editDonorPhotoUri = cloudUrl }
                     }
@@ -10281,7 +10398,7 @@ fun WebsiteAndCmsManagerTab(
             val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "donor")
             editDonorPhotoUri = saved
             scope.launch(Dispatchers.IO) {
-                val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "donor_${System.currentTimeMillis()}.jpg")
+                val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, saved, "donor_${System.currentTimeMillis()}.jpg")
                 if (!cloudUrl.isNullOrBlank()) {
                     withContext(Dispatchers.Main) { editDonorPhotoUri = cloudUrl }
                 }
@@ -10296,7 +10413,7 @@ fun WebsiteAndCmsManagerTab(
                 val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "guruji")
                 gurujiPhotoUri = saved
                 scope.launch(Dispatchers.IO) {
-                    val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "guruji_profile.jpg")
+                    val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, saved, "guruji_profile.jpg")
                     if (!cloudUrl.isNullOrBlank()) {
                         repository.updateGurujiPhoto(cloudUrl)
                         withContext(Dispatchers.Main) {
@@ -10313,7 +10430,7 @@ fun WebsiteAndCmsManagerTab(
             val saved = DevoteePhotoHelper.saveDevoteePhoto(context, bmp, "guruji")
             gurujiPhotoUri = saved
             scope.launch(Dispatchers.IO) {
-                val cloudUrl = GitHubLiveSyncManager.uploadPhotoToGitHub(context, saved, "guruji_profile.jpg")
+                val cloudUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(context, saved, "guruji_profile.jpg")
                 if (!cloudUrl.isNullOrBlank()) {
                     repository.updateGurujiPhoto(cloudUrl)
                     withContext(Dispatchers.Main) {
@@ -10373,6 +10490,8 @@ fun WebsiteAndCmsManagerTab(
                                 repository.updateDarbarScheduleTimings(darbarTimings)
                                 val res = repository.publishEverythingToWebsiteAndCloud(admin.name)
                                 isPublishing = false
+                                publishResult = res
+                                showPublishResultDialog = true
                                 Toast.makeText(context, res.second, Toast.LENGTH_LONG).show()
                                 onRefresh()
                             }
@@ -10697,10 +10816,7 @@ fun WebsiteAndCmsManagerTab(
                                     }
                                     IconButton(
                                         onClick = {
-                                            scope.launch {
-                                                repository.deleteSevadar(sev.id)
-                                                loadData()
-                                            }
+                                            sevadarToDelete = sev
                                         }
                                     ) {
                                         Text("🗑️", fontSize = 16.sp)
@@ -11066,6 +11182,90 @@ fun WebsiteAndCmsManagerTab(
             },
             dismissButton = {
                 TextButton(onClick = { editingDonor = null }) { Text("रद्द करें") }
+            }
+        )
+    }
+
+    // Delete Sevadar Confirmation Dialog
+    if (sevadarToDelete != null) {
+        val target = sevadarToDelete!!
+        AlertDialog(
+            onDismissRequest = { sevadarToDelete = null },
+            title = {
+                Text(
+                    text = if (isHindi) "सेवादार हटाएं?" else "Delete Sevadar?",
+                    fontWeight = FontWeight.Bold,
+                    color = MaroonPrimary
+                )
+            },
+            text = {
+                Text(
+                    text = if (isHindi) "क्या आप वाकई सेवादार '${target.name}' को हटाना चाहते हैं? यह तुरंत सर्वर व सभी भक्तों के ऐप से हट जाएगा।"
+                    else "Are you sure you want to delete sevadar '${target.name}'? This will sync immediately.",
+                    fontSize = 13.sp,
+                    color = Color(0xFF212121)
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val id = target.id
+                        sevadarToDelete = null
+                        scope.launch {
+                            repository.deleteSevadar(id)
+                            loadData()
+                            Toast.makeText(context, if (isHindi) "✅ सेवादार हटाया गया व लाइव सिंक पूर्ण!" else "Sevadar deleted and synced!", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text(if (isHindi) "हटाएं" else "Delete", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { sevadarToDelete = null }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // Publish Result Dialog
+    if (showPublishResultDialog && publishResult != null) {
+        val isSuccess = publishResult!!.first
+        val msg = publishResult!!.second
+        AlertDialog(
+            onDismissRequest = { showPublishResultDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (isSuccess) "✅" else "⚠️", fontSize = 22.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isSuccess) (if (isHindi) "लाइव पब्लिश सफल!" else "Live Publish Successful!")
+                        else (if (isHindi) "लाइव पब्लिश विफल" else "Live Publish Failed"),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = if (isSuccess) Color(0xFF1B5E20) else Color.Red
+                    )
+                }
+            },
+            text = {
+                Text(
+                    text = msg,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF212121)
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showPublishResultDialog = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSuccess) Color(0xFF1B5E20) else MaroonPrimary
+                    )
+                ) {
+                    Text(if (isHindi) "उत्कृष्ट (OK)" else "OK", fontWeight = FontWeight.Bold)
+                }
             }
         )
     }
