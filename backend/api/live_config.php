@@ -67,6 +67,11 @@ $targetCols = [
     "upi_id" => "VARCHAR(100) NOT NULL DEFAULT 'shribalajikripadham@upi'",
     "upi_name" => "VARCHAR(150) NOT NULL DEFAULT 'श्री बालाजी कृपा धाम'",
     "aarti_timings" => "TEXT",
+    "is_darbar_live_now" => "TINYINT(1) NOT NULL DEFAULT 0",
+    "live_stream_title" => "VARCHAR(255) NOT NULL DEFAULT 'श्री बालाजी कृपा धाम दिव्य दरबार लाइव'",
+    "live_stream_url" => "VARCHAR(500) DEFAULT ''",
+    "youtube_live_url" => "VARCHAR(500) DEFAULT ''",
+    "facebook_live_url" => "VARCHAR(500) DEFAULT ''",
     "config_version" => "INT NOT NULL DEFAULT 1"
 ];
 
@@ -122,6 +127,24 @@ try {
         INDEX idx_donor_order (display_order),
         INDEX idx_donor_active (is_active)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ashram_tracks (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        track_key VARCHAR(100) NOT NULL UNIQUE,
+        title_hindi VARCHAR(255) NOT NULL,
+        title_english VARCHAR(255) DEFAULT '',
+        subtitle_hindi VARCHAR(255) DEFAULT '',
+        duration_text VARCHAR(50) DEFAULT '',
+        audio_url VARCHAR(500) NOT NULL,
+        lyrics_hindi TEXT,
+        is_published TINYINT(1) NOT NULL DEFAULT 1,
+        display_order INT NOT NULL DEFAULT 0,
+        youtube_search_query VARCHAR(255) DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_track_published (is_published),
+        INDEX idx_track_order (display_order)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 } catch (Exception $e) {}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -168,7 +191,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'allow_admin_reserved_tokens' => isset($input['allow_admin_reserved_tokens']) ? intval($input['allow_admin_reserved_tokens']) : (isset($input['can_admin_issue_reserved_tokens']) ? intval($input['can_admin_issue_reserved_tokens']) : intval($current['allow_admin_reserved_tokens'] ?? 0)),
         'badi_arzi_rate' => isset($input['badi_arzi_rate']) ? floatval($input['badi_arzi_rate']) : floatval($current['badi_arzi_rate'] ?? 100.0),
         'chhoti_arzi_rate' => isset($input['chhoti_arzi_rate']) ? floatval($input['chhoti_arzi_rate']) : floatval($current['chhoti_arzi_rate'] ?? 50.0),
-        'aarti_timings' => trim($input['aarti_timings'] ?? ($current['aarti_timings'] ?? ''))
+        'aarti_timings' => trim($input['aarti_timings'] ?? ($current['aarti_timings'] ?? '')),
+        'is_darbar_live_now' => isset($input['is_darbar_live_now']) ? intval($input['is_darbar_live_now']) : intval($current['is_darbar_live_now'] ?? 0),
+        'live_stream_title' => trim($input['live_stream_title'] ?? ($current['live_stream_title'] ?? 'श्री बालाजी कृपा धाम दिव्य दरबार लाइव')),
+        'live_stream_url' => trim($input['live_stream_url'] ?? ($current['live_stream_url'] ?? '')),
+        'youtube_live_url' => trim($input['youtube_live_url'] ?? ($current['youtube_live_url'] ?? '')),
+        'facebook_live_url' => trim($input['facebook_live_url'] ?? ($current['facebook_live_url'] ?? ''))
     ];
 
     foreach ($fields as $colName => $val) {
@@ -335,6 +363,11 @@ try {
         "can_admin_issue_reserved_tokens" => boolval($row['can_admin_issue_reserved_tokens'] ?? false),
         "allow_admin_reserved_tokens" => boolval($row['allow_admin_reserved_tokens'] ?? false),
         "aarti_timings" => $row['aarti_timings'] ?? '',
+        "is_darbar_live_now" => boolval($row['is_darbar_live_now'] ?? false),
+        "live_stream_title" => $row['live_stream_title'] ?? 'श्री बालाजी कृपा धाम दिव्य दरबार लाइव',
+        "live_stream_url" => $row['live_stream_url'] ?? '',
+        "youtube_live_url" => $row['youtube_live_url'] ?? '',
+        "facebook_live_url" => $row['facebook_live_url'] ?? '',
         "config_version" => intval($row['config_version'] ?? 1),
         "server_time" => time(),
         "sevadars" => $sevadars,

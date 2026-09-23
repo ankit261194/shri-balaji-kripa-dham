@@ -1,4 +1,4 @@
-﻿CREATE TABLE IF NOT EXISTS ashram_settings (
+CREATE TABLE IF NOT EXISTS ashram_settings (
     id INT PRIMARY KEY DEFAULT 1,
     ashram_name VARCHAR(255) NOT NULL DEFAULT 'श्री बालाजी कृपा धाम',
     ashram_latitude DECIMAL(11, 8) NOT NULL DEFAULT 28.3972915,
@@ -53,3 +53,21 @@ CREATE TABLE IF NOT EXISTS devotee_profiles (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ashram_tracks (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    track_key VARCHAR(100) NOT NULL UNIQUE,
+    title_hindi VARCHAR(255) NOT NULL,
+    title_english VARCHAR(255) DEFAULT '',
+    subtitle_hindi VARCHAR(255) DEFAULT '',
+    duration_text VARCHAR(50) DEFAULT '',
+    audio_url VARCHAR(500) NOT NULL,
+    lyrics_hindi TEXT,
+    is_published TINYINT(1) NOT NULL DEFAULT 1,
+    display_order INT NOT NULL DEFAULT 0,
+    youtube_search_query VARCHAR(255) DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_track_published (is_published),
+    INDEX idx_track_order (display_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

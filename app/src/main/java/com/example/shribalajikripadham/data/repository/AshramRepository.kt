@@ -132,7 +132,11 @@ class AshramRepository(context: Context) {
             adBannerDescription = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_banner_description")) ?: "धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।" } catch (e: Exception) { "धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।" },
             adTargetUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_target_url")) ?: "" } catch (e: Exception) { "" },
             adPlacement = try { cursor.getString(cursor.getColumnIndexOrThrow("ad_placement")) ?: "HOME_BOTTOM" } catch (e: Exception) { "HOME_BOTTOM" },
-            isDarbarLiveNow = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_darbar_live_now")) == 1 } catch (e: Exception) { false }
+            isDarbarLiveNow = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_darbar_live_now")) == 1 } catch (e: Exception) { false },
+            liveStreamTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("live_stream_title")) ?: "श्री बालाजी कृपा धाम दिव्य दरबार लाइव" } catch (e: Exception) { "श्री बालाजी कृपा धाम दिव्य दरबार लाइव" },
+            liveStreamUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("live_stream_url")) ?: "" } catch (e: Exception) { "" },
+            youtubeLiveUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("youtube_live_url")) ?: "" } catch (e: Exception) { "" },
+            facebookLiveUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("facebook_live_url")) ?: "" } catch (e: Exception) { "" }
         )
     }
 
@@ -5808,4 +5812,64 @@ class AshramRepository(context: Context) {
         }
     }
 
+    // ==========================================
+    // 🎵 SACRED AUDIO TRACKS & MP3 REPOSITORY
+    // ==========================================
+    suspend fun getSacredTracks(publishedOnly: Boolean = true): List<com.example.shribalajikripadham.data.sacred.SacredTrack> = withContext(Dispatchers.IO) {
+        if (publishedOnly) dbHelper.getPublishedTracks() else dbHelper.getAllTracks()
+    }
+
+    suspend fun syncSacredTracksFromHostinger(admin: Boolean = false): Pair<Boolean, List<com.example.shribalajikripadham.data.sacred.SacredTrack>> = withContext(Dispatchers.IO) {
+        val (ok, remoteList) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchSacredTracks(admin)
+        if (ok && remoteList.isNotEmpty()) {
+            dbHelper.saveAllTracks(remoteList)
+        }
+        val localList = if (admin) dbHelper.getAllTracks() else dbHelper.getPublishedTracks()
+        Pair(ok, localList)
+    }
+
+    suspend fun saveSacredTrack(track: com.example.shribalajikripadham.data.sacred.SacredTrack): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val localId = dbHelper.insertOrUpdateTrack(track)
+        val trackToSync = if (track.id <= 0) track.copy(id = localId) else track
+        val (ok, msg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.saveSacredTrack(trackToSync)
+        Pair(ok, msg)
+    }
+
+    suspend fun deleteSacredTrack(id: Long): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        dbHelper.deleteTrack(id)
+        val (ok, msg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.deleteSacredTrack(id)
+        Pair(ok, msg)
+    }
+
+    suspend fun uploadSacredAudio(file: java.io.File): String? = withContext(Dispatchers.IO) {
+        com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadAudio(appContext, file)
+    }
+
+    // ==========================================
+    // 🔴 LIVE DARBAR STREAMING BROADCAST CONTROLS
+    // ==========================================
+    suspend fun updateLiveStreamingStatus(
+        isLive: Boolean,
+        title: String = "श्री बालाजी कृपा धाम दिव्य दरबार लाइव",
+        liveUrl: String = "",
+        ytUrl: String = "",
+        fbUrl: String = ""
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val (ok, msg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateLiveStatus(
+            isLive = isLive,
+            title = title,
+            liveUrl = liveUrl,
+            ytUrl = ytUrl,
+            fbUrl = fbUrl
+        )
+        try {
+            val db = dbHelper.writableDatabase
+            val cv = ContentValues().apply {
+                put("is_darbar_live_now", if (isLive) 1 else 0)
+            }
+            db.update("ashram_settings", cv, "id = 1", null)
+        } catch (ignored: Exception) {}
+        Pair(ok, msg)
+    }
 }
+

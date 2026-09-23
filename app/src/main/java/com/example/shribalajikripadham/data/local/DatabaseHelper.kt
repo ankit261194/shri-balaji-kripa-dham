@@ -549,6 +549,27 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_audit_token ON audit_logs (token_number)")
         } catch (e: Exception) { e.printStackTrace() }
 
+        // 19. Sacred Tracks (Aartis & Bhajans) Table
+        try {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS ashram_tracks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    track_key TEXT UNIQUE NOT NULL,
+                    title_hindi TEXT NOT NULL,
+                    title_english TEXT NOT NULL DEFAULT '',
+                    subtitle_hindi TEXT NOT NULL DEFAULT '',
+                    duration_text TEXT NOT NULL DEFAULT '',
+                    audio_url TEXT NOT NULL DEFAULT '',
+                    lyrics_hindi TEXT NOT NULL DEFAULT '',
+                    is_published INTEGER NOT NULL DEFAULT 1,
+                    display_order INTEGER NOT NULL DEFAULT 0,
+                    youtube_search_query TEXT NOT NULL DEFAULT ''
+                )
+            """.trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_track_published ON ashram_tracks (is_published)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_track_order ON ashram_tracks (display_order)")
+        } catch (e: Exception) { e.printStackTrace() }
+
         // Ensure missing columns in existing tables
         ensureColumns(db)
 
@@ -1075,6 +1096,117 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         } catch (e: Exception) {
             e.printStackTrace()
             Pair(false, "बैकअप निर्माण में त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    // ==========================================
+    // 🎵 SACRED AUDIO TRACKS & AARTI REPOSITORY
+    // ==========================================
+    fun getAllTracks(): List<com.example.shribalajikripadham.data.sacred.SacredTrack> {
+        val list = mutableListOf<com.example.shribalajikripadham.data.sacred.SacredTrack>()
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT id, track_key, title_hindi, title_english, subtitle_hindi, duration_text, audio_url, lyrics_hindi, is_published, display_order, youtube_search_query FROM ashram_tracks ORDER BY display_order ASC, id ASC", null)
+        try {
+            while (cursor.moveToNext()) {
+                list.add(
+                    com.example.shribalajikripadham.data.sacred.SacredTrack(
+                        id = cursor.getLong(0),
+                        trackKey = cursor.getString(1) ?: "",
+                        titleHindi = cursor.getString(2) ?: "",
+                        titleEnglish = cursor.getString(3) ?: "",
+                        subtitleHindi = cursor.getString(4) ?: "",
+                        durationText = cursor.getString(5) ?: "",
+                        audioUrl = cursor.getString(6) ?: "",
+                        lyricsHindi = cursor.getString(7) ?: "",
+                        isPublished = cursor.getInt(8) == 1,
+                        displayOrder = cursor.getInt(9),
+                        youtubeSearchQuery = cursor.getString(10) ?: ""
+                    )
+                )
+            }
+        } finally {
+            cursor.close()
+        }
+        return list
+    }
+
+    fun getPublishedTracks(): List<com.example.shribalajikripadham.data.sacred.SacredTrack> {
+        val list = mutableListOf<com.example.shribalajikripadham.data.sacred.SacredTrack>()
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT id, track_key, title_hindi, title_english, subtitle_hindi, duration_text, audio_url, lyrics_hindi, is_published, display_order, youtube_search_query FROM ashram_tracks WHERE is_published = 1 ORDER BY display_order ASC, id ASC", null)
+        try {
+            while (cursor.moveToNext()) {
+                list.add(
+                    com.example.shribalajikripadham.data.sacred.SacredTrack(
+                        id = cursor.getLong(0),
+                        trackKey = cursor.getString(1) ?: "",
+                        titleHindi = cursor.getString(2) ?: "",
+                        titleEnglish = cursor.getString(3) ?: "",
+                        subtitleHindi = cursor.getString(4) ?: "",
+                        durationText = cursor.getString(5) ?: "",
+                        audioUrl = cursor.getString(6) ?: "",
+                        lyricsHindi = cursor.getString(7) ?: "",
+                        isPublished = cursor.getInt(8) == 1,
+                        displayOrder = cursor.getInt(9),
+                        youtubeSearchQuery = cursor.getString(10) ?: ""
+                    )
+                )
+            }
+        } finally {
+            cursor.close()
+        }
+        return list
+    }
+
+    fun insertOrUpdateTrack(track: com.example.shribalajikripadham.data.sacred.SacredTrack): Long {
+        val db = writableDatabase
+        val cv = ContentValues().apply {
+            put("track_key", track.trackKey)
+            put("title_hindi", track.titleHindi)
+            put("title_english", track.titleEnglish)
+            put("subtitle_hindi", track.subtitleHindi)
+            put("duration_text", track.durationText)
+            put("audio_url", track.audioUrl)
+            put("lyrics_hindi", track.lyricsHindi)
+            put("is_published", if (track.isPublished) 1 else 0)
+            put("display_order", track.displayOrder)
+            put("youtube_search_query", track.youtubeSearchQuery)
+        }
+        return if (track.id > 0) {
+            db.update("ashram_tracks", cv, "id = ?", arrayOf(track.id.toString()))
+            track.id
+        } else {
+            db.insertWithOnConflict("ashram_tracks", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+        }
+    }
+
+    fun deleteTrack(id: Long): Boolean {
+        val db = writableDatabase
+        return db.delete("ashram_tracks", "id = ?", arrayOf(id.toString())) > 0
+    }
+
+    fun saveAllTracks(tracks: List<com.example.shribalajikripadham.data.sacred.SacredTrack>) {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            for (track in tracks) {
+                val cv = ContentValues().apply {
+                    put("track_key", track.trackKey)
+                    put("title_hindi", track.titleHindi)
+                    put("title_english", track.titleEnglish)
+                    put("subtitle_hindi", track.subtitleHindi)
+                    put("duration_text", track.durationText)
+                    put("audio_url", track.audioUrl)
+                    put("lyrics_hindi", track.lyricsHindi)
+                    put("is_published", if (track.isPublished) 1 else 0)
+                    put("display_order", track.displayOrder)
+                    put("youtube_search_query", track.youtubeSearchQuery)
+                }
+                db.insertWithOnConflict("ashram_tracks", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
         }
     }
 }

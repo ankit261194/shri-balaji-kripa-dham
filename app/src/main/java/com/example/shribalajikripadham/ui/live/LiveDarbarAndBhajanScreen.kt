@@ -49,7 +49,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 import com.example.shribalajikripadham.data.sacred.SacredTrack
-import com.example.shribalajikripadham.data.sacred.SACRED_TRACKS
 import com.example.shribalajikripadham.util.DevotionalAudioCacheManager
 import com.example.shribalajikripadham.util.SacredOfflineVaniEngine
 import android.widget.Toast
@@ -80,6 +79,8 @@ fun LiveDarbarAndBhajanScreen(
     var playbackErrorMessage by remember { mutableStateOf<String?>(null) }
     var showLyricsDialog by remember { mutableStateOf<SacredTrack?>(null) }
     var cacheRefreshCounter by remember { mutableIntStateOf(0) }
+    var tracksList by remember { mutableStateOf<List<SacredTrack>>(emptyList()) }
+    var isTracksLoading by remember { mutableStateOf(false) }
 
     val isVaniReciting by SacredOfflineVaniEngine.isReciting.collectAsState()
 
@@ -89,27 +90,38 @@ fun LiveDarbarAndBhajanScreen(
         }
     }
 
-    LaunchedEffect(svcTrackIndex) {
-        if (svcTrackIndex in SACRED_TRACKS.indices) {
+    LaunchedEffect(svcTrackIndex, tracksList) {
+        if (tracksList.isNotEmpty() && svcTrackIndex in tracksList.indices) {
             currentTrackIndex = svcTrackIndex
         }
     }
 
     LaunchedEffect(Unit) {
         ashramSettings = repository.getSettings()
+        tracksList = repository.getSacredTracks(publishedOnly = true)
+        scope.launch {
+            isTracksLoading = true
+            val (ok, list) = repository.syncSacredTracksFromHostinger(admin = false)
+            if (ok && list.isNotEmpty()) {
+                tracksList = list
+            }
+            isTracksLoading = false
+        }
     }
 
     fun playTrack(index: Int) {
         try {
             playbackErrorMessage = null
+            if (index !in tracksList.indices) return
             currentTrackIndex = index
-            val track = SACRED_TRACKS[index]
+            val track = tracksList[index]
+            val playableSource = DevotionalAudioCacheManager.getPlayableSource(context, track.trackKey, track.audioUrl)
             BhajanAudioService.playTrack(
                 context = context,
                 trackIndex = index,
                 title = if (isHindi) track.titleHindi else track.titleEnglish,
-                artist = "श्री बालाजी कृपा धाम (डूँगरा जाट)",
-                audioUrl = track.audioUrl,
+                artist = track.subtitleHindi.ifBlank { "श्री बालाजी कृपा धाम (डूँगरा जाट)" },
+                audioUrl = playableSource,
                 trackKey = track.trackKey
             )
         } catch (e: Exception) {
@@ -634,393 +646,473 @@ fun LiveDarbarAndBhajanScreen(
                         .fillMaxSize()
                         .padding(14.dp)
                 ) {
-                    // Player Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaroonPrimary)
-                    ) {
-                        Column(
+                    if (tracksList.isEmpty()) {
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                                .padding(vertical = 16.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaroonPrimary)
                         ) {
-                            val activeTrack = SACRED_TRACKS[currentTrackIndex]
-
-                            Box(
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.sweepGradient(
-                                            listOf(
-                                                SaffronPrimary,
-                                                Color(0xFFFFD54F),
-                                                MaroonPrimary,
-                                                SaffronPrimary
-                                            )
-                                        )
-                                    )
-                                    .border(3.dp, Color(0xFFFFD54F), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = if (isPlaying) "🕉️" else "🚩",
-                                    fontSize = 36.sp,
-                                    modifier = if (isPlaying) Modifier.scale(pulseScale) else Modifier
-                                )
-                            }
-
-                            Spacer(Modifier.height(10.dp))
-
-                            Text(
-                                text = if (isHindi) activeTrack.titleHindi else activeTrack.titleEnglish,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                textAlign = TextAlign.Center
-                            )
-
-                            Text(
-                                text = activeTrack.subtitleHindi,
-                                fontSize = 12.sp,
-                                color = Color(0xFFFFD54F),
-                                textAlign = TextAlign.Center,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-
-                            Spacer(Modifier.height(10.dp))
-
-                            // Action buttons: Read Lyrics & Watch on YouTube
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                OutlinedButton(
-                                    onClick = { showLyricsDialog = activeTrack },
-                                    border = BorderStroke(1.dp, Color(0xFFFFD54F)),
-                                    shape = RoundedCornerShape(20.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                                ) {
-                                    Text("📖 सम्पूर्ण पाठ पढ़ें", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                }
-                                Spacer(Modifier.width(10.dp))
-                                Button(
-                                    onClick = { openTrackInYouTube(activeTrack) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000)),
-                                    shape = RoundedCornerShape(20.dp),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                                ) {
-                                    Text("▶ यूट्यूब पर सुनें", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                }
-                            }
-
-                            Spacer(Modifier.height(8.dp))
-
-                            // Seek Bar
-                            Slider(
-                                value = currentPositionMs.toFloat().coerceIn(0f, totalDurationMs.coerceAtLeast(1).toFloat()),
-                                onValueChange = { newPos ->
-                                    BhajanAudioService.seekTo(context, newPos.toInt())
-                                },
-                                valueRange = 0f..totalDurationMs.coerceAtLeast(1).toFloat(),
-                                colors = SliderDefaults.colors(
-                                    thumbColor = Color(0xFFFFD54F),
-                                    activeTrackColor = Color(0xFFFFD54F),
-                                    inactiveTrackColor = Color.White.copy(alpha = 0.3f)
-                                )
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = formatTime(currentPositionMs),
-                                    fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.8f)
-                                )
-                                Text(
-                                    text = formatTime(totalDurationMs),
-                                    fontSize = 11.sp,
-                                    color = Color.White.copy(alpha = 0.8f)
-                                )
-                            }
-
-                            Spacer(Modifier.height(8.dp))
-
-                            // Controls Row
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                IconButton(onClick = { isLooping = !isLooping }) {
-                                    Text(
-                                        text = "🔁",
-                                        fontSize = 20.sp,
-                                        color = if (isLooping) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.5f)
-                                    )
-                                }
-
-                                IconButton(onClick = {
-                                    val prevIdx = if (currentTrackIndex - 1 < 0) SACRED_TRACKS.size - 1 else currentTrackIndex - 1
-                                    playTrack(prevIdx)
-                                }) {
-                                    Text(text = "⏮", fontSize = 24.sp, color = Color.White)
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .size(54.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFFFFD54F))
-                                        .clickable { togglePlayPause() },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (isBuffering) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(24.dp),
-                                            color = MaroonPrimary,
-                                            strokeWidth = 3.dp
-                                        )
-                                    } else {
-                                        Text(
-                                            text = if (isPlaying) "⏸" else "▶",
-                                            fontSize = 24.sp,
-                                            color = MaroonPrimary,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-
-                                IconButton(onClick = {
-                                    val nextIdx = (currentTrackIndex + 1) % SACRED_TRACKS.size
-                                    playTrack(nextIdx)
-                                }) {
-                                    Text(text = "⏭", fontSize = 24.sp, color = Color.White)
-                                }
-
-                                IconButton(onClick = {
-                                    BhajanAudioService.stopPlayback(context)
-                                }) {
-                                    Text(text = "⏹", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
-                                }
-                            }
-
-                            if (playbackErrorMessage != null) {
-                                Spacer(Modifier.height(6.dp))
-                                Text(
-                                    text = playbackErrorMessage ?: "",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFFFFCC80),
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(14.dp))
-
-                    // Offline Fast Cache Status Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)),
-                        border = BorderStroke(1.dp, Color(0xFF81C784))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(
-                                    text = "⚡ 0.0s बफरिंग ऑफ़लाइन ऑडियो",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.5.sp,
-                                    color = Color(0xFF1B5E20)
-                                )
-                                Text(
-                                    text = "डिवाइस में सुरक्षित: ${DevotionalAudioCacheManager.getTotalCacheSizeFormatted(context)} (बिना इंटरनेट 100% चलेगा)",
-                                    fontSize = 10.5.sp,
-                                    color = Color.DarkGray
-                                )
-                            }
-                            TextButton(
-                                onClick = {
-                                    scope.launch {
-                                        Toast.makeText(context, "📥 सभी 10 आरतियाँ ऑफ़लाइन डाउनलोड हो रही हैं...", Toast.LENGTH_SHORT).show()
-                                        for (t in SACRED_TRACKS) {
-                                            if (!DevotionalAudioCacheManager.isTrackCached(context, t.trackKey)) {
-                                                DevotionalAudioCacheManager.downloadTrackForOffline(context, t.trackKey, t.audioUrl)
-                                            }
-                                        }
-                                        cacheRefreshCounter++
-                                        Toast.makeText(context, "✅ सभी पावन आरतियाँ ऑफ़लाइन सुरक्षित हो गईं!", Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            ) {
-                                Text("📥 सभी सेव करें", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (isHindi) "पावन 10 आरतियाँ, चालीसा एवं स्तुतियाँ" else "10 Sacred Aartis & Chalisas",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaroonPrimary
-                        )
-
-                        if (isVaniReciting) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = SaffronPrimary,
-                                modifier = Modifier.clickable {
-                                    SacredOfflineVaniEngine.stop()
-                                }
-                            ) {
-                                Text(
-                                    text = "⏹ वाणी पाठ रोकें",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    // Track List (10 Sacred Tracks in Strict Sequential Order)
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        itemsIndexed(SACRED_TRACKS) { index, track ->
-                            val isCurrent = currentTrackIndex == index
-                            val isOfflineCached = remember(track.trackKey, cacheRefreshCounter) {
-                                DevotionalAudioCacheManager.isTrackCached(context, track.trackKey)
-                            }
-                            var isDownloadingThis by remember { mutableStateOf(false) }
-
-                            Card(
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { playTrack(index) },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (isCurrent) Color(0xFFFFF3E0) else Color.White
-                                ),
-                                border = if (isCurrent) BorderStroke(1.5.dp, SaffronPrimary) else null,
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Row(
+                                Box(
                                     modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
+                                        .size(72.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFFFD54F)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(text = "🚩", fontSize = 36.sp)
+                                }
+                                Spacer(Modifier.height(14.dp))
+                                Text(
+                                    text = if (isHindi) "श्री बालाजी कृपा धाम (डूँगरा जाट)" else "Shri Balaji Kripa Dham",
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = if (isHindi)
+                                        "🚩 आश्रम प्रबंधन द्वारा प्रामाणिक आरती व भजन शीघ्र प्रकाशित किए जाएंगे। कृपया प्रतीक्षा करें।"
+                                    else
+                                        "🚩 Sacred Aartis & Bhajans will be published soon by Ashram Administration. Please wait.",
+                                    fontSize = 13.sp,
+                                    color = Color(0xFFFFD54F),
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 20.sp
+                                )
+                                Spacer(Modifier.height(18.dp))
+                                if (isTracksLoading) {
+                                    CircularProgressIndicator(
+                                        color = Color(0xFFFFD54F),
+                                        modifier = Modifier.size(28.dp),
+                                        strokeWidth = 3.dp
+                                    )
+                                } else {
+                                    Button(
+                                        onClick = {
+                                            scope.launch {
+                                                isTracksLoading = true
+                                                val (ok, list) = repository.syncSacredTracksFromHostinger(admin = false)
+                                                if (ok && list.isNotEmpty()) {
+                                                    tracksList = list
+                                                    Toast.makeText(context, "✅ आरतियाँ लोड हो गईं!", Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    Toast.makeText(context, "अभी कोई नई आरती प्रकाशित नहीं है।", Toast.LENGTH_SHORT).show()
+                                                }
+                                                isTracksLoading = false
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                                        shape = RoundedCornerShape(20.dp)
+                                    ) {
+                                        Text("🔄 ताज़ा करें (Refresh)", color = Color.White, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        val safeTrackIndex = currentTrackIndex.coerceIn(0, tracksList.size - 1)
+                        val activeTrack = tracksList[safeTrackIndex]
+
+                        // Player Card
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaroonPrimary)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(80.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.sweepGradient(
+                                                listOf(
+                                                    SaffronPrimary,
+                                                    Color(0xFFFFD54F),
+                                                    MaroonPrimary,
+                                                    SaffronPrimary
+                                                )
+                                            )
+                                        )
+                                        .border(3.dp, Color(0xFFFFD54F), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (isPlaying) "🕉️" else "🚩",
+                                        fontSize = 36.sp,
+                                        modifier = if (isPlaying) Modifier.scale(pulseScale) else Modifier
+                                    )
+                                }
+
+                                Spacer(Modifier.height(10.dp))
+
+                                Text(
+                                    text = if (isHindi) activeTrack.titleHindi else activeTrack.titleEnglish,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Text(
+                                    text = activeTrack.subtitleHindi,
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFFFD54F),
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+
+                                Spacer(Modifier.height(10.dp))
+
+                                // Action buttons: Read Lyrics & Watch on YouTube
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { showLyricsDialog = activeTrack },
+                                        border = BorderStroke(1.dp, Color(0xFFFFD54F)),
+                                        shape = RoundedCornerShape(20.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                    ) {
+                                        Text("📖 सम्पूर्ण पाठ पढ़ें", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    Spacer(Modifier.width(10.dp))
+                                    Button(
+                                        onClick = { openTrackInYouTube(activeTrack) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000)),
+                                        shape = RoundedCornerShape(20.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                    ) {
+                                        Text("▶ यूट्यूब पर सुनें", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+                                }
+
+                                Spacer(Modifier.height(8.dp))
+
+                                // Seek Bar
+                                Slider(
+                                    value = currentPositionMs.toFloat().coerceIn(0f, totalDurationMs.coerceAtLeast(1).toFloat()),
+                                    onValueChange = { newPos ->
+                                        BhajanAudioService.seekTo(context, newPos.toInt())
+                                    },
+                                    valueRange = 0f..totalDurationMs.coerceAtLeast(1).toFloat(),
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = Color(0xFFFFD54F),
+                                        activeTrackColor = Color(0xFFFFD54F),
+                                        inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                                    )
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = formatTime(currentPositionMs),
+                                        fontSize = 11.sp,
+                                        color = Color.White.copy(alpha = 0.8f)
+                                    )
+                                    Text(
+                                        text = formatTime(totalDurationMs),
+                                        fontSize = 11.sp,
+                                        color = Color.White.copy(alpha = 0.8f)
+                                    )
+                                }
+
+                                Spacer(Modifier.height(8.dp))
+
+                                // Controls Row
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceEvenly,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    IconButton(onClick = { isLooping = !isLooping }) {
+                                        Text(
+                                            text = "🔁",
+                                            fontSize = 20.sp,
+                                            color = if (isLooping) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.5f)
+                                        )
+                                    }
+
+                                    IconButton(onClick = {
+                                        val prevIdx = if (safeTrackIndex - 1 < 0) tracksList.size - 1 else safeTrackIndex - 1
+                                        playTrack(prevIdx)
+                                    }) {
+                                        Text(text = "⏮", fontSize = 24.sp, color = Color.White)
+                                    }
+
                                     Box(
                                         modifier = Modifier
-                                            .size(40.dp)
+                                            .size(54.dp)
                                             .clip(CircleShape)
-                                            .background(if (isCurrent) SaffronPrimary else Color(0xFFF5F5F5)),
+                                            .background(Color(0xFFFFD54F))
+                                            .clickable { togglePlayPause() },
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(
-                                            text = if (isCurrent && isPlaying) "▶" else "${index + 1}",
-                                            fontWeight = FontWeight.Bold,
-                                            color = if (isCurrent) Color.White else Color.DarkGray,
-                                            fontSize = 13.sp
-                                        )
-                                    }
-
-                                    Spacer(Modifier.width(12.dp))
-
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = if (isHindi) track.titleHindi else track.titleEnglish,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 14.sp,
-                                                color = if (isCurrent) MaroonPrimary else Color.Black
-                                            )
-                                            if (isOfflineCached) {
-                                                Spacer(Modifier.width(6.dp))
-                                                Surface(
-                                                    shape = RoundedCornerShape(4.dp),
-                                                    color = Color(0xFFE8F5E9)
-                                                ) {
-                                                    Text(
-                                                        text = "⚡ 0s ऑफ़लाइन",
-                                                        fontSize = 9.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = Color(0xFF2E7D32),
-                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        Text(
-                                            text = track.subtitleHindi,
-                                            fontSize = 11.5.sp,
-                                            color = Color(0xFF333333),
-                                            fontWeight = FontWeight.Medium,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-
-                                    if (!isOfflineCached) {
-                                        if (isDownloadingThis) {
+                                        if (isBuffering) {
                                             CircularProgressIndicator(
-                                                modifier = Modifier.size(20.dp),
-                                                strokeWidth = 2.dp,
-                                                color = MaroonPrimary
+                                                modifier = Modifier.size(24.dp),
+                                                color = MaroonPrimary,
+                                                strokeWidth = 3.dp
                                             )
                                         } else {
-                                            IconButton(onClick = {
-                                                isDownloadingThis = true
-                                                scope.launch {
-                                                    val ok = DevotionalAudioCacheManager.downloadTrackForOffline(
-                                                        context, track.trackKey, track.audioUrl
-                                                    )
-                                                    isDownloadingThis = false
-                                                    if (ok) {
-                                                        cacheRefreshCounter++
-                                                        Toast.makeText(context, "✅ '${track.titleHindi}' ऑफ़लाइन सुरक्षित हो गई (0s बफरिंग)!", Toast.LENGTH_SHORT).show()
-                                                    } else {
-                                                        Toast.makeText(context, "डाउनलोड विफल। कृपया इंटरनेट जांचें।", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                            }) {
-                                                Text("📥", fontSize = 16.sp)
-                                            }
+                                            Text(
+                                                text = if (isPlaying) "⏸" else "▶",
+                                                fontSize = 24.sp,
+                                                color = MaroonPrimary,
+                                                fontWeight = FontWeight.Bold
+                                            )
                                         }
                                     }
 
-                                    IconButton(onClick = { showLyricsDialog = track }) {
-                                        Text("📖", fontSize = 18.sp)
+                                    IconButton(onClick = {
+                                        val nextIdx = (safeTrackIndex + 1) % tracksList.size
+                                        playTrack(nextIdx)
+                                    }) {
+                                        Text(text = "⏭", fontSize = 24.sp, color = Color.White)
                                     }
 
-                                    IconButton(onClick = { openTrackInYouTube(track) }) {
-                                        Text("▶", fontSize = 16.sp, color = Color(0xFFCC0000))
+                                    IconButton(onClick = {
+                                        BhajanAudioService.stopPlayback(context)
+                                    }) {
+                                        Text(text = "⏹", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
+                                    }
+                                }
+
+                                if (playbackErrorMessage != null) {
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(
+                                        text = playbackErrorMessage ?: "",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFFFFCC80),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(14.dp))
+
+                        // Offline Fast Cache Status Card
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)),
+                            border = BorderStroke(1.dp, Color(0xFF81C784))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "⚡ 0.0s बफरिंग ऑफ़लाइन ऑडियो",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.5.sp,
+                                        color = Color(0xFF1B5E20)
+                                    )
+                                    Text(
+                                        text = "डिवाइस में सुरक्षित: ${DevotionalAudioCacheManager.getTotalCacheSizeFormatted(context)} (बिना इंटरनेट 100% चलेगा)",
+                                        fontSize = 10.5.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                                TextButton(
+                                    onClick = {
+                                        scope.launch {
+                                            Toast.makeText(context, "📥 सभी आरतियाँ ऑफ़लाइन डाउनलोड हो रही हैं...", Toast.LENGTH_SHORT).show()
+                                            for (t in tracksList) {
+                                                if (t.audioUrl.isNotBlank() && !DevotionalAudioCacheManager.isTrackCached(context, t.trackKey)) {
+                                                    DevotionalAudioCacheManager.downloadTrackForOffline(context, t.trackKey, t.audioUrl)
+                                                }
+                                            }
+                                            cacheRefreshCounter++
+                                            Toast.makeText(context, "✅ सभी पावन आरतियाँ ऑफ़लाइन सुरक्षित हो गईं!", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                ) {
+                                    Text("📥 सभी सेव करें", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (isHindi) "पावन आरतियाँ, चालीसा एवं स्तुतियाँ (${tracksList.size})" else "Sacred Aartis & Chalisas (${tracksList.size})",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaroonPrimary
+                            )
+
+                            if (isVaniReciting) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = SaffronPrimary,
+                                    modifier = Modifier.clickable {
+                                        SacredOfflineVaniEngine.stop()
+                                    }
+                                ) {
+                                    Text(
+                                        text = "⏹ वाणी पाठ रोकें",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        // Track List
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            itemsIndexed(tracksList) { index, track ->
+                                val isCurrent = safeTrackIndex == index
+                                val isOfflineCached = remember(track.trackKey, cacheRefreshCounter) {
+                                    DevotionalAudioCacheManager.isTrackCached(context, track.trackKey)
+                                }
+                                var isDownloadingThis by remember { mutableStateOf(false) }
+
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { playTrack(index) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isCurrent) Color(0xFFFFF3E0) else Color.White
+                                    ),
+                                    border = if (isCurrent) BorderStroke(1.5.dp, SaffronPrimary) else null,
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(40.dp)
+                                                .clip(CircleShape)
+                                                .background(if (isCurrent) SaffronPrimary else Color(0xFFF5F5F5)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = if (isCurrent && isPlaying) "▶" else "${index + 1}",
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isCurrent) Color.White else Color.DarkGray,
+                                                fontSize = 13.sp
+                                            )
+                                        }
+
+                                        Spacer(Modifier.width(12.dp))
+
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = if (isHindi) track.titleHindi else track.titleEnglish,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp,
+                                                    color = if (isCurrent) MaroonPrimary else Color.Black
+                                                )
+                                                if (isOfflineCached) {
+                                                    Spacer(Modifier.width(6.dp))
+                                                    Surface(
+                                                        shape = RoundedCornerShape(4.dp),
+                                                        color = Color(0xFFE8F5E9)
+                                                    ) {
+                                                        Text(
+                                                            text = "⚡ 0s ऑफ़लाइन",
+                                                            fontSize = 9.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFF2E7D32),
+                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            Text(
+                                                text = track.subtitleHindi,
+                                                fontSize = 11.5.sp,
+                                                color = Color(0xFF333333),
+                                                fontWeight = FontWeight.Medium,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+
+                                        if (!isOfflineCached) {
+                                            if (isDownloadingThis) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(20.dp),
+                                                    strokeWidth = 2.dp,
+                                                    color = MaroonPrimary
+                                                )
+                                            } else {
+                                                IconButton(onClick = {
+                                                    if (track.audioUrl.isBlank()) {
+                                                        Toast.makeText(context, "इस ट्रैक का ऑडियो उपलब्ध नहीं है", Toast.LENGTH_SHORT).show()
+                                                        return@IconButton
+                                                    }
+                                                    isDownloadingThis = true
+                                                    scope.launch {
+                                                        val ok = DevotionalAudioCacheManager.downloadTrackForOffline(
+                                                            context, track.trackKey, track.audioUrl
+                                                        )
+                                                        isDownloadingThis = false
+                                                        if (ok) {
+                                                            cacheRefreshCounter++
+                                                            Toast.makeText(context, "✅ '${track.titleHindi}' ऑफ़लाइन सुरक्षित हो गई (0s बफरिंग)!", Toast.LENGTH_SHORT).show()
+                                                        } else {
+                                                            Toast.makeText(context, "डाउनलोड विफल। कृपया इंटरनेट जांचें।", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    }
+                                                }) {
+                                                    Text("📥", fontSize = 16.sp)
+                                                }
+                                            }
+                                        }
+
+                                        IconButton(onClick = { showLyricsDialog = track }) {
+                                            Text("📖", fontSize = 18.sp)
+                                        }
+
+                                        IconButton(onClick = { openTrackInYouTube(track) }) {
+                                            Text("▶", fontSize = 16.sp, color = Color(0xFFCC0000))
+                                        }
                                     }
                                 }
                             }

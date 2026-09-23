@@ -1408,5 +1408,223 @@ object HostingerCentralSyncManager {
         }
     }
 
+    // ========================================================
+    // 🎵 SACRED AUDIO TRACKS & MP3 CLOUD SYNC
+    // ========================================================
+
+    suspend fun fetchSacredTracks(admin: Boolean = false): Pair<Boolean, List<com.example.shribalajikripadham.data.sacred.SacredTrack>> = withContext(Dispatchers.IO) {
+        val list = mutableListOf<com.example.shribalajikripadham.data.sacred.SacredTrack>()
+        try {
+            val urlStr = if (admin) "${BASE_URL}get_sacred_tracks.php?admin=1" else "${BASE_URL}get_sacred_tracks.php"
+            val conn = (URL(urlStr).openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache")
+                connectTimeout = 8000
+                readTimeout = 8000
+            }
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false)) {
+                    val arr = json.optJSONArray("tracks") ?: JSONArray()
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        list.add(
+                            com.example.shribalajikripadham.data.sacred.SacredTrack(
+                                id = obj.optLong("id", 0L),
+                                trackKey = obj.optString("track_key", ""),
+                                titleHindi = obj.optString("title_hindi", ""),
+                                titleEnglish = obj.optString("title_english", ""),
+                                subtitleHindi = obj.optString("subtitle_hindi", ""),
+                                durationText = obj.optString("duration_text", ""),
+                                audioUrl = obj.optString("audio_url", ""),
+                                lyricsHindi = obj.optString("lyrics_hindi", ""),
+                                isPublished = obj.optInt("is_published", 1) == 1,
+                                displayOrder = obj.optInt("display_order", 0),
+                                youtubeSearchQuery = obj.optString("youtube_search_query", "")
+                            )
+                        )
+                    }
+                    return@withContext Pair(true, list)
+                }
+            }
+            Pair(false, list)
+        } catch (e: Exception) {
+            Log.e(TAG, "fetchSacredTracks error: ${e.message}")
+            Pair(false, list)
+        }
+    }
+
+    suspend fun saveSacredTrack(track: com.example.shribalajikripadham.data.sacred.SacredTrack): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val conn = (URL("${BASE_URL}save_sacred_track.php").openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                connectTimeout = 10000
+                readTimeout = 10000
+            }
+
+            val payload = JSONObject().apply {
+                if (track.id > 0) put("id", track.id)
+                put("track_key", track.trackKey)
+                put("title_hindi", track.titleHindi)
+                put("title_english", track.titleEnglish)
+                put("subtitle_hindi", track.subtitleHindi)
+                put("duration_text", track.durationText)
+                put("audio_url", track.audioUrl)
+                put("lyrics_hindi", track.lyricsHindi)
+                put("is_published", if (track.isPublished) 1 else 0)
+                put("display_order", track.displayOrder)
+                put("youtube_search_query", track.youtubeSearchQuery)
+            }
+
+            conn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false)) {
+                    return@withContext Pair(true, json.optString("message", "सफलतापूर्वक सुरक्षित!"))
+                } else {
+                    return@withContext Pair(false, json.optString("error", "सर्वर त्रुटि"))
+                }
+            }
+            Pair(false, "HTTP ${conn.responseCode}")
+        } catch (e: Exception) {
+            Log.e(TAG, "saveSacredTrack error: ${e.message}")
+            Pair(false, e.localizedMessage ?: "अज्ञात त्रुटि")
+        }
+    }
+
+    suspend fun deleteSacredTrack(id: Long): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val conn = (URL("${BASE_URL}delete_sacred_track.php").openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                connectTimeout = 10000
+                readTimeout = 10000
+            }
+
+            val payload = JSONObject().apply {
+                put("id", id)
+            }
+
+            conn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false)) {
+                    return@withContext Pair(true, json.optString("message", "ट्रैक हटा दिया गया!"))
+                } else {
+                    return@withContext Pair(false, json.optString("error", "सर्वर त्रुटि"))
+                }
+            }
+            Pair(false, "HTTP ${conn.responseCode}")
+        } catch (e: Exception) {
+            Log.e(TAG, "deleteSacredTrack error: ${e.message}")
+            Pair(false, e.localizedMessage ?: "अज्ञात त्रुटि")
+        }
+    }
+
+    suspend fun uploadAudio(context: Context, file: File): String? = withContext(Dispatchers.IO) {
+        try {
+            if (!file.exists() || file.length() == 0L) return@withContext null
+            val boundary = "SBKDAudioBoundary" + System.currentTimeMillis()
+            val conn = (URL("${BASE_URL}upload_audio.php").openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+                connectTimeout = 30000
+                readTimeout = 60000
+            }
+
+            conn.outputStream.use { os ->
+                val sb = StringBuilder()
+                sb.append("--$boundary\r\n")
+                sb.append("Content-Disposition: form-data; name=\"audio\"; filename=\"${file.name}\"\r\n")
+                sb.append("Content-Type: audio/mpeg\r\n\r\n")
+                os.write(sb.toString().toByteArray(StandardCharsets.UTF_8))
+
+                FileInputStream(file).use { fis ->
+                    val buffer = ByteArray(8192)
+                    var read: Int
+                    while (fis.read(buffer).also { read = it } != -1) {
+                        os.write(buffer, 0, read)
+                    }
+                }
+                os.write("\r\n--$boundary--\r\n".toByteArray(StandardCharsets.UTF_8))
+            }
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false)) {
+                    return@withContext json.optString("audio_url", null)
+                }
+            }
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "uploadAudio failed: ${e.message}")
+            null
+        }
+    }
+
+    // ========================================================
+    // 🔴 LIVE DARBAR STREAMING & BROADCAST CONTROL
+    // ========================================================
+
+    suspend fun updateLiveStatus(
+        isLive: Boolean,
+        title: String = "श्री बालाजी कृपा धाम दिव्य दरबार लाइव",
+        liveUrl: String = "",
+        ytUrl: String = "",
+        fbUrl: String = ""
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val conn = (URL("${BASE_URL}update_live_status.php").openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                connectTimeout = 10000
+                readTimeout = 10000
+            }
+
+            val payload = JSONObject().apply {
+                put("is_live", if (isLive) 1 else 0)
+                put("live_stream_title", title)
+                put("live_stream_url", liveUrl)
+                put("youtube_live_url", ytUrl)
+                put("facebook_live_url", fbUrl)
+            }
+
+            conn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false)) {
+                    return@withContext Pair(true, json.optString("message", if (isLive) "🔴 लाइव शुरू हुआ!" else "⏹️ लाइव समाप्त हुआ।"))
+                }
+            }
+            Pair(false, "HTTP ${conn.responseCode}")
+        } catch (e: Exception) {
+            Log.e(TAG, "updateLiveStatus error: ${e.message}")
+            Pair(false, e.localizedMessage ?: "अज्ञात त्रुटि")
+        }
+    }
 }
 

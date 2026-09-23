@@ -2,7 +2,7 @@ package com.example.shribalajikripadham.util
 
 import android.content.Context
 import android.util.Log
-import com.example.shribalajikripadham.data.sacred.SACRED_TRACKS
+import com.example.shribalajikripadham.data.sacred.SacredTrack
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -70,13 +70,16 @@ object DevotionalAudioCacheManager {
      * Background self-healing sync: Silently verifies and downloads all sacred tracks
      * so that the user experiences zero audio buffering without filling external gallery.
      */
-    suspend fun startSilentBackgroundSync(context: Context) = withContext(Dispatchers.IO) {
+    suspend fun startSilentBackgroundSync(
+        context: Context,
+        tracks: List<SacredTrack> = emptyList()
+    ) = withContext(Dispatchers.IO) {
         try {
             val audioDir = getAudioDirectory(context)
             Log.d(TAG, "Starting silent background audio pre-cache in: ${audioDir.absolutePath}")
 
-            for (track in SACRED_TRACKS) {
-                if (!isTrackCached(context, track.trackKey)) {
+            for (track in tracks) {
+                if (track.audioUrl.isNotBlank() && !isTrackCached(context, track.trackKey)) {
                     Log.d(TAG, "Silently caching sacred track: ${track.trackKey} (${track.titleHindi})")
                     try {
                         downloadTrackForOffline(
@@ -204,11 +207,13 @@ object DevotionalAudioCacheManager {
     }
 
     fun getCachedTrackCount(context: Context): Int {
-        return SACRED_TRACKS.count { isTrackCached(context, it.trackKey) }
+        val files = getAudioDirectory(context).listFiles() ?: return 0
+        return files.count { it.name.endsWith(".mp3") && it.length() > 1024 }
     }
 
-    fun isFullyCached(context: Context): Boolean {
-        return getCachedTrackCount(context) >= SACRED_TRACKS.size
+    fun isFullyCached(context: Context, totalExpectedTracks: Int = 0): Boolean {
+        if (totalExpectedTracks <= 0) return false
+        return getCachedTrackCount(context) >= totalExpectedTracks
     }
 
     /**

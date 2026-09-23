@@ -1062,6 +1062,8 @@ fun AdminDashboardScreen(
             if (admin.canSendNotifications || isSuper) allowedTabs.add(if (isHindi) "सूचना भेजें" else "Broadcast")
             if (isSuper || admin.canEditAshramInfo) {
                 allowedTabs.add(if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control")
+                allowedTabs.add(if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager")
+                allowedTabs.add(if (isHindi) "🔴 लाइव स्टूडियो" else "🔴 Live Studio")
             }
             if (isSuper || (admin.canManageYatra && settings.isBusBookingLive)) {
                 allowedTabs.add(if (isHindi) "बस बुकिंग लेजर" else "Bus Ledger")
@@ -2198,6 +2200,19 @@ fun AdminDashboardScreen(
                                         refreshData()
                                     }
                                 }
+                            )
+                        }
+                        currentTabTitle == "🎵 आरती व भजन प्रबंधन" || currentTabTitle == "Audio & Aarti Manager" -> {
+                            AdminAudioAartiManagerTab(
+                                isHindi = isHindi,
+                                repository = repository
+                            )
+                        }
+                        currentTabTitle == "🔴 लाइव स्टूडियो" || currentTabTitle == "🔴 Live Studio" -> {
+                            AdminLiveStudioTab(
+                                isHindi = isHindi,
+                                repository = repository,
+                                settings = settings
                             )
                         }
                     }

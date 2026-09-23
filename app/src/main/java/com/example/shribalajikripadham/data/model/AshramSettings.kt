@@ -93,6 +93,10 @@ data class AshramSettings(
     val ashramRulesHindi: String = "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।\n4. पूर्ण शांति, स्वच्छता व मर्यादा बनाए रखें।",
     val allowAdminReservedTokens: Boolean = false,
     val isDarbarLiveNow: Boolean = false,
+    val liveStreamTitle: String = "श्री बालाजी कृपा धाम दिव्य दरबार लाइव",
+    val liveStreamUrl: String = "",
+    val youtubeLiveUrl: String = "",
+    val facebookLiveUrl: String = "",
     val officialWebsiteUrl: String = "https://shribalajikripadham.online"
 )
 
