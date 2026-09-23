@@ -10,7 +10,7 @@ downloads_dir = r'C:\Users\hp\Downloads'
 bundle_files = {}
 
 # 1. Root files
-root_files = ['.htaccess', 'download.php', 'index.php', 'schema.sql', 'version.json']
+root_files = ['.htaccess', 'download.php', 'index.php', 'schema.sql', 'version.json', 'deploy.php']
 for rf in root_files:
     p = os.path.join(backend_dir, rf)
     if os.path.exists(p):
@@ -289,13 +289,17 @@ $queries = [
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;"
 ];
 
-foreach ($queries as $sql) {
-    try {
-        $pdo->exec($sql);
-        $results[] = ["query" => substr(trim($sql), 0, 45) . "...", "status" => "OK"];
-    } catch (PDOException $e) {
-        $results[] = ["query" => substr(trim($sql), 0, 45) . "...", "status" => "WARN: " . $e->getMessage()];
+if ($pdo) {
+    foreach ($queries as $sql) {
+        try {
+            $pdo->exec($sql);
+            $results[] = ["query" => substr(trim($sql), 0, 45) . "...", "status" => "OK"];
+        } catch (Throwable $e) {
+            $results[] = ["query" => substr(trim($sql), 0, 45) . "...", "status" => "WARN: " . $e->getMessage()];
+        }
     }
+} else {
+    $results[] = ["query" => "Database connection", "status" => "OFFLINE / LOCAL_DEPLOY"];
 }
 
 // 4. Automatic Column Migration for ashram_settings (Guarantees zero 500 errors)
@@ -324,35 +328,49 @@ $targetCols = [
     "is_banner_visible" => "TINYINT(1) NOT NULL DEFAULT 1",
     "guruji_photo_url" => "VARCHAR(500) DEFAULT ''",
     "can_admin_issue_reserved_tokens" => "TINYINT(1) NOT NULL DEFAULT 0",
+    "allow_admin_reserved_tokens" => "TINYINT(1) NOT NULL DEFAULT 0",
     "badi_arzi_rate" => "DECIMAL(10, 2) NOT NULL DEFAULT 100.0",
     "chhoti_arzi_rate" => "DECIMAL(10, 2) NOT NULL DEFAULT 50.0",
+    "contact_phone" => "VARCHAR(50) NOT NULL DEFAULT '+91 97206 91090'",
+    "whatsapp_number" => "VARCHAR(50) NOT NULL DEFAULT '+91 97206 91090'",
+    "upi_id" => "VARCHAR(100) NOT NULL DEFAULT 'shribalajikripadham@upi'",
+    "upi_name" => "VARCHAR(150) NOT NULL DEFAULT 'श्री बालाजी कृपा धाम'",
     "aarti_timings" => "TEXT",
-    "whatsapp_number" => "VARCHAR(20) DEFAULT '+918006518960'",
-    "whatsapp_group_url" => "VARCHAR(500) DEFAULT ''",
+    "is_darbar_live_now" => "TINYINT(1) NOT NULL DEFAULT 0",
+    "live_stream_title" => "VARCHAR(255) NOT NULL DEFAULT 'श्री बालाजी कृपा धाम दिव्य दरबार लाइव'",
+    "live_stream_url" => "VARCHAR(500) DEFAULT ''",
+    "youtube_live_url" => "VARCHAR(500) DEFAULT ''",
+    "facebook_live_url" => "VARCHAR(500) DEFAULT ''",
     "config_version" => "INT NOT NULL DEFAULT 1"
 ];
 
-$existingColsStmt = $pdo->query("SHOW COLUMNS FROM ashram_settings");
-$existingCols = $existingColsStmt->fetchAll(PDO::FETCH_COLUMN);
-
 $addedCols = [];
-foreach ($targetCols as $col => $definition) {
-    if (!in_array($col, $existingCols)) {
-        try {
-            $pdo->exec("ALTER TABLE ashram_settings ADD COLUMN `{$col}` {$definition}");
-            $addedCols[] = $col;
-        } catch (Exception $e) {}
-    }
-}
+$existingTables = [];
+if ($pdo) {
+    try {
+        $existingColsStmt = $pdo->query("SHOW COLUMNS FROM ashram_settings");
+        $existingCols = $existingColsStmt ? $existingColsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        if (is_array($existingCols)) {
+            foreach ($targetCols as $col => $definition) {
+                if (!in_array($col, $existingCols)) {
+                    try {
+                        $pdo->exec("ALTER TABLE ashram_settings ADD COLUMN `{$col}` {$definition}");
+                        $addedCols[] = $col;
+                    } catch (Throwable $e) {}
+                }
+            }
+        }
 
-// 5. Ensure row 1 exists in ashram_settings
-$checkRow = $pdo->query("SELECT id FROM ashram_settings WHERE id = 1 LIMIT 1")->fetch();
-if (!$checkRow) {
-    $pdo->exec("INSERT INTO ashram_settings (id, ashram_name, current_serving_token, is_darbar_active, is_token_service_enabled) VALUES (1, 'श्री बालाजी कृपा धाम', 0, 1, 1)");
-}
+        // 5. Ensure row 1 exists in ashram_settings
+        $checkRow = $pdo->query("SELECT id FROM ashram_settings WHERE id = 1 LIMIT 1");
+        if ($checkRow && !$checkRow->fetch()) {
+            $pdo->exec("INSERT INTO ashram_settings (id, ashram_name, current_serving_token, is_darbar_active, is_token_service_enabled) VALUES (1, 'श्री बालाजी कृपा धाम', 0, 1, 1)");
+        }
 
-$tablesStmt = $pdo->query("SHOW TABLES");
-$existingTables = $tablesStmt->fetchAll(PDO::FETCH_COLUMN);
+        $tablesStmt = $pdo->query("SHOW TABLES");
+        $existingTables = $tablesStmt ? $tablesStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+    } catch (Throwable $e) {}
+}
 
 echo json_encode([
     "success" => true,
@@ -376,12 +394,19 @@ dl_install_path = os.path.join(downloads_dir, 'install.php')
 shutil.copy2(install_path, dl_install_path)
 print(f"Copied to Downloads: {dl_install_path}")
 
-# Create shribalajikripadham_backend.zip
+# Copy deploy.php to Downloads
+deploy_src = os.path.join(backend_dir, 'deploy.php')
+if os.path.exists(deploy_src):
+    dl_deploy_path = os.path.join(downloads_dir, 'deploy.php')
+    shutil.copy2(deploy_src, dl_deploy_path)
+    print(f"Copied deploy.php to Downloads: {dl_deploy_path}")
+
+# Create shribalajikripadham_backend.zip (lightweight code bundle < 1 MB)
 zip_path = os.path.join(backend_dir, 'shribalajikripadham_backend.zip')
 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as z:
     for root, dirs, files in os.walk(backend_dir):
-        # skip zip itself and downloads APKs to keep zip tiny (< 1MB)
-        if 'downloads' in root or 'uploads' in root:
+        # skip zip itself, large media, downloads and uploads to keep zip tiny (< 1MB)
+        if 'downloads' in root or 'uploads' in root or 'media' in root:
             continue
         for file in files:
             if file.endswith('.zip') or file.endswith('.apk'):

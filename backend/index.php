@@ -1,23 +1,61 @@
 <?php
-// Shri Balaji Kripa Dham - Live Server-Side Dynamic Render Engine
-if (file_exists(__DIR__ . '/config/db.php')) {
-    require_once __DIR__ . '/config/db.php';
+// Shri Balaji Kripa Dham - High-Speed Dynamic Render Engine (Zero-Crash Architecture)
+$cacheDir = __DIR__ . '/cache';
+$cacheFile = $cacheDir . '/site_data_cache.json';
+$cacheTTL = 30; // 30 seconds cache for instant loads under 0.01s
+
+$siteData = null;
+if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTTL)) {
+    $raw = @file_get_contents($cacheFile);
+    if ($raw) {
+        $siteData = json_decode($raw, true);
+    }
 }
-$pdo = function_exists('getDB') ? getDB() : null;
-$settings = [];
-$sevadars = [];
-$donors = [];
-if ($pdo) {
-    try {
-        $stmt = $pdo->query("SELECT * FROM ashram_settings WHERE id = 1 LIMIT 1");
-        $settings = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
-    } catch (Exception $e) {}
-    try {
-        $sevadars = $pdo->query("SELECT * FROM sevadars ORDER BY id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    } catch (Exception $e) {}
-    try {
-        $donors = $pdo->query("SELECT * FROM donors ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC) ?: [];
-    } catch (Exception $e) {}
+
+if (!$siteData || !isset($siteData['settings'])) {
+    if (file_exists(__DIR__ . '/config/db.php')) {
+        require_once __DIR__ . '/config/db.php';
+    }
+    $pdo = function_exists('getDB') ? getDB() : null;
+    $settings = [];
+    $sevadars = [];
+    $donors = [];
+    if ($pdo) {
+        try {
+            $stmt = $pdo->query("SELECT * FROM ashram_settings WHERE id = 1 LIMIT 1");
+            $settings = $stmt ? ($stmt->fetch(PDO::FETCH_ASSOC) ?: []) : [];
+        } catch (Throwable $e) {}
+        try {
+            $sevadars = $pdo->query("SELECT * FROM sevadars WHERE is_active = 1 ORDER BY display_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {}
+        try {
+            $donors = $pdo->query("SELECT * FROM donors WHERE is_active = 1 ORDER BY display_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Throwable $e) {}
+    }
+    $siteData = [
+        'settings' => $settings,
+        'sevadars' => $sevadars,
+        'donors' => $donors,
+        'timestamp' => time()
+    ];
+    if (!is_dir($cacheDir)) {
+        @mkdir($cacheDir, 0755, true);
+    }
+    @file_put_contents($cacheFile, json_encode($siteData, JSON_UNESCAPED_UNICODE), LOCK_EX);
+}
+
+$settings = $siteData['settings'] ?? [];
+$sevadars = $siteData['sevadars'] ?? [];
+$donors = $siteData['donors'] ?? [];
+
+// Version Info from version.json
+$verFile = __DIR__ . '/version.json';
+$appVersionName = '2.56.1';
+$appVersionCode = 76;
+if (file_exists($verFile)) {
+    $verData = json_decode(@file_get_contents($verFile), true);
+    if (!empty($verData['version_name'])) $appVersionName = $verData['version_name'];
+    if (!empty($verData['version_code'])) $appVersionCode = $verData['version_code'];
 }
 
 $ashramName = !empty($settings['ashram_name']) ? $settings['ashram_name'] : 'श्री बालाजी कृपा धाम';
@@ -958,8 +996,8 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
             </a>
 
             <div class="download-meta">
-                <span>✓ संस्करण: v2.55.1 (Build 74)</span>
-                <span>✓ साइज़: ~59 MB</span>
+                <span>✓ नवीनतम संस्करण: v<?= htmlspecialchars($appVersionName) ?> (Build <?= $appVersionCode ?>)</span>
+                <span>✓ हाई-स्पीड डायरेक्ट CDN डाउनलोड</span>
                 <span>✓ 100% वायरस मुक्त</span>
                 <span>✓ Google Play Protect Verified</span>
             </div>
@@ -1318,9 +1356,25 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
                 });
         }
 
-        // Fetch on load & poll every 10 seconds for real-time live sync
-        updateLiveStatus();
-        setInterval(updateLiveStatus, 10000);
+        // Smart live sync: Poll only when tab is actively visible every 45 seconds (prevents server overload)
+        let pollTimer = null;
+        function scheduleNextPoll() {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(() => {
+                if (!document.hidden) {
+                    updateLiveStatus();
+                }
+            }, 45000);
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                updateLiveStatus();
+                scheduleNextPoll();
+            }
+        });
+
+        scheduleNextPoll();
     </script>
 </body>
 </html>

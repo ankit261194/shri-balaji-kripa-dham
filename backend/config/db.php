@@ -6,11 +6,13 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-SBKD-API-KEY, x-sbkd-api-key");
 
-// Zero-Cache Headers for real-time live data reflection
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Cache-Control: post-check=0, pre-check=0", false);
-header("Pragma: no-cache");
-header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+// Set Zero-Cache Headers ONLY for API endpoints, NOT for the main website HTML
+if (isset($_SERVER['SCRIPT_NAME']) && strpos($_SERVER['SCRIPT_NAME'], '/api/') !== false) {
+    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+    header("Cache-Control: post-check=0, pre-check=0", false);
+    header("Pragma: no-cache");
+    header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -51,21 +53,28 @@ if (!defined('DB_NAME')) define('DB_NAME', 'u237101617_balaji');
 if (!defined('DB_USER')) define('DB_USER', 'u237101617_ankitantim0');
 if (!defined('DB_PASS')) define('DB_PASS', 'Aa@8006518960');
 
-function getDB() {
+function getDB($exitOnError = false) {
     static $pdo = null;
-    if ($pdo === null) {
+    static $connectAttempted = false;
+    if ($pdo === null && !$connectAttempted) {
+        $connectAttempted = true;
         $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::ATTR_TIMEOUT => 3, // 3-second connect timeout to prevent website freezing
         ];
         try {
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         } catch (PDOException $e) {
-            http_response_code(500);
-            echo json_encode(["success" => false, "error" => "Database connection failed: " . $e->getMessage()]);
-            exit;
+            error_log("ShriBalaji DB Connection Notice: " . $e->getMessage());
+            if ($exitOnError) {
+                http_response_code(500);
+                echo json_encode(["success" => false, "error" => "Database connection unavailable"]);
+                exit;
+            }
+            return null;
         }
     }
     return $pdo;
