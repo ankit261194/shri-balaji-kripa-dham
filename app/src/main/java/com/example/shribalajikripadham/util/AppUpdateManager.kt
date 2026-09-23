@@ -24,7 +24,7 @@ import org.json.JSONObject
 
 object AppUpdateManager {
 
-    const val DEFAULT_APK_URL = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.55.1/ShriBalajiKripaDham-release.apk"
+    const val DEFAULT_APK_URL = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk"
     const val DEFAULT_VERSION_JSON_URL = "https://cdn.jsdelivr.net/gh/ankit261194/shri-balaji-kripa-dham@main/version.json"
     const val JSDELIVR_APP_UPDATE_URL = "https://cdn.jsdelivr.net/gh/ankit261194/shri-balaji-kripa-dham@main/app_update.json"
     const val ASHRAM_VERSION_JSON_URL = "https://shribalajikripadham.online/version.json"
@@ -167,11 +167,11 @@ object AppUpdateManager {
 
                 OnlineUpdateInfo(
                     versionCode = parsedCode,
-                    versionName = verClean.ifEmpty { "2.34.0" },
+                    versionName = verClean.ifEmpty { "2.56.1" },
                     updateNotesHindi = conciseHindiNotes,
                     updateNotesEnglish = conciseEnglishNotes,
                     apkUrl = apkDownloadUrl,
-                    isForce = true,
+                    isForce = false,
                     webhookUrl = ""
                 )
             } else {
@@ -402,9 +402,8 @@ object AppUpdateManager {
 
             // 2. Direct GitHub Release official assets (Always clean, immutable, non-cached)
             val gitHubReleaseFallbacks = listOf(
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.55.1/ShriBalajiKripaDham-release.apk",
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.55.1/ShriBalajiKripaDham-v2.55.1.apk",
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk"
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk",
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.56.1/ShriBalajiKripaDham-release.apk"
             )
             for (gh in gitHubReleaseFallbacks) {
                 if (!candidateUrls.contains(gh)) {

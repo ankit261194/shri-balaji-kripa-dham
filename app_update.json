@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 75,
-  "version_code": 75,
-  "latest_version_name": "2.56.0",
-  "version_name": "2.56.0",
-  "update_notes_hindi": "v2.56.0: 🎵 एडमिन डायनामिक एमपी3 व प्रामाणिक आरती प्रबंधन (सभी अशुद्ध पुराने ऑडियो हटा दिए गए हैं, एडमिन द्वारा नए एमपी3 व देवनागरी पाठ सीधे अपलोड व प्रकाशित होंगे) + 🔴 एडमिन लाइव स्टूडियो (गोल्डन आभा, दीया ग्लो व मंदिर फ्रेम फिल्टर्स, यूट्यूब/फेसबुक/इंस्टा ऑटो-लाइव व होम स्क्रीन लाइव अलर्ट)।",
-  "update_notes_english": "v2.56.0: 🎵 Dynamic Admin Audio & Authentic Aarti Manager (Faulty hardcoded audios removed; Admin can upload MP3 and lyrics dynamically) + 🔴 Admin Live Camera Studio with Devotional Filters, Multi-Social Broadcasting & Live Home Banner.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.56.0/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 76,
+  "version_code": 76,
+  "latest_version_name": "2.56.1",
+  "version_name": "2.56.1",
+  "update_notes_hindi": "v2.56.1: 🚀 ऑटो-अपडेट लूप व वेबसाइट डाउनलोड फिक्स (हमेशा नवीनतम रिलीज़ APK प्राप्त होगी, बार-बार अपडेट मांगने की समस्या समाप्त) + 🎵 एडमिन डायनामिक एमपी3 व आरती प्रबंधन + 🔴 एडमिन लाइव कैमरा स्टूडियो।",
+  "update_notes_english": "v2.56.1: 🚀 Auto-update loop fix & dynamic website CDN delivery (Always fetches latest release APK; fixes repeated update prompt issue) + 🎵 Admin Dynamic MP3 Aarti Manager + 🔴 Admin Live Camera Studio.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.56.1/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }
