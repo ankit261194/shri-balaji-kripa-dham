@@ -97,5 +97,16 @@ def publish(version_name="2.56.0", version_code=75):
         return result["browser_download_url"]
 
 if __name__ == "__main__":
-    url = publish("2.56.0", 75)
+    v_name = "2.56.1"
+    v_code = 76
+    try:
+        v_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "version.json")
+        if os.path.exists(v_path):
+            with open(v_path, "r", encoding="utf-8") as f:
+                v_data = json.load(f)
+                v_name = v_data.get("version_name", v_name)
+                v_code = v_data.get("version_code", v_code)
+    except Exception as e:
+        print(f"Warning reading version.json: {e}")
+    url = publish(v_name, v_code)
     print(f"Release URL: {url}")

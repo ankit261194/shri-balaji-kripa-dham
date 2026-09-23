@@ -1927,7 +1927,7 @@ fun HomeScreen(
                                 scope.launch {
                                     AppUpdateManager.startInAppUpdateDetailed(
                                         context = context,
-                                        downloadUrl = settings.apkDownloadUrl,
+                                        downloadUrl = if (settings.apkDownloadUrl.isNotBlank() && !settings.apkDownloadUrl.contains("v2.55.1")) settings.apkDownloadUrl else "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk",
                                         onProgress = { progress, downloaded, total ->
                                             downloadProgress = progress
                                             downloadDownloadedBytes = downloaded
@@ -1970,7 +1970,8 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedButton(
                             onClick = {
-                                AppUpdateManager.openInBrowser(context, settings.apkDownloadUrl)
+                                val browserUrl = if (settings.apkDownloadUrl.isNotBlank() && !settings.apkDownloadUrl.contains("v2.55.1")) settings.apkDownloadUrl else "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk"
+                                AppUpdateManager.openInBrowser(context, browserUrl)
                             },
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier
