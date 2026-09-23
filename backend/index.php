@@ -958,8 +958,8 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
             </a>
 
             <div class="download-meta">
-                <span>✓ संस्करण: v2.43.0 Pro</span>
-                <span>✓ साइज़: ~107 MB</span>
+                <span>✓ संस्करण: v2.55.1 (Build 74)</span>
+                <span>✓ साइज़: ~59 MB</span>
                 <span>✓ 100% वायरस मुक्त</span>
                 <span>✓ Google Play Protect Verified</span>
             </div>

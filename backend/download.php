@@ -1,10 +1,10 @@
 <?php
 // ==============================================================================
 // श्री बालाजी कृपा धाम (ग्राम डूँगरा जाट) - आधिकारिक हाई-स्पीड APK डाउनलोड सेवा
-// High-Speed Direct Ashram Server APK Delivery Engine (v2.54.0 Build 72)
+// High-Speed Direct Ashram Server APK Delivery Engine (v2.55.1 Build 74)
 // ==============================================================================
 
-$cdnUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.54.0/ShriBalajiKripaDham-release.apk";
+$cdnUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.55.1/ShriBalajiKripaDham-release.apk";
 header("Location: " . $cdnUrl, true, 302);
 exit;
 
@@ -59,7 +59,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>श्री बालाजी कृपा धाम - ऐप डाउनलोड (v2.51.0)</title>
+    <title>श्री बालाजी कृपा धाम - ऐप डाउनलोड (v2.55.1)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #FFF8E7; color: #212121; text-align: center; padding: 40px 20px; }
         .card { max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 20px; padding: 30px; box-shadow: 0 8px 30px rgba(128,0,0,0.12); border: 2px solid #FFD54F; }
@@ -74,7 +74,7 @@ $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "
     <div class="card">
         <div style="font-size: 3rem; margin-bottom: 10px;">🚩</div>
         <h1>श्री बालाजी कृपा धाम</h1>
-        <p><strong>आधिकारिक मोबाइल ऐप (v2.51.0 - Build 69)</strong></p>
+        <p><strong>आधिकारिक मोबाइल ऐप (v2.55.1 - Build 74)</strong></p>
         <p>रविवार दरबार टोकन, लाइव दर्शन, आरती व संपूर्ण आश्रम सेवाओं के लिए ऐप डाउनलोड करें।</p>
         <a href="<?= $baseUrl ?>/downloads/ShriBalajiKripaDham-release.apk" class="btn">📲 ऐप डाउनलोड करें (Direct APK)</a>
         <div class="note">
