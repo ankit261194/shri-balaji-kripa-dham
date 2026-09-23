@@ -24,8 +24,10 @@ import org.json.JSONObject
 
 object AppUpdateManager {
 
-    const val DEFAULT_APK_URL = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk"
-    const val DEFAULT_VERSION_JSON_URL = "https://shribalajikripadham.online/version.json"
+    const val DEFAULT_APK_URL = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.55.1/ShriBalajiKripaDham-release.apk"
+    const val DEFAULT_VERSION_JSON_URL = "https://cdn.jsdelivr.net/gh/ankit261194/shri-balaji-kripa-dham@main/version.json"
+    const val JSDELIVR_APP_UPDATE_URL = "https://cdn.jsdelivr.net/gh/ankit261194/shri-balaji-kripa-dham@main/app_update.json"
+    const val ASHRAM_VERSION_JSON_URL = "https://shribalajikripadham.online/version.json"
     const val GITHUB_VERSION_JSON_URL = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/version.json"
 
     data class OnlineUpdateInfo(
@@ -40,11 +42,13 @@ object AppUpdateManager {
 
     suspend fun fetchLatestUpdateFromOnline(urlStr: String = DEFAULT_VERSION_JSON_URL): OnlineUpdateInfo? {
         return withContext(Dispatchers.IO) {
-            val fromAshram = fetchFromVersionJson(urlStr)
+            val fromJsDelivr = fetchFromVersionJson(DEFAULT_VERSION_JSON_URL)
+            val fromJsDelivrApp = fetchFromVersionJson(JSDELIVR_APP_UPDATE_URL)
+            val fromAshram = fetchFromVersionJson(ASHRAM_VERSION_JSON_URL)
             val fromGitHubVersion = fetchFromVersionJson(GITHUB_VERSION_JSON_URL)
             val fromAppUpdateJson = fetchFromVersionJson("https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/app_update.json")
             val fromGitHub = fetchFromGitHubReleasesApi()
-            listOfNotNull(fromAshram, fromGitHubVersion, fromAppUpdateJson, fromGitHub).maxByOrNull { it.versionCode }
+            listOfNotNull(fromJsDelivr, fromJsDelivrApp, fromAshram, fromGitHubVersion, fromAppUpdateJson, fromGitHub).maxByOrNull { it.versionCode }
         }
     }
 
@@ -398,8 +402,9 @@ object AppUpdateManager {
 
             // 2. Direct GitHub Release official assets (Always clean, immutable, non-cached)
             val gitHubReleaseFallbacks = listOf(
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk",
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.54.0/ShriBalajiKripaDham-release.apk"
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.55.1/ShriBalajiKripaDham-release.apk",
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.55.1/ShriBalajiKripaDham-v2.55.1.apk",
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk"
             )
             for (gh in gitHubReleaseFallbacks) {
                 if (!candidateUrls.contains(gh)) {

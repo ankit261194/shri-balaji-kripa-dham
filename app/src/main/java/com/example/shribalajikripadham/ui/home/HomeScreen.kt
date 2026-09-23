@@ -170,6 +170,9 @@ fun HomeScreen(
     var uiSectionConfigs by remember { mutableStateOf<List<UiSectionConfig>>(UiSectionConfig.defaultSections()) }
 
     var showUpdatePopup by remember { mutableStateOf(false) }
+    var showUpToDateDialog by remember { mutableStateOf(false) }
+    var onlineCheckedVerCode by remember { mutableIntStateOf(0) }
+    var onlineCheckedVerName by remember { mutableStateOf("") }
     var showWhatsNewDialog by remember { mutableStateOf(false) }
     var isDownloadingUpdate by remember { mutableStateOf(false) }
     var downloadProgress by remember { mutableIntStateOf(0) }
@@ -572,7 +575,7 @@ fun HomeScreen(
                         add(NavDrawerItem("🔄", if (isHindi) "ऐप अपडेट जांचें (Live)" else "Check App Update", {
                             scope.launch {
                                 drawerState.close()
-                                Toast.makeText(context, if (isHindi) "🔄 लाइव अपडेट जांच रहे हैं..." else "Checking for updates...", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, if (isHindi) "🔄 लाइव सर्वर से अपडेट जांच रहे हैं..." else "Checking server for updates...", Toast.LENGTH_SHORT).show()
                                 val currentCode = AppUpdateManager.getCurrentVersionCode(context)
                                 val onlineInfo = AppUpdateManager.fetchLatestUpdateFromOnline()
                                 if (onlineInfo != null && onlineInfo.versionCode > currentCode) {
@@ -591,14 +594,22 @@ fun HomeScreen(
                                     if (AppUpdateManager.isUpdateAvailable(currentCode, freshSettings.latestVersionCode)) {
                                         showUpdatePopup = true
                                     } else {
-                                        Toast.makeText(
-                                            context,
-                                            if (isHindi) "✅ आपका ऐप नवीनतम संस्करण (v${AppUpdateManager.getCurrentVersionName(context)} Build #$currentCode) पर है!"
-                                            else "✅ App is on the latest version (v${AppUpdateManager.getCurrentVersionName(context)} Build #$currentCode)!",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        if (onlineInfo != null) {
+                                            onlineCheckedVerCode = onlineInfo.versionCode
+                                            onlineCheckedVerName = onlineInfo.versionName
+                                        }
+                                        showUpToDateDialog = true
                                     }
                                 }
+                            }
+                        }))
+                        add(NavDrawerItem("📥", if (isHindi) "नवीनतम APK डाउनलोड करें" else "Download Latest APK", {
+                            scope.launch {
+                                drawerState.close()
+                                val targetUrl = settings.apkDownloadUrl.ifBlank {
+                                    AppUpdateManager.DEFAULT_APK_URL
+                                }
+                                AppUpdateManager.downloadAndInstallUpdate(context, targetUrl)
                             }
                         }))
                         add(NavDrawerItem("🔐", if (isHindi) "प्रबंधक / सेवादार लॉगिन" else "Sevadar & Admin Portal", onNavigateToAdmin))
@@ -1049,12 +1060,11 @@ fun HomeScreen(
                                     if (AppUpdateManager.isUpdateAvailable(currentCode, freshSettings.latestVersionCode)) {
                                         showUpdatePopup = true
                                     } else {
-                                        Toast.makeText(
-                                            context,
-                                            if (isHindi) "✅ आपका ऐप पहले से नवीनतम संस्करण (v${AppUpdateManager.getCurrentVersionName(context)} Build #$currentCode) पर है!"
-                                            else "✅ App is already on the latest version (v${AppUpdateManager.getCurrentVersionName(context)} Build #$currentCode)!",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        if (onlineInfo != null) {
+                                            onlineCheckedVerCode = onlineInfo.versionCode
+                                            onlineCheckedVerName = onlineInfo.versionName
+                                        }
+                                        showUpToDateDialog = true
                                     }
                                 }
                             }
@@ -1223,54 +1233,161 @@ fun HomeScreen(
                         }
 
                         val currentCode = AppUpdateManager.getCurrentVersionCode(context)
+                        val currentVerName = AppUpdateManager.getCurrentVersionName(context)
                         val isUpdateAvailable = AppUpdateManager.isUpdateAvailable(currentCode, settings.latestVersionCode)
 
-                        // UPDATE ALERT BANNER
-                        if (isUpdateAvailable) {
-                            Card(
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                                shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
-                                border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
+                        // 📲 PERMANENT SACRED APP VERSION & DOWNLOAD / UPDATE PORTAL CARD
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isUpdateAvailable) Color(0xFFFFF8E1) else Color(0xFFF1F8E9)
+                            ),
+                            shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
+                            border = BorderStroke(1.5.dp, if (isUpdateAvailable) Color(0xFFFFB300) else Color(0xFF81C784)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = sectionSpacing)
+                        ) {
+                            Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = sectionSpacing)
+                                    .padding(if (isCompact) 10.dp else 14.dp)
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(if (isCompact) 8.dp else 14.dp),
+                                    modifier = Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(if (isCompact) 32.dp else 42.dp)
+                                            .size(if (isCompact) 36.dp else 44.dp)
                                             .clip(CircleShape)
-                                            .background(Color(0xFFFFB300)),
+                                            .background(if (isUpdateAvailable) Color(0xFFFFB300) else Color(0xFFC8E6C9)),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text("🔔", fontSize = if (isCompact) 17.sp else 22.sp)
+                                        Text(if (isUpdateAvailable) "🔔" else "📲", fontSize = if (isCompact) 18.sp else 22.sp)
                                     }
-                                    Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
+                                    Spacer(modifier = Modifier.width(if (isCompact) 10.dp else 12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = if (isUpdateAvailable) {
+                                                    if (isHindi) "नया अपडेट v${settings.latestVersionName} उपलब्ध!" else "New Update v${settings.latestVersionName} Available!"
+                                                } else {
+                                                    if (isHindi) "ऐप संस्करण: v$currentVerName" else "App Version: v$currentVerName"
+                                                },
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = if (isCompact) 13.sp else 14.5.sp,
+                                                color = if (isUpdateAvailable) MaroonPrimary else Color(0xFF1B5E20)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Surface(
+                                                color = if (isUpdateAvailable) Color(0xFFFFE082) else Color(0xFFA5D6A7),
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = if (isUpdateAvailable) "Build #${settings.latestVersionCode}" else "Build #$currentCode",
+                                                    fontSize = if (isCompact) 9.5.sp else 10.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = if (isUpdateAvailable) Color(0xFFB78103) else Color(0xFF1B5E20),
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(2.dp))
                                         Text(
-                                            text = if (isHindi) "नया अपडेट v${settings.latestVersionName} उपलब्ध है!" else "New Update v${settings.latestVersionName} Available!",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = if (isCompact) 12.5.sp else 14.sp,
-                                            color = MaroonPrimary
-                                        )
-                                        Text(
-                                            text = if (isHindi) "नए फीचर्स व सुधारों के लिए तुरंत अपडेट करें।" else "Tap to update app immediately.",
-                                            fontSize = if (isCompact) 10.sp else 11.sp,
-                                            color = TextSecondaryDark
+                                            text = if (isUpdateAvailable) {
+                                                if (isHindi) "नवीनतम फीचर्स व सुरक्षा पैच के लिए तुरंत अपडेट करें।" else "Update now for latest features & security patches."
+                                            } else {
+                                                if (isHindi) "✅ आपका ऐप नवीनतम संस्करण पर है (Up to Date)" else "✅ Your app is on the latest version (Up to Date)"
+                                            },
+                                            fontSize = if (isCompact) 10.5.sp else 11.5.sp,
+                                            fontWeight = if (isUpdateAvailable) FontWeight.Normal else FontWeight.SemiBold,
+                                            color = if (isUpdateAvailable) TextSecondaryDark else Color(0xFF2E7D32)
                                         )
                                     }
-                                    Button(
-                                        onClick = { showUpdatePopup = true },
-                                        colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            scope.launch {
+                                                Toast.makeText(context, if (isHindi) "🔄 लाइव सर्वर से जांच रहे हैं..." else "Checking server...", Toast.LENGTH_SHORT).show()
+                                                val cCode = AppUpdateManager.getCurrentVersionCode(context)
+                                                val online = AppUpdateManager.fetchLatestUpdateFromOnline()
+                                                if (online != null && online.versionCode > cCode) {
+                                                    repository.updateAppUpdateConfig(
+                                                        latestVersionCode = online.versionCode,
+                                                        latestVersionName = online.versionName,
+                                                        updateNotes = if (isHindi) online.updateNotesHindi else online.updateNotesEnglish,
+                                                        apkDownloadUrl = online.apkUrl,
+                                                        isForceUpdate = online.isForce
+                                                    )
+                                                    settings = repository.getSettings()
+                                                    showUpdatePopup = true
+                                                } else {
+                                                    val fresh = repository.getSettings()
+                                                    settings = fresh
+                                                    if (AppUpdateManager.isUpdateAvailable(cCode, fresh.latestVersionCode)) {
+                                                        showUpdatePopup = true
+                                                    } else {
+                                                        if (online != null) {
+                                                            onlineCheckedVerCode = online.versionCode
+                                                            onlineCheckedVerName = online.versionName
+                                                        }
+                                                        showUpToDateDialog = true
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(8.dp),
-                                        contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 12.dp, vertical = if (isCompact) 4.dp else 6.dp)
+                                        border = BorderStroke(1.dp, if (isUpdateAvailable) Color(0xFFFFB300) else Color(0xFF81C784)),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                                     ) {
+                                        Text("🔄", fontSize = 13.sp)
+                                        Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = if (isHindi) "अपडेट करें" else "Update",
-                                            fontSize = if (isCompact) 10.5.sp else 12.sp,
+                                            text = if (isHindi) "अपडेट जांचें" else "Check Update",
+                                            fontSize = if (isCompact) 11.sp else 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isUpdateAvailable) MaroonPrimary else Color(0xFF2E7D32)
+                                        )
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            if (isUpdateAvailable) {
+                                                showUpdatePopup = true
+                                            } else {
+                                                val targetUrl = settings.apkDownloadUrl.ifBlank {
+                                                    AppUpdateManager.DEFAULT_APK_URL
+                                                }
+                                                AppUpdateManager.downloadAndInstallUpdate(context, targetUrl)
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (isUpdateAvailable) MaroonPrimary else Color(0xFF2E7D32)
+                                        ),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(if (isUpdateAvailable) "⚡" else "📥", fontSize = 13.sp)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = if (isUpdateAvailable) {
+                                                if (isHindi) "अभी अपडेट करें" else "Update Now"
+                                            } else {
+                                                if (isHindi) "APK डाउनलोड करें" else "Download APK"
+                                            },
+                                            fontSize = if (isCompact) 11.sp else 12.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color.White
                                         )
@@ -1887,6 +2004,135 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    // --- APP IS UP-TO-DATE STATUS & DOWNLOAD MODAL ---
+    if (showUpToDateDialog) {
+        val currentCode = AppUpdateManager.getCurrentVersionCode(context)
+        val currentName = AppUpdateManager.getCurrentVersionName(context)
+        val displayServerCode = if (onlineCheckedVerCode > 0) onlineCheckedVerCode else settings.latestVersionCode.coerceAtLeast(currentCode)
+        val displayServerName = if (onlineCheckedVerName.isNotBlank()) onlineCheckedVerName else settings.latestVersionName.ifBlank { currentName }
+
+        AlertDialog(
+            onDismissRequest = { showUpToDateDialog = false },
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(54.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFE8F5E9)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("✅", fontSize = 28.sp)
+                }
+            },
+            title = {
+                Text(
+                    text = if (isHindi) "आपका ऐप नवीनतम है" else "App is Up to Date",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp,
+                    color = Color(0xFF1B5E20),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Surface(
+                        color = Color(0xFFF1F8E9),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFFA5D6A7)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = if (isHindi) "📱 स्थापित संस्करण:" else "📱 Installed Version:",
+                                    fontSize = 12.sp,
+                                    color = TextSecondaryDark
+                                )
+                                Text(
+                                    text = "v$currentName (#$currentCode)",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimaryDark
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = if (isHindi) "🌐 सर्वर नवीनतम:" else "🌐 Server Latest:",
+                                    fontSize = 12.sp,
+                                    color = TextSecondaryDark
+                                )
+                                Text(
+                                    text = "v$displayServerName (#$displayServerCode)",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1B5E20)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = if (isHindi)
+                            "बधाई! आपके फोन में श्री बालाजी कृपा धाम का सबसे नया, तेज़ और 100% सुरक्षित संस्करण सक्रिय है। सभी सेवाएं व सुरक्षा नियम सुचारू रूप से कार्य कर रहे हैं।"
+                        else
+                            "Great! You have the official latest and most secure version of Shri Balaji Kripa Dham app installed. All services are running optimally.",
+                        fontSize = 12.5.sp,
+                        color = TextPrimaryDark,
+                        lineHeight = 18.sp,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = if (isHindi) "यदि आप किसी अन्य फोन हेतु APK फ़ाइल सुरक्षित रखना चाहते हैं, तो नीचे से सीधे डाउनलोड कर सकते हैं।"
+                        else "You can also download the latest APK file directly below to share or archive.",
+                        fontSize = 11.sp,
+                        color = TextSecondaryDark,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showUpToDateDialog = false
+                        val targetUrl = settings.apkDownloadUrl.ifBlank {
+                            AppUpdateManager.DEFAULT_APK_URL
+                        }
+                        AppUpdateManager.downloadAndInstallUpdate(context, targetUrl)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(if (isHindi) "📥 APK डाउनलोड करें" else "📥 Download APK", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showUpToDateDialog = false }
+                ) {
+                    Text(if (isHindi) "ठीक है (OK)" else "OK", fontWeight = FontWeight.Bold, color = TextSecondaryDark)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
     }
 
     // --- WHAT'S NEW IN V2.2.0 DIALOG ---

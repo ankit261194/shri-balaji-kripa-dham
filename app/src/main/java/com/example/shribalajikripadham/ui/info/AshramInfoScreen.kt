@@ -380,6 +380,20 @@ fun AshramInfoScreen(
                     ) {
                         Text(if (isHindi) "🔄 अपडेट जांचें (Check for Updates)" else "🔄 Check for Updates", fontWeight = FontWeight.Bold)
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            val targetUrl = AppUpdateManager.DEFAULT_APK_URL
+                            AppUpdateManager.downloadAndInstallUpdate(context, targetUrl)
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, SaffronPrimary),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("📥", fontSize = 14.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(if (isHindi) "नवीनतम APK डाउनलोड करें" else "Download Latest APK", fontWeight = FontWeight.Bold, color = SaffronPrimary)
+                    }
                     if (updateStatusMsg != null) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(updateStatusMsg!!, color = Color(0xFF2E7D32), fontSize = 12.sp, fontWeight = FontWeight.Medium)
