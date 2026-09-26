@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-26T16:10:04Z",
+  "updated_at": "2026-09-26T16:10:34Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -32,7 +32,7 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1790439004889
+    "updated_at": 1790439034343
   },
   "services_config": {
     "is_token_service_enabled": true,
