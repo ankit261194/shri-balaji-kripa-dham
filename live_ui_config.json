@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-27T14:36:06Z",
+  "updated_at": "2026-09-27T14:36:33Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -32,7 +32,7 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1790519766932
+    "updated_at": 1790519793779
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -56,7 +56,7 @@
     "custom_upi_qr_uri": "",
     "bus_seat_fare_amount": 0,
     "is_arzi_ledger_live": true,
-    "badi_arzi_rate": 100,
+    "badi_arzi_rate": 150,
     "chhoti_arzi_rate": 50,
     "can_admin_view_arzi_ledger": true,
     "can_devotee_view_arzi_ledger": false,
