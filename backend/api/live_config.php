@@ -509,6 +509,14 @@ try {
     try {
         $stmt = $pdo->query("SELECT * FROM ashram_settings WHERE id = 1 LIMIT 1");
         $row = $stmt ? ($stmt->fetch() ?: []) : [];
+        if (!empty($row['bank_account_number']) && strpos($row['bank_account_number'], 'XXXX') !== false) {
+            $row['bank_account_number'] = '';
+            try { $pdo->exec("UPDATE ashram_settings SET bank_account_number = '' WHERE id = 1"); } catch (Throwable $e) {}
+        }
+        if (!empty($row['bank_ifsc']) && strpos($row['bank_ifsc'], 'XXXX') !== false) {
+            $row['bank_ifsc'] = '';
+            try { $pdo->exec("UPDATE ashram_settings SET bank_ifsc = '' WHERE id = 1"); } catch (Throwable $e) {}
+        }
     } catch (Throwable $ex) {
         // Table may be missing; trigger migration once
         runSchemaMigrations($pdo, $targetCols);

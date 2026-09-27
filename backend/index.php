@@ -118,8 +118,8 @@ $aartiSandhya = !empty($settings['aarti_sandhya_time']) ? $settings['aarti_sandh
 $aartiShayan = !empty($settings['aarti_shayan_time']) ? $settings['aarti_shayan_time'] : 'रात्रि 09:00 बजे';
 $bankName = !empty($settings['bank_name']) ? $settings['bank_name'] : 'पंजाब नेशनल बैंक (PNB)';
 $bankAccountHolder = !empty($settings['bank_account_holder']) ? $settings['bank_account_holder'] : 'श्री बालाजी कृपा धाम सेवा ट्रस्ट';
-$bankAccountNumber = !empty($settings['bank_account_number']) ? $settings['bank_account_number'] : '';
-$bankIfsc = !empty($settings['bank_ifsc']) ? $settings['bank_ifsc'] : '';
+$bankAccountNumber = (!empty($settings['bank_account_number']) && strpos($settings['bank_account_number'], 'XXXX') === false) ? $settings['bank_account_number'] : '';
+$bankIfsc = (!empty($settings['bank_ifsc']) && strpos($settings['bank_ifsc'], 'XXXX') === false) ? $settings['bank_ifsc'] : '';
 $bankBranch = !empty($settings['bank_branch']) ? $settings['bank_branch'] : 'अनूपशहर, बुलन्दशहर';
 $ashramAddress = !empty($settings['ashram_address']) ? $settings['ashram_address'] : "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील अनूपशहर,\nजिला बुलन्दशहर, उत्तर प्रदेश";
 $ashramDirections = !empty($settings['ashram_directions']) ? $settings['ashram_directions'] : 'निकटतम रेलवे स्टेशन: अनूपशहर / बबराला / बुलन्दशहर';
