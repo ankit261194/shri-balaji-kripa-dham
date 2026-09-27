@@ -89,6 +89,36 @@ if (is_dir($cacheDir)) {
     }
 }
 
+// Optional: Sync latest Release APK directly onto server
+if (isset($_GET['sync_apk'])) {
+    $apkUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk";
+    $dlDir = $baseDir . '/downloads';
+    if (!is_dir($dlDir)) @mkdir($dlDir, 0755, true);
+    $targetApk = $dlDir . '/ShriBalajiKripaDham-release.apk';
+    $tmpApk = $targetApk . '.tmp';
+    
+    $fp = @fopen($tmpApk, 'w+');
+    if ($fp) {
+        $ch = curl_init($apkUrl);
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        curl_setopt($ch, CURLOPT_USERAGENT, "SBKD-Deployer/2.0");
+        $success = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        fclose($fp);
+        if ($success && $httpCode === 200 && filesize($tmpApk) > 10000000) {
+            @rename($tmpApk, $targetApk);
+            $updated[] = "downloads/ShriBalajiKripaDham-release.apk (" . round(filesize($targetApk)/(1024*1024), 2) . " MB)";
+        } else {
+            @unlink($tmpApk);
+            $failed[] = "downloads/ShriBalajiKripaDham-release.apk (HTTP $httpCode)";
+        }
+    }
+}
+
 echo json_encode([
     "success" => count($failed) === 0,
     "status" => "DEPLOYMENT_COMPLETE",
