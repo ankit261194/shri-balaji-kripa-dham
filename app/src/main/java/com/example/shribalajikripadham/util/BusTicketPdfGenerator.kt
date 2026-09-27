@@ -399,7 +399,7 @@ object BusTicketPdfGenerator {
             isAntiAlias = true
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("श्री बालाजी कृपा धाम प्रबंधन समिति | हेल्पलाइन: +91 9876543210 | www.shribalajikripadham.org", PAGE_WIDTH / 2f, PAGE_HEIGHT - MARGIN - 26f, contactFooterPaint)
+        canvas.drawText("श्री बालाजी कृपा धाम प्रबंधन समिति | हेल्पलाइन: +91 97206 91090 | shribalajikripadham.online", PAGE_WIDTH / 2f, PAGE_HEIGHT - MARGIN - 26f, contactFooterPaint)
 
         val autoGenPaint = Paint().apply {
             color = Color.GRAY

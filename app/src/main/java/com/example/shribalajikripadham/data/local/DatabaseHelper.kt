@@ -92,6 +92,11 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             db.execSQL("PRAGMA secure_delete = ON;")
             // PRAGMA synchronous = NORMAL delivers maximum speed & buttery-smooth transactions with full durability under WAL mode
             db.execSQL("PRAGMA synchronous = NORMAL;")
+
+            // 0-Tolerance Policy: Purge any old dummy sevadars, dummy donors, or demo phone numbers
+            db.execSQL("DELETE FROM sevadars WHERE phone IN ('9876543210', '9876543211', '9876543212', '9876543213') OR name IN ('अंकित शर्मा', 'दीपक कुमार', 'राहुल सिंह', 'सोनू तेवतिया');")
+            db.execSQL("DELETE FROM donors WHERE name IN ('सेठ राधेश्याम जी', 'चौधरी वीरेन्द्र सिंह जी', 'श्री रमेश चंद्र गोयल जी', 'श्री अजय तेवतिया जी');")
+            db.execSQL("UPDATE ashram_settings SET whatsapp_number = '+91 97206 91090' WHERE whatsapp_number LIKE '%9876543210%';")
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -166,7 +171,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     apk_download_url TEXT NOT NULL,
                     is_force_update INTEGER NOT NULL,
                     whatsapp_group_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite',
-                    whatsapp_number TEXT NOT NULL DEFAULT '+919876543210',
+                    whatsapp_number TEXT NOT NULL DEFAULT '+91 97206 91090',
                     youtube_channel_url TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham',
                     facebook_page_url TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham',
                     instagram_url TEXT NOT NULL DEFAULT 'https://www.instagram.com/shribalajikripadham',
@@ -591,7 +596,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN is_emergency_notice_visible INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN scheduled_token_open_timestamp INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN whatsapp_group_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite'",
-            "ALTER TABLE ashram_settings ADD COLUMN whatsapp_number TEXT NOT NULL DEFAULT '+919876543210'",
+            "ALTER TABLE ashram_settings ADD COLUMN whatsapp_number TEXT NOT NULL DEFAULT '+91 97206 91090'",
             "ALTER TABLE ashram_settings ADD COLUMN youtube_channel_url TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham'",
             "ALTER TABLE ashram_settings ADD COLUMN facebook_page_url TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham'",
             "ALTER TABLE ashram_settings ADD COLUMN instagram_url TEXT NOT NULL DEFAULT 'https://www.instagram.com/shribalajikripadham'",

@@ -293,6 +293,7 @@ fun HomeScreen(
         // - Exponential backoff on network failures
         scope.launch {
             var consecutiveErrors = 0
+            var isFirstIteration = true
             while (isActive) {
                 val myTokPrefs = try {
                     context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
@@ -302,14 +303,16 @@ fun HomeScreen(
                 val todayStr = com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
                 val hasActiveTokenToday = myToken > 0 && (myTokenDate == todayStr || myTokenDate.isBlank())
 
-                // Dynamic interval calculation:
-                val baseDelayMs = when {
-                    consecutiveErrors > 0 -> (10_000L * consecutiveErrors.coerceAtMost(3))
-                    hasActiveTokenToday || settings.isDarbarActive -> 5_000L
-                    else -> 18_000L
+                // ⚡ Instant 0ms fetch on entry, then high-frequency 2.5s live polling on active/Sunday
+                if (!isFirstIteration) {
+                    val baseDelayMs = when {
+                        consecutiveErrors > 0 -> (5_000L * consecutiveErrors.coerceAtMost(3))
+                        hasActiveTokenToday || settings.isDarbarActive -> 2_500L
+                        else -> 5_000L
+                    }
+                    delay(baseDelayMs)
                 }
-
-                delay(baseDelayMs)
+                isFirstIteration = false
 
                 try {
                     val rawCfg = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveConfig()
@@ -1391,7 +1394,7 @@ fun HomeScreen(
                         val todayDateStr = remember { com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString() }
                         val isMyTokenToday = devoteeMyToken > 0 && (devoteeMyTokenDate == todayDateStr || devoteeMyTokenDate.isBlank())
 
-                        if (settings.runningTokenNumber > 0 || isMyTokenToday) {
+                        if (settings.isLiveCounterVisible || settings.runningTokenNumber > 0 || isMyTokenToday || settings.isDarbarActive) {
                             val queueEta = remember(devoteeMyToken, settings.runningTokenNumber, isMyTokenToday) {
                                 com.example.shribalajikripadham.util.SundayTokenScheduleHelper.calculateQueueEta(
                                     myToken = if (isMyTokenToday) devoteeMyToken else 0,
@@ -3374,35 +3377,36 @@ fun RenderClassicSection(
         }
 
         UiSectionConfig.ID_SEVADAR_TEAM -> {
-            // Ashram Sevadar Showcase & Slider
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (isHindi) "🚩 आश्रम के समर्पित सेवादार" else "Dedicated Ashram Sevadars",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = currentTheme.primaryColor
-                    )
-                    Text(
-                        text = if (isHindi) "📞 1-क्लिक कॉल" else "📞 1-Tap Call",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2E7D32)
-                    )
-                }
-                Spacer(modifier = Modifier.height(10.dp))
+            // Ashram Sevadar Showcase & Slider - only shown when real sevadars exist
+            if (sevadarProfiles.isNotEmpty()) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isHindi) "🚩 आश्रम के समर्पित सेवादार" else "Dedicated Ashram Sevadars",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = currentTheme.primaryColor
+                        )
+                        Text(
+                            text = if (isHindi) "📞 1-क्लिक कॉल" else "📞 1-Tap Call",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2E7D32)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                val profilesToShow = if (sevadarProfiles.isNotEmpty()) sevadarProfiles else SevadarProfile.defaultProfiles()
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(vertical = 4.dp)
-                ) {
-                    items(profilesToShow) { sProfile ->
-                        SevadarCard(sevadar = sProfile, isHindi = isHindi)
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(vertical = 4.dp)
+                    ) {
+                        items(sevadarProfiles) { sProfile ->
+                            SevadarCard(sevadar = sProfile, isHindi = isHindi)
+                        }
                     }
                 }
             }

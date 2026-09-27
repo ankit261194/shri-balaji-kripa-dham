@@ -9,7 +9,9 @@ import com.example.shribalajikripadham.data.local.DatabaseHelper
 import com.example.shribalajikripadham.data.model.*
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
 import com.example.shribalajikripadham.util.DistanceCalculatorService
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -85,7 +87,7 @@ class AshramRepository(context: Context) {
             apkDownloadUrl = cursor.getString(cursor.getColumnIndexOrThrow("apk_download_url")),
             isForceUpdate = cursor.getInt(cursor.getColumnIndexOrThrow("is_force_update")) == 1,
             whatsappGroupUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_group_url")) } catch (e: Exception) { "https://chat.whatsapp.com/invite" },
-            whatsappNumber = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_number")) } catch (e: Exception) { "+919876543210" },
+            whatsappNumber = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_number")) } catch (e: Exception) { "+91 97206 91090" },
             youtubeChannelUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("youtube_channel_url")) } catch (e: Exception) { "https://www.youtube.com/@ShriBalajiKripaDham" },
             facebookPageUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("facebook_page_url")) } catch (e: Exception) { "https://www.facebook.com/ShriBalajiKripaDham" },
             instagramUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("instagram_url")) } catch (e: Exception) { "https://www.instagram.com/shribalajikripadham" },
@@ -204,12 +206,14 @@ class AshramRepository(context: Context) {
         try {
             val fresh = getSettings()
             com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), fresh)
-            try {
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh, getAllSevadars())
-            } catch (e: Exception) {}
-            try {
-                publishCurrentSettingsToGitHub()
-            } catch (e: Exception) {}
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh, getAllSevadars())
+                } catch (e: Exception) {}
+                try {
+                    publishCurrentSettingsToGitHub()
+                } catch (e: Exception) {}
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -692,7 +696,21 @@ class AshramRepository(context: Context) {
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (ok) {
-            persistCurrentSettingsToAllLayers()
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val s = getSettings()
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateLiveConfig(
+                        radiusMeters = s.allowedRadiusMeters,
+                        isGeofenceEnforced = s.isGeofenceEnforced,
+                        isOutstationAllowed = s.isOutstationAdvanceAllowed,
+                        outstationKm = s.outstationMinDistanceKm,
+                        currentServingToken = tokenNum,
+                        lat = s.latitude,
+                        long = s.longitude
+                    )
+                } catch (e: Exception) {}
+                persistCurrentSettingsToAllLayers()
+            }
         }
         ok
     }
@@ -1116,54 +1134,58 @@ class AshramRepository(context: Context) {
         // ☁️ Smart GitHub Sync Policy: Individual real-time tokens are handled instantly by Hostinger Central MySQL & Google Sheets.
         // Consolidated token backup is pushed when Super Admin triggers "Push All to GitHub" to prevent GitHub 409 rate-limiting.
 
-        // 📊 Universal Real-Time Google Sheets Sync for ALL tokens (Devotees + Admin + Sevadar)
-        try {
-            com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.postTokenToSheet(appContext, createdToken)
-        } catch (e: Exception) {}
-
-        // 🌐 Real-Time Hostinger Sync (Ensures MySQL has this token even if generated offline or via custom token)
-        if (centralTokenNumber == null) {
-            try {
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
-                    patientName = createdToken.patientName,
-                    phoneNumber = createdToken.phoneNumber,
-                    city = createdToken.city,
-                    deviceId = createdToken.deviceId,
-                    latitude = createdToken.latitude,
-                    longitude = createdToken.longitude,
-                    distanceKm = createdToken.distanceKm.toDouble(),
-                    photoUrl = createdToken.photoUri,
-                    registeredBy = createdToken.registeredBy,
-                    originAddress = createdToken.originAddress,
-                    destinationAddress = createdToken.destinationAddress,
-                    darbarDate = createdToken.darbarDate
-                )
-            } catch (e: Exception) {}
-        }
-
-        // 🌐 Central Devotee Profile Sync (Saves contact to registry for cross-device lookup)
-        try {
-            if (phoneNumber.isNotBlank() && patientName.isNotBlank()) {
-                upsertDevoteeProfile(
-                    name = patientName,
-                    phone = phoneNumber,
-                    city = safeCity,
-                    faceVector = null,
-                    photoUri = photoUri,
-                    registeredBy = registeredBy
-                )
-            }
-        } catch (e: Exception) {}
-
-        // Auto-save local snapshot and trigger cloud vault backup
-        try {
-            com.example.shribalajikripadham.util.GoogleDriveSyncHelper.autoPushTrigger(appContext)
-        } catch (e: Exception) {}
-
         // 🛡️ ANTI-BYPASS: Save hardware-bound persistent receipt into public device storage
         try {
             com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.savePersistentReceipt(createdToken)
         } catch (e: Exception) {}
+
+        // ⚡ NANO-SECOND RESPONSE: Offload all cloud syncs (Google Sheets, Hostinger, Directory, Drive Backup)
+        // to a background CoroutineScope so that token generation returns instantly to devotee!
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+            // 📊 Universal Real-Time Google Sheets Sync for ALL tokens (Devotees + Admin + Sevadar)
+            try {
+                com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.postTokenToSheet(appContext, createdToken)
+            } catch (e: Exception) {}
+
+            // 🌐 Real-Time Hostinger Sync (Ensures MySQL has this token even if generated offline or via custom token)
+            if (centralTokenNumber == null) {
+                try {
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
+                        patientName = createdToken.patientName,
+                        phoneNumber = createdToken.phoneNumber,
+                        city = createdToken.city,
+                        deviceId = createdToken.deviceId,
+                        latitude = createdToken.latitude,
+                        longitude = createdToken.longitude,
+                        distanceKm = createdToken.distanceKm.toDouble(),
+                        photoUrl = createdToken.photoUri,
+                        registeredBy = createdToken.registeredBy,
+                        originAddress = createdToken.originAddress,
+                        destinationAddress = createdToken.destinationAddress,
+                        darbarDate = createdToken.darbarDate
+                    )
+                } catch (e: Exception) {}
+            }
+
+            // 🌐 Central Devotee Profile Sync (Saves contact to registry for cross-device lookup)
+            try {
+                if (phoneNumber.isNotBlank() && patientName.isNotBlank()) {
+                    upsertDevoteeProfile(
+                        name = patientName,
+                        phone = phoneNumber,
+                        city = safeCity,
+                        faceVector = null,
+                        photoUri = photoUri,
+                        registeredBy = registeredBy
+                    )
+                }
+            } catch (e: Exception) {}
+
+            // Auto-save local snapshot and trigger cloud vault backup
+            try {
+                com.example.shribalajikripadham.util.GoogleDriveSyncHelper.autoPushTrigger(appContext)
+            } catch (e: Exception) {}
+        }
 
         createdToken
     }
@@ -1473,21 +1495,23 @@ class AshramRepository(context: Context) {
         val ok = db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
         if (ok && tokenNum > 0) {
             val newStatus = if (completed) TokenStatus.COMPLETED else TokenStatus.WAITING
-            try {
-                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.updateLiveTokenStatusInGitHub(
-                    appContext, tokenNum, darbarDate, newStatus
-                )
-            } catch (e: Exception) {}
-            try {
-                com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.updateTokenStatusInSheet(
-                    appContext, darbarDate, tokenNum, newStatus.name
-                )
-            } catch (e: Exception) {}
-            try {
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateCentralTokenStatus(
-                    tokenNum, darbarDate, newStatus.name, completed
-                )
-            } catch (e: Exception) {}
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateCentralTokenStatus(
+                        tokenNum, darbarDate, newStatus.name, completed
+                    )
+                } catch (e: Exception) {}
+                try {
+                    com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.updateTokenStatusInSheet(
+                        appContext, darbarDate, tokenNum, newStatus.name
+                    )
+                } catch (e: Exception) {}
+                try {
+                    com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.updateLiveTokenStatusInGitHub(
+                        appContext, tokenNum, darbarDate, newStatus
+                    )
+                } catch (e: Exception) {}
+            }
         }
         ok
     }
@@ -1517,21 +1541,23 @@ class AshramRepository(context: Context) {
         }
         val ok = db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
         if (ok && tokenNum > 0) {
-            try {
-                com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.updateLiveTokenStatusInGitHub(
-                    appContext, tokenNum, darbarDate, status
-                )
-            } catch (e: Exception) {}
-            try {
-                com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.updateTokenStatusInSheet(
-                    appContext, darbarDate, tokenNum, status.name
-                )
-            } catch (e: Exception) {}
-            try {
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateCentralTokenStatus(
-                    tokenNum, darbarDate, status.name, status == TokenStatus.COMPLETED
-                )
-            } catch (e: Exception) {}
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateCentralTokenStatus(
+                        tokenNum, darbarDate, status.name, status == TokenStatus.COMPLETED
+                    )
+                } catch (e: Exception) {}
+                try {
+                    com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.updateTokenStatusInSheet(
+                        appContext, darbarDate, tokenNum, status.name
+                    )
+                } catch (e: Exception) {}
+                try {
+                    com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.updateLiveTokenStatusInGitHub(
+                        appContext, tokenNum, darbarDate, status
+                    )
+                } catch (e: Exception) {}
+            }
         }
         ok
     }
@@ -4247,20 +4273,81 @@ class AshramRepository(context: Context) {
     suspend fun syncLiveTokensFromCloud(date: String = DatabaseHelper.getTodayDateString()): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
         var totalNew = 0
         try {
-            // 1. Fetch from GitHub live_tokens.json
-            val ghTokens = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveTokensFromGitHub(appContext, date)
-            // 2. Fetch from Google Sheet (if configured)
-            val gsTokens = try {
-                com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.fetchTokensFromSheet(appContext, date)
-            } catch (e: Exception) { emptyList() }
-
             val allRemote = mutableListOf<Token>()
-            allRemote.addAll(ghTokens)
-            for (gt in gsTokens) {
-                if (allRemote.none { it.tokenNumber == gt.tokenNumber && it.darbarDate == gt.darbarDate }) {
-                    allRemote.add(gt)
+
+            // 1. Fetch from Central Hostinger MySQL Server (Real-time live queue)
+            try {
+                val queueObj = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveQueue(date)
+                if (queueObj != null && queueObj.optBoolean("success", false)) {
+                    val currentServingServer = queueObj.optInt("current_serving_token", 0)
+                    if (currentServingServer > 0) {
+                        try {
+                            val db = dbHelper.writableDatabase
+                            val cv = ContentValues().apply { put("running_token_number", currentServingServer) }
+                            db.update("ashram_settings", cv, "id = 1", null)
+                        } catch (e: Exception) {}
+                    }
+
+                    val arr = queueObj.optJSONArray("tokens")
+                    if (arr != null) {
+                        for (i in 0 until arr.length()) {
+                            val item = arr.getJSONObject(i)
+                            if (item.optInt("is_reserved_unfilled", 0) == 1) continue // Skip unfilled reserved placeholder slots
+                            val tNum = item.optInt("token_number", 0)
+                            if (tNum <= 0) continue
+                            val statusStr = item.optString("status", "WAITING")
+                            val tStatus = try {
+                                TokenStatus.valueOf(statusStr.uppercase())
+                            } catch (e: Exception) { TokenStatus.WAITING }
+
+                            val isDarshan = item.optInt("is_darshan_completed", 0) == 1 || tStatus == TokenStatus.COMPLETED
+                            val tok = Token(
+                                id = item.optLong("id", 0L),
+                                tokenNumber = tNum,
+                                darbarDate = item.optString("darbar_date", date).ifBlank { date },
+                                patientName = item.optString("patient_name", "भक्त"),
+                                phoneNumber = item.optString("phone_number", ""),
+                                city = item.optString("city", "डूँगरा जाट (स्थानीय)"),
+                                deviceId = item.optString("device_id", "HOSTINGER"),
+                                latitude = item.optDouble("latitude", 28.3972915),
+                                longitude = item.optDouble("longitude", 78.1460410),
+                                status = tStatus,
+                                registeredBy = item.optString("registered_by", "APP_ONLINE"),
+                                photoUri = item.optString("photo_url", ""),
+                                isDarshanCompleted = isDarshan,
+                                darshanCompletedAt = item.optLong("darshan_completed_at", 0L),
+                                originAddress = item.optString("origin_address", ""),
+                                destinationAddress = item.optString("destination_address", "श्री बालाजी कृपा धाम, डुंगरा जाट"),
+                                distanceKm = item.optDouble("distance_km", -1.0).toFloat(),
+                                createdAt = item.optLong("created_at", System.currentTimeMillis())
+                            )
+                            allRemote.add(tok)
+                        }
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+
+            // 2. Fetch from GitHub live_tokens.json
+            try {
+                val ghTokens = com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.fetchLiveTokensFromGitHub(appContext, date)
+                for (gt in ghTokens) {
+                    if (allRemote.none { it.tokenNumber == gt.tokenNumber && it.darbarDate == gt.darbarDate }) {
+                        allRemote.add(gt)
+                    }
+                }
+            } catch (e: Exception) {}
+
+            // 3. Fetch from Google Sheet (if configured)
+            try {
+                val gsTokens = com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.fetchTokensFromSheet(appContext, date)
+                for (gt in gsTokens) {
+                    if (allRemote.none { it.tokenNumber == gt.tokenNumber && it.darbarDate == gt.darbarDate }) {
+                        allRemote.add(gt)
+                    }
+                }
+            } catch (e: Exception) {}
 
             if (allRemote.isEmpty()) return@withContext Pair(false, 0)
 
@@ -5706,39 +5793,7 @@ class AshramRepository(context: Context) {
             )
         }
         cursor.close()
-
-        val prefs = appContext.getSharedPreferences("ashram_vault_prefs", Context.MODE_PRIVATE)
-        val hasSeeded = prefs.getBoolean("has_seeded_initial_sevadars", false)
-
-        if (list.isEmpty() && !hasSeeded) {
-            // Seed defaults ONLY ONCE into real SQLite database on very first install
-            prefs.edit().putBoolean("has_seeded_initial_sevadars", true).apply()
-            val defaults = AshramDataDefaults.sevadars
-            defaults.forEach { saveSevadar(it) }
-            val reloadedCursor = db.rawQuery("SELECT * FROM sevadars WHERE is_active = 1 ORDER BY display_order ASC, id ASC", null)
-            val reloadedList = mutableListOf<SevadarProfile>()
-            while (reloadedCursor.moveToNext()) {
-                reloadedList.add(
-                    SevadarProfile(
-                        id = reloadedCursor.getLong(reloadedCursor.getColumnIndexOrThrow("id")),
-                        name = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("name")),
-                        roleTitleHindi = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("role")),
-                        roleTitleEnglish = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("role")),
-                        phoneNumber = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("phone")),
-                        photoUri = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("photo_uri")),
-                        displayOrder = reloadedCursor.getInt(reloadedCursor.getColumnIndexOrThrow("display_order")),
-                        isActive = reloadedCursor.getInt(reloadedCursor.getColumnIndexOrThrow("is_active")) == 1
-                    )
-                )
-            }
-            reloadedCursor.close()
-            reloadedList.ifEmpty { defaults }
-        } else {
-            if (list.isNotEmpty() && !hasSeeded) {
-                prefs.edit().putBoolean("has_seeded_initial_sevadars", true).apply()
-            }
-            list
-        }
+        list
     }
 
     /**
@@ -5860,44 +5915,7 @@ class AshramRepository(context: Context) {
             )
         }
         cursor.close()
-
-        val prefs = appContext.getSharedPreferences("ashram_vault_prefs", Context.MODE_PRIVATE)
-        val hasSeeded = prefs.getBoolean("has_seeded_initial_donors", false)
-
-        if (list.isEmpty() && !hasSeeded) {
-            prefs.edit().putBoolean("has_seeded_initial_donors", true).apply()
-            val defaultDonors = listOf(
-                DonorProfile(1, "सेठ राधेश्याम जी", "दिल्ली / बुलन्दशहर", "भव्य मंदिर निर्माण महासहयोगी", "", "", "", 1, true),
-                DonorProfile(2, "चौधरी वीरेन्द्र सिंह जी", "हापुड़, उत्तर प्रदेश", "स्वर्ण ध्वजा एवं कलश सेवा", "", "", "", 2, true),
-                DonorProfile(3, "श्री रमेश चंद्र गोयल जी", "गाजियाबाद, उत्तर प्रदेश", "नित्य महाप्रसाद अन्नक्षेत्र सेवा", "", "", "", 3, true),
-                DonorProfile(4, "श्री अजय तेवतिया जी", "स्याना, बुलन्दशहर", "श्री बालाजी बस यात्रा सहयोगी", "", "", "", 4, true)
-            )
-            defaultDonors.forEach { saveDonor(it) }
-            val reloadedCursor = db.rawQuery("SELECT * FROM donors WHERE is_active = 1 ORDER BY display_order ASC, id ASC", null)
-            val reloadedList = mutableListOf<DonorProfile>()
-            while (reloadedCursor.moveToNext()) {
-                reloadedList.add(
-                    DonorProfile(
-                        id = reloadedCursor.getLong(reloadedCursor.getColumnIndexOrThrow("id")),
-                        name = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("name")),
-                        cityAddress = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("city_address")),
-                        title = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("title")),
-                        photoUri = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("photo_uri")),
-                        phone = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("phone")),
-                        notes = reloadedCursor.getString(reloadedCursor.getColumnIndexOrThrow("notes")),
-                        displayOrder = reloadedCursor.getInt(reloadedCursor.getColumnIndexOrThrow("display_order")),
-                        isActive = reloadedCursor.getInt(reloadedCursor.getColumnIndexOrThrow("is_active")) == 1
-                    )
-                )
-            }
-            reloadedCursor.close()
-            reloadedList.ifEmpty { defaultDonors }
-        } else {
-            if (list.isNotEmpty() && !hasSeeded) {
-                prefs.edit().putBoolean("has_seeded_initial_donors", true).apply()
-            }
-            list
-        }
+        list
     }
 
     suspend fun saveDonor(donor: DonorProfile): Boolean = withContext(Dispatchers.IO) {
@@ -6018,16 +6036,18 @@ class AshramRepository(context: Context) {
         try {
             val s = getSettings()
             val (hOk, hMsg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(s, getAllSevadars())
-            val (gOk, gMsg) = publishCurrentSettingsToGitHub(adminName)
-            
-            // Re-sync all sevadars and donors to Hostinger
-            getAllSevadars().forEach { saveSevadar(it) }
-            getAllDonors().forEach { saveDonor(it) }
 
-            if (hOk || gOk) {
+            // Background GitHub commit so if GitHub throws 409 Conflict or rate limit, it NEVER fails the Super Admin action!
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    publishCurrentSettingsToGitHub(adminName)
+                } catch (e: Exception) {}
+            }
+
+            if (hOk) {
                 Pair(true, "✅ वेबसाइट (shribalajikripadham.online) और सभी भक्तों के ऐप पर सारा डेटा 100% लाइव पब्लिश हो गया!")
             } else {
-                Pair(false, "पब्लिश त्रुटि: $hMsg")
+                Pair(false, "पब्लिश संदेश: $hMsg")
             }
         } catch (e: Exception) {
             Pair(false, e.localizedMessage ?: "पब्लिश त्रुटि")

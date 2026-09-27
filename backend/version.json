@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 80,
-  "version_code": 80,
-  "latest_version_name": "2.56.5",
-  "version_name": "2.56.5",
-  "update_notes_hindi": "v2.56.5: 🚩 शून्य डमी डेटा नीति एवं अनूपशहर पता सुधार; रविवार टोकन आर्काइव एवं बल्क डिलीट; 3-स्तरीय उपस्थिति (दिखाया/नहीं दिखाया/अनुपलब्ध); डायनामिक बस किराया व अर्जी दरें।",
-  "update_notes_english": "v2.56.5: 🚩 Zero dummy data & Anoopshahr address fix; Sunday Token Archive & Bulk Delete; 3-state devotee attendance tracking; fully dynamic bus fares & arzi rates.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.56.5/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 81,
+  "version_code": 81,
+  "latest_version_name": "2.56.6",
+  "version_name": "2.56.6",
+  "update_notes_hindi": "v2.56.6: 🚩 लाइव टोकन नंबर काउंटर त्वरित अपडेट; 0ms नैनो-सेकंड बटन रिस्पांस; सुपरएडमिन अर्जी दर डायनामिक अपडेट; 100% शून्य डमी डेटा; ऑल-इन-वन परमिशन बैच व हाई-स्पीड डाउनलोड।",
+  "update_notes_english": "v2.56.6: 🚩 Instant Live Token Counter display; 0ms nano-second button response; dynamic Arzi rates for SuperAdmin; 100% zero dummy data; batch upfront permissions & high-speed Hostinger CDN downloads.",
+  "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

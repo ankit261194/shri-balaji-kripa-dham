@@ -51,12 +51,15 @@ import java.util.*
 fun ArziLedgerTab(
     isHindi: Boolean,
     repository: AshramRepository,
-    settings: AshramSettings,
+    initialSettings: AshramSettings,
     isSuperAdmin: Boolean,
     scope: CoroutineScope,
-    context: Context
+    context: Context,
+    onSettingsUpdated: ((AshramSettings) -> Unit)? = null
 ) {
     val isSuper = isSuperAdmin
+    var liveSettings by remember(initialSettings) { mutableStateOf(initialSettings) }
+    val settings = liveSettings
 
     var records by remember { mutableStateOf<List<ArziDistributionRecord>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -937,13 +940,16 @@ fun ArziLedgerTab(
                     onClick = {
                         val bRate = inputBadiRate.toDoubleOrNull() ?: 100.0
                         val cRate = inputChhotiRate.toDoubleOrNull() ?: 50.0
+                        val updated = liveSettings.copy(badiArziRate = bRate, chhotiArziRate = cRate)
+                        liveSettings = updated
+                        onSettingsUpdated?.invoke(updated)
                         scope.launch {
                             repository.updateArziSettings(
-                                isArziLedgerLive = settings.isArziLedgerLive,
-                                badiArziRate = bRate.toInt(),
-                                chhotiArziRate = cRate.toInt(),
-                                canAdminViewArziLedger = settings.canAdminViewArziLedger,
-                                canDevoteeViewArziLedger = settings.canDevoteeViewArziLedger
+                                isArziLedgerLive = updated.isArziLedgerLive,
+                                badiArziRate = bRate,
+                                chhotiArziRate = cRate,
+                                canAdminViewArziLedger = updated.canAdminViewArziLedger,
+                                canDevoteeViewArziLedger = updated.canDevoteeViewArziLedger
                             )
                             showRateConfigDialog = false
                             Toast.makeText(

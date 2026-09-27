@@ -459,7 +459,7 @@ fun PaperRegisterScanTab(
                         color = MaroonPrimary
                     )
                     Text(
-                        text = if (isHindi) "उदाहरण: 1. रमेश कुमार 9876543210 मेरठ (देवनागरी १. २. भी मान्य)" else "Example: 1. Ramesh Kumar 9876543210 Meerut",
+                        text = if (isHindi) "उदाहरण: 1. रमेश कुमार 9720691090 मेरठ (देवनागरी १. २. भी मान्य)" else "Example: 1. Ramesh Kumar 9720691090 Meerut",
                         fontSize = 11.sp,
                         color = Color.Gray
                     )
@@ -471,7 +471,7 @@ fun PaperRegisterScanTab(
                         onValueChange = { rawTextInput = it },
                         placeholder = {
                             Text(
-                                "1. रमेश कुमार 9876543210 मेरठ\n2. सुरेश शर्मा 9812345678 दिल्ली\n3. अनिता देवी 9998887776 बुलंदशहर",
+                                "1. रमेश कुमार 9720691090 मेरठ\n2. सुरेश शर्मा 9812345678 दिल्ली\n3. अनिता देवी 9998887776 बुलंदशहर",
                                 fontSize = 12.sp,
                                 color = Color.LightGray
                             )

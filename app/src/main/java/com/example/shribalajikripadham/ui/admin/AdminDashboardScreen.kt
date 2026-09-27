@@ -468,9 +468,11 @@ fun AdminDashboardScreen(
                 while (true) {
                     delay(4000)
                     try {
-                        val (tokCount, expCount, payCount) = repository.syncFullHostingerToLocal()
-                        if (tokCount > 0 || expCount > 0 || payCount > 0) {
-                            refreshData()
+                        val (tokCount, expCount, payCount) = repository.syncFullHostingerToLocal(selectedQueueDate)
+                        val (cloudOk, cloudCount) = repository.syncLiveTokensFromCloud(selectedQueueDate)
+                        if (tokCount > 0 || expCount > 0 || payCount > 0 || cloudCount > 0) {
+                            todayTokens = repository.getAllTokensToday()
+                            queueTokensForSelectedDate = repository.getAllTokensForDate(selectedQueueDate)
                         }
                     } catch (e: Exception) {}
                 }
@@ -1357,30 +1359,40 @@ fun AdminDashboardScreen(
                                     }
                                 },
                                 onUpdateRunningToken = { newNum ->
+                                    settings = settings.copy(runningTokenNumber = newNum)
                                     scope.launch {
                                         repository.updateRunningTokenNumber(newNum)
                                         refreshData()
                                     }
                                 },
                                 onUpdateStatus = { id, status ->
+                                    todayTokens = todayTokens.map { if (it.id == id) it.copy(status = status, isDarshanCompleted = (status == TokenStatus.COMPLETED)) else it }
+                                    queueTokensForSelectedDate = queueTokensForSelectedDate.map { if (it.id == id) it.copy(status = status, isDarshanCompleted = (status == TokenStatus.COMPLETED)) else it }
                                     scope.launch {
                                         repository.updateTokenStatus(id, status)
                                         refreshData()
                                     }
                                 },
                                 onToggleDarshan = { tokenId, completed ->
+                                    val newStatus = if (completed) TokenStatus.COMPLETED else TokenStatus.WAITING
+                                    todayTokens = todayTokens.map { if (it.id == tokenId) it.copy(isDarshanCompleted = completed, status = newStatus) else it }
+                                    queueTokensForSelectedDate = queueTokensForSelectedDate.map { if (it.id == tokenId) it.copy(isDarshanCompleted = completed, status = newStatus) else it }
                                     scope.launch {
                                         repository.toggleDarshanCompleted(tokenId, completed)
                                         refreshData()
                                     }
                                 },
                                 onCancelToken = { tokenId ->
+                                    todayTokens = todayTokens.map { if (it.id == tokenId) it.copy(status = TokenStatus.CANCELLED) else it }
+                                    queueTokensForSelectedDate = queueTokensForSelectedDate.map { if (it.id == tokenId) it.copy(status = TokenStatus.CANCELLED) else it }
                                     scope.launch {
                                         repository.cancelToken(tokenId)
                                         refreshData()
                                     }
                                 },
                                 onDeleteToken = { tokenId ->
+                                    todayTokens = todayTokens.filter { it.id != tokenId }
+                                    queueTokensForSelectedDate = queueTokensForSelectedDate.filter { it.id != tokenId }
                                     scope.launch {
                                         repository.deleteToken(tokenId)
                                         refreshData()
@@ -1388,7 +1400,7 @@ fun AdminDashboardScreen(
                                 },
                                 onSyncFromCloud = {
                                     scope.launch {
-                                        val res = repository.syncLiveTokensFromCloud()
+                                        val res = repository.syncLiveTokensFromCloud(selectedQueueDate)
                                         refreshData()
                                         if (res.first) {
                                             Toast.makeText(context, if (isHindi) "✅ क्लाउड से ${res.second} नए भक्त टोकन सिंक हुए!" else "✅ Synced ${res.second} new tokens from cloud!", Toast.LENGTH_SHORT).show()
@@ -1399,7 +1411,7 @@ fun AdminDashboardScreen(
                                 },
                                 onSyncFromGoogleSheet = {
                                     scope.launch {
-                                        val res = repository.syncLiveTokensFromCloud()
+                                        val res = repository.syncLiveTokensFromCloud(selectedQueueDate)
                                         refreshData()
                                         if (res.first) {
                                             Toast.makeText(context, if (isHindi) "✅ क्लाउड से ${res.second} नए टोकन सिंक हुए!" else "✅ Synced ${res.second} new tokens from cloud!", Toast.LENGTH_SHORT).show()
@@ -1755,10 +1767,11 @@ fun AdminDashboardScreen(
                             ArziLedgerTab(
                                 isHindi = isHindi,
                                 repository = repository,
-                                settings = settings,
+                                initialSettings = settings,
                                 isSuperAdmin = isSuper,
                                 scope = scope,
-                                context = context
+                                context = context,
+                                onSettingsUpdated = { settings = it }
                             )
                         }
                         currentTabTitle == "महा-लेजर 📊" || currentTabTitle == "Master Ledger 📊" -> {
@@ -5455,7 +5468,7 @@ fun ManualTokenTab(
                 OutlinedTextField(
                     value = searchInput,
                     onValueChange = { searchInput = it },
-                    placeholder = { Text(if (isHindi) "उदा. राजेश, 9876543210..." else "e.g. Ramesh, 9876543210...") },
+                    placeholder = { Text(if (isHindi) "उदा. राजेश, 9720691090..." else "e.g. Ramesh, 9720691090...") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),

@@ -4,7 +4,14 @@
 // High-Speed Direct Ashram Server APK Delivery Engine (v2.55.1 Build 74)
 // ==============================================================================
 
-$cdnUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk";
+$localApk = __DIR__ . '/downloads/ShriBalajiKripaDham-release.apk';
+if (file_exists($localApk) && filesize($localApk) > 10000000) {
+    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+    header("Location: https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk", true, 302);
+    exit;
+}
+
+$cdnUrl = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk";
 if (file_exists(__DIR__ . '/version.json')) {
     $vj = @json_decode(file_get_contents(__DIR__ . '/version.json'), true);
     if (!empty($vj['apk_url'])) {

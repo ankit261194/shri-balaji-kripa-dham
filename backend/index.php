@@ -1049,6 +1049,7 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
     </section>
 
     <!-- Sevadars Carousel Section (App & Web synchronized) -->
+    <?php if (!empty($sevadars)): ?>
     <section class="carousel-section">
         <div class="section-title">
             <h3>🙏 समर्पित सेवादल मंडल</h3>
@@ -1058,39 +1059,28 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
         <div class="carousel-wrapper">
             <button class="carousel-nav-btn carousel-nav-prev" onclick="slideCarousel('sevadarTrack', -1)">❮</button>
             <div class="carousel-track" id="sevadarTrack">
-                <?php if (!empty($sevadars)): ?>
-                    <?php foreach ($sevadars as $s): ?>
-                        <div class="sevadar-card">
-                            <div class="sevadar-photo">
-                                <img src="<?= htmlspecialchars(!empty($s['photo_url']) ? $s['photo_url'] : 'uploads/sevadars/default.jpg') ?>" alt="<?= htmlspecialchars($s['name']) ?>" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
-                            </div>
-                            <div class="sevadar-name"><?= htmlspecialchars($s['name']) ?></div>
-                            <div class="sevadar-role"><?= htmlspecialchars(!empty($s['role']) ? $s['role'] : 'सेवादार') ?></div>
-                            <?php if (!empty($s['phone'])): ?>
-                            <a href="tel:<?= htmlspecialchars($s['phone']) ?>" class="sevadar-phone-btn">
-                                📞 <?= htmlspecialchars($s['phone']) ?>
-                            </a>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
+                <?php foreach ($sevadars as $s): ?>
                     <div class="sevadar-card">
                         <div class="sevadar-photo">
-                            <img src="uploads/sevadars/sevadar_1.jpg" alt="मुख्य प्रबंधक" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                            <img src="<?= htmlspecialchars(!empty($s['photo_url']) ? $s['photo_url'] : 'uploads/sevadars/default.jpg') ?>" alt="<?= htmlspecialchars($s['name']) ?>" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
                         </div>
-                        <div class="sevadar-name">अंकित शर्मा</div>
-                        <div class="sevadar-role">मुख्य प्रबंधक एवं व्यवस्थापक</div>
-                        <a href="tel:<?= htmlspecialchars($contactPhone) ?>" class="sevadar-phone-btn">
-                            📞 <?= htmlspecialchars($contactPhone) ?>
+                        <div class="sevadar-name"><?= htmlspecialchars($s['name']) ?></div>
+                        <div class="sevadar-role"><?= htmlspecialchars(!empty($s['role']) ? $s['role'] : 'सेवादार') ?></div>
+                        <?php if (!empty($s['phone'])): ?>
+                        <a href="tel:<?= htmlspecialchars($s['phone']) ?>" class="sevadar-phone-btn">
+                            📞 <?= htmlspecialchars($s['phone']) ?>
                         </a>
+                        <?php endif; ?>
                     </div>
-                <?php endif; ?>
+                <?php endforeach; ?>
             </div>
             <button class="carousel-nav-btn carousel-nav-next" onclick="slideCarousel('sevadarTrack', 1)">❯</button>
         </div>
     </section>
+    <?php endif; ?>
 
     <!-- Prominent Donors Carousel Section (STRICT PRIVACY: NO PHONE NUMBERS) -->
+    <?php if (!empty($donors)): ?>
     <section class="carousel-section" style="background: #FFFDF5; border-top: 1px solid #FFE082; border-bottom: 1px solid #FFE082;">
         <div class="section-title">
             <h3>🌟 प्रमुख दानदाता एवं संरक्षक मंडल</h3>
@@ -1100,33 +1090,22 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
         <div class="carousel-wrapper">
             <button class="carousel-nav-btn carousel-nav-prev" onclick="slideCarousel('donorTrack', -1)">❮</button>
             <div class="carousel-track" id="donorTrack">
-                <?php if (!empty($donors)): ?>
-                    <?php foreach ($donors as $d): ?>
-                        <div class="donor-card">
-                            <span class="donor-badge-top">🌟 परम सहयोगी</span>
-                            <div class="donor-photo">
-                                <img src="<?= htmlspecialchars(!empty($d['photo_url']) ? $d['photo_url'] : 'uploads/donors/default.jpg') ?>" alt="<?= htmlspecialchars($d['name']) ?>" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
-                            </div>
-                            <div class="donor-name"><?= htmlspecialchars($d['name']) ?></div>
-                            <div class="donor-address">📍 <?= htmlspecialchars(!empty($d['city_address']) ? $d['city_address'] : 'ग्राम डूँगरा जाट') ?></div>
-                            <div class="donor-title"><?= htmlspecialchars(!empty($d['title']) ? $d['title'] : 'मंदिर निर्माण सहयोगी') ?></div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
+                <?php foreach ($donors as $d): ?>
                     <div class="donor-card">
-                        <span class="donor-badge-top">👑 मुख्य संरक्षक</span>
+                        <span class="donor-badge-top">🌟 परम सहयोगी</span>
                         <div class="donor-photo">
-                            <img src="uploads/donors/donor_1.jpg" alt="दानदाता" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                            <img src="<?= htmlspecialchars(!empty($d['photo_url']) ? $d['photo_url'] : 'uploads/donors/default.jpg') ?>" alt="<?= htmlspecialchars($d['name']) ?>" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FFD700\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
                         </div>
-                        <div class="donor-name">सेठ राधेश्याम जी</div>
-                        <div class="donor-address">📍 दिल्ली / बुलन्दशहर</div>
-                        <div class="donor-title">भव्य मंदिर निर्माण महासहयोगी</div>
+                        <div class="donor-name"><?= htmlspecialchars($d['name']) ?></div>
+                        <div class="donor-address">📍 <?= htmlspecialchars(!empty($d['city_address']) ? $d['city_address'] : 'ग्राम डूँगरा जाट') ?></div>
+                        <div class="donor-title"><?= htmlspecialchars(!empty($d['title']) ? $d['title'] : 'मंदिर निर्माण सहयोगी') ?></div>
                     </div>
-                <?php endif; ?>
+                <?php endforeach; ?>
             </div>
             <button class="carousel-nav-btn carousel-nav-next" onclick="slideCarousel('donorTrack', 1)">❯</button>
         </div>
     </section>
+    <?php endif; ?>
 
     <!-- Services Grid -->
     <section style="padding: 40px 0;">

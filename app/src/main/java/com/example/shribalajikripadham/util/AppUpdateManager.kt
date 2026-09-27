@@ -24,7 +24,7 @@ import org.json.JSONObject
 
 object AppUpdateManager {
 
-    const val DEFAULT_APK_URL = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk"
+    const val DEFAULT_APK_URL = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk"
     const val DEFAULT_VERSION_JSON_URL = "https://cdn.jsdelivr.net/gh/ankit261194/shri-balaji-kripa-dham@main/version.json"
     const val JSDELIVR_APP_UPDATE_URL = "https://cdn.jsdelivr.net/gh/ankit261194/shri-balaji-kripa-dham@main/app_update.json"
     const val ASHRAM_VERSION_JSON_URL = "https://shribalajikripadham.online/version.json"
@@ -456,12 +456,23 @@ object AppUpdateManager {
 
             val candidateUrls = mutableListOf<String>()
 
-            // 1. Prioritize the exact release APK URL provided dynamically in version.json / app_update.json
+            // 1. Direct High-Speed Ashram Server endpoints (Bypasses AWS S3 ISP throttling in India)
+            val ashramEndpoints = listOf(
+                "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
+                "https://shribalajikripadham.online/download.php"
+            )
+            for (af in ashramEndpoints) {
+                if (!candidateUrls.contains(af)) {
+                    candidateUrls.add(af)
+                }
+            }
+
+            // 2. Prioritize dynamic release APK URL from version.json / app_update.json if distinct
             if (finalUrl.isNotBlank() && !candidateUrls.contains(finalUrl.trim())) {
                 candidateUrls.add(finalUrl.trim())
             }
 
-            // 2. Direct GitHub Release official assets (Always clean, immutable, non-cached)
+            // 3. GitHub Release official fallback assets
             val gitHubReleaseFallbacks = listOf(
                 DEFAULT_APK_URL,
                 "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk"
@@ -469,17 +480,6 @@ object AppUpdateManager {
             for (gh in gitHubReleaseFallbacks) {
                 if (!candidateUrls.contains(gh)) {
                     candidateUrls.add(gh)
-                }
-            }
-
-            // 3. Direct Ashram server endpoints (always updated to latest)
-            val ashramFallbacks = listOf(
-                "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
-                "https://shribalajikripadham.online/download.php"
-            )
-            for (af in ashramFallbacks) {
-                if (!candidateUrls.contains(af)) {
-                    candidateUrls.add(af)
                 }
             }
 

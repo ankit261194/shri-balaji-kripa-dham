@@ -56,15 +56,23 @@ class MainActivity : ComponentActivity() {
             ShriBalajiKripaDhamTheme(sacredTheme = currentSacredTheme) {
 
 
-                // Unified All-In-One Permission Request (Location + Camera + Notifications)
+                // Unified All-In-One Permission Request (Location + Camera + Audio + Storage/Images + Notifications + Bluetooth)
                 val allRequiredPermissions = remember {
                     val list = mutableListOf(
                         Manifest.permission.ACCESS_FINE_LOCATION,
                         Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.CAMERA
+                        Manifest.permission.CAMERA,
+                        Manifest.permission.RECORD_AUDIO
                     )
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         list.add(Manifest.permission.POST_NOTIFICATIONS)
+                        list.add(Manifest.permission.READ_MEDIA_IMAGES)
+                    } else {
+                        list.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        list.add(Manifest.permission.BLUETOOTH_CONNECT)
+                        list.add(Manifest.permission.BLUETOOTH_SCAN)
                     }
                     list.toTypedArray()
                 }
