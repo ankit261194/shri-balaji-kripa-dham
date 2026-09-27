@@ -8,6 +8,13 @@ import java.util.Locale
 
 sealed class SundayScheduleState {
     object Open : SundayScheduleState()
+    data class CountdownActive(
+        val openTimestamp: Long,
+        val remainingMillis: Long,
+        val formattedTarget: String,
+        val messageHindi: String,
+        val messageEnglish: String
+    ) : SundayScheduleState()
     data class SundayBeforeStart(val messageHindi: String, val messageEnglish: String) : SundayScheduleState()
     data class SundayClosedEvening(val nextSundayDateStr: String, val messageHindi: String, val messageEnglish: String) : SundayScheduleState()
     data class NonSunday(val nextSundayDateStr: String, val messageHindi: String, val messageEnglish: String) : SundayScheduleState()
@@ -17,14 +24,17 @@ sealed class SundayScheduleState {
 
 object SundayTokenScheduleHelper {
 
-    // Sunday window: 8:30 AM to 5:00 PM (17:00)
+    // Sunday window: 8:00 AM to 5:00 PM (17:00)
     const val SUNDAY_START_HOUR = 8
-    const val SUNDAY_START_MINUTE = 30
+    const val SUNDAY_START_MINUTE = 0
     const val SUNDAY_END_HOUR = 17
     const val SUNDAY_END_MINUTE = 0
 
+    // 12-hour pre-registration countdown window in milliseconds (12 * 60 * 60 * 1000)
+    const val COUNTDOWN_WINDOW_MILLIS = 12 * 60 * 60 * 1000L
+
     /**
-     * Calculates the upcoming Sunday at 8:30 AM.
+     * Calculates the upcoming Sunday at 8:00 AM.
      */
     fun getNextSundayDate(fromCal: Calendar = Calendar.getInstance()): Calendar {
         val cal = fromCal.clone() as Calendar
@@ -39,7 +49,7 @@ object SundayTokenScheduleHelper {
 
         if (dayOfWeek == Calendar.SUNDAY) {
             if (currentMinutes < startMinutes) {
-                // Today is Sunday before 8:30 AM -> this morning!
+                // Today is Sunday before 8:00 AM -> this morning!
                 return cal
             } else {
                 // Today is Sunday during/after darbar -> 7 days later
@@ -65,7 +75,61 @@ object SundayTokenScheduleHelper {
         return sdf.format(nextSunday.time)
     }
 
+    /**
+     * Formats remaining milliseconds into HH:MM:SS format
+     */
+    fun formatCountdown(remainingMillis: Long): String {
+        if (remainingMillis <= 0L) return "00:00:00"
+        val totalSeconds = remainingMillis / 1000
+        val hours = totalSeconds / 3600
+        val minutes = (totalSeconds % 3600) / 60
+        val seconds = totalSeconds % 60
+        return String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds)
+    }
+
+    /**
+     * Formats remaining milliseconds into descriptive Hindi text
+     */
+    fun formatCountdownHindi(remainingMillis: Long): String {
+        if (remainingMillis <= 0L) return "0 सेकंड"
+        val totalSeconds = remainingMillis / 1000
+        val hours = totalSeconds / 3600
+        val minutes = (totalSeconds % 3600) / 60
+        val seconds = totalSeconds % 60
+        return buildString {
+            if (hours > 0) append("$hours घंटे ")
+            if (minutes > 0 || hours > 0) append("$minutes मिनट ")
+            append("$seconds सेकंड")
+        }.trim()
+    }
+
+    fun evaluateSchedule(
+        mode: String = "AUTO_SUNDAY",
+        scheduledTimestamp: Long = 0L,
+        nowMillis: Long = System.currentTimeMillis(),
+        isServiceEnabled: Boolean = true
+    ): SundayScheduleState {
+        val tempSettings = AshramSettings(
+            tokenServiceMode = mode,
+            scheduledTokenOpenTimestamp = scheduledTimestamp,
+            isTokenServiceEnabled = isServiceEnabled
+        )
+        return evaluateSchedule(tempSettings, nowMillis)
+    }
+
     fun evaluateSchedule(settings: AshramSettings, nowMillis: Long = System.currentTimeMillis()): SundayScheduleState {
+        // 1. SuperAdmin Manual Mode Override Check:
+        if (settings.tokenServiceMode.equals("FORCE_OPEN", ignoreCase = true)) {
+            // SuperAdmin forced tokens OPEN at any day/time
+            return SundayScheduleState.Open
+        }
+        if (settings.tokenServiceMode.equals("FORCE_CLOSED", ignoreCase = true)) {
+            // SuperAdmin forced tokens CLOSED at any day/time
+            return SundayScheduleState.ServiceDisabled(
+                messageHindi = "रविवार टोकन सेवा वर्तमान में सुपर एडमिन द्वारा बंद/स्थगित की गई है।",
+                messageEnglish = "Sunday token service is currently paused by Super Admin."
+            )
+        }
         if (!settings.isTokenServiceEnabled) {
             return SundayScheduleState.ServiceDisabled(
                 messageHindi = "रविवार टोकन सेवा वर्तमान में व्यवस्थापक द्वारा स्थगित की गई है।",
@@ -73,10 +137,20 @@ object SundayTokenScheduleHelper {
             )
         }
 
-        // Custom admin schedule override if set in future
+        // 2. Custom admin schedule override if set in future
         if (settings.scheduledTokenOpenTimestamp > nowMillis) {
+            val remaining = settings.scheduledTokenOpenTimestamp - nowMillis
             val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
             val formatted = sdf.format(Date(settings.scheduledTokenOpenTimestamp))
+            if (remaining <= COUNTDOWN_WINDOW_MILLIS) {
+                return SundayScheduleState.CountdownActive(
+                    openTimestamp = settings.scheduledTokenOpenTimestamp,
+                    remainingMillis = remaining,
+                    formattedTarget = formatted,
+                    messageHindi = "टोकन पंजीकरण निर्धारित समय ($formatted) पर स्वतः खुलेगा।",
+                    messageEnglish = "Token registration will open automatically at $formatted."
+                )
+            }
             return SundayScheduleState.CustomScheduled(
                 openTimestamp = settings.scheduledTokenOpenTimestamp,
                 formattedDate = formatted,
@@ -85,6 +159,7 @@ object SundayTokenScheduleHelper {
             )
         }
 
+        // 3. AUTO_SUNDAY Schedule Evaluation
         val cal = Calendar.getInstance()
         cal.timeInMillis = nowMillis
 
@@ -93,38 +168,56 @@ object SundayTokenScheduleHelper {
         val minute = cal.get(Calendar.MINUTE)
         val currentMinutes = hour * 60 + minute
 
-        val startMinutes = SUNDAY_START_HOUR * 60 + SUNDAY_START_MINUTE // 8*60 + 30 = 510
-        val endMinutes = SUNDAY_END_HOUR * 60 + SUNDAY_END_MINUTE       // 17*60 = 1020
+        val startMinutes = SUNDAY_START_HOUR * 60 + SUNDAY_START_MINUTE // 8:00 AM (480)
+        val endMinutes = SUNDAY_END_HOUR * 60 + SUNDAY_END_MINUTE       // 17:00 (1020)
 
         val nextSun = getNextSundayDate(cal)
         val nextSunHindi = formatNextSundayDateHindi(nextSun)
         val nextSunEng = formatNextSundayDateEnglish(nextSun)
+        val nextSunStartMillis = nextSun.timeInMillis
 
-        if (dayOfWeek != Calendar.SUNDAY) {
-            return SundayScheduleState.NonSunday(
-                nextSundayDateStr = nextSunHindi,
-                messageHindi = "टोकन केवल रविवार को सुबह 8:30 बजे से शाम 5:00 बजे तक आश्रम परिसर में दिए जाते हैं। आप आगामी रविवार, $nextSunHindi को सुबह 8:30 बजे से आश्रम लोकेशन पर आकर टोकन प्राप्त कर सकते हैं।",
-                messageEnglish = "Tokens are issued only on Sundays from 8:30 AM to 5:00 PM at Ashram premises. You can visit on Sunday, $nextSunEng from 8:30 AM to get your token."
-            )
+        if (dayOfWeek == Calendar.SUNDAY) {
+            if (currentMinutes in startMinutes until endMinutes) {
+                // Sunday between 8:00 AM and 5:00 PM: AUTOMATICALLY OPEN!
+                return SundayScheduleState.Open
+            } else if (currentMinutes < startMinutes) {
+                // Sunday morning before 8:00 AM (Within 12-hour countdown!)
+                val remainingMillis = (nextSunStartMillis - nowMillis).coerceAtLeast(0L)
+                return SundayScheduleState.CountdownActive(
+                    openTimestamp = nextSunStartMillis,
+                    remainingMillis = remainingMillis,
+                    formattedTarget = "आज रविवार प्रातः 8:00 बजे",
+                    messageHindi = "आज रविवार का टोकन पंजीकरण प्रातः 8:00 बजे से स्वतः प्रारंभ होगा।",
+                    messageEnglish = "Today's Sunday token registration will start automatically at 8:00 AM."
+                )
+            } else {
+                // Sunday after 5:00 PM
+                return SundayScheduleState.SundayClosedEvening(
+                    nextSundayDateStr = nextSunHindi,
+                    messageHindi = "आज के टोकन पूरे हो गए हैं। अब टोकन आगामी रविवार, $nextSunHindi को प्रातः 8:00 बजे से मिलना शुरू होंगे।",
+                    messageEnglish = "Today's tokens are complete. Next tokens will be available on Sunday, $nextSunEng from 8:00 AM onwards."
+                )
+            }
+        } else {
+            // Monday to Saturday
+            val timeUntilNextSundayStart = nextSunStartMillis - nowMillis
+            if (timeUntilNextSundayStart in 1..COUNTDOWN_WINDOW_MILLIS) {
+                // Within 12 hours of Sunday 8:00 AM (Saturday 8:00 PM onwards!)
+                return SundayScheduleState.CountdownActive(
+                    openTimestamp = nextSunStartMillis,
+                    remainingMillis = timeUntilNextSundayStart,
+                    formattedTarget = "कल रविवार प्रातः 8:00 बजे",
+                    messageHindi = "रविवार टोकन पंजीकरण 12 घंटे पूर्व उल्टी गिनती जारी है। कल प्रातः 8:00 बजे टोकन स्वतः खुल जाएंगे।",
+                    messageEnglish = "Sunday token countdown active. Tokens will open automatically tomorrow at 8:00 AM."
+                )
+            } else {
+                return SundayScheduleState.NonSunday(
+                    nextSundayDateStr = nextSunHindi,
+                    messageHindi = "टोकन प्रत्येक रविवार को प्रातः 8:00 बजे से शाम 5:00 बजे तक दिए जाते हैं। आप आगामी रविवार, $nextSunHindi को टोकन प्राप्त कर सकते हैं। (शनिवार रात 8:00 बजे से 12 घंटे पूर्व उल्टी गिनती शुरू होगी)",
+                    messageEnglish = "Tokens are issued on Sundays from 8:00 AM to 5:00 PM at Ashram premises. Registration opens on Sunday, $nextSunEng from 8:00 AM."
+                )
+            }
         }
-
-        // It is Sunday!
-        if (currentMinutes < startMinutes) {
-            return SundayScheduleState.SundayBeforeStart(
-                messageHindi = "आज (रविवार) का टोकन वितरण सुबह 8:30 बजे से शुरू होगा। कृपया सुबह 8:30 बजे आश्रम लोकेशन पर आकर टोकन प्राप्त करें।",
-                messageEnglish = "Today's Sunday token distribution will start at 8:30 AM. Please arrive at Ashram premises at 8:30 AM to get token."
-            )
-        }
-
-        if (currentMinutes >= endMinutes) {
-            return SundayScheduleState.SundayClosedEvening(
-                nextSundayDateStr = nextSunHindi,
-                messageHindi = "आज के टोकन पूरे हो गए हैं। अब टोकन आगामी रविवार, $nextSunHindi को सुबह 8:30 बजे से मिलना शुरू होंगे।",
-                messageEnglish = "Today's tokens are complete. Next tokens will be available on Sunday, $nextSunEng from 8:30 AM onwards."
-            )
-        }
-
-        return SundayScheduleState.Open
     }
 
     fun calculateQueueEta(

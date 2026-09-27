@@ -545,6 +545,13 @@ fun FaceTokenRegistrationScreen(
                                 titleText = if (isHindi) "टोकन सेवा स्थगित" else "Token Service Paused",
                                 descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                             )
+                            is SundayScheduleState.CountdownActive -> ScheduleBannerVisual(
+                                bannerBg = Color(0xFFFFFBEA),
+                                borderCol = Color(0xFFFF8F00),
+                                iconText = "⏳",
+                                titleText = if (isHindi) "रविवार दरबार 12-घंटे काउंटडाउन" else "Sunday Darbar Countdown",
+                                descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
+                            )
                             is SundayScheduleState.CustomScheduled -> ScheduleBannerVisual(
                                 bannerBg = Color(0xFFFFFBEA),
                                 borderCol = Color(0xFFD84315),
@@ -733,6 +740,13 @@ fun FaceTokenRegistrationScreen(
                                             errorMessage = scheduleAlertMessage
                                             return@Button
                                         }
+                                        is SundayScheduleState.CountdownActive -> {
+                                            scheduleAlertTitle = if (isHindi) "⏳ रविवार दरबार टोकन काउंटडाउन" else "⏳ Sunday Darbar Token Countdown"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
                                         is SundayScheduleState.CustomScheduled -> {
                                             scheduleAlertTitle = if (isHindi) "⏳ टोकन पूर्व-निर्धारित है" else "⏳ Scheduled"
                                             scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
@@ -808,6 +822,13 @@ fun FaceTokenRegistrationScreen(
                                         }
                                         is SundayScheduleState.ServiceDisabled -> {
                                             scheduleAlertTitle = if (isHindi) "🔒 टोकन सेवा स्थगित" else "🔒 Token Service Paused"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@OutlinedButton
+                                        }
+                                        is SundayScheduleState.CountdownActive -> {
+                                            scheduleAlertTitle = if (isHindi) "⏳ रविवार दरबार टोकन काउंटडाउन" else "⏳ Sunday Darbar Token Countdown"
                                             scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
                                             showScheduleAlertDialog = true
                                             errorMessage = scheduleAlertMessage
@@ -1591,6 +1612,13 @@ fun FaceTokenRegistrationScreen(
                                         }
                                         is SundayScheduleState.ServiceDisabled -> {
                                             scheduleAlertTitle = if (isHindi) "🔒 टोकन सेवा स्थगित" else "🔒 Token Service Paused"
+                                            scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                            showScheduleAlertDialog = true
+                                            errorMessage = scheduleAlertMessage
+                                            return@Button
+                                        }
+                                        is SundayScheduleState.CountdownActive -> {
+                                            scheduleAlertTitle = if (isHindi) "⏳ रविवार दरबार टोकन काउंटडाउन" else "⏳ Sunday Darbar Token Countdown"
                                             scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
                                             showScheduleAlertDialog = true
                                             errorMessage = scheduleAlertMessage

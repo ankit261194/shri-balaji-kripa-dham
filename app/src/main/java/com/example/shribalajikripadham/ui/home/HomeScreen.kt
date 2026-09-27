@@ -184,6 +184,15 @@ fun HomeScreen(
     var selectedHomeTab by remember { mutableStateOf(HomeTab.DARSHAN_TOKEN) }
     val homeScrollState = rememberScrollState()
     var viewingLyricsTrack by remember { mutableStateOf<SacredTrack?>(null) }
+    var showAppDownloadShareDialog by remember { mutableStateOf(false) }
+    var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            currentTimeMs = System.currentTimeMillis()
+            kotlinx.coroutines.delay(1000L)
+        }
+    }
 
     LaunchedEffect(Unit) {
         var s = settings
@@ -332,6 +341,9 @@ fun HomeScreen(
                         val isDarbarLiveNow = if (liveCfg.has("is_darbar_live_now")) liveCfg.optBoolean("is_darbar_live_now") else settings.isDarbarLiveNow
                         val liveStreamTitle = if (liveCfg.has("live_stream_title")) liveCfg.optString("live_stream_title", settings.liveStreamTitle) else settings.liveStreamTitle
                         val liveStreamUrl = if (liveCfg.has("live_stream_url")) liveCfg.optString("live_stream_url", settings.liveStreamUrl) else settings.liveStreamUrl
+                        val tokenMode = if (liveCfg.has("token_service_mode")) liveCfg.optString("token_service_mode", settings.tokenServiceMode) else settings.tokenServiceMode
+                        val appDownloadUrl = if (liveCfg.has("app_download_url")) liveCfg.optString("app_download_url", settings.apkDownloadUrl) else settings.apkDownloadUrl
+                        val appShareUrl = if (liveCfg.has("app_share_url")) liveCfg.optString("app_share_url", settings.appShareUrl) else settings.appShareUrl
 
                         // ⚡ Instant Devotee Token Calling Alert
                         if (currentServing != settings.runningTokenNumber && currentServing > 0) {
@@ -374,7 +386,10 @@ fun HomeScreen(
                             isDarbarActive != settings.isDarbarActive ||
                             isDarbarLiveNow != settings.isDarbarLiveNow ||
                             liveStreamTitle != settings.liveStreamTitle ||
-                            liveStreamUrl != settings.liveStreamUrl
+                            liveStreamUrl != settings.liveStreamUrl ||
+                            tokenMode != settings.tokenServiceMode ||
+                            (appDownloadUrl.isNotBlank() && appDownloadUrl != settings.apkDownloadUrl) ||
+                            (appShareUrl.isNotBlank() && appShareUrl != settings.appShareUrl)
                         ) {
                             settings = settings.copy(
                                 runningTokenNumber = currentServing,
@@ -389,7 +404,10 @@ fun HomeScreen(
                                 isDarbarActive = isDarbarActive,
                                 isDarbarLiveNow = isDarbarLiveNow,
                                 liveStreamTitle = liveStreamTitle,
-                                liveStreamUrl = liveStreamUrl
+                                liveStreamUrl = liveStreamUrl,
+                                tokenServiceMode = tokenMode,
+                                apkDownloadUrl = if (appDownloadUrl.isNotBlank()) appDownloadUrl else settings.apkDownloadUrl,
+                                appShareUrl = if (appShareUrl.isNotBlank()) appShareUrl else settings.appShareUrl
                             )
                             repository.updateSettings(settings)
                         }
@@ -621,7 +639,11 @@ fun HomeScreen(
                                 }
                             }
                         }))
-                        add(NavDrawerItem("📥", if (isHindi) "नवीनतम APK डाउनलोड करें" else "Download Latest APK", {
+                        add(NavDrawerItem("📲", if (isHindi) "धाम का आधिकारिक ऐप डाउनलोड व शेयर करें" else "Download & Share Official App", {
+                            scope.launch { drawerState.close() }
+                            showAppDownloadShareDialog = true
+                        }))
+                        add(NavDrawerItem("📥", if (isHindi) "सीधा APK डाउनलोड करें (Direct Link)" else "Download Latest APK (Direct)", {
                             scope.launch {
                                 drawerState.close()
                                 val targetUrl = settings.apkDownloadUrl.ifBlank {
@@ -629,6 +651,41 @@ fun HomeScreen(
                                 }
                                 AppUpdateManager.downloadAndInstallUpdate(context, targetUrl)
                             }
+                        }))
+                        add(NavDrawerItem("💬", if (isHindi) "व्हाट्सएप पर ऐप लिंक शेयर करें" else "Share App Link on WhatsApp", {
+                            scope.launch { drawerState.close() }
+                            val apkUrl = settings.apkDownloadUrl.ifBlank { AppUpdateManager.DEFAULT_APK_URL }
+                            val sharePageUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.online/download.php" }
+                            val msg = if (isHindi) {
+                                """
+                                🙏 *श्री बालाजी कृपा धाम, डूँगरा जाट (बुलन्दशहर)* 🙏
+                                
+                                परम पूज्य गुरुदेव जी के पावन सानिध्य में रविवार दरबार के दिव्य दर्शन, लाइव टोकन, आरती-भजन, हवन-उतारा पर्चे व आश्रम सेवाओं हेतु धाम का आधिकारिक एंड्रॉइड ऐप अभी डाउनलोड करें:
+                                
+                                🌐 *वेबसाइट से डाउनलोड करें:*
+                                $sharePageUrl
+                                
+                                📥 *सीधा APK डाउनलोड लिंक:*
+                                $apkUrl
+                                
+                                ॥ ॐ श्री हनुमते नमः ॥ जय श्री राम ॥
+                                """.trimIndent()
+                            } else {
+                                """
+                                🙏 *Shri Balaji Kripa Dham, Dungra Jaat (Bulandshahr)* 🙏
+                                
+                                Download the official Ashram Mobile App for Sunday Darbar Token, Live Darshan, Sacred Parchas, Aartis and Ashram updates:
+                                
+                                🌐 *Download from Website:*
+                                $sharePageUrl
+                                
+                                📥 *Direct APK Download:*
+                                $apkUrl
+                                
+                                Jai Shri Ram • Jai Balaji Maharaj!
+                                """.trimIndent()
+                            }
+                            shareAppContent(context, msg, if (isHindi) "धाम ऐप शेयर करें" else "Share Ashram App")
                         }))
                         add(NavDrawerItem("🔐", if (isHindi) "प्रबंधक / सेवादार लॉगिन" else "Sevadar & Admin Portal", onNavigateToAdmin))
                     }
@@ -1714,6 +1771,7 @@ fun HomeScreen(
             }
         }
     }
+    }
 
     // Sacred Lyrics Full Viewer Modal Dialog
     viewingLyricsTrack?.let { track ->
@@ -1724,7 +1782,14 @@ fun HomeScreen(
         )
     }
 
-            }
+    if (showAppDownloadShareDialog) {
+        AppDownloadShareDialog(
+            isHindi = isHindi,
+            settings = settings,
+            onDismiss = { showAppDownloadShareDialog = false }
+        )
+    }
+
     // IN-APP UPDATE POPUP DIALOG (Pops up directly on Home Screen!)
     val currentInstalledCode = AppUpdateManager.getCurrentVersionCode(context)
     val hasPendingUpdate = settings.latestVersionCode > currentInstalledCode
@@ -2559,6 +2624,15 @@ fun RenderClassicSection(
     context: Context,
     isCompact: Boolean = false
 ) {
+    var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(1000L)
+            currentTimeMs = System.currentTimeMillis()
+        }
+    }
+    var showSectionAppDownloadShareDialog by remember { mutableStateOf(false) }
+
     // Custom announcement / guideline banner customized by Super Admin
     if (sectionConfig != null && (sectionConfig.customContentHindi.isNotBlank() || sectionConfig.customSubtitleHindi.isNotBlank())) {
         val subtitleText = if (isHindi) sectionConfig.customSubtitleHindi.ifEmpty { sectionConfig.customSubtitleEnglish } else sectionConfig.customSubtitleEnglish.ifEmpty { sectionConfig.customSubtitleHindi }
@@ -2913,39 +2987,235 @@ fun RenderClassicSection(
         }
 
         UiSectionConfig.ID_TOKEN_COUNTDOWN -> {
-            // Pre-Scheduled Token Opening Countdown Banner
-            if (settings.isTokenServiceEnabled && settings.scheduledTokenOpenTimestamp > System.currentTimeMillis()) {
-                val sdf = java.text.SimpleDateFormat("dd MMM yyyy, hh:mm a", java.util.Locale.getDefault())
-                val scheduledTimeStr = sdf.format(java.util.Date(settings.scheduledTokenOpenTimestamp))
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                    shape = RoundedCornerShape(if (isCompact) 12.dp else 18.dp),
-                    border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
-                    elevation = CardDefaults.cardElevation(if (isCompact) 2.dp else 4.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(if (isCompact) 10.dp else 14.dp),
-                        verticalAlignment = Alignment.CenterVertically
+            // Sunday Darbar Token Schedule & 12-Hour Live Countdown Banner
+            val schedule = SundayTokenScheduleHelper.evaluateSchedule(
+                mode = settings.tokenServiceMode,
+                scheduledTimestamp = settings.scheduledTokenOpenTimestamp,
+                nowMillis = currentTimeMs,
+                isServiceEnabled = settings.isTokenServiceEnabled
+            )
+
+            when (schedule) {
+                is SundayScheduleState.CountdownActive -> {
+                    val formattedClock = SundayTokenScheduleHelper.formatCountdown(schedule.remainingMillis)
+                    val formattedHindi = SundayTokenScheduleHelper.formatCountdownHindi(schedule.remainingMillis)
+
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                        shape = RoundedCornerShape(if (isCompact) 14.dp else 18.dp),
+                        border = BorderStroke(2.dp, Color(0xFFFFB300)),
+                        elevation = CardDefaults.cardElevation(if (isCompact) 4.dp else 6.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("⏳", fontSize = if (isCompact) 22.sp else 28.sp)
-                        Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
-                        Column {
-                            Text(
-                                text = if (isHindi) "रविवार टोकन पंजीकरण पूर्व-निर्धारित है" else "Token Registration Scheduled",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = if (isCompact) 12.5.sp else 14.sp,
-                                color = Color(0xFFE65100)
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = if (isHindi)
-                                    "टोकन खुलने का समय: $scheduledTimeStr\n(उस समय यह स्वतः खुल जाएगा)"
-                                else
-                                    "Opens automatically on: $scheduledTimeStr",
-                                fontSize = if (isCompact) 10.5.sp else 12.sp,
-                                color = TextPrimaryDark
-                            )
+                        Column(modifier = Modifier.padding(if (isCompact) 12.dp else 16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = Color(0xFFFF6F00),
+                                    modifier = Modifier.size(if (isCompact) 32.dp else 40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text("⏳", fontSize = if (isCompact) 18.sp else 22.sp)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (isHindi) "रविवार टोकन पंजीकरण: 12-घंटे पूर्व काउंटडाउन" else "Sunday Token Registration: 12h Countdown",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = if (isCompact) 13.sp else 15.sp,
+                                        color = Color(0xFFE65100)
+                                    )
+                                    Text(
+                                        text = if (isHindi) "खुलने का समय: ${schedule.formattedTarget}" else "Opens at: ${schedule.formattedTarget}",
+                                        fontSize = if (isCompact) 10.5.sp else 12.sp,
+                                        color = Color(0xFF5D4037)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Large Digital Timer Box
+                            Surface(
+                                color = Color(0xFF1E272C),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(vertical = if (isCompact) 10.dp else 12.dp, horizontal = 14.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = if (isHindi) "टोकन पंजीकरण खुलने में शेष समय:" else "Time Remaining Until Registration Opens:",
+                                        fontSize = if (isCompact) 10.5.sp else 11.5.sp,
+                                        color = Color(0xFFFFD54F),
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = formattedClock,
+                                        fontSize = if (isCompact) 26.sp else 32.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color.White,
+                                        letterSpacing = 2.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = formattedHindi,
+                                        fontSize = if (isCompact) 10.sp else 11.sp,
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (isHindi) "⚡ समय होते ही टोकन स्वतः खुल जाएगा" else "⚡ Automatically unlocks at 00:00:00",
+                                    fontSize = 10.5.sp,
+                                    color = Color(0xFF2E7D32),
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Button(
+                                    onClick = onNavigateToToken,
+                                    colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp)
+                                ) {
+                                    Text(if (isHindi) "टोकन पेज देखें" else "View Token Page", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+                is SundayScheduleState.Open -> {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                        shape = RoundedCornerShape(if (isCompact) 14.dp else 18.dp),
+                        border = BorderStroke(2.dp, Color(0xFF2E7D32)),
+                        elevation = CardDefaults.cardElevation(if (isCompact) 4.dp else 6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(if (isCompact) 12.dp else 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Text("🟢", fontSize = if (isCompact) 22.sp else 26.sp)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (isHindi) "रविवार दरबार टोकन पंजीकरण लाइव चालू है!" else "Sunday Darbar Token Registration LIVE!",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = if (isCompact) 13.sp else 15.sp,
+                                        color = Color(0xFF1B5E20)
+                                    )
+                                    Text(
+                                        text = if (isHindi) "अभी तुरंत अपना कतार टोकन प्राप्त करें" else "Generate your queue token now",
+                                        fontSize = if (isCompact) 10.5.sp else 12.sp,
+                                        color = Color(0xFF2E7D32)
+                                    )
+                                }
+                            }
+                            Button(
+                                onClick = onNavigateToToken,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(if (isHindi) "🎟️ टोकन लें" else "Get Token", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+                is SundayScheduleState.ServiceDisabled -> {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                        shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFE57373)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("🔒", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "टोकन सेवा वर्तमान में विश्राम पर है" else "Token Service Paused",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFFC62828)
+                                )
+                                Text(
+                                    text = if (isHindi) schedule.messageHindi else schedule.messageEnglish,
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFB71C1C)
+                                )
+                            }
+                        }
+                    }
+                }
+                is SundayScheduleState.CustomScheduled -> {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                        shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("⏳", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "टोकन पंजीकरण पूर्व-निर्धारित है" else "Token Registration Scheduled",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFFE65100)
+                                )
+                                Text(
+                                    text = if (isHindi) schedule.messageHindi else schedule.messageEnglish,
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF5D4037)
+                                )
+                            }
+                        }
+                    }
+                }
+                is SundayScheduleState.NonSunday,
+                is SundayScheduleState.SundayBeforeStart,
+                is SundayScheduleState.SundayClosedEvening -> {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                        shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFFFB74D)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("⏱️", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "आगामी रविवार दरबार टोकन पंजीकरण" else "Upcoming Sunday Darbar Token",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFFE65100)
+                                )
+                                Text(
+                                    text = if (isHindi)
+                                        "टोकन हर रविवार 8:00 AM से 5:00 PM तक दिए जाते हैं। दरबार से 12 घंटे पहले शनिवार रात 8:00 बजे से लाइव काउंटडाउन शुरू होगा।"
+                                    else
+                                        "Tokens are issued Sundays 8:00 AM - 5:00 PM. 12h countdown starts Saturday 8:00 PM.",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFBF360C)
+                                )
+                            }
                         }
                     }
                 }
@@ -2954,8 +3224,16 @@ fun RenderClassicSection(
 
         UiSectionConfig.ID_SMART_FACE_TOKEN -> {
             // Smart Face Recognition 1-Second Token Banner
+            val smartSchedule = SundayTokenScheduleHelper.evaluateSchedule(
+                mode = settings.tokenServiceMode,
+                scheduledTimestamp = settings.scheduledTokenOpenTimestamp,
+                nowMillis = currentTimeMs,
+                isServiceEnabled = settings.isTokenServiceEnabled
+            )
+            val isScheduleOpen = smartSchedule is SundayScheduleState.Open
+            val isBeforeSchedule = !isScheduleOpen
+
             if (settings.isTokenServiceEnabled) {
-                val isBeforeSchedule = settings.scheduledTokenOpenTimestamp > System.currentTimeMillis()
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = if (isBeforeSchedule) Color(0xFF422018) else Color(0xFF5C001E)
@@ -3275,6 +3553,140 @@ fun RenderClassicSection(
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(tileSpacing))
+
+                // 📲 OFFICIAL APP DIRECT DOWNLOAD & SHARE CARD
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                    shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
+                    border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(if (isCompact) 10.dp else 14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = SaffronPrimary,
+                                    modifier = Modifier.size(if (isCompact) 36.dp else 42.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text("📲", fontSize = if (isCompact) 18.sp else 22.sp)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (isHindi) "धाम का आधिकारिक ऐप (Direct APK)" else "Official Ashram App (Direct APK)",
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = if (isCompact) 12.5.sp else 14.sp,
+                                        color = MaroonPrimary
+                                    )
+                                    Text(
+                                        text = if (isHindi) "सीधा APK डाउनलोड करें या व्हाट्सएप पर शेयर करें" else "Direct APK download & share with devotees",
+                                        fontSize = if (isCompact) 10.sp else 11.5.sp,
+                                        color = Color(0xFF5D4037)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Direct APK Download Button
+                            Button(
+                                onClick = {
+                                    val apkUrl = settings.apkDownloadUrl.ifBlank { AppUpdateManager.DEFAULT_APK_URL }
+                                    AppUpdateManager.downloadAndInstallUpdate(context, apkUrl)
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1.2f),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = if (isHindi) "📥 APK डाउनलोड" else "📥 Download APK",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+
+                            // WhatsApp Share Button
+                            Button(
+                                onClick = {
+                                    val apkUrl = settings.apkDownloadUrl.ifBlank { AppUpdateManager.DEFAULT_APK_URL }
+                                    val sharePageUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.online/download.php" }
+                                    val msg = if (isHindi) {
+                                        """
+                                        🙏 *श्री बालाजी कृपा धाम, डूँगरा जाट (बुलन्दशहर)* 🙏
+                                        
+                                        परम पूज्य गुरुदेव जी के पावन सानिध्य में रविवार दरबार के दिव्य दर्शन, लाइव टोकन, आरती-भजन, हवन-उतारा पर्चे व आश्रम सेवाओं हेतु धाम का आधिकारिक एंड्रॉइड ऐप अभी डाउनलोड करें:
+                                        
+                                        🌐 *वेबसाइट से डाउनलोड करें:*
+                                        $sharePageUrl
+                                        
+                                        📥 *सीधा APK डाउनलोड लिंक:*
+                                        $apkUrl
+                                        
+                                        ॥ ॐ श्री हनुमते नमः ॥ जय श्री राम ॥
+                                        """.trimIndent()
+                                    } else {
+                                        """
+                                        🙏 *Shri Balaji Kripa Dham, Dungra Jaat (Bulandshahr)* 🙏
+                                        
+                                        Download the official Ashram Mobile App for Sunday Darbar Token, Live Darshan, Sacred Parchas, Aartis and Ashram updates:
+                                        
+                                        🌐 *Download from Website:*
+                                        $sharePageUrl
+                                        
+                                        📥 *Direct APK Download:*
+                                        $apkUrl
+                                        
+                                        Jai Shri Ram • Jai Balaji Maharaj!
+                                        """.trimIndent()
+                                    }
+                                    shareAppContent(context, msg, if (isHindi) "धाम ऐप शेयर करें" else "Share Ashram App")
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1.2f),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = if (isHindi) "💬 शेयर करें" else "💬 Share",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+
+                            // More details modal button
+                            OutlinedButton(
+                                onClick = { showSectionAppDownloadShareDialog = true },
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(0.9f),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = if (isHindi) "अन्य..." else "More...",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaroonPrimary
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -3579,60 +3991,76 @@ fun RenderClassicSection(
 
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Share App Button
-                    Button(
-                        onClick = {
-                            val shareUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.org/app" }
-                            val shareMessage = if (isHindi) {
-                                """
-                                🚩 श्री बालाजी कृपा धाम, डूँगरा जाट (बुलन्दशहर, उ.प्र.) 🚩
-                                
-                                परम पूज्य गुरुजी तेजवीर सिंह जी के पावन सानिध्य में:
-                                ✨ भूत-प्रेत व मानसिक समस्याओं का 100% निःशुल्क (FREE) इलाज!
-                                ✨ प्रत्येक रविवार दिव्य दरबार एवं ऑनलाइन टोकन सुविधा
-                                ✨ आरती, दर्शन व आश्रम की सभी सेवाओं की अधिकृत जानकारी
-                                
-                                📲 अभी श्री बालाजी कृपा धाम ऍप डाउनलोड करें व परिजनों को शेयर करें:
-                                $shareUrl
-                                
-                                ॥ जय श्री बालाजी महाराज ॥
-                                """.trimIndent()
-                            } else {
-                                """
-                                🚩 Shri Balaji Kripa Dham, Dungra Jaat (Bulandshahr, U.P.) 🚩
-                                
-                                Under the divine grace of Param Pujya Guruji Tejveer Singh Ji:
-                                ✨ 100% FREE spiritual healing for afflictions & distress!
-                                ✨ Online Sunday Darbar Token & Queue Management
-                                ✨ Live Aarti, Darshan & Ashram services
-                                
-                                📲 Download Shri Balaji Kripa Dham Official App:
-                                $shareUrl
-                                
-                                || Jai Shri Balaji Maharaj ||
-                                """.trimIndent()
-                            }
-
-                            shareAppContent(
-                                context = context,
-                                shareMessage = shareMessage,
-                                title = if (isHindi) "श्री बालाजी कृपा धाम ऍप शेयर करें" else "Share Ashram App"
-                            )
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
-                        shape = RoundedCornerShape(14.dp),
+                    // Direct APK Download & WhatsApp Share Hub
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(vertical = 12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("📤", fontSize = 18.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (isHindi) "ऍप को व्हाट्सएप्प व अन्य सोशल मीडिया पर शेयर करें" else "Share App on WhatsApp & Social Media",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                        Button(
+                            onClick = {
+                                val apkUrl = settings.apkDownloadUrl.ifBlank { AppUpdateManager.DEFAULT_APK_URL }
+                                AppUpdateManager.downloadAndInstallUpdate(context, apkUrl)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(vertical = 10.dp)
+                        ) {
+                            Text(if (isHindi) "📥 APK डाउनलोड" else "📥 Download APK", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+
+                        Button(
+                            onClick = {
+                                val shareUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.online/download.php" }
+                                val apkUrl = settings.apkDownloadUrl.ifBlank { AppUpdateManager.DEFAULT_APK_URL }
+                                val shareMessage = if (isHindi) {
+                                    """
+                                    🙏 *श्री बालाजी कृपा धाम, डूँगरा जाट (बुलन्दशहर, उ.प्र.)* 🙏
+                                    
+                                    परम पूज्य गुरुजी तेजवीर सिंह जी के पावन सानिध्य में:
+                                    ✨ भूत-प्रेत व मानसिक समस्याओं का 100% निःशुल्क (FREE) इलाज!
+                                    ✨ प्रत्येक रविवार दिव्य दरबार एवं ऑनलाइन टोकन सुविधा
+                                    ✨ 15 संपूर्ण नित्य आरतियाँ, चालीसा व ऑडियो भजन
+                                    
+                                    🌐 *वेबसाइट से ऐप डाउनलोड करें:*
+                                    $shareUrl
+                                    
+                                    📥 *सीधा APK डाउनलोड लिंक:*
+                                    $apkUrl
+                                    
+                                    ॥ जय श्री बालाजी महाराज ॥
+                                    """.trimIndent()
+                                } else {
+                                    """
+                                    🙏 *Shri Balaji Kripa Dham, Dungra Jaat (Bulandshahr, U.P.)* 🙏
+                                    
+                                    Under the divine grace of Param Pujya Guruji Tejveer Singh Ji:
+                                    ✨ 100% FREE spiritual healing for afflictions & distress!
+                                    ✨ Online Sunday Darbar Token & Queue Management
+                                    ✨ Live Aarti, Darshan & Ashram services
+                                    
+                                    🌐 *Download from Website:*
+                                    $shareUrl
+                                    
+                                    📥 *Direct APK Download:*
+                                    $apkUrl
+                                    
+                                    || Jai Shri Balaji Maharaj ||
+                                    """.trimIndent()
+                                }
+
+                                shareAppContent(
+                                    context = context,
+                                    shareMessage = shareMessage,
+                                    title = if (isHindi) "श्री बालाजी कृपा धाम ऍप शेयर करें" else "Share Ashram App"
+                                )
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(vertical = 10.dp)
+                        ) {
+                            Text(if (isHindi) "💬 ऐप शेयर करें" else "💬 Share App", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
                 }
@@ -3678,6 +4106,14 @@ fun RenderClassicSection(
                 }
             }
         }
+    }
+
+    if (showSectionAppDownloadShareDialog) {
+        AppDownloadShareDialog(
+            isHindi = isHindi,
+            settings = settings,
+            onDismiss = { showSectionAppDownloadShareDialog = false }
+        )
     }
 }
 
@@ -5380,6 +5816,236 @@ fun SacredLyricsViewerDialog(
                     ) {
                         Text(if (isHindi) "🙏 बन्द करें" else "Close", fontWeight = FontWeight.Bold, color = Color.White)
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AppDownloadShareDialog(
+    isHindi: Boolean,
+    settings: AshramSettings,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val apkUrl = settings.apkDownloadUrl.ifBlank { AppUpdateManager.DEFAULT_APK_URL }
+    val sharePageUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.online/download.php" }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = BorderStroke(2.dp, SaffronPrimary),
+            elevation = CardDefaults.cardElevation(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Header with App Icon
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFFFFF3E0),
+                    border = BorderStroke(2.dp, SaffronPrimary),
+                    modifier = Modifier.size(60.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("📲", fontSize = 28.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = if (isHindi) "श्री बालाजी कृपा धाम" else "Shri Balaji Kripa Dham",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaroonPrimary
+                )
+                Text(
+                    text = if (isHindi) "आधिकारिक ऐप डाउनलोड व शेयर करें" else "Official App Download & Share",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = SaffronDark
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Feature Highlights
+                Surface(
+                    color = Color(0xFFFFFDE7),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFFFD54F)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = if (isHindi) "✨ 1-क्लिक रविवार टोकन जनरेशन व लाइव कतार" else "✨ 1-Click Sunday Token & Live Queue",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF3E2723)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isHindi) "✨ 15 संपूर्ण नित्य आरतियाँ, चालीसा व ऑडियो भजन" else "✨ 15 Sacred Daily Aartis, Chalisa & Audio",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF3E2723)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isHindi) "✨ भूत-प्रेत व कष्ट निवारण का 100% निःशुल्क इलाज" else "✨ 100% Free Spiritual Healing Information",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF3E2723)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Action 1: Direct APK Download
+                Button(
+                    onClick = {
+                        AppUpdateManager.downloadAndInstallUpdate(context, apkUrl)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 12.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("📥", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(horizontalAlignment = Alignment.Start) {
+                            Text(
+                                text = if (isHindi) "सीधा APK डाउनलोड करें (Direct Download)" else "Download Latest APK (Direct)",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "v${settings.latestVersionName} (रिलीज़ APK)",
+                                fontSize = 10.5.sp,
+                                color = Color.White.copy(alpha = 0.85f)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Action 2: WhatsApp Share
+                Button(
+                    onClick = {
+                        val shareMessage = if (isHindi) {
+                            """
+                            🙏 *श्री बालाजी कृपा धाम, डूँगरा जाट (बुलन्दशहर)* 🙏
+                            
+                            परम पूज्य गुरुदेव जी के पावन सानिध्य में रविवार दरबार के दिव्य दर्शन, लाइव टोकन, आरती-भजन, हवन-उतारा पर्चे व आश्रम सेवाओं हेतु धाम का आधिकारिक एंड्रॉइड ऐप अभी डाउनलोड करें:
+                            
+                            🌐 *वेबसाइट से डाउनलोड करें:*
+                            $sharePageUrl
+                            
+                            📥 *सीधा APK डाउनलोड लिंक:*
+                            $apkUrl
+                            
+                            ॥ ॐ श्री हनुमते नमः ॥ जय श्री राम ॥
+                            """.trimIndent()
+                        } else {
+                            """
+                            🙏 *Shri Balaji Kripa Dham, Dungra Jaat (Bulandshahr)* 🙏
+                            
+                            Download the official Ashram Mobile App for Sunday Darbar Token, Live Darshan, Sacred Parchas, Aartis and Ashram updates:
+                            
+                            🌐 *Download from Website:*
+                            $sharePageUrl
+                            
+                            📥 *Direct APK Download:*
+                            $apkUrl
+                            
+                            Jai Shri Ram • Jai Balaji Maharaj!
+                            """.trimIndent()
+                        }
+                        shareAppContent(context, shareMessage, if (isHindi) "धाम ऐप शेयर करें" else "Share Ashram App")
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 12.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("💬", fontSize = 18.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isHindi) "व्हाट्सएप पर परिजनों को शेयर करें" else "Share on WhatsApp with Devotees",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Action 3: Copy Link
+                OutlinedButton(
+                    onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val clip = ClipData.newPlainText("Ashram App Download Link", sharePageUrl)
+                        clipboard.setPrimaryClip(clip)
+                        Toast.makeText(context, if (isHindi) "✅ ऐप डाउनलोड लिंक कॉपी हो गया!" else "✅ App download link copied!", Toast.LENGTH_SHORT).show()
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 10.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("📋", fontSize = 16.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isHindi) "डाउनलोड लिंक कॉपी करें" else "Copy Download Link",
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonPrimary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Action 4: Open Web Page
+                TextButton(
+                    onClick = {
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(sharePageUrl))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {}
+                    }
+                ) {
+                    Text(
+                        text = if (isHindi) "🌐 डाउनलोड वेब पेज खोलें (download.php)" else "🌐 Open Download Page in Browser",
+                        fontSize = 11.5.sp,
+                        color = Color(0xFF0D47A1),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (isHindi) "🙏 बन्द करें" else "Close", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         }

@@ -262,6 +262,7 @@ fun AdminDashboardScreen(
 
     // Service Toggles & Master Visibility
     var svcTokenEnabled by remember { mutableStateOf(true) }
+    var svcTokenMode by remember { mutableStateOf("AUTO_SUNDAY") }
     var svcYatraEnabled by remember { mutableStateOf(false) }
     var svcLiveCounterVisible by remember { mutableStateOf(true) }
     var svcEventsVisible by remember { mutableStateOf(true) }
@@ -389,6 +390,7 @@ fun AdminDashboardScreen(
             }
 
             svcTokenEnabled = s.isTokenServiceEnabled
+            svcTokenMode = s.tokenServiceMode
             svcYatraEnabled = s.isYatraServiceEnabled
             svcLiveCounterVisible = s.isLiveCounterVisible
             svcEventsVisible = s.isEventsVisible
@@ -1801,6 +1803,12 @@ fun AdminDashboardScreen(
                                 isHindi = isHindi,
                                 isToken = svcTokenEnabled,
                                 onTokenChange = { svcTokenEnabled = it },
+                                tokenServiceMode = svcTokenMode,
+                                onTokenServiceModeChange = {
+                                    svcTokenMode = it
+                                    if (it == "FORCE_OPEN") svcTokenEnabled = true
+                                    else if (it == "FORCE_CLOSED") svcTokenEnabled = false
+                                },
                                 isYatra = svcYatraEnabled,
                                 onYatraChange = { svcYatraEnabled = it },
                                 isLiveCounter = svcLiveCounterVisible,
@@ -1871,7 +1879,8 @@ fun AdminDashboardScreen(
                                             isEventsVisible = svcEventsVisible,
                                             isAartiTimingsVisible = svcAartiTimingsVisible,
                                             isGurujiInfoVisible = svcGurujiInfoVisible,
-                                            isEmergencyNoticeVisible = svcEmergencyNoticeVisible
+                                            isEmergencyNoticeVisible = svcEmergencyNoticeVisible,
+                                            tokenServiceMode = svcTokenMode
                                         )
                                         repository.updateBusAndPaymentSettings(
                                             isBusBookingLive = svcBusBookingLive,
@@ -6745,6 +6754,8 @@ fun PublicServiceMatrixTab(
     isHindi: Boolean,
     isToken: Boolean,
     onTokenChange: (Boolean) -> Unit,
+    tokenServiceMode: String = "AUTO_SUNDAY",
+    onTokenServiceModeChange: (String) -> Unit = {},
     isYatra: Boolean,
     onYatraChange: (Boolean) -> Unit,
     isLiveCounter: Boolean,
@@ -6848,50 +6859,209 @@ fun PublicServiceMatrixTab(
                 }
             }
         }
-        // SECTION 1: PRE-SCHEDULED TOKEN OPENING (Timing Control)
+        // SECTION 1: MASTER TOKEN SERVICE CONTROL & SUNDAYDarbar 12H COUNTDOWN (SUPER ADMIN CONTROL)
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.White),
             shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, Color(0xFFFFD54F))
+            border = BorderStroke(1.5.dp, Color(0xFFFFB300))
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("⏱️", fontSize = 22.sp)
+                    Text("🎯", fontSize = 24.sp)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isHindi) "टोकन खुलने का पूर्व-निर्धारित समय (Timing Control)" else "Pre-Scheduled Token Opening",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = MaroonPrimary
-                    )
+                    Column {
+                        Text(
+                            text = if (isHindi) "टोकन सेवा मास्टर नियंत्रण (Token Master Control)" else "Token Service Master Control",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 16.sp,
+                            color = MaroonPrimary
+                        )
+                        Text(
+                            text = if (isHindi) "सुपर एडमिन जब चाहें टोकन चालू/बंद कर सकते हैं अथवा ऑटो-रविवार मोड सक्रिय रख सकते हैं" else "SuperAdmin can force tokens open/closed anytime or keep Auto-Sunday active",
+                            fontSize = 11.5.sp,
+                            color = Color.DarkGray
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Mode Selection Header
                 Text(
-                    text = if (isHindi)
-                        "सुपर एडमिन टोकन पंजीकरण शुरू होने की निश्चित तारीख व समय पहले से तय कर सकते हैं। उस समय से पहले भक्तों को स्क्रीन पर काउंटडाउन दिखेगा और टोकन बटन लॉक रहेगा।"
-                    else
-                        "Pre-schedule the exact Date & Time when Token Generation automatically starts. Devotees see a live countdown before this time.",
-                    fontSize = 12.sp,
-                    color = Color.DarkGray
+                    text = if (isHindi) "टोकन सेवा मोड चुनें (Select Token Mode):" else "Select Token Service Mode:",
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaroonPrimary
                 )
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Current Status Card
-                val now = System.currentTimeMillis()
-                val statusText = when {
-                    scheduledTimestamp <= 0L -> if (isHindi) "🟢 तत्काल खुला (Immediate / Open during Darbar)" else "🟢 Immediate / Open"
-                    scheduledTimestamp > now -> {
-                        val sdf = java.text.SimpleDateFormat("dd MMM yyyy, hh:mm a", java.util.Locale.getDefault())
-                        val dt = sdf.format(java.util.Date(scheduledTimestamp))
-                        if (isHindi) "🟡 निर्धारित समय: $dt पर स्वतः खुलेगा (वर्तमान में बंद)" else "🟡 Scheduled for: $dt (Locked until then)"
+                // Option 1: AUTO_SUNDAY
+                Surface(
+                    onClick = { onTokenServiceModeChange("AUTO_SUNDAY") },
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (tokenServiceMode == "AUTO_SUNDAY") Color(0xFFFFF8E1) else Color(0xFFFAFAFA),
+                    border = BorderStroke(if (tokenServiceMode == "AUTO_SUNDAY") 2.dp else 1.dp, if (tokenServiceMode == "AUTO_SUNDAY") SaffronPrimary else Color(0xFFE0E0E0)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = tokenServiceMode == "AUTO_SUNDAY",
+                            onClick = { onTokenServiceModeChange("AUTO_SUNDAY") },
+                            colors = RadioButtonDefaults.colors(selectedColor = SaffronPrimary)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = if (isHindi) "⏰ ऑटो रविवार (12 घंटे पूर्व काउंटडाउन)" else "⏰ Auto Sunday (12h Pre-Countdown)",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.5.sp,
+                                    color = Color(0xFF263238)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    color = Color(0xFF2E7D32),
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Text(
+                                        text = if (isHindi) "अनुशंसित" else "Default",
+                                        color = Color.White,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (isHindi)
+                                    "हर रविवार सुबह 8:00 से शाम 5:00 तक स्वतः खुलेगा। शनिवार रात 8:00 बजे से 12-घंटे का लाइव काउंटडाउन चलेगा और रविवार 8:00 AM पर अपने आप टोकन जनरेशन एक्टिव हो जाएगा।"
+                                else
+                                    "Opens automatically every Sunday 8:00 AM - 5:00 PM. Live 12h countdown starts Saturday 8:00 PM and tokens unlock automatically at 8:00 AM.",
+                                fontSize = 11.sp,
+                                color = Color(0xFF555555),
+                                lineHeight = 15.sp
+                            )
+                        }
                     }
-                    else -> if (isHindi) "🟢 निर्धारित समय पूरा हो चुका है — स्वतः चालू है" else "🟢 Scheduled time reached — Active"
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Option 2: FORCE_OPEN
+                Surface(
+                    onClick = { onTokenServiceModeChange("FORCE_OPEN") },
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (tokenServiceMode == "FORCE_OPEN") Color(0xFFE8F5E9) else Color(0xFFFAFAFA),
+                    border = BorderStroke(if (tokenServiceMode == "FORCE_OPEN") 2.dp else 1.dp, if (tokenServiceMode == "FORCE_OPEN") Color(0xFF2E7D32) else Color(0xFFE0E0E0)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = tokenServiceMode == "FORCE_OPEN",
+                            onClick = { onTokenServiceModeChange("FORCE_OPEN") },
+                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF2E7D32))
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "🟢 तत्काल चालू रखें (Force Open - किसी भी दिन/समय चालू)" else "🟢 Force Open (Open Anytime / Any Day)",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.5.sp,
+                                color = Color(0xFF1B5E20)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (isHindi)
+                                    "सुपर एडमिन द्वारा टोकन जनरेशन अभी तुरंत खोलें। भक्त किसी भी समय, किसी भी दिन तुरंत टोकन जनरेट कर सकेंगे।"
+                                else
+                                    "Immediately unlock token generation right now. Devotees can generate tokens anytime on any day.",
+                                fontSize = 11.sp,
+                                color = Color(0xFF2E7D32),
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Option 3: FORCE_CLOSED
+                Surface(
+                    onClick = { onTokenServiceModeChange("FORCE_CLOSED") },
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (tokenServiceMode == "FORCE_CLOSED") Color(0xFFFFEBEE) else Color(0xFFFAFAFA),
+                    border = BorderStroke(if (tokenServiceMode == "FORCE_CLOSED") 2.dp else 1.dp, if (tokenServiceMode == "FORCE_CLOSED") Color(0xFFC62828) else Color(0xFFE0E0E0)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = tokenServiceMode == "FORCE_CLOSED",
+                            onClick = { onTokenServiceModeChange("FORCE_CLOSED") },
+                            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFC62828))
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "🔴 तत्काल बंद रखें (Force Closed - टोकन सेवा बंद)" else "🔴 Force Closed (Service Disabled)",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.5.sp,
+                                color = Color(0xFFB71C1C)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (isHindi)
+                                    "टोकन जनरेशन तुरंत बंद करें। भक्तों के ऐप में टोकन सेवा बंद दिखाई देगी।"
+                                else
+                                    "Disable token generation immediately. Token service appears paused to devotees.",
+                                fontSize = 11.sp,
+                                color = Color(0xFFC62828),
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Current Live Status Banner
+                val currentSchedule = SundayTokenScheduleHelper.evaluateSchedule(tokenServiceMode, scheduledTimestamp)
+                val statusText = when (currentSchedule) {
+                    is SundayScheduleState.Open -> if (isHindi) "🟢 टोकन पंजीकरण वर्तमान में चालू है (LIVE OPEN)" else "🟢 Token Registration ACTIVE"
+                    is SundayScheduleState.CountdownActive -> if (isHindi)
+                        "⏳ रविवार दरबार 12-घंटे काउंटडाउन चालू है: ${SundayTokenScheduleHelper.formatCountdownHindi(currentSchedule.remainingMillis)} शेष [ ${SundayTokenScheduleHelper.formatCountdown(currentSchedule.remainingMillis)} ] (${currentSchedule.formattedTarget} पर स्वतः खुलेगा)"
+                    else
+                        "⏳ 12h Countdown Active: ${SundayTokenScheduleHelper.formatCountdown(currentSchedule.remainingMillis)} remaining (Opens at ${currentSchedule.formattedTarget})"
+                    is SundayScheduleState.NonSunday -> if (isHindi)
+                        "📅 आगामी रविवार दरबार: ${currentSchedule.nextSundayDateStr} (दरबार से 12 घंटे पहले शनिवार रात 8:00 बजे से काउंटडाउन शुरू होगा)"
+                    else
+                        "📅 Scheduled: ${currentSchedule.nextSundayDateStr} (12h countdown starts Saturday 8:00 PM)"
+                    is SundayScheduleState.CustomScheduled -> if (isHindi)
+                        "📅 आगामी निर्धारित दरबार: ${currentSchedule.formattedDate}"
+                    else
+                        "📅 Scheduled: ${currentSchedule.formattedDate}"
+                    is SundayScheduleState.SundayBeforeStart -> if (isHindi)
+                        "⏳ आज रविवार: ${currentSchedule.messageHindi}"
+                    else
+                        "⏳ Sunday: ${currentSchedule.messageEnglish}"
+                    is SundayScheduleState.SundayClosedEvening -> if (isHindi)
+                        "🔴 आज के टोकन समाप्त: ${currentSchedule.messageHindi}"
+                    else
+                        "🔴 Tokens closed: ${currentSchedule.messageEnglish}"
+                    is SundayScheduleState.ServiceDisabled -> if (isHindi)
+                        "🔴 सुपर एडमिन द्वारा टोकन सेवा बंद रखी गई है (Force Closed)"
+                    else
+                        "🔴 Token Service Disabled by SuperAdmin"
+                    else -> if (isHindi) "🟢 सामान्य स्थिति" else "🟢 Normal"
                 }
 
                 Surface(
-                    color = if (scheduledTimestamp > now) Color(0xFFFFF3E0) else Color(0xFFE8F5E9),
+                    color = when (currentSchedule) {
+                        is SundayScheduleState.Open -> Color(0xFFE8F5E9)
+                        is SundayScheduleState.CountdownActive -> Color(0xFFFFF8E1)
+                        is SundayScheduleState.ServiceDisabled -> Color(0xFFFFEBEE)
+                        else -> Color(0xFFFFF3E0)
+                    },
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -6899,16 +7069,21 @@ fun PublicServiceMatrixTab(
                         text = statusText,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (scheduledTimestamp > now) Color(0xFFE65100) else Color(0xFF2E7D32),
+                        color = when (currentSchedule) {
+                            is SundayScheduleState.Open -> Color(0xFF2E7D32)
+                            is SundayScheduleState.CountdownActive -> Color(0xFFE65100)
+                            is SundayScheduleState.ServiceDisabled -> Color(0xFFC62828)
+                            else -> Color(0xFFE65100)
+                        },
                         modifier = Modifier.padding(10.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Preset Buttons
+                // Advance Timing Override (Optional)
                 Text(
-                    text = if (isHindi) "त्वरित समय विकल्प (Quick Presets):" else "Quick Timing Presets:",
+                    text = if (isHindi) "अग्रिम निश्चित समय ओवरराइड (Optional Custom Timing):" else "Optional Custom Timing Override:",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.Gray
@@ -6925,7 +7100,7 @@ fun PublicServiceMatrixTab(
                             while (cal.get(java.util.Calendar.DAY_OF_WEEK) != java.util.Calendar.SUNDAY) {
                                 cal.add(java.util.Calendar.DAY_OF_YEAR, 1)
                             }
-                            cal.set(java.util.Calendar.HOUR_OF_DAY, 6)
+                            cal.set(java.util.Calendar.HOUR_OF_DAY, 8)
                             cal.set(java.util.Calendar.MINUTE, 0)
                             cal.set(java.util.Calendar.SECOND, 0)
                             cal.set(java.util.Calendar.MILLISECOND, 0)
@@ -6939,7 +7114,7 @@ fun PublicServiceMatrixTab(
                         },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(if (isHindi) "आगामी रविवार 6 AM" else "Next Sun 6 AM", fontSize = 11.sp)
+                        Text(if (isHindi) "आगामी रविवार 8 AM" else "Next Sun 8 AM", fontSize = 11.sp)
                     }
 
                     OutlinedButton(
@@ -6949,7 +7124,7 @@ fun PublicServiceMatrixTab(
                         },
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(if (isHindi) "तत्काल खोलें (Open)" else "Open Now", fontSize = 11.sp)
+                        Text(if (isHindi) "तत्काल खोलें (0L)" else "Immediate (0L)", fontSize = 11.sp)
                     }
                 }
 
@@ -6959,7 +7134,7 @@ fun PublicServiceMatrixTab(
                     value = customDateStr,
                     onValueChange = onCustomDateStrChange,
                     label = { Text(if (isHindi) "कस्टम तारीख व समय (YYYY-MM-DD HH:mm)" else "Custom Date & Time (YYYY-MM-DD HH:mm)") },
-                    placeholder = { Text("उदा. 2026-09-13 06:00") },
+                    placeholder = { Text("उदा. 2026-09-27 08:00") },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -10607,6 +10782,7 @@ fun WebsiteAndCmsManagerTab(
     var runningToken by remember { mutableIntStateOf(settings.runningTokenNumber) }
     var isDarbarActive by remember { mutableStateOf(settings.isDarbarActive) }
     var isTokenServiceEnabled by remember { mutableStateOf(settings.isTokenServiceEnabled) }
+    var tokenServiceMode by remember { mutableStateOf(settings.tokenServiceMode.ifBlank { "AUTO_SUNDAY" }) }
 
     // Website Content States
     var websiteBannerTitle by remember { mutableStateOf(settings.bannerTitle) }
@@ -10952,6 +11128,118 @@ fun WebsiteAndCmsManagerTab(
                             modifier = Modifier.weight(1f)
                         ) {
                             Text("🌐 वेबसाइट खोलें")
+                        }
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFFEEEEEE))
+
+                    // 1-CLICK TOKEN SERVICE MODE TOGGLE (SuperAdmin Master Control)
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (isHindi) "🎯 टोकन जनरेशन मोड (1-क्लिक)" else "🎯 Token Mode (1-Click)",
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaroonPrimary
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = when (tokenServiceMode) {
+                                    "FORCE_OPEN" -> Color(0xFFE8F5E9)
+                                    "FORCE_CLOSED" -> Color(0xFFFFEBEE)
+                                    else -> Color(0xFFFFF8E1)
+                                }
+                            ) {
+                                Text(
+                                    text = when (tokenServiceMode) {
+                                        "FORCE_OPEN" -> "🟢 तुरंत चालू (Open)"
+                                        "FORCE_CLOSED" -> "🔴 तुरंत बंद (Closed)"
+                                        else -> "⏰ ऑटो रविवार (12h पूर्व)"
+                                    },
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = when (tokenServiceMode) {
+                                        "FORCE_OPEN" -> Color(0xFF2E7D32)
+                                        "FORCE_CLOSED" -> Color(0xFFC62828)
+                                        else -> Color(0xFFE65100)
+                                    },
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            // Button 1: AUTO_SUNDAY
+                            Button(
+                                onClick = {
+                                    tokenServiceMode = "AUTO_SUNDAY"
+                                    scope.launch {
+                                        repository.updateTokenServiceMode("AUTO_SUNDAY")
+                                        Toast.makeText(context, "✅ टोकन सेवा: ऑटो रविवार मोड सक्रिय (12h पूर्व काउंटडाउन)!", Toast.LENGTH_SHORT).show()
+                                        onRefresh()
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (tokenServiceMode == "AUTO_SUNDAY") SaffronPrimary else Color(0xFFF5F5F5),
+                                    contentColor = if (tokenServiceMode == "AUTO_SUNDAY") Color.White else Color.DarkGray
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                            ) {
+                                Text("⏰ ऑटो रवि", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            // Button 2: FORCE_OPEN
+                            Button(
+                                onClick = {
+                                    tokenServiceMode = "FORCE_OPEN"
+                                    scope.launch {
+                                        repository.updateTokenServiceMode("FORCE_OPEN")
+                                        Toast.makeText(context, "🟢 टोकन सेवा: अभी तुरंत चालू (FORCE OPEN)!", Toast.LENGTH_SHORT).show()
+                                        onRefresh()
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (tokenServiceMode == "FORCE_OPEN") Color(0xFF2E7D32) else Color(0xFFF5F5F5),
+                                    contentColor = if (tokenServiceMode == "FORCE_OPEN") Color.White else Color.DarkGray
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                            ) {
+                                Text("🟢 तुरंत चालू", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            // Button 3: FORCE_CLOSED
+                            Button(
+                                onClick = {
+                                    tokenServiceMode = "FORCE_CLOSED"
+                                    scope.launch {
+                                        repository.updateTokenServiceMode("FORCE_CLOSED")
+                                        Toast.makeText(context, "🔴 टोकन सेवा: तुरंत बंद (FORCE CLOSED)!", Toast.LENGTH_SHORT).show()
+                                        onRefresh()
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (tokenServiceMode == "FORCE_CLOSED") Color(0xFFC62828) else Color(0xFFF5F5F5),
+                                    contentColor = if (tokenServiceMode == "FORCE_CLOSED") Color.White else Color.DarkGray
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                            ) {
+                                Text("🔴 तुरंत बंद", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }

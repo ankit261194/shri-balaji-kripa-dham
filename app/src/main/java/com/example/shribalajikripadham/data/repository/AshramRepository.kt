@@ -71,6 +71,7 @@ class AshramRepository(context: Context) {
             contactPhone = cursor.getString(cursor.getColumnIndexOrThrow("contact_phone")),
             emergencyNoticeText = cursor.getString(cursor.getColumnIndexOrThrow("emergency_notice")),
             isTokenServiceEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("is_token_service_enabled")) == 1,
+            tokenServiceMode = try { cursor.getString(cursor.getColumnIndexOrThrow("token_service_mode")) ?: "AUTO_SUNDAY" } catch (e: Exception) { "AUTO_SUNDAY" },
             isYatraServiceEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("is_yatra_service_enabled")) == 1,
             isLiveCounterVisible = cursor.getInt(cursor.getColumnIndexOrThrow("is_live_counter_visible")) == 1,
             isEventsVisible = cursor.getInt(cursor.getColumnIndexOrThrow("is_events_visible")) == 1,
@@ -91,7 +92,7 @@ class AshramRepository(context: Context) {
             youtubeChannelUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("youtube_channel_url")) } catch (e: Exception) { "https://www.youtube.com/@ShriBalajiKripaDham" },
             facebookPageUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("facebook_page_url")) } catch (e: Exception) { "https://www.facebook.com/ShriBalajiKripaDham" },
             instagramUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("instagram_url")) } catch (e: Exception) { "https://www.instagram.com/shribalajikripadham" },
-            appShareUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("app_share_url")) } catch (e: Exception) { "https://shribalajikripadham.org/app" },
+            appShareUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("app_share_url")) } catch (e: Exception) { "https://shribalajikripadham.online/download.php" },
             currentThemeId = try { cursor.getString(cursor.getColumnIndexOrThrow("current_theme_id")) } catch (e: Exception) { "maroon" },
             gurujiPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("guruji_photo_uri")) } catch (e: Exception) { "" } ?: "",
             activeUiLayout = try { cursor.getString(cursor.getColumnIndexOrThrow("active_ui_layout")) } catch (e: Exception) { "CLASSIC_DARBAR" } ?: "CLASSIC_DARBAR",
@@ -339,6 +340,30 @@ class AshramRepository(context: Context) {
         res
     }
 
+    suspend fun updateTokenServiceMode(mode: String): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        try {
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN token_service_mode TEXT DEFAULT 'AUTO_SUNDAY'")
+        } catch (ignored: Exception) {}
+        val cv = android.content.ContentValues().apply {
+            put("token_service_mode", mode)
+            if (mode.equals("FORCE_OPEN", ignoreCase = true)) {
+                put("is_token_service_enabled", 1)
+                put("is_darbar_active", 1)
+            } else if (mode.equals("FORCE_CLOSED", ignoreCase = true)) {
+                put("is_token_service_enabled", 0)
+            } else {
+                // AUTO_SUNDAY
+                put("is_token_service_enabled", 1)
+            }
+        }
+        val res = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (res) {
+            persistCurrentSettingsToAllLayers()
+        }
+        res
+    }
+
     suspend fun updateAshramDetails(
         ashramName: String,
         gurujiName: String,
@@ -400,6 +425,7 @@ class AshramRepository(context: Context) {
         val cv = ContentValues().apply {
             put("running_token_number", s.runningTokenNumber)
             put("is_token_service_enabled", if (s.isTokenServiceEnabled) 1 else 0)
+            put("token_service_mode", s.tokenServiceMode)
             put("is_bus_booking_live", if (s.isBusBookingLive) 1 else 0)
             put("emergency_notice", s.emergencyNoticeText)
             put("is_emergency_notice_visible", if (s.isEmergencyNoticeVisible) 1 else 0)
@@ -590,11 +616,13 @@ class AshramRepository(context: Context) {
         isEventsVisible: Boolean,
         isAartiTimingsVisible: Boolean,
         isGurujiInfoVisible: Boolean,
-        isEmergencyNoticeVisible: Boolean
+        isEmergencyNoticeVisible: Boolean,
+        tokenServiceMode: String = "AUTO_SUNDAY"
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
             put("is_token_service_enabled", if (isTokenEnabled) 1 else 0)
+            put("token_service_mode", tokenServiceMode)
             put("is_yatra_service_enabled", if (isYatraEnabled) 1 else 0)
             put("is_live_counter_visible", if (isLiveCounterVisible) 1 else 0)
             put("is_events_visible", if (isEventsVisible) 1 else 0)
@@ -855,6 +883,7 @@ class AshramRepository(context: Context) {
             val sched = com.example.shribalajikripadham.util.SundayTokenScheduleHelper.evaluateSchedule(settings)
             when (sched) {
                 is com.example.shribalajikripadham.util.SundayScheduleState.Open -> { /* Allowed */ }
+                is com.example.shribalajikripadham.util.SundayScheduleState.CountdownActive -> throw IllegalStateException(sched.messageHindi)
                 is com.example.shribalajikripadham.util.SundayScheduleState.SundayBeforeStart -> throw IllegalStateException(sched.messageHindi)
                 is com.example.shribalajikripadham.util.SundayScheduleState.SundayClosedEvening -> throw IllegalStateException(sched.messageHindi)
                 is com.example.shribalajikripadham.util.SundayScheduleState.NonSunday -> throw IllegalStateException(sched.messageHindi)

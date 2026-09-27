@@ -673,13 +673,28 @@ fun TokenRegistrationScreen(
                     onBackToHome = onBack
                 )
             } else {
-                // Check Sunday 8:30 AM - 5:00 PM Weekly Schedule & Upcoming Sunday Date
-                val scheduleState = remember(settings) {
-                    SundayTokenScheduleHelper.evaluateSchedule(settings)
+                // Check Sunday 8:00 AM - 5:00 PM Weekly Schedule & Upcoming Sunday Date
+                var currentTimestampMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+                LaunchedEffect(Unit) {
+                    while (true) {
+                        kotlinx.coroutines.delay(1000L)
+                        currentTimestampMillis = System.currentTimeMillis()
+                    }
                 }
+                val scheduleState = SundayTokenScheduleHelper.evaluateSchedule(settings, currentTimestampMillis)
 
                 if (scheduleState !is SundayScheduleState.Open) {
                     val visual = when (scheduleState) {
+                        is SundayScheduleState.CountdownActive -> ScheduleBannerVisual(
+                            bannerBg = Color(0xFFFFF8E1),
+                            borderCol = Color(0xFFFF9800),
+                            iconText = "⏳",
+                            titleText = if (isHindi) "रविवार टोकन पंजीकरण: 12 घंटे पूर्व उल्टी गिनती" else "Sunday Token Registration Countdown",
+                            descText = if (isHindi)
+                                "टोकन खुलने में शेष समय: ${SundayTokenScheduleHelper.formatCountdownHindi(scheduleState.remainingMillis)} [ ${SundayTokenScheduleHelper.formatCountdown(scheduleState.remainingMillis)} ]\n\nटोकन ${scheduleState.formattedTarget} पर स्वतः खुल जाएंगे।"
+                            else
+                                "Time remaining: ${SundayTokenScheduleHelper.formatCountdown(scheduleState.remainingMillis)} (${scheduleState.messageEnglish})"
+                        )
                         is SundayScheduleState.NonSunday -> ScheduleBannerVisual(
                             bannerBg = Color(0xFFFFFBEA),
                             borderCol = Color(0xFFD84315),
@@ -691,7 +706,7 @@ fun TokenRegistrationScreen(
                             bannerBg = Color(0xFFFFFBEA),
                             borderCol = Color(0xFFE65100),
                             iconText = "⏳",
-                            titleText = if (isHindi) "टोकन आज सुबह 8:30 बजे से मिलेंगे" else "Opens at 8:30 AM Today",
+                            titleText = if (isHindi) "टोकन आज सुबह 8:00 बजे से मिलेंगे" else "Opens at 8:00 AM Today",
                             descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                         )
                         is SundayScheduleState.SundayClosedEvening -> ScheduleBannerVisual(
@@ -1422,9 +1437,19 @@ fun TokenRegistrationScreen(
 
                         Button(
                             onClick = {
-                                // 1. Check Sunday Schedule (08:30 AM to 05:00 PM)
+                                // 1. Check Sunday Schedule (08:00 AM to 05:00 PM)
                                 val currentSchedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
                                 when (currentSchedule) {
+                                    is SundayScheduleState.CountdownActive -> {
+                                        scheduleAlertTitle = if (isHindi) "⏳ टोकन उल्टी गिनती जारी है" else "⏳ Countdown Active"
+                                        scheduleAlertMessage = if (isHindi)
+                                            "रविवार टोकन पंजीकरण में शेष समय: ${SundayTokenScheduleHelper.formatCountdownHindi(currentSchedule.remainingMillis)} [ ${SundayTokenScheduleHelper.formatCountdown(currentSchedule.remainingMillis)} ]।\n\nटोकन ${currentSchedule.formattedTarget} स्वतः खुल जाएंगे। कृपया उस समय पुनः प्रयास करें।"
+                                        else
+                                            "Tokens open in: ${SundayTokenScheduleHelper.formatCountdown(currentSchedule.remainingMillis)} (Will open automatically at ${currentSchedule.formattedTarget})."
+                                        showScheduleAlertDialog = true
+                                        errorMessage = scheduleAlertMessage
+                                        return@Button
+                                    }
                                     is SundayScheduleState.NonSunday -> {
                                         scheduleAlertTitle = if (isHindi) "📅 टोकन केवल रविवार को मिलते हैं" else "📅 Tokens Only On Sunday"
                                         scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
@@ -1433,7 +1458,7 @@ fun TokenRegistrationScreen(
                                         return@Button
                                     }
                                     is SundayScheduleState.SundayBeforeStart -> {
-                                        scheduleAlertTitle = if (isHindi) "⏳ टोकन सुबह 8:30 बजे से मिलेंगे" else "⏳ Opens at 8:30 AM"
+                                        scheduleAlertTitle = if (isHindi) "⏳ टोकन सुबह 8:00 बजे से मिलेंगे" else "⏳ Opens at 8:00 AM"
                                         scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
                                         showScheduleAlertDialog = true
                                         errorMessage = scheduleAlertMessage

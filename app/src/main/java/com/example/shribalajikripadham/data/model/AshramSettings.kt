@@ -17,6 +17,7 @@ data class AshramSettings(
     val emergencyNoticeText: String = "",
     // Public service visibility toggles for devotees
     val isTokenServiceEnabled: Boolean = true,
+    val tokenServiceMode: String = "AUTO_SUNDAY", // AUTO_SUNDAY, FORCE_OPEN, FORCE_CLOSED
     val isYatraServiceEnabled: Boolean = false, // Permanently hidden until explicitly opened by Super Admin
     val isLiveCounterVisible: Boolean = true,
     val isEventsVisible: Boolean = true,
@@ -28,10 +29,10 @@ data class AshramSettings(
     val isOutstationAdvanceAllowed: Boolean = true,
     val outstationMinDistanceKm: Double = 30.0,
     // In-app auto update system configuration
-    val latestVersionCode: Int = 80,
-    val latestVersionName: String = "2.56.5",
-    val updateNotes: String = "सुरक्षा पैच एवं सिस्टम स्थिरता सुधार (Security Patch Update)",
-    val apkDownloadUrl: String = "",
+    val latestVersionCode: Int = 83,
+    val latestVersionName: String = "2.56.8",
+    val updateNotes: String = "ऐप में सीधा डाउनलोड व शेयर लिंक, रविवार 12 घंटे पूर्व काउंटडाउन एवं सुपर एडमिन टोकन मास्टर कंट्रोल।",
+    val apkDownloadUrl: String = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
     val isForceUpdate: Boolean = false,
     // Social Media Links & App Sharing
     val whatsappGroupUrl: String = "https://chat.whatsapp.com/invite",
@@ -39,7 +40,7 @@ data class AshramSettings(
     val youtubeChannelUrl: String = "https://www.youtube.com/@ShriBalajiKripaDham",
     val facebookPageUrl: String = "https://www.facebook.com/ShriBalajiKripaDham",
     val instagramUrl: String = "https://www.instagram.com/shribalajikripadham",
-    val appShareUrl: String = "https://shribalajikripadham.org/app",
+    val appShareUrl: String = "https://shribalajikripadham.online/download.php",
     val currentThemeId: String = "maroon",
     val gurujiPhotoUri: String = "",
     val activeUiLayout: String = "CLASSIC_DARBAR",

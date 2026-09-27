@@ -899,7 +899,7 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.7")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.8")
 
             val json = JSONObject().apply {
                 put("api_key", API_SECRET_KEY)
@@ -913,6 +913,9 @@ object HostingerCentralSyncManager {
                 put("current_serving_token", settings.runningTokenNumber)
                 put("daily_token_limit", if (settings.maxDailyTokens > 0) settings.maxDailyTokens else 1000)
                 put("is_token_service_enabled", if (settings.isTokenServiceEnabled) 1 else 0)
+                put("token_service_mode", settings.tokenServiceMode)
+                put("app_download_url", settings.apkDownloadUrl)
+                put("app_share_url", settings.appShareUrl)
                 put("is_bus_booking_live", if (settings.isBusBookingLive) 1 else 0)
                 put("is_live_counter_visible", if (settings.isLiveCounterVisible) 1 else 0)
                 put("is_payment_feature_live", if (settings.isPaymentFeatureLive) 1 else 0)
@@ -1247,7 +1250,7 @@ object HostingerCentralSyncManager {
             conn.connectTimeout = 6000
             conn.readTimeout = 6000
             conn.requestMethod = "GET"
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.7")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.8")
 
             if (conn.responseCode == 200) {
                 val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
@@ -1303,7 +1306,7 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.7")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.8")
 
             val params = StringBuilder()
             params.append("api_key=").append(URLEncoder.encode(API_SECRET_KEY, "UTF-8"))
@@ -1346,7 +1349,7 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.7")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.8")
 
             val params = "id=$id&api_key=" + URLEncoder.encode(API_SECRET_KEY, "UTF-8")
             conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }

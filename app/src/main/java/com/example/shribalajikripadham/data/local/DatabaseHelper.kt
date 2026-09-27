@@ -160,6 +160,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     contact_phone TEXT NOT NULL,
                     emergency_notice TEXT NOT NULL,
                     is_token_service_enabled INTEGER NOT NULL,
+                    token_service_mode TEXT NOT NULL DEFAULT 'AUTO_SUNDAY',
                     is_yatra_service_enabled INTEGER NOT NULL,
                     is_live_counter_visible INTEGER NOT NULL,
                     is_events_visible INTEGER NOT NULL,
@@ -688,6 +689,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN ashram_address TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश'",
             "ALTER TABLE ashram_settings ADD COLUMN ashram_directions TEXT NOT NULL DEFAULT 'निकटतम रेलवे स्टेशन: अनूपशहर / बबराला / बुलन्दशहर'",
             "ALTER TABLE ashram_settings ADD COLUMN footer_copyright TEXT NOT NULL DEFAULT '© 2026 श्री बालाजी कृपा धाम। सर्वाधिकार सुरक्षित।'",
+            "ALTER TABLE ashram_settings ADD COLUMN token_service_mode TEXT NOT NULL DEFAULT 'AUTO_SUNDAY'",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_darbar_number ON tokens (darbar_date, token_number)",
             "CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date)"
         )
@@ -739,6 +741,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("contact_phone", "+91 97206 91090")
                         put("emergency_notice", "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।")
                         put("is_token_service_enabled", 1)
+                        put("token_service_mode", "AUTO_SUNDAY")
                         put("is_yatra_service_enabled", 0)
                         put("is_live_counter_visible", 1)
                         put("is_events_visible", 1)
@@ -747,17 +750,17 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("is_emergency_notice_visible", 1)
                         put("scheduled_token_open_timestamp", 0L)
                         put("is_geofence_enforced", 1)
-                        put("latest_version_code", 80)
-                        put("latest_version_name", "2.56.5")
-                        put("update_notes", "श्री बालाजी कृपा धाम v2.56.5")
-                        put("apk_download_url", "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-v2.56.5.apk")
+                        put("latest_version_code", 83)
+                        put("latest_version_name", "2.56.8")
+                        put("update_notes", "ऐप में सीधा डाउनलोड व शेयर लिंक, रविवार 12 घंटे पूर्व काउंटडाउन एवं सुपर एडमिन टोकन मास्टर कंट्रोल।")
+                        put("apk_download_url", "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk")
                         put("is_force_update", 0)
                         put("whatsapp_group_url", "https://chat.whatsapp.com/invite")
                         put("whatsapp_number", "+91 97206 91090")
                         put("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham")
                         put("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham")
                         put("instagram_url", "https://www.instagram.com/shribalajikripadham")
-                        put("app_share_url", "https://shribalajikripadham.org/app")
+                        put("app_share_url", "https://shribalajikripadham.online/download.php")
                         put("current_theme_id", "maroon")
                         put("guruji_photo_uri", "")
                         put("active_ui_layout", "CLASSIC_DARBAR")
