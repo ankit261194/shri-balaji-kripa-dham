@@ -25,9 +25,51 @@ verifyApiAuth();
 
 $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
 
+$action = strtoupper(trim($input['action'] ?? ''));
 $darbarDate = trim($input['darbar_date'] ?? date('Y-m-d'));
 $tokenNumber = intval($input['token_number'] ?? 0);
+$tokenId = intval($input['token_id'] ?? 0);
 $status = strtoupper(trim($input['status'] ?? ''));
+
+$pdo = getDB();
+
+// Robust deletion handler fallback
+if ($action === 'DELETE_ALL_FOR_DATE' || $status === 'DELETE_ALL') {
+    if (empty($darbarDate)) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "error" => "दरबार की तारीख अनिवार्य है।"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $delStmt = $pdo->prepare("DELETE FROM tokens WHERE darbar_date = :darbar_date");
+    $delStmt->execute([':darbar_date' => $darbarDate]);
+    $deletedCount = $delStmt->rowCount();
+
+    $cacheFile = __DIR__ . '/../cache/live_config_cache.json';
+    if (file_exists($cacheFile)) @unlink($cacheFile);
+
+    echo json_encode([
+        "success" => true,
+        "message" => "दिनांक $darbarDate के कुल $deletedCount टोकन सफलतापूर्वक हटाए गए।",
+        "deleted_count" => $deletedCount,
+        "darbar_date" => $darbarDate
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if ($action === 'DELETE' || $action === 'DELETE_SINGLE' || $status === 'DELETED') {
+    if ($tokenNumber > 0) {
+        $delStmt = $pdo->prepare("DELETE FROM tokens WHERE darbar_date = :darbar_date AND token_number = :token_number");
+        $delStmt->execute([':darbar_date' => $darbarDate, ':token_number' => $tokenNumber]);
+    } elseif ($tokenId > 0) {
+        $delStmt = $pdo->prepare("DELETE FROM tokens WHERE id = :id");
+        $delStmt->execute([':id' => $tokenId]);
+    }
+    $cacheFile = __DIR__ . '/../cache/live_config_cache.json';
+    if (file_exists($cacheFile)) @unlink($cacheFile);
+
+    echo json_encode(["success" => true, "message" => "टोकन सफलतापूर्वक हटाया गया।"], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 if ($tokenNumber <= 0 || empty($status)) {
     http_response_code(400);
@@ -41,8 +83,6 @@ if (!in_array($status, $validStatuses)) {
     echo json_encode(["success" => false, "error" => "अमान्य टोकन स्थिति।"], JSON_UNESCAPED_UNICODE);
     exit;
 }
-
-$pdo = getDB();
 
 try {
     $pdo->beginTransaction();
@@ -64,11 +104,16 @@ try {
         ':token_number' => $tokenNumber
     ]);
 
-    // If setting to SERVING, update current_serving_token in ashram_settings and trigger FCM notification
-    if ($status === 'SERVING') {
-        $upSettings = $pdo->prepare("UPDATE ashram_settings SET current_serving_token = :tok WHERE id = 1");
+    // If setting to SERVING or COMPLETED, update current_serving_token in ashram_settings and invalidate cache
+    if ($status === 'SERVING' || $status === 'COMPLETED') {
+        $upSettings = $pdo->prepare("UPDATE ashram_settings SET current_serving_token = :tok WHERE id = 1 AND current_serving_token <= :tok");
         $upSettings->execute([':tok' => $tokenNumber]);
+    }
 
+    $cacheFile = __DIR__ . '/../cache/live_config_cache.json';
+    if (file_exists($cacheFile)) @unlink($cacheFile);
+
+    if ($status === 'SERVING') {
         // Fetch devotee details for push notification
         try {
             $tokInfo = $pdo->prepare("SELECT patient_name, phone_number FROM tokens WHERE darbar_date = :darbar_date AND token_number = :token_number LIMIT 1");

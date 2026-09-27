@@ -445,9 +445,31 @@ if (isset($_GET['run_migration']) && $_GET['run_migration'] == '1') {
     if (file_exists($cacheFile)) @unlink($cacheFile);
 }
 
-// Step 1: Check File Cache (10s TTL) for lightning-fast reads
+// Self-healing deployment hook to write missing files from GitHub
+if (isset($_GET['deploy_missing']) && $_GET['deploy_missing'] == '1') {
+    $repoRawBase = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/backend/";
+    $needed = [
+        "deploy.php" => __DIR__ . '/../deploy.php',
+        "api/delete_token.php" => __DIR__ . '/delete_token.php',
+        "config/db.php" => __DIR__ . '/../config/db.php'
+    ];
+    $repaired = [];
+    foreach ($needed as $rel => $dest) {
+        $code = @file_get_contents($repoRawBase . $rel . "?t=" . time());
+        if ($code && strlen($code) > 10) {
+            @file_put_contents($dest, $code);
+            $repaired[] = $rel;
+        }
+    }
+    if (file_exists($cacheFile)) @unlink($cacheFile);
+    echo json_encode(['success' => true, 'repaired' => $repaired, 'message' => 'Files synchronized from GitHub successfully'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// Step 1: Check File Cache (2s TTL max, bypassed if nocache or t parameter provided)
 $now = time();
-if (file_exists($cacheFile) && ($now - filemtime($cacheFile) < 10)) {
+$bypassCache = isset($_GET['nocache']) || isset($_GET['t']) || isset($_GET['no_cache']);
+if (!$bypassCache && file_exists($cacheFile) && ($now - filemtime($cacheFile) < 2)) {
     $cached = @file_get_contents($cacheFile);
     if ($cached && strlen($cached) > 50) {
         $etag = '"sbkd_c_' . filemtime($cacheFile) . '"';

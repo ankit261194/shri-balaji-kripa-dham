@@ -1497,7 +1497,7 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
                 });
         }
 
-        // Real-Time High-Speed Sync: Polls every 5 seconds when tab is active
+        // Real-Time High-Speed Sync: Polls every 2 seconds when tab is active
         let pollTimer = null;
         function scheduleNextPoll() {
             if (pollTimer) clearInterval(pollTimer);
@@ -1505,7 +1505,7 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
                 if (!document.hidden) {
                     updateLiveStatus();
                 }
-            }, 5000);
+            }, 2000);
         }
 
         document.addEventListener('visibilitychange', () => {
