@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-09-27T08:42:49Z",
-  "updated_by": "Ankit Chaudhary (Super Admin)",
+  "updated_at": "2026-09-27T09:52:11Z",
+  "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
   "ashram_details": {
@@ -32,7 +32,7 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1790498569227
+    "updated_at": 1790502731137
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -54,10 +54,10 @@
     "ashram_upi_id": "shribalajikripadham@upi",
     "ashram_upi_name": "Shri Balaji Kripa Dham",
     "custom_upi_qr_uri": "",
-    "bus_seat_fare_amount": 0,
+    "bus_seat_fare_amount": 1500,
     "is_arzi_ledger_live": true,
-    "badi_arzi_rate": 0,
-    "chhoti_arzi_rate": 0,
+    "badi_arzi_rate": 100,
+    "chhoti_arzi_rate": 50,
     "can_admin_view_arzi_ledger": true,
     "can_devotee_view_arzi_ledger": false,
     "can_devotee_view_yatra_diary": false,
