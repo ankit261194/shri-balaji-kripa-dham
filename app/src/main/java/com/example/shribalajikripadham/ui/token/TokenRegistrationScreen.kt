@@ -161,7 +161,6 @@ fun TokenRegistrationScreen(
             }
         } else {
             cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
-            showPermissionSettingsDialog = true
         }
     }
 
@@ -270,9 +269,6 @@ fun TokenRegistrationScreen(
         if (hasLocationPermission) {
             triggerFreshLocationFix()
         }
-        if (!hasLocationPermission || !hasCameraPermission) {
-            showPermissionSettingsDialog = true
-        }
     }
 
     val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
@@ -343,18 +339,20 @@ fun TokenRegistrationScreen(
             existingToken = repository.checkDeviceRegisteredToday(id)
             todayActiveTokens = repository.getTodayActiveTokenCount()
 
-            // Check & request unified permissions (Location + Camera + Notifications)
-            val missingPerms = requiredPermissions.filter { perm ->
-                androidx.core.content.ContextCompat.checkSelfPermission(
-                    context, perm
-                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
-            }
+            // Passively evaluate permissions already requested upfront at app launch
+            val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            val coarseGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            val camGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.CAMERA
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
-            if (missingPerms.isNotEmpty()) {
-                unifiedPermissionLauncher.launch(missingPerms.toTypedArray())
-            } else {
-                hasLocationPermission = true
-                hasCameraPermission = true
+            hasLocationPermission = fineGranted || coarseGranted
+            hasCameraPermission = camGranted
+            if (hasLocationPermission) {
                 triggerFreshLocationFix()
             }
 

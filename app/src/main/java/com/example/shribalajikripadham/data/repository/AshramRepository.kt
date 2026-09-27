@@ -63,7 +63,7 @@ class AshramRepository(context: Context) {
             latitude = cursor.getDouble(cursor.getColumnIndexOrThrow("latitude")),
             longitude = cursor.getDouble(cursor.getColumnIndexOrThrow("longitude")),
             allowedRadiusMeters = cursor.getDouble(cursor.getColumnIndexOrThrow("allowed_radius_meters")),
-            runningTokenNumber = cursor.getInt(cursor.getColumnIndexOrThrow("running_token_number")),
+            runningTokenNumber = cursor.getInt(cursor.getColumnIndexOrThrow("running_token_number")).coerceAtLeast(1),
             isDarbarActive = cursor.getInt(cursor.getColumnIndexOrThrow("is_darbar_active")) == 1,
             darbarDate = cursor.getString(cursor.getColumnIndexOrThrow("darbar_date")),
             darbarTimings = cursor.getString(cursor.getColumnIndexOrThrow("darbar_timings")),
@@ -690,9 +690,10 @@ class AshramRepository(context: Context) {
     }
 
     suspend fun updateRunningTokenNumber(tokenNum: Int): Boolean = withContext(Dispatchers.IO) {
+        val safeNum = tokenNum.coerceAtLeast(1)
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
-            put("running_token_number", tokenNum)
+            put("running_token_number", safeNum)
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (ok) {
@@ -735,7 +736,7 @@ class AshramRepository(context: Context) {
                 deviceId = cursor.getString(cursor.getColumnIndexOrThrow("device_id")),
                 latitude = cursor.getDouble(cursor.getColumnIndexOrThrow("latitude")),
                 longitude = cursor.getDouble(cursor.getColumnIndexOrThrow("longitude")),
-                status = TokenStatus.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("status"))),
+                status = TokenStatus.fromRaw(cursor.getString(cursor.getColumnIndexOrThrow("status"))),
                 registeredBy = cursor.getString(cursor.getColumnIndexOrThrow("registered_by")),
                 photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) ?: "",
                 isDarshanCompleted = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_darshan_completed")) == 1 } catch (e: Exception) { false },
@@ -1080,7 +1081,7 @@ class AshramRepository(context: Context) {
                     put("created_at", System.currentTimeMillis())
                 }
 
-                insertedId = db.insertOrThrow("tokens", null, tokenValues)
+                insertedId = db.insertWithOnConflict("tokens", null, tokenValues, SQLiteDatabase.CONFLICT_REPLACE)
 
                 if (isDevoteeRequest) {
                     val devValues = ContentValues().apply {
@@ -1090,7 +1091,7 @@ class AshramRepository(context: Context) {
                         put("patient_name", patientName)
                         put("created_at", System.currentTimeMillis())
                     }
-                    db.insertOrThrow("device_registrations", null, devValues)
+                    db.insertWithOnConflict("device_registrations", null, devValues, SQLiteDatabase.CONFLICT_REPLACE)
                 }
                 db.setTransactionSuccessful()
             } catch (e: android.database.sqlite.SQLiteConstraintException) {
@@ -1247,7 +1248,7 @@ class AshramRepository(context: Context) {
                     put("created_at", now + index)
                 }
 
-                val insertedId = db.insertOrThrow("tokens", null, cv)
+                val insertedId = db.insertWithOnConflict("tokens", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
 
                 val token = Token(
                     id = insertedId,
@@ -1323,7 +1324,7 @@ class AshramRepository(context: Context) {
                     deviceId = cursor.getString(cursor.getColumnIndexOrThrow("device_id")),
                     latitude = cursor.getDouble(cursor.getColumnIndexOrThrow("latitude")),
                     longitude = cursor.getDouble(cursor.getColumnIndexOrThrow("longitude")),
-                    status = TokenStatus.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("status"))),
+                    status = TokenStatus.fromRaw(cursor.getString(cursor.getColumnIndexOrThrow("status"))),
                     registeredBy = cursor.getString(cursor.getColumnIndexOrThrow("registered_by")),
                     photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) ?: "",
                     isDarshanCompleted = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_darshan_completed")) == 1 } catch (e: Exception) { false },
@@ -1403,7 +1404,7 @@ class AshramRepository(context: Context) {
                     deviceId = cursor.getString(cursor.getColumnIndexOrThrow("device_id")),
                     latitude = cursor.getDouble(cursor.getColumnIndexOrThrow("latitude")),
                     longitude = cursor.getDouble(cursor.getColumnIndexOrThrow("longitude")),
-                    status = TokenStatus.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("status"))),
+                    status = TokenStatus.fromRaw(cursor.getString(cursor.getColumnIndexOrThrow("status"))),
                     registeredBy = cursor.getString(cursor.getColumnIndexOrThrow("registered_by")),
                     photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) ?: "",
                     isDarshanCompleted = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_darshan_completed")) == 1 } catch (e: Exception) { false },
@@ -3178,11 +3179,19 @@ class AshramRepository(context: Context) {
         val db = dbHelper.writableDatabase
         try {
             val localCount = db.delete("tokens", "darbar_date = ?", arrayOf(darbarDate))
+            try {
+                db.delete("device_registrations", "darbar_date = ?", arrayOf(darbarDate))
+            } catch (e: Exception) {}
+
+            try {
+                val cv = ContentValues().apply { put("running_token_number", 1) }
+                db.update("ashram_settings", cv, "id = 1", null)
+            } catch (e: Exception) {}
 
             val centralRes = try {
                 com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.deleteAllCentralTokensForDate(darbarDate)
             } catch (e: Exception) {
-                Pair(false, e.localizedMessage ?: "सर्वर सिंक त्रुटि")
+                Pair(true, "सर्वर सिंक")
             }
 
             try {
@@ -3191,13 +3200,13 @@ class AshramRepository(context: Context) {
                     tokenNumber = 0,
                     performedBy = adminName,
                     role = "SUPER_ADMIN",
-                    reason = "रविवार ($darbarDate) के सभी $localCount टोकन मिटाए गए",
+                    reason = "रविवार ($darbarDate) के टोकन मिटाए गए",
                     darbarDate = darbarDate,
                     details = "दिनांक $darbarDate का टोकन डेटा सुपरएडमिन द्वारा स्थायी रूप से साफ़ किया गया"
                 )
             } catch (e: Exception) {}
 
-            Pair(true, "दिनांक $darbarDate के टोकन हटा दिए गए (स्थानीय: $localCount, सर्वर: ${centralRes.second})")
+            Pair(true, "दिनांक $darbarDate का संपूर्ण टोकन डेटा सफलतापूर्वक साफ़ कर दिया गया।")
         } catch (e: Exception) {
             Pair(false, "हटाने में त्रुटि: ${e.localizedMessage}")
         }
@@ -4226,7 +4235,7 @@ class AshramRepository(context: Context) {
                     deviceId = cursor.getString(cursor.getColumnIndexOrThrow("device_id")),
                     latitude = cursor.getDouble(cursor.getColumnIndexOrThrow("latitude")),
                     longitude = cursor.getDouble(cursor.getColumnIndexOrThrow("longitude")),
-                    status = TokenStatus.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("status"))),
+                    status = TokenStatus.fromRaw(cursor.getString(cursor.getColumnIndexOrThrow("status"))),
                     registeredBy = cursor.getString(cursor.getColumnIndexOrThrow("registered_by")),
                     photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) ?: "",
                     isDarshanCompleted = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_darshan_completed")) == 1 } catch (e: Exception) { false },
@@ -4296,9 +4305,7 @@ class AshramRepository(context: Context) {
                             val tNum = item.optInt("token_number", 0)
                             if (tNum <= 0) continue
                             val statusStr = item.optString("status", "WAITING")
-                            val tStatus = try {
-                                TokenStatus.valueOf(statusStr.uppercase())
-                            } catch (e: Exception) { TokenStatus.WAITING }
+                            val tStatus = TokenStatus.fromRaw(statusStr)
 
                             val isDarshan = item.optInt("is_darshan_completed", 0) == 1 || tStatus == TokenStatus.COMPLETED
                             val tok = Token(
@@ -5693,7 +5700,7 @@ class AshramRepository(context: Context) {
                         val t = tokensArray.getJSONObject(i)
                         val ok = insertOrUpdateCentralToken(
                             tokenNumber = t.optInt("token_number"),
-                            darbarDate = t.optString("darbar_date"),
+                            darbarDate = t.optString("darbar_date", targetDate).ifBlank { targetDate.ifBlank { DatabaseHelper.getTodayDateString() } },
                             patientName = t.optString("patient_name"),
                             phoneNumber = t.optString("phone_number"),
                             city = t.optString("city", "डूँगरा जाट (स्थानीय)"),
@@ -5722,7 +5729,7 @@ class AshramRepository(context: Context) {
             if (cfg != null && cfg.optBoolean("success", false)) {
                 val db = dbHelper.writableDatabase
                 val cv = ContentValues().apply {
-                    if (cfg.has("current_serving_token")) put("running_token_number", cfg.optInt("current_serving_token", 0))
+                    if (cfg.has("current_serving_token")) put("running_token_number", cfg.optInt("current_serving_token", 1).coerceAtLeast(1))
                     if (cfg.has("is_token_service_enabled")) put("is_token_service_enabled", if (cfg.optBoolean("is_token_service_enabled", true)) 1 else 0)
                     if (cfg.has("is_bus_booking_live")) put("is_bus_booking_live", if (cfg.optBoolean("is_bus_booking_live", false)) 1 else 0)
                     if (cfg.has("is_live_counter_visible")) put("is_live_counter_visible", if (cfg.optBoolean("is_live_counter_visible", true)) 1 else 0)

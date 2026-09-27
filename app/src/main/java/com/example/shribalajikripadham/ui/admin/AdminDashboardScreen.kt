@@ -470,10 +470,8 @@ fun AdminDashboardScreen(
                     try {
                         val (tokCount, expCount, payCount) = repository.syncFullHostingerToLocal(selectedQueueDate)
                         val (cloudOk, cloudCount) = repository.syncLiveTokensFromCloud(selectedQueueDate)
-                        if (tokCount > 0 || expCount > 0 || payCount > 0 || cloudCount > 0) {
-                            todayTokens = repository.getAllTokensToday()
-                            queueTokensForSelectedDate = repository.getAllTokensForDate(selectedQueueDate)
-                        }
+                        todayTokens = repository.getAllTokensToday()
+                        queueTokensForSelectedDate = repository.getAllTokensForDate(selectedQueueDate)
                     } catch (e: Exception) {}
                 }
             }
@@ -1350,10 +1348,14 @@ fun AdminDashboardScreen(
                                     }
                                 },
                                 onDeleteAllTokensForSelectedDate = { dateToWipe ->
+                                    todayTokens = todayTokens.filter { it.darbarDate != dateToWipe }
+                                    queueTokensForSelectedDate = queueTokensForSelectedDate.filter { it.darbarDate != dateToWipe }
+                                    settings = settings.copy(runningTokenNumber = 1)
                                     scope.launch {
                                         val (ok, msg) = repository.deleteAllTokensForDate(dateToWipe, admin.name)
                                         Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                                         allSundayDates = repository.getAllTokenDates()
+                                        todayTokens = repository.getAllTokensToday()
                                         queueTokensForSelectedDate = repository.getAllTokensForDate(selectedQueueDate)
                                         refreshData()
                                     }
@@ -3467,7 +3469,8 @@ fun TokenQueueTab(
         }
         // 1. Current Calling Token
         item {
-            val currentCalledDevotee = todayTokens.find { it.tokenNumber == settings.runningTokenNumber }
+            val effectiveCallingNum = if (settings.runningTokenNumber > 0) settings.runningTokenNumber else 1
+            val currentCalledDevotee = todayTokens.find { it.tokenNumber == effectiveCallingNum }
 
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -3480,7 +3483,7 @@ fun TokenQueueTab(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(if (isHindi) "वर्तमान बुलाया गया नंबर" else "Currently Active Token", fontSize = 14.sp, color = Color.Gray)
-                    Text("#${settings.runningTokenNumber}", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = SaffronPrimary)
+                    Text("#$effectiveCallingNum", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = SaffronPrimary)
 
                     if (currentCalledDevotee != null) {
                         Surface(
@@ -3502,6 +3505,28 @@ fun TokenQueueTab(
                                 )
                             }
                         }
+                    } else if (todayTokens.isNotEmpty()) {
+                        val firstWaiting = todayTokens.firstOrNull { it.tokenNumber >= effectiveCallingNum }
+                            ?: todayTokens.firstOrNull()
+                        if (firstWaiting != null) {
+                            Surface(
+                                color = Color(0xFFF5F5F5),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = if (isHindi) "👉 कतार में टोकन: #${firstWaiting.tokenNumber} - ${firstWaiting.patientName} (${firstWaiting.city})" else "Queue: #${firstWaiting.tokenNumber} - ${firstWaiting.patientName} (${firstWaiting.city})",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                            }
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -3511,7 +3536,7 @@ fun TokenQueueTab(
                     ) {
                         Button(
                             onClick = {
-                                val prevNum = (settings.runningTokenNumber - 1).coerceAtLeast(1)
+                                val prevNum = (effectiveCallingNum - 1).coerceAtLeast(1)
                                 onUpdateRunningToken(prevNum)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
@@ -3521,7 +3546,7 @@ fun TokenQueueTab(
                         }
                         Button(
                             onClick = {
-                                val nextNum = settings.runningTokenNumber + 1
+                                val nextNum = effectiveCallingNum + 1
                                 onUpdateRunningToken(nextNum)
                                 val nextDev = todayTokens.find { it.tokenNumber == nextNum }
                                 AshramVoiceAnnouncementManager.announceNextToken(

@@ -334,7 +334,7 @@ fun FaceTokenRegistrationScreen(
                 e.printStackTrace()
             }
             settings = repository.getSettings()
-            // Check & request location permissions
+            // Passively check location permissions without re-prompting dialog
             val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
                 context, android.Manifest.permission.ACCESS_FINE_LOCATION
             ) == android.content.pm.PackageManager.PERMISSION_GRANTED
@@ -342,19 +342,12 @@ fun FaceTokenRegistrationScreen(
                 context, android.Manifest.permission.ACCESS_COARSE_LOCATION
             ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
-            if (!fineGranted && !coarseGranted) {
-                locationPermissionLauncher.launch(
-                    arrayOf(
-                        android.Manifest.permission.ACCESS_FINE_LOCATION,
-                        android.Manifest.permission.ACCESS_COARSE_LOCATION
-                    )
-                )
-            }
-
-            GeofenceLocationManager.requestFreshLocation(context) { loc ->
-                if (loc != null) {
-                    userLatitude = loc.latitude
-                    userLongitude = loc.longitude
+            if (fineGranted || coarseGranted) {
+                GeofenceLocationManager.requestFreshLocation(context) { loc ->
+                    if (loc != null) {
+                        userLatitude = loc.latitude
+                        userLongitude = loc.longitude
+                    }
                 }
             }
             try { repository.syncDevoteesFromCloud() } catch (e: Exception) {}

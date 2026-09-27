@@ -45,6 +45,10 @@ try {
         $stmt->execute([':darbar_date' => $darbarDate]);
         $deletedCount = $stmt->rowCount();
 
+        try {
+            $pdo->exec("UPDATE ashram_settings SET current_serving_token = 1 WHERE id = 1");
+        } catch (Exception $ex) {}
+
         echo json_encode([
             "success" => true,
             "message" => "दिनांक $darbarDate के कुल $deletedCount टोकन सफलतापूर्वक हटाए गए।",

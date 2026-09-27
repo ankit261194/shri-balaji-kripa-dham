@@ -4,9 +4,28 @@ enum class TokenStatus {
     WAITING,
     PENDING,
     CALLED,
+    SERVING,
     COMPLETED,
     CANCELLED,
-    ABSENT
+    ABSENT;
+
+    companion object {
+        fun fromRaw(raw: String?): TokenStatus {
+            if (raw.isNullOrBlank()) return WAITING
+            val clean = raw.trim().uppercase()
+            return try {
+                valueOf(clean)
+            } catch (_: Exception) {
+                when (clean) {
+                    "SERVING", "CALLING" -> CALLED
+                    "DONE", "FINISHED" -> COMPLETED
+                    "CANCEL", "CANCELLED", "CANCELED" -> CANCELLED
+                    "ABSENT", "NOT_PRESENT" -> ABSENT
+                    else -> WAITING
+                }
+            }
+        }
+    }
 }
 
 data class Token(
