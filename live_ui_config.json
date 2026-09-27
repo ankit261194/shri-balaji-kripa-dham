@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-27T09:53:45Z",
+  "updated_at": "2026-09-27T13:19:53Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -17,12 +17,12 @@
     "facebook_page_url": "https:\/\/www.facebook.com\/ShriBalajiKripaDham",
     "instagram_url": "https:\/\/www.instagram.com\/shribalajikripadham",
     "app_share_url": "https:\/\/shribalajikripadham.org\/app",
-    "guruji_photo_url": "https:\/\/shribalajikripadham.online\/uploads\/guruji_1789757619_a001cb.jpg"
+    "guruji_photo_url": ""
   },
   "emergency_notice": {
     "is_enabled": false,
-    "notice_hindi": "",
-    "notice_english": ""
+    "notice_hindi": "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।",
+    "notice_english": "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।"
   },
   "location_config": {
     "latitude": 28.3972915,
@@ -32,7 +32,7 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1790502825085
+    "updated_at": 1790515193596
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -54,7 +54,7 @@
     "ashram_upi_id": "shribalajikripadham@upi",
     "ashram_upi_name": "Shri Balaji Kripa Dham",
     "custom_upi_qr_uri": "",
-    "bus_seat_fare_amount": 1500,
+    "bus_seat_fare_amount": 0,
     "is_arzi_ledger_live": true,
     "badi_arzi_rate": 100,
     "chhoti_arzi_rate": 50,
