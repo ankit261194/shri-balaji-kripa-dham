@@ -234,6 +234,12 @@ function runSchemaMigrations($pdo, $targetCols) {
             INDEX idx_donor_order (display_order),
             INDEX idx_donor_active (is_active)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        // 0-Tolerance Policy: Purge any placeholder dummy data from production MySQL
+        $pdo->exec("UPDATE ashram_settings SET bank_account_number = '' WHERE bank_account_number LIKE '%XXXX%'");
+        $pdo->exec("UPDATE ashram_settings SET bank_ifsc = '' WHERE bank_ifsc LIKE '%XXXX%'");
+        $pdo->exec("DELETE FROM sevadars WHERE phone LIKE '%987654321%' OR phone = '' OR name IN ('अंकित शर्मा', 'दीपक कुमार', 'राहुल सिंह', 'सोनू तेवतिया') OR name LIKE '%?%'");
+        $pdo->exec("DELETE FROM donors WHERE phone LIKE '%987654321%' OR name IN ('सेठ राधेश्याम जी', 'चौधरी वीरेन्द्र सिंह जी', 'श्री रमेश चंद्र गोयल जी', 'श्री अजय तेवतिया जी', 'श्री Ajay तेवतिया जी') OR name LIKE '%?%'");
     } catch (Throwable $e) {
         error_log("runSchemaMigrations warning: " . $e->getMessage());
     }
@@ -410,13 +416,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($activeIds)) {
                 $inClause = implode(',', array_map('intval', $activeIds));
                 $pdo->exec("UPDATE sevadars SET is_active = 0 WHERE id NOT IN ($inClause)");
+            } else {
+                $pdo->exec("UPDATE sevadars SET is_active = 0");
             }
         } catch (Throwable $sevEx) {}
     }
 
-    // Invalidate Cache Immediately
-    if (file_exists($cacheFile)) {
-        @unlink($cacheFile);
+    // Invalidate All Caches (live_config_cache.json, site_data_cache.json, etc.) Immediately
+    $allCaches = glob(__DIR__ . '/../cache/*');
+    if ($allCaches) {
+        @array_map('unlink', $allCaches);
     }
 
     echo json_encode([
@@ -518,6 +527,34 @@ try {
     } catch (Throwable $e) {}
 
     $servingNum = isset($row['current_serving_token']) ? intval($row['current_serving_token']) : $fb['current_serving_token'];
+    if ($servingNum <= 0) {
+        try {
+            $todayDate = date('Y-m-d');
+            $tStmt = $pdo->prepare("SELECT MAX(token_number) FROM tokens WHERE darbar_date = :d AND status IN ('SERVING', 'COMPLETED')");
+            $tStmt->execute([':d' => $todayDate]);
+            $maxServed = $tStmt->fetchColumn();
+            if ($maxServed && intval($maxServed) > 0) {
+                $servingNum = intval($maxServed);
+            } else {
+                $wStmt = $pdo->prepare("SELECT MIN(token_number) FROM tokens WHERE darbar_date = :d AND status = 'WAITING'");
+                $wStmt->execute([':d' => $todayDate]);
+                $minWaiting = $wStmt->fetchColumn();
+                if ($minWaiting && intval($minWaiting) > 0) {
+                    $servingNum = intval($minWaiting);
+                } else {
+                    $allStmt = $pdo->query("SELECT MAX(token_number) FROM tokens WHERE status IN ('SERVING', 'COMPLETED')");
+                    $allMx = $allStmt ? $allStmt->fetchColumn() : null;
+                    if ($allMx && intval($allMx) > 0) {
+                        $servingNum = intval($allMx);
+                    } else {
+                        $firstTok = $pdo->query("SELECT MIN(token_number) FROM tokens");
+                        $firstVal = $firstTok ? $firstTok->fetchColumn() : null;
+                        if ($firstVal && intval($firstVal) > 0) $servingNum = intval($firstVal);
+                    }
+                }
+            }
+        } catch (Throwable $tokEx) {}
+    }
 
     $configData = [
         "ashram_name" => !empty($row['ashram_name']) ? $row['ashram_name'] : $fb['ashram_name'],

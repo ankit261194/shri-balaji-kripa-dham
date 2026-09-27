@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 81,
-  "version_code": 81,
-  "latest_version_name": "2.56.6",
-  "version_name": "2.56.6",
-  "update_notes_hindi": "v2.56.6 (Build 81): 🚩 ऐप शुरू होते ही एक बार में अनुमति; हॉस्टिंगर हाई-स्पीड डायरेक्ट APK डाउनलोड; रविवार टोकन डेटा क्लीन एवं पहला टोकन विजिबिलिटी सुधार; 0ms तुरंत बटन रिस्पांस; 100% शून्य डमी डेटा नीति।",
-  "update_notes_english": "v2.56.6 (Build 81): 🚩 Single upfront batch permissions; high-speed Hostinger CDN APK download; Sunday token data wipe fix & token #1 visibility; 0ms instant button response; 100% zero dummy data.",
+  "latest_version_code": 82,
+  "version_code": 82,
+  "latest_version_name": "2.56.7",
+  "version_name": "2.56.7",
+  "update_notes_hindi": "v2.56.7 (Build 82): 🚩 लाइव रनिंग टोकन नंबर वेबसाइट और ऐप पर 100% एक्टिव; 0ms तुरंत बटन रिस्पांस; बड़ी/छोटी अर्जी दरें तुरंत अपडेट; वेबसाइट एडिटर एरर-फिक्स; 100% शून्य डमी डेटा नीति।",
+  "update_notes_english": "v2.56.7 (Build 82): 🚩 Live running token active on website & app; 0ms instant button response; Badi & Chhoti Arzi rates cloud sync; SuperAdmin CMS error fix; 100% zero dummy data.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false

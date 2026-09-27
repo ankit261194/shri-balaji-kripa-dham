@@ -397,12 +397,14 @@ fun WebsiteLiveEditorTab(
 
                 scope.launch {
                     try {
-                        // 1. Save to local SQLite
+                        isSaving = true
+                        // 1. Push directly to Hostinger live_config.php MySQL table
+                        val (ok, serverMsg) = HostingerCentralSyncManager.updateFullLiveConfig(updatedSettings)
+
+                        // 2. Save to local SQLite
                         repository.updateSettings(updatedSettings)
                         onSettingsUpdated(updatedSettings)
 
-                        // 2. Push directly to Hostinger live_config.php MySQL table
-                        val (ok, serverMsg) = HostingerCentralSyncManager.updateFullLiveConfig(updatedSettings)
                         isSaving = false
                         if (ok) {
                             saveStatusMsg = if (isHindi)
@@ -411,7 +413,8 @@ fun WebsiteLiveEditorTab(
                                 "✅ Changes pushed LIVE to website successfully!"
                             Toast.makeText(context, saveStatusMsg, Toast.LENGTH_LONG).show()
                         } else {
-                            saveStatusMsg = "⚠️ लोकल सेव हुआ, सर्वर सिंक संदेश: $serverMsg"
+                            saveStatusMsg = "⚠️ लोकल सेव हुआ, सर्वर संदेश: $serverMsg"
+                            Toast.makeText(context, saveStatusMsg, Toast.LENGTH_LONG).show()
                         }
                     } catch (e: Exception) {
                         isSaving = false

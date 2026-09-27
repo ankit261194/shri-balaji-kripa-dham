@@ -1571,16 +1571,7 @@ fun TokenRegistrationScreen(
                                             return@launch
                                         }
 
-                                        val cloudPhotoUrl = if (capturedPhotoUri.isNotBlank()) {
-                                            try {
-                                                val rawPath = capturedPhotoUri.removePrefix("file://")
-                                                val f = File(rawPath)
-                                                if (f.exists() && f.length() > 0) {
-                                                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(f) ?: capturedPhotoUri
-                                                } else capturedPhotoUri
-                                            } catch (e: Exception) { capturedPhotoUri }
-                                        } else ""
-
+                                        // Instant token registration: register immediately without blocking UI on heavy photo upload
                                         val created = repository.registerToken(
                                             patientName = patientName.trim(),
                                             phoneNumber = phoneNumber.trim(),
@@ -1589,7 +1580,7 @@ fun TokenRegistrationScreen(
                                             longitude = finalLon,
                                             city = devoteeVillageOrCity,
                                             registeredBy = "SELF",
-                                            photoUri = if (cloudPhotoUrl.isNotBlank()) cloudPhotoUrl else capturedPhotoUri,
+                                            photoUri = capturedPhotoUri,
                                             isMockLocation = isMock,
                                             locationAccuracy = accuracy,
                                             originAddress = devoteeVillageOrCity,
@@ -1597,21 +1588,10 @@ fun TokenRegistrationScreen(
                                             distanceKm = estimatedDistanceKm
                                         )
 
-                                        // If devotee captured a photo, extract invariant vector & enroll to universal registry
-                                        if (capturedBitmap != null) {
-                                            try {
-                                                val vector = FaceEmbeddingEngine.extractVectorFromBitmap(capturedBitmap!!)
-                                                repository.upsertDevoteeProfile(
-                                                    name = patientName.trim(),
-                                                    phone = phoneNumber.trim(),
-                                                    city = devoteeVillageOrCity,
-                                                    faceVector = vector,
-                                                    photoUri = if (cloudPhotoUrl.isNotBlank()) cloudPhotoUrl else capturedPhotoUri,
-                                                    registeredBy = "SELF"
-                                                )
-                                            } catch (e: Exception) {}
-                                        }
                                         existingToken = created
+                                        isSubmitting = false
+
+                                        // Store devotee personal token preferences immediately
                                         try {
                                             val myTokPrefs = context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
                                             myTokPrefs.edit()
@@ -1620,11 +1600,28 @@ fun TokenRegistrationScreen(
                                                 .putString("my_patient_name", created.patientName)
                                                 .apply()
                                         } catch (e: Exception) {}
-                                        try {
-                                            com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.registerDevoteePhone(
-                                                context, phoneNumber.trim()
-                                            )
-                                        } catch (e: Exception) {}
+
+                                        // Asynchronous non-blocking background tasks: Photo upload, Face embedding, FCM
+                                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                            try {
+                                                if (capturedBitmap != null) {
+                                                    val vector = FaceEmbeddingEngine.extractVectorFromBitmap(capturedBitmap!!)
+                                                    repository.upsertDevoteeProfile(
+                                                        name = patientName.trim(),
+                                                        phone = phoneNumber.trim(),
+                                                        city = devoteeVillageOrCity,
+                                                        faceVector = vector,
+                                                        photoUri = capturedPhotoUri,
+                                                        registeredBy = "SELF"
+                                                    )
+                                                }
+                                            } catch (e: Exception) {}
+                                            try {
+                                                com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.registerDevoteePhone(
+                                                    context, phoneNumber.trim()
+                                                )
+                                            } catch (e: Exception) {}
+                                        }
                                     } catch (e: SecurityException) {
                                         errorMessage = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
                                     } catch (e: Exception) {

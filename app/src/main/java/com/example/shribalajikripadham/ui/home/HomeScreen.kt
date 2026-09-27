@@ -1394,24 +1394,23 @@ fun HomeScreen(
                         val todayDateStr = remember { com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString() }
                         val isMyTokenToday = devoteeMyToken > 0 && (devoteeMyTokenDate == todayDateStr || devoteeMyTokenDate.isBlank())
 
-                        if (settings.isLiveCounterVisible || settings.runningTokenNumber > 0 || isMyTokenToday || settings.isDarbarActive) {
-                            val queueEta = remember(devoteeMyToken, settings.runningTokenNumber, isMyTokenToday) {
-                                com.example.shribalajikripadham.util.SundayTokenScheduleHelper.calculateQueueEta(
-                                    myToken = if (isMyTokenToday) devoteeMyToken else 0,
-                                    currentServing = settings.runningTokenNumber
-                                )
-                            }
-
-                            DevoteeSmartQueueEtaCard(
-                                queueEta = queueEta,
-                                runningTokenNumber = settings.runningTokenNumber,
-                                devoteeToken = if (isMyTokenToday) devoteeMyToken else 0,
-                                isHindi = isHindi,
-                                isCompact = isCompact,
-                                onNavigateToToken = onNavigateToToken
+                        // 🎯 ALWAYS render live token status so devotees are never left in the dark about which token is running
+                        val queueEta = remember(devoteeMyToken, settings.runningTokenNumber, isMyTokenToday) {
+                            com.example.shribalajikripadham.util.SundayTokenScheduleHelper.calculateQueueEta(
+                                myToken = if (isMyTokenToday) devoteeMyToken else 0,
+                                currentServing = settings.runningTokenNumber
                             )
-                            Spacer(modifier = Modifier.height(sectionSpacing))
                         }
+
+                        DevoteeSmartQueueEtaCard(
+                            queueEta = queueEta,
+                            runningTokenNumber = settings.runningTokenNumber,
+                            devoteeToken = if (isMyTokenToday) devoteeMyToken else 0,
+                            isHindi = isHindi,
+                            isCompact = isCompact,
+                            onNavigateToToken = onNavigateToToken
+                        )
+                        Spacer(modifier = Modifier.height(sectionSpacing))
 
                         // 🌺 दैनिक अलौकिक श्रृंगार दर्शन
                         DailyDarshanQuickCard(

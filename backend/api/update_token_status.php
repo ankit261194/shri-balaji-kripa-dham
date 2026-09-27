@@ -110,8 +110,11 @@ try {
         $upSettings->execute([':tok' => $tokenNumber]);
     }
 
-    $cacheFile = __DIR__ . '/../cache/live_config_cache.json';
-    if (file_exists($cacheFile)) @unlink($cacheFile);
+    // Invalidate all caches (live_config_cache.json, site_data_cache.json, etc.) immediately
+    $allCaches = glob(__DIR__ . '/../cache/*');
+    if ($allCaches) {
+        @array_map('unlink', $allCaches);
+    }
 
     if ($status === 'SERVING') {
         // Fetch devotee details for push notification

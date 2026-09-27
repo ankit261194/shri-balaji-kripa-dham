@@ -938,8 +938,8 @@ fun ArziLedgerTab(
             confirmButton = {
                 Button(
                     onClick = {
-                        val bRate = inputBadiRate.toDoubleOrNull() ?: 100.0
-                        val cRate = inputChhotiRate.toDoubleOrNull() ?: 50.0
+                        val bRate = inputBadiRate.toDoubleOrNull() ?: liveSettings.badiArziRate
+                        val cRate = inputChhotiRate.toDoubleOrNull() ?: liveSettings.chhotiArziRate
                         val updated = liveSettings.copy(badiArziRate = bRate, chhotiArziRate = cRate)
                         liveSettings = updated
                         onSettingsUpdated?.invoke(updated)
@@ -951,6 +951,9 @@ fun ArziLedgerTab(
                                 canAdminViewArziLedger = updated.canAdminViewArziLedger,
                                 canDevoteeViewArziLedger = updated.canDevoteeViewArziLedger
                             )
+                            try {
+                                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(updated)
+                            } catch (e: Exception) {}
                             showRateConfigDialog = false
                             Toast.makeText(
                                 context,

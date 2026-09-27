@@ -94,8 +94,11 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             db.execSQL("PRAGMA synchronous = NORMAL;")
 
             // 0-Tolerance Policy: Purge any old dummy sevadars, dummy donors, or demo phone numbers
-            db.execSQL("DELETE FROM sevadars WHERE phone IN ('9876543210', '9876543211', '9876543212', '9876543213') OR name IN ('अंकित शर्मा', 'दीपक कुमार', 'राहुल सिंह', 'सोनू तेवतिया');")
-            db.execSQL("DELETE FROM donors WHERE name IN ('सेठ राधेश्याम जी', 'चौधरी वीरेन्द्र सिंह जी', 'श्री रमेश चंद्र गोयल जी', 'श्री अजय तेवतिया जी');")
+            db.execSQL("DELETE FROM sevadars WHERE phone LIKE '%987654321%' OR phone = '' OR phone LIKE '%12345%' OR name IN ('अंकित शर्मा', 'दीपक कुमार', 'राहुल सिंह', 'सोनू तेवतिया') OR name LIKE '%?%';")
+            db.execSQL("DELETE FROM donors WHERE phone LIKE '%987654321%' OR name IN ('सेठ राधेश्याम जी', 'चौधरी वीरेन्द्र सिंह जी', 'श्री रमेश चंद्र गोयल जी', 'श्री अजय तेवतिया जी', 'श्री Ajay तेवतिया जी') OR name LIKE '%?%';")
+            db.execSQL("DELETE FROM admins WHERE role != 'SUPER_ADMIN' AND username NOT IN ('admin');")
+            db.execSQL("UPDATE ashram_settings SET bank_account_number = '' WHERE bank_account_number LIKE '%XXXX%';")
+            db.execSQL("UPDATE ashram_settings SET bank_ifsc = '' WHERE bank_ifsc LIKE '%XXXX%';")
             db.execSQL("UPDATE ashram_settings SET whatsapp_number = '+91 97206 91090' WHERE whatsapp_number LIKE '%9876543210%';")
         } catch (e: Exception) {
             e.printStackTrace()
@@ -678,8 +681,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN aarti_maha_time TEXT NOT NULL DEFAULT 'रात्रि 08:00 बजे'",
             "ALTER TABLE ashram_settings ADD COLUMN bank_name TEXT NOT NULL DEFAULT 'स्टेट बैंक ऑफ इंडिया (SBI)'",
             "ALTER TABLE ashram_settings ADD COLUMN bank_account_holder TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम ट्रस्ट'",
-            "ALTER TABLE ashram_settings ADD COLUMN bank_account_number TEXT NOT NULL DEFAULT 'XXXXXX1234'",
-            "ALTER TABLE ashram_settings ADD COLUMN bank_ifsc TEXT NOT NULL DEFAULT 'SBIN000XXXX'",
+            "ALTER TABLE ashram_settings ADD COLUMN bank_account_number TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ashram_settings ADD COLUMN bank_ifsc TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN bank_branch TEXT NOT NULL DEFAULT 'अनूपशहर, बुलन्दशहर'",
             "ALTER TABLE ashram_settings ADD COLUMN bank_upi_id TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
             "ALTER TABLE ashram_settings ADD COLUMN ashram_address TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश'",

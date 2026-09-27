@@ -1364,24 +1364,29 @@ fun AdminDashboardScreen(
                                     settings = settings.copy(runningTokenNumber = newNum)
                                     scope.launch {
                                         repository.updateRunningTokenNumber(newNum)
-                                        refreshData()
                                     }
                                 },
                                 onUpdateStatus = { id, status ->
+                                    val targetTok = todayTokens.find { it.id == id } ?: queueTokensForSelectedDate.find { it.id == id }
+                                    if (status == TokenStatus.COMPLETED && targetTok != null && targetTok.tokenNumber > settings.runningTokenNumber) {
+                                        settings = settings.copy(runningTokenNumber = targetTok.tokenNumber)
+                                    }
                                     todayTokens = todayTokens.map { if (it.id == id) it.copy(status = status, isDarshanCompleted = (status == TokenStatus.COMPLETED)) else it }
                                     queueTokensForSelectedDate = queueTokensForSelectedDate.map { if (it.id == id) it.copy(status = status, isDarshanCompleted = (status == TokenStatus.COMPLETED)) else it }
                                     scope.launch {
                                         repository.updateTokenStatus(id, status)
-                                        refreshData()
                                     }
                                 },
                                 onToggleDarshan = { tokenId, completed ->
                                     val newStatus = if (completed) TokenStatus.COMPLETED else TokenStatus.WAITING
+                                    val targetTok = todayTokens.find { it.id == tokenId } ?: queueTokensForSelectedDate.find { it.id == tokenId }
+                                    if (completed && targetTok != null && targetTok.tokenNumber > settings.runningTokenNumber) {
+                                        settings = settings.copy(runningTokenNumber = targetTok.tokenNumber)
+                                    }
                                     todayTokens = todayTokens.map { if (it.id == tokenId) it.copy(isDarshanCompleted = completed, status = newStatus) else it }
                                     queueTokensForSelectedDate = queueTokensForSelectedDate.map { if (it.id == tokenId) it.copy(isDarshanCompleted = completed, status = newStatus) else it }
                                     scope.launch {
                                         repository.toggleDarshanCompleted(tokenId, completed)
-                                        refreshData()
                                     }
                                 },
                                 onCancelToken = { tokenId ->
@@ -1389,7 +1394,6 @@ fun AdminDashboardScreen(
                                     queueTokensForSelectedDate = queueTokensForSelectedDate.map { if (it.id == tokenId) it.copy(status = TokenStatus.CANCELLED) else it }
                                     scope.launch {
                                         repository.cancelToken(tokenId)
-                                        refreshData()
                                     }
                                 },
                                 onDeleteToken = { tokenId ->

@@ -278,7 +278,8 @@ object HostingerCentralSyncManager {
                     "&outstation_min_distance_km=$outstationKm" +
                     "&current_serving_token=$currentServingToken" +
                     "&latitude=$lat" +
-                    "&longitude=$long"
+                    "&longitude=$long" +
+                    "&api_key=$API_SECRET_KEY"
 
             conn.outputStream.use { os ->
                 os.write(params.toByteArray(StandardCharsets.UTF_8))
@@ -893,12 +894,12 @@ object HostingerCentralSyncManager {
                 setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
                 setRequestProperty("Pragma", "no-cache")
             }
-            conn.connectTimeout = 8000
-            conn.readTimeout = 8000
+            conn.connectTimeout = 15000
+            conn.readTimeout = 15000
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.52.0")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.7")
 
             val json = JSONObject().apply {
                 put("api_key", API_SECRET_KEY)
@@ -929,7 +930,7 @@ object HostingerCentralSyncManager {
                 put("banner_title", settings.bannerTitle)
                 put("banner_subtitle", settings.bannerSubtitle)
                 put("is_banner_visible", if (settings.isBannerVisible) 1 else 0)
-                put("guruji_photo_url", settings.gurujiPhotoUri)
+                put("guruji_photo_url", if (settings.gurujiPhotoUri.startsWith("http://") || settings.gurujiPhotoUri.startsWith("https://") || settings.gurujiPhotoUri.startsWith("uploads/")) settings.gurujiPhotoUri else "")
                 put("allow_admin_reserved_tokens", if (settings.allowAdminReservedTokens) 1 else 0)
                 put("can_admin_issue_reserved_tokens", if (settings.allowAdminReservedTokens) 1 else 0)
                 put("aarti_timings", "${settings.websiteAartiMangala} मंगला • ${settings.websiteAartiSandhya} संध्या • ${settings.websiteAartiShayan} शयन")
@@ -980,7 +981,16 @@ object HostingerCentralSyncManager {
                 val resObj = JSONObject(resp)
                 return@withContext Pair(true, resObj.optString("message", "सेटिंग्स लाइव प्रसारित हो गईं!"))
             }
-            Pair(false, "सर्वर रिस्पॉन्स HTTP $code")
+            val errBody = try {
+                conn.errorStream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() } ?: ""
+            } catch (e: Exception) { "" }
+            val cleanErr = if (errBody.isNotBlank()) {
+                try {
+                    val eo = JSONObject(errBody)
+                    eo.optString("error", eo.optString("message", errBody))
+                } catch (pe: Exception) { errBody }
+            } else "सर्वर रिस्पॉन्स HTTP $code"
+            Pair(false, cleanErr)
         } catch (e: Exception) {
             Pair(false, "लाइव सेटिंग्स सिंक त्रुटि: ${e.localizedMessage}")
         }
@@ -1010,7 +1020,7 @@ object HostingerCentralSyncManager {
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
             conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.5")
 
-            val params = "token_number=$tokenNumber&darbar_date=${URLEncoder.encode(darbarDate, "UTF-8")}&status=${URLEncoder.encode(status, "UTF-8")}&is_darshan_completed=${if (isDarshanCompleted) 1 else 0}"
+            val params = "api_key=$API_SECRET_KEY&token_number=$tokenNumber&darbar_date=${URLEncoder.encode(darbarDate, "UTF-8")}&status=${URLEncoder.encode(status, "UTF-8")}&is_darshan_completed=${if (isDarshanCompleted) 1 else 0}"
             conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }
 
             val code = conn.responseCode
@@ -1224,6 +1234,51 @@ object HostingerCentralSyncManager {
     }
 
     /**
+     * Fetch active Donors from Central Hostinger MySQL
+     */
+    suspend fun fetchCentralDonors(): List<com.example.shribalajikripadham.data.model.DonorProfile> = withContext(Dispatchers.IO) {
+        val list = mutableListOf<com.example.shribalajikripadham.data.model.DonorProfile>()
+        try {
+            val url = URL("${BASE_URL}get_donors.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.7")
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val j = JSONObject(resp)
+                val arr = j.optJSONArray("donors")
+                if (arr != null) {
+                    for (i in 0 until arr.length()) {
+                        val d = arr.getJSONObject(i)
+                        list.add(
+                            com.example.shribalajikripadham.data.model.DonorProfile(
+                                id = d.optLong("id", 0L),
+                                name = d.optString("name", ""),
+                                cityAddress = d.optString("city_address", ""),
+                                title = d.optString("title", "परम सहयोगी / दानदाता"),
+                                photoUri = d.optString("photo_url", ""),
+                                phone = "",
+                                notes = d.optString("notes", ""),
+                                displayOrder = d.optInt("display_order", 0),
+                                isActive = true
+                            )
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching central donors: ${e.message}")
+        }
+        list
+    }
+
+    /**
      * Save Donor to Central Hostinger MySQL (STRICT PRIVACY: phone is NEVER public)
      */
     suspend fun saveCentralDonor(
@@ -1248,10 +1303,11 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.39.0")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.7")
 
             val params = StringBuilder()
-            params.append("name=").append(URLEncoder.encode(name, "UTF-8"))
+            params.append("api_key=").append(URLEncoder.encode(API_SECRET_KEY, "UTF-8"))
+            params.append("&name=").append(URLEncoder.encode(name, "UTF-8"))
             params.append("&city_address=").append(URLEncoder.encode(cityAddress, "UTF-8"))
             params.append("&title=").append(URLEncoder.encode(title, "UTF-8"))
             params.append("&photo_url=").append(URLEncoder.encode(photoUrl, "UTF-8"))
@@ -1290,9 +1346,9 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.39.0")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.7")
 
-            val params = "id=$id"
+            val params = "id=$id&api_key=" + URLEncoder.encode(API_SECRET_KEY, "UTF-8")
             conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }
             conn.responseCode == 200
         } catch (e: Exception) {

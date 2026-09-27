@@ -963,15 +963,7 @@ class AshramRepository(context: Context) {
         var nextTokenNum = 1
         var insertedId: Long = -1
 
-        val finalPhotoUri = if (photoUri.isNotBlank() && !photoUri.startsWith("http://") && !photoUri.startsWith("https://")) {
-            try {
-                val rawPath = photoUri.removePrefix("file://")
-                val f = java.io.File(rawPath)
-                if (f.exists() && f.length() > 0) {
-                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(f) ?: photoUri
-                } else photoUri
-            } catch (e: Exception) { photoUri }
-        } else photoUri
+        val finalPhotoUri = if (photoUri.startsWith("http://") || photoUri.startsWith("https://")) photoUri else ""
 
         var centralTokenNumber: Int? = null
         var centralOk = false
@@ -1072,7 +1064,7 @@ class AshramRepository(context: Context) {
                     put("longitude", longitude)
                     put("status", TokenStatus.WAITING.name)
                     put("registered_by", registeredBy)
-                    put("photo_uri", finalPhotoUri)
+                    put("photo_uri", if (finalPhotoUri.isNotBlank()) finalPhotoUri else photoUri)
                     put("is_darshan_completed", 0)
                     put("darshan_completed_at", 0L)
                     put("origin_address", safeOrigin)
@@ -1098,6 +1090,24 @@ class AshramRepository(context: Context) {
                 throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
             } finally {
                 db.endTransaction()
+            }
+        }
+
+        // Asynchronous non-blocking photo upload to central CDN
+        if (insertedId > 0 && photoUri.isNotBlank() && !photoUri.startsWith("http")) {
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val rawPath = photoUri.removePrefix("file://")
+                    val f = java.io.File(rawPath)
+                    if (f.exists() && f.length() > 0) {
+                        val upUrl = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.uploadPhoto(f)
+                        if (!upUrl.isNullOrBlank()) {
+                            val wDb = dbHelper.writableDatabase
+                            val cvUp = ContentValues().apply { put("photo_uri", upUrl) }
+                            wDb.update("tokens", cvUp, "id = ?", arrayOf(insertedId.toString()))
+                        }
+                    }
+                } catch (e: Exception) {}
             }
         }
 
@@ -1495,6 +1505,11 @@ class AshramRepository(context: Context) {
         }
         val ok = db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
         if (ok && tokenNum > 0) {
+            if (completed) {
+                try {
+                    db.execSQL("UPDATE ashram_settings SET running_token_number = ? WHERE id = 1 AND running_token_number < ?", arrayOf(tokenNum, tokenNum))
+                } catch (e: Exception) {}
+            }
             val newStatus = if (completed) TokenStatus.COMPLETED else TokenStatus.WAITING
             kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                 try {
@@ -1542,6 +1557,11 @@ class AshramRepository(context: Context) {
         }
         val ok = db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
         if (ok && tokenNum > 0) {
+            if (status == TokenStatus.COMPLETED) {
+                try {
+                    db.execSQL("UPDATE ashram_settings SET running_token_number = ? WHERE id = 1 AND running_token_number < ?", arrayOf(tokenNum, tokenNum))
+                } catch (e: Exception) {}
+            }
             kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                 try {
                     com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateCentralTokenStatus(
@@ -3924,12 +3944,12 @@ class AshramRepository(context: Context) {
                     cv.put("bus_seat_fare_amount", cfg.optInt("bus_seat_fare_amount", 0))
                 }
                 if (cfg.has("badi_arzi_rate")) {
-                    val bRate = cfg.optDouble("badi_arzi_rate", 0.0)
-                    if (bRate > 0) cv.put("badi_arzi_rate", bRate)
+                    val bRate = cfg.optDouble("badi_arzi_rate", -1.0)
+                    if (bRate >= 0.0) cv.put("badi_arzi_rate", bRate)
                 }
                 if (cfg.has("chhoti_arzi_rate")) {
-                    val cRate = cfg.optDouble("chhoti_arzi_rate", 0.0)
-                    if (cRate > 0) cv.put("chhoti_arzi_rate", cRate)
+                    val cRate = cfg.optDouble("chhoti_arzi_rate", -1.0)
+                    if (cRate >= 0.0) cv.put("chhoti_arzi_rate", cRate)
                 }
                 if (cfg.has("is_arzi_ledger_live")) cv.put("is_arzi_ledger_live", if (cfg.optBoolean("is_arzi_ledger_live")) 1 else 0)
 
@@ -5811,10 +5831,10 @@ class AshramRepository(context: Context) {
         val remoteSevadars = try {
             com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchCentralSevadars()
         } catch (e: Exception) {
-            emptyList()
+            null
         }
 
-        if (remoteSevadars.isNotEmpty()) {
+        if (remoteSevadars != null) {
             val db = dbHelper.writableDatabase
             db.beginTransaction()
             try {
@@ -5842,6 +5862,46 @@ class AshramRepository(context: Context) {
             }
         }
         getAllSevadars()
+    }
+
+    /**
+     * Synchronize Donors from Hostinger Central MySQL to Local SQLite
+     */
+    suspend fun syncDonorsFromCloud(): List<DonorProfile> = withContext(Dispatchers.IO) {
+        val remoteDonors = try {
+            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchCentralDonors()
+        } catch (e: Exception) {
+            null
+        }
+
+        if (remoteDonors != null) {
+            val db = dbHelper.writableDatabase
+            db.beginTransaction()
+            try {
+                // Clear local and replace with authoritative server donors
+                db.delete("donors", null, null)
+                remoteDonors.forEach { d ->
+                    val cv = ContentValues().apply {
+                        put("id", d.id)
+                        put("name", d.name)
+                        put("city_address", d.cityAddress)
+                        put("title", d.title)
+                        put("photo_uri", d.photoUri)
+                        put("phone", d.phone)
+                        put("notes", d.notes)
+                        put("display_order", d.displayOrder)
+                        put("is_active", if (d.isActive) 1 else 0)
+                    }
+                    db.insertWithOnConflict("donors", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                }
+                db.setTransactionSuccessful()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                db.endTransaction()
+            }
+        }
+        getAllDonors()
     }
 
     suspend fun saveSevadar(sevadar: SevadarProfile): Boolean = withContext(Dispatchers.IO) {

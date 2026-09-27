@@ -2,7 +2,7 @@
 // Shri Balaji Kripa Dham - High-Speed Dynamic Render Engine (Zero-Crash Architecture)
 $cacheDir = __DIR__ . '/cache';
 $cacheFile = $cacheDir . '/site_data_cache.json';
-$cacheTTL = 30; // 30 seconds cache for instant loads under 0.01s
+$cacheTTL = 3; // 3 seconds ultra-fast TTL for instant live synchronization under 0.01s
 
 $siteData = null;
 if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTTL)) {
@@ -66,6 +66,38 @@ $isEmergencyVisible = (!empty($settings['is_emergency_notice_visible']) && !empt
 $darbarTimings = !empty($settings['darbar_timings']) ? $settings['darbar_timings'] : 'प्रत्येक रविवार प्रातःकाल 8:00 बजे से';
 $darbarDate = !empty($settings['darbar_date']) ? $settings['darbar_date'] : '';
 $currentServing = !empty($settings['current_serving_token']) ? (int)$settings['current_serving_token'] : 0;
+if ($currentServing <= 0) {
+    if (file_exists(__DIR__ . '/config/db.php')) require_once __DIR__ . '/config/db.php';
+    $dbPdo = function_exists('getDB') ? getDB() : null;
+    if ($dbPdo) {
+        try {
+            $todayD = date('Y-m-d');
+            $tStmt = $dbPdo->prepare("SELECT MAX(token_number) FROM tokens WHERE darbar_date = :d AND status IN ('SERVING', 'COMPLETED')");
+            $tStmt->execute([':d' => $todayD]);
+            $mx = $tStmt->fetchColumn();
+            if ($mx && intval($mx) > 0) {
+                $currentServing = intval($mx);
+            } else {
+                $wStmt = $dbPdo->prepare("SELECT MIN(token_number) FROM tokens WHERE darbar_date = :d AND status = 'WAITING'");
+                $wStmt->execute([':d' => $todayD]);
+                $mn = $wStmt->fetchColumn();
+                if ($mn && intval($mn) > 0) {
+                    $currentServing = intval($mn);
+                } else {
+                    $allStmt = $dbPdo->query("SELECT MAX(token_number) FROM tokens WHERE status IN ('SERVING', 'COMPLETED')");
+                    $allMx = $allStmt ? $allStmt->fetchColumn() : null;
+                    if ($allMx && intval($allMx) > 0) {
+                        $currentServing = intval($allMx);
+                    } else {
+                        $firstTok = $dbPdo->query("SELECT MIN(token_number) FROM tokens");
+                        $firstVal = $firstTok ? $firstTok->fetchColumn() : null;
+                        if ($firstVal && intval($firstVal) > 0) $currentServing = intval($firstVal);
+                    }
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+}
 $gurujiPhoto = !empty($settings['guruji_photo_url']) ? $settings['guruji_photo_url'] : 'uploads/guruji_profile.jpg';
 $isDarbarActive = !isset($settings['is_darbar_active']) || $settings['is_darbar_active'] == 1;
 $contactPhone = !empty($settings['contact_phone']) ? $settings['contact_phone'] : '+91 97206 91090';
