@@ -2,6 +2,8 @@
 // Shri Balaji Kripa Dham - Central Database Connection
 // Hostinger MySQL Configuration
 
+date_default_timezone_set('Asia/Kolkata');
+
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-SBKD-API-KEY, x-sbkd-api-key");

@@ -15,6 +15,7 @@ header("Pragma: no-cache");
 $repoRawBase = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/backend/";
 $filesToSync = [
     ".htaccess",
+    "deploy.php",
     "download.php",
     "index.php",
     "version.json",

@@ -13,6 +13,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $backupFile = __DIR__ . '/../uploads/backup_latest.json';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if (isset($_GET['repair']) || isset($_GET['sync_files'])) {
+        $repoRawBase = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/backend/";
+        $needed = [
+            "deploy.php" => __DIR__ . '/../deploy.php',
+            "api/delete_token.php" => __DIR__ . '/delete_token.php',
+            "config/db.php" => __DIR__ . '/../config/db.php'
+        ];
+        $repaired = [];
+        foreach ($needed as $rel => $dest) {
+            $code = @file_get_contents($repoRawBase . $rel . "?t=" . time());
+            if ($code && strlen($code) > 10) {
+                @file_put_contents($dest, $code);
+                $repaired[] = $rel;
+            }
+        }
+        echo json_encode(['success' => true, 'repaired' => $repaired, 'message' => 'Missing files synchronized from GitHub']);
+        exit;
+    }
     if (file_exists($backupFile)) {
         readfile($backupFile);
     } else {
