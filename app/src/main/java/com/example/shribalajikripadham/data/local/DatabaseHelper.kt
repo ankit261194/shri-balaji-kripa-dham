@@ -641,6 +641,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE bus_seats ADD COLUMN hold_expires_at INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE bus_seats ADD COLUMN held_by TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN is_bus_booking_live INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN is_dharamshala_live INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN is_payment_feature_live INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN can_admin_view_payment_history INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN can_devotee_view_payment_history INTEGER NOT NULL DEFAULT 0",

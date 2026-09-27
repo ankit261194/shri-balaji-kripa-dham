@@ -33,11 +33,30 @@ function verifyApiAuth($allowPublicRead = false) {
         return true;
     }
     $headers = function_exists('getallheaders') ? getallheaders() : [];
-    $apiKey = $headers['X-SBKD-API-KEY'] ?? 
-              $headers['x-sbkd-api-key'] ?? 
+    $lowerHeaders = [];
+    foreach ($headers as $k => $v) {
+        $lowerHeaders[strtolower($k)] = $v;
+    }
+
+    $apiKey = $lowerHeaders['x-sbkd-api-key'] ?? 
+              $lowerHeaders['authorization'] ??
               $_SERVER['HTTP_X_SBKD_API_KEY'] ?? 
-              $_POST['api_key'] ?? 
-              $_GET['api_key'] ?? '';
+              $_SERVER['REDIRECT_HTTP_X_SBKD_API_KEY'] ?? 
+              $_SERVER['HTTP_AUTHORIZATION'] ??
+              $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ??
+              $_GET['api_key'] ?? 
+              $_POST['api_key'] ?? '';
+
+    // If still empty and request has a JSON body, peek into JSON body
+    if (empty($apiKey)) {
+        $raw = file_get_contents('php://input');
+        if (!empty($raw)) {
+            $json = json_decode($raw, true);
+            if (is_array($json) && !empty($json['api_key'])) {
+                $apiKey = $json['api_key'];
+            }
+        }
+    }
               
     if (empty($apiKey) || $apiKey !== SBKD_API_SECRET) {
         http_response_code(401);

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // ==============================================================================
 // श्री बालाजी कृपा धाम (ग्राम डूँगरा जाट) - धर्मशाला व कमरा आरक्षण प्रणाली
 // Ashram Dharamshala & Room Management REST API
@@ -61,27 +61,8 @@ try {
         INDEX idx_dates (checkin_date, checkout_date)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
-    // 2. Auto-seed rooms if table is empty
-    $chk = $pdo->query("SELECT COUNT(*) FROM dharamshala_rooms")->fetchColumn();
-    if ($chk == 0) {
-        $defaultRooms = [
-            ['101', 'AC', 'कमरा 101 (वातानुकूलित AC कक्ष)', 'Ground', 4, 500.00],
-            ['102', 'AC', 'कमरा 102 (वातानुकूलित AC कक्ष)', 'Ground', 4, 500.00],
-            ['103', 'AC', 'कमरा 103 (वातानुकूलित AC कक्ष)', 'Ground', 4, 500.00],
-            ['201', 'NON_AC', 'कमरा 201 (डीलक्स गैर-AC कक्ष)', 'First Floor', 4, 250.00],
-            ['202', 'NON_AC', 'कमरा 202 (डीलक्स गैर-AC कक्ष)', 'First Floor', 4, 250.00],
-            ['203', 'NON_AC', 'कमरा 203 (डीलक्स गैर-AC कक्ष)', 'First Floor', 4, 250.00],
-            ['204', 'NON_AC', 'कमरा 204 (डीलक्स गैर-AC कक्ष)', 'First Floor', 4, 250.00],
-            ['H-1', 'HALL_BED', 'सत्संग हॉल बेड H-1', 'Ground Hall', 1, 50.00],
-            ['H-2', 'HALL_BED', 'सत्संग हॉल बेड H-2', 'Ground Hall', 1, 50.00],
-            ['H-3', 'HALL_BED', 'सत्संग हॉल बेड H-3', 'Ground Hall', 1, 50.00],
-            ['H-4', 'HALL_BED', 'सत्संग हॉल बेड H-4', 'Ground Hall', 1, 50.00]
-        ];
-        $ins = $pdo->prepare("INSERT INTO dharamshala_rooms (room_number, room_type, title_hindi, floor, capacity, daily_seva_rate, status) VALUES (?, ?, ?, ?, ?, ?, 'AVAILABLE')");
-        foreach ($defaultRooms as $r) {
-            $ins->execute($r);
-        }
-    }
+    // Strict Zero-Dummy Policy: Absolutely no auto-seeding of rooms.
+    // Rooms are strictly managed by SuperAdmin.
 
     $raw = file_get_contents('php://input');
     $input = json_decode($raw, true) ?: $_POST;
@@ -90,7 +71,7 @@ try {
     switch ($action) {
         case 'list_rooms':
             $stmt = $pdo->query("SELECT * FROM dharamshala_rooms ORDER BY id ASC");
-            $rooms = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $rooms = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
             echo json_encode([
                 "success" => true,
                 "rooms" => $rooms,
@@ -109,6 +90,19 @@ try {
             break;
 
         case 'book_room':
+            // Check if Dharamshala service is enabled in settings
+            $isDhLive = 0;
+            try {
+                $stLive = $pdo->query("SELECT is_dharamshala_live FROM ashram_settings WHERE id = 1 LIMIT 1");
+                if ($stLive) $isDhLive = intval($stLive->fetchColumn());
+            } catch (Throwable $e) {}
+
+            if ($isDhLive !== 1) {
+                http_response_code(403);
+                echo json_encode(["success" => false, "error" => "आश्रम व्यवस्था अनुसार धर्मशाला व कमरा आरक्षण सेवा अभी बंद है।"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
             $devoteeName = trim($input['devotee_name'] ?? '');
             $phone = trim($input['phone_number'] ?? '');
             $roomId = intval($input['room_id'] ?? 0);
@@ -215,10 +209,96 @@ try {
             break;
 
         case 'update_room_status':
+            if (function_exists('verifyApiAuth')) verifyApiAuth();
             $roomId = intval($input['room_id'] ?? 0);
             $status = strtoupper(trim($input['status'] ?? 'AVAILABLE'));
             $pdo->prepare("UPDATE dharamshala_rooms SET status = :st WHERE id = :id")->execute([':st' => $status, ':id' => $roomId]);
             echo json_encode(["success" => true, "message" => "कमरे की स्थिति अपडेट हुई!"], JSON_UNESCAPED_UNICODE);
+            break;
+
+        case 'add_room':
+            if (function_exists('verifyApiAuth')) verifyApiAuth();
+            $roomNum = trim($input['room_number'] ?? '');
+            $roomType = trim($input['room_type'] ?? 'NON_AC');
+            $titleHindi = trim($input['title_hindi'] ?? "कमरा $roomNum");
+            $floor = trim($input['floor'] ?? 'Ground');
+            $capacity = max(1, intval($input['capacity'] ?? 4));
+            $dailyRate = floatval($input['daily_seva_rate'] ?? 250.0);
+            $status = strtoupper(trim($input['status'] ?? 'AVAILABLE'));
+            $notes = trim($input['notes'] ?? '');
+
+            if (empty($roomNum)) {
+                http_response_code(400);
+                echo json_encode(["success" => false, "error" => "कमरा नंबर अनिवार्य है।"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $stmt = $pdo->prepare("INSERT INTO dharamshala_rooms (room_number, room_type, title_hindi, floor, capacity, daily_seva_rate, status, notes)
+                VALUES (:rnum, :rtype, :title, :floor, :cap, :rate, :st, :notes)
+                ON DUPLICATE KEY UPDATE room_type = VALUES(room_type), title_hindi = VALUES(title_hindi), floor = VALUES(floor), capacity = VALUES(capacity), daily_seva_rate = VALUES(daily_seva_rate), status = VALUES(status), notes = VALUES(notes)");
+            $stmt->execute([
+                ':rnum' => $roomNum,
+                ':rtype' => $roomType,
+                ':title' => $titleHindi,
+                ':floor' => $floor,
+                ':cap' => $capacity,
+                ':rate' => $dailyRate,
+                ':st' => $status,
+                ':notes' => $notes
+            ]);
+            echo json_encode(["success" => true, "message" => "कमरा #$roomNum सफलतापूर्वक जोड़ा/अपडेट किया गया!"], JSON_UNESCAPED_UNICODE);
+            break;
+
+        case 'edit_room':
+            if (function_exists('verifyApiAuth')) verifyApiAuth();
+            $roomId = intval($input['id'] ?? 0);
+            $roomNum = trim($input['room_number'] ?? '');
+            $roomType = trim($input['room_type'] ?? 'NON_AC');
+            $titleHindi = trim($input['title_hindi'] ?? "कमरा $roomNum");
+            $floor = trim($input['floor'] ?? 'Ground');
+            $capacity = max(1, intval($input['capacity'] ?? 4));
+            $dailyRate = floatval($input['daily_seva_rate'] ?? 250.0);
+            $status = strtoupper(trim($input['status'] ?? 'AVAILABLE'));
+            $notes = trim($input['notes'] ?? '');
+
+            if ($roomId <= 0) {
+                http_response_code(400);
+                echo json_encode(["success" => false, "error" => "मान्य कमरा ID अनिवार्य है।"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            $stmt = $pdo->prepare("UPDATE dharamshala_rooms SET room_number = :rnum, room_type = :rtype, title_hindi = :title, floor = :floor, capacity = :cap, daily_seva_rate = :rate, status = :st, notes = :notes WHERE id = :id");
+            $stmt->execute([
+                ':rnum' => $roomNum,
+                ':rtype' => $roomType,
+                ':title' => $titleHindi,
+                ':floor' => $floor,
+                ':cap' => $capacity,
+                ':rate' => $dailyRate,
+                ':st' => $status,
+                ':notes' => $notes,
+                ':id' => $roomId
+            ]);
+            echo json_encode(["success" => true, "message" => "कमरा विवरण सफलतापूर्वक अपडेट हुआ!"], JSON_UNESCAPED_UNICODE);
+            break;
+
+        case 'delete_room':
+            if (function_exists('verifyApiAuth')) verifyApiAuth();
+            $roomId = intval($input['id'] ?? 0);
+            if ($roomId <= 0) {
+                http_response_code(400);
+                echo json_encode(["success" => false, "error" => "मान्य कमरा ID अनिवार्य है।"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+            $pdo->prepare("DELETE FROM dharamshala_rooms WHERE id = :id")->execute([':id' => $roomId]);
+            echo json_encode(["success" => true, "message" => "कमरा हटा दिया गया!"], JSON_UNESCAPED_UNICODE);
+            break;
+
+        case 'clear_all_rooms':
+            if (function_exists('verifyApiAuth')) verifyApiAuth();
+            $pdo->exec("TRUNCATE TABLE dharamshala_rooms");
+            $pdo->exec("TRUNCATE TABLE dharamshala_bookings");
+            echo json_encode(["success" => true, "message" => "सभी कमरे व बुकिंग रिकॉर्ड पूरी तरह से साफ कर दिए गए हैं (0 Rooms)!"], JSON_UNESCAPED_UNICODE);
             break;
 
         default:

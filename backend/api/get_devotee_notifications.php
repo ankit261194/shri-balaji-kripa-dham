@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Fetch unread notifications for a devotee by phone number
 require_once __DIR__ . '/../config/db.php';
 

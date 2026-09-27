@@ -29,9 +29,9 @@ data class AshramSettings(
     val isOutstationAdvanceAllowed: Boolean = true,
     val outstationMinDistanceKm: Double = 30.0,
     // In-app auto update system configuration
-    val latestVersionCode: Int = 83,
-    val latestVersionName: String = "2.56.8",
-    val updateNotes: String = "ऐप में सीधा डाउनलोड व शेयर लिंक, रविवार 12 घंटे पूर्व काउंटडाउन एवं सुपर एडमिन टोकन मास्टर कंट्रोल।",
+    val latestVersionCode: Int = 84,
+    val latestVersionName: String = "2.56.9",
+    val updateNotes: String = "धर्मशाला व कमरा मास्टर कंट्रोल, शून्य डमी डेटा गारंटी, वेबसाइट व एडिटर पब्लिश सुधार।",
     val apkDownloadUrl: String = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
     val isForceUpdate: Boolean = false,
     // Social Media Links & App Sharing
@@ -73,6 +73,7 @@ data class AshramSettings(
     val sundayTokenCustomNotice: String = "",
     // Bus & Payment Super Admin Controls
     val isBusBookingLive: Boolean = false,
+    val isDharamshalaLive: Boolean = false,
     val isPaymentFeatureLive: Boolean = false,
     val canAdminViewPaymentHistory: Boolean = false,
     val canDevoteeViewPaymentHistory: Boolean = false,

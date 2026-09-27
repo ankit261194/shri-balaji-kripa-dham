@@ -40,6 +40,7 @@ $filesToSync = [
     "api/cloud_sync.php",
     "api/data_vault.php",
     "api/check_device.php",
+    "api/get_devotee_notifications.php",
     "sync_apk.php"
 ];
 

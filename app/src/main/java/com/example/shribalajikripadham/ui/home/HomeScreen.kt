@@ -594,7 +594,9 @@ fun HomeScreen(
                             }
                         }
                         add(NavDrawerItem("ℹ️", if (isHindi) "आश्रम परिचय व नियम" else "Ashram Info & Rules", onNavigateToInfo))
-                        add(NavDrawerItem("🏨", if (isHindi) "धर्मशाला व कमरा आरक्षण" else "Dharamshala Room Booking", onNavigateToDharamshala))
+                        if (settings.isDharamshalaLive) {
+                            add(NavDrawerItem("🏨", if (isHindi) "धर्मशाला व कमरा आरक्षण" else "Dharamshala Room Booking", onNavigateToDharamshala))
+                        }
                         add(NavDrawerItem("📖", if (isHindi) "ऐप संपूर्ण मार्गदर्शिका (PDF)" else "Devotee User Manual (PDF)", {
                             scope.launch { drawerState.close() }
                             val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
@@ -1726,6 +1728,7 @@ fun HomeScreen(
                     HomeTab.DHARAMSHALA_YATRA -> {
                         DevoteeDharamshalaYatraTab(
                             isHindi = isHindi,
+                            isDharamshalaLive = settings.isDharamshalaLive,
                             currentTheme = currentTheme,
                             context = context,
                             isCompact = isCompact,
@@ -3430,18 +3433,20 @@ fun RenderClassicSection(
                             onClick = onNavigateToAdmin
                         )
                     }
-                    Spacer(modifier = Modifier.height(tileSpacing))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        ActionTile(
-                            title = if (isHindi) "धर्मशाला व आवास" else "Dharamshala",
-                            subtitle = if (isHindi) "कमरा व बेड आरक्षण (AC / Non-AC)" else "Room & Bed Booking",
-                            iconBadge = "🏨",
-                            badgeColor = Color(0xFF00796B),
-                            isPopular = true,
-                            isCompact = isCompact,
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = onNavigateToDharamshala
-                        )
+                    if (settings.isDharamshalaLive) {
+                        Spacer(modifier = Modifier.height(tileSpacing))
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            ActionTile(
+                                title = if (isHindi) "धर्मशाला व आवास" else "Dharamshala",
+                                subtitle = if (isHindi) "कमरा व बेड आरक्षण (AC / Non-AC)" else "Room & Bed Booking",
+                                iconBadge = "🏨",
+                                badgeColor = Color(0xFF00796B),
+                                isPopular = true,
+                                isCompact = isCompact,
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = onNavigateToDharamshala
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(tileSpacing))
                     Surface(
@@ -3540,17 +3545,19 @@ fun RenderClassicSection(
                             modifier = Modifier.weight(1f),
                             onClick = onNavigateToAdmin
                         )
-                        Spacer(modifier = Modifier.width(tileSpacing))
-                        ActionTile(
-                            title = if (isHindi) "धर्मशाला व आवास" else "Dharamshala",
-                            subtitle = if (isHindi) "कमरा व बेड आरक्षण" else "Room & Bed Booking",
-                            iconBadge = "🏨",
-                            badgeColor = Color(0xFF00796B),
-                            isPopular = true,
-                            isCompact = isCompact,
-                            modifier = Modifier.weight(1f),
-                            onClick = onNavigateToDharamshala
-                        )
+                        if (settings.isDharamshalaLive) {
+                            Spacer(modifier = Modifier.width(tileSpacing))
+                            ActionTile(
+                                title = if (isHindi) "धर्मशाला व आवास" else "Dharamshala",
+                                subtitle = if (isHindi) "कमरा व बेड आरक्षण" else "Room & Bed Booking",
+                                iconBadge = "🏨",
+                                badgeColor = Color(0xFF00796B),
+                                isPopular = true,
+                                isCompact = isCompact,
+                                modifier = Modifier.weight(1f),
+                                onClick = onNavigateToDharamshala
+                            )
+                        }
                     }
                 }
 
@@ -5086,6 +5093,7 @@ fun DevoteeSacredAartiBhaktiTab(
 @Composable
 fun DevoteeDharamshalaYatraTab(
     isHindi: Boolean,
+    isDharamshalaLive: Boolean = false,
     currentTheme: SacredTheme,
     context: Context,
     isCompact: Boolean,
@@ -5094,67 +5102,107 @@ fun DevoteeDharamshalaYatraTab(
     onNavigateToYatraExpenses: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        // 1. Dharamshala Room Booking Card
-        Card(
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(18.dp),
-            elevation = CardDefaults.cardElevation(4.dp),
-            border = BorderStroke(1.2.dp, Color(0xFF00796B)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFE0F2F1),
-                        modifier = Modifier.size(44.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text("🏨", fontSize = 24.sp)
+        // 1. Dharamshala Room Booking Card (Controlled by SuperAdmin isDharamshalaLive)
+        if (isDharamshalaLive) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(18.dp),
+                elevation = CardDefaults.cardElevation(4.dp),
+                border = BorderStroke(1.2.dp, Color(0xFF00796B)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFE0F2F1),
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("🏨", fontSize = 24.sp)
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "धर्मशाला व कमरा आरक्षण" else "Dharamshala Room Booking",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF004D40)
+                            )
+                            Text(
+                                text = if (isHindi) "आश्रम में रात्रि विश्राम एवं आवास व्यवस्था" else "Clean Rooms & Rest Facilities",
+                                fontSize = 11.5.sp,
+                                color = TextSecondaryDark
+                            )
                         }
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = if (isHindi)
+                            "• वातानुकूलित (AC) एवं नॉन-एसी सुविधायुक्त कमरे\n• स्वच्छ बिस्तर, २४ घंटे बिजली एवं स्वच्छ जल व्यवस्था\n• आश्रम महाप्रसाद एवं भोजनालय की उत्तम सुविधा\n• पारिवारिक एवं व्यक्तिगत कक्ष अग्रिम बुकिंग उपलब्ध"
+                        else
+                            "• AC and Non-AC clean rooms available\n• 24-hr electricity, clean water & bedding\n• Ashram Bhandara & Bhojanalaya facilities\n• Advance booking available for families and individuals",
+                        fontSize = 12.sp,
+                        color = Color(0xFF333333),
+                        lineHeight = 18.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = onNavigateToDharamshala,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(vertical = 11.dp)
+                    ) {
                         Text(
-                            text = if (isHindi) "धर्मशाला व कमरा आरक्षण" else "Dharamshala Room Booking",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF004D40)
-                        )
-                        Text(
-                            text = if (isHindi) "आश्रम में रात्रि विश्राम एवं आवास व्यवस्था" else "Clean Rooms & Rest Facilities",
-                            fontSize = 11.5.sp,
-                            color = TextSecondaryDark
+                            text = if (isHindi) "🏨 धर्मशाला कमरा / बेड आरक्षित करें ➔" else "Book Dharamshala Room ➔",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = if (isHindi)
-                        "• वातानुकूलित (AC) एवं नॉन-एसी सुविधायुक्त कमरे\n• स्वच्छ बिस्तर, २४ घंटे बिजली एवं स्वच्छ जल व्यवस्था\n• आश्रम महाप्रसाद एवं भोजनालय की उत्तम सुविधा\n• पारिवारिक एवं व्यक्तिगत कक्ष अग्रिम बुकिंग उपलब्ध"
-                    else
-                        "• AC and Non-AC clean rooms available\n• 24-hr electricity, clean water & bedding\n• Ashram Bhandara & Bhojanalaya facilities\n• Advance booking available for families and individuals",
-                    fontSize = 12.sp,
-                    color = Color(0xFF333333),
-                    lineHeight = 18.sp
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Button(
-                    onClick = onNavigateToDharamshala,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B)),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(vertical = 11.dp)
+            }
+        } else {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(18.dp),
+                elevation = CardDefaults.cardElevation(2.dp),
+                border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFF5F5F5),
+                        modifier = Modifier.size(54.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("🏨", fontSize = 28.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = if (isHindi) "🏨 धर्मशाला कमरा / बेड आरक्षित करें ➔" else "Book Dharamshala Room ➔",
-                        fontSize = 13.sp,
+                        text = if (isHindi) "धर्मशाला व कमरा आरक्षण सेवा अभी बंद है" else "Dharamshala Booking is Currently Inactive",
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Color(0xFF37474F)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (isHindi) "आश्रम व्यवस्था अनुसार धर्मशाला व कमरा आरक्षण सेवा अभी बंद है। अधिक जानकारी हेतु आश्रम कार्यालय में संपर्क करें।" else "Online room booking service is currently inactive. Please contact the ashram office for offline arrangements.",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        lineHeight = 16.sp
                     )
                 }
             }

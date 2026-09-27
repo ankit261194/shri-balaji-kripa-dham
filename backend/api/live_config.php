@@ -58,6 +58,7 @@ function getFallbackConfig() {
         "app_download_url" => "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
         "app_share_url" => "https://shribalajikripadham.online/download.php",
         "is_bus_booking_live" => false,
+        "is_dharamshala_live" => false,
         "is_live_counter_visible" => true,
         "is_payment_feature_live" => false,
         "is_arzi_ledger_live" => true,
@@ -136,6 +137,7 @@ $targetCols = [
     "app_download_url" => "VARCHAR(500) NOT NULL DEFAULT 'https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk'",
     "app_share_url" => "VARCHAR(500) NOT NULL DEFAULT 'https://shribalajikripadham.online/download.php'",
     "is_bus_booking_live" => "TINYINT(1) NOT NULL DEFAULT 0",
+    "is_dharamshala_live" => "TINYINT(1) NOT NULL DEFAULT 0",
     "is_live_counter_visible" => "TINYINT(1) NOT NULL DEFAULT 1",
     "is_payment_feature_live" => "TINYINT(1) NOT NULL DEFAULT 0",
     "is_arzi_ledger_live" => "TINYINT(1) NOT NULL DEFAULT 1",
@@ -298,6 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'app_download_url' => trim($input['app_download_url'] ?? ($current['app_download_url'] ?? 'https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk')),
         'app_share_url' => trim($input['app_share_url'] ?? ($current['app_share_url'] ?? 'https://shribalajikripadham.online/download.php')),
         'is_bus_booking_live' => isset($input['is_bus_booking_live']) ? intval($input['is_bus_booking_live']) : intval($current['is_bus_booking_live'] ?? 0),
+        'is_dharamshala_live' => isset($input['is_dharamshala_live']) ? intval($input['is_dharamshala_live']) : intval($current['is_dharamshala_live'] ?? 0),
         'is_live_counter_visible' => isset($input['is_live_counter_visible']) ? intval($input['is_live_counter_visible']) : intval($current['is_live_counter_visible'] ?? 1),
         'is_payment_feature_live' => isset($input['is_payment_feature_live']) ? intval($input['is_payment_feature_live']) : intval($current['is_payment_feature_live'] ?? 0),
         'is_arzi_ledger_live' => isset($input['is_arzi_ledger_live']) ? intval($input['is_arzi_ledger_live']) : intval($current['is_arzi_ledger_live'] ?? 1),
@@ -447,6 +450,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         "guruji_photo_url" => $fields['guruji_photo_url'],
         "is_token_service_enabled" => boolval($fields['is_token_service_enabled']),
         "is_bus_booking_live" => boolval($fields['is_bus_booking_live']),
+        "is_dharamshala_live" => boolval($fields['is_dharamshala_live']),
         "timestamp" => time()
     ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
@@ -589,6 +593,7 @@ try {
         "app_download_url" => !empty($row['app_download_url']) ? $row['app_download_url'] : $fb['app_download_url'],
         "app_share_url" => !empty($row['app_share_url']) ? $row['app_share_url'] : $fb['app_share_url'],
         "is_bus_booking_live" => isset($row['is_bus_booking_live']) ? boolval($row['is_bus_booking_live']) : $fb['is_bus_booking_live'],
+        "is_dharamshala_live" => isset($row['is_dharamshala_live']) ? boolval($row['is_dharamshala_live']) : $fb['is_dharamshala_live'],
         "is_live_counter_visible" => isset($row['is_live_counter_visible']) ? boolval($row['is_live_counter_visible']) : $fb['is_live_counter_visible'],
         "is_payment_feature_live" => isset($row['is_payment_feature_live']) ? boolval($row['is_payment_feature_live']) : $fb['is_payment_feature_live'],
         "is_arzi_ledger_live" => isset($row['is_arzi_ledger_live']) ? boolval($row['is_arzi_ledger_live']) : $fb['is_arzi_ledger_live'],

@@ -259,7 +259,7 @@ object HostingerCentralSyncManager {
         long: Double = 78.1460410
     ): Boolean = withContext(Dispatchers.IO) {
         try {
-            val url = URL("${BASE_URL}live_config.php")
+            val url = URL("${BASE_URL}live_config.php?api_key=$API_SECRET_KEY")
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
                 setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -888,7 +888,7 @@ object HostingerCentralSyncManager {
         sevadars: List<com.example.shribalajikripadham.data.model.SevadarProfile>? = null
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
-            val url = URL("${BASE_URL}live_config.php")
+            val url = URL("${BASE_URL}live_config.php?api_key=$API_SECRET_KEY")
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
                 setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
@@ -899,7 +899,7 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.9")
 
             val json = JSONObject().apply {
                 put("api_key", API_SECRET_KEY)
@@ -917,6 +917,7 @@ object HostingerCentralSyncManager {
                 put("app_download_url", settings.apkDownloadUrl)
                 put("app_share_url", settings.appShareUrl)
                 put("is_bus_booking_live", if (settings.isBusBookingLive) 1 else 0)
+                put("is_dharamshala_live", if (settings.isDharamshalaLive) 1 else 0)
                 put("is_live_counter_visible", if (settings.isLiveCounterVisible) 1 else 0)
                 put("is_payment_feature_live", if (settings.isPaymentFeatureLive) 1 else 0)
                 put("is_arzi_ledger_live", if (settings.isArziLedgerLive) 1 else 0)
@@ -1859,5 +1860,142 @@ object HostingerCentralSyncManager {
             Pair(false, e.localizedMessage ?: "अज्ञात त्रुटि")
         }
     }
+
+    // ========================================================================
+    // DHARAMSHALA ROOM MANAGEMENT (ADMIN & DEVOTEE)
+    // ========================================================================
+    suspend fun clearAllDharamshalaRooms(): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}dharamshala.php?action=clear_all_rooms&api_key=$API_SECRET_KEY")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            }
+            conn.outputStream.use { it.write("{}".toByteArray(StandardCharsets.UTF_8)) }
+            if (conn.responseCode in 200..299) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val obj = JSONObject(resp)
+                Pair(obj.optBoolean("success", false), obj.optString("message", "सभी कमरे साफ़ कर दिए गए"))
+            } else {
+                Pair(false, "सर्वर त्रुटि: HTTP ${conn.responseCode}")
+            }
+        } catch (e: Exception) {
+            Pair(false, e.localizedMessage ?: "नेटवर्क त्रुटि")
+        }
+    }
+
+    suspend fun addDharamshalaRoom(
+        roomNumber: String,
+        roomType: String,
+        titleHindi: String,
+        floor: String,
+        capacity: Int,
+        dailyRate: Double
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}dharamshala.php?action=add_room&api_key=$API_SECRET_KEY")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            }
+            val payload = JSONObject().apply {
+                put("room_number", roomNumber)
+                put("room_type", roomType)
+                put("title_hindi", titleHindi)
+                put("floor", floor)
+                put("capacity", capacity)
+                put("daily_seva_rate", dailyRate)
+            }
+            conn.outputStream.use { it.write(payload.toString().toByteArray(StandardCharsets.UTF_8)) }
+            if (conn.responseCode in 200..299) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val obj = JSONObject(resp)
+                Pair(obj.optBoolean("success", false), obj.optString("message", "कमरा सफलतापूर्वक जोड़ा गया"))
+            } else {
+                Pair(false, "सर्वर त्रुटि: HTTP ${conn.responseCode}")
+            }
+        } catch (e: Exception) {
+            Pair(false, e.localizedMessage ?: "नेटवर्क त्रुटि")
+        }
+    }
+
+    suspend fun editDharamshalaRoom(
+        roomId: Int,
+        roomNumber: String,
+        roomType: String,
+        titleHindi: String,
+        floor: String,
+        capacity: Int,
+        dailyRate: Double,
+        status: String
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}dharamshala.php?action=edit_room&api_key=$API_SECRET_KEY")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            }
+            val payload = JSONObject().apply {
+                put("room_id", roomId)
+                put("room_number", roomNumber)
+                put("room_type", roomType)
+                put("title_hindi", titleHindi)
+                put("floor", floor)
+                put("capacity", capacity)
+                put("daily_seva_rate", dailyRate)
+                put("status", status)
+            }
+            conn.outputStream.use { it.write(payload.toString().toByteArray(StandardCharsets.UTF_8)) }
+            if (conn.responseCode in 200..299) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val obj = JSONObject(resp)
+                Pair(obj.optBoolean("success", false), obj.optString("message", "कमरा अपडेट हो गया"))
+            } else {
+                Pair(false, "सर्वर त्रुटि: HTTP ${conn.responseCode}")
+            }
+        } catch (e: Exception) {
+            Pair(false, e.localizedMessage ?: "नेटवर्क त्रुटि")
+        }
+    }
+
+    suspend fun deleteDharamshalaRoom(roomId: Int): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}dharamshala.php?action=delete_room&api_key=$API_SECRET_KEY")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            }
+            val payload = JSONObject().apply {
+                put("room_id", roomId)
+            }
+            conn.outputStream.use { it.write(payload.toString().toByteArray(StandardCharsets.UTF_8)) }
+            if (conn.responseCode in 200..299) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val obj = JSONObject(resp)
+                Pair(obj.optBoolean("success", false), obj.optString("message", "कमरा हटा दिया गया"))
+            } else {
+                Pair(false, "सर्वर त्रुटि: HTTP ${conn.responseCode}")
+            }
+        } catch (e: Exception) {
+            Pair(false, e.localizedMessage ?: "नेटवर्क त्रुटि")
+        }
+    }
 }
+
 

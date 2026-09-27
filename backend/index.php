@@ -100,10 +100,14 @@ if ($currentServing <= 0) {
 }
 $gurujiPhoto = !empty($settings['guruji_photo_url']) ? $settings['guruji_photo_url'] : 'uploads/guruji_profile.jpg';
 $isDarbarActive = !isset($settings['is_darbar_active']) || $settings['is_darbar_active'] == 1;
-$contactPhone = !empty($settings['contact_phone']) ? $settings['contact_phone'] : '+91 97206 91090';
-$whatsappNumber = !empty($settings['whatsapp_number']) ? $settings['whatsapp_number'] : '+91 97206 91090';
-$upiId = !empty($settings['upi_id']) ? $settings['upi_id'] : 'shribalajikripadham@upi';
-$upiName = !empty($settings['upi_name']) ? $settings['upi_name'] : 'श्री बालाजी कृपा धाम';
+$isBusLive = !empty($settings['is_bus_booking_live']);
+$isDharamshalaLive = !empty($settings['is_dharamshala_live']);
+$isArziLive = !isset($settings['is_arzi_ledger_live']) || $settings['is_arzi_ledger_live'] == 1;
+
+$contactPhone = !empty($settings['contact_phone']) ? $settings['contact_phone'] : '';
+$whatsappNumber = !empty($settings['whatsapp_number']) ? $settings['whatsapp_number'] : '';
+$upiId = (!empty($settings['upi_id']) && $settings['upi_id'] !== 'shribalajikripadham@upi') ? $settings['upi_id'] : '';
+$upiName = !empty($settings['upi_name']) ? $settings['upi_name'] : $ashramName;
 $badiArziRate = isset($settings['badi_arzi_rate']) ? (float)$settings['badi_arzi_rate'] : 0.0;
 $chhotiArziRate = isset($settings['chhoti_arzi_rate']) ? (float)$settings['chhoti_arzi_rate'] : 0.0;
 
@@ -116,11 +120,12 @@ $aartiMangala = !empty($settings['aarti_mangala_time']) ? $settings['aarti_manga
 $aartiBalbhog = !empty($settings['aarti_balbhog_time']) ? $settings['aarti_balbhog_time'] : 'प्रातः 08:00 बजे';
 $aartiSandhya = !empty($settings['aarti_sandhya_time']) ? $settings['aarti_sandhya_time'] : 'सायं 07:00 बजे';
 $aartiShayan = !empty($settings['aarti_shayan_time']) ? $settings['aarti_shayan_time'] : 'रात्रि 09:00 बजे';
-$bankName = !empty($settings['bank_name']) ? $settings['bank_name'] : 'पंजाब नेशनल बैंक (PNB)';
-$bankAccountHolder = !empty($settings['bank_account_holder']) ? $settings['bank_account_holder'] : 'श्री बालाजी कृपा धाम सेवा ट्रस्ट';
+$bankName = !empty($settings['bank_name']) ? $settings['bank_name'] : '';
+$bankAccountHolder = !empty($settings['bank_account_holder']) ? $settings['bank_account_holder'] : '';
 $bankAccountNumber = (!empty($settings['bank_account_number']) && strpos($settings['bank_account_number'], 'XXXX') === false) ? $settings['bank_account_number'] : '';
 $bankIfsc = (!empty($settings['bank_ifsc']) && strpos($settings['bank_ifsc'], 'XXXX') === false) ? $settings['bank_ifsc'] : '';
-$bankBranch = !empty($settings['bank_branch']) ? $settings['bank_branch'] : 'अनूपशहर, बुलन्दशहर';
+$bankBranch = !empty($settings['bank_branch']) ? $settings['bank_branch'] : '';
+$hasBankDetails = (!empty($bankAccountNumber) || !empty($upiId));
 $ashramAddress = !empty($settings['ashram_address']) ? $settings['ashram_address'] : "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील अनूपशहर,\nजिला बुलन्दशहर, उत्तर प्रदेश";
 $ashramDirections = !empty($settings['ashram_directions']) ? $settings['ashram_directions'] : 'निकटतम रेलवे स्टेशन: अनूपशहर / बबराला / बुलन्दशहर';
 $contactEmail = !empty($settings['contact_email']) ? $settings['contact_email'] : 'shribalajikripadham@gmail.com';
@@ -1046,7 +1051,11 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
         <!-- Big Download Call To Action -->
         <div class="download-hero-card">
             <h3>📱 आधिकारिक Android ऐप प्राप्त करें</h3>
-            <p>रविवार टोकन पंजीकरण, 60-सीटर डीलक्स बस सीट बुकिंग एवं पावन दरबार की लाइव जानकारी हेतु आधिकारिक ऐप इंस्टॉल करें।</p>
+            <?php if ($isBusLive): ?>
+            <p>रविवार टोकन पंजीकरण, श्री बालाजी यात्रा बस सीट बुकिंग एवं पावन दरबार की लाइव जानकारी हेतु आधिकारिक ऐप इंस्टॉल करें।</p>
+            <?php else: ?>
+            <p>रविवार टोकन पंजीकरण, दिव्य अर्जी एवं पावन दरबार की लाइव जानकारी हेतु आधिकारिक ऐप इंस्टॉल करें।</p>
+            <?php endif; ?>
             
             <a href="download.php" class="btn-main-download">
                 <span>📥 डायरेक्ट ऐप डाउनलोड करें (APK)</span>
@@ -1153,11 +1162,21 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
                 <p>मोबाइल ऐप द्वारा घर बैठे आगामी रविवार के पावन दरबार का टोकन प्राप्त करें। शून्य डुप्लीकेट गारंटी एवं पूर्ण निष्पक्षता।</p>
             </div>
 
+            <?php if ($isBusLive): ?>
             <div class="service-card">
                 <div class="service-icon">🚌</div>
                 <h4>श्री बालाजी यात्रा डीलक्स बस</h4>
                 <p>ग्राम डूँगरा जाट से श्री बालाजी धाम की 60-सीटर डीलक्स बस सेवा। ऐप से अपनी मनपसंद सीट का अग्रिम आरक्षण करें।</p>
             </div>
+            <?php endif; ?>
+
+            <?php if ($isDharamshalaLive): ?>
+            <div class="service-card">
+                <div class="service-icon">🏨</div>
+                <h4>धर्मशाला व आवास सेवा</h4>
+                <p>बाहर से आने वाले श्रद्धालुओं हेतु धाम परिसर में विश्राम व आवास की सुगम व्यवस्था।</p>
+            </div>
+            <?php endif; ?>
 
             <div class="service-card">
                 <div class="service-icon">📜</div>
@@ -1230,22 +1249,38 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
 
         <!-- Seva, Donation & Bank Details Card (App Controlled) -->
         <div class="info-box" style="border: 2px solid var(--gold); background: #FFFDF7;">
-            <h4>🏦 सेवा, दान एवं बैंक खाता विवरण</h4>
+            <h4>🏦 सेवा, दान एवं सहयोग विवरण</h4>
+            <?php if ($hasBankDetails): ?>
             <div style="font-size: 0.95rem; margin-bottom: 10px; color: #37474F; line-height: 1.6;">
+                <?php if (!empty($bankAccountHolder)): ?>
                 <p><strong>खाता धारक:</strong> <span id="dynamicBankAccountHolder"><?= htmlspecialchars($bankAccountHolder) ?></span></p>
+                <?php endif; ?>
+                <?php if (!empty($bankName)): ?>
                 <p><strong>बैंक का नाम:</strong> <span id="dynamicBankName"><?= htmlspecialchars($bankName) ?></span></p>
+                <?php endif; ?>
                 <?php if (!empty($bankAccountNumber)): ?>
                 <p><strong>खाता संख्या (A/C No):</strong> <span id="dynamicBankAccountNumber" style="font-family: monospace; font-weight: 700; color: #800000; font-size: 1.05rem;"><?= htmlspecialchars($bankAccountNumber) ?></span></p>
                 <?php endif; ?>
                 <?php if (!empty($bankIfsc)): ?>
                 <p><strong>IFSC कोड:</strong> <span id="dynamicBankIfsc" style="font-family: monospace; font-weight: 700;"><?= htmlspecialchars($bankIfsc) ?></span></p>
                 <?php endif; ?>
+                <?php if (!empty($bankBranch)): ?>
                 <p><strong>शाखा:</strong> <span id="dynamicBankBranch"><?= htmlspecialchars($bankBranch) ?></span></p>
+                <?php endif; ?>
+                <?php if (!empty($upiId)): ?>
                 <p style="margin-top: 6px;"><strong>UPI ID:</strong> <span id="dynamicUpiId" style="font-weight: 700; color: #2E7D32;"><?= htmlspecialchars($upiId) ?></span></p>
+                <?php endif; ?>
             </div>
+            <?php else: ?>
+            <p style="font-size: 0.95rem; margin-bottom: 10px; color: #555; line-height: 1.6;">
+                आश्रम में सेवा, दान, निर्माण अथवा भंडारा सहयोग हेतु कृपया सीधे धाम कार्यालय में संपर्क करें अथवा आधिकारिक मोबाइल ऐप का प्रयोग करें।
+            </p>
+            <?php endif; ?>
+            <?php if (($badiArziRate > 0 || $chhotiArziRate > 0) && $isArziLive): ?>
             <div style="background: #FFF3E0; padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; color: #E65100; font-weight: 600;">
                 📜 पावन अर्जी सेवा दर: बड़ी अर्जी ₹<span id="dynamicBadiArzi"><?= $badiArziRate ?></span> | छोटी अर्जी ₹<span id="dynamicChhotiArzi"><?= $chhotiArziRate ?></span>
             </div>
+            <?php endif; ?>
         </div>
 
         <!-- Ashram Location -->

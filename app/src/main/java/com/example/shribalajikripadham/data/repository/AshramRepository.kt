@@ -105,6 +105,7 @@ class AshramRepository(context: Context) {
             sundayTokenBannerText = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_banner_text")) } catch (e: Exception) { "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।" } ?: "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।",
             sundayTokenCustomNotice = try { cursor.getString(cursor.getColumnIndexOrThrow("sunday_token_custom_notice")) } catch (e: Exception) { "" } ?: "",
             isBusBookingLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_bus_booking_live")) == 1 } catch (e: Exception) { false },
+            isDharamshalaLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_dharamshala_live")) == 1 } catch (e: Exception) { false },
             isPaymentFeatureLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_payment_feature_live")) == 1 } catch (e: Exception) { false },
             canAdminViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_admin_view_payment_history")) == 1 } catch (e: Exception) { false },
             canDevoteeViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_payment_history")) == 1 } catch (e: Exception) { false },
@@ -427,6 +428,7 @@ class AshramRepository(context: Context) {
             put("is_token_service_enabled", if (s.isTokenServiceEnabled) 1 else 0)
             put("token_service_mode", s.tokenServiceMode)
             put("is_bus_booking_live", if (s.isBusBookingLive) 1 else 0)
+            put("is_dharamshala_live", if (s.isDharamshalaLive) 1 else 0)
             put("emergency_notice", s.emergencyNoticeText)
             put("is_emergency_notice_visible", if (s.isEmergencyNoticeVisible) 1 else 0)
             if (s.gurujiPhotoUri.isNotBlank()) put("guruji_photo_uri", s.gurujiPhotoUri)
@@ -2263,6 +2265,16 @@ class AshramRepository(context: Context) {
             persistCurrentSettingsToAllLayers()
         }
         res
+    }
+
+    suspend fun updateDharamshalaLiveStatus(isLive: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("is_dharamshala_live", if (isLive) 1 else 0)
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) persistCurrentSettingsToAllLayers()
+        ok
     }
 
     // --- Yatra Expenses ---

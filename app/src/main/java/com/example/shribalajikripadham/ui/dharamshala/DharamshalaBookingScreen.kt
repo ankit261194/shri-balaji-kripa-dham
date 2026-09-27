@@ -82,6 +82,7 @@ data class DharamshalaBooking(
 @Composable
 fun DharamshalaBookingScreen(
     isHindi: Boolean,
+    isDharamshalaLive: Boolean = true,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
@@ -211,7 +212,9 @@ fun DharamshalaBookingScreen(
 
     val submitBooking: () -> Unit = {
         val room = selectedRoom
-        if (room == null) {
+        if (!isDharamshalaLive) {
+            Toast.makeText(context, if (isHindi) "धर्मशाला व कमरा आरक्षण सेवा अभी बंद है!" else "Dharamshala booking is currently inactive!", Toast.LENGTH_SHORT).show()
+        } else if (room == null) {
             Toast.makeText(context, if (isHindi) "कृपया कमरा चुनें!" else "Please select a room!", Toast.LENGTH_SHORT).show()
         } else if (devoteeName.isBlank()) {
             Toast.makeText(context, if (isHindi) "कृपया भक्त का नाम लिखें!" else "Please enter devotee name!", Toast.LENGTH_SHORT).show()
@@ -399,6 +402,41 @@ fun DharamshalaBookingScreen(
                             )
                         }
                     )
+                }
+            }
+
+            if (!isDharamshalaLive) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                    border = BorderStroke(1.dp, Color(0xFFEF5350)),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🔒", fontSize = 24.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "धर्मशाला व कमरा आरक्षण सेवा अभी बंद है" else "Dharamshala Service Inactive",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.5.sp,
+                                color = Color(0xFFC62828)
+                            )
+                            Text(
+                                text = if (isHindi)
+                                    "सुपर एडमिन द्वारा सेवा चालू करने के बाद ही बुकिंग स्वीकार की जाएगी।"
+                                else
+                                    "Room booking is temporarily disabled by admin.",
+                                fontSize = 11.5.sp,
+                                color = Color(0xFFB71C1C)
+                            )
+                        }
+                    }
                 }
             }
 
@@ -671,6 +709,40 @@ fun RoomsListView(
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             color = if (isSelected) AmberGold else Color.DarkGray,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        if (filteredRooms.isEmpty()) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("🏨", fontSize = 36.sp)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = if (isHindi) "वर्तमान में कोई कमरा पंजीकृत नहीं है" else "No Rooms Registered",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = Color.DarkGray
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = if (isHindi)
+                                "सुपर एडमिन द्वारा कमरा जोड़ने पर ही यहाँ कमरे दिखाई देंगे।"
+                            else
+                                "Rooms will appear once added by admin.",
+                            fontSize = 12.sp,
+                            color = Color.Gray
                         )
                     }
                 }

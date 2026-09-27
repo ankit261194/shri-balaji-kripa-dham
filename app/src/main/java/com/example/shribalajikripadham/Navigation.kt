@@ -233,6 +233,7 @@ fun MainNavigation(
 
             AppScreen.DHARAMSHALA -> com.example.shribalajikripadham.ui.dharamshala.DharamshalaBookingScreen(
                 isHindi = isHindi,
+                isDharamshalaLive = settings.isDharamshalaLive,
                 onBack = { navigateBack() }
             )
         }
