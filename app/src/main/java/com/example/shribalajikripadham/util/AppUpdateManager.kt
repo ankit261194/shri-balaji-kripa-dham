@@ -40,6 +40,70 @@ object AppUpdateManager {
         val webhookUrl: String = ""
     )
 
+    fun snoozeUpdate(context: Context, versionCode: Int, durationMs: Long = 24 * 60 * 60 * 1000L) {
+        try {
+            val prefs = context.getSharedPreferences("sbkd_update_snooze", Context.MODE_PRIVATE)
+            prefs.edit()
+                .putInt("snoozed_version_code", versionCode)
+                .putLong("snooze_until_timestamp", System.currentTimeMillis() + durationMs)
+                .apply()
+        } catch (_: Exception) {}
+    }
+
+    fun isUpdateSnoozed(context: Context, versionCode: Int): Boolean {
+        return try {
+            val prefs = context.getSharedPreferences("sbkd_update_snooze", Context.MODE_PRIVATE)
+            val snoozedCode = prefs.getInt("snoozed_version_code", 0)
+            val snoozeUntil = prefs.getLong("snooze_until_timestamp", 0L)
+            snoozedCode >= versionCode && System.currentTimeMillis() < snoozeUntil
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Inspects local storage caches to see if a valid, uncorrupted APK matching or exceeding
+     * the requested target version has already been downloaded to the device.
+     */
+    fun findCachedUpdateApk(context: Context, minVersionCode: Int): File? {
+        val candidates = mutableListOf<File>()
+        try {
+            val internalUpdateDir = File(context.cacheDir, "updates")
+            candidates.add(File(internalUpdateDir, "ShriBalajiKripaDham_update.apk"))
+            val extDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+            if (extDir != null) {
+                candidates.add(File(extDir, "ShriBalajiKripaDham_update.apk"))
+            }
+            val pubDown = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            if (pubDown != null && pubDown.exists()) {
+                candidates.add(File(pubDown, "ShriBalajiKripaDham-release.apk"))
+                candidates.add(File(pubDown, "ShriBalajiKripaDham-v2.56.4.apk"))
+                candidates.add(File(pubDown, "ShriBalajiKripaDham-v2.56.3.apk"))
+            }
+        } catch (_: Exception) {}
+
+        for (candidate in candidates) {
+            try {
+                if (candidate.exists() && candidate.length() > 5000000L) {
+                    val pkg = context.packageManager.getPackageArchiveInfo(candidate.absolutePath, 0)
+                    if (pkg != null && pkg.packageName == context.packageName) {
+                        val ver = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                            pkg.longVersionCode.toInt()
+                        } else {
+                            @Suppress("DEPRECATION")
+                            pkg.versionCode
+                        }
+                        if (ver >= minVersionCode) {
+                            candidate.setReadable(true, false)
+                            return candidate
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        return null
+    }
+
     suspend fun fetchLatestUpdateFromOnline(urlStr: String = DEFAULT_VERSION_JSON_URL): OnlineUpdateInfo? {
         return withContext(Dispatchers.IO) {
             val fromJsDelivr = fetchFromVersionJson(DEFAULT_VERSION_JSON_URL)
@@ -300,6 +364,7 @@ object AppUpdateManager {
                 setDataAndType(uri, "application/vnd.android.package-archive")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true)
             }
 
@@ -321,7 +386,15 @@ object AppUpdateManager {
                 } catch (_: Exception) {}
             }
 
-            listOf("com.google.android.packageinstaller", "com.android.packageinstaller").forEach { pkg ->
+            listOf(
+                "com.google.android.packageinstaller",
+                "com.android.packageinstaller",
+                "com.samsung.android.packageinstaller",
+                "com.miui.packageinstaller",
+                "com.coloros.packageinstaller",
+                "com.oplus.packageinstaller",
+                "com.vivo.abe"
+            ).forEach { pkg ->
                 try {
                     context.grantUriPermission(pkg, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 } catch (_: Exception) {}
@@ -355,44 +428,32 @@ object AppUpdateManager {
         onError: (String) -> Unit
     ) = withContext(Dispatchers.IO) {
         val finalUrl = if (downloadUrl.isNotBlank()) downloadUrl.trim() else DEFAULT_APK_URL
+        val currentVersionCode = getCurrentVersionCode(context)
 
-        // Choose accessible external files directory so system Package Installer can read the file
-        val targetDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-            ?: context.externalCacheDir
-            ?: context.cacheDir
-
-        // Check if pre-existing release APK is available locally in Downloads folder
-        try {
-            val publicDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            val localCandidate = File(publicDownloads, "ShriBalajiKripaDham-release.apk")
-            if (localCandidate.exists() && localCandidate.length() > 5000000L && downloadUrl.isBlank()) {
-                val valid = context.packageManager.getPackageArchiveInfo(localCandidate.absolutePath, 0) != null
-                if (valid) {
-                    withContext(Dispatchers.Main) {
-                        onProgress(100, localCandidate.length(), localCandidate.length())
-                        onSuccess(localCandidate)
-                    }
-                    return@withContext
-                }
+        // 1. Instant check: If a newer APK was already downloaded locally, skip re-download entirely!
+        val cachedApk = findCachedUpdateApk(context, currentVersionCode + 1)
+        if (cachedApk != null && cachedApk.exists()) {
+            withContext(Dispatchers.Main) {
+                onProgress(100, cachedApk.length(), cachedApk.length())
+                onSuccess(cachedApk)
             }
-        } catch (_: Exception) {}
+            return@withContext
+        }
+
+        // Choose cacheDir/updates folder (guaranteed FileProvider compatibility across all Android 7-15)
+        val updateDir = File(context.cacheDir, "updates").apply { mkdirs() }
+        val targetFile = File(updateDir, "ShriBalajiKripaDham_update.apk")
 
         try {
             // Clean up any old cached APK files
             try {
-                targetDir.listFiles()?.forEach { f ->
-                    if (f.name.endsWith(".apk", ignoreCase = true)) {
-                        f.delete()
-                    }
-                }
-                context.cacheDir.listFiles()?.forEach { f ->
+                updateDir.listFiles()?.forEach { f ->
                     if (f.name.endsWith(".apk", ignoreCase = true)) {
                         f.delete()
                     }
                 }
             } catch (_: Exception) {}
 
-            val targetFile = File(targetDir, "ShriBalajiKripaDham_update.apk")
             val candidateUrls = mutableListOf<String>()
 
             // 1. Prioritize the exact release APK URL provided dynamically in version.json / app_update.json
@@ -402,8 +463,8 @@ object AppUpdateManager {
 
             // 2. Direct GitHub Release official assets (Always clean, immutable, non-cached)
             val gitHubReleaseFallbacks = listOf(
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk",
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.56.1/ShriBalajiKripaDham-release.apk"
+                DEFAULT_APK_URL,
+                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk"
             )
             for (gh in gitHubReleaseFallbacks) {
                 if (!candidateUrls.contains(gh)) {
@@ -411,11 +472,10 @@ object AppUpdateManager {
                 }
             }
 
-            // 3. Fallback to direct Ashram server endpoints
+            // 3. Direct Ashram server endpoints (always updated to latest)
             val ashramFallbacks = listOf(
-                "https://shribalajikripadham.online/download.php",
                 "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
-                DEFAULT_APK_URL
+                "https://shribalajikripadham.online/download.php"
             )
             for (af in ashramFallbacks) {
                 if (!candidateUrls.contains(af)) {

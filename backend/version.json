@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 78,
-  "version_code": 78,
-  "latest_version_name": "2.56.3",
-  "version_name": "2.56.3",
-  "update_notes_hindi": "v2.56.3: 📍 जीपीएस ऑटो-लोकेशन व निष्पक्ष टोकन प्रणाली: 30 किमी से दूरस्थ भक्तों का वास्तविक स्थान व सड़क दूरी GPS से स्वतः दर्ज; सुझाव सूची पूर्णतः समाप्त; आश्रम परिसर (200m) में उपस्थित स्थानीय भक्तों को अपना गाँव स्वयं लिखने की सुविधा; सुपरएडमिन में सटीक दूरी प्रदर्शन।",
-  "update_notes_english": "v2.56.3: 📍 GPS Auto-Location & Accurate Road Distance: Automatic GPS location fetch for outstation devotees (> 30 km); all location suggestions completely removed; free typing permitted for devotees physically at Ashram (< 200m); accurate road distance recorded for Superadmin.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.56.3/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 79,
+  "version_code": 79,
+  "latest_version_name": "2.56.4",
+  "version_name": "2.56.4",
+  "update_notes_hindi": "v2.56.4: ⚡ स्थायी अपडेट सुधार: बार-बार अपडेट मांगने की समस्या पूर्णतः हल; प्री-कैश APK इंस्टॉलेशन व अज्ञात ऐप अनुमति सुधार; सुगम एवं तीव्र दर्शन सेवा।",
+  "update_notes_english": "v2.56.4: ⚡ Permanent Update Fix: Completely resolved repeated update prompt issue; pre-cached APK installation & unknown apps permission flow hardened; smoother Darshan service.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.56.4/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

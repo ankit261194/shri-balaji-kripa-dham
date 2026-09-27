@@ -254,25 +254,31 @@ fun HomeScreen(
                             isForceUpdate = onlineInfo.isForce
                         )
                         settings = repository.getSettings()
-                        val updatePrefs = context.getSharedPreferences("sbkd_update_snooze", android.content.Context.MODE_PRIVATE)
-                        val snoozedCode = updatePrefs.getInt("snoozed_version_code", 0)
-                        val snoozeUntil = updatePrefs.getLong("snooze_until_timestamp", 0L)
-                        val isSnoozed = (snoozedCode >= onlineInfo.versionCode && System.currentTimeMillis() < snoozeUntil)
+                        val cached = AppUpdateManager.findCachedUpdateApk(context, onlineInfo.versionCode)
+                        if (cached != null) {
+                            downloadedApkFile = cached
+                        }
+                        val isSnoozed = AppUpdateManager.isUpdateSnoozed(context, onlineInfo.versionCode)
                         if (!isSnoozed || onlineInfo.isForce) {
                             showUpdatePopup = true
                         }
+                    } else {
+                        showUpdatePopup = false
                     }
                 } else {
                     val fresh = repository.getSettings()
                     if (AppUpdateManager.isUpdateAvailable(currentCode, fresh.latestVersionCode)) {
                         settings = fresh
-                        val updatePrefs = context.getSharedPreferences("sbkd_update_snooze", android.content.Context.MODE_PRIVATE)
-                        val snoozedCode = updatePrefs.getInt("snoozed_version_code", 0)
-                        val snoozeUntil = updatePrefs.getLong("snooze_until_timestamp", 0L)
-                        val isSnoozed = (snoozedCode >= fresh.latestVersionCode && System.currentTimeMillis() < snoozeUntil)
+                        val cached = AppUpdateManager.findCachedUpdateApk(context, fresh.latestVersionCode)
+                        if (cached != null) {
+                            downloadedApkFile = cached
+                        }
+                        val isSnoozed = AppUpdateManager.isUpdateSnoozed(context, fresh.latestVersionCode)
                         if (!isSnoozed || fresh.isForceUpdate) {
                             showUpdatePopup = true
                         }
+                    } else {
+                        showUpdatePopup = false
                     }
                 }
             } catch (e: Exception) {
@@ -1339,11 +1345,19 @@ fun HomeScreen(
                                                         isForceUpdate = online.isForce
                                                     )
                                                     settings = repository.getSettings()
+                                                    val cached = AppUpdateManager.findCachedUpdateApk(context, online.versionCode)
+                                                    if (cached != null) {
+                                                        downloadedApkFile = cached
+                                                    }
                                                     showUpdatePopup = true
                                                 } else {
                                                     val fresh = repository.getSettings()
                                                     settings = fresh
                                                     if (AppUpdateManager.isUpdateAvailable(cCode, fresh.latestVersionCode)) {
+                                                        val cached = AppUpdateManager.findCachedUpdateApk(context, fresh.latestVersionCode)
+                                                        if (cached != null) {
+                                                            downloadedApkFile = cached
+                                                        }
                                                         showUpdatePopup = true
                                                     } else {
                                                         if (online != null) {
@@ -1706,18 +1720,23 @@ fun HomeScreen(
         )
     }
 
-
             }
     // IN-APP UPDATE POPUP DIALOG (Pops up directly on Home Screen!)
-    if (showUpdatePopup) {
+    val currentInstalledCode = AppUpdateManager.getCurrentVersionCode(context)
+    val hasPendingUpdate = settings.latestVersionCode > currentInstalledCode
+    if (showUpdatePopup && hasPendingUpdate) {
+        // Pre-check if valid APK matching target version was already downloaded
+        if (downloadedApkFile == null || !downloadedApkFile!!.exists()) {
+            val cached = AppUpdateManager.findCachedUpdateApk(context, settings.latestVersionCode)
+            if (cached != null) {
+                downloadedApkFile = cached
+            }
+        }
+
         Dialog(
             onDismissRequest = {
                 if (!settings.isForceUpdate && !isDownloadingUpdate) {
-                    val updatePrefs = context.getSharedPreferences("sbkd_update_snooze", android.content.Context.MODE_PRIVATE)
-                    updatePrefs.edit()
-                        .putInt("snoozed_version_code", settings.latestVersionCode)
-                        .putLong("snooze_until_timestamp", System.currentTimeMillis() + (24 * 60 * 60 * 1000L))
-                        .apply()
+                    AppUpdateManager.snoozeUpdate(context, settings.latestVersionCode, 24 * 60 * 60 * 1000L)
                     showUpdatePopup = false
                 }
             },
@@ -1879,8 +1898,25 @@ fun HomeScreen(
                         }
                     } else if (downloadedApkFile != null && downloadedApkFile!!.exists()) {
                         // 100% Downloaded -> Direct In-App Install Button
+                        Surface(
+                            color = Color(0xFFE8F5E9),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, Color(0xFF81C784)),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
+                        ) {
+                            Text(
+                                text = if (isHindi) "✅ नवीनतम अपडेट फ़ाइल फोन में तैयार है! इन्स्टॉल करने के लिए नीचे हरा बटन दबाएं।"
+                                else "✅ Update package ready! Tap Install below.",
+                                fontSize = 12.sp,
+                                color = Color(0xFF1B5E20),
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(10.dp)
+                            )
+                        }
+
                         Button(
                             onClick = {
+                                AppUpdateManager.snoozeUpdate(context, settings.latestVersionCode, 30 * 60 * 1000L)
                                 AppUpdateManager.triggerApkInstall(context, downloadedApkFile!!)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
@@ -1893,7 +1929,7 @@ fun HomeScreen(
                                 Text("📦", fontSize = 20.sp)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = if (isHindi) "इन्स्टॉल करें (Install Update)" else "Install Update Now",
+                                    text = if (isHindi) "अभी इन्स्टॉल करें (Install Now)" else "Install Update Now",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -1919,6 +1955,21 @@ fun HomeScreen(
 
                         Button(
                             onClick = {
+                                // Pre-check Unknown Sources permission before downloading to avoid surprise termination
+                                if (!AppUpdateManager.hasInstallPermission(context)) {
+                                    AppUpdateManager.snoozeUpdate(context, settings.latestVersionCode, 30 * 60 * 1000L)
+                                    AppUpdateManager.requestInstallPermission(context)
+                                    Toast.makeText(
+                                        context,
+                                        if (isHindi) "कृपया 'Allow from this source' चालू करें, फिर ऐप में वापस आकर अपडेट करें"
+                                        else "Please enable 'Allow from this source' and return to app",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                    return@Button
+                                }
+
+                                // Auto-snooze for 1 hour while updating so user isn't spammed
+                                AppUpdateManager.snoozeUpdate(context, settings.latestVersionCode, 60 * 60 * 1000L)
                                 isDownloadingUpdate = true
                                 downloadProgress = 0
                                 downloadDownloadedBytes = 0L
@@ -1927,7 +1978,7 @@ fun HomeScreen(
                                 scope.launch {
                                     AppUpdateManager.startInAppUpdateDetailed(
                                         context = context,
-                                        downloadUrl = if (settings.apkDownloadUrl.isNotBlank() && !settings.apkDownloadUrl.contains("v2.55.1")) settings.apkDownloadUrl else "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk",
+                                        downloadUrl = if (settings.apkDownloadUrl.isNotBlank() && !settings.apkDownloadUrl.contains("v2.55.1")) settings.apkDownloadUrl else AppUpdateManager.DEFAULT_APK_URL,
                                         onProgress = { progress, downloaded, total ->
                                             downloadProgress = progress
                                             downloadDownloadedBytes = downloaded
@@ -1970,8 +2021,16 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedButton(
                             onClick = {
-                                val browserUrl = if (settings.apkDownloadUrl.isNotBlank() && !settings.apkDownloadUrl.contains("v2.55.1")) settings.apkDownloadUrl else "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk"
+                                AppUpdateManager.snoozeUpdate(context, settings.latestVersionCode, 2 * 60 * 60 * 1000L)
+                                showUpdatePopup = false
+                                val browserUrl = if (settings.apkDownloadUrl.isNotBlank() && !settings.apkDownloadUrl.contains("v2.55.1")) settings.apkDownloadUrl else AppUpdateManager.DEFAULT_APK_URL
                                 AppUpdateManager.openInBrowser(context, browserUrl)
+                                Toast.makeText(
+                                    context,
+                                    if (isHindi) "ब्राउज़र से डाउनलोड होने के बाद फोन के 'Downloads' फ़ोल्डर से APK खोलकर इन्स्टॉल करें"
+                                    else "After download completes, open the APK from Downloads to install",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             },
                             shape = RoundedCornerShape(14.dp),
                             modifier = Modifier
@@ -1994,12 +2053,13 @@ fun HomeScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             TextButton(
                                 onClick = {
-                                    val updatePrefs = context.getSharedPreferences("sbkd_update_snooze", android.content.Context.MODE_PRIVATE)
-                                    updatePrefs.edit()
-                                        .putInt("snoozed_version_code", settings.latestVersionCode)
-                                        .putLong("snooze_until_timestamp", System.currentTimeMillis() + (24 * 60 * 60 * 1000L))
-                                        .apply()
+                                    AppUpdateManager.snoozeUpdate(context, settings.latestVersionCode, 24 * 60 * 60 * 1000L)
                                     showUpdatePopup = false
+                                    Toast.makeText(
+                                        context,
+                                        if (isHindi) "अपडेट 24 घंटे के लिए स्थगित किया गया" else "Update snoozed for 24 hours",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             ) {
