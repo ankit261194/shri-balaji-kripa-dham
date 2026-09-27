@@ -137,7 +137,7 @@ $passengerGender = trim($input['passenger_gender'] ?? 'पुरुष');
 $passengerAge = intval($input['passenger_age'] ?? 30);
 $seatStatus = 'BOOKED';
 $paymentStatus = trim($input['payment_status'] ?? 'PAID');
-$fareAmount = floatval($input['fare_amount'] ?? 1500.0);
+$fareAmount = floatval($input['fare_amount'] ?? 0.0);
 $bookedBy = trim($input['booked_by'] ?? 'APP');
 $createdAt = intval($input['created_at'] ?? $nowMs);
 

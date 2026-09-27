@@ -131,7 +131,7 @@ fun BalajiYatraScreen(
 
     val bookedCount = seats.count { it.isBooked }
     val availableCount = seats.size - bookedCount
-    val farePerSeat = if (settings.busSeatFareAmount > 0) settings.busSeatFareAmount else 1500
+    val farePerSeat = settings.busSeatFareAmount
     val totalFare = selectedSeats.size * farePerSeat
 
     // Generate UPI QR Bitmap when payment sheet opens or custom QR image is present

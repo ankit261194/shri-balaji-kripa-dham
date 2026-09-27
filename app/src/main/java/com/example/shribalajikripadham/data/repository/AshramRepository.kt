@@ -108,15 +108,15 @@ class AshramRepository(context: Context) {
             ashramUpiId = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_id")) } catch (e: Exception) { "shribalajikripadham@upi" } ?: "shribalajikripadham@upi",
             ashramUpiName = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_name")) } catch (e: Exception) { "Shri Balaji Kripa Dham" } ?: "Shri Balaji Kripa Dham",
             customUpiQrUri = try { cursor.getString(cursor.getColumnIndexOrThrow("custom_upi_qr_uri")) } catch (e: Exception) { "" } ?: "",
-            busSeatFareAmount = try { cursor.getInt(cursor.getColumnIndexOrThrow("bus_seat_fare_amount")) } catch (e: Exception) { 1500 },
+            busSeatFareAmount = try { cursor.getInt(cursor.getColumnIndexOrThrow("bus_seat_fare_amount")) } catch (e: Exception) { 0 },
             isArziLedgerLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_arzi_ledger_live")) == 1 } catch (e: Exception) { true },
             badiArziRate = try { cursor.getDouble(cursor.getColumnIndexOrThrow("badi_arzi_rate")) } catch (e: Exception) { 100.0 },
             chhotiArziRate = try { cursor.getDouble(cursor.getColumnIndexOrThrow("chhoti_arzi_rate")) } catch (e: Exception) { 50.0 },
             canAdminViewArziLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_admin_view_arzi_ledger")) == 1 } catch (e: Exception) { true },
             canDevoteeViewArziLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_arzi_ledger")) == 1 } catch (e: Exception) { false },
             canDevoteeViewYatraDiary = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_yatra_diary")) == 1 } catch (e: Exception) { false },
-            ashramParichayHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_hindi")) ?: "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" } catch (e: Exception) { "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" },
-            ashramParichayEnglish = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_english")) ?: "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Shikarpur, Bulandshahr, UP), healing is 100% free under Guruji Tejveer Singh Ji." } catch (e: Exception) { "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Shikarpur, Bulandshahr, UP), healing is 100% free under Guruji Tejveer Singh Ji." },
+            ashramParichayHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_hindi")) ?: "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील अनूपशहर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" } catch (e: Exception) { "श्री बालाजी कृपा धाम (ग्राम डूंगरा जाट, तहसील अनूपशहर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है।" },
+            ashramParichayEnglish = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_parichay_english")) ?: "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Anoopshahr, Bulandshahr, UP), healing is 100% free under Guruji तेजवीर सिंह Ji." } catch (e: Exception) { "At Shri Balaji Kripa Dham (Gram Dungra Jaat, Anoopshahr, Bulandshahr, UP), healing is 100% free under Guruji तेजवीर सिंह Ji." },
             ashramHistoryHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_history_hindi")) ?: "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है।" } catch (e: Exception) { "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है।" },
             ashramRulesHindi = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_rules_hindi")) ?: "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" } catch (e: Exception) { "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आश्रम परिसर (200m परिधि) में भौतिक रूप से उपस्थित होने पर ही मिलेगा।\n3. एक मोबाइल से 1 ही टोकन बनेगा।" },
             tokenVoicePreset = try { cursor.getString(cursor.getColumnIndexOrThrow("token_voice_preset")) ?: "GURU_CALM" } catch (e: Exception) { "GURU_CALM" },
@@ -136,7 +136,29 @@ class AshramRepository(context: Context) {
             liveStreamTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("live_stream_title")) ?: "श्री बालाजी कृपा धाम दिव्य दरबार लाइव" } catch (e: Exception) { "श्री बालाजी कृपा धाम दिव्य दरबार लाइव" },
             liveStreamUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("live_stream_url")) ?: "" } catch (e: Exception) { "" },
             youtubeLiveUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("youtube_live_url")) ?: "" } catch (e: Exception) { "" },
-            facebookLiveUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("facebook_live_url")) ?: "" } catch (e: Exception) { "" }
+            facebookLiveUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("facebook_live_url")) ?: "" } catch (e: Exception) { "" },
+            // Website CMS Dynamic Fields
+            websiteTopBarText = try { cursor.getString(cursor.getColumnIndexOrThrow("top_bar_text")) ?: "🚩 ॐ श्री हनुमते नमः | परम पूज्य गुरुजी तेजवीर सिंह जी | श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, बुलन्दशहर 🚩" } catch (e: Exception) { "🚩 ॐ श्री हनुमते नमः | परम पूज्य गुरुजी तेजवीर सिंह जी | श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, बुलन्दशहर 🚩" },
+            websiteGurujiTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("guruji_title")) ?: "परम पूज्य गुरुजी तेजवीर सिंह जी" } catch (e: Exception) { "परम पूज्य गुरुजी तेजवीर सिंह जी" },
+            websiteGurujiBio = try { cursor.getString(cursor.getColumnIndexOrThrow("guruji_bio")) ?: "अध्यात्म, मानव सेवा एवं बालाजी महाराज की असीम कृपा के संवाहक" } catch (e: Exception) { "अध्यात्म, मानव सेवा एवं बालाजी महाराज की असीम कृपा के संवाहक" },
+            websiteTokenRuleNotice = try { cursor.getString(cursor.getColumnIndexOrThrow("token_rules_notice")) ?: "आश्रम की निष्पक्षता, पारदर्शी कतार, GPS लोकेशन एवं AI बायोमेट्रिक सुरक्षा नियमों के अनुसार टोकन पंजीकरण केवल और केवल आधिकारिक मोबाइल ऐप से ही संभव है। वेबसाइट पर कोई टोकन जनरेशन फॉर्म नहीं है। टोकन प्राप्त करने के लिए कृपया ऊपर दिए गए बटन से मोबाइल ऐप इंस्टॉल करें।" } catch (e: Exception) { "आश्रम की निष्पक्षता, पारदर्शी कतार, GPS लोकेशन एवं AI बायोमेट्रिक सुरक्षा नियमों के अनुसार टोकन पंजीकरण केवल और केवल आधिकारिक मोबाइल ऐप से ही संभव है। वेबसाइट पर कोई टोकन जनरेशन फॉर्म नहीं है। टोकन प्राप्त करने के लिए कृपया ऊपर दिए गए बटन से मोबाइल ऐप इंस्टॉल करें।" },
+            websiteAartiMangala = try { cursor.getString(cursor.getColumnIndexOrThrow("aarti_mangala_time")) ?: "प्रातः 05:30 बजे" } catch (e: Exception) { "प्रातः 05:30 बजे" },
+            websiteAartiBalbhog = try { cursor.getString(cursor.getColumnIndexOrThrow("aarti_balbhog_time")) ?: "प्रातः 08:00 बजे" } catch (e: Exception) { "प्रातः 08:00 बजे" },
+            websiteAartiSandhya = try { cursor.getString(cursor.getColumnIndexOrThrow("aarti_sandhya_time")) ?: "सायं 07:00 बजे" } catch (e: Exception) { "सायं 07:00 बजे" },
+            websiteAartiShayan = try { cursor.getString(cursor.getColumnIndexOrThrow("aarti_shayan_time")) ?: "रात्रि 09:00 बजे" } catch (e: Exception) { "रात्रि 09:00 बजे" },
+            websiteBankName = try { cursor.getString(cursor.getColumnIndexOrThrow("bank_name")) ?: "पंजाब नेशनल बैंक (PNB)" } catch (e: Exception) { "पंजाब नेशनल बैंक (PNB)" },
+            websiteAccountHolder = try { cursor.getString(cursor.getColumnIndexOrThrow("bank_account_holder")) ?: "श्री बालाजी कृपा धाम सेवा ट्रस्ट" } catch (e: Exception) { "श्री बालाजी कृपा धाम सेवा ट्रस्ट" },
+            websiteAccountNumber = try { cursor.getString(cursor.getColumnIndexOrThrow("bank_account_number")) ?: "" } catch (e: Exception) { "" },
+            websiteBankIfsc = try { cursor.getString(cursor.getColumnIndexOrThrow("bank_ifsc")) ?: "" } catch (e: Exception) { "" },
+            websiteBankBranch = try { cursor.getString(cursor.getColumnIndexOrThrow("bank_branch")) ?: "अनूपशहर, बुलन्दशहर" } catch (e: Exception) { "अनूपशहर, बुलन्दशहर" },
+            websiteAshramAddress = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_address")) ?: "श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश" } catch (e: Exception) { "श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश" },
+            websiteAshramDirections = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_directions")) ?: "निकटतम रेलवे स्टेशन: अनूपशहर / बबराला / बुलन्दशहर" } catch (e: Exception) { "निकटतम रेलवे स्टेशन: अनूपशहर / बबराला / बुलन्दशहर" },
+            websiteContactEmail = try { cursor.getString(cursor.getColumnIndexOrThrow("contact_email")) ?: "shribalajikripadham@gmail.com" } catch (e: Exception) { "shribalajikripadham@gmail.com" },
+            websiteInstagramUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("instagram_url")) ?: "https://www.instagram.com/shribalajikripadham" } catch (e: Exception) { "https://www.instagram.com/shribalajikripadham" },
+            websiteWhatsappChannelUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_channel_url")) ?: "https://chat.whatsapp.com/invite" } catch (e: Exception) { "https://chat.whatsapp.com/invite" },
+            websiteFooterTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("footer_title")) ?: "श्री बालाजी कृपा धाम" } catch (e: Exception) { "श्री बालाजी कृपा धाम" },
+            websiteFooterDedication = try { cursor.getString(cursor.getColumnIndexOrThrow("footer_dedication")) ?: "सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।" } catch (e: Exception) { "सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।" },
+            websiteFooterCopyright = try { cursor.getString(cursor.getColumnIndexOrThrow("footer_copyright")) ?: "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।" } catch (e: Exception) { "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।" }
         )
     }
 
@@ -383,6 +405,34 @@ class AshramRepository(context: Context) {
             if (s.darbarTimings.isNotBlank()) put("darbar_timings", s.darbarTimings)
             put("is_darbar_active", if (s.isDarbarActive) 1 else 0)
             put("is_darbar_live_now", if (s.isDarbarLiveNow) 1 else 0)
+            put("badi_arzi_rate", s.badiArziRate)
+            put("chhoti_arzi_rate", s.chhotiArziRate)
+            put("bus_seat_fare_amount", s.busSeatFareAmount)
+            put("contact_phone", s.contactPhone)
+            put("whatsapp_number", s.whatsappNumber)
+            put("ashram_upi_id", s.ashramUpiId)
+            put("ashram_upi_name", s.ashramUpiName)
+            put("top_bar_text", s.websiteTopBarText)
+            put("guruji_title", s.websiteGurujiTitle)
+            put("guruji_bio", s.websiteGurujiBio)
+            put("token_rules_notice", s.websiteTokenRuleNotice)
+            put("aarti_mangala_time", s.websiteAartiMangala)
+            put("aarti_balbhog_time", s.websiteAartiBalbhog)
+            put("aarti_sandhya_time", s.websiteAartiSandhya)
+            put("aarti_shayan_time", s.websiteAartiShayan)
+            put("bank_name", s.websiteBankName)
+            put("bank_account_holder", s.websiteAccountHolder)
+            put("bank_account_number", s.websiteAccountNumber)
+            put("bank_ifsc", s.websiteBankIfsc)
+            put("bank_branch", s.websiteBankBranch)
+            put("ashram_address", s.websiteAshramAddress)
+            put("ashram_directions", s.websiteAshramDirections)
+            put("contact_email", s.websiteContactEmail)
+            put("instagram_url", s.websiteInstagramUrl)
+            put("whatsapp_channel_url", s.websiteWhatsappChannelUrl)
+            put("footer_title", s.websiteFooterTitle)
+            put("footer_dedication", s.websiteFooterDedication)
+            put("footer_copyright", s.websiteFooterCopyright)
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (ok) persistCurrentSettingsToAllLayers()
@@ -1460,8 +1510,9 @@ class AshramRepository(context: Context) {
             if (status == TokenStatus.COMPLETED) {
                 put("is_darshan_completed", 1)
                 put("darshan_completed_at", System.currentTimeMillis())
-            } else if (status == TokenStatus.CANCELLED) {
+            } else {
                 put("is_darshan_completed", 0)
+                put("darshan_completed_at", 0L)
             }
         }
         val ok = db.update("tokens", cv, "id = ?", arrayOf(tokenId.toString())) > 0
@@ -1528,7 +1579,7 @@ class AshramRepository(context: Context) {
         paymentStatus: PaymentStatus,
         paymentMode: String,
         boardingPoint: String = "Gram Dungra Jaat Ashram",
-        fareAmount: Int = 1500,
+        fareAmount: Int = 0,
         notes: String = "",
         passengerAge: Int = 0,
         passengerGender: String = "",
@@ -3079,6 +3130,12 @@ class AshramRepository(context: Context) {
                 )
             } catch (e: Exception) {}
             try {
+                // Delete from Hostinger Central MySQL
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.deleteCentralToken(
+                    tokenNum, darbarDate
+                )
+            } catch (e: Exception) {}
+            try {
                 // Keep immutable audit trail in Google Sheet
                 com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.updateTokenStatusInSheet(
                     appContext, darbarDate, tokenNum, "CANCELLED", "एडमिन द्वारा हटाया गया ($adminName)"
@@ -3086,6 +3143,38 @@ class AshramRepository(context: Context) {
             } catch (e: Exception) {}
         }
         deleted
+    }
+
+    /**
+     * SuperAdmin: Delete ALL tokens for a selected Sunday/date (Both local and Hostinger Central)
+     */
+    suspend fun deleteAllTokensForDate(darbarDate: String, adminName: String = "SUPER_ADMIN"): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        try {
+            val localCount = db.delete("tokens", "darbar_date = ?", arrayOf(darbarDate))
+
+            val centralRes = try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.deleteAllCentralTokensForDate(darbarDate)
+            } catch (e: Exception) {
+                Pair(false, e.localizedMessage ?: "सर्वर सिंक त्रुटि")
+            }
+
+            try {
+                dbHelper.insertAuditLog(
+                    action = "SUNDAY_TOKENS_WIPED",
+                    tokenNumber = 0,
+                    performedBy = adminName,
+                    role = "SUPER_ADMIN",
+                    reason = "रविवार ($darbarDate) के सभी $localCount टोकन मिटाए गए",
+                    darbarDate = darbarDate,
+                    details = "दिनांक $darbarDate का टोकन डेटा सुपरएडमिन द्वारा स्थायी रूप से साफ़ किया गया"
+                )
+            } catch (e: Exception) {}
+
+            Pair(true, "दिनांक $darbarDate के टोकन हटा दिए गए (स्थानीय: $localCount, सर्वर: ${centralRes.second})")
+        } catch (e: Exception) {
+            Pair(false, "हटाने में त्रुटि: ${e.localizedMessage}")
+        }
     }
 
     // =========================================================================
@@ -3796,6 +3885,9 @@ class AshramRepository(context: Context) {
                 if (cfg.has("is_token_service_enabled")) cv.put("is_token_service_enabled", if (cfg.optBoolean("is_token_service_enabled")) 1 else 0)
                 if (cfg.has("is_bus_booking_live")) cv.put("is_bus_booking_live", if (cfg.optBoolean("is_bus_booking_live")) 1 else 0)
                 if (cfg.has("is_payment_feature_live")) cv.put("is_payment_feature_live", if (cfg.optBoolean("is_payment_feature_live")) 1 else 0)
+                if (cfg.has("bus_seat_fare_amount")) {
+                    cv.put("bus_seat_fare_amount", cfg.optInt("bus_seat_fare_amount", 0))
+                }
                 if (cfg.has("badi_arzi_rate")) {
                     val bRate = cfg.optDouble("badi_arzi_rate", 0.0)
                     if (bRate > 0) cv.put("badi_arzi_rate", bRate)
@@ -3805,6 +3897,21 @@ class AshramRepository(context: Context) {
                     if (cRate > 0) cv.put("chhoti_arzi_rate", cRate)
                 }
                 if (cfg.has("is_arzi_ledger_live")) cv.put("is_arzi_ledger_live", if (cfg.optBoolean("is_arzi_ledger_live")) 1 else 0)
+
+                val cmsCols = listOf(
+                    "top_bar_text", "guruji_title", "guruji_bio", "token_rules_notice",
+                    "aarti_mangala_time", "aarti_balbhog_time", "aarti_sandhya_time", "aarti_shayan_time",
+                    "bank_name", "bank_account_holder", "bank_account_number", "bank_ifsc",
+                    "bank_branch", "ashram_address", "ashram_directions", "contact_email",
+                    "instagram_url", "whatsapp_channel_url", "footer_title", "footer_dedication",
+                    "footer_copyright", "ashram_parichay_hindi", "ashram_history_hindi", "ashram_rules_hindi"
+                )
+                for (col in cmsCols) {
+                    if (cfg.has(col)) {
+                        val v = cfg.optString(col, "")
+                        if (v.isNotBlank()) cv.put(col, v)
+                    }
+                }
 
                 if (cv.size() > 0) {
                     db.update("ashram_settings", cv, "id = 1", null)
@@ -3891,14 +3998,16 @@ class AshramRepository(context: Context) {
                 if (sc.ashramUpiId.isNotBlank()) cv.put("ashram_upi_id", sc.ashramUpiId)
                 if (sc.ashramUpiName.isNotBlank()) cv.put("ashram_upi_name", sc.ashramUpiName)
                 if (sc.customUpiQrUri.isNotBlank()) cv.put("custom_upi_qr_uri", sc.customUpiQrUri)
-                if (sc.busSeatFareAmount > 0) cv.put("bus_seat_fare_amount", sc.busSeatFareAmount)
+                if (!hasSettings) {
+                    if (sc.busSeatFareAmount > 0) cv.put("bus_seat_fare_amount", sc.busSeatFareAmount)
+                    if (sc.badiArziRate > 0) cv.put("badi_arzi_rate", sc.badiArziRate)
+                    if (sc.chhotiArziRate > 0) cv.put("chhoti_arzi_rate", sc.chhotiArziRate)
+                }
                 if (sc.bannerTitle.isNotBlank()) cv.put("banner_title", sc.bannerTitle)
                 if (sc.bannerSubtitle.isNotBlank()) cv.put("banner_subtitle", sc.bannerSubtitle)
                 if (sc.bannerPhotoUri.isNotBlank()) cv.put("banner_photo_uri", sc.bannerPhotoUri)
                 cv.put("is_banner_visible", if (sc.isBannerVisible) 1 else 0)
                 if (sc.bannerActionUrl.isNotBlank()) cv.put("banner_action_url", sc.bannerActionUrl)
-                if (sc.badiArziRate > 0) cv.put("badi_arzi_rate", sc.badiArziRate)
-                if (sc.chhotiArziRate > 0) cv.put("chhoti_arzi_rate", sc.chhotiArziRate)
                 cv.put("is_arzi_ledger_live", if (sc.isArziLedgerLive) 1 else 0)
                 cv.put("can_admin_view_arzi_ledger", if (sc.canAdminViewArziLedger) 1 else 0)
                 cv.put("can_devotee_view_arzi_ledger", if (sc.canDevoteeViewArziLedger) 1 else 0)
@@ -4104,6 +4213,26 @@ class AshramRepository(context: Context) {
             )
         }
         cursor.close()
+        list
+    }
+
+    suspend fun getAllTokenDates(): List<String> = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val list = mutableListOf<String>()
+        try {
+            val cursor = db.rawQuery("SELECT DISTINCT darbar_date FROM tokens ORDER BY darbar_date DESC", null)
+            while (cursor.moveToNext()) {
+                val d = cursor.getString(0)
+                if (!d.isNullOrBlank()) list.add(d)
+            }
+            cursor.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        val today = DatabaseHelper.getTodayDateString()
+        if (!list.contains(today)) {
+            list.add(0, today)
+        }
         list
     }
 
@@ -5466,10 +5595,10 @@ class AshramRepository(context: Context) {
      * Pulls latest tokens, bills/expenses, devotee payments, and live settings from Hostinger MySQL.
      * All Admin phones see changes immediately!
      */
-    suspend fun syncFullHostingerToLocal(): Triple<Int, Int, Int> = withContext(Dispatchers.IO) {
+    suspend fun syncFullHostingerToLocal(targetDate: String = ""): Triple<Int, Int, Int> = withContext(Dispatchers.IO) {
         var tokenCount = 0
         try {
-            val queueJson = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveQueue()
+            val queueJson = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveQueue(targetDate)
             if (queueJson != null && queueJson.optBoolean("success", false)) {
                 val tokensArray = queueJson.optJSONArray("tokens")
                 if (tokensArray != null && tokensArray.length() > 0) {
@@ -5516,6 +5645,25 @@ class AshramRepository(context: Context) {
                     if (cfg.has("banner_title") && cfg.optString("banner_title").isNotBlank()) put("banner_title", cfg.optString("banner_title"))
                     if (cfg.has("banner_subtitle") && cfg.optString("banner_subtitle").isNotBlank()) put("banner_subtitle", cfg.optString("banner_subtitle"))
                     if (cfg.has("is_banner_visible")) put("is_banner_visible", if (cfg.optBoolean("is_banner_visible", true)) 1 else 0)
+                    // New website CMS fields
+                    if (cfg.has("top_bar_text") && cfg.optString("top_bar_text").isNotBlank()) put("top_bar_text", cfg.optString("top_bar_text"))
+                    if (cfg.has("guruji_title") && cfg.optString("guruji_title").isNotBlank()) put("guruji_title", cfg.optString("guruji_title"))
+                    if (cfg.has("guruji_bio") && cfg.optString("guruji_bio").isNotBlank()) put("guruji_bio", cfg.optString("guruji_bio"))
+                    if (cfg.has("ashram_history") && cfg.optString("ashram_history").isNotBlank()) put("ashram_history", cfg.optString("ashram_history"))
+                    if (cfg.has("token_rules_summary") && cfg.optString("token_rules_summary").isNotBlank()) put("token_rules_summary", cfg.optString("token_rules_summary"))
+                    if (cfg.has("youtube_live_video_id") && cfg.optString("youtube_live_video_id").isNotBlank()) put("youtube_live_video_id", cfg.optString("youtube_live_video_id"))
+                    if (cfg.has("aarti_mangala_time") && cfg.optString("aarti_mangala_time").isNotBlank()) put("aarti_mangala_time", cfg.optString("aarti_mangala_time"))
+                    if (cfg.has("aarti_sandhya_time") && cfg.optString("aarti_sandhya_time").isNotBlank()) put("aarti_sandhya_time", cfg.optString("aarti_sandhya_time"))
+                    if (cfg.has("aarti_maha_time") && cfg.optString("aarti_maha_time").isNotBlank()) put("aarti_maha_time", cfg.optString("aarti_maha_time"))
+                    if (cfg.has("bank_name") && cfg.optString("bank_name").isNotBlank()) put("bank_name", cfg.optString("bank_name"))
+                    if (cfg.has("bank_account_holder") && cfg.optString("bank_account_holder").isNotBlank()) put("bank_account_holder", cfg.optString("bank_account_holder"))
+                    if (cfg.has("bank_account_number") && cfg.optString("bank_account_number").isNotBlank()) put("bank_account_number", cfg.optString("bank_account_number"))
+                    if (cfg.has("bank_ifsc") && cfg.optString("bank_ifsc").isNotBlank()) put("bank_ifsc", cfg.optString("bank_ifsc"))
+                    if (cfg.has("bank_branch") && cfg.optString("bank_branch").isNotBlank()) put("bank_branch", cfg.optString("bank_branch"))
+                    if (cfg.has("bank_upi_id") && cfg.optString("bank_upi_id").isNotBlank()) put("bank_upi_id", cfg.optString("bank_upi_id"))
+                    if (cfg.has("ashram_address") && cfg.optString("ashram_address").isNotBlank()) put("ashram_address", cfg.optString("ashram_address"))
+                    if (cfg.has("ashram_directions") && cfg.optString("ashram_directions").isNotBlank()) put("ashram_directions", cfg.optString("ashram_directions"))
+                    if (cfg.has("footer_copyright") && cfg.optString("footer_copyright").isNotBlank()) put("footer_copyright", cfg.optString("footer_copyright"))
                 }
                 db.update("ashram_settings", cv, "id = 1", null)
             }

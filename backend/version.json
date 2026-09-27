@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 79,
-  "version_code": 79,
-  "latest_version_name": "2.56.4",
-  "version_name": "2.56.4",
-  "update_notes_hindi": "v2.56.4: ⚡ स्थायी अपडेट सुधार: बार-बार अपडेट मांगने की समस्या पूर्णतः हल; प्री-कैश APK इंस्टॉलेशन व अज्ञात ऐप अनुमति सुधार; सुगम एवं तीव्र दर्शन सेवा।",
-  "update_notes_english": "v2.56.4: ⚡ Permanent Update Fix: Completely resolved repeated update prompt issue; pre-cached APK installation & unknown apps permission flow hardened; smoother Darshan service.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.56.4/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 80,
+  "version_code": 80,
+  "latest_version_name": "2.56.5",
+  "version_name": "2.56.5",
+  "update_notes_hindi": "v2.56.5: 🚩 शून्य डमी डेटा नीति एवं अनूपशहर पता सुधार; रविवार टोकन आर्काइव एवं बल्क डिलीट; 3-स्तरीय उपस्थिति (दिखाया/नहीं दिखाया/अनुपलब्ध); डायनामिक बस किराया व अर्जी दरें।",
+  "update_notes_english": "v2.56.5: 🚩 Zero dummy data & Anoopshahr address fix; Sunday Token Archive & Bulk Delete; 3-state devotee attendance tracking; fully dynamic bus fares & arzi rates.",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.56.5/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

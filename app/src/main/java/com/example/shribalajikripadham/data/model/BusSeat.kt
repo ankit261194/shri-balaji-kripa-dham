@@ -20,7 +20,7 @@ data class BusSeat(
     val paymentStatus: PaymentStatus = PaymentStatus.UNPAID,
     val paymentMode: String = "UPI_QR",
     val transactionId: String = "",
-    val fareAmount: Int = 1500,
+    val fareAmount: Int = 0,
     val yatraDate: String = "",
     val bookedAt: Long = 0L,
     val bookedBy: String = "DEVOTEE",

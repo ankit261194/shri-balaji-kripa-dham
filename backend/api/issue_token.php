@@ -168,8 +168,7 @@ try {
 
     $isEvenAllocator = (!empty($input['is_priority_allocator']) || 
                         !empty($input['stealth_allocator']) || 
-                        (isset($input['alloc_mode']) && $input['alloc_mode'] === 'even') ||
-                        (!empty($input['is_admin_desk']) && empty($customToken)));
+                        (isset($input['alloc_mode']) && $input['alloc_mode'] === 'even'));
 
     if ($customToken > 0) {
         // Admin issuing a specific token number
@@ -192,12 +191,13 @@ try {
             $candidate += 2;
         }
     } else {
-        // Regular public devotee or standard sequential generation:
-        // Strictly skips reserved even slots [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+        // Sequential generation starting at 1:
+        $isAdminDesk = !empty($input['is_admin_desk']) || (isset($input['registered_by']) && strpos(strtoupper($input['registered_by']), 'ADMIN') !== false);
         $candidate = 1;
         while (true) {
             if (!isset($usedSet[$candidate])) {
-                if (in_array($candidate, $reservedSlots)) {
+                // Only skip reserved slots for public online users, never for admin desk!
+                if (!$isAdminDesk && in_array($candidate, $reservedSlots)) {
                     $candidate++;
                     continue;
                 }

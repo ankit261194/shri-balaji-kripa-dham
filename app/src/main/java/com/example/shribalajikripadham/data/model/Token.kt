@@ -5,7 +5,8 @@ enum class TokenStatus {
     PENDING,
     CALLED,
     COMPLETED,
-    CANCELLED
+    CANCELLED,
+    ABSENT
 }
 
 data class Token(

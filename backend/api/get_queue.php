@@ -78,10 +78,18 @@ try {
     $waiting = 0;
     $completed = 0;
     $cancelled = 0;
+    $absent = 0;
     foreach ($tokens as $t) {
-        if ($t['status'] === 'WAITING') $waiting++;
-        elseif ($t['status'] === 'COMPLETED') $completed++;
-        elseif ($t['status'] === 'CANCELLED') $cancelled++;
+        $st = strtoupper($t['status'] ?? '');
+        if ($st === 'COMPLETED' || !empty($t['is_darshan_completed'])) {
+            $completed++;
+        } elseif ($st === 'ABSENT') {
+            $absent++;
+        } elseif ($st === 'CANCELLED') {
+            $cancelled++;
+        } else {
+            $waiting++;
+        }
     }
 
     echo json_encode([
@@ -92,6 +100,7 @@ try {
         "waiting_count" => $waiting,
         "completed_count" => $completed,
         "cancelled_count" => $cancelled,
+        "absent_count" => $absent,
         "tokens" => $tokens
     ], JSON_UNESCAPED_UNICODE);
 

@@ -932,7 +932,27 @@ object HostingerCentralSyncManager {
                 put("guruji_photo_url", settings.gurujiPhotoUri)
                 put("allow_admin_reserved_tokens", if (settings.allowAdminReservedTokens) 1 else 0)
                 put("can_admin_issue_reserved_tokens", if (settings.allowAdminReservedTokens) 1 else 0)
-                put("aarti_timings", "प्रातः 05:30 मंगला आरती • सायं 07:00 महाआरती")
+                put("aarti_timings", "${settings.websiteAartiMangala} मंगला • ${settings.websiteAartiSandhya} संध्या • ${settings.websiteAartiShayan} शयन")
+
+                // Full Website CMS Fields (100% Dynamic from App)
+                put("top_bar_text", settings.websiteTopBarText)
+                put("guruji_title", settings.websiteGurujiTitle)
+                put("guruji_bio", settings.websiteGurujiBio)
+                put("ashram_history", settings.ashramHistoryHindi)
+                put("token_rules_summary", settings.websiteTokenRuleNotice)
+                put("youtube_live_video_id", settings.youtubeLiveUrl)
+                put("aarti_mangala_time", settings.websiteAartiMangala)
+                put("aarti_sandhya_time", settings.websiteAartiSandhya)
+                put("aarti_maha_time", settings.websiteAartiShayan)
+                put("bank_name", settings.websiteBankName)
+                put("bank_account_holder", settings.websiteAccountHolder)
+                put("bank_account_number", settings.websiteAccountNumber)
+                put("bank_ifsc", settings.websiteBankIfsc)
+                put("bank_branch", settings.websiteBankBranch)
+                put("bank_upi_id", settings.ashramUpiId)
+                put("ashram_address", settings.websiteAshramAddress)
+                put("ashram_directions", settings.websiteAshramDirections)
+                put("footer_copyright", settings.websiteFooterCopyright)
 
                 if (sevadars != null) {
                     val sArr = JSONArray()
@@ -988,7 +1008,7 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.39.0")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.5")
 
             val params = "token_number=$tokenNumber&darbar_date=${URLEncoder.encode(darbarDate, "UTF-8")}&status=${URLEncoder.encode(status, "UTF-8")}&is_darshan_completed=${if (isDarshanCompleted) 1 else 0}"
             conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }
@@ -1001,6 +1021,87 @@ object HostingerCentralSyncManager {
             false
         } catch (e: Exception) {
             false
+        }
+    }
+
+    /**
+     * Delete a single token from Central Hostinger MySQL
+     */
+    suspend fun deleteCentralToken(
+        tokenNumber: Int,
+        darbarDate: String
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}delete_token.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.5")
+
+            val params = "action=DELETE_SINGLE&token_number=$tokenNumber&darbar_date=${URLEncoder.encode(darbarDate, "UTF-8")}&api_key=${URLEncoder.encode(API_SECRET_KEY, "UTF-8")}"
+            conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            if (code == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false)) {
+                    return@withContext Pair(true, json.optString("message", "टोकन सफलतापूर्वक हटा दिया गया"))
+                } else {
+                    return@withContext Pair(false, json.optString("message", "हटाने में त्रुटि"))
+                }
+            }
+            Pair(false, "सर्वर त्रुटि: HTTP $code")
+        } catch (e: Exception) {
+            Log.e(TAG, "deleteCentralToken error: ${e.message}")
+            Pair(false, "त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    /**
+     * SuperAdmin: Delete ALL tokens for a specific Sunday/date from Central Hostinger MySQL
+     */
+    suspend fun deleteAllCentralTokensForDate(
+        darbarDate: String
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}delete_token.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.5")
+
+            val params = "action=DELETE_ALL_FOR_DATE&darbar_date=${URLEncoder.encode(darbarDate, "UTF-8")}&api_key=${URLEncoder.encode(API_SECRET_KEY, "UTF-8")}"
+            conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            if (code == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false)) {
+                    return@withContext Pair(true, json.optString("message", "सभी टोकन हटा दिए गए"))
+                } else {
+                    return@withContext Pair(false, json.optString("message", "हटाने में त्रुटि"))
+                }
+            }
+            Pair(false, "सर्वर त्रुटि: HTTP $code")
+        } catch (e: Exception) {
+            Log.e(TAG, "deleteAllCentralTokensForDate error: ${e.message}")
+            Pair(false, "त्रुटि: ${e.localizedMessage}")
         }
     }
 

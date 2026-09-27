@@ -35,7 +35,7 @@ if ($tokenNumber <= 0 || empty($status)) {
     exit;
 }
 
-$validStatuses = ['WAITING', 'SERVING', 'COMPLETED', 'CANCELLED'];
+$validStatuses = ['WAITING', 'SERVING', 'COMPLETED', 'CANCELLED', 'ABSENT'];
 if (!in_array($status, $validStatuses)) {
     http_response_code(400);
     echo json_encode(["success" => false, "error" => "अमान्य टोकन स्थिति।"], JSON_UNESCAPED_UNICODE);

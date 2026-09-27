@@ -60,7 +60,7 @@ if (file_exists($verFile)) {
 
 $ashramName = !empty($settings['ashram_name']) ? $settings['ashram_name'] : 'श्री बालाजी कृपा धाम';
 $bannerTitle = !empty($settings['banner_title']) ? $settings['banner_title'] : 'श्री बालाजी कृपा धाम';
-$bannerSubtitle = !empty($settings['banner_subtitle']) ? $settings['banner_subtitle'] : '📍 ग्राम डूँगरा जाट, तहसील स्याना, जिला बुलन्दशहर (उ.प्र.)';
+$bannerSubtitle = !empty($settings['banner_subtitle']) ? $settings['banner_subtitle'] : '📍 ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.)';
 $emergencyNotice = !empty($settings['emergency_notice']) ? $settings['emergency_notice'] : '';
 $isEmergencyVisible = (!empty($settings['is_emergency_notice_visible']) && !empty($emergencyNotice));
 $darbarTimings = !empty($settings['darbar_timings']) ? $settings['darbar_timings'] : 'प्रत्येक रविवार प्रातःकाल 8:00 बजे से';
@@ -71,8 +71,33 @@ $isDarbarActive = !isset($settings['is_darbar_active']) || $settings['is_darbar_
 $contactPhone = !empty($settings['contact_phone']) ? $settings['contact_phone'] : '+91 97206 91090';
 $whatsappNumber = !empty($settings['whatsapp_number']) ? $settings['whatsapp_number'] : '+91 97206 91090';
 $upiId = !empty($settings['upi_id']) ? $settings['upi_id'] : 'shribalajikripadham@upi';
-$badiArziRate = !empty($settings['badi_arzi_rate']) ? (float)$settings['badi_arzi_rate'] : 100.0;
-$chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chhoti_arzi_rate'] : 50.0;
+$upiName = !empty($settings['upi_name']) ? $settings['upi_name'] : 'श्री बालाजी कृपा धाम';
+$badiArziRate = isset($settings['badi_arzi_rate']) ? (float)$settings['badi_arzi_rate'] : 0.0;
+$chhotiArziRate = isset($settings['chhoti_arzi_rate']) ? (float)$settings['chhoti_arzi_rate'] : 0.0;
+
+// Expanded Full Dynamic Website CMS fields
+$topBarText = !empty($settings['top_bar_text']) ? $settings['top_bar_text'] : '🚩 ॐ श्री हनुमते नमः • संकट कटै मिटै सब पीरा, जो सुमरै हनुमत बलबीरा 🚩';
+$gurujiTitle = !empty($settings['guruji_title']) ? $settings['guruji_title'] : 'परम पूज्य गुरुजी तेजवीर सिंह जी';
+$gurujiBio = !empty($settings['guruji_bio']) ? $settings['guruji_bio'] : 'संकट मोचन श्री बालाजी महाराज के अनन्य उपासक एवं पावन कृपा धाम के पीठाधीश्वर।';
+$tokenRulesNotice = !empty($settings['token_rules_notice']) ? $settings['token_rules_notice'] : 'आश्रम की निष्पक्षता, पारदर्शी कतार, GPS लोकेशन एवं AI बायोमेट्रिक सुरक्षा नियमों के अनुसार टोकन पंजीकरण केवल और केवल आधिकारिक मोबाइल ऐप से ही संभव है। वेबसाइट पर कोई टोकन जनरेशन फॉर्म नहीं है। टोकन प्राप्त करने के लिए कृपया ऊपर दिए गए बटन से मोबाइल ऐप इंस्टॉल करें।';
+$aartiMangala = !empty($settings['aarti_mangala_time']) ? $settings['aarti_mangala_time'] : 'प्रातः 05:30 बजे';
+$aartiBalbhog = !empty($settings['aarti_balbhog_time']) ? $settings['aarti_balbhog_time'] : 'प्रातः 08:00 बजे';
+$aartiSandhya = !empty($settings['aarti_sandhya_time']) ? $settings['aarti_sandhya_time'] : 'सायं 07:00 बजे';
+$aartiShayan = !empty($settings['aarti_shayan_time']) ? $settings['aarti_shayan_time'] : 'रात्रि 09:00 बजे';
+$bankName = !empty($settings['bank_name']) ? $settings['bank_name'] : 'पंजाब नेशनल बैंक (PNB)';
+$bankAccountHolder = !empty($settings['bank_account_holder']) ? $settings['bank_account_holder'] : 'श्री बालाजी कृपा धाम सेवा ट्रस्ट';
+$bankAccountNumber = !empty($settings['bank_account_number']) ? $settings['bank_account_number'] : '';
+$bankIfsc = !empty($settings['bank_ifsc']) ? $settings['bank_ifsc'] : '';
+$bankBranch = !empty($settings['bank_branch']) ? $settings['bank_branch'] : 'अनूपशहर, बुलन्दशहर';
+$ashramAddress = !empty($settings['ashram_address']) ? $settings['ashram_address'] : "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील अनूपशहर,\nजिला बुलन्दशहर, उत्तर प्रदेश";
+$ashramDirections = !empty($settings['ashram_directions']) ? $settings['ashram_directions'] : 'निकटतम रेलवे स्टेशन: अनूपशहर / बबराला / बुलन्दशहर';
+$contactEmail = !empty($settings['contact_email']) ? $settings['contact_email'] : 'shribalajikripadham@gmail.com';
+$instagramUrl = !empty($settings['instagram_url']) ? $settings['instagram_url'] : 'https://www.instagram.com/shribalajikripadham';
+$youtubeLiveUrl = !empty($settings['youtube_live_url']) ? $settings['youtube_live_url'] : '';
+$whatsappChannelUrl = !empty($settings['whatsapp_channel_url']) ? $settings['whatsapp_channel_url'] : 'https://chat.whatsapp.com/invite';
+$footerTitle = !empty($settings['footer_title']) ? $settings['footer_title'] : 'श्री बालाजी कृपा धाम';
+$footerDedication = !empty($settings['footer_dedication']) ? $settings['footer_dedication'] : 'सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।';
+$footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_copyright'] : '© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।';
 ?>
 <!DOCTYPE html>
 <html lang="hi">
@@ -916,8 +941,8 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
 <body>
 
     <!-- Top Sacred Bar -->
-    <div class="top-bar">
-        🚩 ॐ श्री हनुमते नमः • संकट कटै मिटै सब पीरा, जो सुमरै हनुमत बलबीरा 🚩
+    <div class="top-bar" id="websiteTopBarText">
+        <?= htmlspecialchars($topBarText) ?>
     </div>
 
     <!-- Navigation -->
@@ -926,7 +951,7 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
             <a href="/" class="nav-logo">
                 <div class="nav-logo-icon">🪔</div>
                 <div class="nav-logo-text">
-                    <h1>श्री बालाजी कृपा धाम</h1>
+                    <h1 id="websiteNavTitleText"><?= htmlspecialchars($ashramName) ?></h1>
                     <p>ग्राम डूँगरा जाट, बुलन्दशहर (उत्तर प्रदेश)</p>
                 </div>
             </a>
@@ -959,9 +984,9 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
                 <img id="gurujiPhotoImg" src="<?= htmlspecialchars($gurujiPhoto) ?>?t=<?= time() ?>" alt="पूज्य गुरुदेव जी" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
             </div>
             <div class="guruji-info">
-                <h4>पूज्य गुरुदेव जी</h4>
+                <h4 id="websiteGurujiTitleText"><?= htmlspecialchars($gurujiTitle) ?></h4>
                 <p class="title">✨ संस्थापक एवं पीठाधीश्वर</p>
-                <p class="desc">संकट मोचन श्री बालाजी महाराज के अनन्य उपासक एवं पावन कृपा धाम के संरक्षक।</p>
+                <p class="desc" id="websiteGurujiBioText"><?= htmlspecialchars($gurujiBio) ?></p>
             </div>
         </div>
 
@@ -1006,10 +1031,21 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
         <!-- MANDATORY TOKEN RULE BANNER (User Rule Enforced) -->
         <div class="rule-banner">
             <h4>⚠️ आवश्यक नियम: टोकन केवल मोबाइल ऐप से मान्य</h4>
-            <p>
-                आश्रम की निष्पक्षता, पारदर्शी कतार, GPS लोकेशन एवं AI बायोमेट्रिक सुरक्षा नियमों के अनुसार <strong>टोकन पंजीकरण केवल और केवल आधिकारिक मोबाइल ऐप से ही संभव है</strong>। वेबसाइट पर कोई टोकन जनरेशन फॉर्म नहीं है। टोकन प्राप्त करने के लिए कृपया ऊपर दिए गए बटन से मोबाइल ऐप इंस्टॉल करें।
+            <p id="tokenRulesNoticeText">
+                <?= nl2br(htmlspecialchars($tokenRulesNotice)) ?>
             </p>
         </div>
+
+        <?php if (!empty($youtubeLiveUrl)): ?>
+        <!-- YouTube Live Darbar Stream Card -->
+        <div style="max-width: 850px; margin: 25px auto 0; text-align: center; background: #FFEBEE; border: 2px solid #D32F2F; border-radius: 16px; padding: 18px; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.15);">
+            <h4 style="color: #C62828; margin-bottom: 6px; font-size: 1.2rem;">🔴 दिव्य दरबार लाइव प्रसारण (YouTube Live)</h4>
+            <p style="margin-bottom: 12px; font-size: 0.92rem; color: #424242;">पूज्य गुरुदेव जी के पावन सान्निध्य में नित्य सत्संग, महाआरती एवं दर्शन से जुड़ें</p>
+            <a href="<?= htmlspecialchars($youtubeLiveUrl) ?>" target="_blank" style="display: inline-block; background: #D32F2F; color: #ffffff; padding: 10px 24px; border-radius: 24px; text-decoration: none; font-weight: 700; font-size: 0.95rem;">
+                ▶️ यूट्यूब पर लाइव देखें (Watch Live on YouTube)
+            </a>
+        </div>
+        <?php endif; ?>
     </section>
 
     <!-- Sevadars Carousel Section (App & Web synchronized) -->
@@ -1044,8 +1080,8 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
                         </div>
                         <div class="sevadar-name">अंकित शर्मा</div>
                         <div class="sevadar-role">मुख्य प्रबंधक एवं व्यवस्थापक</div>
-                        <a href="tel:9876543210" class="sevadar-phone-btn">
-                            📞 9876543210
+                        <a href="tel:<?= htmlspecialchars($contactPhone) ?>" class="sevadar-phone-btn">
+                            📞 <?= htmlspecialchars($contactPhone) ?>
                         </a>
                     </div>
                 <?php endif; ?>
@@ -1154,18 +1190,18 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
         </div>
     </section>
 
-    <!-- Ashram Timings & Location -->
+    <!-- Ashram Timings, Seva & Location -->
     <section class="info-section">
-        <!-- Darbar Timings -->
+        <!-- Darbar & Aarti Timings -->
         <div class="info-box">
             <h4>🕒 नित्य आरती एवं दरबार समय</h4>
             <div class="timing-row">
                 <span>मंगला महाआरती</span>
-                <span class="time">प्रातः 05:30 बजे</span>
+                <span class="time" id="dynamicAartiMangala"><?= htmlspecialchars($aartiMangala) ?></span>
             </div>
             <div class="timing-row">
                 <span>बालभोग एवं प्रातः दर्शन</span>
-                <span class="time">प्रातः 08:00 बजे</span>
+                <span class="time" id="dynamicAartiBalbhog"><?= htmlspecialchars($aartiBalbhog) ?></span>
             </div>
             <div class="timing-row">
                 <span>रविवार विशेष दरबार</span>
@@ -1173,24 +1209,42 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
             </div>
             <div class="timing-row">
                 <span>सांध्य महाआरती</span>
-                <span class="time">सायं 07:00 बजे</span>
+                <span class="time" id="dynamicAartiSandhya"><?= htmlspecialchars($aartiSandhya) ?></span>
             </div>
             <div class="timing-row">
                 <span>शयन आरती</span>
-                <span class="time">रात्रि 09:00 बजे</span>
+                <span class="time" id="dynamicAartiShayan"><?= htmlspecialchars($aartiShayan) ?></span>
+            </div>
+        </div>
+
+        <!-- Seva, Donation & Bank Details Card (App Controlled) -->
+        <div class="info-box" style="border: 2px solid var(--gold); background: #FFFDF7;">
+            <h4>🏦 सेवा, दान एवं बैंक खाता विवरण</h4>
+            <div style="font-size: 0.95rem; margin-bottom: 10px; color: #37474F; line-height: 1.6;">
+                <p><strong>खाता धारक:</strong> <span id="dynamicBankAccountHolder"><?= htmlspecialchars($bankAccountHolder) ?></span></p>
+                <p><strong>बैंक का नाम:</strong> <span id="dynamicBankName"><?= htmlspecialchars($bankName) ?></span></p>
+                <?php if (!empty($bankAccountNumber)): ?>
+                <p><strong>खाता संख्या (A/C No):</strong> <span id="dynamicBankAccountNumber" style="font-family: monospace; font-weight: 700; color: #800000; font-size: 1.05rem;"><?= htmlspecialchars($bankAccountNumber) ?></span></p>
+                <?php endif; ?>
+                <?php if (!empty($bankIfsc)): ?>
+                <p><strong>IFSC कोड:</strong> <span id="dynamicBankIfsc" style="font-family: monospace; font-weight: 700;"><?= htmlspecialchars($bankIfsc) ?></span></p>
+                <?php endif; ?>
+                <p><strong>शाखा:</strong> <span id="dynamicBankBranch"><?= htmlspecialchars($bankBranch) ?></span></p>
+                <p style="margin-top: 6px;"><strong>UPI ID:</strong> <span id="dynamicUpiId" style="font-weight: 700; color: #2E7D32;"><?= htmlspecialchars($upiId) ?></span></p>
+            </div>
+            <div style="background: #FFF3E0; padding: 8px 12px; border-radius: 8px; font-size: 0.88rem; color: #E65100; font-weight: 600;">
+                📜 पावन अर्जी सेवा दर: बड़ी अर्जी ₹<span id="dynamicBadiArzi"><?= $badiArziRate ?></span> | छोटी अर्जी ₹<span id="dynamicChhotiArzi"><?= $chhotiArziRate ?></span>
             </div>
         </div>
 
         <!-- Ashram Location -->
         <div class="info-box">
             <h4>📍 आश्रम का पावन पता एवं संपर्क</h4>
-            <p style="font-size: 1rem; margin-bottom: 8px; color: #37474F;">
-                <strong>श्री बालाजी कृपा धाम</strong><br>
-                ग्राम डूँगरा जाट, पोस्ट स्याना,<br>
-                जिला बुलन्दशहर, उत्तर प्रदेश - 203412
+            <p style="font-size: 1rem; margin-bottom: 8px; color: #37474F;" id="dynamicAshramAddress">
+                <?= nl2br(htmlspecialchars($ashramAddress)) ?>
             </p>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;">
-                निकटतम रेलवे स्टेशन: हापुड़ / बुलन्दशहर • निकटतम बस स्टैंड: स्याना
+            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;" id="dynamicAshramDirections">
+                <?= htmlspecialchars($ashramDirections) ?>
             </p>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <a href="https://www.google.com/maps/search/?api=1&query=28.3972915,78.1460410" target="_blank" class="btn-maps">
@@ -1202,24 +1256,29 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
                 <a href="tel:<?= htmlspecialchars($contactPhone) ?>" class="btn-maps" style="background: #E65100;">
                     📞 कॉल सेवा (<?= htmlspecialchars($contactPhone) ?>)
                 </a>
+                <?php if (!empty($instagramUrl)): ?>
+                <a href="<?= htmlspecialchars($instagramUrl) ?>" target="_blank" class="btn-maps" style="background: #C2185B;">
+                    📸 इंस्टाग्राम (Instagram)
+                </a>
+                <?php endif; ?>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
     <footer>
-        <h3 style="color: var(--gold); font-size: 1.4rem; margin-bottom: 6px;">श्री बालाजी कृपा धाम</h3>
+        <h3 id="dynamicFooterTitle" style="color: var(--gold); font-size: 1.4rem; margin-bottom: 6px;"><?= htmlspecialchars($footerTitle) ?></h3>
         <p>ग्राम डूँगरा जाट, बुलन्दशहर (उत्तर प्रदेश)</p>
-        <p style="font-size: 0.88rem; color: #FFD54F;">सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।</p>
+        <p id="dynamicFooterDedication" style="font-size: 0.88rem; color: #FFD54F;"><?= htmlspecialchars($footerDedication) ?></p>
         
         <div style="margin-top: 15px;">
             <a href="download.php" style="color: #ffffff; background: var(--saffron-deep); padding: 8px 18px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.88rem;">
-                📲 Android ऐप डाउनलोड करें (v2.54.0 Pro)
+                📲 Android ऐप डाउनलोड करें (नवीनतम v<?= htmlspecialchars($appVersionName) ?>)
             </a>
         </div>
 
-        <div class="copyright">
-            © 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।
+        <div class="copyright" id="dynamicFooterCopyright">
+            <?= htmlspecialchars($footerCopyright) ?>
         </div>
     </footer>
 
@@ -1349,6 +1408,88 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
                             const dTimings = document.getElementById('dynamicDarbarTimings');
                             if (dTimings) dTimings.innerText = cfg.darbar_timings;
                         }
+
+                        // 9. Top Bar Text
+                        if (cfg.top_bar_text && cfg.top_bar_text.trim() !== '') {
+                            const tBar = document.getElementById('websiteTopBarText');
+                            if (tBar) tBar.innerText = cfg.top_bar_text;
+                        }
+
+                        // 10. Guruji Title & Bio
+                        if (cfg.guruji_title && cfg.guruji_title.trim() !== '') {
+                            const gTitle = document.getElementById('websiteGurujiTitleText');
+                            if (gTitle) gTitle.innerText = cfg.guruji_title;
+                        }
+                        if (cfg.guruji_bio && cfg.guruji_bio.trim() !== '') {
+                            const gBio = document.getElementById('websiteGurujiBioText');
+                            if (gBio) gBio.innerText = cfg.guruji_bio;
+                        }
+
+                        // 11. Dynamic Aarti Timings
+                        if (cfg.aarti_mangala_time) {
+                            const el = document.getElementById('dynamicAartiMangala');
+                            if (el) el.innerText = cfg.aarti_mangala_time;
+                        }
+                        if (cfg.aarti_balbhog_time) {
+                            const el = document.getElementById('dynamicAartiBalbhog');
+                            if (el) el.innerText = cfg.aarti_balbhog_time;
+                        }
+                        if (cfg.aarti_sandhya_time) {
+                            const el = document.getElementById('dynamicAartiSandhya');
+                            if (el) el.innerText = cfg.aarti_sandhya_time;
+                        }
+                        if (cfg.aarti_shayan_time) {
+                            const el = document.getElementById('dynamicAartiShayan');
+                            if (el) el.innerText = cfg.aarti_shayan_time;
+                        }
+
+                        // 12. Bank & Seva Details
+                        if (cfg.bank_name) {
+                            const el = document.getElementById('dynamicBankName');
+                            if (el) el.innerText = cfg.bank_name;
+                        }
+                        if (cfg.bank_account_holder) {
+                            const el = document.getElementById('dynamicBankAccountHolder');
+                            if (el) el.innerText = cfg.bank_account_holder;
+                        }
+                        if (cfg.bank_account_number) {
+                            const el = document.getElementById('dynamicBankAccountNumber');
+                            if (el) el.innerText = cfg.bank_account_number;
+                        }
+                        if (cfg.bank_ifsc) {
+                            const el = document.getElementById('dynamicBankIfsc');
+                            if (el) el.innerText = cfg.bank_ifsc;
+                        }
+                        if (cfg.bank_branch) {
+                            const el = document.getElementById('dynamicBankBranch');
+                            if (el) el.innerText = cfg.bank_branch;
+                        }
+                        if (cfg.upi_id) {
+                            const el = document.getElementById('dynamicUpiId');
+                            if (el) el.innerText = cfg.upi_id;
+                        }
+                        if (cfg.badi_arzi_rate) {
+                            const el = document.getElementById('dynamicBadiArzi');
+                            if (el) el.innerText = cfg.badi_arzi_rate;
+                        }
+                        if (cfg.chhoti_arzi_rate) {
+                            const el = document.getElementById('dynamicChhotiArzi');
+                            if (el) el.innerText = cfg.chhoti_arzi_rate;
+                        }
+
+                        // 13. Footer
+                        if (cfg.footer_title) {
+                            const el = document.getElementById('dynamicFooterTitle');
+                            if (el) el.innerText = cfg.footer_title;
+                        }
+                        if (cfg.footer_dedication) {
+                            const el = document.getElementById('dynamicFooterDedication');
+                            if (el) el.innerText = cfg.footer_dedication;
+                        }
+                        if (cfg.footer_copyright) {
+                            const el = document.getElementById('dynamicFooterCopyright');
+                            if (el) el.innerText = cfg.footer_copyright;
+                        }
                     }
                 })
                 .catch(err => {
@@ -1356,7 +1497,7 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
                 });
         }
 
-        // Smart live sync: Poll only when tab is actively visible every 45 seconds (prevents server overload)
+        // Real-Time High-Speed Sync: Polls every 5 seconds when tab is active
         let pollTimer = null;
         function scheduleNextPoll() {
             if (pollTimer) clearInterval(pollTimer);
@@ -1364,7 +1505,7 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
                 if (!document.hidden) {
                     updateLiveStatus();
                 }
-            }, 45000);
+            }, 5000);
         }
 
         document.addEventListener('visibilitychange', () => {
@@ -1374,6 +1515,8 @@ $chhotiArziRate = !empty($settings['chhoti_arzi_rate']) ? (float)$settings['chho
             }
         });
 
+        // Immediate fetch on load followed by real-time 5s interval
+        updateLiveStatus();
         scheduleNextPoll();
     </script>
 </body>

@@ -106,7 +106,7 @@ object BusTicketPdfGenerator {
             isAntiAlias = true
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("ग्राम डूँगरा जाट, तहसील शिकारपुर, ज़िला बुलन्दशहर (उ.प्र.) | परम पूज्य गुरुजी तेजवीर सिंह जी", PAGE_WIDTH / 2f, currentY, addressPaint)
+        canvas.drawText("ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.) | परम पूज्य गुरुजी तेजवीर सिंह जी", PAGE_WIDTH / 2f, currentY, addressPaint)
         currentY += 16f
 
         // Ribbon Banner: Official Bus Ticket
@@ -251,7 +251,7 @@ object BusTicketPdfGenerator {
             val ageGender = "${if (seat.passengerAge > 0) "${seat.passengerAge} वर्ष" else "-"} / ${seat.passengerGender.ifEmpty { "-" }}"
             canvas.drawText(ageGender, col3X, rowY + 15f, tdPaint)
             canvas.drawText(seat.phoneNumber.ifEmpty { "-" }, col4X, rowY + 15f, tdPaint)
-            val fare = if (seat.fareAmount > 0) seat.fareAmount else 1500
+            val fare = seat.fareAmount
             totalFare += fare
             canvas.drawText("₹$fare", col5X, rowY + 15f, tdPaint)
         }

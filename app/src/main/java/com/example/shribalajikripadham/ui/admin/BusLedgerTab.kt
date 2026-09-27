@@ -84,7 +84,7 @@ fun BusLedgerTab(
     val pendingSeats = seats.filter { it.isBooked && it.paymentStatus == PaymentStatus.PENDING_VERIFICATION }
     val confirmedSeats = seats.filter { it.isBooked && it.paymentStatus != PaymentStatus.PENDING_VERIFICATION }
     val availableSeats = seats.filter { !it.isBooked }
-    val farePerSeat = if (settings.busSeatFareAmount > 0) settings.busSeatFareAmount else 1500
+    val farePerSeat = settings.busSeatFareAmount
     val totalRevenue = confirmedSeats.size * farePerSeat
 
     Column(

@@ -1641,18 +1641,18 @@ fun MahabaliHeroLayout(
             AccordionOptionRow(
                 icon = "📞",
                 title = if (isHindi) "आश्रम मुख्य हेल्पलाइन" else "Ashram Helpline Call",
-                subtitle = settings.contactPhone.ifEmpty { "+91 98765 00000" },
+                subtitle = settings.contactPhone.ifEmpty { "+91 97206 91090" },
                 actionButtonText = if (isHindi) "कॉल करें" else "Call",
                 accentColor = Color(0xFF2E7D32),
                 onClick = {
-                    val p = settings.contactPhone.ifEmpty { "+919876500000" }
+                    val p = settings.contactPhone.ifEmpty { "+919720691090" }
                     try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$p"))) } catch (e: Exception) {}
                 }
             )
             AccordionOptionRow(
                 icon = "💬",
                 title = if (isHindi) "आधिकारिक व्हाट्सएप सेवा" else "Official WhatsApp Helpdesk",
-                subtitle = settings.whatsappNumber.ifEmpty { "+91 98765 43210" },
+                subtitle = settings.whatsappNumber.ifEmpty { "+91 97206 91090" },
                 actionButtonText = if (isHindi) "मैसेज करें" else "Chat",
                 accentColor = Color(0xFF25D366),
                 onClick = {
@@ -1846,18 +1846,18 @@ fun BhaktiAccordionLayout(
             AccordionOptionRow(
                 icon = "📞",
                 title = if (isHindi) "आश्रम फोन हेल्पलाइन" else "Ashram Helpline Phone",
-                subtitle = settings.contactPhone.ifEmpty { "+91 98765 00000" },
+                subtitle = settings.contactPhone.ifEmpty { "+91 97206 91090" },
                 actionButtonText = if (isHindi) "कॉल" else "Call",
                 accentColor = Color(0xFF2E7D32),
                 onClick = {
-                    val p = settings.contactPhone.ifEmpty { "+919876500000" }
+                    val p = settings.contactPhone.ifEmpty { "+919720691090" }
                     try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$p"))) } catch (e: Exception) {}
                 }
             )
             AccordionOptionRow(
                 icon = "💬",
                 title = if (isHindi) "व्हाट्सएप सहायता" else "WhatsApp Support",
-                subtitle = settings.whatsappNumber.ifEmpty { "+91 98765 43210" },
+                subtitle = settings.whatsappNumber.ifEmpty { "+91 97206 91090" },
                 actionButtonText = if (isHindi) "चैट" else "Chat",
                 accentColor = Color(0xFF25D366),
                 onClick = {
@@ -2263,18 +2263,18 @@ fun GoldenLotusLayout(
             AccordionOptionRow(
                 icon = "📞",
                 title = if (isHindi) "आश्रम हेल्पलाइन" else "Ashram Helpline",
-                subtitle = settings.contactPhone.ifEmpty { "+91 98765 00000" },
+                subtitle = settings.contactPhone.ifEmpty { "+91 97206 91090" },
                 actionButtonText = if (isHindi) "कॉल" else "Call",
                 accentColor = Color(0xFF2E7D32),
                 onClick = {
-                    val p = settings.contactPhone.ifEmpty { "+919876500000" }
+                    val p = settings.contactPhone.ifEmpty { "+919720691090" }
                     try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$p"))) } catch (e: Exception) {}
                 }
             )
             AccordionOptionRow(
                 icon = "💬",
                 title = if (isHindi) "व्हाट्सएप सेवा" else "WhatsApp Service",
-                subtitle = settings.whatsappNumber.ifEmpty { "+91 98765 43210" },
+                subtitle = settings.whatsappNumber.ifEmpty { "+91 97206 91090" },
                 actionButtonText = if (isHindi) "चैट" else "Chat",
                 accentColor = Color(0xFF25D366),
                 onClick = {
@@ -2459,18 +2459,18 @@ fun SiddhaPeethPortalLayout(
                 AccordionOptionRow(
                     icon = "📞",
                     title = if (isHindi) "आश्रम मुख्य हेल्पलाइन" else "Ashram Helpline Call",
-                    subtitle = settings.contactPhone.ifEmpty { "+91 98765 00000" },
+                    subtitle = settings.contactPhone.ifEmpty { "+91 97206 91090" },
                     actionButtonText = if (isHindi) "कॉल करें" else "Call",
                     accentColor = Color(0xFF2E7D32),
                     onClick = {
-                        val p = settings.contactPhone.ifEmpty { "+919876500000" }
+                        val p = settings.contactPhone.ifEmpty { "+919720691090" }
                         try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$p"))) } catch (e: Exception) {}
                     }
                 )
                 AccordionOptionRow(
                     icon = "💬",
                     title = if (isHindi) "व्हाट्सएप सहायता" else "WhatsApp Support",
-                    subtitle = settings.whatsappNumber.ifEmpty { "+91 98765 43210" },
+                    subtitle = settings.whatsappNumber.ifEmpty { "+91 97206 91090" },
                     actionButtonText = if (isHindi) "चैट करें" else "Chat",
                     accentColor = Color(0xFF25D366),
                     onClick = {

@@ -184,7 +184,7 @@ object BluetoothThermalPrinterHelper {
 
         paint.textSize = if (is80mm) 16f else 13f
         paint.isFakeBoldText = false
-        canvas.drawText("ग्राम डूँगरा जाट, शिकारपुर (बुलंदशहर)", width / 2f, y, paint)
+        canvas.drawText("ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.)", width / 2f, y, paint)
         y += if (is80mm) 22f else 18f
         canvas.drawText("परम पूज्य गुरुजी श्री तेजवीर सिंह जी", width / 2f, y, paint)
         y += if (is80mm) 24f else 20f

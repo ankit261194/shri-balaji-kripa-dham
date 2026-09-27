@@ -13,6 +13,7 @@ import android.os.Environment
 import androidx.core.content.FileProvider
 import com.example.shribalajikripadham.data.model.AshramSettings
 import com.example.shribalajikripadham.data.model.Token
+import com.example.shribalajikripadham.data.model.TokenStatus
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -105,8 +106,9 @@ object TokenPdfExporter {
 
         val sortedTokens = tokens.sortedBy { it.tokenNumber }
         val totalTokens = sortedTokens.size
-        val completedCount = sortedTokens.count { it.isDarshanCompleted }
-        val pendingCount = totalTokens - completedCount
+        val completedCount = sortedTokens.count { it.status == TokenStatus.COMPLETED || it.isDarshanCompleted }
+        val absentCount = sortedTokens.count { it.status == TokenStatus.ABSENT }
+        val pendingCount = sortedTokens.count { it.status != TokenStatus.COMPLETED && !it.isDarshanCompleted && it.status != TokenStatus.ABSENT && it.status != TokenStatus.CANCELLED }
 
         val timeSdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
 
@@ -143,14 +145,14 @@ object TokenPdfExporter {
                 subTitlePaint
             )
 
-            val infoLine = "दिनांक: $dateString   |   कुल टोकन: $totalTokens   |   दर्शन संपन्न: $completedCount   |   दर्शन शेष: $pendingCount"
+            val infoLine = "दिनांक: $dateString   |   कुल टोकन: $totalTokens   |   दिखाया: $completedCount   |   नहीं दिखाया: $pendingCount   |   अनुपलब्ध: $absentCount"
             val infoPaint = Paint(subTitlePaint).apply {
                 color = Color.rgb(50, 50, 50)
                 textSize = 8.5f
             }
             canvas.drawText(infoLine, PAGE_WIDTH / 2f, margin + 56f, infoPaint)
 
-            val addressLine = "${settings.address} | हेल्पलाइन: ${settings.contactPhone}"
+            val addressLine = "${settings.address.ifEmpty { "ग्राम: डूँगरा जाट, तहसील: अनूपशहर, जिला: बुलन्दशहर (उ.प्र.)" }} | हेल्पलाइन: ${settings.contactPhone}"
             canvas.drawText(addressLine, PAGE_WIDTH / 2f, margin + 72f, metaPaint.apply { textAlign = Paint.Align.CENTER })
             metaPaint.textAlign = Paint.Align.LEFT
 
@@ -269,11 +271,32 @@ object TokenPdfExporter {
                     val timeStr = timeSdf.format(Date(token.createdAt))
                     canvas.drawText(timeStr, txtXTime, textY, rowTextPaint)
 
-                    // 7. Status Checkmark
-                    if (token.isDarshanCompleted) {
-                        canvas.drawText("✓ संपन्न", txtXStatus, textY, rowCompletedPaint)
-                    } else {
-                        canvas.drawText("⏳ शेष", txtXStatus, textY, rowPendingPaint)
+                    // 7. Status Checkmark (3-States: दिखाया, नहीं दिखाया, अनुपलब्ध)
+                    when {
+                        token.status == TokenStatus.ABSENT -> {
+                            val rowAbsentPaint = Paint().apply {
+                                color = Color.rgb(210, 0, 0)
+                                textSize = 8f
+                                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                                isAntiAlias = true
+                            }
+                            canvas.drawText("❌ उपलब्ध नहीं", txtXStatus, textY, rowAbsentPaint)
+                        }
+                        token.status == TokenStatus.CANCELLED -> {
+                            val rowCancelPaint = Paint().apply {
+                                color = Color.rgb(150, 150, 150)
+                                textSize = 8f
+                                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                                isAntiAlias = true
+                            }
+                            canvas.drawText("🚫 निरस्त", txtXStatus, textY, rowCancelPaint)
+                        }
+                        token.isDarshanCompleted || token.status == TokenStatus.COMPLETED -> {
+                            canvas.drawText("✓ दिखाया", txtXStatus, textY, rowCompletedPaint)
+                        }
+                        else -> {
+                            canvas.drawText("⏳ नहीं दिखाया", txtXStatus, textY, rowPendingPaint)
+                        }
                     }
 
                     // Draw Horizontal Divider Line

@@ -637,7 +637,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN can_devotee_view_payment_history INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN ashram_upi_id TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
             "ALTER TABLE ashram_settings ADD COLUMN ashram_upi_name TEXT NOT NULL DEFAULT 'Shri Balaji Kripa Dham'",
-            "ALTER TABLE ashram_settings ADD COLUMN bus_seat_fare_amount INTEGER NOT NULL DEFAULT 1500",
+            "ALTER TABLE ashram_settings ADD COLUMN bus_seat_fare_amount INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN is_arzi_ledger_live INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN badi_arzi_rate REAL NOT NULL DEFAULT 100.0",
             "ALTER TABLE ashram_settings ADD COLUMN chhoti_arzi_rate REAL NOT NULL DEFAULT 50.0",
@@ -662,6 +662,24 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN outstation_min_distance_km REAL NOT NULL DEFAULT 30.0",
             "ALTER TABLE ashram_settings ADD COLUMN allow_admin_reserved_tokens INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN custom_upi_qr_uri TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ashram_settings ADD COLUMN top_bar_text TEXT NOT NULL DEFAULT '॥ ॐ श्री हनुमते नमः ॥ श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील: अनूपशहर, जिला: बुलन्दशहर (उ.प्र.)'",
+            "ALTER TABLE ashram_settings ADD COLUMN guruji_title TEXT NOT NULL DEFAULT 'परम पूज्य गुरुजी तेजवीर सिंह जी'",
+            "ALTER TABLE ashram_settings ADD COLUMN guruji_bio TEXT NOT NULL DEFAULT 'परम पूज्य गुरुजी तेजवीर सिंह जी के पावन सानिध्य में श्री बालाजी कृपा धाम में हर रविवार को दिव्य दरबार का आयोजन होता है।'",
+            "ALTER TABLE ashram_settings ADD COLUMN ashram_history TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, डूँगरा जाट एक अलौकिक तपोभूमि है जहाँ संकटमोचन श्री हनुमान जी महाराज एवं पूज्य गुरुजी के आशीर्वाद से समस्त बाधाएं दूर होती हैं।'",
+            "ALTER TABLE ashram_settings ADD COLUMN token_rules_summary TEXT NOT NULL DEFAULT '1. टोकन केवल रविवार दरबार हेतु जारी किए जाते हैं। 2. एक मोबाइल से एक ही टोकन मान्य है। 3. सभी सेवाएं 100% निःशुल्क हैं।'",
+            "ALTER TABLE ashram_settings ADD COLUMN youtube_live_video_id TEXT NOT NULL DEFAULT 'live_stream'",
+            "ALTER TABLE ashram_settings ADD COLUMN aarti_mangala_time TEXT NOT NULL DEFAULT 'प्रातः 05:30 बजे'",
+            "ALTER TABLE ashram_settings ADD COLUMN aarti_sandhya_time TEXT NOT NULL DEFAULT 'सायं 06:30 बजे'",
+            "ALTER TABLE ashram_settings ADD COLUMN aarti_maha_time TEXT NOT NULL DEFAULT 'रात्रि 08:00 बजे'",
+            "ALTER TABLE ashram_settings ADD COLUMN bank_name TEXT NOT NULL DEFAULT 'स्टेट बैंक ऑफ इंडिया (SBI)'",
+            "ALTER TABLE ashram_settings ADD COLUMN bank_account_holder TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम ट्रस्ट'",
+            "ALTER TABLE ashram_settings ADD COLUMN bank_account_number TEXT NOT NULL DEFAULT 'XXXXXX1234'",
+            "ALTER TABLE ashram_settings ADD COLUMN bank_ifsc TEXT NOT NULL DEFAULT 'SBIN000XXXX'",
+            "ALTER TABLE ashram_settings ADD COLUMN bank_branch TEXT NOT NULL DEFAULT 'अनूपशहर, बुलन्दशहर'",
+            "ALTER TABLE ashram_settings ADD COLUMN bank_upi_id TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
+            "ALTER TABLE ashram_settings ADD COLUMN ashram_address TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश'",
+            "ALTER TABLE ashram_settings ADD COLUMN ashram_directions TEXT NOT NULL DEFAULT 'निकटतम रेलवे स्टेशन: अनूपशहर / बबराला / बुलन्दशहर'",
+            "ALTER TABLE ashram_settings ADD COLUMN footer_copyright TEXT NOT NULL DEFAULT '© 2026 श्री बालाजी कृपा धाम। सर्वाधिकार सुरक्षित।'",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_darbar_number ON tokens (darbar_date, token_number)",
             "CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date)"
         )
@@ -710,7 +728,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("darbar_date", today)
                         put("darbar_timings", "प्रत्येक रविवार प्रातःकाल 8:00 बजे से")
                         put("free_disclaimer", "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।")
-                        put("contact_phone", "+91 98765 00000")
+                        put("contact_phone", "+91 97206 91090")
                         put("emergency_notice", "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।")
                         put("is_token_service_enabled", 1)
                         put("is_yatra_service_enabled", 0)
@@ -721,13 +739,13 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("is_emergency_notice_visible", 1)
                         put("scheduled_token_open_timestamp", 0L)
                         put("is_geofence_enforced", 1)
-                        put("latest_version_code", 59)
-                        put("latest_version_name", "2.42.1")
-                        put("update_notes", "श्री बालाजी कृपा धाम v2.42.1")
-                        put("apk_download_url", "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.42.1/ShriBalajiKripaDham-v2.42.1.apk")
+                        put("latest_version_code", 80)
+                        put("latest_version_name", "2.56.5")
+                        put("update_notes", "श्री बालाजी कृपा धाम v2.56.5")
+                        put("apk_download_url", "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-v2.56.5.apk")
                         put("is_force_update", 0)
                         put("whatsapp_group_url", "https://chat.whatsapp.com/invite")
-                        put("whatsapp_number", "+919876543210")
+                        put("whatsapp_number", "+91 97206 91090")
                         put("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham")
                         put("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham")
                         put("instagram_url", "https://www.instagram.com/shribalajikripadham")
@@ -757,7 +775,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 val superAdmin = ContentValues().apply {
                     put("name", "Ankit Chaudhary (Super Admin)")
                     put("username", "admin")
-                    put("phone", "+91 98765 00000")
+                    put("phone", "+91 97206 91090")
                     put("role", AdminRole.SUPER_ADMIN.name)
                     put("pin_hash", MASTER_PIN_RAW_HASH)
                     put("password_hash", MASTER_PWD_SALTED_HASH)
@@ -861,7 +879,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                                 put("payment_status", PaymentStatus.UNPAID.name)
                                 put("payment_mode", "UPI_QR")
                                 put("transaction_id", "")
-                                put("fare_amount", 1500)
+                                put("fare_amount", 0)
                                 put("yatra_date", "Upcoming Pilgrimage")
                                 put("booked_at", 0L)
                                 put("booked_by", "DEVOTEE")

@@ -106,7 +106,7 @@ object BluetoothThermalPrinterHelper {
 
         paint.textSize = 15f
         paint.typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
-        canvas.drawText("ग्राम डूँगरा जाट, शिकारपुर (बुलंदशहर)", widthPx / 2f, y, paint)
+        canvas.drawText("ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.)", widthPx / 2f, y, paint)
         y += 22f
         canvas.drawText("निशुल्क रविवार दिव्य दरबार", widthPx / 2f, y, paint)
         y += 20f

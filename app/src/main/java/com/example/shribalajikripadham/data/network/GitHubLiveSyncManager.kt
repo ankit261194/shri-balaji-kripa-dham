@@ -2039,7 +2039,7 @@ object GitHubLiveSyncManager {
                             paymentStatus = com.example.shribalajikripadham.data.model.PaymentStatus.valueOf(o.optString("payment_status", "UNPAID")),
                             paymentMode = o.optString("payment_mode", "UPI_QR"),
                             transactionId = o.optString("transaction_id", ""),
-                            fareAmount = o.optInt("fare_amount", 1500),
+                            fareAmount = o.optInt("fare_amount", 0),
                             yatraDate = o.optString("yatra_date", ""),
                             bookedAt = o.optLong("booked_at", 0L),
                             bookedBy = o.optString("booked_by", "DEVOTEE"),

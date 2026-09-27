@@ -198,6 +198,9 @@ fun AdminDashboardScreen(
 
     var settings by remember { mutableStateOf(AshramSettings()) }
     var todayTokens by remember { mutableStateOf<List<Token>>(emptyList()) }
+    var allSundayDates by remember { mutableStateOf<List<String>>(emptyList()) }
+    var selectedQueueDate by remember { mutableStateOf(DatabaseHelper.getTodayDateString()) }
+    var queueTokensForSelectedDate by remember { mutableStateOf<List<Token>>(emptyList()) }
     var adminsList by remember { mutableStateOf<List<Admin>>(emptyList()) }
     var eventsList by remember { mutableStateOf<List<AshramEvent>>(emptyList()) }
     var notificationsList by remember { mutableStateOf<List<AppNotification>>(emptyList()) }
@@ -268,7 +271,7 @@ fun AdminDashboardScreen(
     var svcScheduledTimestamp by remember { mutableLongStateOf(0L) }
     var customScheduledDateStr by remember { mutableStateOf("") }
     var svcBusBookingLive by remember { mutableStateOf(false) }
-    var svcBusFareAmount by remember { mutableStateOf("1500") }
+    var svcBusFareAmount by remember { mutableStateOf("0") }
     var svcPaymentFeatureLive by remember { mutableStateOf(false) }
     var svcCanAdminViewPayments by remember { mutableStateOf(false) }
     var svcCanDevoteeViewPayments by remember { mutableStateOf(false) }
@@ -276,8 +279,8 @@ fun AdminDashboardScreen(
     var svcUpiName by remember { mutableStateOf("Shri Balaji Kripa Dham") }
     var svcUpiQrUri by remember { mutableStateOf("") }
     var svcArziLedgerLive by remember { mutableStateOf(false) }
-    var svcBadiArziRate by remember { mutableStateOf("100") }
-    var svcChhotiArziRate by remember { mutableStateOf("50") }
+    var svcBadiArziRate by remember { mutableStateOf("0") }
+    var svcChhotiArziRate by remember { mutableStateOf("0") }
     var svcCanAdminViewArzi by remember { mutableStateOf(false) }
     var svcCanDevoteeViewArzi by remember { mutableStateOf(false) }
     var svcCanDevoteeViewYatraDiary by remember { mutableStateOf(false) }
@@ -426,6 +429,8 @@ fun AdminDashboardScreen(
             updIsForce = s.isForceUpdate
 
             todayTokens = repository.getAllTokensToday()
+            allSundayDates = repository.getAllTokenDates()
+            queueTokensForSelectedDate = repository.getAllTokensForDate(selectedQueueDate)
             adminsList = repository.getAllAdmins()
             superAdminAccount = repository.getSuperAdmin()
             eventsList = repository.getAllEvents()
@@ -1328,11 +1333,29 @@ fun AdminDashboardScreen(
                             TokenQueueTab(
                                 isHindi = isHindi,
                                 settings = settings,
-                                todayTokens = todayTokens,
+                                todayTokens = if (selectedQueueDate == DatabaseHelper.getTodayDateString()) todayTokens else queueTokensForSelectedDate,
                                 canViewPhotos = admin.canViewDevoteePhotos || isSuper,
                                 canCancelTokens = admin.canCancelTokens || isSuper,
                                 canDeleteTokens = admin.canDeleteTokens || isSuper,
                                 canExportPdf = admin.canExportPdf || isSuper,
+                                isSuperAdmin = isSuper,
+                                allSundays = allSundayDates,
+                                selectedDarbarDate = selectedQueueDate,
+                                onSelectDarbarDate = { newDate ->
+                                    selectedQueueDate = newDate
+                                    scope.launch {
+                                        queueTokensForSelectedDate = repository.getAllTokensForDate(newDate)
+                                    }
+                                },
+                                onDeleteAllTokensForSelectedDate = { dateToWipe ->
+                                    scope.launch {
+                                        val (ok, msg) = repository.deleteAllTokensForDate(dateToWipe, admin.name)
+                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                        allSundayDates = repository.getAllTokenDates()
+                                        queueTokensForSelectedDate = repository.getAllTokensForDate(selectedQueueDate)
+                                        refreshData()
+                                    }
+                                },
                                 onUpdateRunningToken = { newNum ->
                                     scope.launch {
                                         repository.updateRunningTokenNumber(newNum)
@@ -1838,18 +1861,22 @@ fun AdminDashboardScreen(
                                             canDevoteeViewPaymentHistory = svcCanDevoteeViewPayments,
                                             ashramUpiId = svcUpiId.trim(),
                                             ashramUpiName = svcUpiName.trim(),
-                                            busSeatFareAmount = svcBusFareAmount.toIntOrNull() ?: 1500,
+                                            busSeatFareAmount = svcBusFareAmount.toIntOrNull() ?: 0,
                                             customUpiQrUri = svcUpiQrUri.trim()
                                         )
                                         repository.updateArziSettings(
                                             isArziLedgerLive = svcArziLedgerLive,
-                                            badiArziRate = svcBadiArziRate.toDoubleOrNull() ?: 100.0,
-                                            chhotiArziRate = svcChhotiArziRate.toDoubleOrNull() ?: 50.0,
+                                            badiArziRate = svcBadiArziRate.toDoubleOrNull() ?: 0.0,
+                                            chhotiArziRate = svcChhotiArziRate.toDoubleOrNull() ?: 0.0,
                                             canAdminViewArziLedger = svcCanAdminViewArzi,
                                             canDevoteeViewArziLedger = svcCanDevoteeViewArzi
                                         )
                                         repository.updateCanDevoteeViewYatraDiary(svcCanDevoteeViewYatraDiary)
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
+                                        try {
+                                            val freshS = repository.getSettings()
+                                            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(freshS)
+                                        } catch (e: Exception) {}
                                         try {
                                             com.example.shribalajikripadham.data.network.GitHubLiveSyncManager.publishBroadcastNoticeToCloud(
                                                 context = context,
@@ -3225,6 +3252,11 @@ fun TokenQueueTab(
     canCancelTokens: Boolean = true,
     canDeleteTokens: Boolean = true,
     canExportPdf: Boolean = true,
+    isSuperAdmin: Boolean = false,
+    allSundays: List<String> = emptyList(),
+    selectedDarbarDate: String = settings.darbarDate,
+    onSelectDarbarDate: (String) -> Unit = {},
+    onDeleteAllTokensForSelectedDate: ((String) -> Unit)? = null,
     onUpdateRunningToken: (Int) -> Unit,
     onUpdateStatus: (Long, TokenStatus) -> Unit,
     onToggleDarshan: (Long, Boolean) -> Unit,
@@ -3259,6 +3291,10 @@ fun TokenQueueTab(
     var fillPhone by remember { mutableStateOf("") }
     var fillCity by remember { mutableStateOf("डूँगरा जाट (स्थानीय)") }
 
+    var showWipeSundayDialog by remember { mutableStateOf(false) }
+    var showCustomDateDialog by remember { mutableStateOf(false) }
+    var customDateInput by remember(selectedDarbarDate) { mutableStateOf(selectedDarbarDate) }
+
     val filteredTokens = remember(todayTokens, searchQuery, selectedDistanceFilter, selectedSortOrder, settings) {
         TokenDistanceHelper.filterAndSortTokens(
             tokens = todayTokens,
@@ -3271,8 +3307,9 @@ fun TokenQueueTab(
     }
 
     val totalCount = todayTokens.size
-    val completedCount = todayTokens.count { it.isDarshanCompleted }
-    val pendingCount = totalCount - completedCount
+    val completedCount = todayTokens.count { it.status == TokenStatus.COMPLETED || it.isDarshanCompleted }
+    val absentCount = todayTokens.count { it.status == TokenStatus.ABSENT }
+    val pendingCount = todayTokens.count { it.status != TokenStatus.COMPLETED && !it.isDarshanCompleted && it.status != TokenStatus.ABSENT && it.status != TokenStatus.CANCELLED }
 
     LazyColumn(
         modifier = Modifier
@@ -3280,6 +3317,141 @@ fun TokenQueueTab(
             .imePadding(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        // 0. 🗓️ SUNDAY ARCHIVE SELECTOR & SUPERADMIN DATA WIPE BAR
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFDFBF7)),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.4f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Text("🗓️", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "रविवार दरबार चयन: $selectedDarbarDate" else "Sunday Darbar: $selectedDarbarDate",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaroonPrimary
+                                )
+                                Text(
+                                    text = if (isHindi) "कुल: $totalCount • दिखाया: $completedCount • नहीं दिखाया: $pendingCount • अनुपलब्ध: $absentCount" else "Tokens: $totalCount • Done: $completedCount • Pending: $pendingCount • Absent: $absentCount",
+                                    fontSize = 11.sp,
+                                    color = Color.DarkGray
+                                )
+                            }
+                        }
+
+                        if ((isSuperAdmin || canDeleteTokens) && onDeleteAllTokensForSelectedDate != null) {
+                            Button(
+                                onClick = { showWipeSundayDialog = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text("🗑️ इस रविवार का डेटा मिटाएं", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Date Selection Chips
+                    val datesList = (listOf(DatabaseHelper.getTodayDateString()) + allSundays).distinct()
+                    androidx.compose.foundation.lazy.LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(datesList) { dateStr ->
+                            val isSelected = dateStr == selectedDarbarDate
+                            val isToday = dateStr == DatabaseHelper.getTodayDateString()
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { onSelectDarbarDate(dateStr) },
+                                label = {
+                                    Text(
+                                        text = if (isToday) "$dateStr (आज)" else dateStr,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = SaffronPrimary,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+                        }
+                        item {
+                            OutlinedButton(
+                                onClick = { showCustomDateDialog = true },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text("📅 अन्य तारीख...", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 4-Counter Attendance Status Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Surface(
+                            color = Color(0xFFF3E5F5),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(if (isHindi) "कुल टोकन" else "Total", fontSize = 10.sp, color = Color(0xFF6A1B9A))
+                                Text("$totalCount", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF4A148C))
+                            }
+                        }
+                        Surface(
+                            color = Color(0xFFE8F5E9),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(if (isHindi) "🟢 दिखाया" else "Done", fontSize = 10.sp, color = Color(0xFF2E7D32))
+                                Text("$completedCount", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1B5E20))
+                            }
+                        }
+                        Surface(
+                            color = Color(0xFFFFF3E0),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(if (isHindi) "🟠 नहीं दिखाया" else "Pending", fontSize = 10.sp, color = Color(0xFFE65100))
+                                Text("$pendingCount", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFBF360C))
+                            }
+                        }
+                        Surface(
+                            color = Color(0xFFFFEBEE),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(if (isHindi) "🔴 अनुपलब्ध" else "Absent", fontSize = 10.sp, color = Color(0xFFC62828))
+                                Text("$absentCount", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB71C1C))
+                            }
+                        }
+                    }
+                }
+            }
+        }
         // 1. Current Calling Token
         item {
             val currentCalledDevotee = todayTokens.find { it.tokenNumber == settings.runningTokenNumber }
@@ -3727,12 +3899,12 @@ fun TokenQueueTab(
                         Button(
                             onClick = {
                                 if (todayTokens.isEmpty()) {
-                                    Toast.makeText(context, if (isHindi) "आज कोई टोकन नहीं है" else "No tokens today", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, if (isHindi) "इस तारीख का कोई टोकन नहीं है" else "No tokens for this date", Toast.LENGTH_SHORT).show()
                                     return@Button
                                 }
                                 isExportingPdf = true
                                 try {
-                                    val pdfFile = TokenPdfExporter.exportTokensToPdf(context, todayTokens, settings)
+                                    val pdfFile = TokenPdfExporter.exportTokensToPdf(context, todayTokens, settings, selectedDarbarDate)
                                     TokenPdfExporter.openOrSharePdf(context, pdfFile)
                                     Toast.makeText(context, if (isHindi) "PDF रिपोर्ट तैयार है!" else "PDF report ready!", Toast.LENGTH_SHORT).show()
                                 } catch (e: Exception) {
@@ -3749,7 +3921,7 @@ fun TokenQueueTab(
                                 text = if (isExportingPdf)
                                     (if (isHindi) "PDF बनाई जा रही है..." else "Generating PDF...")
                                 else
-                                    ("📄 " + (if (isHindi) "आज की टोकन सूची PDF डाउनलोड / शेयर करें" else "Export Today's Token List to PDF")),
+                                    ("📄 " + (if (isHindi) "टोकन सूची PDF डाउनलोड / शेयर करें ($selectedDarbarDate)" else "Export Token List to PDF ($selectedDarbarDate)")),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
                                 color = Color.White
@@ -3762,11 +3934,11 @@ fun TokenQueueTab(
                     Button(
                         onClick = {
                             if (todayTokens.isEmpty()) {
-                                Toast.makeText(context, if (isHindi) "आज कोई टोकन नहीं है" else "No tokens today", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, if (isHindi) "इस तारीख का कोई टोकन नहीं है" else "No tokens for this date", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
                             try {
-                                TokenCsvExporter.shareTokensCsv(context, filteredTokens, settings.darbarDate)
+                                TokenCsvExporter.shareTokensCsv(context, filteredTokens, selectedDarbarDate)
                                 Toast.makeText(context, if (isHindi) "एक्सेल / CSV रिपोर्ट तैयार है!" else "Excel / CSV report ready!", Toast.LENGTH_SHORT).show()
                             } catch (e: Exception) {
                                 Toast.makeText(context, "CSV Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
@@ -3777,7 +3949,7 @@ fun TokenQueueTab(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "📊 " + (if (isHindi) "आज की टोकन सूची एक्सेल / CSV डाउनलोड करें" else "Export Today's Token List to Excel / CSV"),
+                            text = "📊 " + (if (isHindi) "टोकन सूची एक्सेल / CSV डाउनलोड करें ($selectedDarbarDate)" else "Export Token List to Excel / CSV ($selectedDarbarDate)"),
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                             color = Color.White
@@ -4388,7 +4560,9 @@ fun TokenQueueTab(
                                     TokenStatus.WAITING, TokenStatus.PENDING -> AmberGold
                                     TokenStatus.CALLED -> SaffronPrimary
                                     TokenStatus.COMPLETED -> Color(0xFF2E7D32)
+                                    TokenStatus.ABSENT -> Color(0xFFD32F2F)
                                     TokenStatus.CANCELLED -> Color.Red
+                                    else -> Color.Gray
                                 }
                             ) {
                                 Text(
@@ -4396,7 +4570,9 @@ fun TokenQueueTab(
                                         TokenStatus.WAITING, TokenStatus.PENDING -> if (isHindi) "प्रतीक्षारत" else "Waiting"
                                         TokenStatus.CALLED -> if (isHindi) "बुलाया गया" else "Called"
                                         TokenStatus.COMPLETED -> if (isHindi) "दर्शन पूर्ण" else "Completed"
+                                        TokenStatus.ABSENT -> if (isHindi) "अनुपलब्ध" else "Absent"
                                         TokenStatus.CANCELLED -> if (isHindi) "रद्द" else "Cancelled"
+                                        else -> token.status.name
                                     },
                                     color = Color.White,
                                     fontSize = 11.sp,
@@ -4453,30 +4629,69 @@ fun TokenQueueTab(
                             }
                         }
 
-                        // 1-Tap Checkmark Tick Button ("दिखा लिया")
-                        FilterChip(
-                            selected = token.isDarshanCompleted,
-                            onClick = { onToggleDarshan(token.id, !token.isDarshanCompleted) },
-                            label = {
+                        // 3-State Attendance Controls: 🟢 दिखाया | 🟠 नहीं दिखाया | 🔴 उपलब्ध नहीं
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val isDone = token.isDarshanCompleted || token.status == TokenStatus.COMPLETED
+                            val isAbsent = token.status == TokenStatus.ABSENT
+                            val isWaiting = !isDone && !isAbsent
+
+                            // 1. 🟢 दिखाया (COMPLETED)
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isDone) Color(0xFF2E7D32) else Color(0xFFE8F5E9),
+                                border = BorderStroke(1.dp, Color(0xFF2E7D32)),
+                                modifier = Modifier.clickable {
+                                    onUpdateStatus(token.id, TokenStatus.COMPLETED)
+                                }
+                            ) {
                                 Text(
-                                    text = if (token.isDarshanCompleted)
-                                        (if (isHindi) "✓ दिखा लिया (दर्शन संपन्न)" else "✓ Darshan Done")
-                                    else
-                                        (if (isHindi) "☐ दर्शन शेष (दिखाना बाकी)" else "☐ Darshan Pending"),
+                                    text = if (isHindi) "✓ दिखाया" else "✓ Done",
+                                    color = if (isDone) Color.White else Color(0xFF1B5E20),
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    color = if (token.isDarshanCompleted) Color(0xFF1B5E20) else Color.DarkGray
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
                                 )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Color(0xFFC8E6C9),
-                                containerColor = Color(0xFFEEEEEE)
-                            ),
-                            border = BorderStroke(
-                                1.5.dp,
-                                if (token.isDarshanCompleted) Color(0xFF2E7D32) else Color.LightGray
-                            )
-                        )
+                            }
+
+                            // 2. 🟠 नहीं दिखाया (WAITING)
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isWaiting) Color(0xFFE65100) else Color(0xFFFFF3E0),
+                                border = BorderStroke(1.dp, Color(0xFFE65100)),
+                                modifier = Modifier.clickable {
+                                    onUpdateStatus(token.id, TokenStatus.WAITING)
+                                }
+                            ) {
+                                Text(
+                                    text = if (isHindi) "⏳ नहीं दिखाया" else "⏳ Waiting",
+                                    color = if (isWaiting) Color.White else Color(0xFFBF360C),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
+                                )
+                            }
+
+                            // 3. 🔴 उपलब्ध नहीं (ABSENT)
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isAbsent) Color(0xFFC62828) else Color(0xFFFFEBEE),
+                                border = BorderStroke(1.dp, Color(0xFFC62828)),
+                                modifier = Modifier.clickable {
+                                    onUpdateStatus(token.id, TokenStatus.ABSENT)
+                                }
+                            ) {
+                                Text(
+                                    text = if (isHindi) "❌ उपलब्ध नहीं" else "❌ Absent",
+                                    color = if (isAbsent) Color.White else Color(0xFFB71C1C),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
                     }
 
                     // Row 4: Super Admin & Admin Token Cancellation & Removal Action Buttons (Permission Controlled)
@@ -4844,6 +5059,93 @@ fun TokenQueueTab(
             },
             dismissButton = {
                 TextButton(onClick = { tokenToDelete = null }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // Confirmation Dialog for Wiping All Tokens for Selected Sunday
+    if (showWipeSundayDialog) {
+        AlertDialog(
+            onDismissRequest = { showWipeSundayDialog = false },
+            title = {
+                Text(
+                    text = if (isHindi) "⚠️ रविवार डेटा पूर्णतः मिटाएं ($selectedDarbarDate)?" else "Delete All Tokens for $selectedDarbarDate?",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFD32F2F)
+                )
+            },
+            text = {
+                Text(
+                    text = if (isHindi)
+                        "क्या आप $selectedDarbarDate के सभी टोकन डेटाबेस से हमेशा के लिए हटाना चाहते हैं? कुल टोकन: ${todayTokens.size}। यह क्रिया अपरिवर्तनीय (Irreversible) है।"
+                    else
+                        "Are you sure you want to permanently delete ALL ${todayTokens.size} tokens for $selectedDarbarDate? This action cannot be undone."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeleteAllTokensForSelectedDate?.invoke(selectedDarbarDate)
+                        showWipeSundayDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                ) {
+                    Text(if (isHindi) "हाँ, सारा डेटा मिटाएं" else "Yes, Wipe All", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWipeSundayDialog = false }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // Custom Date Selector Dialog
+    if (showCustomDateDialog) {
+        AlertDialog(
+            onDismissRequest = { showCustomDateDialog = false },
+            title = {
+                Text(
+                    text = if (isHindi) "📅 तारीख चुनें (YYYY-MM-DD)" else "Select Date (YYYY-MM-DD)",
+                    fontWeight = FontWeight.Bold,
+                    color = MaroonPrimary
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = if (isHindi) "कृपया वह तारीख दर्ज करें जिसके टोकन आप देखना चाहते हैं:" else "Enter the date for which you want to view tokens:",
+                        fontSize = 13.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = customDateInput,
+                        onValueChange = { customDateInput = it.trim() },
+                        label = { Text("YYYY-MM-DD") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (customDateInput.isNotBlank()) {
+                            onSelectDarbarDate(customDateInput)
+                        }
+                        showCustomDateDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                ) {
+                    Text(if (isHindi) "देखें" else "View", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCustomDateDialog = false }) {
                     Text(if (isHindi) "रद्द करें" else "Cancel")
                 }
             }
@@ -6419,7 +6721,7 @@ fun PublicServiceMatrixTab(
     onCustomDateStrChange: (String) -> Unit,
     isBusBookingLive: Boolean = false,
     onBusBookingLiveChange: (Boolean) -> Unit = {},
-    busFareAmount: String = "1500",
+    busFareAmount: String = "0",
     onBusFareAmountChange: (String) -> Unit = {},
     isPaymentFeatureLive: Boolean = false,
     onPaymentFeatureLiveChange: (Boolean) -> Unit = {},
@@ -6435,9 +6737,9 @@ fun PublicServiceMatrixTab(
     onCustomUpiQrUriChange: (String) -> Unit = {},
     isArziLedgerLive: Boolean = false,
     onArziLedgerLiveChange: (Boolean) -> Unit = {},
-    badiArziRate: String = "100",
+    badiArziRate: String = "0",
     onBadiArziRateChange: (String) -> Unit = {},
-    chhotiArziRate: String = "50",
+    chhotiArziRate: String = "0",
     onChhotiArziRateChange: (String) -> Unit = {},
     canAdminViewArzi: Boolean = false,
     onCanAdminViewArziChange: (Boolean) -> Unit = {},
