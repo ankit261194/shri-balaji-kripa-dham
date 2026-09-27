@@ -108,28 +108,31 @@ fun FaceTokenRegistrationScreen(
     var manualPhone by remember { mutableStateOf("") }
     var manualCity by remember { mutableStateOf("") }
     var enrollFaceForFuture by remember { mutableStateOf(true) }
-    var locationSuggestions by remember { mutableStateOf<List<com.example.shribalajikripadham.util.IndiaLocation>>(emptyList()) }
-    var showLocationDropdown by remember { mutableStateOf(false) }
+    var isLocationAutoFetched by remember { mutableStateOf(false) }
+    var isResolvingLocationName by remember { mutableStateOf(false) }
 
-    LaunchedEffect(manualCity) {
-        val q = manualCity.trim()
-        if (q.length >= 2) {
-            val localResults = com.example.shribalajikripadham.util.IndiaLocationsDatabase.search(q, maxLimit = 8)
-            if (localResults.isNotEmpty()) {
-                locationSuggestions = localResults
-                showLocationDropdown = true
-            }
-            // Always fetch online results (villages, hamlets, tehsils across India) and update suggestions
-            try {
-                val fullResults = com.example.shribalajikripadham.util.IndiaLocationsDatabase.searchWithOnlineFallback(q, maxLimit = 15)
-                if (fullResults.isNotEmpty()) {
-                    locationSuggestions = fullResults
-                    showLocationDropdown = true
+    LaunchedEffect(userLatitude, userLongitude, settings) {
+        if (userLatitude != 0.0 && userLongitude != 0.0) {
+            val distMeters = GeofenceLocationManager.calculateDistanceMeters(
+                userLatitude, userLongitude,
+                settings.latitude, settings.longitude
+            )
+            if (distMeters > settings.outstationMinDistanceKm * 1000.0) {
+                // Outstation devotee (> 30 km): Auto-fetch & auto-fill their location for manual entry
+                if (manualCity.isBlank()) {
+                    isResolvingLocationName = true
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        val resolved = GeofenceLocationManager.resolveVillageAndCity(context, userLatitude, userLongitude)
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            isResolvingLocationName = false
+                            if (resolved.isNotBlank()) {
+                                manualCity = resolved
+                                isLocationAutoFetched = true
+                            }
+                        }
+                    }
                 }
-            } catch (e: Exception) {}
-        } else {
-            locationSuggestions = emptyList()
-            showLocationDropdown = false
+            }
         }
     }
 
@@ -1493,49 +1496,54 @@ fun FaceTokenRegistrationScreen(
                                 )
                             )
 
-                            if (showLocationDropdown && locationSuggestions.isNotEmpty()) {
+                            if (isResolvingLocationName) {
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Card(
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA)),
-                                    shape = RoundedCornerShape(12.dp),
-                                    border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.5f)),
-                                    elevation = CardDefaults.cardElevation(3.dp),
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
                                 ) {
-                                    Column(modifier = Modifier.padding(6.dp)) {
-                                        locationSuggestions.forEach { loc ->
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable {
-                                                        val formattedLoc = if (loc.districtHindi.isNotBlank() && !loc.nameHindi.contains(loc.districtHindi)) {
-                                                            "${loc.nameHindi} (${loc.districtHindi}, ${loc.stateHindi})"
-                                                        } else if (loc.stateHindi.isNotBlank() && !loc.nameHindi.contains(loc.stateHindi)) {
-                                                            "${loc.nameHindi} (${loc.stateHindi})"
-                                                        } else {
-                                                            loc.nameHindi
-                                                        }
-                                                        manualCity = formattedLoc
-                                                        showLocationDropdown = false
-                                                    }
-                                                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Text("📍", fontSize = 14.sp)
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                val locDetails = listOfNotNull(
-                                                    loc.districtHindi.takeIf { it.isNotBlank() },
-                                                    loc.stateHindi.takeIf { it.isNotBlank() }
-                                                ).joinToString(", ")
-                                                Text(
-                                                    text = if (locDetails.isNotBlank()) "${loc.nameHindi} ($locDetails) • ${loc.distanceKm} किमी" else "${loc.nameHindi} (${loc.stateHindi}) • ${loc.distanceKm} किमी",
-                                                    fontSize = 12.sp,
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = Color(0xFF111111)
-                                                )
-                                            }
-                                        }
-                                    }
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(12.dp),
+                                        strokeWidth = 1.5.dp,
+                                        color = MaroonPrimary
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (isHindi) "जीपीएस से स्थान प्राप्त किया जा रहा है..." else "Resolving location from GPS...",
+                                        fontSize = 11.sp,
+                                        color = MaroonPrimary
+                                    )
+                                }
+                            } else if (isLocationAutoFetched && manualCity.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Surface(
+                                    color = Color(0xFFE8F5E9),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, Color(0xFF81C784)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = if (isHindi) "📍 GPS द्वारा स्वतः प्राप्त स्थान" else "📍 GPS Auto-Fetched Location",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2E7D32),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            } else if (distanceMeters >= 0.0 && distanceMeters <= settings.allowedRadiusMeters) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Surface(
+                                    color = Color(0xFFE3F2FD),
+                                    shape = RoundedCornerShape(8.dp),
+                                    border = BorderStroke(1.dp, Color(0xFF90CAF9)),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = if (isHindi) "✍️ आश्रम परिसर में उपस्थित: आप अपना गाँव/कस्बा स्वयं लिख सकते हैं।" else "✍️ At Ashram: Enter village freely.",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF1565C0),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
                                 }
                             }
 
@@ -1684,6 +1692,17 @@ fun FaceTokenRegistrationScreen(
                                                 return@launch
                                             }
 
+                                            val gpsDistanceM = GeofenceLocationManager.calculateDistanceMeters(
+                                                finalLat, finalLon,
+                                                settings.latitude, settings.longitude
+                                            )
+                                            val straightKm = (gpsDistanceM / 1000.0).toFloat()
+                                            val calculatedRoadKm = if (gpsDistanceM <= settings.allowedRadiusMeters) {
+                                                (kotlin.math.round(straightKm * 10) / 10)
+                                            } else {
+                                                (kotlin.math.round(straightKm * 1.28f * 10) / 10)
+                                            }
+
                                             // Register Token with anti-fraud gating
                                             val token = repository.registerToken(
                                                 patientName = manualName.trim(),
@@ -1695,7 +1714,9 @@ fun FaceTokenRegistrationScreen(
                                                 registeredBy = "MANUAL_FALLBACK",
                                                 photoUri = capturedPhotoUri,
                                                 isMockLocation = isMock,
-                                                locationAccuracy = accuracy
+                                                locationAccuracy = accuracy,
+                                                originAddress = manualCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                                                distanceKm = calculatedRoadKm
                                             )
 
                                             // Auto-enroll face if selected

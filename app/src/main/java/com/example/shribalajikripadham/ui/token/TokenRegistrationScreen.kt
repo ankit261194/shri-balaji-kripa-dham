@@ -90,8 +90,8 @@ fun TokenRegistrationScreen(
     var capturedPhotoUri by remember { mutableStateOf("") }
     var nameSuggestions by remember { mutableStateOf<List<DevoteeFaceProfile>>(emptyList()) }
     var directorySuggestions by remember { mutableStateOf<List<DevoteeDirectoryEntry>>(emptyList()) }
-    var locationSuggestions by remember { mutableStateOf<List<com.example.shribalajikripadham.util.IndiaLocation>>(emptyList()) }
-    var showLocationDropdown by remember { mutableStateOf(false) }
+    var isLocationAutoFetched by remember { mutableStateOf(false) }
+    var isResolvingLocationName by remember { mutableStateOf(false) }
     var autoFillBanner by remember { mutableStateOf<String?>(null) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -172,19 +172,32 @@ fun TokenRegistrationScreen(
     var userLongitude by remember { mutableDoubleStateOf(0.0) }
 
     // Live road distance calculation to Shri Balaji Kripa Dham, Dungra Jaat
-    LaunchedEffect(city, originAddress, userLatitude, userLongitude) {
-        val query = if (originAddress.isNotBlank()) originAddress else city
-        if (query.isNotBlank()) {
-            isCalculatingDistance = true
-            val res = DistanceCalculatorService.resolveDrivingDistance(
-                origin = query,
-                deviceLat = if (userLatitude != 0.0) userLatitude else 28.3972915,
-                deviceLng = if (userLongitude != 0.0) userLongitude else 78.1460410
+    LaunchedEffect(city, originAddress, userLatitude, userLongitude, settings) {
+        if (userLatitude != 0.0 && userLongitude != 0.0) {
+            val distMeters = GeofenceLocationManager.calculateDistanceMeters(
+                userLatitude, userLongitude,
+                settings.latitude, settings.longitude
             )
-            estimatedDistanceKm = res.distanceKm
-            isCalculatingDistance = false
+            val straightKm = (distMeters / 1000.0).toFloat()
+            if (distMeters <= settings.allowedRadiusMeters) {
+                estimatedDistanceKm = (kotlin.math.round(straightKm * 10) / 10)
+            } else {
+                estimatedDistanceKm = (kotlin.math.round(straightKm * 1.28f * 10) / 10)
+            }
         } else {
-            estimatedDistanceKm = -1f
+            val query = if (originAddress.isNotBlank()) originAddress else city
+            if (query.isNotBlank()) {
+                isCalculatingDistance = true
+                val res = DistanceCalculatorService.resolveDrivingDistance(
+                    origin = query,
+                    deviceLat = 28.3972915,
+                    deviceLng = 78.1460410
+                )
+                estimatedDistanceKm = res.distanceKm
+                isCalculatingDistance = false
+            } else {
+                estimatedDistanceKm = -1f
+            }
         }
     }
 
@@ -400,38 +413,40 @@ fun TokenRegistrationScreen(
         }
     }
 
-    // Live search of Pan-India Locations & Road Distance
-    LaunchedEffect(originAddress) {
-        val q = originAddress.trim()
-        if (q.length >= 2) {
-            val localResults = com.example.shribalajikripadham.util.IndiaLocationsDatabase.search(q, maxLimit = 8)
-            if (localResults.isNotEmpty()) {
-                locationSuggestions = localResults
-                showLocationDropdown = true
-            }
-            // Always fetch online results (villages, hamlets, tehsils across India) and update suggestions
-            try {
-                val fullResults = com.example.shribalajikripadham.util.IndiaLocationsDatabase.searchWithOnlineFallback(q, maxLimit = 15)
-                if (fullResults.isNotEmpty()) {
-                    locationSuggestions = fullResults
-                    showLocationDropdown = true
+    // Auto-fetch devotee location & road distance when GPS coordinates are available (> 30 km)
+    LaunchedEffect(userLatitude, userLongitude, settings) {
+        if (userLatitude != 0.0 && userLongitude != 0.0) {
+            val distMeters = GeofenceLocationManager.calculateDistanceMeters(
+                userLatitude, userLongitude,
+                settings.latitude, settings.longitude
+            )
+            val straightKm = (distMeters / 1000.0).toFloat()
+            val roadKm = (kotlin.math.round(straightKm * 1.28f * 10) / 10)
+
+            if (distMeters > settings.outstationMinDistanceKm * 1000.0) {
+                // Outstation devotee (> 30 km): Auto-fetch & auto-fill their location from GPS
+                estimatedDistanceKm = roadKm
+                isResolvingLocationName = true
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val resolved = GeofenceLocationManager.resolveVillageAndCity(context, userLatitude, userLongitude)
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        isResolvingLocationName = false
+                        if (resolved.isNotBlank()) {
+                            originAddress = resolved
+                            city = resolved
+                            isLocationAutoFetched = true
+                        }
+                    }
                 }
-            } catch (e: Exception) {}
-            isCalculatingDistance = true
-            try {
-                val res = DistanceCalculatorService.calculateRoadDistance(q)
-                if (res.distanceKm >= 0f) {
-                    estimatedDistanceKm = res.distanceKm
-                }
-            } catch (e: Exception) {
-                // Ignore
-            } finally {
-                isCalculatingDistance = false
+            } else if (distMeters <= settings.allowedRadiusMeters) {
+                // Local devotee at Ashram (<= 200m)
+                estimatedDistanceKm = (kotlin.math.round(straightKm * 10) / 10)
+                isLocationAutoFetched = false
+            } else {
+                // Devotee within 30 km, but outside 200m
+                estimatedDistanceKm = roadKm
+                isLocationAutoFetched = false
             }
-        } else {
-            locationSuggestions = emptyList()
-            showLocationDropdown = false
-            estimatedDistanceKm = -1f
         }
     }
 
@@ -1005,9 +1020,10 @@ fun TokenRegistrationScreen(
                             onValueChange = {
                                 originAddress = it
                                 city = it
+                                isLocationAutoFetched = false
                             },
-                            label = { Text(text = if (isHindi) "गाँव / कस्बा / शहर (ऐच्छिक)" else "Village / Town / City (Optional)", fontWeight = FontWeight.SemiBold) },
-                            placeholder = { Text(text = if (isHindi) "उदा. अपना गाँव, कस्बा, मजरा या शहर का नाम लिखें..." else "e.g. Enter your village, town or city...", color = Color(0xFF757575)) },
+                            label = { Text(text = if (isHindi) "गाँव / कस्बा / शहर" else "Village / Town / City", fontWeight = FontWeight.SemiBold) },
+                            placeholder = { Text(text = if (isHindi) "उदा. अपना गाँव, कस्बा या शहर का नाम लिखें..." else "e.g. Enter your village, town or city...", color = Color(0xFF757575)) },
                             textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
@@ -1022,154 +1038,71 @@ fun TokenRegistrationScreen(
                             )
                         )
 
-                        // Pan-India Autocomplete Suggestions Dropdown
-                        if (showLocationDropdown && locationSuggestions.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Card(
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFAFAFA)),
-                                shape = RoundedCornerShape(12.dp),
-                                border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.5f)),
-                                elevation = CardDefaults.cardElevation(3.dp),
+                        // GPS Auto-Fetch Status & Local Devotee Typing Status Badge
+                        if (isResolvingLocationName) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
+                                    .padding(vertical = 2.dp)
                             ) {
-                                Column(modifier = Modifier.padding(6.dp)) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = if (isHindi) "🔍 स्थान सुझाव (Tap to Select):" else "🔍 Location Suggestions:",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaroonPrimary
-                                        )
-                                        Text(
-                                            text = "✕",
-                                            fontSize = 12.sp,
-                                            color = Color.Gray,
-                                            modifier = Modifier.clickable { showLocationDropdown = false }
-                                        )
-                                    }
-                                    locationSuggestions.forEach { loc ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    val formattedLoc = if (loc.districtHindi.isNotBlank() && !loc.nameHindi.contains(loc.districtHindi)) {
-                                                        "${loc.nameHindi} (${loc.districtHindi}, ${loc.stateHindi})"
-                                                    } else if (loc.stateHindi.isNotBlank() && !loc.nameHindi.contains(loc.stateHindi)) {
-                                                        "${loc.nameHindi} (${loc.stateHindi})"
-                                                    } else {
-                                                        loc.nameHindi
-                                                    }
-                                                    originAddress = formattedLoc
-                                                    city = formattedLoc
-                                                    if (loc.distanceKm >= 0f) {
-                                                        estimatedDistanceKm = loc.distanceKm
-                                                    }
-                                                    showLocationDropdown = false
-                                                }
-                                                .padding(horizontal = 8.dp, vertical = 6.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = when (loc.category) {
-                                                    "स्थानीय गाँव" -> "🏡"
-                                                    "तहसील / कस्बा" -> "🏘️"
-                                                    "ज़िला (UP)" -> "🏛️"
-                                                    "राज्य / UT" -> "🇮🇳"
-                                                    else -> "📍"
-                                                },
-                                                fontSize = 14.sp
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Text(
-                                                        text = loc.nameHindi,
-                                                        fontWeight = FontWeight.Bold,
-                                                        fontSize = 13.sp,
-                                                        color = Color(0xFF111111)
-                                                    )
-                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                    Surface(
-                                                        color = Color(0xFFECEFF1),
-                                                        shape = RoundedCornerShape(4.dp)
-                                                    ) {
-                                                        Text(
-                                                            text = loc.category,
-                                                            fontSize = 9.sp,
-                                                            color = Color(0xFF455A64),
-                                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                                                        )
-                                                    }
-                                                }
-                                                val locDetails = listOfNotNull(
-                                                    loc.districtHindi.takeIf { it.isNotBlank() },
-                                                    loc.stateHindi.takeIf { it.isNotBlank() }
-                                                ).joinToString(", ")
-                                                Text(
-                                                    text = if (locDetails.isNotBlank()) "${loc.nameEnglish} • $locDetails" else "${loc.nameEnglish} • ${loc.stateHindi}",
-                                                    fontSize = 10.sp,
-                                                    color = Color.DarkGray
-                                                )
-                                            }
-                                            if (loc.distanceKm >= 0f) {
-                                                Surface(
-                                                    color = if (loc.distanceKm <= 0.2f) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
-                                                    shape = RoundedCornerShape(6.dp)
-                                                ) {
-                                                    Text(
-                                                        text = if (loc.distanceKm <= 0.2f) "स्थानीय" else "${loc.distanceKm.toInt()} km",
-                                                        fontSize = 11.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = if (loc.distanceKm <= 0.2f) Color(0xFF2E7D32) else Color(0xFFE65100),
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                        HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 0.5.dp)
-                                    }
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaroonPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (isHindi) "जीपीएस से आपका गाँव/स्थान खोजा जा रहा है..." else "Resolving village name from GPS...",
+                                    fontSize = 12.sp,
+                                    color = MaroonPrimary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        } else if (isLocationAutoFetched && originAddress.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Surface(
+                                color = Color(0xFFE8F5E9),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, Color(0xFF81C784)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("📍", fontSize = 14.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (isHindi) "GPS द्वारा स्वतः सत्यापित स्थान (${if (estimatedDistanceKm >= 0f) "%.1f किमी".format(estimatedDistanceKm) else ""})" else "GPS Verified Location (${if (estimatedDistanceKm >= 0f) "%.1f km".format(estimatedDistanceKm) else ""})",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2E7D32)
+                                    )
                                 }
                             }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Quick City Chips
-                        Text(
-                            text = if (isHindi) "त्वरित चयन (Quick Select):" else "Quick Select:",
-                            fontSize = 12.sp,
-                            color = Color(0xFF333333),
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        val quickCities = listOf(
-                            "डूँगरा जाट", "जहाँगीरपुर", "झाझर", "जेवर", "खुर्जा", "बुलन्दशहर", "शिकारपुर", "पहासू", "अरनिया", "छतारी", "दानपुर", "डिबाई", "अनूपशहर", "स्याना", "गुलावठी", "सिकंदराबाद", "ककोड", "अलीगढ़", "हापुड़", "मेरठ", "नोएडा", "दिल्ली", "गाजियाबाद"
-                        )
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            quickCities.forEach { cName ->
-                                SuggestionChip(
-                                    onClick = {
-                                        originAddress = cName
-                                        city = cName
-                                    },
-                                    colors = SuggestionChipDefaults.suggestionChipColors(
-                                        containerColor = Color(0xFFF5F5F5),
-                                        labelColor = Color(0xFF212121)
-                                    ),
-                                    border = BorderStroke(1.dp, Color(0xFFBDBDBD)),
-                                    label = { Text(cName, fontSize = 12.sp, fontWeight = FontWeight.Medium) }
-                                )
+                        } else if (distanceMeters >= 0.0 && distanceMeters <= settings.allowedRadiusMeters) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Surface(
+                                color = Color(0xFFE3F2FD),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, Color(0xFF90CAF9)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("✍️", fontSize = 14.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (isHindi) "आश्रम परिसर में उपस्थित: आप अपना गाँव/कस्बा स्वयं लिख सकते हैं।" else "At Ashram: Enter your home village/city freely.",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF1565C0)
+                                    )
+                                }
                             }
                         }
 

@@ -426,6 +426,38 @@ object GeofenceLocationManager {
                 }
             }
         } catch (_: Exception) {}
+
+        // 3. Robust Online Reverse Geocode Fallback (OpenStreetMap Nominatim)
+        // Ensures accurate village/town resolution even without Google Play Services
+        try {
+            val url = java.net.URL("https://nominatim.openstreetmap.org/reverse?lat=$lat&lon=$lon&format=json&accept-language=hi,en")
+            val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                requestMethod = "GET"
+                setRequestProperty("User-Agent", "ShriBalajiKripaDhamApp/2.56.3")
+                connectTimeout = 3500
+                readTimeout = 3500
+            }
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader().use { it.readText() }
+                val jsonObj = org.json.JSONObject(resp)
+                val address = jsonObj.optJSONObject("address")
+                if (address != null) {
+                    val village = address.optString("village").trim()
+                    val suburb = address.optString("suburb").trim()
+                    val town = address.optString("town").trim()
+                    val city = address.optString("city").trim()
+                    val county = address.optString("county").trim()
+                    val state = address.optString("state").trim()
+
+                    val primary = village.ifEmpty { suburb }.ifEmpty { town }.ifEmpty { city }
+                    val secondary = if (primary != county && county.isNotBlank()) county else state
+                    if (primary.isNotBlank()) {
+                        return if (secondary.isNotBlank() && !primary.contains(secondary)) "$primary ($secondary)" else primary
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
         return ""
     }
 }

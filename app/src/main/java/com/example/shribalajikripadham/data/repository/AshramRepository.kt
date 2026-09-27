@@ -853,9 +853,25 @@ class AshramRepository(context: Context) {
         } else city.trim()
         val safeOrigin = if (originAddress.isNotBlank()) originAddress.trim() else safeCity
 
-        // Automatic Road/Driving Distance Calculation to Shri Balaji Kripa Dham, Dungra Jaat
+        val settings = getSettings()
+        val distFromAshram = if (latitude > 0.0 && longitude > 0.0 && settings.latitude > 0.0) {
+            GeofenceLocationManager.calculateDistanceMeters(
+                latitude, longitude,
+                settings.latitude, settings.longitude
+            )
+        } else -1.0
+
+        // Priority 1: If distanceKm is explicitly passed and valid, use it
+        // Priority 2: If real GPS coordinates exist, use GPS road/local distance directly
+        // Priority 3: Fallback to text query routing
         val calculatedDistance = if (distanceKm >= 0f) {
             distanceKm
+        } else if (distFromAshram >= 0.0) {
+            if (distFromAshram <= settings.allowedRadiusMeters) {
+                (kotlin.math.round((distFromAshram / 1000.0) * 10) / 10).toFloat()
+            } else {
+                (kotlin.math.round((distFromAshram / 1000.0) * 1.28 * 10) / 10).toFloat()
+            }
         } else {
             DistanceCalculatorService.resolveDrivingDistance(
                 origin = safeOrigin,
@@ -864,12 +880,7 @@ class AshramRepository(context: Context) {
             ).distanceKm
         }
 
-        val settings = getSettings()
         if (settings.isGeofenceEnforced && !shouldBypassGeofence) {
-            val distFromAshram = GeofenceLocationManager.calculateDistanceMeters(
-                latitude, longitude,
-                settings.latitude, settings.longitude
-            )
             // If road/city distance is within 30 km and user is NOT within allowed radius (200m) of Ashram: BLOCK!
             if (calculatedDistance > 0 && calculatedDistance < settings.outstationMinDistanceKm && distFromAshram > settings.allowedRadiusMeters) {
                 val outstationKm = settings.outstationMinDistanceKm.toInt()

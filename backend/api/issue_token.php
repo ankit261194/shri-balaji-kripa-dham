@@ -143,6 +143,13 @@ if (!$isAdmin) {
                 exit;
             }
         }
+
+        // Accurately assign GPS-derived distance for database persistence & Superadmin visibility
+        if ($isGpsOutstation) {
+            $distanceKm = round($gpsDistanceKm * 1.28, 1);
+        } elseif ($isPhysicallyAtAshram) {
+            $distanceKm = round($gpsDistanceKm, 2);
+        }
     }
 }
 

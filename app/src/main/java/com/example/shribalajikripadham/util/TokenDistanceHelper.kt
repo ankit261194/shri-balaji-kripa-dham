@@ -73,7 +73,11 @@ object TokenDistanceHelper {
         ashramLong: Double,
         isHindi: Boolean = true
     ): String {
-        val distKm = calculateDistanceKm(ashramLat, ashramLong, token.latitude, token.longitude)
+        val distKm = if (token.distanceKm >= 0f) {
+            token.distanceKm
+        } else {
+            calculateDistanceKm(ashramLat, ashramLong, token.latitude, token.longitude)
+        }
         return formatDistance(distKm, isHindi)
     }
 
@@ -106,15 +110,15 @@ object TokenDistanceHelper {
         val filteredByDistance = when (distanceFilter) {
             DistanceFilter.ALL -> filteredByQuery
             DistanceFilter.WITHIN_10_KM -> filteredByQuery.filter { token ->
-                val dist = calculateDistanceKm(ashramLat, ashramLong, token.latitude, token.longitude)
+                val dist = if (token.distanceKm >= 0f) token.distanceKm else calculateDistanceKm(ashramLat, ashramLong, token.latitude, token.longitude)
                 dist in 0f..10f || dist < 0f // Include desk as local
             }
             DistanceFilter.BETWEEN_10_AND_50_KM -> filteredByQuery.filter { token ->
-                val dist = calculateDistanceKm(ashramLat, ashramLong, token.latitude, token.longitude)
+                val dist = if (token.distanceKm >= 0f) token.distanceKm else calculateDistanceKm(ashramLat, ashramLong, token.latitude, token.longitude)
                 dist in 10f..50f
             }
             DistanceFilter.BEYOND_50_KM -> filteredByQuery.filter { token ->
-                val dist = calculateDistanceKm(ashramLat, ashramLong, token.latitude, token.longitude)
+                val dist = if (token.distanceKm >= 0f) token.distanceKm else calculateDistanceKm(ashramLat, ashramLong, token.latitude, token.longitude)
                 dist > 50f
             }
         }
@@ -123,10 +127,10 @@ object TokenDistanceHelper {
         return when (sortOrder) {
             TokenSortOrder.TOKEN_NUMBER -> filteredByDistance.sortedBy { it.tokenNumber }
             TokenSortOrder.DISTANCE_DESC -> filteredByDistance.sortedByDescending {
-                calculateDistanceKm(ashramLat, ashramLong, it.latitude, it.longitude)
+                if (it.distanceKm >= 0f) it.distanceKm else calculateDistanceKm(ashramLat, ashramLong, it.latitude, it.longitude)
             }
             TokenSortOrder.DISTANCE_ASC -> filteredByDistance.sortedBy {
-                val d = calculateDistanceKm(ashramLat, ashramLong, it.latitude, it.longitude)
+                val d = if (it.distanceKm >= 0f) it.distanceKm else calculateDistanceKm(ashramLat, ashramLong, it.latitude, it.longitude)
                 if (d < 0f) 0f else d
             }
             TokenSortOrder.DARSHAN_PENDING_FIRST -> filteredByDistance.sortedWith(
