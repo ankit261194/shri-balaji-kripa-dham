@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 76,
-  "version_code": 76,
-  "latest_version_name": "2.56.1",
-  "version_name": "2.56.1",
-  "update_notes_hindi": "v2.56.1: 🚀 ऑटो-अपडेट लूप व वेबसाइट डाउनलोड फिक्स (हमेशा नवीनतम रिलीज़ APK प्राप्त होगी, बार-बार अपडेट मांगने की समस्या समाप्त) + 🎵 एडमिन डायनामिक एमपी3 व आरती प्रबंधन + 🔴 एडमिन लाइव कैमरा स्टूडियो।",
-  "update_notes_english": "v2.56.1: 🚀 Auto-update loop fix & dynamic website CDN delivery (Always fetches latest release APK; fixes repeated update prompt issue) + 🎵 Admin Dynamic MP3 Aarti Manager + 🔴 Admin Live Camera Studio.",
-  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.56.1/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 77,
+  "version_code": 77,
+  "latest_version_name": "2.56.2",
+  "version_name": "2.56.2",
+  "update_notes_hindi": "v2.56.2: 🔒 सख्त सुरक्षा व दूरी नियम: 30 किमी के स्थानीय भक्तों हेतु केवल आश्रम परिसर (200m) से ही टोकन की अनुमति + 🛡️ एंटी-क्लियर डेटा सुरक्षा (1 फोन = 1 टोकन प्रति रविवार, ऐप डेटा मिटाने पर भी दोबारा टोकन प्रतिबंधित)।",
+  "update_notes_english": "v2.56.2: 🔒 Strict Ashram Geofence (Devotees within 30 km must be within 200m of Ashram) + 🛡️ Anti-Clear Data Protection (1 Phone = 1 Token per Sunday, even if app data is cleared).",
+  "apk_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.56.2/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

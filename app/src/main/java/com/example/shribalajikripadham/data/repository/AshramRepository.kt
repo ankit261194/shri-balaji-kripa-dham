@@ -680,8 +680,48 @@ class AshramRepository(context: Context) {
         }
         cursor.close()
 
-        // 🛡️ ANTI-BYPASS: If app was uninstalled & reinstalled, local SQLite is empty!
-        // Check persistent hardware receipt stored in public device storage:
+        // 🛡️ ANTI-BYPASS: If app was uninstalled & reinstalled or Clear Data was performed, local SQLite is empty!
+        // 1. Check central server (Highest Authority):
+        if (token == null) {
+            try {
+                val serverToken = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, today)
+                if (serverToken != null) {
+                    val cv = ContentValues().apply {
+                        put("token_number", serverToken.tokenNumber)
+                        put("darbar_date", serverToken.darbarDate)
+                        put("patient_name", serverToken.patientName)
+                        put("phone_number", serverToken.phoneNumber)
+                        put("city", serverToken.city)
+                        put("device_id", serverToken.deviceId)
+                        put("latitude", serverToken.latitude)
+                        put("longitude", serverToken.longitude)
+                        put("status", serverToken.status.name)
+                        put("registered_by", serverToken.registeredBy)
+                        put("photo_uri", serverToken.photoUri)
+                        put("is_darshan_completed", if (serverToken.isDarshanCompleted) 1 else 0)
+                        put("darshan_completed_at", serverToken.darshanCompletedAt)
+                        put("origin_address", serverToken.originAddress)
+                        put("destination_address", serverToken.destinationAddress)
+                        put("distance_km", serverToken.distanceKm)
+                        put("created_at", serverToken.createdAt)
+                    }
+                    val wDb = dbHelper.writableDatabase
+                    wDb.insertWithOnConflict("tokens", null, cv, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+                    val devCv = ContentValues().apply {
+                        put("device_id", serverToken.deviceId)
+                        put("darbar_date", serverToken.darbarDate)
+                        put("token_number", serverToken.tokenNumber)
+                        put("registered_at", serverToken.createdAt)
+                    }
+                    wDb.insertWithOnConflict("device_registrations", null, devCv, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+                    token = serverToken
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        // 2. Check persistent hardware receipt stored in public device storage:
         if (token == null) {
             val persistent = com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(deviceId, today)
             if (persistent != null) {
@@ -825,6 +865,21 @@ class AshramRepository(context: Context) {
         }
 
         val settings = getSettings()
+        if (settings.isGeofenceEnforced && !shouldBypassGeofence) {
+            val distFromAshram = GeofenceLocationManager.calculateDistanceMeters(
+                latitude, longitude,
+                settings.latitude, settings.longitude
+            )
+            // If road/city distance is within 30 km and user is NOT within allowed radius (200m) of Ashram: BLOCK!
+            if (calculatedDistance > 0 && calculatedDistance < settings.outstationMinDistanceKm && distFromAshram > settings.allowedRadiusMeters) {
+                val outstationKm = settings.outstationMinDistanceKm.toInt()
+                val allowedM = settings.allowedRadiusMeters.toInt()
+                val radiusDesc = if (allowedM >= 1000) "${String.format(java.util.Locale.US, "%.1f", allowedM / 1000.0)} किमी" else "$allowedM मीटर"
+                val cDist = String.format(java.util.Locale.US, "%.1f", calculatedDistance)
+                throw SecurityException("⚠️ आश्रम दूरी नियम: आपके शहर/गाँव ($safeOrigin - $cDist किमी) की दूरी ${outstationKm} किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में उपस्थित होकर ही मान्य है। कृपया आश्रम परिसर में आकर टोकन प्राप्त करें।")
+            }
+        }
+
         var nextTokenNum = 1
         var insertedId: Long = -1
 
@@ -865,12 +920,20 @@ class AshramRepository(context: Context) {
 
         if (customTokenNumber == null || customTokenNumber <= 0) {
             if (!centralOk || centralNum <= 0) {
+                val srvErr = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.lastIssueErrorMessage
+                if (!srvErr.isNullOrBlank()) {
+                    throw SecurityException(srvErr)
+                }
                 throw IllegalStateException("⚠️ इंटरनेट कनेक्शन अनिवार्य है!\n\nटोकन नंबर में किसी भी टकराव (Duplicate Token) को रोकने के लिए सेंट्रल सर्वर से सीधा संपर्क अनिवार्य है। कृपया इंटरनेट चालू करें और पुनः प्रयास करें।")
             } else {
                 centralTokenNumber = centralNum
             }
         } else {
             if (!centralOk || centralNum <= 0) {
+                val srvErr = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.lastIssueErrorMessage
+                if (!srvErr.isNullOrBlank()) {
+                    throw SecurityException(srvErr)
+                }
                 throw IllegalStateException("⚠️ इंटरनेट कनेक्शन अनिवार्य है!\n\nटोकन नंबर में किसी भी टकराव को रोकने के लिए इंटरनेट चालू होना आवश्यक है।")
             }
             centralTokenNumber = centralNum

@@ -57,6 +57,95 @@ if (empty($patientName) || empty($phoneNumber)) {
 
 $pdo = getDB();
 
+$isAdmin = (strpos($registeredBy, 'SUPER_ADMIN') !== false || strpos($registeredBy, 'ADMIN') !== false || $registeredBy === 'SEVADAR_DESK');
+
+// 1. Hardware-Level Device Locking (1 Phone = 1 Token per Darbar Date)
+// Survives app clear data, cache wipe, uninstallation & reinstallation
+if (!$isAdmin && !empty($deviceId)) {
+    $devCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE device_id = :dev AND darbar_date = :date AND status != 'CANCELLED' LIMIT 1");
+    $devCheck->execute([':dev' => $deviceId, ':date' => $darbarDate]);
+    $existingDev = $devCheck->fetch(PDO::FETCH_ASSOC);
+    if ($existingDev) {
+        http_response_code(403);
+        echo json_encode([
+            "success" => false,
+            "error" => "⚠️ डिवाइस सुरक्षा नियम (1 फोन = 1 टोकन):\n\nइस मोबाइल फोन से आज का टोकन (#" . $existingDev['token_number'] . " - " . $existingDev['patient_name'] . ") पहले ही पंजीकृत हो चुका है।\n\nनियम: एक फोन से प्रत्येक रविवार केवल एक ही टोकन प्राप्त किया जा सकता है। ऐप का डेटा रीसेट या दोबारा इंस्टॉल करने पर भी दूसरा टोकन नहीं मिल सकता।"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// 2. Phone Number Locking (1 Mobile Number = 1 Token per Darbar Date)
+if (!$isAdmin && !empty($phoneNumber)) {
+    $cleanPhone = preg_replace('/[^0-9]/', '', $phoneNumber);
+    if (strlen($cleanPhone) >= 10) {
+        $cleanPhone10 = substr($cleanPhone, -10);
+        $phoneCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND darbar_date = :date AND status != 'CANCELLED' LIMIT 1");
+        $phoneCheck->execute([':phone' => $cleanPhone10, ':date' => $darbarDate]);
+        $existingPhone = $phoneCheck->fetch(PDO::FETCH_ASSOC);
+        if ($existingPhone) {
+            http_response_code(403);
+            echo json_encode([
+                "success" => false,
+                "error" => "⚠️ मोबाइल नंबर सुरक्षा नियम:\n\nइस नंबर (" . $phoneNumber . ") से आज का टोकन (#" . $existingPhone['token_number'] . " - " . $existingPhone['patient_name'] . ") पहले ही पंजीकृत है। एक रविवार को एक नंबर से केवल 1 टोकन मान्य है।"
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+}
+
+// 3. Central Geofence & Dual-Distance Policy Enforcement
+if (!$isAdmin) {
+    $st = $pdo->query("SELECT * FROM ashram_settings WHERE id = 1 LIMIT 1");
+    $settings = $st ? $st->fetch(PDO::FETCH_ASSOC) : [];
+    $isGeofenceEnforced = !isset($settings['is_geofence_enforced']) || (int)$settings['is_geofence_enforced'] === 1;
+
+    if ($isGeofenceEnforced) {
+        if ($lat == 0.0 && $long == 0.0) {
+            http_response_code(403);
+            echo json_encode([
+                "success" => false,
+                "error" => "⚠️ वैध जीपीएस लोकेशन अनिवार्य है। कृपया फोन का GPS चालू करें और पुनः प्रयास करें।"
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $ashLat = floatval($settings['ashram_latitude'] ?? 28.3972915);
+        $ashLon = floatval($settings['ashram_longitude'] ?? 78.1460410);
+        $allowedRadiusM = floatval($settings['allowed_radius_meters'] ?? 200.0);
+        $outstationMinKm = floatval($settings['outstation_min_distance_km'] ?? 30.0);
+        $isOutstationAllowed = !isset($settings['is_outstation_advance_allowed']) || (int)$settings['is_outstation_advance_allowed'] === 1;
+
+        // Haversine formula for exact distance from Ashram
+        $r = 6371000.0; // Earth radius in meters
+        $dLat = deg2rad($lat - $ashLat);
+        $dLon = deg2rad($long - $ashLon);
+        $a = sin($dLat / 2) * sin($dLat / 2) + cos(deg2rad($ashLat)) * cos(deg2rad($lat)) * sin($dLon / 2) * sin($dLon / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        $gpsDistanceMeters = $r * $c;
+        $gpsDistanceKm = $gpsDistanceMeters / 1000.0;
+
+        $isPhysicallyAtAshram = ($gpsDistanceMeters <= $allowedRadiusM);
+        $isGpsOutstation = ($gpsDistanceKm > $outstationMinKm);
+        $isRoadOutstation = ($distanceKm >= $outstationMinKm);
+
+        // If devotee is within 30 km (by GPS OR by road/city distance), they MUST be physically at Ashram!
+        if (!$isPhysicallyAtAshram) {
+            // Must be genuinely outstation (> 30km) on BOTH GPS and Road distance
+            if (!$isOutstationAllowed || !$isGpsOutstation || ($distanceKm > 0 && !$isRoadOutstation)) {
+                http_response_code(403);
+                $distStr = number_format(min($gpsDistanceKm, $distanceKm > 0 ? $distanceKm : $gpsDistanceKm), 1);
+                $radDesc = ($allowedRadiusM >= 1000) ? number_format($allowedRadiusM / 1000, 1) . " किमी" : round($allowedRadiusM) . " मीटर";
+                echo json_encode([
+                    "success" => false,
+                    "error" => "⚠️ आश्रम दूरी नियम उल्लंघन:\n\n30 किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर (" . $radDesc . " के भीतर) में ही मान्य है।\n\nआपकी दूरी " . $distStr . " किमी है। कृपया आश्रम परिसर में पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का हक न छूटे।"
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+    }
+}
+
 try {
     // ATOMIC TRANSACTION: Lock today's token table to guarantee sequential unique number
     $pdo->beginTransaction();

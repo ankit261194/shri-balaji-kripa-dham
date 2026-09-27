@@ -25,6 +25,9 @@ object HostingerCentralSyncManager {
     const val BASE_URL = "https://shribalajikripadham.online/api/"
     const val API_SECRET_KEY = "SBKD_SECURE_TOKEN_9100100251233433_V243"
 
+    @Volatile
+    var lastIssueErrorMessage: String? = null
+
     /**
      * Request next atomic sequential token from Central MySQL Database.
      * Guaranteed ZERO collisions across all devices.
@@ -45,6 +48,7 @@ object HostingerCentralSyncManager {
         customTokenNumber: Int? = null,
         isStealthAllocator: Boolean = false
     ): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
+        lastIssueErrorMessage = null
         try {
             val url = URL("${BASE_URL}issue_token.php")
             val conn = (url.openConnection() as HttpURLConnection).apply {
@@ -57,7 +61,7 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.42.1")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.2")
 
             val params = StringBuilder()
             params.append("patient_name=").append(URLEncoder.encode(patientName, "UTF-8"))
@@ -91,13 +95,82 @@ object HostingerCentralSyncManager {
                 val json = JSONObject(resp)
                 if (json.optBoolean("success", false)) {
                     val tokenNum = json.optInt("token_number", -1)
+                    lastIssueErrorMessage = null
                     return@withContext Pair(true, tokenNum)
+                }
+            } else {
+                val errResp = try {
+                    conn.errorStream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }
+                } catch (e: Exception) { null }
+                if (!errResp.isNullOrBlank()) {
+                    try {
+                        val errJson = JSONObject(errResp)
+                        lastIssueErrorMessage = errJson.optString("error", "सर्वर द्वारा टोकन अस्वीकृत।")
+                    } catch (e: Exception) {
+                        lastIssueErrorMessage = errResp
+                    }
                 }
             }
             Pair(false, -1)
         } catch (e: Exception) {
             Log.e(TAG, "issueCentralToken failed: ${e.message}")
             Pair(false, -1)
+        }
+    }
+
+    /**
+     * Checks if a device has already registered a token today on the central server.
+     * Prevents bypassing via "Clear Data" or app reinstall.
+     */
+    suspend fun checkDeviceRegisteredOnServer(deviceId: String, darbarDate: String = ""): com.example.shribalajikripadham.data.model.Token? = withContext(Dispatchers.IO) {
+        if (deviceId.isBlank()) return@withContext null
+        try {
+            val dDate = if (darbarDate.isNotBlank()) darbarDate else com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
+            val urlStr = "${BASE_URL}check_device.php?device_id=${URLEncoder.encode(deviceId, "UTF-8")}&darbar_date=${URLEncoder.encode(dDate, "UTF-8")}"
+            val url = URL(urlStr)
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+                connectTimeout = 6000
+                readTimeout = 6000
+                requestMethod = "GET"
+                setRequestProperty("User-Agent", "ShriBalajiApp/2.56.2")
+            }
+
+            if (conn.responseCode == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false) && json.optBoolean("registered", false)) {
+                    val tokObj = json.optJSONObject("token")
+                    if (tokObj != null) {
+                        return@withContext com.example.shribalajikripadham.data.model.Token(
+                            id = tokObj.optLong("id", 0L),
+                            tokenNumber = tokObj.optInt("token_number", 0),
+                            darbarDate = tokObj.optString("darbar_date", dDate),
+                            patientName = tokObj.optString("patient_name", ""),
+                            phoneNumber = tokObj.optString("phone_number", ""),
+                            city = tokObj.optString("city", "डूँगरा जाट (स्थानीय)"),
+                            deviceId = tokObj.optString("device_id", deviceId),
+                            latitude = tokObj.optDouble("latitude", 0.0),
+                            longitude = tokObj.optDouble("longitude", 0.0),
+                            distanceKm = tokObj.optDouble("distance_km", 0.0).toFloat(),
+                            originAddress = tokObj.optString("origin_address", ""),
+                            destinationAddress = tokObj.optString("destination_address", "श्री बालाजी कृपा धाम, डुंगरा जाट"),
+                            photoUri = tokObj.optString("photo_url", ""),
+                            status = try { com.example.shribalajikripadham.data.model.TokenStatus.valueOf(tokObj.optString("status", "WAITING")) } catch (e: Exception) { com.example.shribalajikripadham.data.model.TokenStatus.WAITING },
+                            registeredBy = tokObj.optString("registered_by", "SELF"),
+                            isDarshanCompleted = tokObj.optBoolean("is_darshan_completed", false),
+                            darshanCompletedAt = 0L,
+                            createdAt = tokObj.optLong("created_at", System.currentTimeMillis())
+                        )
+                    }
+                }
+            }
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "checkDeviceRegisteredOnServer failed: ${e.message}")
+            null
         }
     }
 

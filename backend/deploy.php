@@ -33,7 +33,8 @@ $filesToSync = [
     "api/delete_donor.php",
     "api/github_proxy.php",
     "api/cloud_sync.php",
-    "api/data_vault.php"
+    "api/data_vault.php",
+    "api/check_device.php"
 ];
 
 $baseDir = __DIR__;

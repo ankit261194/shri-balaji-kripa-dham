@@ -1602,6 +1602,20 @@ fun TokenRegistrationScreen(
                                 }
                                 val devoteeVillageOrCity = originAddress.trim().ifEmpty { city.trim() }.ifEmpty { if (isHindi) "स्थानीय" else "Local" }
 
+                                if (settings.isGeofenceEnforced && estimatedDistanceKm > 0f && estimatedDistanceKm < settings.outstationMinDistanceKm && distanceMeters > settings.allowedRadiusMeters) {
+                                    val outKm = settings.outstationMinDistanceKm.toInt()
+                                    val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
+                                    val cDist = String.format(Locale.US, "%.1f", estimatedDistanceKm)
+                                    locationAlertTitle = if (isHindi) "📍 स्थानीय भक्त नियम" else "📍 Local Devotee Policy"
+                                    locationAlertMessage = if (isHindi)
+                                        "⚠️ आपके चयनित शहर/गाँव ($devoteeVillageOrCity - $cDist किमी) की दूरी $outKm किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल आश्रम परिसर ($radM के भीतर) में उपस्थित होकर ही मान्य है। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें।"
+                                    else
+                                        "Your village/city ($cDist km) is within $outKm km radius. Local devotees can only register within $radM of Ashram."
+                                    showLocationAlertDialog = true
+                                    errorMessage = locationAlertMessage
+                                    return@Button
+                                }
+
                                 isSubmitting = true
                                 errorMessage = null
                                 scope.launch {

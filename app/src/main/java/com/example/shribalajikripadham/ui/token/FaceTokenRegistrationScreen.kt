@@ -1190,6 +1190,27 @@ fun FaceTokenRegistrationScreen(
                                         isSubmitting = true
                                         scope.launch {
                                             try {
+                                                val profileCity = match.profile.city.trim()
+                                                val cityDistKm = com.example.shribalajikripadham.util.DistanceCalculatorService.resolveDrivingDistance(
+                                                    origin = profileCity,
+                                                    deviceLat = userLatitude,
+                                                    deviceLng = userLongitude
+                                                ).distanceKm
+
+                                                if (settings.isGeofenceEnforced && cityDistKm > 0f && cityDistKm < settings.outstationMinDistanceKm && distanceMeters > settings.allowedRadiusMeters) {
+                                                    val outKm = settings.outstationMinDistanceKm.toInt()
+                                                    val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
+                                                    val cDist = String.format(Locale.US, "%.1f", cityDistKm)
+                                                    locationAlertTitle = if (isHindi) "📍 स्थानीय भक्त नियम" else "📍 Local Devotee Policy"
+                                                    locationAlertMessage = if (isHindi)
+                                                        "⚠️ आपके प्रोफाइल शहर/गाँव ($profileCity - $cDist किमी) की दूरी $outKm किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन केवल आश्रम परिसर ($radM के भीतर) में उपस्थित होकर ही मान्य है।"
+                                                    else
+                                                        "Your city/village ($cDist km) is within $outKm km radius. Must be at Ashram."
+                                                    showLocationAlertDialog = true
+                                                    errorMessage = locationAlertMessage
+                                                    isSubmitting = false
+                                                    return@launch
+                                                }
                                                 val loc = GeofenceLocationManager.getLastKnownLocation(context)
                                                 val isMock = GeofenceLocationManager.isMockLocation(loc, context)
                                                 if (isMock) {
@@ -1606,6 +1627,28 @@ fun FaceTokenRegistrationScreen(
                                     isSubmitting = true
                                     scope.launch {
                                         try {
+                                            val fallbackCity = manualCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" }
+                                            val cityDistKm = com.example.shribalajikripadham.util.DistanceCalculatorService.resolveDrivingDistance(
+                                                origin = fallbackCity,
+                                                deviceLat = userLatitude,
+                                                deviceLng = userLongitude
+                                            ).distanceKm
+
+                                            if (settings.isGeofenceEnforced && cityDistKm > 0f && cityDistKm < settings.outstationMinDistanceKm && distanceMeters > settings.allowedRadiusMeters) {
+                                                val outKm = settings.outstationMinDistanceKm.toInt()
+                                                val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
+                                                val cDist = String.format(Locale.US, "%.1f", cityDistKm)
+                                                locationAlertTitle = if (isHindi) "📍 स्थानीय भक्त नियम" else "📍 Local Devotee Policy"
+                                                locationAlertMessage = if (isHindi)
+                                                    "⚠️ आपके चयनित शहर/गाँव ($fallbackCity - $cDist किमी) की दूरी $outKm किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल आश्रम परिसर ($radM के भीतर) में उपस्थित होकर ही मान्य है। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें।"
+                                                else
+                                                    "Your village/city ($cDist km) is within $outKm km radius. Local devotees can only register within $radM of Ashram."
+                                                showLocationAlertDialog = true
+                                                errorMessage = locationAlertMessage
+                                                isSubmitting = false
+                                                return@launch
+                                            }
+
                                             if (manualName.isBlank() || manualPhone.isBlank()) {
                                                 errorMessage = "कृपया नाम व फोन नंबर भरें"
                                                 return@launch
@@ -1632,8 +1675,14 @@ fun FaceTokenRegistrationScreen(
                                                 return@launch
                                             }
                                             val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
-                                            val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: settings.latitude)
-                                            val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: settings.longitude)
+                                            val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: 0.0)
+                                            val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: 0.0)
+
+                                            if (settings.isGeofenceEnforced && (finalLat == 0.0 || finalLon == 0.0)) {
+                                                errorMessage = if (isHindi) "⚠️ वैध जीपीएस लोकेशन नहीं मिली। कृपया GPS चालू करें और पुनः प्रयास करें।" else "Valid GPS location required."
+                                                isSubmitting = false
+                                                return@launch
+                                            }
 
                                             // Register Token with anti-fraud gating
                                             val token = repository.registerToken(
