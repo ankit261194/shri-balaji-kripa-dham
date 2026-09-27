@@ -39,7 +39,8 @@ $filesToSync = [
     "api/github_proxy.php",
     "api/cloud_sync.php",
     "api/data_vault.php",
-    "api/check_device.php"
+    "api/check_device.php",
+    "sync_apk.php"
 ];
 
 $baseDir = __DIR__;
