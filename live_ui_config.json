@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-27T03:22:08Z",
+  "updated_at": "2026-09-27T07:10:03Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -17,12 +17,12 @@
     "facebook_page_url": "https:\/\/www.facebook.com\/ShriBalajiKripaDham",
     "instagram_url": "https:\/\/www.instagram.com\/shribalajikripadham",
     "app_share_url": "https:\/\/shribalajikripadham.org\/app",
-    "guruji_photo_url": ""
+    "guruji_photo_url": "https:\/\/shribalajikripadham.online\/uploads\/guruji_1789757619_a001cb.jpg"
   },
   "emergency_notice": {
-    "is_enabled": true,
-    "notice_hindi": "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।",
-    "notice_english": "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।"
+    "is_enabled": false,
+    "notice_hindi": "",
+    "notice_english": ""
   },
   "location_config": {
     "latitude": 28.3972915,
@@ -32,7 +32,7 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1790479328062
+    "updated_at": 1790493003879
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -41,7 +41,7 @@
     "is_events_visible": true,
     "is_aarti_timings_visible": true,
     "is_guruji_info_visible": true,
-    "is_emergency_notice_visible": true,
+    "is_emergency_notice_visible": false,
     "scheduled_token_open_timestamp": 0,
     "max_daily_tokens": 0,
     "sunday_token_banner_title": "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन",
