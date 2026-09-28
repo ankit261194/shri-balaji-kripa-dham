@@ -984,6 +984,8 @@ fun TokenRegistrationScreen(
                             )
                         )
 
+                        val isOutstationDevotee = distanceMeters > (settings.outstationMinDistanceKm * 1000.0)
+
                         if (directorySuggestions.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
@@ -1004,8 +1006,10 @@ fun TokenRegistrationScreen(
                                         onClick = {
                                             phoneNumber = entry.phoneNumber
                                             patientName = entry.patientName
-                                            city = entry.city
-                                            originAddress = entry.city
+                                            if (!isOutstationDevotee) {
+                                                city = entry.city
+                                                originAddress = entry.city
+                                            }
                                             if (entry.photoUri.isNotBlank()) capturedPhotoUri = entry.photoUri
                                             directorySuggestions = emptyList()
                                         },
@@ -1031,12 +1035,34 @@ fun TokenRegistrationScreen(
                         OutlinedTextField(
                             value = originAddress.ifEmpty { city },
                             onValueChange = {
-                                originAddress = it
-                                city = it
-                                isLocationAutoFetched = false
+                                if (!isOutstationDevotee) {
+                                    originAddress = it
+                                    city = it
+                                    isLocationAutoFetched = false
+                                }
                             },
-                            label = { Text(text = if (isHindi) "गाँव / कस्बा / शहर" else "Village / Town / City", fontWeight = FontWeight.SemiBold) },
+                            readOnly = isOutstationDevotee,
+                            label = {
+                                Text(
+                                    text = if (isOutstationDevotee)
+                                        (if (isHindi) "गाँव / कस्बा / शहर (GPS द्वारा स्वतः लॉक)" else "Village / Town / City (GPS Locked)")
+                                    else
+                                        (if (isHindi) "गाँव / कस्बा / शहर" else "Village / Town / City"),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            },
                             placeholder = { Text(text = if (isHindi) "उदा. अपना गाँव, कस्बा या शहर का नाम लिखें..." else "e.g. Enter your village, town or city...", color = Color(0xFF757575)) },
+                            trailingIcon = {
+                                if (isOutstationDevotee) {
+                                    Text(
+                                        text = "🔒 GPS लॉक",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF2E7D32),
+                                        modifier = Modifier.padding(end = 12.dp)
+                                    )
+                                }
+                            },
                             textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
@@ -1072,6 +1098,28 @@ fun TokenRegistrationScreen(
                                     color = MaroonPrimary,
                                     fontWeight = FontWeight.Medium
                                 )
+                            }
+                        } else if (isOutstationDevotee && originAddress.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Surface(
+                                color = Color(0xFFE8F5E9),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, Color(0xFF81C784)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("🔒", fontSize = 14.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (isHindi) "30 किमी से अधिक दूरी: स्थान GPS द्वारा स्वतः लॉक है (${if (estimatedDistanceKm >= 0f) "%.1f किमी".format(estimatedDistanceKm) else ""})" else "Outstation (>30km): Location locked by GPS (${if (estimatedDistanceKm >= 0f) "%.1f km".format(estimatedDistanceKm) else ""})",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2E7D32)
+                                    )
+                                }
                             }
                         } else if (isLocationAutoFetched && originAddress.isNotBlank()) {
                             Spacer(modifier = Modifier.height(6.dp))

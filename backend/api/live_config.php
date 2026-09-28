@@ -278,7 +278,7 @@ function runSchemaMigrations($pdo, $targetCols) {
         $pdo->exec("UPDATE ashram_settings SET whatsapp_number = '' WHERE whatsapp_number LIKE '%97206%' OR whatsapp_number LIKE '%98765%'");
         $pdo->exec("UPDATE ashram_settings SET contact_email = '' WHERE contact_email LIKE '%shribalajikripadham@gmail.com%'");
         $pdo->exec("UPDATE ashram_settings SET upi_id = '' WHERE upi_id = 'shribalajikripadham@upi'");
-        $pdo->exec("UPDATE ashram_settings SET aarti_mangala_time = '', aarti_balbhog_time = '', aarti_sandhya_time = '', aarti_shayan_time = '', aarti_timings = ''");
+        $pdo->exec("UPDATE ashram_settings SET is_tuesday_darbar_enabled = 1 WHERE id = 1 AND is_tuesday_darbar_enabled = 0");
         $pdo->exec("DELETE FROM sevadars WHERE phone LIKE '%987654321%' OR phone = '' OR name IN ('अंकित शर्मा', 'दीपक कुमार', 'राहुल सिंह', 'सोनू तेवतिया') OR name LIKE '%?%'");
         $pdo->exec("DELETE FROM donors WHERE phone LIKE '%987654321%' OR name IN ('सेठ राधेश्याम जी', 'चौधरी वीरेन्द्र सिंह जी', 'श्री रमेश चंद्र गोयल जी', 'श्री अजय तेवतिया जी', 'श्री Ajay तेवतिया जी') OR name LIKE '%?%'");
     } catch (Throwable $e) {

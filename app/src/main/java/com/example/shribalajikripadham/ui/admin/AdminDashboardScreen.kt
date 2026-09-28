@@ -5331,30 +5331,41 @@ fun ManualTokenTab(
             successMessage = null
             try {
                 val isSuperAdmin = admin.role == AdminRole.SUPER_ADMIN
-                val schedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
-                val isTokenOpen = schedule is SundayScheduleState.Open && settings.isDarbarActive
+                val isTuesday = selectedVenue == "BULANDSHAHR"
+                val isTokenOpen = if (isTuesday) {
+                    val tSchedule = com.example.shribalajikripadham.util.TuesdayTokenScheduleHelper.evaluateSchedule(settings)
+                    tSchedule is com.example.shribalajikripadham.util.TuesdayScheduleState.Open && settings.isTuesdayDarbarEnabled
+                } else {
+                    val sSchedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
+                    sSchedule is SundayScheduleState.Open && settings.isDarbarActive
+                }
                 val hasAnytimePermission = isSuperAdmin || admin.canIssueTokensAnywhere || settings.allowAdminReservedTokens
 
                 if (!isTokenOpen && !hasAnytimePermission) {
+                    val venueLabel = if (isTuesday) "मंगलवार (बुलन्दशहर)" else "रविवार (डूँगरा जाट)"
                     errorMessage = if (isHindi)
-                        "⚠️ टोकन सेवा वर्तमान में बंद है। सामान्य एडमिन केवल टोकन सेवा सक्रिय/खुली होने पर ही टोकन बना सकते हैं। सुपर एडमिन द्वारा विशेष अनुमति ('किसी भी समय टोकन बनाने की अनुमति') मिलने पर ही बंद समय में टोकन जारी किए जा सकते हैं।"
+                        "⚠️ $venueLabel टोकन सेवा वर्तमान में बंद है। सामान्य एडमिन केवल टोकन सेवा सक्रिय/खुली होने पर ही टोकन बना सकते हैं। सुपर एडमिन द्वारा विशेष अनुमति मिलने पर ही बंद समय में टोकन जारी किए जा सकते हैं।"
                     else
-                        "⚠️ Token service is currently closed. Regular admins can only issue tokens when token service is active and open. Super Admin permission is required to issue tokens anytime."
+                        "⚠️ $venueLabel token service is currently closed. Regular admins can only issue tokens when token service is active and open."
                     isIssuing = false
                     return@launch
                 }
 
                 // Check geofence if not bypass-permitted
                 if (!canBypassGeofence) {
+                    val targetVenLat = if (isTuesday) settings.tuesdayLatitude else settings.latitude
+                    val targetVenLng = if (isTuesday) settings.tuesdayLongitude else settings.longitude
+                    val targetVenRadius = if (isTuesday) settings.tuesdayAllowedRadiusMeters else settings.allowedRadiusMeters
                     val dist = GeofenceLocationManager.calculateDistanceMeters(
                         userLat, userLng,
-                        settings.latitude, settings.longitude
+                        targetVenLat, targetVenLng
                     )
-                    if (dist > settings.allowedRadiusMeters) {
+                    if (dist > targetVenRadius) {
+                        val venueTitle = if (isTuesday) "बुलन्दशहर दरबार" else "आश्रम"
                         errorMessage = if (isHindi)
-                            "⚠️ आप आश्रम GPS सीमा से बाहर हैं (${String.format("%.1f", dist / 1000.0)} km)। टोकन केवल आश्रम में उपस्थित होकर या सुपर एडमिन की अनुमति से जारी हो सकता है।"
+                            "⚠️ आप $venueTitle GPS सीमा से बाहर हैं (${String.format("%.1f", dist / 1000.0)} km)। टोकन केवल परिसर में उपस्थित होकर या सुपर एडमिन की अनुमति से जारी हो सकता है।"
                         else
-                            "⚠️ Outside Ashram GPS boundary. Token can only be issued inside Ashram premises or with Super Admin permission."
+                            "⚠️ Outside $venueTitle GPS boundary. Token can only be issued inside premises or with Super Admin permission."
                         isIssuing = false
                         return@launch
                     }

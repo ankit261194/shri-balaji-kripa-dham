@@ -103,7 +103,7 @@ try {
             $pdo->exec("UPDATE ashram_settings SET whatsapp_number = '' WHERE whatsapp_number LIKE '%97206%' OR whatsapp_number LIKE '%98765%'");
             $pdo->exec("UPDATE ashram_settings SET contact_email = '' WHERE contact_email LIKE '%shribalajikripadham@gmail.com%'");
             $pdo->exec("UPDATE ashram_settings SET upi_id = '' WHERE upi_id = 'shribalajikripadham@upi'");
-            $pdo->exec("UPDATE ashram_settings SET aarti_mangala_time = '', aarti_balbhog_time = '', aarti_sandhya_time = '', aarti_shayan_time = '', aarti_timings = ''");
+            $pdo->exec("UPDATE ashram_settings SET is_tuesday_darbar_enabled = 1 WHERE id = 1 AND is_tuesday_darbar_enabled = 0");
         }
     }
 } catch (Throwable $e) {}
