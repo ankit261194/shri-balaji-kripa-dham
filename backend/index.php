@@ -1496,7 +1496,7 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
                         // WhatsApp Dynamic Link (Real Admin Number Only)
                         const waEl = document.getElementById('btnWhatsappLink');
                         const waNumEl = document.getElementById('dynamicWhatsappNumber');
-                        if (cfg.whatsapp_number && cfg.whatsapp_number.trim() !== '' && cfg.whatsapp_number.indexOf('97206') === -1) {
+                        if (cfg.whatsapp_number && cfg.whatsapp_number.trim() !== '' && cfg.whatsapp_number.length >= 10) {
                             if (waNumEl) waNumEl.innerText = cfg.whatsapp_number;
                             if (waEl) {
                                 waEl.href = 'https://wa.me/' + cfg.whatsapp_number.replace(/[^0-9]/g, '') + '?text=जय%20श्री%20बालाजी%20महाराज';
@@ -1509,7 +1509,7 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
                         // Contact Phone Dynamic Link (Real Admin Number Only)
                         const phEl = document.getElementById('btnPhoneLink');
                         const phNumEl = document.getElementById('dynamicContactPhone');
-                        if (cfg.contact_phone && cfg.contact_phone.trim() !== '' && cfg.contact_phone.indexOf('97206') === -1) {
+                        if (cfg.contact_phone && cfg.contact_phone.trim() !== '' && cfg.contact_phone.length >= 10) {
                             if (phNumEl) phNumEl.innerText = cfg.contact_phone;
                             if (phEl) {
                                 phEl.href = 'tel:' + cfg.contact_phone;
