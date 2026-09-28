@@ -191,7 +191,7 @@ if ($action === 'LOGIN') {
 // 2. VERIFY SESSION TOKEN
 // -----------------------------------------------------------------------------
 if ($action === 'VERIFY') {
-    $token = trim($input['token'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_TOKEN'] ?? '');
+    $token = trim($input['token'] ?? $_GET['token'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_TOKEN'] ?? '');
     if (empty($token)) {
         http_response_code(400);
         echo json_encode(["success" => false, "is_valid" => false, "error" => "टोकन आवश्यक है।"], JSON_UNESCAPED_UNICODE);
@@ -220,7 +220,7 @@ if ($action === 'VERIFY') {
 // 3. LOGOUT / INVALIDATE SESSION
 // -----------------------------------------------------------------------------
 if ($action === 'LOGOUT') {
-    $token = trim($input['token'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_TOKEN'] ?? '');
+    $token = trim($input['token'] ?? $_GET['token'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_TOKEN'] ?? '');
     if (!empty($token)) {
         try {
             $pdo->prepare("UPDATE admin_sessions SET is_active = 0 WHERE session_token = :st")->execute([':st' => $token]);
