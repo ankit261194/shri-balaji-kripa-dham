@@ -1037,7 +1037,11 @@ fun HomeScreen(
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            val shareUrl = settings.appShareUrl.ifEmpty { "https://shribalajikripadham.org/app" }
+                            val shareUrl = if (settings.appShareUrl.contains(".org") || settings.appShareUrl.isBlank() || settings.appShareUrl.endsWith("/app")) {
+                                "https://shribalajikripadham.online/download.php"
+                            } else {
+                                settings.appShareUrl
+                            }
                             val shareMsg = if (isHindi) {
                                 "🚩 ॐ श्री हनुमते नमः 🚩\n\nश्री बालाजी कृपा धाम (ग्राम डूँगरा जाट, जिला बुलंदशहर, उ.प्र.)\nपरम पूज्य गुरुजी तेजवीर सिंह जी महाराज\n\nआश्रम का आधिकारिक मोबाइल ऐप डाउनलोड करें और रविवार टोकन, पर्चा, व लाइव जानकारी प्राप्त करें:\n$shareUrl"
                             } else {

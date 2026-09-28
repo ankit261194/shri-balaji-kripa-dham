@@ -29,9 +29,9 @@ data class AshramSettings(
     val isOutstationAdvanceAllowed: Boolean = true,
     val outstationMinDistanceKm: Double = 30.0,
     // In-app auto update system configuration
-    val latestVersionCode: Int = 87,
-    val latestVersionName: String = "2.56.12",
-    val updateNotes: String = "सुपर एडमिन सेटिंग्स फिक्स, डेटाबेस स्थिरता सुधार एवं सुचारू टोकन व्यवस्था।",
+    val latestVersionCode: Int = 88,
+    val latestVersionName: String = "2.56.13",
+    val updateNotes: String = "आधिकारिक वेबसाइट व डाउनलोड लिंक शुद्धिकरण (shribalajikripadham.online) एवं ऐप स्थिरता सुधार।",
     val apkDownloadUrl: String = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
     val isForceUpdate: Boolean = false,
     // Social Media Links & App Sharing

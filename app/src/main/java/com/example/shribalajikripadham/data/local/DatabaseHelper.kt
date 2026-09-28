@@ -191,6 +191,11 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         }
                     }
                 }
+
+                // Self-healing: if app_share_url was ever set to an old domain or empty, update to official shribalajikripadham.online/download.php
+                try {
+                    db.execSQL("UPDATE ashram_settings SET app_share_url = 'https://shribalajikripadham.online/download.php' WHERE app_share_url NOT LIKE '%shribalajikripadham.online%' OR app_share_url LIKE '%.org%' OR app_share_url = '' OR app_share_url LIKE '%/app';")
+                } catch (ignored: Exception) {}
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -232,7 +237,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             db.execSQL("UPDATE ashram_settings SET bank_account_number = '' WHERE bank_account_number LIKE '%XXXX%';")
             db.execSQL("UPDATE ashram_settings SET bank_ifsc = '' WHERE bank_ifsc LIKE '%XXXX%';")
             db.execSQL("UPDATE ashram_settings SET contact_phone = '' WHERE contact_phone LIKE '%97206%' OR contact_phone LIKE '%98765%';")
-            db.execSQL("UPDATE ashram_settings SET whatsapp_number = '' WHERE whatsapp_number LIKE '%97206%' OR whatsapp_number LIKE '%98765%';")
+            // Auto-heal app share URL: rewrite any old/invalid domain to official shribalajikripadham.online/download.php
+            db.execSQL("UPDATE ashram_settings SET app_share_url = 'https://shribalajikripadham.online/download.php' WHERE app_share_url NOT LIKE '%shribalajikripadham.online%' OR app_share_url LIKE '%.org%' OR app_share_url = '' OR app_share_url LIKE '%/app';")
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -313,7 +319,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     youtube_channel_url TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham',
                     facebook_page_url TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham',
                     instagram_url TEXT NOT NULL DEFAULT 'https://www.instagram.com/shribalajikripadham',
-                    app_share_url TEXT NOT NULL DEFAULT 'https://shribalajikripadham.org/app',
+                    app_share_url TEXT NOT NULL DEFAULT 'https://shribalajikripadham.online/download.php',
                     current_theme_id TEXT NOT NULL DEFAULT 'maroon',
                     guruji_photo_uri TEXT NOT NULL DEFAULT '',
                     active_ui_layout TEXT NOT NULL DEFAULT 'CLASSIC_DARBAR',
@@ -755,7 +761,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN youtube_channel_url TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham'",
             "ALTER TABLE ashram_settings ADD COLUMN facebook_page_url TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham'",
             "ALTER TABLE ashram_settings ADD COLUMN instagram_url TEXT NOT NULL DEFAULT 'https://www.instagram.com/shribalajikripadham'",
-            "ALTER TABLE ashram_settings ADD COLUMN app_share_url TEXT NOT NULL DEFAULT 'https://shribalajikripadham.org/app'",
+            "ALTER TABLE ashram_settings ADD COLUMN app_share_url TEXT NOT NULL DEFAULT 'https://shribalajikripadham.online/download.php'",
             "ALTER TABLE ashram_settings ADD COLUMN current_theme_id TEXT NOT NULL DEFAULT 'maroon'",
             "ALTER TABLE ashram_settings ADD COLUMN guruji_photo_uri TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN active_ui_layout TEXT NOT NULL DEFAULT 'CLASSIC_DARBAR'",

@@ -375,7 +375,7 @@ object PhotoshopPsdGenerator {
             }
             canvas.drawText(data.ashramAddress, 60f, ruleY + 100f, addressPaint)
             canvas.drawText("हेल्पलाइन: ${data.emergencyPhone}", 60f, ruleY + 140f, addressPaint)
-            canvas.drawText("ईमेल / वेबसाइट: shribalajikripadham.org", 60f, ruleY + 180f, addressPaint)
+            canvas.drawText("वेबसाइट: shribalajikripadham.online", 60f, ruleY + 180f, addressPaint)
 
             // Bottom Footer
             val footerPaint = Paint().apply {

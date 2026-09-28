@@ -10609,7 +10609,7 @@ fun SuperControlTab(
                         value = cloudUrlInput,
                         onValueChange = { cloudUrlInput = it; cloudSyncStatusMsg = null },
                         label = { Text("Cloud Server Endpoint (POST / JSON)") },
-                        placeholder = { Text("https://shribalajikripadham.org/api/sync") },
+                        placeholder = { Text("https://shribalajikripadham.online/api/cloud_sync.php") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
