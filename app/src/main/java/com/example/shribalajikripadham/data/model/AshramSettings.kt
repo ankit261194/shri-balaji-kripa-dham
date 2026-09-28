@@ -29,9 +29,9 @@ data class AshramSettings(
     val isOutstationAdvanceAllowed: Boolean = true,
     val outstationMinDistanceKm: Double = 30.0,
     // In-app auto update system configuration
-    val latestVersionCode: Int = 85,
-    val latestVersionName: String = "2.56.10",
-    val updateNotes: String = "वेबसाइट लाइव एडिटर सुधार, शून्य डमी डेटा गारंटी, केवल वास्तविक संपर्क विवरण।",
+    val latestVersionCode: Int = 86,
+    val latestVersionName: String = "2.56.11",
+    val updateNotes: String = "मंगलवार बुलन्दशहर दरबार टोकन सिस्टम, सुपर एडमिन कंट्रोल, वेबसाइट लाइव डिस्प्ले",
     val apkDownloadUrl: String = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
     val isForceUpdate: Boolean = false,
     // Social Media Links & App Sharing
@@ -121,7 +121,22 @@ data class AshramSettings(
     val websiteWhatsappChannelUrl: String = "https://chat.whatsapp.com/invite",
     val websiteFooterTitle: String = "श्री बालाजी कृपा धाम",
     val websiteFooterDedication: String = "सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।",
-    val websiteFooterCopyright: String = "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।"
+    val websiteFooterCopyright: String = "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।",
+    // Tuesday Bulandshahr Darbar Controls (Super Admin Controlled, Token-Only)
+    val isTuesdayDarbarEnabled: Boolean = false,
+    val tuesdayDarbarName: String = "श्री बालाजी कृपा धाम (बुलन्दशहर दरबार)",
+    val tuesdayDarbarAddress: String = "बुलन्दशहर, उत्तर प्रदेश",
+    val tuesdayLatitude: Double = 28.4069,
+    val tuesdayLongitude: Double = 77.8498,
+    val tuesdayAllowedRadiusMeters: Double = 200.0,
+    val tuesdayOutstationMinDistanceKm: Double = 30.0,
+    val tuesdayDarbarTimings: String = "प्रत्येक मंगलवार प्रातः 8:00 बजे से (Every Tuesday from 8:00 AM)",
+    val tuesdayTokenServiceMode: String = "AUTO_TUESDAY", // AUTO_TUESDAY, FORCE_OPEN, FORCE_CLOSED
+    val tuesdayScheduledOpenTimestamp: Long = 0L,
+    val tuesdayDarbarDate: String = "",
+    val tuesdayCurrentServingToken: Int = 0,
+    val tuesdayRunningTokenNumber: Int = 1,
+    val tuesdayTokenNotice: String = "बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।"
 )
 
 data class CustomCityDistance(

@@ -134,6 +134,7 @@ $queries = [
         allocated_time_slot VARCHAR(100) NOT NULL,
         darbar_date VARCHAR(50) NOT NULL,
         status VARCHAR(30) NOT NULL DEFAULT 'ISSUED',
+        darbar_venue VARCHAR(50) NOT NULL DEFAULT 'DUNGRA_JAAT',
         entry_source VARCHAR(30) NOT NULL DEFAULT 'DEVOTEE_APP',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -171,7 +172,21 @@ $queries = [
         can_admin_issue_reserved_tokens TINYINT(1) NOT NULL DEFAULT 0,
         allow_admin_reserved_tokens TINYINT(1) NOT NULL DEFAULT 0,
         aarti_timings TEXT,
-        whatsapp_number VARCHAR(20) DEFAULT '+918006518960',
+        is_tuesday_darbar_enabled TINYINT(1) NOT NULL DEFAULT 0,
+        tuesday_darbar_name VARCHAR(255) NOT NULL DEFAULT 'मंगलवार दरबार (बुलन्दशहर)',
+        tuesday_darbar_address TEXT,
+        tuesday_latitude DECIMAL(11, 8) NOT NULL DEFAULT 28.4070000,
+        tuesday_longitude DECIMAL(11, 8) NOT NULL DEFAULT 77.8498000,
+        tuesday_allowed_radius_meters DECIMAL(8, 2) NOT NULL DEFAULT 200.0,
+        tuesday_outstation_min_distance_km DECIMAL(6, 2) NOT NULL DEFAULT 30.0,
+        tuesday_darbar_timings VARCHAR(255) NOT NULL DEFAULT 'प्रत्येक मंगलवार प्रातःकाल 8:00 बजे से',
+        tuesday_token_service_mode VARCHAR(50) NOT NULL DEFAULT 'AUTO_TUESDAY',
+        tuesday_scheduled_open_timestamp BIGINT NOT NULL DEFAULT 0,
+        tuesday_darbar_date VARCHAR(50) NOT NULL DEFAULT '',
+        tuesday_current_serving_token INT NOT NULL DEFAULT 0,
+        tuesday_running_token_number INT NOT NULL DEFAULT 0,
+        tuesday_token_notice TEXT,
+        whatsapp_number VARCHAR(20) DEFAULT '',
         whatsapp_group_url VARCHAR(500) DEFAULT '',
         config_version INT NOT NULL DEFAULT 1,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -341,7 +356,21 @@ $targetCols = [
     "live_stream_url" => "VARCHAR(500) DEFAULT ''",
     "youtube_live_url" => "VARCHAR(500) DEFAULT ''",
     "facebook_live_url" => "VARCHAR(500) DEFAULT ''",
-    "config_version" => "INT NOT NULL DEFAULT 1"
+    "config_version" => "INT NOT NULL DEFAULT 1",
+    "is_tuesday_darbar_enabled" => "TINYINT(1) NOT NULL DEFAULT 0",
+    "tuesday_darbar_name" => "VARCHAR(255) NOT NULL DEFAULT 'मंगलवार दरबार (बुलन्दशहर)'",
+    "tuesday_darbar_address" => "TEXT",
+    "tuesday_latitude" => "DECIMAL(11, 8) NOT NULL DEFAULT 28.4070000",
+    "tuesday_longitude" => "DECIMAL(11, 8) NOT NULL DEFAULT 77.8498000",
+    "tuesday_allowed_radius_meters" => "DECIMAL(8, 2) NOT NULL DEFAULT 200.0",
+    "tuesday_outstation_min_distance_km" => "DECIMAL(6, 2) NOT NULL DEFAULT 30.0",
+    "tuesday_darbar_timings" => "VARCHAR(255) NOT NULL DEFAULT 'प्रत्येक मंगलवार प्रातःकाल 8:00 बजे से'",
+    "tuesday_token_service_mode" => "VARCHAR(50) NOT NULL DEFAULT 'AUTO_TUESDAY'",
+    "tuesday_scheduled_open_timestamp" => "BIGINT NOT NULL DEFAULT 0",
+    "tuesday_darbar_date" => "VARCHAR(50) NOT NULL DEFAULT ''",
+    "tuesday_current_serving_token" => "INT NOT NULL DEFAULT 0",
+    "tuesday_running_token_number" => "INT NOT NULL DEFAULT 0",
+    "tuesday_token_notice" => "TEXT"
 ];
 
 $addedCols = [];
@@ -359,6 +388,16 @@ if ($pdo) {
                     } catch (Throwable $e) {}
                 }
             }
+        }
+
+        // Migrate tokens table for darbar_venue
+        $existingTokenColsStmt = $pdo->query("SHOW COLUMNS FROM tokens");
+        $existingTokenCols = $existingTokenColsStmt ? $existingTokenColsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+        if (is_array($existingTokenCols) && !in_array('darbar_venue', $existingTokenCols)) {
+            try {
+                $pdo->exec("ALTER TABLE tokens ADD COLUMN `darbar_venue` VARCHAR(50) NOT NULL DEFAULT 'DUNGRA_JAAT'");
+                $addedCols[] = 'tokens.darbar_venue';
+            } catch (Throwable $e) {}
         }
 
         // 5. Ensure row 1 exists in ashram_settings

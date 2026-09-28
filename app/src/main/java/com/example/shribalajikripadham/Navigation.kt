@@ -31,6 +31,7 @@ enum class AppScreen {
     HOME,
     TOKEN,
     FACE_TOKEN,
+    TUESDAY_FACE_TOKEN,
     YATRA,
     YATRA_EXPENSES,
     ADMIN,
@@ -110,6 +111,7 @@ fun MainNavigation(
                 onThemeChanged = onThemeChanged,
                 onNavigateToToken = { navigateTo(AppScreen.TOKEN) },
                 onNavigateToFaceToken = { navigateTo(AppScreen.FACE_TOKEN) },
+                onNavigateToTuesdayToken = { navigateTo(AppScreen.TUESDAY_FACE_TOKEN) },
                 onNavigateToYatra = {
                     if (settings.isYatraServiceEnabled) {
                         navigateTo(AppScreen.YATRA)
@@ -144,6 +146,17 @@ fun MainNavigation(
 
             AppScreen.FACE_TOKEN -> FaceTokenRegistrationScreen(
                 isHindi = isHindi,
+                darbarVenue = "DUNGRA_JAAT",
+                onBack = { navigateBack() },
+                onNavigateToManualForm = {
+                    navigateBack()
+                    navigateTo(AppScreen.TOKEN)
+                }
+            )
+
+            AppScreen.TUESDAY_FACE_TOKEN -> FaceTokenRegistrationScreen(
+                isHindi = isHindi,
+                darbarVenue = "BULANDSHAHR",
                 onBack = { navigateBack() },
                 onNavigateToManualForm = {
                     navigateBack()

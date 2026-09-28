@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 85,
-  "version_code": 85,
-  "latest_version_name": "2.56.10",
-  "version_name": "2.56.10",
-  "update_notes_hindi": "v2.56.10 (Build 85): 🌐 आधिकारिक वेबसाइट लाइव एडिटर सुधार; 1-क्लिक लाइव वेबसाइट सिंक; शून्य डमी डेटा गारंटी - केवल वास्तविक संपर्क सूत्र; नित्य आरती कार्ड निष्कासन एवं स्वच्छ दरबार विवरण।",
-  "update_notes_english": "v2.56.10 (Build 85): 🌐 Official Website Live Editor enhancement; 1-click instant live website sync; zero dummy data guarantee - strictly real contact numbers only; Aarti timings removed & clean Darbar schedule.",
+  "latest_version_code": 86,
+  "version_code": 86,
+  "latest_version_name": "2.56.11",
+  "version_name": "2.56.11",
+  "update_notes_hindi": "v2.56.11 (Build 86): 🚩 मंगलवार बुलन्दशहर दरबार टोकन सिस्टम; सुपर एडमिन पूर्ण नियंत्रण (चालू/बंद व 1-क्लिक GPS सेटिंग); वेबसाइट पर मंगलवार लाइव टोकन काउंटर।",
+  "update_notes_english": "v2.56.11 (Build 86): 🚩 Tuesday Bulandshahr Darbar Token System; Super Admin full control (Toggle On/Off & 1-click GPS setup); Tuesday live token counter on website.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false

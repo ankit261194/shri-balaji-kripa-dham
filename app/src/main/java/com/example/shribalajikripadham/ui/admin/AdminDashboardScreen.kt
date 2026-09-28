@@ -1087,6 +1087,7 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊")
             }
             if (isSuper) {
+                allowedTabs.add(if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar")
                 allowedTabs.add(if (isHindi) "🌐 वेबसाइट लाइव एडिटर" else "Website Live Editor")
                 allowedTabs.add(if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️")
             }
@@ -1928,6 +1929,16 @@ fun AdminDashboardScreen(
                                         Toast.makeText(context, if (isHindi) "✓ सेटिंग्स सुरक्षित व लाइव अपडेट!" else "Settings saved & live updated!", Toast.LENGTH_SHORT).show()
                                         refreshData()
                                     }
+                                }
+                            )
+                        }
+                        currentTabTitle == "🚩 मंगलवार दरबार" || currentTabTitle == "Tuesday Darbar" -> {
+                            TuesdayDarbarTab(
+                                isHindi = isHindi,
+                                settings = settings,
+                                onSettingsUpdated = { updatedS ->
+                                    settings = updatedS
+                                    refreshData()
                                 }
                             )
                         }
@@ -5232,6 +5243,7 @@ fun ManualTokenTab(
     var formName by remember { mutableStateOf("") }
     var formPhone by remember { mutableStateOf("") }
     var formCity by remember { mutableStateOf("डूँगरा जाट (स्थानीय)") }
+    var selectedVenue by remember { mutableStateOf("DUNGRA_JAAT") }
     var formPhotoUri by remember { mutableStateOf("") }
     var formCapturedBitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     var nameSuggestions by remember { mutableStateOf<List<DevoteeFaceProfile>>(emptyList()) }
@@ -5371,17 +5383,24 @@ fun ManualTokenTab(
                     }
                 }
 
+                val isTuesday = selectedVenue == "BULANDSHAHR"
+                val targetVenueLat = if (isTuesday) settings.tuesdayLatitude else settings.latitude
+                val targetVenueLng = if (isTuesday) settings.tuesdayLongitude else settings.longitude
+                val targetDestAddr = if (isTuesday) settings.tuesdayDarbarAddress.ifBlank { "बुलन्दशहर, उत्तर प्रदेश" } else "श्री बालाजी कृपा धाम, डुंगरा जाट"
+
                 val token = repository.registerToken(
                     patientName = pName.trim(),
                     phoneNumber = pPhone.trim(),
                     deviceId = "ADMIN_${admin.id}_${System.currentTimeMillis()}",
-                    latitude = if (canBypassGeofence) settings.latitude else userLat,
-                    longitude = if (canBypassGeofence) settings.longitude else userLng,
-                    city = pCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                    latitude = if (canBypassGeofence) targetVenueLat else userLat,
+                    longitude = if (canBypassGeofence) targetVenueLng else userLng,
+                    city = pCity.trim().ifEmpty { if (isTuesday) "बुलन्दशहर (स्थानीय)" else "डूँगरा जाट (स्थानीय)" },
                     registeredBy = attribution,
                     photoUri = pPhotoUri,
                     bypassGeofence = canBypassGeofence,
-                    customTokenNumber = customNum
+                    customTokenNumber = customNum,
+                    destinationAddress = targetDestAddr,
+                    darbarVenue = selectedVenue
                 )
 
                 // If photo was captured, enroll face vector in universal registry
@@ -5693,7 +5712,40 @@ fun ManualTokenTab(
                     color = Color.Gray
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                // Venue Selector: Sunday (Dungra Jaat) vs Tuesday (Bulandshahr)
+                if (settings.isTuesdayDarbarEnabled) {
+                    Text(
+                        text = if (isHindi) "दरबार स्थल चुनें:" else "Select Darbar Venue:",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = MaroonPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = selectedVenue == "DUNGRA_JAAT",
+                            onClick = {
+                                selectedVenue = "DUNGRA_JAAT"
+                                if (formCity == "बुलन्दशहर (स्थानीय)") formCity = "डूँगरा जाट (स्थानीय)"
+                            },
+                            label = { Text(if (isHindi) "रविवार (डुंगरा जाट)" else "Sunday (Dungra Jaat)", fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FilterChip(
+                            selected = selectedVenue == "BULANDSHAHR",
+                            onClick = {
+                                selectedVenue = "BULANDSHAHR"
+                                if (formCity == "डूँगरा जाट (स्थानीय)") formCity = "बुलन्दशहर (स्थानीय)"
+                            },
+                            label = { Text(if (isHindi) "मंगलवार (बुलन्दशहर)" else "Tuesday (Bulandshahr)", fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
 
                 // Patient Name with suggestions
                 OutlinedTextField(

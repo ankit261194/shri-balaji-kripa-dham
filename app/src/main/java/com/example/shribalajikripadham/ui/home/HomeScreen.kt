@@ -141,6 +141,7 @@ fun HomeScreen(
     onThemeChanged: (SacredTheme) -> Unit = {},
     onNavigateToToken: () -> Unit,
     onNavigateToFaceToken: () -> Unit = onNavigateToToken,
+    onNavigateToTuesdayToken: () -> Unit = onNavigateToFaceToken,
     onNavigateToYatra: () -> Unit,
     onNavigateToInfo: () -> Unit,
     onNavigateToAdmin: () -> Unit,
@@ -585,7 +586,10 @@ fun HomeScreen(
                         }))
                         add(NavDrawerItem("🔴", if (isHindi) "🔴 लाइव दर्शन व आरती/भजन" else "🔴 Live Darbar & Bhajans", onNavigateToLiveDarbar))
                         add(NavDrawerItem("🎟️", if (isHindi) "दरबार टोकन जनरेट करें" else "Generate Darbar Token", onNavigateToToken))
-                        add(NavDrawerItem("🤳", if (isHindi) "फेस वेरिफिकेशन टोकन" else "Face Token", onNavigateToFaceToken))
+                        add(NavDrawerItem("🤳", if (isHindi) "फेस वेरिफिकेशन टोकन (रविवार)" else "Face Token (Sunday)", onNavigateToFaceToken))
+                        if (settings.isTuesdayDarbarEnabled) {
+                            add(NavDrawerItem("🚩", if (isHindi) "मंगलवार टोकन (बुलन्दशहर)" else "Tuesday Token (Bulandshahr)", onNavigateToTuesdayToken))
+                        }
                         add(NavDrawerItem("📜", if (isHindi) "डिजिटल पर्चा देखें" else "Digital Parchas", onNavigateToParchas))
                         if (settings.isYatraServiceEnabled) {
                             add(NavDrawerItem("🚗", if (isHindi) "यात्रा व दूरी विवरण" else "Yatra & Distance Info", onNavigateToYatra))
@@ -1506,6 +1510,7 @@ fun HomeScreen(
                                     dynamicEvents = dynamicEvents,
                                     onNavigateToToken = onNavigateToToken,
                                     onNavigateToFaceToken = onNavigateToFaceToken,
+                                    onNavigateToTuesdayToken = onNavigateToTuesdayToken,
                                     onNavigateToYatra = onNavigateToYatra,
                                     onNavigateToInfo = onNavigateToInfo,
                                     onNavigateToAdmin = onNavigateToAdmin,
@@ -2626,6 +2631,7 @@ fun RenderClassicSection(
     dynamicEvents: List<AshramEvent>,
     onNavigateToToken: () -> Unit,
     onNavigateToFaceToken: () -> Unit,
+    onNavigateToTuesdayToken: () -> Unit = onNavigateToFaceToken,
     onNavigateToYatra: () -> Unit,
     onNavigateToInfo: () -> Unit,
     onNavigateToAdmin: () -> Unit,
@@ -3343,6 +3349,126 @@ fun RenderClassicSection(
                     }
                 }
             }
+
+            // 🚩 TUESDAY DARBAR (BULANDSHAHR) TOKEN CARD
+            if (settings.isTuesdayDarbarEnabled) {
+                Spacer(modifier = Modifier.height(if (isCompact) 8.dp else 12.dp))
+                val tuesdaySchedule = com.example.shribalajikripadham.util.TuesdayTokenScheduleHelper.evaluateSchedule(
+                    settings = settings,
+                    nowMillis = currentTimeMs
+                )
+                val isTuesdayOpen = tuesdaySchedule is com.example.shribalajikripadham.util.TuesdayScheduleState.Open
+
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (!isTuesdayOpen) Color(0xFF2C2216) else Color(0xFF1B4332)
+                    ),
+                    shape = RoundedCornerShape(if (isCompact) 14.dp else 20.dp),
+                    elevation = CardDefaults.cardElevation(if (isCompact) 4.dp else 6.dp),
+                    border = BorderStroke(1.5.dp, if (isTuesdayOpen) Color(0xFF40916C) else Color(0xFFD4A373)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        if (!isTuesdayOpen) Color(0xFF2C2216) else Color(0xFF1B4332),
+                                        if (!isTuesdayOpen) Color(0xFF1F170E) else Color(0xFF2D6A4F)
+                                    )
+                                )
+                            )
+                            .padding(if (isCompact) 10.dp else 16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
+                                    color = Color.White.copy(alpha = 0.15f),
+                                    border = BorderStroke(1.dp, Color(0xFFD4A373).copy(alpha = 0.5f)),
+                                    modifier = Modifier.size(if (isCompact) 38.dp else 50.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(if (!isTuesdayOpen) "⏳" else "🚩", fontSize = if (isCompact) 19.sp else 24.sp)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(if (isCompact) 8.dp else 12.dp))
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = if (isHindi) "मंगलवार टोकन (बुलन्दशहर)" else "Tuesday Token (Bulandshahr)",
+                                            color = Color(0xFFFFD54F),
+                                            fontSize = if (isCompact) 13.5.sp else 15.5.sp,
+                                            fontWeight = FontWeight.ExtraBold
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(5.dp),
+                                            color = Color(0xFFE65100)
+                                        ) {
+                                            Text(
+                                                text = if (isTuesdayOpen) "LIVE" else "मंगलवार",
+                                                color = Color.White,
+                                                fontSize = if (isCompact) 8.sp else 9.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(1.dp))
+                                    Text(
+                                        text = when (tuesdaySchedule) {
+                                            is com.example.shribalajikripadham.util.TuesdayScheduleState.Open ->
+                                                if (isHindi) "बुलन्दशहर दरबार टोकन वितरण चालू है • टैप करें" else "Bulandshahr tokens open • Tap to register"
+                                            is com.example.shribalajikripadham.util.TuesdayScheduleState.TuesdayBeforeStart ->
+                                                if (isHindi) "आज सुबह 8:00 AM से खुलेंगे" else "Opens at 8:00 AM today"
+                                            is com.example.shribalajikripadham.util.TuesdayScheduleState.CountdownActive ->
+                                                if (isHindi) "12-घंटे काउंटडाउन चालू • टोकन सुबह 8:00 AM" else "12h countdown active"
+                                            is com.example.shribalajikripadham.util.TuesdayScheduleState.TuesdayClosedEvening ->
+                                                if (isHindi) "आज के मंगलवार टोकन पूर्ण" else "Today's tokens closed"
+                                            is com.example.shribalajikripadham.util.TuesdayScheduleState.NonTuesday ->
+                                                if (isHindi) "आगामी मंगलवार: ${tuesdaySchedule.nextTuesdayDateStr} (8:00 AM)" else "Next Tuesday: ${tuesdaySchedule.nextTuesdayDateStr}"
+                                            is com.example.shribalajikripadham.util.TuesdayScheduleState.CustomScheduled ->
+                                                if (isHindi) "खुलने का समय: ${tuesdaySchedule.formattedDate}" else "Opens at ${tuesdaySchedule.formattedDate}"
+                                            else ->
+                                                if (isHindi) "मंगलवार सेवा अभी बंद है" else "Tuesday service closed"
+                                        },
+                                        color = Color.White.copy(alpha = 0.9f),
+                                        fontSize = if (isCompact) 10.sp else 11.5.sp
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Button(
+                                onClick = onNavigateToTuesdayToken,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (!isTuesdayOpen) Color.White.copy(alpha = 0.2f) else Color(0xFF40916C),
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
+                                elevation = ButtonDefaults.buttonElevation(if (isCompact) 2.dp else 4.dp),
+                                contentPadding = PaddingValues(horizontal = if (isCompact) 10.dp else 14.dp, vertical = if (isCompact) 5.dp else 8.dp)
+                            ) {
+                                Text(
+                                    text = if (!isTuesdayOpen) (if (isHindi) "देखें" else "View") else (if (isHindi) "टोकन लें" else "Get Token"),
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = if (isCompact) 11.5.sp else 13.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         UiSectionConfig.ID_QUICK_SERVICES -> {
@@ -3368,6 +3494,22 @@ fun RenderClassicSection(
                     )
                 }
                 Spacer(modifier = Modifier.height(tileSpacing))
+
+                if (settings.isTuesdayDarbarEnabled) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        ActionTile(
+                            title = if (isHindi) "मंगलवार टोकन" else "Tuesday Token",
+                            subtitle = if (isHindi) "बुलन्दशहर दरबार कतार" else "Bulandshahr Queue & Pass",
+                            iconBadge = "🚩",
+                            badgeColor = Color(0xFFE65100),
+                            isPopular = true,
+                            isCompact = isCompact,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = onNavigateToTuesdayToken
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(tileSpacing))
+                }
 
                 if (settings.isYatraServiceEnabled) {
                     // Row 1: Sunday Token + Balaji Yatra

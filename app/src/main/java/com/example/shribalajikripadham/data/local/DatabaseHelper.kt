@@ -191,7 +191,21 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     sunday_token_banner_title TEXT NOT NULL DEFAULT 'हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन',
                     sunday_token_banner_text TEXT NOT NULL DEFAULT 'एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।',
                     sunday_token_custom_notice TEXT NOT NULL DEFAULT '',
-                    allow_admin_reserved_tokens INTEGER NOT NULL DEFAULT 0
+                    allow_admin_reserved_tokens INTEGER NOT NULL DEFAULT 0,
+                    is_tuesday_darbar_enabled INTEGER NOT NULL DEFAULT 0,
+                    tuesday_darbar_name TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम (बुलन्दशहर दरबार)',
+                    tuesday_darbar_address TEXT NOT NULL DEFAULT 'बुलन्दशहर, उत्तर प्रदेश',
+                    tuesday_latitude REAL NOT NULL DEFAULT 28.4069,
+                    tuesday_longitude REAL NOT NULL DEFAULT 77.8498,
+                    tuesday_allowed_radius_meters REAL NOT NULL DEFAULT 200.0,
+                    tuesday_outstation_min_distance_km REAL NOT NULL DEFAULT 30.0,
+                    tuesday_darbar_timings TEXT NOT NULL DEFAULT 'प्रत्येक मंगलवार प्रातः 8:00 बजे से (Every Tuesday from 8:00 AM)',
+                    tuesday_token_service_mode TEXT NOT NULL DEFAULT 'AUTO_TUESDAY',
+                    tuesday_scheduled_open_timestamp INTEGER NOT NULL DEFAULT 0,
+                    tuesday_darbar_date TEXT NOT NULL DEFAULT '',
+                    tuesday_current_serving_token INTEGER NOT NULL DEFAULT 0,
+                    tuesday_running_token_number INTEGER NOT NULL DEFAULT 1,
+                    tuesday_token_notice TEXT NOT NULL DEFAULT 'बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।'
                 )
             """.trimIndent())
         } catch (e: Exception) { e.printStackTrace() }
@@ -251,6 +265,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     origin_address TEXT NOT NULL DEFAULT '',
                     destination_address TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, डुंगरा जाट',
                     distance_km REAL NOT NULL DEFAULT -1.0,
+                    darbar_venue TEXT NOT NULL DEFAULT 'DUNGRA_JAAT',
                     created_at INTEGER NOT NULL
                 )
             """.trimIndent())
@@ -692,6 +707,21 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN ashram_directions TEXT NOT NULL DEFAULT 'निकटतम रेलवे स्टेशन: अनूपशहर / बबराला / बुलन्दशहर'",
             "ALTER TABLE ashram_settings ADD COLUMN footer_copyright TEXT NOT NULL DEFAULT '© 2026 श्री बालाजी कृपा धाम। सर्वाधिकार सुरक्षित।'",
             "ALTER TABLE ashram_settings ADD COLUMN token_service_mode TEXT NOT NULL DEFAULT 'AUTO_SUNDAY'",
+            "ALTER TABLE ashram_settings ADD COLUMN is_tuesday_darbar_enabled INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_darbar_name TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम (बुलन्दशहर दरबार)'",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_darbar_address TEXT NOT NULL DEFAULT 'बुलन्दशहर, उत्तर प्रदेश'",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_latitude REAL NOT NULL DEFAULT 28.4069",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_longitude REAL NOT NULL DEFAULT 77.8498",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_allowed_radius_meters REAL NOT NULL DEFAULT 200.0",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_outstation_min_distance_km REAL NOT NULL DEFAULT 30.0",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_darbar_timings TEXT NOT NULL DEFAULT 'प्रत्येक मंगलवार प्रातः 8:00 बजे से (Every Tuesday from 8:00 AM)'",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_token_service_mode TEXT NOT NULL DEFAULT 'AUTO_TUESDAY'",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_scheduled_open_timestamp INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_darbar_date TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_current_serving_token INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_running_token_number INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE ashram_settings ADD COLUMN tuesday_token_notice TEXT NOT NULL DEFAULT 'बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।'",
+            "ALTER TABLE tokens ADD COLUMN darbar_venue TEXT NOT NULL DEFAULT 'DUNGRA_JAAT'",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_darbar_number ON tokens (darbar_date, token_number)",
             "CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date)"
         )

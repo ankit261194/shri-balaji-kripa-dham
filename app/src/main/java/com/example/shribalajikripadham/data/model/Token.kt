@@ -46,5 +46,6 @@ data class Token(
     val originAddress: String = city,
     val destinationAddress: String = "श्री बालाजी कृपा धाम, डुंगरा जाट",
     val distanceKm: Float = -1f,
+    val darbarVenue: String = "DUNGRA_JAAT",
     val createdAt: Long = System.currentTimeMillis()
 )

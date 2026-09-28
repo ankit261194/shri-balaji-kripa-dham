@@ -98,6 +98,44 @@ if ($currentServing <= 0) {
         } catch (Throwable $e) {}
     }
 }
+
+$isTuesdayDarbarEnabled = !empty($settings['is_tuesday_darbar_enabled']);
+$tuesdayDarbarName = !empty($settings['tuesday_darbar_name']) ? $settings['tuesday_darbar_name'] : 'श्री बालाजी कृपा धाम (मंगलवार दरबार, बुलन्दशहर)';
+$tuesdayDarbarAddress = !empty($settings['tuesday_darbar_address']) ? $settings['tuesday_darbar_address'] : 'बुलन्दशहर, उत्तर प्रदेश';
+$tuesdayTimings = !empty($settings['tuesday_darbar_timings']) ? $settings['tuesday_darbar_timings'] : 'प्रत्येक मंगलवार प्रातः 8:00 बजे से सायं 5:00 बजे तक';
+$tuesdayServiceMode = !empty($settings['tuesday_token_service_mode']) ? $settings['tuesday_token_service_mode'] : 'AUTO_TUESDAY';
+$tuesdayCurrentServing = !empty($settings['tuesday_current_serving_token']) ? (int)$settings['tuesday_current_serving_token'] : (!empty($settings['tuesday_running_token_number']) ? (int)$settings['tuesday_running_token_number'] : 0);
+
+$isTuesdayActive = false;
+if ($isTuesdayDarbarEnabled) {
+    if ($tuesdayServiceMode === 'FORCE_OPEN') {
+        $isTuesdayActive = true;
+    } elseif ($tuesdayServiceMode === 'FORCE_CLOSED') {
+        $isTuesdayActive = false;
+    } else {
+        $dow = intval(date('w'));
+        $hr = intval(date('G'));
+        $isTuesdayActive = ($dow === 2 && $hr >= 8 && $hr < 17);
+    }
+}
+
+if ($tuesdayCurrentServing <= 0 && $dbPdo) {
+    try {
+        $todayD = date('Y-m-d');
+        $tStmt2 = $dbPdo->prepare("SELECT MAX(token_number) FROM tokens WHERE darbar_date = :d AND darbar_venue = 'BULANDSHAHR' AND status IN ('SERVING', 'COMPLETED')");
+        $tStmt2->execute([':d' => $todayD]);
+        $mx2 = $tStmt2->fetchColumn();
+        if ($mx2 && intval($mx2) > 0) {
+            $tuesdayCurrentServing = intval($mx2);
+        } else {
+            $wStmt2 = $dbPdo->prepare("SELECT MIN(token_number) FROM tokens WHERE darbar_date = :d AND darbar_venue = 'BULANDSHAHR' AND status = 'WAITING'");
+            $wStmt2->execute([':d' => $todayD]);
+            $mn2 = $wStmt2->fetchColumn();
+            if ($mn2 && intval($mn2) > 0) $tuesdayCurrentServing = intval($mn2);
+        }
+    } catch (Throwable $e) {}
+}
+
 $gurujiPhoto = !empty($settings['guruji_photo_url']) ? $settings['guruji_photo_url'] : 'uploads/guruji_profile.jpg';
 $isDarbarActive = !isset($settings['is_darbar_active']) || $settings['is_darbar_active'] == 1;
 $isBusLive = !empty($settings['is_bus_booking_live']);
@@ -1023,24 +1061,48 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
             </div>
         </div>
 
-        <!-- Glowing Live Running Token Banner -->
-        <div class="live-token-banner">
-            <div class="live-token-title">
-                <span style="font-size: 2.2rem;">🔴</span>
+        <!-- Glowing Live Running Token Section (Sunday Dungra Jaat + Tuesday Bulandshahr) -->
+        <div style="display: flex; flex-direction: column; gap: 16px; max-width: 850px; margin: 0 auto 25px;">
+            <!-- Sunday Darbar Token Banner (Dungra Jaat) -->
+            <div class="live-token-banner" style="margin-bottom: 0;">
+                <div class="live-token-title">
+                    <span style="font-size: 2.2rem;">🔴</span>
+                    <div>
+                        <h3>रविवार दरबार (डूँगरा जाट)</h3>
+                        <p>कतार में वर्तमान टोकन नंबर (Live Sunday Token)</p>
+                    </div>
+                </div>
+                <div class="glowing-token-box">
+                    <span style="font-size: 1.1rem; color: #FFF3E0; font-weight: 700;">टोकन #</span>
+                    <span class="glowing-token-number" id="servingTokenNumber"><?= ($currentServing > 0) ? $currentServing : "--" ?></span>
+                </div>
                 <div>
-                    <h3>लाइव दर्शन एवं पावन दरबार</h3>
-                    <p>कतार में वर्तमान टोकन नंबर (Live Running Token)</p>
+                    <span class="darbar-badge <?= $isDarbarActive ? '' : 'closed' ?>" id="darbarStatusBadge">
+                        <span class="status-dot-blink"></span>
+                        <span id="darbarStatusText"><?= $isDarbarActive ? 'रविवार दरबार खुला है (Open)' : 'विश्राम समय (Closed)' ?></span>
+                    </span>
                 </div>
             </div>
-            <div class="glowing-token-box">
-                <span style="font-size: 1.1rem; color: #FFF3E0; font-weight: 700;">टोकन #</span>
-                <span class="glowing-token-number" id="servingTokenNumber"><?= ($currentServing > 0) ? $currentServing : "--" ?></span>
-            </div>
-            <div>
-                <span class="darbar-badge <?= $isDarbarActive ? '' : 'closed' ?>" id="darbarStatusBadge">
-                    <span class="status-dot-blink"></span>
-                    <span id="darbarStatusText"><?= $isDarbarActive ? 'दरबार खुला है (Open)' : 'विश्राम समय (Closed)' ?></span>
-                </span>
+
+            <!-- Tuesday Darbar Token Banner (Bulandshahr) -->
+            <div class="live-token-banner tuesday-banner" id="tuesdayDarbarSection" style="margin-bottom: 0; background: linear-gradient(135deg, #1A237E, #303F9F); border-color: #FFD54F; box-shadow: 0 10px 30px rgba(26, 35, 126, 0.4); <?= $isTuesdayDarbarEnabled ? '' : 'display: none;' ?>">
+                <div class="live-token-title">
+                    <span style="font-size: 2.2rem;">🚩</span>
+                    <div>
+                        <h3 id="tuesdayDarbarNameDisplay" style="color: #FFE082;"><?= htmlspecialchars($tuesdayDarbarName) ?></h3>
+                        <p id="tuesdayDarbarSubtitle" style="color: #E8EAF6;">मंगलवार कतार में वर्तमान टोकन नंबर (Bulandshahr)</p>
+                    </div>
+                </div>
+                <div class="glowing-token-box" style="background: rgba(0, 0, 0, 0.4); border-color: #FFD54F; box-shadow: 0 0 20px rgba(255, 213, 79, 0.35);">
+                    <span style="font-size: 1.1rem; color: #FFE082; font-weight: 700;">टोकन #</span>
+                    <span class="glowing-token-number" id="tuesdayServingTokenNumber" style="color: #FFD54F;"><?= ($tuesdayCurrentServing > 0) ? $tuesdayCurrentServing : "--" ?></span>
+                </div>
+                <div>
+                    <span class="darbar-badge <?= $isTuesdayActive ? '' : 'closed' ?>" id="tuesdayDarbarStatusBadge" style="background: <?= $isTuesdayActive ? '#2E7D32' : '#C62828' ?>; color: #fff; border: 1px solid #FFD54F;">
+                        <span class="status-dot-blink"></span>
+                        <span id="tuesdayDarbarStatusText"><?= $isTuesdayActive ? 'मंगलवार दरबार खुला है (Open)' : 'मंगलवार (विश्राम समय)' ?></span>
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -1391,6 +1453,49 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
                             tokenEl.innerText = parseInt(sNum);
                         } else {
                             tokenEl.innerText = '--';
+                        }
+
+                        // 2.5 Tuesday Bulandshahr Darbar Live Status & Token
+                        const tuesSection = document.getElementById('tuesdayDarbarSection');
+                        if (tuesSection) {
+                            const isTuesEnabled = (cfg.is_tuesday_darbar_enabled == 1 || cfg.is_tuesday_darbar_enabled === true || cfg.is_tuesday_darbar_enabled === '1');
+                            if (isTuesEnabled) {
+                                tuesSection.style.display = 'flex';
+                                const tuesNameEl = document.getElementById('tuesdayDarbarNameDisplay');
+                                if (tuesNameEl && cfg.tuesday_darbar_name) tuesNameEl.innerText = cfg.tuesday_darbar_name;
+
+                                const tuesTokenEl = document.getElementById('tuesdayServingTokenNumber');
+                                const tNum = (cfg.tuesday_running_token_number !== undefined && cfg.tuesday_running_token_number > 0) 
+                                    ? cfg.tuesday_running_token_number 
+                                    : (cfg.tuesday_current_serving_token || 0);
+                                if (tuesTokenEl) {
+                                    tuesTokenEl.innerText = (parseInt(tNum) > 0) ? parseInt(tNum) : '--';
+                                }
+
+                                const tuesBadge = document.getElementById('tuesdayDarbarStatusBadge');
+                                const tuesText = document.getElementById('tuesdayDarbarStatusText');
+                                if (tuesBadge && tuesText) {
+                                    const mode = cfg.tuesday_token_service_mode || 'AUTO_TUESDAY';
+                                    let isOpen = (mode === 'FORCE_OPEN');
+                                    if (mode === 'AUTO_TUESDAY') {
+                                        const now = new Date();
+                                        isOpen = (now.getDay() === 2 && now.getHours() >= 8 && now.getHours() < 17);
+                                    }
+                                    if (mode === 'FORCE_CLOSED') isOpen = false;
+
+                                    if (isOpen) {
+                                        tuesText.innerText = 'मंगलवार दरबार खुला है (Open)';
+                                        tuesBadge.className = 'darbar-badge';
+                                        tuesBadge.style.background = '#2E7D32';
+                                    } else {
+                                        tuesText.innerText = 'मंगलवार (विश्राम समय)';
+                                        tuesBadge.className = 'darbar-badge closed';
+                                        tuesBadge.style.background = '#C62828';
+                                    }
+                                }
+                            } else {
+                                tuesSection.style.display = 'none';
+                            }
                         }
 
                         // 3. Guruji Photo

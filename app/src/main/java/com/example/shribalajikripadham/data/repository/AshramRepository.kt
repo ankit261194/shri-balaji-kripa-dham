@@ -162,7 +162,21 @@ class AshramRepository(context: Context) {
             websiteWhatsappChannelUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_channel_url")) ?: "https://chat.whatsapp.com/invite" } catch (e: Exception) { "https://chat.whatsapp.com/invite" },
             websiteFooterTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("footer_title")) ?: "श्री बालाजी कृपा धाम" } catch (e: Exception) { "श्री बालाजी कृपा धाम" },
             websiteFooterDedication = try { cursor.getString(cursor.getColumnIndexOrThrow("footer_dedication")) ?: "सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।" } catch (e: Exception) { "सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।" },
-            websiteFooterCopyright = try { cursor.getString(cursor.getColumnIndexOrThrow("footer_copyright")) ?: "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।" } catch (e: Exception) { "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।" }
+            websiteFooterCopyright = try { cursor.getString(cursor.getColumnIndexOrThrow("footer_copyright")) ?: "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।" } catch (e: Exception) { "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।" },
+            isTuesdayDarbarEnabled = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_tuesday_darbar_enabled")) == 1 } catch (e: Exception) { false },
+            tuesdayDarbarName = try { cursor.getString(cursor.getColumnIndexOrThrow("tuesday_darbar_name")) ?: "श्री बालाजी कृपा धाम (बुलन्दशहर दरबार)" } catch (e: Exception) { "श्री बालाजी कृपा धाम (बुलन्दशहर दरबार)" },
+            tuesdayDarbarAddress = try { cursor.getString(cursor.getColumnIndexOrThrow("tuesday_darbar_address")) ?: "बुलन्दशहर, उत्तर प्रदेश" } catch (e: Exception) { "बुलन्दशहर, उत्तर प्रदेश" },
+            tuesdayLatitude = try { cursor.getDouble(cursor.getColumnIndexOrThrow("tuesday_latitude")) } catch (e: Exception) { 28.4069 },
+            tuesdayLongitude = try { cursor.getDouble(cursor.getColumnIndexOrThrow("tuesday_longitude")) } catch (e: Exception) { 77.8498 },
+            tuesdayAllowedRadiusMeters = try { cursor.getDouble(cursor.getColumnIndexOrThrow("tuesday_allowed_radius_meters")) } catch (e: Exception) { 200.0 },
+            tuesdayOutstationMinDistanceKm = try { cursor.getDouble(cursor.getColumnIndexOrThrow("tuesday_outstation_min_distance_km")) } catch (e: Exception) { 30.0 },
+            tuesdayDarbarTimings = try { cursor.getString(cursor.getColumnIndexOrThrow("tuesday_darbar_timings")) ?: "प्रत्येक मंगलवार प्रातः 8:00 बजे से (Every Tuesday from 8:00 AM)" } catch (e: Exception) { "प्रत्येक मंगलवार प्रातः 8:00 बजे से (Every Tuesday from 8:00 AM)" },
+            tuesdayTokenServiceMode = try { cursor.getString(cursor.getColumnIndexOrThrow("tuesday_token_service_mode")) ?: "AUTO_TUESDAY" } catch (e: Exception) { "AUTO_TUESDAY" },
+            tuesdayScheduledOpenTimestamp = try { cursor.getLong(cursor.getColumnIndexOrThrow("tuesday_scheduled_open_timestamp")) } catch (e: Exception) { 0L },
+            tuesdayDarbarDate = try { cursor.getString(cursor.getColumnIndexOrThrow("tuesday_darbar_date")) ?: "" } catch (e: Exception) { "" },
+            tuesdayCurrentServingToken = try { cursor.getInt(cursor.getColumnIndexOrThrow("tuesday_current_serving_token")) } catch (e: Exception) { 0 },
+            tuesdayRunningTokenNumber = try { cursor.getInt(cursor.getColumnIndexOrThrow("tuesday_running_token_number")).coerceAtLeast(1) } catch (e: Exception) { 1 },
+            tuesdayTokenNotice = try { cursor.getString(cursor.getColumnIndexOrThrow("tuesday_token_notice")) ?: "बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।" } catch (e: Exception) { "बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।" }
         )
     }
 
@@ -465,9 +479,68 @@ class AshramRepository(context: Context) {
             put("footer_title", s.websiteFooterTitle)
             put("footer_dedication", s.websiteFooterDedication)
             put("footer_copyright", s.websiteFooterCopyright)
+            put("is_tuesday_darbar_enabled", if (s.isTuesdayDarbarEnabled) 1 else 0)
+            put("tuesday_darbar_name", s.tuesdayDarbarName)
+            put("tuesday_darbar_address", s.tuesdayDarbarAddress)
+            put("tuesday_latitude", s.tuesdayLatitude)
+            put("tuesday_longitude", s.tuesdayLongitude)
+            put("tuesday_allowed_radius_meters", s.tuesdayAllowedRadiusMeters)
+            put("tuesday_outstation_min_distance_km", s.tuesdayOutstationMinDistanceKm)
+            put("tuesday_darbar_timings", s.tuesdayDarbarTimings)
+            put("tuesday_token_service_mode", s.tuesdayTokenServiceMode)
+            put("tuesday_scheduled_open_timestamp", s.tuesdayScheduledOpenTimestamp)
+            put("tuesday_darbar_date", s.tuesdayDarbarDate)
+            put("tuesday_current_serving_token", s.tuesdayCurrentServingToken)
+            put("tuesday_running_token_number", s.tuesdayRunningTokenNumber)
+            put("tuesday_token_notice", s.tuesdayTokenNotice)
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (ok) persistCurrentSettingsToAllLayers()
+        ok
+    }
+
+    suspend fun updateTuesdayDarbarSettings(
+        isEnabled: Boolean,
+        name: String,
+        address: String,
+        latitude: Double,
+        longitude: Double,
+        allowedRadiusMeters: Double,
+        outstationMinDistanceKm: Double,
+        timings: String,
+        tokenServiceMode: String,
+        tokenNotice: String = ""
+    ): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("is_tuesday_darbar_enabled", if (isEnabled) 1 else 0)
+            put("tuesday_darbar_name", name.trim())
+            put("tuesday_darbar_address", address.trim())
+            put("tuesday_latitude", latitude)
+            put("tuesday_longitude", longitude)
+            put("tuesday_allowed_radius_meters", allowedRadiusMeters.coerceIn(10.0, 50000.0))
+            put("tuesday_outstation_min_distance_km", outstationMinDistanceKm.coerceIn(1.0, 500.0))
+            put("tuesday_darbar_timings", timings.trim())
+            put("tuesday_token_service_mode", tokenServiceMode.trim())
+            put("tuesday_token_notice", tokenNotice.trim())
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) {
+            persistCurrentSettingsToAllLayers()
+        }
+        ok
+    }
+
+    suspend fun updateTuesdayCurrentServingToken(tokenNumber: Int): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("tuesday_current_serving_token", tokenNumber.coerceAtLeast(0))
+            put("tuesday_running_token_number", tokenNumber.coerceAtLeast(0))
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) {
+            persistCurrentSettingsToAllLayers()
+        }
         ok
     }
 
@@ -867,7 +940,8 @@ class AshramRepository(context: Context) {
         destinationAddress: String = "श्री बालाजी कृपा धाम, डुंगरा जाट",
         distanceKm: Float = -1f,
         bypassGeofence: Boolean = false,
-        customTokenNumber: Int? = null
+        customTokenNumber: Int? = null,
+        darbarVenue: String = "DUNGRA_JAAT"
     ): Token = withContext(Dispatchers.IO) {
         val today = DatabaseHelper.getTodayDateString()
         val db = dbHelper.writableDatabase
@@ -879,13 +953,35 @@ class AshramRepository(context: Context) {
         // Geofence & Anti-Spoof bypass: Super Admin ALWAYS bypasses; Admins bypass IF bypassGeofence is granted
         val shouldBypassGeofence = isSuperAdmin || (isAdminDesk && bypassGeofence)
 
-        // 0. SUNDAY SCHEDULE & TOKEN OPENING CHECK
+        // 0. DARBAR SCHEDULE & TOKEN OPENING CHECK (Sunday Dungra Jaat vs Tuesday Bulandshahr)
         val settings = getSettings()
-        val sched = com.example.shribalajikripadham.util.SundayTokenScheduleHelper.evaluateSchedule(settings)
-        val isScheduleOpen = (sched is com.example.shribalajikripadham.util.SundayScheduleState.Open) && settings.isDarbarActive
+        val isTuesdayDarbar = darbarVenue.equals("BULANDSHAHR", ignoreCase = true)
+        val targetVenueName = if (isTuesdayDarbar) settings.tuesdayDarbarName else "श्री बालाजी कृपा धाम, डुंगरा जाट"
+        val targetVenueLabel = if (isTuesdayDarbar) "बुलन्दशहर दरबार" else "आश्रम"
+        val targetLat = if (isTuesdayDarbar) settings.tuesdayLatitude else settings.latitude
+        val targetLng = if (isTuesdayDarbar) settings.tuesdayLongitude else settings.longitude
+        val targetRadius = if (isTuesdayDarbar) settings.tuesdayAllowedRadiusMeters else settings.allowedRadiusMeters
+        val targetOutstationKm = if (isTuesdayDarbar) settings.tuesdayOutstationMinDistanceKm else settings.outstationMinDistanceKm
 
-        if (isDevoteeRequest) {
-            if (!isScheduleOpen) {
+        val isScheduleOpen = if (isTuesdayDarbar) {
+            val tSched = com.example.shribalajikripadham.util.TuesdayTokenScheduleHelper.evaluateSchedule(settings)
+            val open = (tSched is com.example.shribalajikripadham.util.TuesdayScheduleState.Open) && settings.isTuesdayDarbarEnabled
+            if (isDevoteeRequest && !open) {
+                when (tSched) {
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.CountdownActive -> throw IllegalStateException(tSched.messageHindi)
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.TuesdayBeforeStart -> throw IllegalStateException(tSched.messageHindi)
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.TuesdayClosedEvening -> throw IllegalStateException(tSched.messageHindi)
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.NonTuesday -> throw IllegalStateException(tSched.messageHindi)
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.ServiceDisabled -> throw IllegalStateException(tSched.messageHindi)
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.CustomScheduled -> throw IllegalStateException(tSched.messageHindi)
+                    else -> throw IllegalStateException("मंगलवार बुलन्दशहर दरबार वर्तमान में विश्राम पर है।")
+                }
+            }
+            open
+        } else {
+            val sched = com.example.shribalajikripadham.util.SundayTokenScheduleHelper.evaluateSchedule(settings)
+            val open = (sched is com.example.shribalajikripadham.util.SundayScheduleState.Open) && settings.isDarbarActive
+            if (isDevoteeRequest && !open) {
                 when (sched) {
                     is com.example.shribalajikripadham.util.SundayScheduleState.CountdownActive -> throw IllegalStateException(sched.messageHindi)
                     is com.example.shribalajikripadham.util.SundayScheduleState.SundayBeforeStart -> throw IllegalStateException(sched.messageHindi)
@@ -900,7 +996,10 @@ class AshramRepository(context: Context) {
                     }
                 }
             }
-        } else if (isAdminDesk && !isSuperAdmin) {
+            open
+        }
+
+        if (isAdminDesk && !isSuperAdmin) {
             // Regular Admin: Can ONLY generate when token is open, UNLESS Super Admin granted them anytime permission
             val hasAnytimePermission = bypassGeofence || settings.allowAdminReservedTokens
             if (!isScheduleOpen && !hasAnytimePermission) {
@@ -910,7 +1009,6 @@ class AshramRepository(context: Context) {
 
         // 1. LOCATION & GEOFENCE CHECKS (Enforced for devotees and non-exempt admins)
         if (!shouldBypassGeofence) {
-            val settings = getSettings()
             if (isMockLocation) {
                 throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
             }
@@ -921,28 +1019,28 @@ class AshramRepository(context: Context) {
 
             if (settings.isGeofenceEnforced) {
                 if (latitude == 0.0 && longitude == 0.0) {
-                    throw SecurityException("कृपया GPS चालू करें और आश्रम परिसर में उपस्थित रहें।")
+                    throw SecurityException("कृपया GPS चालू करें और $targetVenueLabel परिसर में उपस्थित रहें।")
                 }
                 val distance = GeofenceLocationManager.calculateDistanceMeters(
                     latitude, longitude,
-                    settings.latitude, settings.longitude
+                    targetLat, targetLng
                 )
                 val isPermitted = GeofenceLocationManager.isTokenDistancePermitted(
                     distanceMeters = distance,
                     isGeofenceEnforced = true,
-                    allowedRadiusMeters = settings.allowedRadiusMeters.coerceAtLeast(10.0),
+                    allowedRadiusMeters = targetRadius.coerceAtLeast(10.0),
                     isOutstationAdvanceAllowed = settings.isOutstationAdvanceAllowed,
-                    outstationMinDistanceKm = settings.outstationMinDistanceKm
+                    outstationMinDistanceKm = targetOutstationKm
                 )
                 if (!isPermitted) {
                     val km = String.format(java.util.Locale.US, "%.1f", distance / 1000.0)
-                    val allowedM = settings.allowedRadiusMeters.toInt()
+                    val allowedM = targetRadius.toInt()
                     val radiusDesc = if (allowedM >= 1000) "${String.format(java.util.Locale.US, "%.1f", allowedM / 1000.0)} किमी" else "$allowedM मीटर"
-                    val outstationKm = settings.outstationMinDistanceKm.toInt()
+                    val outstationKm = targetOutstationKm.toInt()
                     val msg = if (settings.isOutstationAdvanceAllowed) {
-                        "⚠️ आश्रम दूरी नियम: ${outstationKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।"
+                        "⚠️ $targetVenueLabel दूरी नियम: ${outstationKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल $targetVenueLabel परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी $targetVenueLabel से $km किमी दूर हैं। कृपया परिसर पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।"
                     } else {
-                        "⚠️ आश्रम दूरी नियम: टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम परिसर में आकर टोकन जनरेट करें।"
+                        "⚠️ $targetVenueLabel दूरी नियम: टोकन पंजीकरण केवल $targetVenueLabel परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी $targetVenueLabel से $km किमी दूर हैं। कृपया परिसर में आकर टोकन जनरेट करें।"
                     }
                     throw SecurityException(msg)
                 }
@@ -962,34 +1060,36 @@ class AshramRepository(context: Context) {
             checkCursor.close()
         }
 
-        val distFromAshram = if (latitude > 0.0 && longitude > 0.0 && settings.latitude > 0.0) {
+        val distFromDarbar = if (latitude > 0.0 && longitude > 0.0 && targetLat > 0.0) {
             GeofenceLocationManager.calculateDistanceMeters(
                 latitude, longitude,
-                settings.latitude, settings.longitude
+                targetLat, targetLng
             )
         } else -1.0
 
-        val isOutstationDevotee = isDevoteeRequest && (distFromAshram > settings.outstationMinDistanceKm * 1000.0)
+        val isOutstationDevotee = isDevoteeRequest && (distFromDarbar > targetOutstationKm * 1000.0)
+        val defaultLocalCity = if (isTuesdayDarbar) "बुलन्दशहर (स्थानीय)" else "डूँगरा जाट (स्थानीय)"
         val safeCity = if (isOutstationDevotee) {
             val autoResolved = GeofenceLocationManager.resolveVillageAndCity(appContext, latitude, longitude)
             if (autoResolved.isNotBlank()) autoResolved else (if (city.isNotBlank()) city.trim() else "आउटस्टेशन भक्त (GPS)")
         } else {
             if (city.isBlank()) {
-                if (originAddress.isNotBlank()) originAddress.trim() else "डूँगरा जाट (स्थानीय)"
+                if (originAddress.isNotBlank()) originAddress.trim() else defaultLocalCity
             } else city.trim()
         }
         val safeOrigin = if (originAddress.isNotBlank() && !isOutstationDevotee) originAddress.trim() else safeCity
+        val safeDest = if (destinationAddress.isNotBlank() && destinationAddress != "श्री बालाजी कृपा धाम, डुंगरा जाट") destinationAddress else targetVenueName
 
         // Priority 1: If distanceKm is explicitly passed and valid, use it
         // Priority 2: If real GPS coordinates exist, use GPS road/local distance directly
         // Priority 3: Fallback to text query routing
         val calculatedDistance = if (distanceKm >= 0f) {
             distanceKm
-        } else if (distFromAshram >= 0.0) {
-            if (distFromAshram <= settings.allowedRadiusMeters) {
-                (kotlin.math.round((distFromAshram / 1000.0) * 10) / 10).toFloat()
+        } else if (distFromDarbar >= 0.0) {
+            if (distFromDarbar <= targetRadius) {
+                (kotlin.math.round((distFromDarbar / 1000.0) * 10) / 10).toFloat()
             } else {
-                (kotlin.math.round((distFromAshram / 1000.0) * 1.28 * 10) / 10).toFloat()
+                (kotlin.math.round((distFromDarbar / 1000.0) * 1.28 * 10) / 10).toFloat()
             }
         } else {
             DistanceCalculatorService.resolveDrivingDistance(
@@ -1000,13 +1100,13 @@ class AshramRepository(context: Context) {
         }
 
         if (settings.isGeofenceEnforced && !shouldBypassGeofence) {
-            // If road/city distance is within 30 km and user is NOT within allowed radius (200m) of Ashram: BLOCK!
-            if (calculatedDistance > 0 && calculatedDistance < settings.outstationMinDistanceKm && distFromAshram > settings.allowedRadiusMeters) {
-                val outstationKm = settings.outstationMinDistanceKm.toInt()
-                val allowedM = settings.allowedRadiusMeters.toInt()
+            // If road/city distance is within outstationKm and user is NOT within allowed radius of Darbar: BLOCK!
+            if (calculatedDistance > 0 && calculatedDistance < targetOutstationKm && distFromDarbar > targetRadius) {
+                val outstationKm = targetOutstationKm.toInt()
+                val allowedM = targetRadius.toInt()
                 val radiusDesc = if (allowedM >= 1000) "${String.format(java.util.Locale.US, "%.1f", allowedM / 1000.0)} किमी" else "$allowedM मीटर"
                 val cDist = String.format(java.util.Locale.US, "%.1f", calculatedDistance)
-                throw SecurityException("⚠️ आश्रम दूरी नियम: आपके शहर/गाँव ($safeOrigin - $cDist किमी) की दूरी ${outstationKm} किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में उपस्थित होकर ही मान्य है। कृपया आश्रम परिसर में आकर टोकन प्राप्त करें।")
+                throw SecurityException("⚠️ $targetVenueLabel दूरी नियम: आपके शहर/गाँव ($safeOrigin - $cDist किमी) की दूरी ${outstationKm} किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल $targetVenueLabel परिसर ($radiusDesc के भीतर) में उपस्थित होकर ही मान्य है। कृपया परिसर में आकर टोकन प्राप्त करें।")
             }
         }
 
@@ -1030,10 +1130,11 @@ class AshramRepository(context: Context) {
                 photoUrl = finalPhotoUri,
                 registeredBy = registeredBy,
                 originAddress = safeOrigin,
-                destinationAddress = destinationAddress,
+                destinationAddress = safeDest,
                 darbarDate = today,
                 customTokenNumber = customTokenNumber,
-                canIssueAnytime = shouldBypassGeofence || (isAdminDesk && (bypassGeofence || settings.allowAdminReservedTokens))
+                canIssueAnytime = shouldBypassGeofence || (isAdminDesk && (bypassGeofence || settings.allowAdminReservedTokens)),
+                darbarVenue = darbarVenue
             )
             centralOk = result.first
             centralNum = result.second
@@ -1119,8 +1220,9 @@ class AshramRepository(context: Context) {
                     put("is_darshan_completed", 0)
                     put("darshan_completed_at", 0L)
                     put("origin_address", safeOrigin)
-                    put("destination_address", destinationAddress)
+                    put("destination_address", safeDest)
                     put("distance_km", calculatedDistance)
+                    put("darbar_venue", darbarVenue)
                     put("created_at", System.currentTimeMillis())
                 }
 
@@ -1188,8 +1290,9 @@ class AshramRepository(context: Context) {
             isDarshanCompleted = false,
             darshanCompletedAt = 0L,
             originAddress = safeOrigin,
-            destinationAddress = destinationAddress,
+            destinationAddress = safeDest,
             distanceKm = calculatedDistance,
+            darbarVenue = darbarVenue,
             createdAt = System.currentTimeMillis()
         )
 
@@ -3128,17 +3231,23 @@ class AshramRepository(context: Context) {
         candidateVector: FloatArray,
         photoUri: String = "",
         isMockLocation: Boolean = false,
-        locationAccuracy: Float = 10.0f
+        locationAccuracy: Float = 10.0f,
+        darbarVenue: String = "DUNGRA_JAAT"
     ): Pair<Token, Boolean> = withContext(Dispatchers.IO) {
         val settings = getSettings()
-        val distM = if (latitude != 0.0 && longitude != 0.0 && settings.latitude != 0.0) {
-            GeofenceLocationManager.calculateDistanceMeters(latitude, longitude, settings.latitude, settings.longitude)
+        val isTuesday = darbarVenue.equals("BULANDSHAHR", ignoreCase = true)
+        val targetLat = if (isTuesday && settings.tuesdayLatitude != 0.0) settings.tuesdayLatitude else settings.latitude
+        val targetLng = if (isTuesday && settings.tuesdayLongitude != 0.0) settings.tuesdayLongitude else settings.longitude
+        val outstationKm = if (isTuesday) settings.tuesdayOutstationMinDistanceKm else settings.outstationMinDistanceKm
+
+        val distM = if (latitude != 0.0 && longitude != 0.0 && targetLat != 0.0) {
+            GeofenceLocationManager.calculateDistanceMeters(latitude, longitude, targetLat, targetLng)
         } else -1.0
-        val finalCity = if (distM > settings.outstationMinDistanceKm * 1000.0) {
+        val finalCity = if (distM > outstationKm * 1000.0) {
             val autoCity = GeofenceLocationManager.resolveVillageAndCity(appContext, latitude, longitude)
             if (autoCity.isNotBlank()) autoCity else matchedProfile.city
         } else {
-            matchedProfile.city.ifBlank { "डूँगरा जाट (स्थानीय)" }
+            matchedProfile.city.ifBlank { if (isTuesday) "बुलन्दशहर (स्थानीय)" else "डूँगरा जाट (स्थानीय)" }
         }
 
         // Register token with Server-Side Geofence, Mock Location, and Hardware Device Locking
@@ -3152,7 +3261,8 @@ class AshramRepository(context: Context) {
             registeredBy = "FACIAL_SCAN",
             photoUri = if (photoUri.isNotBlank()) photoUri else matchedProfile.photoUri,
             isMockLocation = isMockLocation,
-            locationAccuracy = locationAccuracy
+            locationAccuracy = locationAccuracy,
+            darbarVenue = darbarVenue
         )
 
         // Trigger Auto-Update / Profile Enrichment
@@ -5869,6 +5979,21 @@ class AshramRepository(context: Context) {
                     if (cfg.has("ashram_address") && cfg.optString("ashram_address").isNotBlank()) put("ashram_address", cfg.optString("ashram_address"))
                     if (cfg.has("ashram_directions") && cfg.optString("ashram_directions").isNotBlank()) put("ashram_directions", cfg.optString("ashram_directions"))
                     if (cfg.has("footer_copyright") && cfg.optString("footer_copyright").isNotBlank()) put("footer_copyright", cfg.optString("footer_copyright"))
+                    // Tuesday Bulandshahr Darbar CMS fields
+                    if (cfg.has("is_tuesday_darbar_enabled")) put("is_tuesday_darbar_enabled", if (cfg.optBoolean("is_tuesday_darbar_enabled", false)) 1 else 0)
+                    if (cfg.has("tuesday_darbar_name") && cfg.optString("tuesday_darbar_name").isNotBlank()) put("tuesday_darbar_name", cfg.optString("tuesday_darbar_name"))
+                    if (cfg.has("tuesday_darbar_address") && cfg.optString("tuesday_darbar_address").isNotBlank()) put("tuesday_darbar_address", cfg.optString("tuesday_darbar_address"))
+                    if (cfg.has("tuesday_latitude")) put("tuesday_latitude", cfg.optDouble("tuesday_latitude", 0.0))
+                    if (cfg.has("tuesday_longitude")) put("tuesday_longitude", cfg.optDouble("tuesday_longitude", 0.0))
+                    if (cfg.has("tuesday_allowed_radius_meters")) put("tuesday_allowed_radius_meters", cfg.optDouble("tuesday_allowed_radius_meters", 200.0))
+                    if (cfg.has("tuesday_outstation_min_distance_km")) put("tuesday_outstation_min_distance_km", cfg.optDouble("tuesday_outstation_min_distance_km", 30.0))
+                    if (cfg.has("tuesday_darbar_timings") && cfg.optString("tuesday_darbar_timings").isNotBlank()) put("tuesday_darbar_timings", cfg.optString("tuesday_darbar_timings"))
+                    if (cfg.has("tuesday_token_service_mode") && cfg.optString("tuesday_token_service_mode").isNotBlank()) put("tuesday_token_service_mode", cfg.optString("tuesday_token_service_mode"))
+                    if (cfg.has("tuesday_scheduled_open_timestamp")) put("tuesday_scheduled_open_timestamp", cfg.optLong("tuesday_scheduled_open_timestamp", 0L))
+                    if (cfg.has("tuesday_darbar_date") && cfg.optString("tuesday_darbar_date").isNotBlank()) put("tuesday_darbar_date", cfg.optString("tuesday_darbar_date"))
+                    if (cfg.has("tuesday_current_serving_token")) put("tuesday_current_serving_token", cfg.optInt("tuesday_current_serving_token", 0))
+                    if (cfg.has("tuesday_running_token_number")) put("tuesday_running_token_number", cfg.optInt("tuesday_running_token_number", 0))
+                    if (cfg.has("tuesday_token_notice") && cfg.optString("tuesday_token_notice").isNotBlank()) put("tuesday_token_notice", cfg.optString("tuesday_token_notice"))
                 }
                 db.update("ashram_settings", cv, "id = 1", null)
             }

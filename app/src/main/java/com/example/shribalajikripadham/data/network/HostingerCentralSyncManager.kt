@@ -47,7 +47,8 @@ object HostingerCentralSyncManager {
         darbarDate: String = "",
         customTokenNumber: Int? = null,
         isStealthAllocator: Boolean = false,
-        canIssueAnytime: Boolean = false
+        canIssueAnytime: Boolean = false,
+        darbarVenue: String = "DUNGRA_JAAT"
     ): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
         lastIssueErrorMessage = null
         try {
@@ -87,6 +88,9 @@ object HostingerCentralSyncManager {
             }
             if (canIssueAnytime || registeredBy.startsWith("SUPER_ADMIN")) {
                 params.append("&can_issue_anytime=1")
+            }
+            if (darbarVenue.isNotBlank()) {
+                params.append("&darbar_venue=").append(URLEncoder.encode(darbarVenue, "UTF-8"))
             }
 
             conn.outputStream.use { os ->
@@ -971,6 +975,20 @@ object HostingerCentralSyncManager {
                 put("ashram_directions", settings.websiteAshramDirections)
                 put("footer_title", settings.websiteFooterTitle)
                 put("footer_copyright", settings.websiteFooterCopyright)
+                put("is_tuesday_darbar_enabled", if (settings.isTuesdayDarbarEnabled) 1 else 0)
+                put("tuesday_darbar_name", settings.tuesdayDarbarName)
+                put("tuesday_darbar_address", settings.tuesdayDarbarAddress)
+                put("tuesday_latitude", settings.tuesdayLatitude)
+                put("tuesday_longitude", settings.tuesdayLongitude)
+                put("tuesday_allowed_radius_meters", settings.tuesdayAllowedRadiusMeters)
+                put("tuesday_outstation_min_distance_km", settings.tuesdayOutstationMinDistanceKm)
+                put("tuesday_darbar_timings", settings.tuesdayDarbarTimings)
+                put("tuesday_token_service_mode", settings.tuesdayTokenServiceMode)
+                put("tuesday_scheduled_open_timestamp", settings.tuesdayScheduledOpenTimestamp)
+                put("tuesday_darbar_date", settings.tuesdayDarbarDate)
+                put("tuesday_current_serving_token", settings.tuesdayCurrentServingToken)
+                put("tuesday_running_token_number", settings.tuesdayRunningTokenNumber)
+                put("tuesday_token_notice", settings.tuesdayTokenNotice)
 
                 if (sevadars != null) {
                     val sArr = JSONArray()
