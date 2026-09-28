@@ -1085,7 +1085,7 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
             </div>
 
             <!-- Tuesday Darbar Token Banner (Bulandshahr) -->
-            <div class="live-token-banner tuesday-banner" id="tuesdayDarbarSection" style="margin-bottom: 0; background: linear-gradient(135deg, #1A237E, #303F9F); border-color: #FFD54F; box-shadow: 0 10px 30px rgba(26, 35, 126, 0.4); display: flex;">
+            <div class="live-token-banner tuesday-banner" id="tuesdayDarbarSection" style="margin-bottom: 0; background: linear-gradient(135deg, #1A237E, #303F9F); border-color: #FFD54F; box-shadow: 0 10px 30px rgba(26, 35, 126, 0.4); <?= $isTuesdayDarbarEnabled ? 'display: flex;' : 'display: none;' ?>">
                 <div class="live-token-title">
                     <span style="font-size: 2.2rem;">🚩</span>
                     <div>
@@ -1458,38 +1458,43 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
                         // 2.5 Tuesday Bulandshahr Darbar Live Status & Token
                         const tuesSection = document.getElementById('tuesdayDarbarSection');
                         if (tuesSection) {
-                            tuesSection.style.display = 'flex';
-                            const tuesNameEl = document.getElementById('tuesdayDarbarNameDisplay');
-                            if (tuesNameEl && cfg.tuesday_darbar_name) tuesNameEl.innerText = cfg.tuesday_darbar_name;
+                            const isTuesEnabled = (cfg.is_tuesday_darbar_enabled == 1 || cfg.is_tuesday_darbar_enabled === true || cfg.is_tuesday_darbar_enabled === '1');
+                            if (isTuesEnabled) {
+                                tuesSection.style.display = 'flex';
+                                const tuesNameEl = document.getElementById('tuesdayDarbarNameDisplay');
+                                if (tuesNameEl && cfg.tuesday_darbar_name) tuesNameEl.innerText = cfg.tuesday_darbar_name;
 
-                            const tuesTokenEl = document.getElementById('tuesdayServingTokenNumber');
-                            const tNum = (cfg.tuesday_running_token_number !== undefined && cfg.tuesday_running_token_number > 0) 
-                                ? cfg.tuesday_running_token_number 
-                                : (cfg.tuesday_current_serving_token || 0);
-                            if (tuesTokenEl) {
-                                tuesTokenEl.innerText = (parseInt(tNum) > 0) ? parseInt(tNum) : '--';
-                            }
-
-                            const tuesBadge = document.getElementById('tuesdayDarbarStatusBadge');
-                            const tuesText = document.getElementById('tuesdayDarbarStatusText');
-                            if (tuesBadge && tuesText) {
-                                const mode = cfg.tuesday_token_service_mode || 'AUTO_TUESDAY';
-                                let isOpen = (mode === 'FORCE_OPEN');
-                                if (mode === 'AUTO_TUESDAY') {
-                                    const now = new Date();
-                                    isOpen = (now.getDay() === 2 && now.getHours() >= 8 && now.getHours() < 17);
+                                const tuesTokenEl = document.getElementById('tuesdayServingTokenNumber');
+                                const tNum = (cfg.tuesday_running_token_number !== undefined && cfg.tuesday_running_token_number > 0) 
+                                    ? cfg.tuesday_running_token_number 
+                                    : (cfg.tuesday_current_serving_token || 0);
+                                if (tuesTokenEl) {
+                                    tuesTokenEl.innerText = (parseInt(tNum) > 0) ? parseInt(tNum) : '--';
                                 }
-                                if (mode === 'FORCE_CLOSED') isOpen = false;
 
-                                if (isOpen) {
-                                    tuesText.innerText = 'मंगलवार दरबार खुला है (Open)';
-                                    tuesBadge.className = 'darbar-badge';
-                                    tuesBadge.style.background = '#2E7D32';
-                                } else {
-                                    tuesText.innerText = 'मंगलवार (विश्राम समय)';
-                                    tuesBadge.className = 'darbar-badge closed';
-                                    tuesBadge.style.background = '#C62828';
+                                const tuesBadge = document.getElementById('tuesdayDarbarStatusBadge');
+                                const tuesText = document.getElementById('tuesdayDarbarStatusText');
+                                if (tuesBadge && tuesText) {
+                                    const mode = cfg.tuesday_token_service_mode || 'AUTO_TUESDAY';
+                                    let isOpen = (mode === 'FORCE_OPEN');
+                                    if (mode === 'AUTO_TUESDAY') {
+                                        const now = new Date();
+                                        isOpen = (now.getDay() === 2 && now.getHours() >= 8 && now.getHours() < 17);
+                                    }
+                                    if (mode === 'FORCE_CLOSED') isOpen = false;
+
+                                    if (isOpen) {
+                                        tuesText.innerText = 'मंगलवार दरबार खुला है (Open)';
+                                        tuesBadge.className = 'darbar-badge';
+                                        tuesBadge.style.background = '#2E7D32';
+                                    } else {
+                                        tuesText.innerText = 'मंगलवार (विश्राम समय)';
+                                        tuesBadge.className = 'darbar-badge closed';
+                                        tuesBadge.style.background = '#C62828';
+                                    }
                                 }
+                            } else {
+                                tuesSection.style.display = 'none';
                             }
                         }
 
