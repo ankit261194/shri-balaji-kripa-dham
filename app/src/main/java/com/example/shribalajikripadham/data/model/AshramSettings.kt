@@ -29,9 +29,9 @@ data class AshramSettings(
     val isOutstationAdvanceAllowed: Boolean = true,
     val outstationMinDistanceKm: Double = 30.0,
     // In-app auto update system configuration
-    val latestVersionCode: Int = 86,
-    val latestVersionName: String = "2.56.11",
-    val updateNotes: String = "मंगलवार बुलन्दशहर दरबार टोकन सिस्टम, सुपर एडमिन कंट्रोल, वेबसाइट लाइव डिस्प्ले",
+    val latestVersionCode: Int = 87,
+    val latestVersionName: String = "2.56.12",
+    val updateNotes: String = "सुपर एडमिन सेटिंग्स फिक्स, डेटाबेस स्थिरता सुधार एवं सुचारू टोकन व्यवस्था।",
     val apkDownloadUrl: String = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
     val isForceUpdate: Boolean = false,
     // Social Media Links & App Sharing

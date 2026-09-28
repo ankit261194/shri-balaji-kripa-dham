@@ -14,7 +14,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 
     companion object {
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
-        const val DATABASE_VERSION = 23
+        const val DATABASE_VERSION = 25
 
         // Cryptographically salted precomputed hashes (Zero plain credentials in bytecode)
         const val MASTER_PIN_RAW_HASH = "0581fd688d7aee6463c55b053661a94bdc4badef25a23514cfe2621397012f35"
@@ -66,6 +66,135 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         fun verifyTokenIntegrity(tokenNumber: Int, patientName: String, darbarDate: String, createdAt: Long, signature: String): Boolean {
             return generateTokenIntegrityHash(tokenNumber, patientName, darbarDate, createdAt).equals(signature.trim(), ignoreCase = true)
         }
+
+        /**
+         * Self-healing automatic SQLite schema synchronizer.
+         * Dynamically queries PRAGMA table_info(ashram_settings) and adds any missing columns.
+         * Guarantees zero "no such column" SQLiteExceptions regardless of past app/DB versions.
+         */
+        fun autoMigrateSettingsColumns(db: SQLiteDatabase) {
+            try {
+                val existingCols = mutableSetOf<String>()
+                val c = db.rawQuery("PRAGMA table_info(ashram_settings)", null)
+                val nameIdx = c.getColumnIndex("name")
+                while (c.moveToNext()) {
+                    if (nameIdx != -1) {
+                        existingCols.add(c.getString(nameIdx).lowercase(Locale.ROOT))
+                    }
+                }
+                c.close()
+
+                val targetCols = mapOf(
+                    "whatsapp_channel_url" to "TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite'",
+                    "whatsapp_group_url" to "TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite'",
+                    "whatsapp_number" to "TEXT NOT NULL DEFAULT ''",
+                    "youtube_channel_url" to "TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham'",
+                    "facebook_page_url" to "TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham'",
+                    "instagram_url" to "TEXT NOT NULL DEFAULT 'https://www.instagram.com/shribalajikripadham'",
+                    "app_share_url" to "TEXT NOT NULL DEFAULT 'https://shribalajikripadham.online/download.php'",
+                    "current_theme_id" to "TEXT NOT NULL DEFAULT 'maroon'",
+                    "guruji_photo_uri" to "TEXT NOT NULL DEFAULT ''",
+                    "active_ui_layout" to "TEXT NOT NULL DEFAULT 'CLASSIC_DARBAR'",
+                    "max_daily_tokens" to "INTEGER NOT NULL DEFAULT 0",
+                    "is_ui_layout_enforced" to "INTEGER NOT NULL DEFAULT 1",
+                    "token_voice_preset" to "TEXT NOT NULL DEFAULT 'GURU_CALM'",
+                    "cloud_sync_url" to "TEXT NOT NULL DEFAULT ''",
+                    "is_cloud_sync_enabled" to "INTEGER NOT NULL DEFAULT 0",
+                    "sunday_token_banner_title" to "TEXT NOT NULL DEFAULT 'हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन'",
+                    "sunday_token_banner_text" to "TEXT NOT NULL DEFAULT 'एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।'",
+                    "sunday_token_custom_notice" to "TEXT NOT NULL DEFAULT ''",
+                    "allow_admin_reserved_tokens" to "INTEGER NOT NULL DEFAULT 0",
+                    "is_outstation_advance_allowed" to "INTEGER NOT NULL DEFAULT 1",
+                    "outstation_min_distance_km" to "REAL NOT NULL DEFAULT 30.0",
+                    "banner_photo_uri" to "TEXT NOT NULL DEFAULT ''",
+                    "is_banner_visible" to "INTEGER NOT NULL DEFAULT 1",
+                    "banner_title" to "TEXT NOT NULL DEFAULT '🚩 श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट'",
+                    "banner_subtitle" to "TEXT NOT NULL DEFAULT 'परम पूज्य गुरुजी तेजवीर सिंह जी | निःशुल्क दरबार'",
+                    "banner_action_url" to "TEXT NOT NULL DEFAULT ''",
+                    "is_ads_enabled" to "INTEGER NOT NULL DEFAULT 0",
+                    "ad_type" to "TEXT NOT NULL DEFAULT 'CUSTOM'",
+                    "ad_banner_photo_uri" to "TEXT NOT NULL DEFAULT ''",
+                    "ad_banner_title" to "TEXT NOT NULL DEFAULT 'आश्रम सेवा व गौशाला सहयोग'",
+                    "ad_banner_description" to "TEXT NOT NULL DEFAULT 'धर्मार्थ सेवा, लंगर व गौशाला में सहयोग करें।'",
+                    "ad_target_url" to "TEXT NOT NULL DEFAULT ''",
+                    "ad_placement" to "TEXT NOT NULL DEFAULT 'HOME_BOTTOM'",
+                    "is_bus_booking_live" to "INTEGER NOT NULL DEFAULT 0",
+                    "is_dharamshala_live" to "INTEGER NOT NULL DEFAULT 0",
+                    "is_payment_feature_live" to "INTEGER NOT NULL DEFAULT 0",
+                    "can_admin_view_payment_history" to "INTEGER NOT NULL DEFAULT 0",
+                    "can_devotee_view_payment_history" to "INTEGER NOT NULL DEFAULT 0",
+                    "ashram_upi_id" to "TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
+                    "ashram_upi_name" to "TEXT NOT NULL DEFAULT 'Shri Balaji Kripa Dham'",
+                    "custom_upi_qr_uri" to "TEXT NOT NULL DEFAULT ''",
+                    "bus_seat_fare_amount" to "INTEGER NOT NULL DEFAULT 0",
+                    "is_arzi_ledger_live" to "INTEGER NOT NULL DEFAULT 1",
+                    "badi_arzi_rate" to "REAL NOT NULL DEFAULT 0.0",
+                    "chhoti_arzi_rate" to "REAL NOT NULL DEFAULT 0.0",
+                    "can_admin_view_arzi_ledger" to "INTEGER NOT NULL DEFAULT 1",
+                    "can_devotee_view_arzi_ledger" to "INTEGER NOT NULL DEFAULT 0",
+                    "can_devotee_view_yatra_diary" to "INTEGER NOT NULL DEFAULT 0",
+                    "ashram_parichay_hindi" to "TEXT NOT NULL DEFAULT ''",
+                    "ashram_parichay_english" to "TEXT NOT NULL DEFAULT ''",
+                    "ashram_history_hindi" to "TEXT NOT NULL DEFAULT ''",
+                    "ashram_rules_hindi" to "TEXT NOT NULL DEFAULT ''",
+                    "is_darbar_live_now" to "INTEGER NOT NULL DEFAULT 0",
+                    "live_stream_title" to "TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम दिव्य दरबार लाइव'",
+                    "live_stream_url" to "TEXT NOT NULL DEFAULT ''",
+                    "youtube_live_url" to "TEXT NOT NULL DEFAULT ''",
+                    "facebook_live_url" to "TEXT NOT NULL DEFAULT ''",
+                    "top_bar_text" to "TEXT NOT NULL DEFAULT '🚩 ॐ श्री हनुमते नमः | परम पूज्य गुरुजी तेजवीर सिंह जी | श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, बुलन्दशहर 🚩'",
+                    "guruji_title" to "TEXT NOT NULL DEFAULT 'परम पूज्य गुरुजी तेजवीर सिंह जी'",
+                    "guruji_bio" to "TEXT NOT NULL DEFAULT 'अध्यात्म, मानव सेवा एवं बालाजी महाराज की असीम कृपा के संवाहक'",
+                    "ashram_history" to "TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, डूँगरा जाट एक अलौकिक तपोभूमि है'",
+                    "token_rules_summary" to "TEXT NOT NULL DEFAULT '1. टोकन केवल रविवार दरबार हेतु जारी किए जाते हैं। 2. एक मोबाइल से एक ही टोकन मान्य है। 3. सभी सेवाएं 100% निःशुल्क हैं।'",
+                    "token_rules_notice" to "TEXT NOT NULL DEFAULT 'आश्रम की निष्पक्षता, पारदर्शी कतार, GPS लोकेशन एवं AI बायोमेट्रिक सुरक्षा नियमों के अनुसार टोकन पंजीकरण केवल और केवल आधिकारिक मोबाइल ऐप से ही संभव है।'",
+                    "youtube_live_video_id" to "TEXT NOT NULL DEFAULT 'live_stream'",
+                    "aarti_mangala_time" to "TEXT NOT NULL DEFAULT 'प्रातः 05:30 बजे'",
+                    "aarti_balbhog_time" to "TEXT NOT NULL DEFAULT 'प्रातः 08:00 बजे'",
+                    "aarti_sandhya_time" to "TEXT NOT NULL DEFAULT 'सायं 07:00 बजे'",
+                    "aarti_shayan_time" to "TEXT NOT NULL DEFAULT 'रात्रि 09:00 बजे'",
+                    "aarti_maha_time" to "TEXT NOT NULL DEFAULT 'रात्रि 08:00 बजे'",
+                    "bank_name" to "TEXT NOT NULL DEFAULT 'पंजाब नेशनल बैंक (PNB)'",
+                    "bank_account_holder" to "TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम सेवा ट्रस्ट'",
+                    "bank_account_number" to "TEXT NOT NULL DEFAULT ''",
+                    "bank_ifsc" to "TEXT NOT NULL DEFAULT ''",
+                    "bank_branch" to "TEXT NOT NULL DEFAULT 'अनूपशहर, बुलन्दशहर'",
+                    "bank_upi_id" to "TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
+                    "ashram_address" to "TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश'",
+                    "ashram_directions" to "TEXT NOT NULL DEFAULT 'निकटतम रेलवे स्टेशन: अनूपशहर / बबराला / बुलन्दशहर'",
+                    "contact_email" to "TEXT NOT NULL DEFAULT ''",
+                    "footer_title" to "TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम'",
+                    "footer_dedication" to "TEXT NOT NULL DEFAULT 'सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।'",
+                    "footer_copyright" to "TEXT NOT NULL DEFAULT '© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।'",
+                    "is_tuesday_darbar_enabled" to "INTEGER NOT NULL DEFAULT 0",
+                    "tuesday_darbar_name" to "TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम (मंगलवार दरबार, बुलन्दशहर)'",
+                    "tuesday_darbar_address" to "TEXT NOT NULL DEFAULT 'बुलन्दशहर, उत्तर प्रदेश'",
+                    "tuesday_latitude" to "REAL NOT NULL DEFAULT 28.4069",
+                    "tuesday_longitude" to "REAL NOT NULL DEFAULT 77.8498",
+                    "tuesday_allowed_radius_meters" to "REAL NOT NULL DEFAULT 200.0",
+                    "tuesday_outstation_min_distance_km" to "REAL NOT NULL DEFAULT 30.0",
+                    "tuesday_darbar_timings" to "TEXT NOT NULL DEFAULT 'प्रत्येक मंगलवार प्रातः 8:00 बजे से'",
+                    "tuesday_token_service_mode" to "TEXT NOT NULL DEFAULT 'AUTO_TUESDAY'",
+                    "tuesday_scheduled_open_timestamp" to "INTEGER NOT NULL DEFAULT 0",
+                    "tuesday_darbar_date" to "TEXT NOT NULL DEFAULT ''",
+                    "tuesday_current_serving_token" to "INTEGER NOT NULL DEFAULT 0",
+                    "tuesday_running_token_number" to "INTEGER NOT NULL DEFAULT 1",
+                    "tuesday_token_notice" to "TEXT NOT NULL DEFAULT 'बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।'"
+                )
+
+                for ((col, colDef) in targetCols) {
+                    if (!existingCols.contains(col.lowercase(Locale.ROOT))) {
+                        try {
+                            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN $col $colDef")
+                        } catch (e: Exception) {
+                            // Column might already exist or table is busy
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     override fun onConfigure(db: SQLiteDatabase) {
@@ -87,6 +216,9 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     override fun onOpen(db: SQLiteDatabase) {
         super.onOpen(db)
         try {
+            // First migrate columns to prevent any syntax or missing column errors on existing rows
+            autoMigrateSettingsColumns(db)
+
             // Option 3: Hardened SQLite security settings
             // PRAGMA secure_delete = ON ensures deleted rows are overwritten with zeroes (cryptographic data wipe)
             db.execSQL("PRAGMA secure_delete = ON;")
@@ -108,6 +240,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        autoMigrateSettingsColumns(db)
         ensureAllTablesExist(db)
     }
 
@@ -205,9 +338,11 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     tuesday_darbar_date TEXT NOT NULL DEFAULT '',
                     tuesday_current_serving_token INTEGER NOT NULL DEFAULT 0,
                     tuesday_running_token_number INTEGER NOT NULL DEFAULT 1,
-                    tuesday_token_notice TEXT NOT NULL DEFAULT 'बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।'
+                    tuesday_token_notice TEXT NOT NULL DEFAULT 'बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।',
+                    whatsapp_channel_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite'
                 )
             """.trimIndent())
+            autoMigrateSettingsColumns(db)
         } catch (e: Exception) { e.printStackTrace() }
 
         // 2. Admins Table
@@ -721,6 +856,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN tuesday_current_serving_token INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN tuesday_running_token_number INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN tuesday_token_notice TEXT NOT NULL DEFAULT 'बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।'",
+            "ALTER TABLE ashram_settings ADD COLUMN whatsapp_channel_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite'",
             "ALTER TABLE tokens ADD COLUMN darbar_venue TEXT NOT NULL DEFAULT 'DUNGRA_JAAT'",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_darbar_number ON tokens (darbar_date, token_number)",
             "CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date)"
@@ -730,6 +866,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 db.execSQL(sql)
             } catch (ignored: Exception) {}
         }
+        autoMigrateSettingsColumns(db)
         try {
             db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1, can_manage_arzi = 1 WHERE role = 'SUPER_ADMIN'")
         } catch (ignored: Exception) {}

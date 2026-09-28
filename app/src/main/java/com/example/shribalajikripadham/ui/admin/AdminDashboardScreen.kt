@@ -286,6 +286,7 @@ fun AdminDashboardScreen(
     var svcCanAdminViewArzi by remember { mutableStateOf(false) }
     var svcCanDevoteeViewArzi by remember { mutableStateOf(false) }
     var svcCanDevoteeViewYatraDiary by remember { mutableStateOf(false) }
+    var svcTuesdayDarbarEnabled by remember { mutableStateOf(false) }
     var customParichayHindi by remember { mutableStateOf("") }
     var customParichayEnglish by remember { mutableStateOf("") }
     var customHistoryHindi by remember { mutableStateOf("") }
@@ -421,6 +422,7 @@ fun AdminDashboardScreen(
             svcCanAdminViewArzi = s.canAdminViewArziLedger
             svcCanDevoteeViewArzi = s.canDevoteeViewArziLedger
             svcCanDevoteeViewYatraDiary = s.canDevoteeViewYatraDiary
+            svcTuesdayDarbarEnabled = s.isTuesdayDarbarEnabled
             customParichayHindi = s.ashramParichayHindi
             customParichayEnglish = s.ashramParichayEnglish
             customHistoryHindi = s.ashramHistoryHindi
@@ -1087,18 +1089,16 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊")
             }
             if (isSuper) {
+                allowedTabs.add(if (isHindi) "सेवाएं ऑन/ऑफ" else "Services")
                 allowedTabs.add(if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar")
                 allowedTabs.add(if (isHindi) "🌐 वेबसाइट लाइव एडिटर" else "Website Live Editor")
-                allowedTabs.add(if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️")
-            }
-            if (isSuper) {
-                allowedTabs.add(if (isHindi) "📜 ऑडिट लेज़र" else "Audit Trail")
-                allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
-                allowedTabs.add(if (isHindi) "सेवाएं ऑन/ऑफ" else "Services")
                 allowedTabs.add(if (isHindi) "🌐 वेबसाइट व CMS" else "Website & CMS")
+                allowedTabs.add(if (isHindi) "सुपर कंट्रोल" else "Super Control")
+                allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
+                allowedTabs.add(if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️")
+                allowedTabs.add(if (isHindi) "📜 ऑडिट लेज़र" else "Audit Trail")
                 allowedTabs.add(if (isHindi) "ऐप कस्टमाइजर" else "Customizer")
                 allowedTabs.add(if (isHindi) "कस्टम दूरियाँ" else "Distances")
-                allowedTabs.add(if (isHindi) "सुपर कंट्रोल" else "Super Control")
                 allowedTabs.add(if (isHindi) "🪪 ID कार्ड स्टूडियो" else "🪪 ID Card Studio")
                 allowedTabs.add(if (isHindi) "ऑटो-अपडेट" else "Updates")
             }
@@ -1858,6 +1858,12 @@ fun AdminDashboardScreen(
                                 onCanDevoteeViewArziChange = { svcCanDevoteeViewArzi = it },
                                 canDevoteeViewYatraDiary = svcCanDevoteeViewYatraDiary,
                                 onCanDevoteeViewYatraDiaryChange = { svcCanDevoteeViewYatraDiary = it },
+                                isTuesdayDarbarEnabled = svcTuesdayDarbarEnabled,
+                                onTuesdayDarbarEnabledChange = { svcTuesdayDarbarEnabled = it },
+                                onOpenTuesdayDarbarTab = {
+                                    val idx = allowedTabs.indexOf(if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar")
+                                    if (idx >= 0) selectedTab = idx
+                                },
                                 successMsg = svcSuccessMsg,
                                 onSave = {
                                     scope.launch {
@@ -1906,9 +1912,22 @@ fun AdminDashboardScreen(
                                         )
                                         repository.updateCanDevoteeViewYatraDiary(svcCanDevoteeViewYatraDiary)
                                         repository.updateDharamshalaLiveStatus(svcDharamshalaLive)
+                                        repository.updateTuesdayDarbarSettings(
+                                            isEnabled = svcTuesdayDarbarEnabled,
+                                            name = settings.tuesdayDarbarName,
+                                            address = settings.tuesdayDarbarAddress,
+                                            latitude = settings.tuesdayLatitude,
+                                            longitude = settings.tuesdayLongitude,
+                                            allowedRadiusMeters = settings.tuesdayAllowedRadiusMeters,
+                                            outstationMinDistanceKm = settings.tuesdayOutstationMinDistanceKm,
+                                            timings = settings.tuesdayDarbarTimings,
+                                            tokenServiceMode = settings.tuesdayTokenServiceMode,
+                                            tokenNotice = settings.tuesdayTokenNotice
+                                        )
                                         try { repository.publishCurrentSettingsToGitHub(admin.name) } catch (e: Exception) {}
                                         try {
                                             val freshS = repository.getSettings()
+                                            settings = freshS
                                             com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(freshS)
                                         } catch (e: Exception) {}
                                         try {
@@ -6932,6 +6951,9 @@ fun PublicServiceMatrixTab(
     onCanDevoteeViewArziChange: (Boolean) -> Unit = {},
     canDevoteeViewYatraDiary: Boolean = false,
     onCanDevoteeViewYatraDiaryChange: (Boolean) -> Unit = {},
+    isTuesdayDarbarEnabled: Boolean = false,
+    onTuesdayDarbarEnabledChange: (Boolean) -> Unit = {},
+    onOpenTuesdayDarbarTab: () -> Unit = {},
     successMsg: String?,
     onSave: () -> Unit
 ) {
@@ -6993,6 +7015,97 @@ fun PublicServiceMatrixTab(
                 }
             }
         }
+
+        // 🚩 SECTION 0: TUESDAY DARBAR (BULANDSHAHR) MASTER ON/OFF SWITCH
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = if (isTuesdayDarbarEnabled) Color(0xFFE8F5E9) else Color(0xFFFFEBEE)
+            ),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(2.dp, if (isTuesdayDarbarEnabled) Color(0xFF2E7D32) else Color(0xFFC62828)),
+            elevation = CardDefaults.cardElevation(3.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🚩", fontSize = 28.sp)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "मंगलवार दरबार (बुलन्दशहर) ऑन/ऑफ" else "Tuesday Darbar (Bulandshahr) ON/OFF",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 16.sp,
+                                color = if (isTuesdayDarbarEnabled) Color(0xFF1B5E20) else Color(0xFFB71C1C)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (isTuesdayDarbarEnabled)
+                                    (if (isHindi) "🟢 चालू (ON) - ऐप व वेबसाइट पर लाइव" else "🟢 Active (ON)")
+                                else
+                                    (if (isHindi) "🔴 बंद (OFF) - पूर्णतः गुप्त व अदृश्य" else "🔴 Paused (OFF) - Completely Hidden"),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = if (isTuesdayDarbarEnabled) Color(0xFF2E7D32) else Color(0xFFC62828)
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = isTuesdayDarbarEnabled,
+                        onCheckedChange = { onTuesdayDarbarEnabledChange(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = Color(0xFF2E7D32),
+                            uncheckedThumbColor = Color.White,
+                            uncheckedTrackColor = Color(0xFFC62828)
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Surface(
+                    color = if (isTuesdayDarbarEnabled) Color(0xFFC8E6C9) else Color(0xFFFFCDD2),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (isTuesdayDarbarEnabled)
+                            (if (isHindi) "✅ वर्तमान स्थिति: मंगलवार दरबार सक्रिय है। भक्तों को ऐप और वेबसाइट पर मंगलवार दरबार, टोकन बुकिंग एवं सूचना दिखेगी।" else "✅ Active: Devotees can see Tuesday Darbar on App and Website.")
+                        else
+                            (if (isHindi) "🔒 वर्तमान स्थिति: पूर्णतः गुप्त / बंद। किसी भी सामान्य भक्त को ऐप या वेबसाइट पर मंगलवार दरबार या बुलन्दशहर का कोई भी ज़िक्र नहीं दिखेगा।" else "🔒 Paused: 100% hidden and invisible from devotees on App and Website."),
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isTuesdayDarbarEnabled) Color(0xFF1B5E20) else Color(0xFF7F0000),
+                        modifier = Modifier.padding(10.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
+                    onClick = { onOpenTuesdayDarbarTab() },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaroonPrimary),
+                    border = BorderStroke(1.dp, MaroonPrimary),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = if (isHindi) "⚙️ मंगलवार दरबार विस्तृत सेटिंग्स खोलें (समय, स्थान, GPS, कतार)" else "⚙️ Open Full Tuesday Settings (Timings, GPS, Queue)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.5.sp
+                    )
+                }
+            }
+        }
+
         // SECTION 1: MASTER TOKEN SERVICE CONTROL & SUNDAYDarbar 12H COUNTDOWN (SUPER ADMIN CONTROL)
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.White),

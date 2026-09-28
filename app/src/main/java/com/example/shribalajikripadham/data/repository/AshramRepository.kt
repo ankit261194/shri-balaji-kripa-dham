@@ -435,6 +435,23 @@ class AshramRepository(context: Context) {
         ok
     }
 
+    private fun safeUpdateAshramSettings(db: SQLiteDatabase, cv: ContentValues): Boolean {
+        com.example.shribalajikripadham.data.local.DatabaseHelper.autoMigrateSettingsColumns(db)
+        return try {
+            db.update("ashram_settings", cv, "id = 1", null) > 0
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Force schema self-healing on any missing column and retry
+            com.example.shribalajikripadham.data.local.DatabaseHelper.autoMigrateSettingsColumns(db)
+            try {
+                db.update("ashram_settings", cv, "id = 1", null) > 0
+            } catch (e2: Exception) {
+                e2.printStackTrace()
+                false
+            }
+        }
+    }
+
     suspend fun updateSettings(s: AshramSettings): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
@@ -494,7 +511,7 @@ class AshramRepository(context: Context) {
             put("tuesday_running_token_number", s.tuesdayRunningTokenNumber)
             put("tuesday_token_notice", s.tuesdayTokenNotice)
         }
-        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = safeUpdateAshramSettings(db, cv)
         if (ok) persistCurrentSettingsToAllLayers()
         ok
     }
@@ -524,7 +541,7 @@ class AshramRepository(context: Context) {
             put("tuesday_token_service_mode", tokenServiceMode.trim())
             put("tuesday_token_notice", tokenNotice.trim())
         }
-        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        val ok = safeUpdateAshramSettings(db, cv)
         if (ok) {
             persistCurrentSettingsToAllLayers()
         }

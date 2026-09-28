@@ -492,15 +492,21 @@ fun TuesdayDarbarTab(
                         repository.persistCurrentSettingsToAllLayers()
 
                         // 2. Sync to Hostinger Live MySQL & Website
+                        var networkSynced = false
                         withContext(Dispatchers.IO) {
-                            HostingerCentralSyncManager.updateFullLiveConfig(updatedSettings)
+                            try {
+                                networkSynced = HostingerCentralSyncManager.updateFullLiveConfig(updatedSettings).first
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
                         }
 
                         onSettingsUpdated(updatedSettings)
                         statusMessage = if (isHindi)
-                            "✅ मंगलवार दरबार की सभी सेटिंग्स सुरक्षित एवं वेबसाइट पर लाइव सिंक हो गईं!"
+                            if (networkSynced) "✅ मंगलवार सेटिंग्स सुरक्षित एवं वेबसाइट पर लाइव सिंक हो गईं!"
+                            else "✅ मंगलवार सेटिंग्स फोन में सुरक्षित हो गईं! (वेबसाइट सिंक बैकग्राउंड में होगी)"
                         else
-                            "✅ Tuesday Darbar settings successfully saved and synced to website!"
+                            "✅ Tuesday Darbar settings successfully saved!"
                         Toast.makeText(context, statusMessage, Toast.LENGTH_SHORT).show()
                     } catch (e: Exception) {
                         statusMessage = "❌ त्रुटि: ${e.localizedMessage ?: "अज्ञात समस्या"}"

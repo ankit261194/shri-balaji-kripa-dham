@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 86,
-  "version_code": 86,
-  "latest_version_name": "2.56.11",
-  "version_name": "2.56.11",
-  "update_notes_hindi": "v2.56.11 (Build 86): 🚩 ऐप प्रदर्शन सुधार, जीपीएस लोकेशन सुरक्षा अपडेट एवं सुचारू टोकन व्यवस्था।",
-  "update_notes_english": "v2.56.11 (Build 86): 🚩 App performance improvements, GPS location security updates, and smooth token system.",
+  "latest_version_code": 87,
+  "version_code": 87,
+  "latest_version_name": "2.56.12",
+  "version_name": "2.56.12",
+  "update_notes_hindi": "v2.56.12 (Build 87): 🚩 सुपर एडमिन सेटिंग्स फिक्स, डेटाबेस स्थिरता सुधार एवं सुचारू टोकन व्यवस्था।",
+  "update_notes_english": "v2.56.12 (Build 87): 🚩 Super Admin settings fix, database stability improvements, and smooth token system.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
