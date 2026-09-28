@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-28T05:34:52Z",
+  "updated_at": "2026-09-28T06:33:55Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -7,20 +7,20 @@
     "ashram_name": "श्री बालाजी कृपा धाम",
     "guruji_name": "परम पूज्य गुरुजी",
     "address": "ग्राम डूंगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.)",
-    "contact_phone": "+91 8171064598",
+    "contact_phone": "+91 98765 00000",
     "contact_phone_secondary": "",
-    "whatsapp_number": "+91 8171064598",
-    "darbar_timings": "प्रत्येक रविवार प्रातःकाल 8:30 बजे से",
+    "whatsapp_number": "+919876543210",
+    "darbar_timings": "प्रत्येक रविवार प्रातःकाल 8:00 बजे से",
     "free_disclaimer": "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।",
     "whatsapp_group_url": "https:\/\/chat.whatsapp.com\/invite",
     "youtube_channel_url": "https:\/\/www.youtube.com\/@ShriBalajiKripaDham",
     "facebook_page_url": "https:\/\/www.facebook.com\/ShriBalajiKripaDham",
     "instagram_url": "https:\/\/www.instagram.com\/shribalajikripadham",
-    "app_share_url": "",
-    "guruji_photo_url": "https:\/\/shribalajikripadham.online\/uploads\/guruji_1790519391_9b3602.jpg?t=1790519391392"
+    "app_share_url": "https:\/\/shribalajikripadham.org\/app",
+    "guruji_photo_url": ""
   },
   "emergency_notice": {
-    "is_enabled": false,
+    "is_enabled": true,
     "notice_hindi": "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।",
     "notice_english": "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।"
   },
@@ -32,7 +32,7 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1790573692642
+    "updated_at": 1790577235064
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -41,8 +41,8 @@
     "is_events_visible": true,
     "is_aarti_timings_visible": true,
     "is_guruji_info_visible": true,
-    "is_emergency_notice_visible": false,
-    "scheduled_token_open_timestamp": 1791082800000,
+    "is_emergency_notice_visible": true,
+    "scheduled_token_open_timestamp": 0,
     "max_daily_tokens": 0,
     "sunday_token_banner_title": "हार्डवेयर फिंगरप्रिंट नियम: 1 फोन = 1 टोकन",
     "sunday_token_banner_text": "एक मोबाइल डिवाइस से प्रत्येक रविवार को केवल 1 मरीज का टोकन लिया जा सकता है।",
@@ -54,9 +54,9 @@
     "ashram_upi_id": "shribalajikripadham@upi",
     "ashram_upi_name": "Shri Balaji Kripa Dham",
     "custom_upi_qr_uri": "",
-    "bus_seat_fare_amount": 0,
+    "bus_seat_fare_amount": 1500,
     "is_arzi_ledger_live": true,
-    "badi_arzi_rate": 150,
+    "badi_arzi_rate": 100,
     "chhoti_arzi_rate": 50,
     "can_admin_view_arzi_ledger": true,
     "can_devotee_view_arzi_ledger": false,
