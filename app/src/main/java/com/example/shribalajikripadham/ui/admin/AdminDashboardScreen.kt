@@ -485,11 +485,19 @@ fun AdminDashboardScreen(
             // Record admin device telemetry heartbeat
             kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                 try {
+                    val adminRoleStr = if (loggedInAdmin!!.role == com.example.shribalajikripadham.data.model.AdminRole.SUPER_ADMIN) "SUPER_ADMIN" else if (loggedInAdmin!!.role == com.example.shribalajikripadham.data.model.AdminRole.SEVADAR) "SEVADAR" else "ADMIN"
+                    context.getSharedPreferences("sbkd_admin_login_prefs", android.content.Context.MODE_PRIVATE)
+                        .edit()
+                        .putString("admin_name", loggedInAdmin!!.name)
+                        .putString("admin_phone", loggedInAdmin!!.phoneNumber)
+                        .putString("admin_role", adminRoleStr)
+                        .apply()
+
                     com.example.shribalajikripadham.data.network.AppTelemetryManager.recordAppHeartbeat(
                         context = context,
                         devoteeName = loggedInAdmin!!.name,
                         devoteePhone = loggedInAdmin!!.phoneNumber,
-                        role = "ADMIN"
+                        role = adminRoleStr
                     )
                 } catch (e: Exception) {}
             }
@@ -517,6 +525,9 @@ fun AdminDashboardScreen(
                             loggedInAdmin = null
                             currentSessionId = ""
                             myLoginTimestamp = 0L
+                            try {
+                                context.getSharedPreferences("sbkd_admin_login_prefs", android.content.Context.MODE_PRIVATE).edit().clear().apply()
+                            } catch (e: Exception) {}
                             break
                         }
                     }
@@ -564,6 +575,9 @@ fun AdminDashboardScreen(
                         loggedInAdmin = null
                         currentSessionId = ""
                         myLoginTimestamp = 0L
+                        try {
+                            context.getSharedPreferences("sbkd_admin_login_prefs", android.content.Context.MODE_PRIVATE).edit().clear().apply()
+                        } catch (e: Exception) {}
                         usernameInput = ""
                         passwordInput = ""
                         pinInput = ""

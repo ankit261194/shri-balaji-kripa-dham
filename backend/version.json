@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 88,
-  "version_code": 88,
-  "latest_version_name": "2.56.13",
-  "version_name": "2.56.13",
-  "update_notes_hindi": "v2.56.13 (Build 88): 🚩 आधिकारिक वेबसाइट व शेयर लिंक शुद्धिकरण (shribalajikripadham.online) एवं ऐप स्थिरता सुधार।",
-  "update_notes_english": "v2.56.13 (Build 88): 🚩 Official website and app share link update to shribalajikripadham.online and app stability improvements.",
+  "latest_version_code": 89,
+  "version_code": 89,
+  "latest_version_name": "2.56.14",
+  "version_name": "2.56.14",
+  "update_notes_hindi": "v2.56.14 (Build 89): 📱 सक्रिय फोन लाइव टेलीमेट्री शुद्धिकरण (सटीक मॉडल, एंड्रॉइड OS, ऑनलाइन उपस्थिति, संपर्क जानकारी) एवं केंद्रीय होस्टिंगर लाइव सिंक।",
+  "update_notes_english": "v2.56.14 (Build 89): 📱 Active devices live telemetry enhancement (real handset models, Android OS version, real-time online status & devotee contacts) with Hostinger cloud sync.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false

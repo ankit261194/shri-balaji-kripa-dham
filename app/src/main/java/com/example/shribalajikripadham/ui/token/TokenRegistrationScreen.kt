@@ -1671,8 +1671,23 @@ fun TokenRegistrationScreen(
                                                 .putInt("my_token_number", created.tokenNumber)
                                                 .putString("my_token_date", created.darbarDate)
                                                 .putString("my_patient_name", created.patientName)
+                                                .putString("my_phone_number", created.phoneNumber)
+                                                .putString("my_city", created.city)
                                                 .apply()
                                         } catch (e: Exception) {}
+
+                                        // Immediate background telemetry heartbeat with devotee credentials
+                                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                            try {
+                                                com.example.shribalajikripadham.data.network.AppTelemetryManager.recordAppHeartbeat(
+                                                    context = context,
+                                                    devoteeName = created.patientName,
+                                                    devoteePhone = created.phoneNumber,
+                                                    city = created.city,
+                                                    role = "USER"
+                                                )
+                                            } catch (e: Exception) {}
+                                        }
 
                                         // Asynchronous non-blocking background tasks: Photo upload, Face embedding, FCM
                                         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {

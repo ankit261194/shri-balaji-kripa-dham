@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.shribalajikripadham.data.model.AshramSettings
 import com.example.shribalajikripadham.data.model.BusSeat
+import com.example.shribalajikripadham.data.model.DevicePresence
 import com.example.shribalajikripadham.data.model.Token
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -2026,6 +2027,97 @@ object HostingerCentralSyncManager {
         } catch (e: Exception) {
             Pair(false, e.localizedMessage ?: "नेटवर्क त्रुटि")
         }
+    }
+
+    /**
+     * Records real-time device heartbeat to Central Hostinger MySQL backend.
+     */
+    suspend fun recordDeviceHeartbeat(
+        deviceId: String,
+        deviceModel: String,
+        androidVersion: String,
+        appVersion: String,
+        userName: String,
+        phoneNumber: String,
+        city: String,
+        role: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}device_telemetry.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                connectTimeout = 6000
+                readTimeout = 6000
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                setRequestProperty("User-Agent", "ShriBalajiApp/2.56.13")
+            }
+            val payload = JSONObject().apply {
+                put("device_id", deviceId)
+                put("device_model", deviceModel)
+                put("android_version", androidVersion)
+                put("app_version", appVersion)
+                put("user_name", userName)
+                put("phone_number", phoneNumber)
+                put("city", city)
+                put("role", role)
+            }
+            conn.outputStream.use { it.write(payload.toString().toByteArray(StandardCharsets.UTF_8)) }
+            conn.responseCode in 200..299
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Fetches real-time active devices presence from Central Hostinger MySQL backend.
+     */
+    suspend fun fetchLiveDevices(): Triple<Int, Int, List<DevicePresence>> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}device_telemetry.php?nocache=${System.currentTimeMillis()}")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "GET"
+                setRequestProperty("Accept", "application/json")
+                setRequestProperty("User-Agent", "ShriBalajiApp/2.56.13")
+            }
+            if (conn.responseCode in 200..299) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(resp)
+                if (root.optBoolean("success", false)) {
+                    val total = root.optInt("total_devices", 0)
+                    val activeToday = root.optInt("active_today", 0)
+                    val arr = root.optJSONArray("devices") ?: JSONArray()
+                    val list = mutableListOf<DevicePresence>()
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        list.add(
+                            DevicePresence(
+                                deviceId = o.optString("device_id"),
+                                deviceModel = o.optString("device_model", "Android Device"),
+                                userName = o.optString("user_name", ""),
+                                phoneNumber = o.optString("phone_number", ""),
+                                city = o.optString("city", ""),
+                                appVersion = o.optString("app_version", "2.56.14"),
+                                lastSeenAt = o.optLong("last_seen_at", System.currentTimeMillis()),
+                                openCount = o.optInt("open_count", 1),
+                                role = o.optString("role", "USER"),
+                                androidVersion = o.optString("android_version", ""),
+                                isOnline = o.optBoolean("is_online", false),
+                                ipAddress = o.optString("ip_address", "")
+                            )
+                        )
+                    }
+                    return@withContext Triple(total, activeToday, list)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        Triple(0, 0, emptyList())
     }
 }
 
