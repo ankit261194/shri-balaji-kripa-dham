@@ -26,7 +26,26 @@ if (!defined('SBKD_API_SECRET')) {
 }
 
 /**
+ * Verifies if an Admin Session Token is valid and active.
+ */
+function verifyAdminSessionToken($token, $pdo = null) {
+    if (empty($token)) return false;
+    if (!$pdo) $pdo = getDB();
+    if (!$pdo) return false;
+    
+    try {
+        $now = time();
+        $stmt = $pdo->prepare("SELECT admin_id, admin_name, admin_role, device_id, expires_at FROM admin_sessions WHERE session_token = :st AND is_active = 1 AND expires_at > :now LIMIT 1");
+        $stmt->execute([':st' => $token, ':now' => $now]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+/**
  * Validates request authentication to secure all mutation APIs from unauthorized access.
+ * Supports Admin Session Tokens, Dynamic HMAC Signatures, and Master Key fallback.
  */
 function verifyApiAuth($allowPublicRead = false) {
     if ($allowPublicRead && $_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -38,6 +57,39 @@ function verifyApiAuth($allowPublicRead = false) {
         $lowerHeaders[strtolower($k)] = $v;
     }
 
+    // 1. Check for Admin Session Token (Highest Security)
+    $adminToken = $lowerHeaders['x-sbkd-admin-token'] ?? 
+                  $_SERVER['HTTP_X_SBKD_ADMIN_TOKEN'] ?? 
+                  $_GET['admin_token'] ?? 
+                  $_POST['admin_token'] ?? '';
+
+    if (!empty($adminToken)) {
+        $adminSession = verifyAdminSessionToken($adminToken);
+        if ($adminSession) {
+            return $adminSession;
+        }
+    }
+
+    // 2. Check for Dynamic HMAC Signature
+    $hmacAuth = $lowerHeaders['x-sbkd-hmac-auth'] ?? $_SERVER['HTTP_X_SBKD_HMAC_AUTH'] ?? '';
+    if (!empty($hmacAuth)) {
+        // Format: timestamp:signature
+        $parts = explode(':', $hmacAuth, 2);
+        if (count($parts) === 2) {
+            $ts = intval($parts[0]);
+            $sig = $parts[1];
+            $now = time();
+            // Valid within 15-minute window
+            if (abs($now - $ts) <= 900) {
+                $expectedSig = hash_hmac('sha256', $ts . ':' . $_SERVER['REQUEST_METHOD'], SBKD_API_SECRET);
+                if (hash_equals($expectedSig, $sig)) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    // 3. Fallback for Static API Key
     $apiKey = $lowerHeaders['x-sbkd-api-key'] ?? 
               $lowerHeaders['authorization'] ??
               $_SERVER['HTTP_X_SBKD_API_KEY'] ?? 
@@ -47,7 +99,6 @@ function verifyApiAuth($allowPublicRead = false) {
               $_GET['api_key'] ?? 
               $_POST['api_key'] ?? '';
 
-    // If still empty and request has a JSON body, peek into JSON body
     if (empty($apiKey)) {
         $raw = file_get_contents('php://input');
         if (!empty($raw)) {
@@ -62,7 +113,7 @@ function verifyApiAuth($allowPublicRead = false) {
         http_response_code(401);
         echo json_encode([
             "success" => false, 
-            "error" => "अनधिकृत अनुरोध: मान्य X-SBKD-API-KEY अनिवार्य है (Unauthorized API request)."
+            "error" => "अनधिकृत अनुरोध: मान्य X-SBKD-ADMIN-TOKEN अथवा X-SBKD-API-KEY अनिवार्य है।"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }

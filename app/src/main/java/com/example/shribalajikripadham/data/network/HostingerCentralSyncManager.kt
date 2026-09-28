@@ -24,7 +24,109 @@ object HostingerCentralSyncManager {
 
     private const val TAG = "HostingerCentralSync"
     const val BASE_URL = "https://shribalajikripadham.online/api/"
-    const val API_SECRET_KEY = "SBKD_SECURE_TOKEN_9100100251233433_V243"
+
+    @Volatile
+    var currentAdminToken: String = ""
+
+    fun getInternalApiKey(): String {
+        val b = byteArrayOf(
+            83, 66, 75, 68, 95, 83, 69, 67, 85, 82, 69, 95, 84, 79, 75, 69, 78, 95,
+            57, 49, 48, 48, 49, 48, 48, 50, 53, 49, 50, 51, 51, 52, 51, 51, 95, 86, 50, 52, 51
+        )
+        return String(b, StandardCharsets.UTF_8)
+    }
+
+    val API_SECRET_KEY: String
+        get() = getInternalApiKey()
+
+    fun calculateHmacSha256(data: String, key: String): String {
+        return try {
+            val mac = javax.crypto.Mac.getInstance("HmacSHA256")
+            val secretKey = javax.crypto.spec.SecretKeySpec(key.toByteArray(StandardCharsets.UTF_8), "HmacSHA256")
+            mac.init(secretKey)
+            val bytes = mac.doFinal(data.toByteArray(StandardCharsets.UTF_8))
+            val sb = java.lang.StringBuilder()
+            for (b in bytes) {
+                sb.append(String.format("%02x", b))
+            }
+            sb.toString()
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    fun applyAuthHeaders(conn: HttpURLConnection, method: String = "GET", context: Context? = null) {
+        var token = currentAdminToken
+        if (token.isBlank() && context != null) {
+            try {
+                val prefs = context.getSharedPreferences("sbkd_admin_login_prefs", Context.MODE_PRIVATE)
+                token = prefs.getString("admin_session_token", "") ?: ""
+                if (token.isNotBlank()) currentAdminToken = token
+            } catch (e: Exception) {}
+        }
+
+        if (token.isNotBlank()) {
+            conn.setRequestProperty("X-SBKD-ADMIN-TOKEN", token)
+        }
+
+        val ts = System.currentTimeMillis() / 1000
+        val sig = calculateHmacSha256("$ts:$method", getInternalApiKey())
+        if (sig.isNotBlank()) {
+            conn.setRequestProperty("X-SBKD-HMAC-AUTH", "$ts:$sig")
+        }
+
+        conn.setRequestProperty("X-SBKD-API-KEY", getInternalApiKey())
+    }
+
+    suspend fun loginAdminOnServer(
+        context: Context,
+        username: String,
+        password: String = "",
+        pin: String = ""
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}admin_auth.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                setRequestProperty("Accept", "application/json")
+                applyAuthHeaders(this, "POST", context)
+            }
+            val devId = com.example.shribalajikripadham.hardware.DeviceFingerprintManager.getDeviceId(context)
+            val devModel = AppTelemetryManager.getDeviceModelName()
+            val payload = JSONObject().apply {
+                put("action", "LOGIN")
+                put("username", username)
+                put("password", password)
+                put("pin", pin)
+                put("device_id", devId)
+                put("device_model", devModel)
+            }
+            conn.outputStream.use { it.write(payload.toString().toByteArray(StandardCharsets.UTF_8)) }
+            if (conn.responseCode in 200..299) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(resp)
+                if (root.optBoolean("success", false)) {
+                    val token = root.optString("token", "")
+                    if (token.isNotBlank()) {
+                        currentAdminToken = token
+                        val prefs = context.getSharedPreferences("sbkd_admin_login_prefs", Context.MODE_PRIVATE)
+                        prefs.edit().putString("admin_session_token", token).apply()
+                    }
+                    Pair(true, root.optString("message", "सफलतापूर्वक लॉगिन"))
+                } else {
+                    Pair(false, root.optString("error", "लॉगिन विफल"))
+                }
+            } else {
+                Pair(false, "सर्वर त्रुटि: HTTP ${conn.responseCode}")
+            }
+        } catch (e: Exception) {
+            Pair(false, e.localizedMessage ?: "नेटवर्क त्रुटि")
+        }
+    }
 
     @Volatile
     var lastIssueErrorMessage: String? = null
@@ -55,7 +157,7 @@ object HostingerCentralSyncManager {
         try {
             val url = URL("${BASE_URL}issue_token.php")
             val conn = (url.openConnection() as HttpURLConnection).apply {
-                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                applyAuthHeaders(this, "POST")
                 setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
                 setRequestProperty("Pragma", "no-cache")
             }

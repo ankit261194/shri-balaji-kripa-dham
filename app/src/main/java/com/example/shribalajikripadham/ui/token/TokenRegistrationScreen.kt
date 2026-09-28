@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,12 +77,12 @@ fun TokenRegistrationScreen(
     var savedImageUri by remember { mutableStateOf<Uri?>(null) }
     var deviceId by remember { mutableStateOf("") }
 
-    // Form inputs
-    var patientName by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
-    var city by remember { mutableStateOf("") }
-    var originAddress by remember { mutableStateOf("") }
-    var estimatedDistanceKm by remember { mutableFloatStateOf(-1f) }
+    // Form inputs (Preserved across rotation and process death)
+    var patientName by rememberSaveable { mutableStateOf("") }
+    var phoneNumber by rememberSaveable { mutableStateOf("") }
+    var city by rememberSaveable { mutableStateOf("") }
+    var originAddress by rememberSaveable { mutableStateOf("") }
+    var estimatedDistanceKm by rememberSaveable { mutableFloatStateOf(-1f) }
     var isCalculatingDistance by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isSubmitting by remember { mutableStateOf(false) }
