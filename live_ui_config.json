@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-28T06:35:30Z",
+  "updated_at": "2026-09-28T07:35:50Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -17,7 +17,7 @@
     "facebook_page_url": "https:\/\/www.facebook.com\/ShriBalajiKripaDham",
     "instagram_url": "https:\/\/www.instagram.com\/shribalajikripadham",
     "app_share_url": "https:\/\/shribalajikripadham.org\/app",
-    "guruji_photo_url": ""
+    "guruji_photo_url": "https:\/\/shribalajikripadham.online\/uploads\/guruji_1790519391_9b3602.jpg?t=1790519391392"
   },
   "emergency_notice": {
     "is_enabled": true,
@@ -32,7 +32,7 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1790577330821
+    "updated_at": 1790580950413
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -54,9 +54,9 @@
     "ashram_upi_id": "shribalajikripadham@upi",
     "ashram_upi_name": "Shri Balaji Kripa Dham",
     "custom_upi_qr_uri": "",
-    "bus_seat_fare_amount": 1500,
+    "bus_seat_fare_amount": 0,
     "is_arzi_ledger_live": true,
-    "badi_arzi_rate": 100,
+    "badi_arzi_rate": 150,
     "chhoti_arzi_rate": 50,
     "can_admin_view_arzi_ledger": true,
     "can_devotee_view_arzi_ledger": false,
