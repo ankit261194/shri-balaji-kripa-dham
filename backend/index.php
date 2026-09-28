@@ -104,10 +104,10 @@ $isBusLive = !empty($settings['is_bus_booking_live']);
 $isDharamshalaLive = !empty($settings['is_dharamshala_live']);
 $isArziLive = !isset($settings['is_arzi_ledger_live']) || $settings['is_arzi_ledger_live'] == 1;
 
-$contactPhone = !empty($settings['contact_phone']) ? $settings['contact_phone'] : '';
-$whatsappNumber = !empty($settings['whatsapp_number']) ? $settings['whatsapp_number'] : '';
-$upiId = (!empty($settings['upi_id']) && $settings['upi_id'] !== 'shribalajikripadham@upi') ? $settings['upi_id'] : '';
-$upiName = !empty($settings['upi_name']) ? $settings['upi_name'] : $ashramName;
+$contactPhone = (!empty($settings['contact_phone']) && strpos($settings['contact_phone'], '97206') === false && strpos($settings['contact_phone'], '98765') === false) ? trim($settings['contact_phone']) : '';
+$whatsappNumber = (!empty($settings['whatsapp_number']) && strpos($settings['whatsapp_number'], '97206') === false && strpos($settings['whatsapp_number'], '98765') === false) ? trim($settings['whatsapp_number']) : '';
+$upiId = (!empty($settings['upi_id']) && $settings['upi_id'] !== 'shribalajikripadham@upi') ? trim($settings['upi_id']) : '';
+$upiName = !empty($settings['upi_name']) ? trim($settings['upi_name']) : $ashramName;
 $badiArziRate = isset($settings['badi_arzi_rate']) ? (float)$settings['badi_arzi_rate'] : 0.0;
 $chhotiArziRate = isset($settings['chhoti_arzi_rate']) ? (float)$settings['chhoti_arzi_rate'] : 0.0;
 
@@ -116,10 +116,6 @@ $topBarText = !empty($settings['top_bar_text']) ? $settings['top_bar_text'] : '�
 $gurujiTitle = !empty($settings['guruji_title']) ? $settings['guruji_title'] : 'परम पूज्य गुरुजी तेजवीर सिंह जी';
 $gurujiBio = !empty($settings['guruji_bio']) ? $settings['guruji_bio'] : 'संकट मोचन श्री बालाजी महाराज के अनन्य उपासक एवं पावन कृपा धाम के पीठाधीश्वर।';
 $tokenRulesNotice = !empty($settings['token_rules_notice']) ? $settings['token_rules_notice'] : 'आश्रम की निष्पक्षता, पारदर्शी कतार, GPS लोकेशन एवं AI बायोमेट्रिक सुरक्षा नियमों के अनुसार टोकन पंजीकरण केवल और केवल आधिकारिक मोबाइल ऐप से ही संभव है। वेबसाइट पर कोई टोकन जनरेशन फॉर्म नहीं है। टोकन प्राप्त करने के लिए कृपया ऊपर दिए गए बटन से मोबाइल ऐप इंस्टॉल करें।';
-$aartiMangala = !empty($settings['aarti_mangala_time']) ? $settings['aarti_mangala_time'] : 'प्रातः 05:30 बजे';
-$aartiBalbhog = !empty($settings['aarti_balbhog_time']) ? $settings['aarti_balbhog_time'] : 'प्रातः 08:00 बजे';
-$aartiSandhya = !empty($settings['aarti_sandhya_time']) ? $settings['aarti_sandhya_time'] : 'सायं 07:00 बजे';
-$aartiShayan = !empty($settings['aarti_shayan_time']) ? $settings['aarti_shayan_time'] : 'रात्रि 09:00 बजे';
 $bankName = !empty($settings['bank_name']) ? $settings['bank_name'] : '';
 $bankAccountHolder = !empty($settings['bank_account_holder']) ? $settings['bank_account_holder'] : '';
 $bankAccountNumber = (!empty($settings['bank_account_number']) && strpos($settings['bank_account_number'], 'XXXX') === false) ? $settings['bank_account_number'] : '';
@@ -128,8 +124,8 @@ $bankBranch = !empty($settings['bank_branch']) ? $settings['bank_branch'] : '';
 $hasBankDetails = (!empty($bankAccountNumber) || !empty($upiId));
 $ashramAddress = !empty($settings['ashram_address']) ? $settings['ashram_address'] : "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील अनूपशहर,\nजिला बुलन्दशहर, उत्तर प्रदेश";
 $ashramDirections = !empty($settings['ashram_directions']) ? $settings['ashram_directions'] : 'निकटतम रेलवे स्टेशन: अनूपशहर / बबराला / बुलन्दशहर';
-$contactEmail = !empty($settings['contact_email']) ? $settings['contact_email'] : 'shribalajikripadham@gmail.com';
-$instagramUrl = !empty($settings['instagram_url']) ? $settings['instagram_url'] : 'https://www.instagram.com/shribalajikripadham';
+$contactEmail = (!empty($settings['contact_email']) && $settings['contact_email'] !== 'shribalajikripadham@gmail.com') ? trim($settings['contact_email']) : '';
+$instagramUrl = !empty($settings['instagram_url']) ? $settings['instagram_url'] : '';
 $youtubeLiveUrl = !empty($settings['youtube_live_url']) ? $settings['youtube_live_url'] : '';
 $whatsappChannelUrl = !empty($settings['whatsapp_channel_url']) ? $settings['whatsapp_channel_url'] : 'https://chat.whatsapp.com/invite';
 $footerTitle = !empty($settings['footer_title']) ? $settings['footer_title'] : 'श्री बालाजी कृपा धाम';
@@ -1081,7 +1077,7 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
         <!-- YouTube Live Darbar Stream Card -->
         <div style="max-width: 850px; margin: 25px auto 0; text-align: center; background: #FFEBEE; border: 2px solid #D32F2F; border-radius: 16px; padding: 18px; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.15);">
             <h4 style="color: #C62828; margin-bottom: 6px; font-size: 1.2rem;">🔴 दिव्य दरबार लाइव प्रसारण (YouTube Live)</h4>
-            <p style="margin-bottom: 12px; font-size: 0.92rem; color: #424242;">पूज्य गुरुदेव जी के पावन सान्निध्य में नित्य सत्संग, महाआरती एवं दर्शन से जुड़ें</p>
+            <p style="margin-bottom: 12px; font-size: 0.92rem; color: #424242;">पूज्य गुरुदेव जी के पावन सान्निध्य में दिव्य सत्संग एवं पावन दर्शन से जुड़ें</p>
             <a href="<?= htmlspecialchars($youtubeLiveUrl) ?>" target="_blank" style="display: inline-block; background: #D32F2F; color: #ffffff; padding: 10px 24px; border-radius: 24px; text-decoration: none; font-weight: 700; font-size: 0.95rem;">
                 ▶️ यूट्यूब पर लाइव देखें (Watch Live on YouTube)
             </a>
@@ -1185,9 +1181,9 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
             </div>
 
             <div class="service-card">
-                <div class="service-icon">🪔</div>
-                <h4>नित्य महाआरती व दर्शन</h4>
-                <p>प्रतिदिन प्रातः मंगला आरती, बालभोग व सांध्य महाआरती में सम्मिलित होकर पुण्य लाभ अर्जित करें।</p>
+                <div class="service-icon">🙏</div>
+                <h4>पावन सत्संग व दर्शन</h4>
+                <p>परम पूज्य गुरुजी के पावन सान्निध्य में श्री बालाजी महाराज व भैरव बाबा के दिव्य दर्शन एवं आशीर्वाद।</p>
             </div>
         </div>
     </section>
@@ -1222,28 +1218,27 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
 
     <!-- Ashram Timings, Seva & Location -->
     <section class="info-section">
-        <!-- Darbar & Aarti Timings -->
+        <!-- Darbar Schedule & Notice (App Controlled) -->
         <div class="info-box">
-            <h4>🕒 नित्य आरती एवं दरबार समय</h4>
+            <h4>🕒 पावन दरबार समय एवं विवरण</h4>
             <div class="timing-row">
-                <span>मंगला महाआरती</span>
-                <span class="time" id="dynamicAartiMangala"><?= htmlspecialchars($aartiMangala) ?></span>
-            </div>
-            <div class="timing-row">
-                <span>बालभोग एवं प्रातः दर्शन</span>
-                <span class="time" id="dynamicAartiBalbhog"><?= htmlspecialchars($aartiBalbhog) ?></span>
-            </div>
-            <div class="timing-row">
-                <span>रविवार विशेष दरबार</span>
+                <span>दरबार दिवस व समय</span>
                 <span class="time" id="dynamicDarbarTimings"><?= htmlspecialchars($darbarTimings) ?></span>
             </div>
-            <div class="timing-row">
-                <span>सांध्य महाआरती</span>
-                <span class="time" id="dynamicAartiSandhya"><?= htmlspecialchars($aartiSandhya) ?></span>
+            <?php if (!empty($darbarDate)): ?>
+            <div class="timing-row" id="darbarDateRow">
+                <span>आगामी दरबार तिथि</span>
+                <span class="time" id="dynamicDarbarDate"><?= htmlspecialchars($darbarDate) ?></span>
             </div>
+            <?php else: ?>
+            <div class="timing-row" id="darbarDateRow" style="display: none;">
+                <span>आगामी दरबार तिथि</span>
+                <span class="time" id="dynamicDarbarDate"></span>
+            </div>
+            <?php endif; ?>
             <div class="timing-row">
-                <span>शयन आरती</span>
-                <span class="time" id="dynamicAartiShayan"><?= htmlspecialchars($aartiShayan) ?></span>
+                <span>दरबार स्थिति</span>
+                <span class="time" id="dynamicDarbarStatus"><?= $isDarbarActive ? 'दरबार चालू है (Open)' : 'विश्राम (Closed)' ?></span>
             </div>
         </div>
 
@@ -1283,7 +1278,7 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
             <?php endif; ?>
         </div>
 
-        <!-- Ashram Location -->
+        <!-- Ashram Location & Contact (Strictly Real Numbers Only) -->
         <div class="info-box">
             <h4>📍 आश्रम का पावन पता एवं संपर्क</h4>
             <p style="font-size: 1rem; margin-bottom: 8px; color: #37474F;" id="dynamicAshramAddress">
@@ -1296,12 +1291,24 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
                 <a href="https://www.google.com/maps/search/?api=1&query=28.3972915,78.1460410" target="_blank" class="btn-maps">
                     🗺️ गूगल मैप्स पर रास्ता देखें
                 </a>
-                <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $whatsappNumber) ?>?text=जय%20श्री%20बालाजी%20महाराज" target="_blank" class="btn-whatsapp">
-                    💬 व्हाट्सएप हेल्पलाइन (<?= htmlspecialchars($whatsappNumber) ?>)
+                <?php if (!empty($whatsappNumber)): ?>
+                <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $whatsappNumber) ?>?text=जय%20श्री%20बालाजी%20महाराज" target="_blank" class="btn-whatsapp" id="btnWhatsappLink">
+                    💬 व्हाट्सएप हेल्पलाइन (<span id="dynamicWhatsappNumber"><?= htmlspecialchars($whatsappNumber) ?></span>)
                 </a>
-                <a href="tel:<?= htmlspecialchars($contactPhone) ?>" class="btn-maps" style="background: #E65100;">
-                    📞 कॉल सेवा (<?= htmlspecialchars($contactPhone) ?>)
+                <?php else: ?>
+                <a href="#" target="_blank" class="btn-whatsapp" id="btnWhatsappLink" style="display: none;">
+                    💬 व्हाट्सएप हेल्पलाइन (<span id="dynamicWhatsappNumber"></span>)
                 </a>
+                <?php endif; ?>
+                <?php if (!empty($contactPhone)): ?>
+                <a href="tel:<?= htmlspecialchars($contactPhone) ?>" class="btn-maps" style="background: #E65100;" id="btnPhoneLink">
+                    📞 कॉल सेवा (<span id="dynamicContactPhone"><?= htmlspecialchars($contactPhone) ?></span>)
+                </a>
+                <?php else: ?>
+                <a href="#" class="btn-maps" style="background: #E65100; display: none;" id="btnPhoneLink">
+                    📞 कॉल सेवा (<span id="dynamicContactPhone"></span>)
+                </a>
+                <?php endif; ?>
                 <?php if (!empty($instagramUrl)): ?>
                 <a href="<?= htmlspecialchars($instagramUrl) ?>" target="_blank" class="btn-maps" style="background: #C2185B;">
                     📸 इंस्टाग्राम (Instagram)
@@ -1471,22 +1478,45 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
                             if (gBio) gBio.innerText = cfg.guruji_bio;
                         }
 
-                        // 11. Dynamic Aarti Timings
-                        if (cfg.aarti_mangala_time) {
-                            const el = document.getElementById('dynamicAartiMangala');
-                            if (el) el.innerText = cfg.aarti_mangala_time;
+                        // 11. Dynamic Darbar Schedule & Contact
+                        if (cfg.darbar_date && cfg.darbar_date.trim() !== '') {
+                            const dDate = document.getElementById('dynamicDarbarDate');
+                            const dRow = document.getElementById('darbarDateRow');
+                            if (dDate) dDate.innerText = cfg.darbar_date;
+                            if (dRow) dRow.style.display = 'flex';
+                        } else {
+                            const dRow = document.getElementById('darbarDateRow');
+                            if (dRow) dRow.style.display = 'none';
                         }
-                        if (cfg.aarti_balbhog_time) {
-                            const el = document.getElementById('dynamicAartiBalbhog');
-                            if (el) el.innerText = cfg.aarti_balbhog_time;
+                        const dStatus = document.getElementById('dynamicDarbarStatus');
+                        if (dStatus) {
+                            dStatus.innerText = cfg.is_darbar_active ? 'दरबार चालू है (Open)' : 'विश्राम (Closed)';
                         }
-                        if (cfg.aarti_sandhya_time) {
-                            const el = document.getElementById('dynamicAartiSandhya');
-                            if (el) el.innerText = cfg.aarti_sandhya_time;
+
+                        // WhatsApp Dynamic Link (Real Admin Number Only)
+                        const waEl = document.getElementById('btnWhatsappLink');
+                        const waNumEl = document.getElementById('dynamicWhatsappNumber');
+                        if (cfg.whatsapp_number && cfg.whatsapp_number.trim() !== '' && cfg.whatsapp_number.indexOf('97206') === -1) {
+                            if (waNumEl) waNumEl.innerText = cfg.whatsapp_number;
+                            if (waEl) {
+                                waEl.href = 'https://wa.me/' + cfg.whatsapp_number.replace(/[^0-9]/g, '') + '?text=जय%20श्री%20बालाजी%20महाराज';
+                                waEl.style.display = 'inline-block';
+                            }
+                        } else if (waEl) {
+                            waEl.style.display = 'none';
                         }
-                        if (cfg.aarti_shayan_time) {
-                            const el = document.getElementById('dynamicAartiShayan');
-                            if (el) el.innerText = cfg.aarti_shayan_time;
+
+                        // Contact Phone Dynamic Link (Real Admin Number Only)
+                        const phEl = document.getElementById('btnPhoneLink');
+                        const phNumEl = document.getElementById('dynamicContactPhone');
+                        if (cfg.contact_phone && cfg.contact_phone.trim() !== '' && cfg.contact_phone.indexOf('97206') === -1) {
+                            if (phNumEl) phNumEl.innerText = cfg.contact_phone;
+                            if (phEl) {
+                                phEl.href = 'tel:' + cfg.contact_phone;
+                                phEl.style.display = 'inline-block';
+                            }
+                        } else if (phEl) {
+                            phEl.style.display = 'none';
                         }
 
                         // 12. Bank & Seva Details

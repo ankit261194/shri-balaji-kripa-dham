@@ -68,7 +68,7 @@ class AshramRepository(context: Context) {
             darbarDate = cursor.getString(cursor.getColumnIndexOrThrow("darbar_date")),
             darbarTimings = cursor.getString(cursor.getColumnIndexOrThrow("darbar_timings")),
             freeDisclaimer = cursor.getString(cursor.getColumnIndexOrThrow("free_disclaimer")),
-            contactPhone = cursor.getString(cursor.getColumnIndexOrThrow("contact_phone")),
+            contactPhone = try { cursor.getString(cursor.getColumnIndexOrThrow("contact_phone")).replace("+91 97206 91090", "").trim() } catch (e: Exception) { "" },
             emergencyNoticeText = cursor.getString(cursor.getColumnIndexOrThrow("emergency_notice")),
             isTokenServiceEnabled = cursor.getInt(cursor.getColumnIndexOrThrow("is_token_service_enabled")) == 1,
             tokenServiceMode = try { cursor.getString(cursor.getColumnIndexOrThrow("token_service_mode")) ?: "AUTO_SUNDAY" } catch (e: Exception) { "AUTO_SUNDAY" },
@@ -88,7 +88,7 @@ class AshramRepository(context: Context) {
             apkDownloadUrl = cursor.getString(cursor.getColumnIndexOrThrow("apk_download_url")),
             isForceUpdate = cursor.getInt(cursor.getColumnIndexOrThrow("is_force_update")) == 1,
             whatsappGroupUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_group_url")) } catch (e: Exception) { "https://chat.whatsapp.com/invite" },
-            whatsappNumber = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_number")) } catch (e: Exception) { "+91 97206 91090" },
+            whatsappNumber = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_number")).replace("+91 97206 91090", "").trim() } catch (e: Exception) { "" },
             youtubeChannelUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("youtube_channel_url")) } catch (e: Exception) { "https://www.youtube.com/@ShriBalajiKripaDham" },
             facebookPageUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("facebook_page_url")) } catch (e: Exception) { "https://www.facebook.com/ShriBalajiKripaDham" },
             instagramUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("instagram_url")) } catch (e: Exception) { "https://www.instagram.com/shribalajikripadham" },
@@ -879,18 +879,32 @@ class AshramRepository(context: Context) {
         // Geofence & Anti-Spoof bypass: Super Admin ALWAYS bypasses; Admins bypass IF bypassGeofence is granted
         val shouldBypassGeofence = isSuperAdmin || (isAdminDesk && bypassGeofence)
 
-        // 0. SUNDAY SCHEDULE & TOKEN OPENING CHECK (Devotees only)
+        // 0. SUNDAY SCHEDULE & TOKEN OPENING CHECK
+        val settings = getSettings()
+        val sched = com.example.shribalajikripadham.util.SundayTokenScheduleHelper.evaluateSchedule(settings)
+        val isScheduleOpen = (sched is com.example.shribalajikripadham.util.SundayScheduleState.Open) && settings.isDarbarActive
+
         if (isDevoteeRequest) {
-            val settings = getSettings()
-            val sched = com.example.shribalajikripadham.util.SundayTokenScheduleHelper.evaluateSchedule(settings)
-            when (sched) {
-                is com.example.shribalajikripadham.util.SundayScheduleState.Open -> { /* Allowed */ }
-                is com.example.shribalajikripadham.util.SundayScheduleState.CountdownActive -> throw IllegalStateException(sched.messageHindi)
-                is com.example.shribalajikripadham.util.SundayScheduleState.SundayBeforeStart -> throw IllegalStateException(sched.messageHindi)
-                is com.example.shribalajikripadham.util.SundayScheduleState.SundayClosedEvening -> throw IllegalStateException(sched.messageHindi)
-                is com.example.shribalajikripadham.util.SundayScheduleState.NonSunday -> throw IllegalStateException(sched.messageHindi)
-                is com.example.shribalajikripadham.util.SundayScheduleState.ServiceDisabled -> throw IllegalStateException(sched.messageHindi)
-                is com.example.shribalajikripadham.util.SundayScheduleState.CustomScheduled -> throw IllegalStateException(sched.messageHindi)
+            if (!isScheduleOpen) {
+                when (sched) {
+                    is com.example.shribalajikripadham.util.SundayScheduleState.CountdownActive -> throw IllegalStateException(sched.messageHindi)
+                    is com.example.shribalajikripadham.util.SundayScheduleState.SundayBeforeStart -> throw IllegalStateException(sched.messageHindi)
+                    is com.example.shribalajikripadham.util.SundayScheduleState.SundayClosedEvening -> throw IllegalStateException(sched.messageHindi)
+                    is com.example.shribalajikripadham.util.SundayScheduleState.NonSunday -> throw IllegalStateException(sched.messageHindi)
+                    is com.example.shribalajikripadham.util.SundayScheduleState.ServiceDisabled -> throw IllegalStateException(sched.messageHindi)
+                    is com.example.shribalajikripadham.util.SundayScheduleState.CustomScheduled -> throw IllegalStateException(sched.messageHindi)
+                    else -> {
+                        if (!settings.isDarbarActive) {
+                            throw IllegalStateException("दरबार वर्तमान में विश्राम पर है। टोकन पंजीकरण बंद है।")
+                        }
+                    }
+                }
+            }
+        } else if (isAdminDesk && !isSuperAdmin) {
+            // Regular Admin: Can ONLY generate when token is open, UNLESS Super Admin granted them anytime permission
+            val hasAnytimePermission = bypassGeofence || settings.allowAdminReservedTokens
+            if (!isScheduleOpen && !hasAnytimePermission) {
+                throw IllegalStateException("⚠️ टोकन पंजीकरण वर्तमान में बंद है। सामान्य एडमिन केवल टोकन खुला होने पर ही टोकन जारी कर सकते हैं। बंद समय में टोकन जारी करने हेतु सुपर एडमिन की अनुमति आवश्यक है।")
             }
         }
 
@@ -948,18 +962,23 @@ class AshramRepository(context: Context) {
             checkCursor.close()
         }
 
-        val safeCity = if (city.isBlank()) {
-            if (originAddress.isNotBlank()) originAddress.trim() else "स्थानीय"
-        } else city.trim()
-        val safeOrigin = if (originAddress.isNotBlank()) originAddress.trim() else safeCity
-
-        val settings = getSettings()
         val distFromAshram = if (latitude > 0.0 && longitude > 0.0 && settings.latitude > 0.0) {
             GeofenceLocationManager.calculateDistanceMeters(
                 latitude, longitude,
                 settings.latitude, settings.longitude
             )
         } else -1.0
+
+        val isOutstationDevotee = isDevoteeRequest && (distFromAshram > settings.outstationMinDistanceKm * 1000.0)
+        val safeCity = if (isOutstationDevotee) {
+            val autoResolved = GeofenceLocationManager.resolveVillageAndCity(appContext, latitude, longitude)
+            if (autoResolved.isNotBlank()) autoResolved else (if (city.isNotBlank()) city.trim() else "आउटस्टेशन भक्त (GPS)")
+        } else {
+            if (city.isBlank()) {
+                if (originAddress.isNotBlank()) originAddress.trim() else "डूँगरा जाट (स्थानीय)"
+            } else city.trim()
+        }
+        val safeOrigin = if (originAddress.isNotBlank() && !isOutstationDevotee) originAddress.trim() else safeCity
 
         // Priority 1: If distanceKm is explicitly passed and valid, use it
         // Priority 2: If real GPS coordinates exist, use GPS road/local distance directly
@@ -1013,7 +1032,8 @@ class AshramRepository(context: Context) {
                 originAddress = safeOrigin,
                 destinationAddress = destinationAddress,
                 darbarDate = today,
-                customTokenNumber = customTokenNumber
+                customTokenNumber = customTokenNumber,
+                canIssueAnytime = shouldBypassGeofence || (isAdminDesk && (bypassGeofence || settings.allowAdminReservedTokens))
             )
             centralOk = result.first
             centralNum = result.second
@@ -1204,7 +1224,8 @@ class AshramRepository(context: Context) {
                         registeredBy = createdToken.registeredBy,
                         originAddress = createdToken.originAddress,
                         destinationAddress = createdToken.destinationAddress,
-                        darbarDate = createdToken.darbarDate
+                        darbarDate = createdToken.darbarDate,
+                        canIssueAnytime = shouldBypassGeofence || (isAdminDesk && (bypassGeofence || settings.allowAdminReservedTokens))
                     )
                 } catch (e: Exception) {}
             }
@@ -3109,11 +3130,22 @@ class AshramRepository(context: Context) {
         isMockLocation: Boolean = false,
         locationAccuracy: Float = 10.0f
     ): Pair<Token, Boolean> = withContext(Dispatchers.IO) {
+        val settings = getSettings()
+        val distM = if (latitude != 0.0 && longitude != 0.0 && settings.latitude != 0.0) {
+            GeofenceLocationManager.calculateDistanceMeters(latitude, longitude, settings.latitude, settings.longitude)
+        } else -1.0
+        val finalCity = if (distM > settings.outstationMinDistanceKm * 1000.0) {
+            val autoCity = GeofenceLocationManager.resolveVillageAndCity(appContext, latitude, longitude)
+            if (autoCity.isNotBlank()) autoCity else matchedProfile.city
+        } else {
+            matchedProfile.city.ifBlank { "डूँगरा जाट (स्थानीय)" }
+        }
+
         // Register token with Server-Side Geofence, Mock Location, and Hardware Device Locking
         val token = registerToken(
             patientName = matchedProfile.patientName,
             phoneNumber = matchedProfile.phoneNumber,
-            city = matchedProfile.city,
+            city = finalCity,
             deviceId = deviceId,
             latitude = latitude,
             longitude = longitude,
@@ -3996,7 +4028,6 @@ class AshramRepository(context: Context) {
 
                 val cmsCols = listOf(
                     "top_bar_text", "guruji_title", "guruji_bio", "token_rules_notice",
-                    "aarti_mangala_time", "aarti_balbhog_time", "aarti_sandhya_time", "aarti_shayan_time",
                     "bank_name", "bank_account_holder", "bank_account_number", "bank_ifsc",
                     "bank_branch", "ashram_address", "ashram_directions", "contact_email",
                     "instagram_url", "whatsapp_channel_url", "footer_title", "footer_dedication",
@@ -4007,6 +4038,25 @@ class AshramRepository(context: Context) {
                         val v = cfg.optString(col, "")
                         if (v.isNotBlank()) cv.put(col, v)
                     }
+                }
+
+                if (cfg.has("contact_phone")) {
+                    val ph = cfg.optString("contact_phone", "").replace("+91 97206 91090", "").trim()
+                    cv.put("contact_phone", ph)
+                }
+                if (cfg.has("whatsapp_number")) {
+                    val wa = cfg.optString("whatsapp_number", "").replace("+91 97206 91090", "").trim()
+                    cv.put("whatsapp_number", wa)
+                }
+                if (cfg.has("darbar_date")) {
+                    cv.put("darbar_date", cfg.optString("darbar_date", ""))
+                }
+                if (cfg.has("upi_id")) {
+                    val upi = cfg.optString("upi_id", "")
+                    if (upi != "shribalajikripadham@upi") cv.put("ashram_upi_id", upi)
+                }
+                if (cfg.has("upi_name")) {
+                    cv.put("ashram_upi_name", cfg.optString("upi_name", ""))
                 }
 
                 if (cv.size() > 0) {

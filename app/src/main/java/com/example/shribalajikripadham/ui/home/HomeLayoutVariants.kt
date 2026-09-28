@@ -1638,28 +1638,33 @@ fun MahabaliHeroLayout(
             badgeText = "${activeSevadars.size} " + if (isHindi) "सेवादार" else "Sevadars",
             primaryColor = Color(0xFF1565C0)
         ) {
-            AccordionOptionRow(
-                icon = "📞",
-                title = if (isHindi) "आश्रम मुख्य हेल्पलाइन" else "Ashram Helpline Call",
-                subtitle = settings.contactPhone.ifEmpty { "+91 97206 91090" },
-                actionButtonText = if (isHindi) "कॉल करें" else "Call",
-                accentColor = Color(0xFF2E7D32),
-                onClick = {
-                    val p = settings.contactPhone.ifEmpty { "+919720691090" }
-                    try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$p"))) } catch (e: Exception) {}
-                }
-            )
-            AccordionOptionRow(
-                icon = "💬",
-                title = if (isHindi) "आधिकारिक व्हाट्सएप सेवा" else "Official WhatsApp Helpdesk",
-                subtitle = settings.whatsappNumber.ifEmpty { "+91 97206 91090" },
-                actionButtonText = if (isHindi) "मैसेज करें" else "Chat",
-                accentColor = Color(0xFF25D366),
-                onClick = {
-                    val wa = settings.whatsappNumber.replace(Regex("[^0-9]"), "")
-                    openSocialMediaLink(context, "https://wa.me/$wa", "https://wa.me/$wa", isWhatsApp = true, errorMessage = "व्हाट्सएप खोलने में असमर्थ")
-                }
-            )
+            val cleanPhone = settings.contactPhone.replace("+91 97206 91090", "").trim()
+            val cleanWa = settings.whatsappNumber.replace("+91 97206 91090", "").trim()
+            if (cleanPhone.isNotEmpty()) {
+                AccordionOptionRow(
+                    icon = "📞",
+                    title = if (isHindi) "आश्रम मुख्य हेल्पलाइन" else "Ashram Helpline Call",
+                    subtitle = cleanPhone,
+                    actionButtonText = if (isHindi) "कॉल करें" else "Call",
+                    accentColor = Color(0xFF2E7D32),
+                    onClick = {
+                        try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone"))) } catch (e: Exception) {}
+                    }
+                )
+            }
+            if (cleanWa.isNotEmpty()) {
+                val waCleanDigits = cleanWa.replace(Regex("[^0-9]"), "")
+                AccordionOptionRow(
+                    icon = "💬",
+                    title = if (isHindi) "आधिकारिक व्हाट्सएप सेवा" else "Official WhatsApp Helpdesk",
+                    subtitle = cleanWa,
+                    actionButtonText = if (isHindi) "मैसेज करें" else "Chat",
+                    accentColor = Color(0xFF25D366),
+                    onClick = {
+                        openSocialMediaLink(context, "https://wa.me/$waCleanDigits", "https://wa.me/$waCleanDigits", isWhatsApp = true, errorMessage = "व्हाट्सएप खोलने में असमर्थ")
+                    }
+                )
+            }
             for (sev in activeSevadars.take(4)) {
                 AccordionOptionRow(
                     icon = "👤",
@@ -1843,28 +1848,33 @@ fun BhaktiAccordionLayout(
             icon = "👥",
             primaryColor = Color(0xFF1565C0)
         ) {
-            AccordionOptionRow(
-                icon = "📞",
-                title = if (isHindi) "आश्रम फोन हेल्पलाइन" else "Ashram Helpline Phone",
-                subtitle = settings.contactPhone.ifEmpty { "+91 97206 91090" },
-                actionButtonText = if (isHindi) "कॉल" else "Call",
-                accentColor = Color(0xFF2E7D32),
-                onClick = {
-                    val p = settings.contactPhone.ifEmpty { "+919720691090" }
-                    try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$p"))) } catch (e: Exception) {}
-                }
-            )
-            AccordionOptionRow(
-                icon = "💬",
-                title = if (isHindi) "व्हाट्सएप सहायता" else "WhatsApp Support",
-                subtitle = settings.whatsappNumber.ifEmpty { "+91 97206 91090" },
-                actionButtonText = if (isHindi) "चैट" else "Chat",
-                accentColor = Color(0xFF25D366),
-                onClick = {
-                    val wa = settings.whatsappNumber.replace(Regex("[^0-9]"), "")
-                    openSocialMediaLink(context, "https://wa.me/$wa", "https://wa.me/$wa", isWhatsApp = true, errorMessage = "व्हाट्सएप खोलने में असमर्थ")
-                }
-            )
+            val cleanPhone2 = settings.contactPhone.replace("+91 97206 91090", "").trim()
+            val cleanWa2 = settings.whatsappNumber.replace("+91 97206 91090", "").trim()
+            if (cleanPhone2.isNotEmpty()) {
+                AccordionOptionRow(
+                    icon = "📞",
+                    title = if (isHindi) "आश्रम फोन हेल्पलाइन" else "Ashram Helpline Phone",
+                    subtitle = cleanPhone2,
+                    actionButtonText = if (isHindi) "कॉल" else "Call",
+                    accentColor = Color(0xFF2E7D32),
+                    onClick = {
+                        try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone2"))) } catch (e: Exception) {}
+                    }
+                )
+            }
+            if (cleanWa2.isNotEmpty()) {
+                val waCleanDigits2 = cleanWa2.replace(Regex("[^0-9]"), "")
+                AccordionOptionRow(
+                    icon = "💬",
+                    title = if (isHindi) "व्हाट्सएप सहायता" else "WhatsApp Support",
+                    subtitle = cleanWa2,
+                    actionButtonText = if (isHindi) "चैट" else "Chat",
+                    accentColor = Color(0xFF25D366),
+                    onClick = {
+                        openSocialMediaLink(context, "https://wa.me/$waCleanDigits2", "https://wa.me/$waCleanDigits2", isWhatsApp = true, errorMessage = "व्हाट्सएप खोलने में असमर्थ")
+                    }
+                )
+            }
             AccordionOptionRow(
                 icon = "📍",
                 title = if (isHindi) "गूगल मैप्स नेविगेशन" else "Google Maps Navigation",
@@ -2260,28 +2270,33 @@ fun GoldenLotusLayout(
             icon = "👥",
             primaryColor = Color(0xFF1565C0)
         ) {
-            AccordionOptionRow(
-                icon = "📞",
-                title = if (isHindi) "आश्रम हेल्पलाइन" else "Ashram Helpline",
-                subtitle = settings.contactPhone.ifEmpty { "+91 97206 91090" },
-                actionButtonText = if (isHindi) "कॉल" else "Call",
-                accentColor = Color(0xFF2E7D32),
-                onClick = {
-                    val p = settings.contactPhone.ifEmpty { "+919720691090" }
-                    try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$p"))) } catch (e: Exception) {}
-                }
-            )
-            AccordionOptionRow(
-                icon = "💬",
-                title = if (isHindi) "व्हाट्सएप सेवा" else "WhatsApp Service",
-                subtitle = settings.whatsappNumber.ifEmpty { "+91 97206 91090" },
-                actionButtonText = if (isHindi) "चैट" else "Chat",
-                accentColor = Color(0xFF25D366),
-                onClick = {
-                    val wa = settings.whatsappNumber.replace(Regex("[^0-9]"), "")
-                    openSocialMediaLink(context, "https://wa.me/$wa", "https://wa.me/$wa", isWhatsApp = true, errorMessage = "व्हाट्सएप खोलने में असमर्थ")
-                }
-            )
+            val cleanPhone3 = settings.contactPhone.replace("+91 97206 91090", "").trim()
+            val cleanWa3 = settings.whatsappNumber.replace("+91 97206 91090", "").trim()
+            if (cleanPhone3.isNotEmpty()) {
+                AccordionOptionRow(
+                    icon = "📞",
+                    title = if (isHindi) "आश्रम हेल्पलाइन" else "Ashram Helpline",
+                    subtitle = cleanPhone3,
+                    actionButtonText = if (isHindi) "कॉल" else "Call",
+                    accentColor = Color(0xFF2E7D32),
+                    onClick = {
+                        try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone3"))) } catch (e: Exception) {}
+                    }
+                )
+            }
+            if (cleanWa3.isNotEmpty()) {
+                val waCleanDigits3 = cleanWa3.replace(Regex("[^0-9]"), "")
+                AccordionOptionRow(
+                    icon = "💬",
+                    title = if (isHindi) "व्हाट्सएप सेवा" else "WhatsApp Service",
+                    subtitle = cleanWa3,
+                    actionButtonText = if (isHindi) "चैट" else "Chat",
+                    accentColor = Color(0xFF25D366),
+                    onClick = {
+                        openSocialMediaLink(context, "https://wa.me/$waCleanDigits3", "https://wa.me/$waCleanDigits3", isWhatsApp = true, errorMessage = "व्हाट्सएप खोलने में असमर्थ")
+                    }
+                )
+            }
         }
     }
 }
@@ -2456,28 +2471,33 @@ fun SiddhaPeethPortalLayout(
                 primaryColor = Color(0xFF1565C0),
                 isInitiallyExpanded = selectedCategory == 4
             ) {
-                AccordionOptionRow(
-                    icon = "📞",
-                    title = if (isHindi) "आश्रम मुख्य हेल्पलाइन" else "Ashram Helpline Call",
-                    subtitle = settings.contactPhone.ifEmpty { "+91 97206 91090" },
-                    actionButtonText = if (isHindi) "कॉल करें" else "Call",
-                    accentColor = Color(0xFF2E7D32),
-                    onClick = {
-                        val p = settings.contactPhone.ifEmpty { "+919720691090" }
-                        try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$p"))) } catch (e: Exception) {}
-                    }
-                )
-                AccordionOptionRow(
-                    icon = "💬",
-                    title = if (isHindi) "व्हाट्सएप सहायता" else "WhatsApp Support",
-                    subtitle = settings.whatsappNumber.ifEmpty { "+91 97206 91090" },
-                    actionButtonText = if (isHindi) "चैट करें" else "Chat",
-                    accentColor = Color(0xFF25D366),
-                    onClick = {
-                        val wa = settings.whatsappNumber.replace(Regex("[^0-9]"), "")
-                        openSocialMediaLink(context, "https://wa.me/$wa", "https://wa.me/$wa", isWhatsApp = true, errorMessage = "व्हाट्सएप खोलने में असमर्थ")
-                    }
-                )
+                val cleanPhone4 = settings.contactPhone.replace("+91 97206 91090", "").trim()
+                val cleanWa4 = settings.whatsappNumber.replace("+91 97206 91090", "").trim()
+                if (cleanPhone4.isNotEmpty()) {
+                    AccordionOptionRow(
+                        icon = "📞",
+                        title = if (isHindi) "आश्रम मुख्य हेल्पलाइन" else "Ashram Helpline Call",
+                        subtitle = cleanPhone4,
+                        actionButtonText = if (isHindi) "कॉल करें" else "Call",
+                        accentColor = Color(0xFF2E7D32),
+                        onClick = {
+                            try { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone4"))) } catch (e: Exception) {}
+                        }
+                    )
+                }
+                if (cleanWa4.isNotEmpty()) {
+                    val waCleanDigits4 = cleanWa4.replace(Regex("[^0-9]"), "")
+                    AccordionOptionRow(
+                        icon = "💬",
+                        title = if (isHindi) "व्हाट्सएप सहायता" else "WhatsApp Support",
+                        subtitle = cleanWa4,
+                        actionButtonText = if (isHindi) "चैट करें" else "Chat",
+                        accentColor = Color(0xFF25D366),
+                        onClick = {
+                            openSocialMediaLink(context, "https://wa.me/$waCleanDigits4", "https://wa.me/$waCleanDigits4", isWhatsApp = true, errorMessage = "व्हाट्सएप खोलने में असमर्थ")
+                        }
+                    )
+                }
             }
         }
     }

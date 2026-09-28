@@ -1492,21 +1492,48 @@ fun FaceTokenRegistrationScreen(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
+                            val isOutstationDevotee = distanceMeters > (settings.outstationMinDistanceKm * 1000.0)
+                            val isInsideAshramPremises = distanceMeters >= 0.0 && distanceMeters <= settings.allowedRadiusMeters
+
                             OutlinedTextField(
                                 value = manualCity,
-                                onValueChange = { manualCity = it },
-                                label = { Text(if (isHindi) "आगमन स्थान / शहर *" else "Coming From (City / Village) *", fontWeight = FontWeight.SemiBold) },
+                                onValueChange = {
+                                    if (!isOutstationDevotee) {
+                                        manualCity = it
+                                    }
+                                },
+                                readOnly = isOutstationDevotee,
+                                label = {
+                                    Text(
+                                        text = if (isOutstationDevotee)
+                                            (if (isHindi) "गृह स्थान / शहर (GPS द्वारा लॉक) *" else "Home Location (GPS Locked) *")
+                                        else
+                                            (if (isHindi) "आगमन स्थान / शहर *" else "Coming From (City / Village) *"),
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                },
                                 placeholder = { Text(if (isHindi) "उदा. डूँगरा जाट, बुलन्दशहर, दिल्ली..." else "e.g. Dungra Jaat, Bulandshahr...", color = Color(0xFF757575)) },
+                                trailingIcon = {
+                                    if (isOutstationDevotee) {
+                                        Text(
+                                            text = "🔒 GPS लॉक",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 11.sp,
+                                            color = Color(0xFF2E7D32),
+                                            modifier = Modifier.padding(end = 12.dp)
+                                        )
+                                    }
+                                },
                                 textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = sacredOutlinedTextFieldColors(
-                                    containerColor = Color.White,
-                                    focusedContainerColor = Color.White,
+                                    containerColor = if (isOutstationDevotee) Color(0xFFF1F8E9) else Color.White,
+                                    focusedContainerColor = if (isOutstationDevotee) Color(0xFFF1F8E9) else Color.White,
                                     textColor = Color(0xFF111111),
-                                    focusedBorderColor = Color(0xFF8B0000),
-                                    unfocusedBorderColor = Color(0xFF757575),
-                                    labelColor = Color(0xFF333333)
+                                    focusedBorderColor = if (isOutstationDevotee) Color(0xFF2E7D32) else Color(0xFF8B0000),
+                                    unfocusedBorderColor = if (isOutstationDevotee) Color(0xFF81C784) else Color(0xFF757575),
+                                    labelColor = if (isOutstationDevotee) Color(0xFF2E7D32) else Color(0xFF333333)
                                 )
                             )
 
@@ -1528,7 +1555,7 @@ fun FaceTokenRegistrationScreen(
                                         color = MaroonPrimary
                                     )
                                 }
-                            } else if (isLocationAutoFetched && manualCity.isNotBlank()) {
+                            } else if (isOutstationDevotee) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Surface(
                                     color = Color(0xFFE8F5E9),
@@ -1536,15 +1563,24 @@ fun FaceTokenRegistrationScreen(
                                     border = BorderStroke(1.dp, Color(0xFF81C784)),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        text = if (isHindi) "📍 GPS द्वारा स्वतः प्राप्त स्थान" else "📍 GPS Auto-Fetched Location",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF2E7D32),
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
+                                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                                        Text(
+                                            text = if (isHindi) "🔒 30 किमी से अधिक दूरी: स्थान GPS द्वारा स्वतः लॉक" else "🔒 Distance > 30km: Location GPS Locked",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF1B5E20)
+                                        )
+                                        Text(
+                                            text = if (isHindi)
+                                                "घर बैठे टोकन बनाने हेतु आपकी वास्तविक GPS लोकेशन ($manualCity) स्वतः सेव होगी। इसे बदला नहीं जा सकता।"
+                                            else
+                                                "Your authentic GPS location ($manualCity) is locked and cannot be changed.",
+                                            fontSize = 10.sp,
+                                            color = Color(0xFF2E7D32)
+                                        )
+                                    }
                                 }
-                            } else if (distanceMeters >= 0.0 && distanceMeters <= settings.allowedRadiusMeters) {
+                            } else if (isInsideAshramPremises) {
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Surface(
                                     color = Color(0xFFE3F2FD),
@@ -1553,7 +1589,7 @@ fun FaceTokenRegistrationScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = if (isHindi) "✍️ आश्रम परिसर में उपस्थित: आप अपना गाँव/कस्बा स्वयं लिख सकते हैं।" else "✍️ At Ashram: Enter village freely.",
+                                        text = if (isHindi) "✍️ आश्रम परिसर (200m): आप अपना गृह निवास / गाँव / शहर यहाँ स्वयं लिख सकते हैं।" else "✍️ At Ashram (200m): You can freely type your home city.",
                                         fontSize = 11.sp,
                                         color = Color(0xFF1565C0),
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -1724,6 +1760,14 @@ fun FaceTokenRegistrationScreen(
                                                 (kotlin.math.round(straightKm * 1.28f * 10) / 10)
                                             }
 
+                                            val isOutstation = gpsDistanceM > settings.outstationMinDistanceKm * 1000.0
+                                            val resolvedOutstationCity = if (manualCity.isNotBlank()) manualCity else GeofenceLocationManager.resolveVillageAndCity(context, finalLat, finalLon)
+                                            val finalDevoteeCity = if (isOutstation) {
+                                                if (resolvedOutstationCity.isNotBlank()) resolvedOutstationCity else "आउटस्टेशन भक्त (GPS सत्यापित)"
+                                            } else {
+                                                manualCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" }
+                                            }
+
                                             // Register Token with anti-fraud gating
                                             val token = repository.registerToken(
                                                 patientName = manualName.trim(),
@@ -1731,12 +1775,12 @@ fun FaceTokenRegistrationScreen(
                                                 deviceId = deviceId,
                                                 latitude = finalLat,
                                                 longitude = finalLon,
-                                                city = manualCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                                                city = finalDevoteeCity,
                                                 registeredBy = "MANUAL_FALLBACK",
                                                 photoUri = capturedPhotoUri,
                                                 isMockLocation = isMock,
                                                 locationAccuracy = accuracy,
-                                                originAddress = manualCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" },
+                                                originAddress = finalDevoteeCity,
                                                 distanceKm = calculatedRoadKm
                                             )
 
@@ -1746,7 +1790,7 @@ fun FaceTokenRegistrationScreen(
                                                     name = manualName.trim(),
                                                     phone = manualPhone.trim(),
                                                     faceVector = candidateVector,
-                                                    city = manualCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" }
+                                                    city = finalDevoteeCity
                                                 )
                                             }
 

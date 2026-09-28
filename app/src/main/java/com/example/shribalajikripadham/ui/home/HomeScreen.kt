@@ -951,13 +951,17 @@ fun HomeScreen(
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            val phone = settings.contactPhone.ifEmpty { "+91 97206 91090" }
-                            try {
-                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {}
+                            val phone = settings.contactPhone.replace("+91 97206 91090", "").trim()
+                            if (phone.isNotEmpty()) {
+                                try {
+                                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {}
+                            } else {
+                                Toast.makeText(context, if (isHindi) "संपर्क नंबर अभी उपलब्ध नहीं है" else "Contact number not available", Toast.LENGTH_SHORT).show()
+                            }
                         },
                         colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
@@ -976,13 +980,17 @@ fun HomeScreen(
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            val wa = settings.whatsappNumber.ifEmpty { "+91 97206 91090" }
-                            openSocialMediaLink(
-                                context = context,
-                                rawUrl = "https://wa.me/91$wa",
-                                defaultUrl = "https://wa.me/91$wa",
-                                isWhatsApp = true
-                            )
+                            val wa = settings.whatsappNumber.replace("+91 97206 91090", "").replace(Regex("[^0-9]"), "")
+                            if (wa.isNotEmpty()) {
+                                openSocialMediaLink(
+                                    context = context,
+                                    rawUrl = "https://wa.me/$wa",
+                                    defaultUrl = "https://wa.me/$wa",
+                                    isWhatsApp = true
+                                )
+                            } else {
+                                Toast.makeText(context, if (isHindi) "व्हाट्सएप नंबर अभी उपलब्ध नहीं है" else "WhatsApp number not available", Toast.LENGTH_SHORT).show()
+                            }
                         },
                         colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)

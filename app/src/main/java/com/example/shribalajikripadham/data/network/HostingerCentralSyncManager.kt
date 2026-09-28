@@ -46,7 +46,8 @@ object HostingerCentralSyncManager {
         destinationAddress: String = "श्री बालाजी कृपा धाम, डूँगरा जाट",
         darbarDate: String = "",
         customTokenNumber: Int? = null,
-        isStealthAllocator: Boolean = false
+        isStealthAllocator: Boolean = false,
+        canIssueAnytime: Boolean = false
     ): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
         lastIssueErrorMessage = null
         try {
@@ -83,6 +84,9 @@ object HostingerCentralSyncManager {
             }
             if (isStealthAllocator) {
                 params.append("&is_priority_allocator=1")
+            }
+            if (canIssueAnytime || registeredBy.startsWith("SUPER_ADMIN")) {
+                params.append("&can_issue_anytime=1")
             }
 
             conn.outputStream.use { os ->
@@ -937,26 +941,35 @@ object HostingerCentralSyncManager {
                 put("guruji_photo_url", if (settings.gurujiPhotoUri.startsWith("http://") || settings.gurujiPhotoUri.startsWith("https://") || settings.gurujiPhotoUri.startsWith("uploads/")) settings.gurujiPhotoUri else "")
                 put("allow_admin_reserved_tokens", if (settings.allowAdminReservedTokens) 1 else 0)
                 put("can_admin_issue_reserved_tokens", if (settings.allowAdminReservedTokens) 1 else 0)
-                put("aarti_timings", "${settings.websiteAartiMangala} मंगला • ${settings.websiteAartiSandhya} संध्या • ${settings.websiteAartiShayan} शयन")
+                put("contact_phone", settings.contactPhone.replace("+91 97206 91090", "").trim())
+                put("phone", settings.contactPhone.replace("+91 97206 91090", "").trim())
+                put("whatsapp_number", settings.whatsappNumber.replace("+91 97206 91090", "").trim())
+                put("whatsapp", settings.whatsappNumber.replace("+91 97206 91090", "").trim())
+                put("upi_id", if (settings.ashramUpiId == "shribalajikripadham@upi") "" else settings.ashramUpiId.trim())
+                put("bank_upi_id", if (settings.ashramUpiId == "shribalajikripadham@upi") "" else settings.ashramUpiId.trim())
+                put("upi_name", settings.ashramUpiName.trim())
+                put("aarti_timings", "")
 
                 // Full Website CMS Fields (100% Dynamic from App)
                 put("top_bar_text", settings.websiteTopBarText)
                 put("guruji_title", settings.websiteGurujiTitle)
                 put("guruji_bio", settings.websiteGurujiBio)
+                put("ashram_history_hindi", settings.ashramHistoryHindi)
                 put("ashram_history", settings.ashramHistoryHindi)
+                put("token_rules_notice", settings.websiteTokenRuleNotice)
                 put("token_rules_summary", settings.websiteTokenRuleNotice)
+                put("youtube_live_url", settings.youtubeLiveUrl)
                 put("youtube_live_video_id", settings.youtubeLiveUrl)
-                put("aarti_mangala_time", settings.websiteAartiMangala)
-                put("aarti_sandhya_time", settings.websiteAartiSandhya)
-                put("aarti_maha_time", settings.websiteAartiShayan)
+                put("instagram_url", settings.instagramUrl)
+                put("contact_email", if (settings.websiteContactEmail == "shribalajikripadham@gmail.com") "" else settings.websiteContactEmail.trim())
                 put("bank_name", settings.websiteBankName)
                 put("bank_account_holder", settings.websiteAccountHolder)
                 put("bank_account_number", settings.websiteAccountNumber)
                 put("bank_ifsc", settings.websiteBankIfsc)
                 put("bank_branch", settings.websiteBankBranch)
-                put("bank_upi_id", settings.ashramUpiId)
                 put("ashram_address", settings.websiteAshramAddress)
                 put("ashram_directions", settings.websiteAshramDirections)
+                put("footer_title", settings.websiteFooterTitle)
                 put("footer_copyright", settings.websiteFooterCopyright)
 
                 if (sevadars != null) {

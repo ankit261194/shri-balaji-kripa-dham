@@ -2458,7 +2458,7 @@ fun AdminDashboardScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = newSevCanAnywhere, onCheckedChange = { newSevCanAnywhere = it })
                         Text(
-                            text = if (isHindi) "कहीं से भी टोकन जारी करने की अनुमति (Anywhere)" else "Allow Issuing Tokens Anywhere",
+                            text = if (isHindi) "⚡ किसी भी समय व स्थान से टोकन जारी करने की अनुमति (Anytime & Anywhere)" else "⚡ Allow Issuing Tokens Anytime & Anywhere",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaroonAccent
@@ -2826,7 +2826,7 @@ fun AdminDashboardScreen(
                                     if (target.canSendNotifications) perms.add("सूचना व घोषणाएं")
                                     if (target.canEditAshramInfo) perms.add("आश्रम जानकारी संपादन")
                                     if (target.canViewDevoteePhotos) perms.add("भक्त फोटो व बायोमेट्रिक")
-                                    if (target.canIssueTokensAnywhere) perms.add("कहीं से भी टोकन जारी करना")
+                                    if (target.canIssueTokensAnywhere) perms.add("किसी भी समय व स्थान से टोकन जारी करना")
                                     if (target.canScanPaperRegister) perms.add("रजिस्टर कॉपी स्कैन")
                                     if (target.canManageParchas) perms.add("आश्रम पावन पर्चे")
 
@@ -3075,7 +3075,7 @@ fun AdminDashboardScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(checked = editSevCanAnywhere, onCheckedChange = { editSevCanAnywhere = it })
                         Text(
-                            text = if (isHindi) "कहीं से भी टोकन जारी करने की अनुमति (Anywhere)" else "Allow Issuing Tokens Anywhere",
+                            text = if (isHindi) "⚡ किसी भी समय व स्थान से टोकन जारी करने की अनुमति (Anytime & Anywhere)" else "⚡ Allow Issuing Tokens Anytime & Anywhere",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaroonAccent
@@ -5245,6 +5245,11 @@ fun ManualTokenTab(
     var userLat by remember { mutableDoubleStateOf(settings.latitude) }
     var userLng by remember { mutableDoubleStateOf(settings.longitude) }
 
+    val isSuperAdmin = admin.role == AdminRole.SUPER_ADMIN
+    val schedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
+    val isTokenOpen = schedule is SundayScheduleState.Open && settings.isDarbarActive
+    val hasAnytimePermission = isSuperAdmin || admin.canIssueTokensAnywhere || settings.allowAdminReservedTokens
+
     LaunchedEffect(Unit) {
         val loc = GeofenceLocationManager.getLastKnownLocation(context)
         if (loc != null) {
@@ -5313,6 +5318,20 @@ fun ManualTokenTab(
             errorMessage = null
             successMessage = null
             try {
+                val isSuperAdmin = admin.role == AdminRole.SUPER_ADMIN
+                val schedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
+                val isTokenOpen = schedule is SundayScheduleState.Open && settings.isDarbarActive
+                val hasAnytimePermission = isSuperAdmin || admin.canIssueTokensAnywhere || settings.allowAdminReservedTokens
+
+                if (!isTokenOpen && !hasAnytimePermission) {
+                    errorMessage = if (isHindi)
+                        "⚠️ टोकन सेवा वर्तमान में बंद है। सामान्य एडमिन केवल टोकन सेवा सक्रिय/खुली होने पर ही टोकन बना सकते हैं। सुपर एडमिन द्वारा विशेष अनुमति ('किसी भी समय टोकन बनाने की अनुमति') मिलने पर ही बंद समय में टोकन जारी किए जा सकते हैं।"
+                    else
+                        "⚠️ Token service is currently closed. Regular admins can only issue tokens when token service is active and open. Super Admin permission is required to issue tokens anytime."
+                    isIssuing = false
+                    return@launch
+                }
+
                 // Check geofence if not bypass-permitted
                 if (!canBypassGeofence) {
                     val dist = GeofenceLocationManager.calculateDistanceMeters(
@@ -5331,7 +5350,6 @@ fun ManualTokenTab(
 
                 val customNum = formCustomTokenNumber.trim().toIntOrNull()
                 val vipNumbers = listOf(2, 4, 6, 8, 10, 12, 14, 16, 18, 20)
-                val isSuperAdmin = admin.role == AdminRole.SUPER_ADMIN
                 val hasReservedPermission = isSuperAdmin || (admin.canSetCustomTokenNumber && settings.allowAdminReservedTokens)
                 if (customNum != null && customNum in vipNumbers && !isSuperAdmin) {
                     if (!hasReservedPermission) {
@@ -5456,28 +5474,64 @@ fun ManualTokenTab(
             }
         }
 
+        // Token Closed Warning Banner for non-authorized admins
+        if (!isTokenOpen && !hasAnytimePermission) {
+            Surface(
+                color = Color(0xFFFFEBEE),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.5.dp, Color(0xFFE53935)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("⏸️", fontSize = 24.sp)
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = if (isHindi) "टोकन सेवा वर्तमान में बंद है" else "Token Service Is Currently Closed",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = Color(0xFFC62828)
+                        )
+                        Text(
+                            text = if (isHindi)
+                                "सामान्य एडमिन केवल टोकन सेवा सक्रिय/खुली होने पर ही टोकन बना सकते हैं। सुपर एडमिन इसे किसी भी समय जारी कर सकते हैं या आपको 'किसी भी समय टोकन बनाने की अनुमति' दे सकते हैं।"
+                            else
+                                "Admins can only issue tokens when token service is active & open. Super Admin can issue anytime or grant anytime access to this admin.",
+                            fontSize = 11.sp,
+                            color = Color.DarkGray
+                        )
+                    }
+                }
+            }
+        }
+
         // Issuance Authority Badge
         Surface(
-            color = if (canBypassGeofence) Color(0xFFE8F5E9) else Color(0xFFFFF8E1),
+            color = if (hasAnytimePermission) Color(0xFFE8F5E9) else Color(0xFFFFF8E1),
             shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, if (canBypassGeofence) Color(0xFF81C784) else Color(0xFFFFB74D)),
+            border = BorderStroke(1.dp, if (hasAnytimePermission) Color(0xFF81C784) else Color(0xFFFFB74D)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(if (canBypassGeofence) "🌐" else "📍", fontSize = 22.sp)
+                Text(if (hasAnytimePermission) "⚡" else "📍", fontSize = 22.sp)
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = if (canBypassGeofence)
-                            (if (isHindi) "टोकन अधिकार: कहीं से भी जारी करने की अनुमति (Anywhere Authorized)" else "Authority: Can Issue Tokens Anywhere")
+                        text = if (isSuperAdmin)
+                            (if (isHindi) "टोकन अधिकार: सुपर एडमिन (किसी भी समय व कहीं से भी टोकन बनाने की पूर्ण अनुमति)" else "Authority: Super Admin (Anytime & Anywhere Access)")
+                        else if (hasAnytimePermission)
+                            (if (isHindi) "टोकन अधिकार: किसी भी समय व स्थान से जारी करने की अनुमति (Super Admin Authorized)" else "Authority: Anytime & Anywhere Authorized")
                         else
-                            (if (isHindi) "टोकन अधिकार: आश्रम GPS सीमा में जारी करने की अनुमति" else "Authority: Ashram GPS Enforced"),
+                            (if (isHindi) "टोकन अधिकार: केवल टोकन सेवा खुली होने पर व आश्रम GPS सीमा में मान्य" else "Authority: Active Service & Ashram GPS Enforced"),
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
-                        color = if (canBypassGeofence) Color(0xFF1B5E20) else Color(0xFFE65100)
+                        color = if (hasAnytimePermission) Color(0xFF1B5E20) else Color(0xFFE65100)
                     )
                     Text(
                         text = "पंजीकरणकर्ता: $attribution",
@@ -5511,7 +5565,7 @@ fun ManualTokenTab(
                 OutlinedTextField(
                     value = searchInput,
                     onValueChange = { searchInput = it },
-                    placeholder = { Text(if (isHindi) "उदा. राजेश, 9720691090..." else "e.g. Ramesh, 9720691090...") },
+                    placeholder = { Text(if (isHindi) "उदा. राजेश, 98xxxxxxxx..." else "e.g. Ramesh, 98xxxxxxxx...") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -5602,6 +5656,7 @@ fun ManualTokenTab(
                                                 null
                                             )
                                         },
+                                        enabled = !isIssuing && (isTokenOpen || hasAnytimePermission),
                                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
                                         shape = RoundedCornerShape(8.dp),
                                         contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
@@ -6010,7 +6065,7 @@ fun ManualTokenTab(
                         }
                         issueTokenForDevotee(formName, formPhone, formCity, formPhotoUri, formCapturedBitmap)
                     },
-                    enabled = !isIssuing,
+                    enabled = !isIssuing && (isTokenOpen || hasAnytimePermission),
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
                     shape = RoundedCornerShape(12.dp)
@@ -6018,7 +6073,15 @@ fun ManualTokenTab(
                     if (isIssuing) {
                         CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                     } else {
-                        Text(if (isHindi) "🎟️ टोकन पर्ची जारी करें" else "🎟️ Issue Token Pass", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text(
+                            text = if (!isTokenOpen && !hasAnytimePermission) {
+                                if (isHindi) "🔒 टोकन सेवा बंद है (अनुमति आवश्यक)" else "🔒 Token Service Closed (Permission Needed)"
+                            } else {
+                                if (isHindi) "🎟️ टोकन पर्ची जारी करें" else "🎟️ Issue Token Pass"
+                            },
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
                     }
                 }
             }
@@ -6627,16 +6690,16 @@ fun SevadarManagementTab(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = if (isHindi) "🌐 कहीं से भी टोकन जारी करने की अनुमति" else "🌐 Issue Tokens Anywhere",
+                                        text = if (isHindi) "⚡ किसी भी समय व स्थान से टोकन बनाने की अनुमति" else "⚡ Issue Tokens Anytime & Anywhere",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp,
                                         color = if (a.canIssueTokensAnywhere) Color(0xFF1B5E20) else MaroonAccent
                                     )
                                     Text(
                                         text = if (a.canIssueTokensAnywhere)
-                                            (if (isHindi) "सक्रिय: बिना आश्रम GPS सीमा के टोकन बना सकते हैं।" else "Active: Can issue tokens outside Ashram GPS.")
+                                            (if (isHindi) "सक्रिय: टोकन सेवा बंद होने पर भी व कहीं से भी टोकन बना सकते हैं।" else "Active: Can issue tokens anytime (even when closed) & anywhere.")
                                         else
-                                            (if (isHindi) "अक्रिय: केवल आश्रम GPS सीमा में ही टोकन जारी होंगे।" else "Inactive: Restricted to Ashram GPS boundary."),
+                                            (if (isHindi) "अक्रिय: केवल टोकन सेवा खुली होने पर और आश्रम GPS सीमा में ही टोकन जारी होंगे।" else "Inactive: Only when token service is open and inside Ashram GPS."),
                                         fontSize = 10.sp,
                                         color = Color.DarkGray
                                     )

@@ -99,7 +99,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             db.execSQL("DELETE FROM admins WHERE role != 'SUPER_ADMIN' AND username NOT IN ('admin');")
             db.execSQL("UPDATE ashram_settings SET bank_account_number = '' WHERE bank_account_number LIKE '%XXXX%';")
             db.execSQL("UPDATE ashram_settings SET bank_ifsc = '' WHERE bank_ifsc LIKE '%XXXX%';")
-            db.execSQL("UPDATE ashram_settings SET whatsapp_number = '+91 97206 91090' WHERE whatsapp_number LIKE '%9876543210%';")
+            db.execSQL("UPDATE ashram_settings SET contact_phone = '' WHERE contact_phone LIKE '%97206%' OR contact_phone LIKE '%98765%';")
+            db.execSQL("UPDATE ashram_settings SET whatsapp_number = '' WHERE whatsapp_number LIKE '%97206%' OR whatsapp_number LIKE '%98765%';")
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -175,7 +176,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     apk_download_url TEXT NOT NULL,
                     is_force_update INTEGER NOT NULL,
                     whatsapp_group_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite',
-                    whatsapp_number TEXT NOT NULL DEFAULT '+91 97206 91090',
+                    whatsapp_number TEXT NOT NULL DEFAULT '',
                     youtube_channel_url TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham',
                     facebook_page_url TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham',
                     instagram_url TEXT NOT NULL DEFAULT 'https://www.instagram.com/shribalajikripadham',
@@ -600,7 +601,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN is_emergency_notice_visible INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN scheduled_token_open_timestamp INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN whatsapp_group_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite'",
-            "ALTER TABLE ashram_settings ADD COLUMN whatsapp_number TEXT NOT NULL DEFAULT '+91 97206 91090'",
+            "ALTER TABLE ashram_settings ADD COLUMN whatsapp_number TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN youtube_channel_url TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham'",
             "ALTER TABLE ashram_settings ADD COLUMN facebook_page_url TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham'",
             "ALTER TABLE ashram_settings ADD COLUMN instagram_url TEXT NOT NULL DEFAULT 'https://www.instagram.com/shribalajikripadham'",
@@ -739,7 +740,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("darbar_date", today)
                         put("darbar_timings", "प्रत्येक रविवार प्रातःकाल 8:00 बजे से")
                         put("free_disclaimer", "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।")
-                        put("contact_phone", "+91 97206 91090")
+                        put("contact_phone", "")
                         put("emergency_notice", "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।")
                         put("is_token_service_enabled", 1)
                         put("token_service_mode", "AUTO_SUNDAY")
@@ -751,13 +752,13 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("is_emergency_notice_visible", 1)
                         put("scheduled_token_open_timestamp", 0L)
                         put("is_geofence_enforced", 1)
-                        put("latest_version_code", 83)
-                        put("latest_version_name", "2.56.8")
-                        put("update_notes", "ऐप में सीधा डाउनलोड व शेयर लिंक, रविवार 12 घंटे पूर्व काउंटडाउन एवं सुपर एडमिन टोकन मास्टर कंट्रोल।")
+                        put("latest_version_code", 84)
+                        put("latest_version_name", "2.56.9")
+                        put("update_notes", "शून्य डमी डेटा गारंटी, वेबसाइट व एडिटर लाइव सिंक।")
                         put("apk_download_url", "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk")
                         put("is_force_update", 0)
                         put("whatsapp_group_url", "https://chat.whatsapp.com/invite")
-                        put("whatsapp_number", "+91 97206 91090")
+                        put("whatsapp_number", "")
                         put("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham")
                         put("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham")
                         put("instagram_url", "https://www.instagram.com/shribalajikripadham")
@@ -787,7 +788,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 val superAdmin = ContentValues().apply {
                     put("name", "Ankit Chaudhary (Super Admin)")
                     put("username", "admin")
-                    put("phone", "+91 97206 91090")
+                    put("phone", "")
                     put("role", AdminRole.SUPER_ADMIN.name)
                     put("pin_hash", MASTER_PIN_RAW_HASH)
                     put("password_hash", MASTER_PWD_SALTED_HASH)

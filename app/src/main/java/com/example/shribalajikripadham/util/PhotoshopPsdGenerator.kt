@@ -28,7 +28,7 @@ data class SevadarIdCardData(
     val bloodGroup: String = "O+",
     val validityYear: String = "2026 - 2027",
     val ashramAddress: String = "ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.)",
-    val emergencyPhone: String = "+91 97206 91090",
+    val emergencyPhone: String = "",
     val photoUri: String = "",
     val templateId: String = "RG_01"
 )

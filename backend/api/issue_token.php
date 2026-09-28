@@ -57,7 +57,41 @@ if (empty($patientName) || empty($phoneNumber)) {
 
 $pdo = getDB();
 
-$isAdmin = (strpos($registeredBy, 'SUPER_ADMIN') !== false || strpos($registeredBy, 'ADMIN') !== false || $registeredBy === 'SEVADAR_DESK');
+$isSuperAdmin = (strpos($registeredBy, 'SUPER_ADMIN') !== false);
+$isAdmin = ($isSuperAdmin || strpos($registeredBy, 'ADMIN') !== false || $registeredBy === 'SEVADAR_DESK');
+$canAdminAnytime = !empty($input['can_issue_anytime']) || !empty($input['bypass_geofence']) || !empty($input['is_priority_allocator']);
+
+$st = $pdo->query("SELECT * FROM ashram_settings WHERE id = 1 LIMIT 1");
+$settings = $st ? $st->fetch(PDO::FETCH_ASSOC) : [];
+$isTokenServiceEnabled = !isset($settings['is_token_service_enabled']) || (int)$settings['is_token_service_enabled'] === 1;
+$isDarbarActive = !isset($settings['is_darbar_active']) || (int)$settings['is_darbar_active'] === 1;
+$allowAdminReservedTokens = isset($settings['allow_admin_reserved_tokens']) && (int)$settings['allow_admin_reserved_tokens'] === 1;
+
+// Gating: Regular Admin vs Super Admin vs Devotees
+if ($isAdmin && !$isSuperAdmin) {
+    // Regular admin can ONLY issue tokens when token service is active & open,
+    // UNLESS Super Admin has granted them anytime permission
+    $hasAnytimePermission = $canAdminAnytime || $allowAdminReservedTokens;
+    if ((!$isTokenServiceEnabled || !$isDarbarActive) && !$hasAnytimePermission) {
+        http_response_code(403);
+        echo json_encode([
+            "success" => false,
+            "error" => "⚠️ टोकन सेवा वर्तमान में बंद है। सामान्य एडमिन केवल टोकन सेवा खुली होने पर ही टोकन बना सकते हैं। बंद समय में टोकन बनाने हेतु सुपर एडमिन की अनुमति आवश्यक है।"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+if (!$isAdmin) {
+    if (!$isTokenServiceEnabled || !$isDarbarActive) {
+        http_response_code(403);
+        echo json_encode([
+            "success" => false,
+            "error" => "⚠️ टोकन सेवा वर्तमान में विश्राम पर है। कृपया टोकन सेवा खुलने पर प्रयास करें।"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
 
 // 1. Hardware-Level Device Locking (1 Phone = 1 Token per Darbar Date)
 // Survives app clear data, cache wipe, uninstallation & reinstallation
@@ -96,8 +130,6 @@ if (!$isAdmin && !empty($phoneNumber)) {
 
 // 3. Central Geofence & Dual-Distance Policy Enforcement
 if (!$isAdmin) {
-    $st = $pdo->query("SELECT * FROM ashram_settings WHERE id = 1 LIMIT 1");
-    $settings = $st ? $st->fetch(PDO::FETCH_ASSOC) : [];
     $isGeofenceEnforced = !isset($settings['is_geofence_enforced']) || (int)$settings['is_geofence_enforced'] === 1;
 
     if ($isGeofenceEnforced) {
@@ -147,6 +179,10 @@ if (!$isAdmin) {
         // Accurately assign GPS-derived distance for database persistence & Superadmin visibility
         if ($isGpsOutstation) {
             $distanceKm = round($gpsDistanceKm * 1.28, 1);
+            // Devotee is outstation (> 30 km): city and origin_address are strictly locked to GPS location
+            if (!empty($originAddress)) {
+                $city = $originAddress;
+            }
         } elseif ($isPhysicallyAtAshram) {
             $distanceKm = round($gpsDistanceKm, 2);
         }

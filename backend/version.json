@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 84,
-  "version_code": 84,
-  "latest_version_name": "2.56.9",
-  "version_name": "2.56.9",
-  "update_notes_hindi": "v2.56.9 (Build 84): 🏨 धर्मशाला व कमरा आरक्षण सेवा का पूर्ण ऑन/ऑफ नियंत्रण; शून्य डमी डेटा नीति लागू; सुपरएडमिन कमरा प्रबंधन व डेटा वाइप; वेबसाइट लाइव पब्लिश ऑथेंटिकेशन सुधार।",
-  "update_notes_english": "v2.56.9 (Build 84): 🏨 Dharamshala room booking master toggle; Zero dummy data policy enforced; SuperAdmin room management & wipe; Website live publish authentication fix.",
+  "latest_version_code": 85,
+  "version_code": 85,
+  "latest_version_name": "2.56.10",
+  "version_name": "2.56.10",
+  "update_notes_hindi": "v2.56.10 (Build 85): 🌐 आधिकारिक वेबसाइट लाइव एडिटर सुधार; 1-क्लिक लाइव वेबसाइट सिंक; शून्य डमी डेटा गारंटी - केवल वास्तविक संपर्क सूत्र; नित्य आरती कार्ड निष्कासन एवं स्वच्छ दरबार विवरण।",
+  "update_notes_english": "v2.56.10 (Build 85): 🌐 Official Website Live Editor enhancement; 1-click instant live website sync; zero dummy data guarantee - strictly real contact numbers only; Aarti timings removed & clean Darbar schedule.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false

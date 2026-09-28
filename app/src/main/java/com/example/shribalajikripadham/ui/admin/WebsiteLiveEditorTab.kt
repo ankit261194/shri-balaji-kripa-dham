@@ -55,13 +55,133 @@ fun WebsiteLiveEditorTab(
     var badiArziRate by remember { mutableStateOf(settings.badiArziRate.toString()) }
     var chhotiArziRate by remember { mutableStateOf(settings.chhotiArziRate.toString()) }
 
-    var contactPhone by remember { mutableStateOf(settings.contactPhone.ifBlank { "+91 97206 91090" }) }
-    var whatsappNumber by remember { mutableStateOf(settings.whatsappNumber.ifBlank { "+91 97206 91090" }) }
-    var upiId by remember { mutableStateOf(settings.ashramUpiId.ifBlank { "shribalajikripadham@upi" }) }
+    // ZERO DUMMY DATA: No fake +91 97206 91090
+    var contactPhone by remember { mutableStateOf(settings.contactPhone.replace("+91 97206 91090", "").trim()) }
+    var whatsappNumber by remember { mutableStateOf(settings.whatsappNumber.replace("+91 97206 91090", "").trim()) }
+    var contactEmail by remember { mutableStateOf(if (settings.websiteContactEmail == "shribalajikripadham@gmail.com") "" else settings.websiteContactEmail.trim()) }
+
+    // Bank & UPI
+    var upiId by remember { mutableStateOf(if (settings.ashramUpiId == "shribalajikripadham@upi") "" else settings.ashramUpiId.trim()) }
     var upiName by remember { mutableStateOf(settings.ashramUpiName.ifBlank { "श्री बालाजी कृपा धाम" }) }
+    var bankName by remember { mutableStateOf(settings.websiteBankName) }
+    var bankAccountHolder by remember { mutableStateOf(settings.websiteAccountHolder) }
+    var bankAccountNumber by remember { mutableStateOf(settings.websiteAccountNumber) }
+    var bankIfsc by remember { mutableStateOf(settings.websiteBankIfsc) }
+    var bankBranch by remember { mutableStateOf(settings.websiteBankBranch) }
+
+    // Website CMS Sections
+    var topBarText by remember { mutableStateOf(settings.websiteTopBarText) }
+    var gurujiTitle by remember { mutableStateOf(settings.websiteGurujiTitle) }
+    var gurujiBio by remember { mutableStateOf(settings.websiteGurujiBio) }
+    var ashramHistoryHindi by remember { mutableStateOf(settings.ashramHistoryHindi) }
+    var tokenRulesNotice by remember { mutableStateOf(settings.websiteTokenRuleNotice) }
+    var youtubeLiveUrl by remember { mutableStateOf(settings.youtubeLiveUrl) }
+    var instagramUrl by remember { mutableStateOf(settings.instagramUrl) }
 
     var isSaving by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
     var saveStatusMsg by remember { mutableStateOf<String?>(null) }
+
+    // Helper to refresh live config from server
+    val refreshFromLiveServer: suspend () -> Unit = {
+        try {
+            isRefreshing = true
+            val liveJson = HostingerCentralSyncManager.fetchLiveConfig()
+            if (liveJson != null && liveJson.optBoolean("success", true)) {
+                val cfg = if (liveJson.has("data")) liveJson.getJSONObject("data") else liveJson
+
+                val sContact = cfg.optString("contact_phone", "").replace("+91 97206 91090", "").trim()
+                contactPhone = sContact
+                val sWa = cfg.optString("whatsapp_number", "").replace("+91 97206 91090", "").trim()
+                whatsappNumber = sWa
+
+                val sEmail = cfg.optString("contact_email", "").replace("shribalajikripadham@gmail.com", "").trim()
+                contactEmail = sEmail
+
+                val sAshramName = cfg.optString("ashram_name", "")
+                if (sAshramName.isNotBlank()) ashramName = sAshramName
+
+                val sBannerTitle = cfg.optString("banner_title", "")
+                if (sBannerTitle.isNotBlank()) bannerTitle = sBannerTitle
+
+                val sBannerSub = cfg.optString("banner_subtitle", "")
+                if (sBannerSub.isNotBlank()) bannerSubtitle = sBannerSub
+
+                if (cfg.has("is_emergency_notice_visible")) {
+                    isEmergencyNoticeVisible = cfg.optInt("is_emergency_notice_visible", 0) == 1
+                }
+                emergencyNoticeText = cfg.optString("emergency_notice", emergencyNoticeText)
+
+                if (cfg.has("is_darbar_active")) {
+                    isDarbarActive = cfg.optInt("is_darbar_active", 1) == 1
+                }
+                if (cfg.has("current_serving_token")) {
+                    runningTokenNumber = cfg.optInt("current_serving_token", runningTokenNumber)
+                }
+                val sDate = cfg.optString("darbar_date", "")
+                if (sDate.isNotBlank()) darbarDate = sDate
+
+                val sTimings = cfg.optString("darbar_timings", "")
+                if (sTimings.isNotBlank()) darbarTimings = sTimings
+
+                if (cfg.has("badi_arzi_rate")) badiArziRate = cfg.optDouble("badi_arzi_rate", 0.0).toString()
+                if (cfg.has("chhoti_arzi_rate")) chhotiArziRate = cfg.optDouble("chhoti_arzi_rate", 0.0).toString()
+
+                val sUpi = cfg.optString("upi_id", "")
+                upiId = if (sUpi == "shribalajikripadham@upi") "" else sUpi
+
+                val sUpiName = cfg.optString("upi_name", "")
+                if (sUpiName.isNotBlank()) upiName = sUpiName
+
+                val sBankName = cfg.optString("bank_name", "")
+                if (sBankName.isNotBlank()) bankName = sBankName
+
+                val sAccHolder = cfg.optString("bank_account_holder", "")
+                if (sAccHolder.isNotBlank()) bankAccountHolder = sAccHolder
+
+                val sAccNum = cfg.optString("bank_account_number", "")
+                if (sAccNum.isNotBlank()) bankAccountNumber = sAccNum
+
+                val sIfsc = cfg.optString("bank_ifsc", "")
+                if (sIfsc.isNotBlank()) bankIfsc = sIfsc
+
+                val sBranch = cfg.optString("bank_branch", "")
+                if (sBranch.isNotBlank()) bankBranch = sBranch
+
+                val sTopBar = cfg.optString("top_bar_text", "")
+                if (sTopBar.isNotBlank()) topBarText = sTopBar
+
+                val sGurujiTitle = cfg.optString("guruji_title", "")
+                if (sGurujiTitle.isNotBlank()) gurujiTitle = sGurujiTitle
+
+                val sGurujiBio = cfg.optString("guruji_bio", "")
+                if (sGurujiBio.isNotBlank()) gurujiBio = sGurujiBio
+
+                val sHistory = cfg.optString("ashram_history", cfg.optString("ashram_history_hindi", ""))
+                if (sHistory.isNotBlank()) ashramHistoryHindi = sHistory
+
+                val sTokenRules = cfg.optString("token_rules_notice", cfg.optString("token_rules_summary", ""))
+                if (sTokenRules.isNotBlank()) tokenRulesNotice = sTokenRules
+
+                val sYt = cfg.optString("youtube_live_url", "")
+                if (sYt.isNotBlank()) youtubeLiveUrl = sYt
+
+                val sInsta = cfg.optString("instagram_url", "")
+                if (sInsta.isNotBlank()) instagramUrl = sInsta
+
+                saveStatusMsg = if (isHindi) "✅ वेबसाइट से ताज़ा डेटा सफलतापूर्वक लोड हो गया है।" else "✅ Live website data loaded successfully."
+            }
+        } catch (e: Exception) {
+            saveStatusMsg = "वेबसाइट से लोड नहीं हो सका: ${e.message}"
+        } finally {
+            isRefreshing = false
+        }
+    }
+
+    // Auto-fetch fresh server data on open
+    LaunchedEffect(Unit) {
+        refreshFromLiveServer()
+    }
 
     Column(
         modifier = Modifier
@@ -94,29 +214,61 @@ fun WebsiteLiveEditorTab(
                             color = AmberGold
                         )
                     }
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFF2E7D32)
-                    ) {
-                        Text(
-                            text = "🟢 LIVE",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color(0xFF2E7D32)
+                        ) {
+                            Text(
+                                text = "🟢 LIVE",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = if (isHindi)
-                        "यहाँ से आप वेबसाइट के मुख्य शीर्षक, नोटिस पट्टी, दरबार समय, लाइव टोकन एवं सभी नियम मोबाइल ऐप से ही सीधे 1-क्लिक में बदल सकते हैं।"
+                        "यहाँ से आप वेबसाइट के मुख्य शीर्षक, नोटिस पट्टी, दरबार समय, लाइव टोकन, संपर्क सूत्र एवं नियम मोबाइल ऐप से ही सीधे 1-क्लिक में बदल सकते हैं।"
                     else
                         "Edit website headlines, marquee notices, darbar timings, live serving token and rules directly from this screen.",
                     fontSize = 12.sp,
                     color = Color.White.copy(alpha = 0.9f),
                     lineHeight = 16.sp
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Refresh Button
+                OutlinedButton(
+                    onClick = {
+                        scope.launch { refreshFromLiveServer() }
+                    },
+                    enabled = !isRefreshing,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.6f)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (isRefreshing) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("सर्वर से डेटा लोड हो रहा है...", fontSize = 12.sp)
+                    } else {
+                        Text(
+                            if (isHindi) "🔄 लाइव वेबसाइट से ताज़ा डेटा लोड करें" else "🔄 Refresh Latest Data from Server",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
 
@@ -292,7 +444,7 @@ fun WebsiteLiveEditorTab(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // SECTION 4: Arzi Rates & Contact Numbers
+        // SECTION 4: Arzi Rates & Contact Numbers (Zero Dummy Data Guarantee)
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
@@ -301,12 +453,56 @@ fun WebsiteLiveEditorTab(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = if (isHindi) "📦 4. अर्जी सेवा दर व संपर्क सूत्र" else "📦 4. Arzi Rates & Contact",
+                    text = if (isHindi) "📞 4. संपर्क सूत्र व अर्जी सेवा दर" else "📞 4. Contact & Arzi Rates",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
                     color = MaroonPrimary
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = if (isHindi)
+                        "⚠️ ध्यान दें: यहाँ केवल वास्तविक मोबाइल नंबर ही दर्ज करें। यदि खाली छोड़ेंगे तो वेबसाइट पर कोई भी फर्जी या डमी नंबर नहीं दिखेगा।"
+                    else
+                        "Note: Only real contact details will appear. If left blank, contact buttons will remain hidden on the website.",
+                    fontSize = 11.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedTextField(
+                        value = contactPhone,
+                        onValueChange = { contactPhone = it },
+                        label = { Text("हेल्पलाइन फोन (Call)", fontWeight = FontWeight.SemiBold) },
+                        placeholder = { Text("खाली छोड़ें या असली नंबर") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    OutlinedTextField(
+                        value = whatsappNumber,
+                        onValueChange = { whatsappNumber = it },
+                        label = { Text("WhatsApp नंबर", fontWeight = FontWeight.SemiBold) },
+                        placeholder = { Text("उदा. 98xxxxxxxx") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = contactEmail,
+                    onValueChange = { contactEmail = it },
+                    label = { Text("आधिकारिक ईमेल (Email)", fontWeight = FontWeight.SemiBold) },
+                    placeholder = { Text("खाली छोड़ें या असली ईमेल") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -327,6 +523,139 @@ fun WebsiteLiveEditorTab(
                         shape = RoundedCornerShape(10.dp)
                     )
                 }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 5: Top Bar & Guruji Details
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = if (isHindi) "🚩 5. वेबसाइट टॉप पट्टी व गुरुजी विवरण" else "🚩 5. Top Bar & Guruji Profile",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = MaroonPrimary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = topBarText,
+                    onValueChange = { topBarText = it },
+                    label = { Text("वेबसाइट की सबसे ऊपर वाली पट्टी (Top Bar)", fontWeight = FontWeight.SemiBold) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = gurujiTitle,
+                    onValueChange = { gurujiTitle = it },
+                    label = { Text("गुरुजी का नाम / पदवी", fontWeight = FontWeight.SemiBold) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = gurujiBio,
+                    onValueChange = { gurujiBio = it },
+                    label = { Text("गुरुजी का संक्षिप्त परिचय", fontWeight = FontWeight.SemiBold) },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    maxLines = 3,
+                    shape = RoundedCornerShape(10.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 6: Ashram History & Rules
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = if (isHindi) "📜 6. आश्रम इतिहास व टोकन नियम" else "📜 6. Ashram History & Token Rules",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = MaroonPrimary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = ashramHistoryHindi,
+                    onValueChange = { ashramHistoryHindi = it },
+                    label = { Text("आश्रम का पावन इतिहास (वेबसाइट पर प्रदर्शित)", fontWeight = FontWeight.SemiBold) },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 6,
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = tokenRulesNotice,
+                    onValueChange = { tokenRulesNotice = it },
+                    label = { Text("टोकन नियम व ऐप डाउनलोड निर्देश", fontWeight = FontWeight.SemiBold) },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 6,
+                    shape = RoundedCornerShape(10.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 7: Bank & Donation Details
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = if (isHindi) "🏦 7. बैंक खाता व दान विवरण" else "🏦 7. Bank & Donation Details",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = MaroonPrimary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedTextField(
+                        value = upiId,
+                        onValueChange = { upiId = it },
+                        label = { Text("UPI ID", fontWeight = FontWeight.SemiBold) },
+                        placeholder = { Text("उदा. name@upi") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    OutlinedTextField(
+                        value = upiName,
+                        onValueChange = { upiName = it },
+                        label = { Text("खाताधारक नाम", fontWeight = FontWeight.SemiBold) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -335,20 +664,82 @@ fun WebsiteLiveEditorTab(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     OutlinedTextField(
-                        value = contactPhone,
-                        onValueChange = { contactPhone = it },
-                        label = { Text("हेल्पलाइन फोन", fontWeight = FontWeight.SemiBold) },
+                        value = bankName,
+                        onValueChange = { bankName = it },
+                        label = { Text("बैंक का नाम", fontWeight = FontWeight.SemiBold) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp)
                     )
                     OutlinedTextField(
-                        value = whatsappNumber,
-                        onValueChange = { whatsappNumber = it },
-                        label = { Text("WhatsApp नंबर", fontWeight = FontWeight.SemiBold) },
+                        value = bankAccountHolder,
+                        onValueChange = { bankAccountHolder = it },
+                        label = { Text("ट्रस्ट/खाता नाम", fontWeight = FontWeight.SemiBold) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(10.dp)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OutlinedTextField(
+                        value = bankAccountNumber,
+                        onValueChange = { bankAccountNumber = it },
+                        label = { Text("खाता संख्या (A/C No)", fontWeight = FontWeight.SemiBold) },
+                        modifier = Modifier.weight(1.3f),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    OutlinedTextField(
+                        value = bankIfsc,
+                        onValueChange = { bankIfsc = it },
+                        label = { Text("IFSC कोड", fontWeight = FontWeight.SemiBold) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECTION 8: Social Media & Live Links
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = if (isHindi) "📺 8. सोशल मीडिया व यूट्यूब लाइव लिंक" else "📺 8. Social Media & Live Links",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = MaroonPrimary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = youtubeLiveUrl,
+                    onValueChange = { youtubeLiveUrl = it },
+                    label = { Text("यूट्यूब लाइव स्ट्रीम / वीडियो लिंक", fontWeight = FontWeight.SemiBold) },
+                    placeholder = { Text("https://www.youtube.com/watch?v=...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = instagramUrl,
+                    onValueChange = { instagramUrl = it },
+                    label = { Text("इंस्टाग्राम प्रोफ़ाइल लिंक", fontWeight = FontWeight.SemiBold) },
+                    placeholder = { Text("https://www.instagram.com/...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                )
             }
         }
 
@@ -359,13 +750,13 @@ fun WebsiteLiveEditorTab(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp),
-                color = Color(0xFFE8F5E9)
+                color = if (msg.startsWith("✅")) Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
             ) {
                 Text(
                     text = msg,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1B5E20),
+                    color = if (msg.startsWith("✅")) Color(0xFF1B5E20) else Color(0xFFE65100),
                     modifier = Modifier.padding(12.dp)
                 )
             }
@@ -391,8 +782,21 @@ fun WebsiteLiveEditorTab(
                     chhotiArziRate = chhotiArziRate.toDoubleOrNull() ?: 0.0,
                     contactPhone = contactPhone.trim(),
                     whatsappNumber = whatsappNumber.trim(),
+                    websiteContactEmail = contactEmail.trim(),
                     ashramUpiId = upiId.trim(),
-                    ashramUpiName = upiName.trim()
+                    ashramUpiName = upiName.trim(),
+                    websiteBankName = bankName.trim(),
+                    websiteAccountHolder = bankAccountHolder.trim(),
+                    websiteAccountNumber = bankAccountNumber.trim(),
+                    websiteBankIfsc = bankIfsc.trim(),
+                    websiteBankBranch = bankBranch.trim(),
+                    websiteTopBarText = topBarText.trim(),
+                    websiteGurujiTitle = gurujiTitle.trim(),
+                    websiteGurujiBio = gurujiBio.trim(),
+                    ashramHistoryHindi = ashramHistoryHindi.trim(),
+                    websiteTokenRuleNotice = tokenRulesNotice.trim(),
+                    youtubeLiveUrl = youtubeLiveUrl.trim(),
+                    instagramUrl = instagramUrl.trim()
                 )
 
                 scope.launch {
@@ -408,7 +812,7 @@ fun WebsiteLiveEditorTab(
                         isSaving = false
                         if (ok) {
                             saveStatusMsg = if (isHindi)
-                                "✅ परिवर्तन वेबसाइट पर तुरंत लाइव हो गए हैं! (shribalajikripadham.online)"
+                                "✅ परिवर्तन वेबसाइट पर तुरंत 100% लाइव हो गए हैं! (shribalajikripadham.online)"
                             else
                                 "✅ Changes pushed LIVE to website successfully!"
                             Toast.makeText(context, saveStatusMsg, Toast.LENGTH_LONG).show()

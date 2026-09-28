@@ -83,13 +83,30 @@ foreach ($filesToSync as $relPath) {
     }
 }
 
-// Clear all local caches
+// Clear all local caches and trigger live_config self-healing migration
 $cacheDir = $baseDir . '/cache';
 if (is_dir($cacheDir)) {
     foreach (glob($cacheDir . '/*') as $f) {
         if (is_file($f)) @unlink($f);
     }
 }
+if (function_exists('opcache_reset')) {
+    @opcache_reset();
+}
+
+try {
+    if (file_exists($baseDir . '/config/db.php')) {
+        require_once $baseDir . '/config/db.php';
+        $pdo = function_exists('getDB') ? getDB() : null;
+        if ($pdo) {
+            $pdo->exec("UPDATE ashram_settings SET contact_phone = '' WHERE contact_phone LIKE '%97206%' OR contact_phone LIKE '%98765%'");
+            $pdo->exec("UPDATE ashram_settings SET whatsapp_number = '' WHERE whatsapp_number LIKE '%97206%' OR whatsapp_number LIKE '%98765%'");
+            $pdo->exec("UPDATE ashram_settings SET contact_email = '' WHERE contact_email LIKE '%shribalajikripadham@gmail.com%'");
+            $pdo->exec("UPDATE ashram_settings SET upi_id = '' WHERE upi_id = 'shribalajikripadham@upi'");
+            $pdo->exec("UPDATE ashram_settings SET aarti_mangala_time = '', aarti_balbhog_time = '', aarti_sandhya_time = '', aarti_shayan_time = '', aarti_timings = ''");
+        }
+    }
+} catch (Throwable $e) {}
 
 // Optional: Sync latest Release APK directly onto server
 if (!empty($_REQUEST['sync_apk'])) {
