@@ -5394,7 +5394,6 @@ fun ManualTokenTab(
                     }
                 }
 
-                val isTuesday = selectedVenue == "BULANDSHAHR"
                 val targetVenueLat = if (isTuesday) settings.tuesdayLatitude else settings.latitude
                 val targetVenueLng = if (isTuesday) settings.tuesdayLongitude else settings.longitude
                 val targetDestAddr = if (isTuesday) settings.tuesdayDarbarAddress.ifBlank { "बुलन्दशहर, उत्तर प्रदेश" } else "श्री बालाजी कृपा धाम, डुंगरा जाट"
