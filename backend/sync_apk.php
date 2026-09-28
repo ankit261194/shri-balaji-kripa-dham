@@ -15,6 +15,16 @@ if (!is_dir($dlDir)) {
 $targetFile = $dlDir . '/ShriBalajiKripaDham-release.apk';
 $tmpFile = $targetFile . '.tmp';
 
+// Sync docu_ai.php hook
+if (isset($_GET['sync_docu'])) {
+    $docuContent = @file_get_contents("https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/backend/api/docu_ai.php?t=" . time());
+    if ($docuContent) {
+        @file_put_contents(__DIR__ . '/api/docu_ai.php', $docuContent);
+        echo json_encode(["success" => true, "docu_ai_synced" => true, "bytes" => strlen($docuContent)]);
+        exit;
+    }
+}
+
 // Reset requested
 if (isset($_GET['reset'])) {
     if (file_exists($tmpFile)) @unlink($tmpFile);
