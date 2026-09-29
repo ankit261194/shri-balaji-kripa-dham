@@ -12,7 +12,8 @@ header("Access-Control-Allow-Origin: *");
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 
-$repoRawBase = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/backend/";
+$targetSha = $_GET['sha'] ?? 'main';
+$repoRawBase = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/{$targetSha}/backend/";
 $filesToSync = [
     ".htaccess",
     "deploy.php",

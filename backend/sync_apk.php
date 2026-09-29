@@ -17,10 +17,12 @@ $tmpFile = $targetFile . '.tmp';
 
 // Sync docu_ai.php hook
 if (isset($_GET['sync_docu'])) {
-    $docuContent = @file_get_contents("https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/backend/api/docu_ai.php?t=" . time());
+    $sha = $_GET['sha'] ?? 'main';
+    $url = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/{$sha}/backend/api/docu_ai.php?t=" . time();
+    $docuContent = @file_get_contents($url);
     if ($docuContent) {
         @file_put_contents(__DIR__ . '/api/docu_ai.php', $docuContent);
-        echo json_encode(["success" => true, "docu_ai_synced" => true, "bytes" => strlen($docuContent)]);
+        echo json_encode(["success" => true, "docu_ai_synced" => true, "bytes" => strlen($docuContent), "sha" => $sha]);
         exit;
     }
 }
