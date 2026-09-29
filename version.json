@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 91,
-  "version_code": 91,
-  "latest_version_name": "2.56.16",
-  "version_name": "2.56.16",
-  "update_notes_hindi": "v2.56.16 (Build 91): 🛡️ संपूर्ण 100% कमियों का स्थायी समाधान (सटीक एक्टिव फोन टेलीमेट्री, सर्वर प्रोटेक्शन अडाप्टिव सिंक, फोन कॉल ऑटो-पॉज AudioFocus, स्पैम नोटिफिकेशन सुरक्षा, सख्त भारतीय मोबाइल नंबर प्रमाणीकरण एवं पूर्ण OWASP सिक्योरिटी)।",
-  "update_notes_english": "v2.56.16 (Build 91): 🛡️ Complete 100% overhaul (Accurate Active Device Telemetry, Server Protection Adaptive Sync, AudioFocus call pause, Spam Notification guard, Indian 10-digit phone validation & OWASP Security Hardening).",
+  "latest_version_code": 92,
+  "version_code": 92,
+  "latest_version_name": "2.56.17",
+  "version_name": "2.56.17",
+  "update_notes_hindi": "v2.56.17 (Build 92): 🌿✨ नया सुंदर WhatsApp और 8 शांत थीम डिज़ाइन (आँखों को सुकून देने वाले शांत रंग, क्रिस्टल-क्लियर Sans-Serif फॉन्ट, स्थिर और सरल WhatsApp-ग्रेड UI, एवं सभी भड़कीले कलर्स व बॉर्डर्स का खात्मा)।",
+  "update_notes_english": "v2.56.17 (Build 92): 🌿✨ New Soothing WhatsApp & 8 Calm Themes Overhaul (Peaceful calm colors, crystal-clear Sans-Serif typography, clean stable WhatsApp-grade UI, and complete removal of gaudy colors & borders).",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false

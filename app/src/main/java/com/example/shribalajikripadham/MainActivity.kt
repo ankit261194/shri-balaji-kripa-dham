@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
                     try {
                         com.example.shribalajikripadham.theme.ThemePreferences.getSelectedTheme(context)
                     } catch (e: Exception) {
-                        com.example.shribalajikripadham.theme.SacredTheme.ROYAL_MAROON
+                        com.example.shribalajikripadham.theme.SacredTheme.WHATSAPP_EMERALD
                     }
                 )
             }

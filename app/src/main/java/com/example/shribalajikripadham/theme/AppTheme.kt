@@ -8,6 +8,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+/**
+ * Modern, Peaceful, Clean Themes for Shri Balaji Kripa Dham.
+ * Inspired by WhatsApp, Telegram, Apple Minimal, and calm, soothing natural palettes.
+ */
 enum class SacredTheme(
     val id: String,
     val nameHindi: String,
@@ -20,294 +24,235 @@ enum class SacredTheme(
     val headerGradientEnd: Color,
     val accentGold: Color,
     val cardBorderColor: Color,
+    val backgroundLight: Color = Color(0xFFF0F2F5),
+    val surfaceLight: Color = Color(0xFFFFFFFF),
     val isDark: Boolean = false,
-    val fontFamily: FontFamily = FontFamily.Serif,
-    val cardShape: CornerBasedShape = RoundedCornerShape(18.dp),
-    val buttonShape: CornerBasedShape = RoundedCornerShape(12.dp),
-    val cardBorderWidth: Dp = 1.5.dp,
-    val cardElevation: Dp = 4.dp,
-    val styleNameHindi: String = "शाही राजसी धरोहर",
-    val styleBadge: String = "👑 सेरिफ • राजसी 18dp"
+    val fontFamily: FontFamily = FontFamily.Default,
+    val cardShape: CornerBasedShape = RoundedCornerShape(12.dp),
+    val buttonShape: CornerBasedShape = RoundedCornerShape(10.dp),
+    val cardBorderWidth: Dp = 0.8.dp,
+    val cardElevation: Dp = 1.dp,
+    val styleNameHindi: String = "वाट्सएप क्लीन",
+    val styleBadge: String = "💬 वाट्सएप • 12dp"
 ) {
-    // 1. Royal Mandir Maroon - Vedic Heritage & Temple Arch
-    ROYAL_MAROON(
-        id = "maroon",
-        nameHindi = "शाही महरून",
-        nameEnglish = "Royal Maroon",
-        icon = "👑",
-        primaryColor = Color(0xFF5C001E),
-        secondaryColor = Color(0xFFFFB300),
-        topBarColor = Color(0xFF5C001E),
-        headerGradientStart = Color(0xFF5C001E),
-        headerGradientEnd = Color(0xFF3B0010),
-        accentGold = Color(0xFFFFD54F),
-        cardBorderColor = Color(0xFFFFB300),
-        isDark = false,
-        fontFamily = FontFamily.Serif,
-        cardShape = RoundedCornerShape(18.dp),
-        buttonShape = RoundedCornerShape(12.dp),
-        cardBorderWidth = 1.5.dp,
-        cardElevation = 4.dp,
-        styleNameHindi = "शाही राजसी धरोहर",
-        styleBadge = "👑 सेरिफ • राजसी 18dp"
-    ),
-
-    // 2. Sacred Mandir Saffron / Bhagwa - Devotional Temple Gopuram
-    SACRED_SAFFRON(
-        id = "saffron",
-        nameHindi = "दिव्य केसरिया",
-        nameEnglish = "Sacred Saffron",
-        icon = "🚩",
-        primaryColor = Color(0xFFE65100),
-        secondaryColor = Color(0xFFFFB300),
-        topBarColor = Color(0xFFBF360C),
-        headerGradientStart = Color(0xFFE65100),
-        headerGradientEnd = Color(0xFFBF360C),
-        accentGold = Color(0xFFFFE082),
-        cardBorderColor = Color(0xFFFFB300),
-        isDark = false,
-        fontFamily = FontFamily.Serif,
-        cardShape = RoundedCornerShape(22.dp),
-        buttonShape = RoundedCornerShape(16.dp),
-        cardBorderWidth = 1.5.dp,
-        cardElevation = 4.dp,
-        styleNameHindi = "मंदिर गोपुरम मेहराब",
-        styleBadge = "🚩 सेरिफ • गोपुरम 22dp"
-    ),
-
-    // 3. Pitambar Gold - Ornate Regal Palace
-    PITAMBAR_GOLD(
-        id = "gold",
-        nameHindi = "पीताम्बर स्वर्ण",
-        nameEnglish = "Pitambar Gold",
-        icon = "🪔",
-        primaryColor = Color(0xFFC68400),
-        secondaryColor = Color(0xFFE65100),
-        topBarColor = Color(0xFFA06700),
-        headerGradientStart = Color(0xFFC68400),
-        headerGradientEnd = Color(0xFF7A4E00),
-        accentGold = Color(0xFFFFF176),
-        cardBorderColor = Color(0xFFFFD54F),
-        isDark = false,
-        fontFamily = FontFamily.Serif,
-        cardShape = RoundedCornerShape(14.dp),
-        buttonShape = RoundedCornerShape(10.dp),
-        cardBorderWidth = 2.dp,
-        cardElevation = 4.dp,
-        styleNameHindi = "स्वर्ण रत्न कट",
-        styleBadge = "🪔 सेरिफ • क्लासिक 14dp"
-    ),
-
-    // 4. Shyamal / Divine Peacock Blue - Ultra Modern Squircle
-    DIVINE_BLUE(
-        id = "blue",
-        nameHindi = "श्याम वर्ण (मयूर नीला)",
-        nameEnglish = "Divine Blue",
-        icon = "🦚",
-        primaryColor = Color(0xFF0D47A1),
-        secondaryColor = Color(0xFFFFB300),
-        topBarColor = Color(0xFF072C66),
-        headerGradientStart = Color(0xFF0D47A1),
-        headerGradientEnd = Color(0xFF051C42),
-        accentGold = Color(0xFFFFD54F),
-        cardBorderColor = Color(0xFFFFC107),
-        isDark = false,
-        fontFamily = FontFamily.SansSerif,
-        cardShape = RoundedCornerShape(26.dp),
-        buttonShape = RoundedCornerShape(24.dp),
-        cardBorderWidth = 1.dp,
-        cardElevation = 3.dp,
-        styleNameHindi = "आधुनिक मयूर स्क्वर्कर",
-        styleBadge = "🦚 सांस-सेरिफ • 26dp"
-    ),
-
-    // 5. Vedic Tulsi Forest Green - Organic Smooth Leaf Curve
-    TULSI_GREEN(
-        id = "green",
-        nameHindi = "तुलसी हरित",
-        nameEnglish = "Tulsi Green",
-        icon = "🌿",
-        primaryColor = Color(0xFF1B5E20),
-        secondaryColor = Color(0xFFFFB300),
-        topBarColor = Color(0xFF103D14),
-        headerGradientStart = Color(0xFF1B5E20),
-        headerGradientEnd = Color(0xFF0B290E),
-        accentGold = Color(0xFFFFD54F),
-        cardBorderColor = Color(0xFFFFB300),
+    // 1. WhatsApp Emerald - Soothing, iconic clean green (Default)
+    WHATSAPP_EMERALD(
+        id = "whatsapp",
+        nameHindi = "वाट्सएप हरा",
+        nameEnglish = "WhatsApp Emerald",
+        icon = "💬",
+        primaryColor = Color(0xFF008069),
+        secondaryColor = Color(0xFF00A884),
+        topBarColor = Color(0xFF008069),
+        headerGradientStart = Color(0xFF008069),
+        headerGradientEnd = Color(0xFF075E54),
+        accentGold = Color(0xFF25D366),
+        cardBorderColor = Color(0xFFE9EDEF),
+        backgroundLight = Color(0xFFF0F2F5),
+        surfaceLight = Color(0xFFFFFFFF),
         isDark = false,
         fontFamily = FontFamily.Default,
-        cardShape = RoundedCornerShape(20.dp),
-        buttonShape = RoundedCornerShape(14.dp),
-        cardBorderWidth = 1.dp,
-        cardElevation = 3.dp,
-        styleNameHindi = "सात्विक तुलसी पर्ण",
-        styleBadge = "🌿 सात्विक • स्मूथ 20dp"
+        cardShape = RoundedCornerShape(12.dp),
+        buttonShape = RoundedCornerShape(10.dp),
+        cardBorderWidth = 0.8.dp,
+        cardElevation = 1.dp,
+        styleNameHindi = "वाट्सएप क्लीन एमराल्ड",
+        styleBadge = "💬 वाट्सएप • 12dp"
     ),
 
-    // 6. Devotional Midnight Dark - Cyber Neon Gold & Modern Glass
-    MIDNIGHT_DARK(
-        id = "dark",
-        nameHindi = "दिव्य रात्रि (Dark)",
-        nameEnglish = "Midnight Dark",
-        icon = "🌌",
-        primaryColor = Color(0xFFFFB300),
-        secondaryColor = Color(0xFFFF8F00),
-        topBarColor = Color(0xFF1E1E1E),
-        headerGradientStart = Color(0xFF262626),
-        headerGradientEnd = Color(0xFF121212),
-        accentGold = Color(0xFFFFE082),
-        cardBorderColor = Color(0xFFFFB300),
-        isDark = true,
-        fontFamily = FontFamily.SansSerif,
-        cardShape = RoundedCornerShape(16.dp),
-        buttonShape = RoundedCornerShape(14.dp),
-        cardBorderWidth = 1.5.dp,
-        cardElevation = 4.dp,
-        styleNameHindi = "नियॉन गोल्ड ग्लास",
-        styleBadge = "🌌 नियॉन • डार्क 16dp"
-    ),
-
-    // 7. Surya Tej Crimson / Sindoor
-    SURYA_CRIMSON(
-        id = "crimson",
-        nameHindi = "सूर्य तेज सिंदूरी",
-        nameEnglish = "Surya Crimson",
-        icon = "☀️",
-        primaryColor = Color(0xFFC2185B),
-        secondaryColor = Color(0xFFFFD54F),
-        topBarColor = Color(0xFF880E4F),
-        headerGradientStart = Color(0xFFC2185B),
-        headerGradientEnd = Color(0xFF880E4F),
-        accentGold = Color(0xFFFFE082),
-        cardBorderColor = Color(0xFFFF80AB),
+    // 2. Telegram Sky Blue - Modern, crisp, fresh
+    TELEGRAM_BLUE(
+        id = "telegram",
+        nameHindi = "टेलीग्राम नीला",
+        nameEnglish = "Telegram Sky Blue",
+        icon = "✈️",
+        primaryColor = Color(0xFF2481CC),
+        secondaryColor = Color(0xFF54A9EB),
+        topBarColor = Color(0xFF1E6EA8),
+        headerGradientStart = Color(0xFF2481CC),
+        headerGradientEnd = Color(0xFF176097),
+        accentGold = Color(0xFF40A7E3),
+        cardBorderColor = Color(0xFFE3E8EC),
+        backgroundLight = Color(0xFFF4F6F8),
+        surfaceLight = Color(0xFFFFFFFF),
         isDark = false,
-        fontFamily = FontFamily.Serif,
-        cardShape = RoundedCornerShape(20.dp),
-        buttonShape = RoundedCornerShape(14.dp),
-        cardBorderWidth = 1.5.dp,
-        cardElevation = 4.dp,
-        styleNameHindi = "सिंदूरी सूर्य तेज",
-        styleBadge = "☀️ सिंदूरी • 20dp"
-    ),
-
-    // 8. Ayodhya Sandalwood
-    AYODHYA_SANDALWOOD(
-        id = "sandalwood",
-        nameHindi = "अयोध्या चंदन",
-        nameEnglish = "Ayodhya Sandalwood",
-        icon = "🪵",
-        primaryColor = Color(0xFF6D4C41),
-        secondaryColor = Color(0xFFFFD54F),
-        topBarColor = Color(0xFF4E342E),
-        headerGradientStart = Color(0xFF6D4C41),
-        headerGradientEnd = Color(0xFF3E2723),
-        accentGold = Color(0xFFFFECB3),
-        cardBorderColor = Color(0xFFFFD54F),
-        isDark = false,
-        fontFamily = FontFamily.Serif,
-        cardShape = RoundedCornerShape(16.dp),
+        fontFamily = FontFamily.Default,
+        cardShape = RoundedCornerShape(14.dp),
         buttonShape = RoundedCornerShape(12.dp),
-        cardBorderWidth = 1.5.dp,
-        cardElevation = 4.dp,
-        styleNameHindi = "पावन चंदन काष्ठ",
-        styleBadge = "🪵 चंदन • 16dp"
+        cardBorderWidth = 0.8.dp,
+        cardElevation = 1.dp,
+        styleNameHindi = "टेलीग्राम स्काई ब्लू",
+        styleBadge = "✈️ टेलीग्राम • 14dp"
     ),
 
-    // 9. Ganga Aarti Amber Flame
-    GANGA_AARTI_AMBER(
-        id = "amber",
-        nameHindi = "गंगा आरती दीप",
-        nameEnglish = "Ganga Aarti Amber",
-        icon = "🔥",
-        primaryColor = Color(0xFFE64A19),
-        secondaryColor = Color(0xFFFFC107),
-        topBarColor = Color(0xFFBF360C),
-        headerGradientStart = Color(0xFFE64A19),
-        headerGradientEnd = Color(0xFFD84315),
-        accentGold = Color(0xFFFFD54F),
-        cardBorderColor = Color(0xFFFFB300),
+    // 3. Calm Sage Mint - Peaceful, Ayurvedic, serene forest
+    CALM_SAGE_MINT(
+        id = "sage",
+        nameHindi = "शांत पुदीना (Sage Mint)",
+        nameEnglish = "Peaceful Sage Mint",
+        icon = "🍃",
+        primaryColor = Color(0xFF2D6A4F),
+        secondaryColor = Color(0xFF52B788),
+        topBarColor = Color(0xFF1B4332),
+        headerGradientStart = Color(0xFF2D6A4F),
+        headerGradientEnd = Color(0xFF1B4332),
+        accentGold = Color(0xFF74C69D),
+        cardBorderColor = Color(0xFFD8E2DC),
+        backgroundLight = Color(0xFFF3F7F5),
+        surfaceLight = Color(0xFFFFFFFF),
         isDark = false,
-        fontFamily = FontFamily.SansSerif,
-        cardShape = RoundedCornerShape(22.dp),
-        buttonShape = RoundedCornerShape(16.dp),
-        cardBorderWidth = 1.5.dp,
-        cardElevation = 4.dp,
-        styleNameHindi = "महा आरती ज्योति",
-        styleBadge = "🔥 महा आरती • 22dp"
-    ),
-
-    // 10. Vrindavan Violet
-    VRINDAVAN_VIOLET(
-        id = "purple",
-        nameHindi = "राधा माधव जामुनी",
-        nameEnglish = "Vrindavan Violet",
-        icon = "🪷",
-        primaryColor = Color(0xFF512DA8),
-        secondaryColor = Color(0xFFFFD54F),
-        topBarColor = Color(0xFF311B92),
-        headerGradientStart = Color(0xFF512DA8),
-        headerGradientEnd = Color(0xFF311B92),
-        accentGold = Color(0xFFFFD54F),
-        cardBorderColor = Color(0xFFB39DDB),
-        isDark = false,
-        fontFamily = FontFamily.Serif,
-        cardShape = RoundedCornerShape(18.dp),
-        buttonShape = RoundedCornerShape(12.dp),
-        cardBorderWidth = 1.5.dp,
-        cardElevation = 4.dp,
-        styleNameHindi = "ब्रज कमल जामुनी",
-        styleBadge = "🪷 ब्रज कमल • 18dp"
-    ),
-
-    // 11. Kailash Teal
-    KAILASH_TEAL(
-        id = "teal",
-        nameHindi = "कैलाश मानसरोवर",
-        nameEnglish = "Kailash Teal",
-        icon = "🌊",
-        primaryColor = Color(0xFF00695C),
-        secondaryColor = Color(0xFFFFD54F),
-        topBarColor = Color(0xFF004D40),
-        headerGradientStart = Color(0xFF00695C),
-        headerGradientEnd = Color(0xFF004D40),
-        accentGold = Color(0xFF80CBC4),
-        cardBorderColor = Color(0xFF4DB6AC),
-        isDark = false,
-        fontFamily = FontFamily.SansSerif,
-        cardShape = RoundedCornerShape(24.dp),
-        buttonShape = RoundedCornerShape(20.dp),
-        cardBorderWidth = 1.dp,
-        cardElevation = 3.dp,
-        styleNameHindi = "पवित्र मानसरोवर",
-        styleBadge = "🌊 मानसरोवर • 24dp"
-    ),
-
-    // 12. Mahadev Rudraksha Copper
-    MAHADEV_COPPER(
-        id = "copper",
-        nameHindi = "रुद्राक्ष ताम्र",
-        nameEnglish = "Mahadev Copper",
-        icon = "🔱",
-        primaryColor = Color(0xFF4E342E),
-        secondaryColor = Color(0xFFFFB300),
-        topBarColor = Color(0xFF2E1C18),
-        headerGradientStart = Color(0xFF4E342E),
-        headerGradientEnd = Color(0xFF2E1C18),
-        accentGold = Color(0xFFFFD54F),
-        cardBorderColor = Color(0xFFFFB300),
-        isDark = false,
-        fontFamily = FontFamily.Serif,
+        fontFamily = FontFamily.Default,
         cardShape = RoundedCornerShape(14.dp),
         buttonShape = RoundedCornerShape(10.dp),
-        cardBorderWidth = 1.5.dp,
-        cardElevation = 4.dp,
-        styleNameHindi = "महाकाल रुद्राक्ष",
-        styleBadge = "🔱 रुद्राक्ष • 14dp"
+        cardBorderWidth = 0.8.dp,
+        cardElevation = 1.dp,
+        styleNameHindi = "शांत सात्विक पुदीना",
+        styleBadge = "🍃 सात्विक • 14dp"
+    ),
+
+    // 4. Ocean Indigo - Deep, calm, executive
+    OCEAN_INDIGO(
+        id = "ocean",
+        nameHindi = "शांत महासागर (Navy Blue)",
+        nameEnglish = "Calm Ocean Navy",
+        icon = "🌊",
+        primaryColor = Color(0xFF1E3A8A),
+        secondaryColor = Color(0xFF38BDF8),
+        topBarColor = Color(0xFF0F172A),
+        headerGradientStart = Color(0xFF1E3A8A),
+        headerGradientEnd = Color(0xFF0F172A),
+        accentGold = Color(0xFF0284C7),
+        cardBorderColor = Color(0xFFE2E8F0),
+        backgroundLight = Color(0xFFF8FAFC),
+        surfaceLight = Color(0xFFFFFFFF),
+        isDark = false,
+        fontFamily = FontFamily.Default,
+        cardShape = RoundedCornerShape(12.dp),
+        buttonShape = RoundedCornerShape(10.dp),
+        cardBorderWidth = 0.8.dp,
+        cardElevation = 1.dp,
+        styleNameHindi = "शांत गंभीर नेवी",
+        styleBadge = "🌊 नेवी • 12dp"
+    ),
+
+    // 5. Peaceful Lavender - Gentle, soothing spiritual iris
+    PEACEFUL_LAVENDER(
+        id = "lavender",
+        nameHindi = "सौम्य लैवेंडर (Soft Iris)",
+        nameEnglish = "Peaceful Lavender",
+        icon = "🪻",
+        primaryColor = Color(0xFF6D28D9),
+        secondaryColor = Color(0xFFA78BFA),
+        topBarColor = Color(0xFF4C1D95),
+        headerGradientStart = Color(0xFF6D28D9),
+        headerGradientEnd = Color(0xFF4C1D95),
+        accentGold = Color(0xFFC4B5FD),
+        cardBorderColor = Color(0xFFEDE9FE),
+        backgroundLight = Color(0xFFFAF8FF),
+        surfaceLight = Color(0xFFFFFFFF),
+        isDark = false,
+        fontFamily = FontFamily.Default,
+        cardShape = RoundedCornerShape(14.dp),
+        buttonShape = RoundedCornerShape(12.dp),
+        cardBorderWidth = 0.8.dp,
+        cardElevation = 1.dp,
+        styleNameHindi = "सौम्य शांति लैवेंडर",
+        styleBadge = "🪻 लैवेंडर • 14dp"
+    ),
+
+    // 6. Minimal Slate - Apple-inspired clean dark slate & cyan
+    MINIMAL_SLATE(
+        id = "slate",
+        nameHindi = "एप्पल मिनिमल स्लेट",
+        nameEnglish = "Minimal Slate Gray",
+        icon = "🩶",
+        primaryColor = Color(0xFF334155),
+        secondaryColor = Color(0xFF64748B),
+        topBarColor = Color(0xFF1E293B),
+        headerGradientStart = Color(0xFF334155),
+        headerGradientEnd = Color(0xFF1E293B),
+        accentGold = Color(0xFF0EA5E9),
+        cardBorderColor = Color(0xFFE2E8F0),
+        backgroundLight = Color(0xFFF8FAFC),
+        surfaceLight = Color(0xFFFFFFFF),
+        isDark = false,
+        fontFamily = FontFamily.Default,
+        cardShape = RoundedCornerShape(16.dp),
+        buttonShape = RoundedCornerShape(12.dp),
+        cardBorderWidth = 0.8.dp,
+        cardElevation = 1.dp,
+        styleNameHindi = "एप्पल मिनिमल स्लेट",
+        styleBadge = "🩶 स्लेट • 16dp"
+    ),
+
+    // 7. Soothing Amber - Earthy sandalwood, calm warm amber
+    SOOTHING_AMBER(
+        id = "amber",
+        nameHindi = "सात्विक चंदन (Soft Amber)",
+        nameEnglish = "Soothing Sandalwood Amber",
+        icon = "🪵",
+        primaryColor = Color(0xFFB45309),
+        secondaryColor = Color(0xFFF59E0B),
+        topBarColor = Color(0xFF78350F),
+        headerGradientStart = Color(0xFFB45309),
+        headerGradientEnd = Color(0xFF78350F),
+        accentGold = Color(0xFFFBBF24),
+        cardBorderColor = Color(0xFFFDE68A),
+        backgroundLight = Color(0xFFFFFBEB),
+        surfaceLight = Color(0xFFFFFFFF),
+        isDark = false,
+        fontFamily = FontFamily.Default,
+        cardShape = RoundedCornerShape(12.dp),
+        buttonShape = RoundedCornerShape(10.dp),
+        cardBorderWidth = 0.8.dp,
+        cardElevation = 1.dp,
+        styleNameHindi = "सात्विक सौम्य चंदन",
+        styleBadge = "🪵 चंदन • 12dp"
+    ),
+
+    // 8. WhatsApp Dark Night - Official WhatsApp Dark Mode
+    WHATSAPP_DARK(
+        id = "dark",
+        nameHindi = "वाट्सएप डार्क नाइट",
+        nameEnglish = "WhatsApp Dark Night",
+        icon = "🌙",
+        primaryColor = Color(0xFF00A884),
+        secondaryColor = Color(0xFF25D366),
+        topBarColor = Color(0xFF1F2C34),
+        headerGradientStart = Color(0xFF1F2C34),
+        headerGradientEnd = Color(0xFF121B22),
+        accentGold = Color(0xFF00A884),
+        cardBorderColor = Color(0xFF2A3942),
+        backgroundLight = Color(0xFF121B22),
+        surfaceLight = Color(0xFF1F2C34),
+        isDark = true,
+        fontFamily = FontFamily.Default,
+        cardShape = RoundedCornerShape(12.dp),
+        buttonShape = RoundedCornerShape(10.dp),
+        cardBorderWidth = 0.8.dp,
+        cardElevation = 1.dp,
+        styleNameHindi = "वाट्सएप नाइट डार्क",
+        styleBadge = "🌙 वाट्सएप • डार्क 12dp"
     );
 
     companion object {
+        val DEFAULT = WHATSAPP_EMERALD
+
+        // Backward-compatibility alias for legacy code
+        val ROYAL_MAROON: SacredTheme get() = WHATSAPP_EMERALD
+
         fun fromId(id: String): SacredTheme {
-            return entries.firstOrNull { it.id.equals(id, ignoreCase = true) } ?: ROYAL_MAROON
+            return when (id.lowercase().trim()) {
+                "whatsapp", "green", "emerald", "maroon" -> WHATSAPP_EMERALD
+                "telegram", "blue", "sky" -> TELEGRAM_BLUE
+                "sage", "mint" -> CALM_SAGE_MINT
+                "ocean", "navy", "indigo" -> OCEAN_INDIGO
+                "lavender", "purple", "iris", "violet" -> PEACEFUL_LAVENDER
+                "slate", "gray", "grey", "minimal" -> MINIMAL_SLATE
+                "amber", "sandalwood", "gold", "saffron", "copper" -> SOOTHING_AMBER
+                "dark", "night", "black" -> WHATSAPP_DARK
+                else -> WHATSAPP_EMERALD
+            }
         }
     }
 }
@@ -325,13 +270,13 @@ data class SacredStyle(
 
 val LocalSacredStyle = staticCompositionLocalOf {
     SacredStyle(
-        theme = SacredTheme.ROYAL_MAROON,
-        fontFamily = FontFamily.Serif,
-        cardShape = SacredTheme.ROYAL_MAROON.cardShape,
-        buttonShape = SacredTheme.ROYAL_MAROON.buttonShape,
-        cardBorderWidth = SacredTheme.ROYAL_MAROON.cardBorderWidth,
-        cardElevation = SacredTheme.ROYAL_MAROON.cardElevation,
-        cardBorderColor = SacredTheme.ROYAL_MAROON.cardBorderColor,
+        theme = SacredTheme.WHATSAPP_EMERALD,
+        fontFamily = FontFamily.Default,
+        cardShape = SacredTheme.WHATSAPP_EMERALD.cardShape,
+        buttonShape = SacredTheme.WHATSAPP_EMERALD.buttonShape,
+        cardBorderWidth = SacredTheme.WHATSAPP_EMERALD.cardBorderWidth,
+        cardElevation = SacredTheme.WHATSAPP_EMERALD.cardElevation,
+        cardBorderColor = SacredTheme.WHATSAPP_EMERALD.cardBorderColor,
         isDark = false
     )
 }

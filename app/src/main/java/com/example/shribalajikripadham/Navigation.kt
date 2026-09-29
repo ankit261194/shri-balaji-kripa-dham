@@ -49,7 +49,7 @@ enum class AppScreen {
 
 @Composable
 fun MainNavigation(
-    currentTheme: SacredTheme = SacredTheme.ROYAL_MAROON,
+    currentTheme: SacredTheme = SacredTheme.WHATSAPP_EMERALD,
     onThemeChanged: (SacredTheme) -> Unit = {}
 ) {
     val context = LocalContext.current

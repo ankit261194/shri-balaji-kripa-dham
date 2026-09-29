@@ -137,7 +137,7 @@ fun shareAppContent(context: Context, shareMessage: String, title: String) {
 @Composable
 fun HomeScreen(
     isHindi: Boolean,
-    currentTheme: SacredTheme = SacredTheme.ROYAL_MAROON,
+    currentTheme: SacredTheme = SacredTheme.WHATSAPP_EMERALD,
     onThemeChanged: (SacredTheme) -> Unit = {},
     onNavigateToToken: () -> Unit,
     onNavigateToFaceToken: () -> Unit = onNavigateToToken,
@@ -730,158 +730,87 @@ fun HomeScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
 
-                    // 🌟 10 COMPLETE UI LOOKS SHOWCASE IN SIDEBAR DRAWER
+                    // 🎨 8 SOOTHING CLEAN THEMES (WhatsApp, Telegram, Sage, Navy, Lavender, Slate, Amber, Dark)
                     Text(
-                        text = if (isHindi) "🌟 ऐप का स्वरूप / 10 UI Looks (पूरा ढांचा बदलें)" else "🌟 App Architecture / 10 UI Looks",
+                        text = if (isHindi) "🎨 ऐप की शांत थीम व रंग (8 Soothing Themes)" else "🎨 App Themes & Calm Colors",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = currentTheme.primaryColor,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
 
-                    if (settings.isUiLayoutEnforced) {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, Color(0xFFFFB74D)),
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("👑", fontSize = 16.sp)
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = if (isHindi) "सुपर एडमिन यूनिवर्सल कंट्रोल सक्रिय" else "Super Admin Universal Control Active",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        color = MaroonAccent
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = if (isHindi) "वर्तमान सक्रिय ढांचा: ${activeLayout.titleHindi} (${activeLayout.icon})\n(यह रूप सभी भक्तों के फोन पर अनिवार्य रूप से लागू है)" else "Active Layout: ${activeLayout.titleEnglish} (${activeLayout.icon})\n(Enforced across all devotees)",
-                                    fontSize = 11.sp,
-                                    color = Color.DarkGray,
-                                    lineHeight = 15.sp
-                                )
-                            }
-                        }
-                    } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(5.dp)
-                        ) {
-                            for (layout in AppUiLayout.entries) {
-                                val isSelected = layout == activeLayout
-                                Surface(
-                                    onClick = {
-                                        activeLayout = layout
-                                        LayoutPreferences.saveLayout(context, layout)
-                                        scope.launch {
-                                            drawerState.close()
-                                            Toast.makeText(
-                                                context,
-                                                if (isHindi) "✅ ऐप का रूप बदलकर '${layout.titleHindi}' हो गया!" else "✅ Switched to ${layout.titleEnglish}!",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    },
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = if (isSelected) currentTheme.primaryColor.copy(alpha = 0.14f) else Color(0xFFFBFBFB),
-                                    border = BorderStroke(
-                                        width = if (isSelected) 1.8.dp else 0.6.dp,
-                                        color = if (isSelected) currentTheme.primaryColor else Color(0xFFE0E0E0)
-                                    ),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 10.dp, vertical = 7.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(32.dp)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(
-                                                    if (isSelected) currentTheme.primaryColor else Color(0xFFEEEEEE)
-                                                ),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(layout.icon, fontSize = 16.sp)
-                                        }
-                                        Spacer(modifier = Modifier.width(10.dp))
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = if (isHindi) layout.titleHindi else layout.titleEnglish,
-                                                fontSize = 12.5.sp,
-                                                fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
-                                                color = if (isSelected) currentTheme.primaryColor else TextPrimaryDark
-                                            )
-                                            Text(
-                                                text = if (isHindi) layout.subtitleHindi else layout.titleHindi,
-                                                fontSize = 10.sp,
-                                                color = TextSecondaryDark,
-                                                maxLines = 1
-                                            )
-                                        }
-                                        if (isSelected) {
-                                            Surface(
-                                                shape = RoundedCornerShape(6.dp),
-                                                color = currentTheme.primaryColor
-                                            ) {
-                                                Text(
-                                                    text = if (isHindi) "सक्रिय" else "ACTIVE",
-                                                    color = Color.White,
-                                                    fontSize = 9.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Compact Palette Row of 12 Sacred Colors
-                    Text(
-                        text = if (isHindi) "🎨 आध्यात्मिक रंग (12 Palette)" else "🎨 Sacred Palette",
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                    LazyRow(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            .padding(horizontal = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        items(SacredTheme.entries.size) { idx ->
-                            val theme = SacredTheme.entries[idx]
-                            val isSel = theme == currentTheme
-                            Box(
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .clip(CircleShape)
-                                    .background(theme.primaryColor)
-                                    .border(
-                                        if (isSel) 2.dp else 0.8.dp,
-                                        if (isSel) Color.White else Color.Transparent,
-                                        CircleShape
-                                    )
-                                    .clickable { onThemeChanged(theme) },
-                                contentAlignment = Alignment.Center
+                        for (theme in SacredTheme.entries) {
+                            val isSelected = theme == currentTheme
+                            Surface(
+                                onClick = {
+                                    onThemeChanged(theme)
+                                    scope.launch {
+                                        drawerState.close()
+                                        Toast.makeText(
+                                            context,
+                                            if (isHindi) "✅ थीम बदलकर '${theme.nameHindi}' हो गई!" else "✅ Switched to ${theme.nameEnglish}!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                color = if (isSelected) theme.primaryColor.copy(alpha = 0.12f) else if (currentTheme.isDark) Color(0xFF1F2C34) else Color(0xFFFBFBFB),
+                                border = BorderStroke(
+                                    width = if (isSelected) 1.5.dp else 0.6.dp,
+                                    color = if (isSelected) theme.primaryColor else if (currentTheme.isDark) Color(0xFF2A3942) else Color(0xFFE0E0E0)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
-                                if (isSel) {
-                                    Text("✓", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(CircleShape)
+                                            .background(theme.primaryColor),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(theme.icon, fontSize = 16.sp)
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = if (isHindi) theme.nameHindi else theme.nameEnglish,
+                                            fontSize = 12.5.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) theme.primaryColor else if (currentTheme.isDark) Color(0xFFE9EDEF) else TextPrimaryDark
+                                        )
+                                        Text(
+                                            text = theme.styleBadge,
+                                            fontSize = 10.sp,
+                                            color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF757575),
+                                            maxLines = 1
+                                        )
+                                    }
+                                    if (isSelected) {
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = theme.primaryColor
+                                        ) {
+                                            Text(
+                                                text = if (isHindi) "✓ सक्रिय" else "✓ ACTIVE",
+                                                color = Color.White,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1206,7 +1135,7 @@ fun HomeScreen(
                 )
             )
         },
-        containerColor = if (currentTheme.isDark) Color(0xFF121212) else SacredBackgroundLight
+        containerColor = currentTheme.backgroundLight
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -1216,11 +1145,11 @@ fun HomeScreen(
             // 🌟 PINNED SACRED GOLDEN TAB BAR (Side-Toggle & Page Selector)
             ScrollableTabRow(
                 selectedTabIndex = selectedHomeTab.ordinal,
-                containerColor = Color.White,
-                contentColor = MaroonPrimary,
+                containerColor = currentTheme.surfaceLight,
+                contentColor = currentTheme.primaryColor,
                 edgePadding = 8.dp,
                 divider = {
-                    HorizontalDivider(color = currentTheme.secondaryColor.copy(alpha = 0.3f), thickness = 1.dp)
+                    HorizontalDivider(color = currentTheme.cardBorderColor, thickness = 1.dp)
                 }
             ) {
                 HomeTab.values().forEach { tab ->
@@ -1238,7 +1167,7 @@ fun HomeScreen(
                                     text = if (isHindi) tab.titleHindi else tab.titleEnglish,
                                     fontWeight = if (selectedHomeTab == tab) FontWeight.ExtraBold else FontWeight.SemiBold,
                                     fontSize = if (isCompact) 12.sp else 13.5.sp,
-                                    color = if (selectedHomeTab == tab) MaroonPrimary else TextSecondaryDark
+                                    color = if (selectedHomeTab == tab) currentTheme.primaryColor else if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF54656F)
                                 )
                             }
                         }

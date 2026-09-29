@@ -8,7 +8,7 @@ import androidx.compose.ui.text.font.FontFamily
  * dynamically bound to the given FontFamily for the active theme,
  * preserving all proper platform metrics.
  */
-fun getSacredTypography(fontFamily: FontFamily = FontFamily.Serif): Typography {
+fun getSacredTypography(fontFamily: FontFamily = FontFamily.Default): Typography {
     val base = androidx.compose.material3.Typography()
     return androidx.compose.material3.Typography(
         displayLarge = base.displayLarge.copy(fontFamily = fontFamily),
@@ -29,4 +29,4 @@ fun getSacredTypography(fontFamily: FontFamily = FontFamily.Serif): Typography {
     )
 }
 
-val Typography = getSacredTypography(FontFamily.Serif)
+val Typography = getSacredTypography(FontFamily.Default)

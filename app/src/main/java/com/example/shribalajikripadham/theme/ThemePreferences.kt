@@ -9,7 +9,7 @@ object ThemePreferences {
 
     fun getSelectedTheme(context: Context): SacredTheme {
         val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val themeId = prefs.getString(KEY_THEME_ID, SacredTheme.ROYAL_MAROON.id) ?: SacredTheme.ROYAL_MAROON.id
+        val themeId = prefs.getString(KEY_THEME_ID, SacredTheme.WHATSAPP_EMERALD.id) ?: SacredTheme.WHATSAPP_EMERALD.id
         return SacredTheme.fromId(themeId)
     }
 

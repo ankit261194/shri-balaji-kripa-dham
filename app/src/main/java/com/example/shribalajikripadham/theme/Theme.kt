@@ -43,35 +43,35 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun ShriBalajiKripaDhamTheme(
-    sacredTheme: SacredTheme = SacredTheme.ROYAL_MAROON,
+    sacredTheme: SacredTheme = SacredTheme.WHATSAPP_EMERALD,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (sacredTheme.isDark) {
         darkColorScheme(
             primary = sacredTheme.primaryColor,
-            onPrimary = Color.Black,
+            onPrimary = Color.White,
             secondary = sacredTheme.secondaryColor,
-            onSecondary = Color.Black,
+            onSecondary = Color.White,
             tertiary = sacredTheme.accentGold,
-            background = Color(0xFF121212),
-            surface = Color(0xFF1E1E1E),
-            onBackground = Color(0xFFEDE0D4),
-            onSurface = Color(0xFFEDE0D4)
+            background = sacredTheme.backgroundLight,
+            surface = sacredTheme.surfaceLight,
+            onBackground = Color(0xFFE9EDEF),
+            onSurface = Color(0xFFE9EDEF)
         )
     } else {
         lightColorScheme(
             primary = sacredTheme.primaryColor,
             onPrimary = Color.White,
-            primaryContainer = sacredTheme.secondaryColor.copy(alpha = 0.2f),
+            primaryContainer = sacredTheme.primaryColor.copy(alpha = 0.12f),
             onPrimaryContainer = sacredTheme.primaryColor,
             secondary = sacredTheme.secondaryColor,
-            onSecondary = Color.Black,
-            secondaryContainer = Color(0xFFFFF8E1),
-            onSecondaryContainer = Color(0xFF5D4037),
+            onSecondary = Color.White,
+            secondaryContainer = sacredTheme.secondaryColor.copy(alpha = 0.15f),
+            onSecondaryContainer = sacredTheme.primaryColor,
             tertiary = sacredTheme.accentGold,
-            onTertiary = Color.Black,
-            background = SacredBackgroundLight,
-            surface = SacredSurfaceLight,
+            onTertiary = Color.White,
+            background = sacredTheme.backgroundLight,
+            surface = sacredTheme.surfaceLight,
             onBackground = TextPrimaryDark,
             onSurface = TextPrimaryDark
         )
