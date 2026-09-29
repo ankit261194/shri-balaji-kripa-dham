@@ -2003,12 +2003,30 @@ fun HomeScreen(
                                 shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text(
-                                    text = "⚠️ $downloadErrorMsg",
-                                    color = Color(0xFFC62828),
-                                    fontSize = 11.sp,
-                                    modifier = Modifier.padding(8.dp)
-                                )
+                                Column(modifier = Modifier.padding(8.dp)) {
+                                    Text(
+                                        text = "⚠️ $downloadErrorMsg",
+                                        color = Color(0xFFC62828),
+                                        fontSize = 11.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    OutlinedButton(
+                                        onClick = {
+                                            AppUpdateManager.openInBrowser(
+                                                context,
+                                                "https://shribalajikripadham.online/download.php?dl=1"
+                                            )
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFC62828))
+                                    ) {
+                                        Text(
+                                            if (isHindi) "🌐 सीधे Chrome/ब्राउज़र से डाउनलोड करें" else "🌐 Download via Browser",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
                             }
                             Spacer(modifier = Modifier.height(8.dp))
                         }

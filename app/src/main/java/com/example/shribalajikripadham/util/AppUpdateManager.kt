@@ -24,8 +24,8 @@ import org.json.JSONObject
 
 object AppUpdateManager {
 
-    const val DEFAULT_APK_URL = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk"
-    const val DEFAULT_VERSION_JSON_URL = "https://cdn.jsdelivr.net/gh/ankit261194/shri-balaji-kripa-dham@main/version.json"
+    const val DEFAULT_APK_URL = "https://shribalajikripadham.online/download.php?dl=1"
+    const val DEFAULT_VERSION_JSON_URL = "https://shribalajikripadham.online/version.json"
     const val JSDELIVR_APP_UPDATE_URL = "https://cdn.jsdelivr.net/gh/ankit261194/shri-balaji-kripa-dham@main/app_update.json"
     const val ASHRAM_VERSION_JSON_URL = "https://shribalajikripadham.online/version.json"
     const val GITHUB_VERSION_JSON_URL = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/version.json"
@@ -106,13 +106,16 @@ object AppUpdateManager {
 
     suspend fun fetchLatestUpdateFromOnline(urlStr: String = DEFAULT_VERSION_JSON_URL): OnlineUpdateInfo? {
         return withContext(Dispatchers.IO) {
+            val fromAshram = fetchFromVersionJson(ASHRAM_VERSION_JSON_URL)
+            if (fromAshram != null && fromAshram.versionCode > 1) {
+                return@withContext fromAshram
+            }
             val fromJsDelivr = fetchFromVersionJson(DEFAULT_VERSION_JSON_URL)
             val fromJsDelivrApp = fetchFromVersionJson(JSDELIVR_APP_UPDATE_URL)
-            val fromAshram = fetchFromVersionJson(ASHRAM_VERSION_JSON_URL)
             val fromGitHubVersion = fetchFromVersionJson(GITHUB_VERSION_JSON_URL)
             val fromAppUpdateJson = fetchFromVersionJson("https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/app_update.json")
             val fromGitHub = fetchFromGitHubReleasesApi()
-            listOfNotNull(fromJsDelivr, fromJsDelivrApp, fromAshram, fromGitHubVersion, fromAppUpdateJson, fromGitHub).maxByOrNull { it.versionCode }
+            listOfNotNull(fromAshram, fromJsDelivr, fromJsDelivrApp, fromGitHubVersion, fromAppUpdateJson, fromGitHub).maxByOrNull { it.versionCode }
         }
     }
 
@@ -456,10 +459,16 @@ object AppUpdateManager {
 
             val candidateUrls = mutableListOf<String>()
 
-            // 1. Direct High-Speed Ashram Server endpoints (Bypasses AWS S3 ISP throttling in India)
+            // 1. Prioritize dynamic release APK URL from version.json if distinct
+            if (finalUrl.isNotBlank() && !candidateUrls.contains(finalUrl.trim())) {
+                candidateUrls.add(finalUrl.trim())
+            }
+
+            // 2. Direct High-Speed Ashram Server endpoints (Bypasses CDN cache issues)
             val ashramEndpoints = listOf(
-                "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
-                "https://shribalajikripadham.online/download.php"
+                "https://shribalajikripadham.online/download.php?dl=1",
+                "https://shribalajikripadham.online/download.php",
+                "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk"
             )
             for (af in ashramEndpoints) {
                 if (!candidateUrls.contains(af)) {
@@ -467,20 +476,10 @@ object AppUpdateManager {
                 }
             }
 
-            // 2. Prioritize dynamic release APK URL from version.json / app_update.json if distinct
-            if (finalUrl.isNotBlank() && !candidateUrls.contains(finalUrl.trim())) {
-                candidateUrls.add(finalUrl.trim())
-            }
-
-            // 3. GitHub Release official fallback assets
-            val gitHubReleaseFallbacks = listOf(
-                DEFAULT_APK_URL,
-                "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk"
-            )
-            for (gh in gitHubReleaseFallbacks) {
-                if (!candidateUrls.contains(gh)) {
-                    candidateUrls.add(gh)
-                }
+            // 3. GitHub Release official fallback asset
+            val gitHubUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk"
+            if (!candidateUrls.contains(gitHubUrl)) {
+                candidateUrls.add(gitHubUrl)
             }
 
             var lastError: Exception? = null
@@ -645,7 +644,15 @@ object AppUpdateManager {
 
             if (!resolvedLocal) {
                 withContext(Dispatchers.Main) {
-                    onError(e.localizedMessage ?: "नेटवर्क डाउनलोड त्रुटि (Network Download Error)")
+                    val rawMsg = e.localizedMessage ?: ""
+                    val friendlyMsg = when {
+                        e is java.net.UnknownHostException || rawMsg.contains("Unable to resolve host", ignoreCase = true) ->
+                            "इंटरनेट या DNS समस्या। कृपया 'ब्राउज़र से डाउनलोड करें' चुनें।"
+                        rawMsg.contains("github", ignoreCase = true) ->
+                            "डाउनलोड सर्वर तक पहुँचने में समस्या। कृपया 'ब्राउज़र से डाउनलोड करें' चुनें।"
+                        else -> rawMsg.ifBlank { "नेटवर्क डाउनलोड त्रुटि (Network Download Error)" }
+                    }
+                    onError(friendlyMsg)
                 }
             }
         }
