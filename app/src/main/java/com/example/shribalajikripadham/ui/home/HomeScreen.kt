@@ -58,6 +58,12 @@ import java.io.File
 import com.example.shribalajikripadham.data.sacred.SacredTrack
 import com.example.shribalajikripadham.service.BhajanAudioService
 import com.example.shribalajikripadham.util.DevotionalAudioCacheManager
+import com.example.shribalajikripadham.data.model.BhaktiStatusItem
+import com.example.shribalajikripadham.data.model.DailySuvichar
+import com.example.shribalajikripadham.data.network.StatusSyncManager
+import com.example.shribalajikripadham.ui.status.BhaktiStatusBar
+import com.example.shribalajikripadham.ui.status.CreateStatusDialog
+import com.example.shribalajikripadham.ui.status.StatusViewerDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 
@@ -187,6 +193,34 @@ fun HomeScreen(
     var viewingLyricsTrack by remember { mutableStateOf<SacredTrack?>(null) }
     var showAppDownloadShareDialog by remember { mutableStateOf(false) }
     var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+    // 🚩 Device Identity & Status State
+    val deviceId = remember {
+        com.example.shribalajikripadham.hardware.DeviceFingerprintManager.getDeviceId(context)
+    }
+    val devIdentity = remember {
+        com.example.shribalajikripadham.data.network.AppTelemetryManager.resolveCurrentDeviceIdentity(context)
+    }
+    val currentUserName = devIdentity.first.ifBlank { "श्री बालाजी भक्त" }
+    val currentUserPhone = devIdentity.second
+    val currentUserCity = devIdentity.third.first
+    val currentUserRole = devIdentity.third.third
+    val isUserAdmin = currentUserRole == "SUPER_ADMIN" || currentUserRole == "ADMIN"
+
+    // 🚩 24-Hour Bhakti Status & WhatsApp Story System
+    var activeStatuses by remember { mutableStateOf<List<BhaktiStatusItem>>(emptyList()) }
+    var dailySuvichar by remember { mutableStateOf(DailySuvichar.default()) }
+    var selectedViewingStatus by remember { mutableStateOf<BhaktiStatusItem?>(null) }
+    var showCreateStatusDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val res = StatusSyncManager.fetchActiveStatuses()
+        if (res.isSuccess) {
+            val (list, suvi) = res.getOrNull() ?: Pair(emptyList(), DailySuvichar.default())
+            activeStatuses = list
+            dailySuvichar = suvi
+        }
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -1184,6 +1218,15 @@ fun HomeScreen(
             ) {
                 when (selectedHomeTab) {
                     HomeTab.DARSHAN_TOKEN -> {
+                        // 🚩 DIVINE 24-HOUR BHAKTI STATUS & WHATSAPP STORY BAR
+                        BhaktiStatusBar(
+                            statuses = activeStatuses,
+                            isHindi = isHindi,
+                            onOpenCreateStatus = { showCreateStatusDialog = true },
+                            onOpenStatus = { selectedViewingStatus = it },
+                            modifier = Modifier.padding(bottom = sectionSpacing)
+                        )
+
                         // 📖 BHAKT APP MARGDARSHIKA (USER MANUAL PDF) BANNER
                         Card(
                             colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
@@ -2332,6 +2375,46 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    // 🚩 Bhakti Status Viewer Modal
+    if (selectedViewingStatus != null) {
+        StatusViewerDialog(
+            status = selectedViewingStatus!!,
+            dailySuvichar = dailySuvichar,
+            isAdmin = isUserAdmin,
+            currentDeviceId = deviceId,
+            currentUserName = currentUserName,
+            currentUserPhone = currentUserPhone,
+            isHindi = isHindi,
+            onDismiss = { selectedViewingStatus = null },
+            onStatusDeleted = { deletedId ->
+                activeStatuses = activeStatuses.filter { it.id != deletedId }
+            }
+        )
+    }
+
+    // 🚩 Create Devotee Status Frame Modal
+    if (showCreateStatusDialog) {
+        CreateStatusDialog(
+            initialUserName = currentUserName,
+            initialUserPhone = currentUserPhone,
+            initialUserCity = currentUserCity,
+            deviceId = deviceId,
+            suvichar = dailySuvichar,
+            isHindi = isHindi,
+            onDismiss = { showCreateStatusDialog = false },
+            onStatusUploaded = {
+                scope.launch {
+                    val res = StatusSyncManager.fetchActiveStatuses()
+                    if (res.isSuccess) {
+                        val (list, suvi) = res.getOrNull() ?: Pair(emptyList(), DailySuvichar.default())
+                        activeStatuses = list
+                        dailySuvichar = suvi
+                    }
+                }
+            }
+        )
     }
 }
 

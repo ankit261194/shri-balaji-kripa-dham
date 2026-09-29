@@ -36,7 +36,7 @@ try {
         device_id VARCHAR(120) NOT NULL UNIQUE,
         device_model VARCHAR(100) NOT NULL DEFAULT 'Android Device',
         android_version VARCHAR(50) NOT NULL DEFAULT '',
-        app_version VARCHAR(50) NOT NULL DEFAULT '2.56.18',
+        app_version VARCHAR(50) NOT NULL DEFAULT '2.56.19',
         user_name VARCHAR(100) NOT NULL DEFAULT '',
         phone_number VARCHAR(30) NOT NULL DEFAULT '',
         city VARCHAR(100) NOT NULL DEFAULT '',
