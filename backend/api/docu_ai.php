@@ -360,5 +360,301 @@ if ($action === 'analyze_text' || $action === 'replace_text') {
     exit(0);
 }
 
+// 5. Enterprise Handwriting to Text AI (Gemini 1.5 Flash Vision OCR)
+if ($action === 'handwriting_ocr') {
+    header('Content-Type: application/json; charset=utf-8');
+    $base64Image = $inputData['image'] ?? null;
+    $customKey = $inputData['gemini_api_key'] ?? $_SERVER['HTTP_X_GEMINI_KEY'] ?? null;
+    $activeKey = (!empty($customKey) && strlen($customKey) > 10) ? $customKey : $GEMINI_API_KEY;
+
+    if (empty($base64Image)) {
+        echo json_encode(['success' => false, 'error' => 'Missing image parameter'], JSON_UNESCAPED_UNICODE);
+        exit(0);
+    }
+
+    if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
+        $base64Image = substr($base64Image, strpos($base64Image, ',') + 1);
+    }
+
+    $prompt = "You are a world-class paleographer, forensic handwriting examiner, and document transcription AI.\n" .
+              "Carefully transcribe ALL handwritten or cursive text in this image with extreme accuracy.\n" .
+              "Guidelines:\n" .
+              "1. Faithfully extract English, Hindi (Devanagari), numbers, mathematical notations, and special characters.\n" .
+              "2. Maintain document structure: use markdown '# Heading' for main titles, '## Subheading' for sections, '- ' or '1. ' for lists.\n" .
+              "3. If tabular notes or columns exist, format them as clean markdown tables (| col1 | col2 |).\n" .
+              "4. Preserve paragraph breaks with double newlines.\n" .
+              "5. Do NOT add conversational banter, intro greetings, or meta commentary. Return ONLY the transcribed text.";
+
+    $geminiPayload = [
+        'contents' => [
+            [
+                'parts' => [
+                    ['text' => $prompt],
+                    [
+                        'inlineData' => [
+                            'mimeType' => 'image/jpeg',
+                            'data' => $base64Image
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        'generationConfig' => [
+            'temperature' => 0.15,
+            'maxOutputTokens' => 4096
+        ]
+    ];
+
+    $geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$PRIMARY_MODEL}:generateContent?key={$activeKey}";
+
+    $ch = curl_init($geminiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($geminiPayload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+    $geminiResponse = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $transcription = "";
+    if ($httpCode === 200 && !empty($geminiResponse)) {
+        $respJson = json_decode($geminiResponse, true);
+        $candidateText = $respJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        $transcription = trim($candidateText);
+    }
+
+    if (empty($transcription)) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'Handwriting transcription failed or empty. Please ensure clear lighting.'
+        ], JSON_UNESCAPED_UNICODE);
+        exit(0);
+    }
+
+    $wordCount = count(preg_split('/\s+/', $transcription, -1, PREG_SPLIT_NO_EMPTY));
+    $charCount = mb_strlen($transcription, 'UTF-8');
+
+    echo json_encode([
+        'success' => true,
+        'cloud_ai' => true,
+        'model' => $PRIMARY_MODEL,
+        'transcription' => $transcription,
+        'word_count' => $wordCount,
+        'char_count' => $charCount,
+        'timestamp' => time()
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    exit(0);
+}
+
+// 6. Multi-Device Cloud Sync & Document Hosting (CamScanner-Style Web Portal)
+if ($action === 'cloud_upload') {
+    header('Content-Type: application/json; charset=utf-8');
+    $fileBase64 = $inputData['file_base64'] ?? null;
+    $fileType = strtolower(trim($inputData['file_type'] ?? 'pdf'));
+    $title = trim($inputData['title'] ?? 'Document_' . date('Ymd_His'));
+    $pagesCount = intval($inputData['pages_count'] ?? 1);
+
+    if (empty($fileBase64)) {
+        echo json_encode(['success' => false, 'error' => 'Missing file_base64 parameter'], JSON_UNESCAPED_UNICODE);
+        exit(0);
+    }
+
+    if (preg_match('/^data:(application\/pdf|image\/\w+);base64,/', $fileBase64, $type)) {
+        $fileBase64 = substr($fileBase64, strpos($fileBase64, ',') + 1);
+    }
+
+    $fileData = @base64_decode($fileBase64);
+    if (!$fileData || strlen($fileData) < 10) {
+        echo json_encode(['success' => false, 'error' => 'Invalid file data'], JSON_UNESCAPED_UNICODE);
+        exit(0);
+    }
+
+    $cloudDir = __DIR__ . '/../docu_cloud';
+    if (!is_dir($cloudDir)) {
+        @mkdir($cloudDir, 0755, true);
+    }
+
+    $docId = 'doc_' . substr(md5(uniqid(rand(), true)), 0, 10);
+    $ext = ($fileType === 'pdf') ? 'pdf' : 'jpg';
+    $filePath = $cloudDir . '/' . $docId . '.' . $ext;
+    @file_put_contents($filePath, $fileData);
+
+    $meta = [
+        'doc_id' => $docId,
+        'title' => $title,
+        'file_type' => $fileType,
+        'ext' => $ext,
+        'pages_count' => $pagesCount,
+        'file_size' => strlen($fileData),
+        'created_at' => time(),
+        'created_date' => date('d M Y, h:i A')
+    ];
+    @file_put_contents($cloudDir . '/' . $docId . '.json', json_encode($meta, JSON_PRETTY_PRINT));
+
+    $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
+    $shareUrl = $baseUrl . "/api/docu_ai.php?action=view&id=" . $docId;
+    $downloadUrl = $baseUrl . "/api/docu_ai.php?action=download&id=" . $docId;
+    $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($shareUrl);
+
+    echo json_encode([
+        'success' => true,
+        'doc_id' => $docId,
+        'title' => $title,
+        'share_url' => $shareUrl,
+        'download_url' => $downloadUrl,
+        'qr_url' => $qrUrl,
+        'file_size_bytes' => strlen($fileData),
+        'file_size_formatted' => round(strlen($fileData) / 1024, 1) . ' KB',
+        'pages_count' => $pagesCount,
+        'timestamp' => time()
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    exit(0);
+}
+
+// 7. Direct Cloud Document Download
+if ($action === 'download') {
+    $id = preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['id'] ?? '');
+    $cloudDir = __DIR__ . '/../docu_cloud';
+    $metaFile = $cloudDir . '/' . $id . '.json';
+    if (!file_exists($metaFile)) {
+        header('HTTP/1.0 404 Not Found');
+        echo "Document not found or expired.";
+        exit(0);
+    }
+    $meta = json_decode(file_get_contents($metaFile), true);
+    $ext = $meta['ext'] ?? 'pdf';
+    $filePath = $cloudDir . '/' . $id . '.' . $ext;
+    if (!file_exists($filePath)) {
+        header('HTTP/1.0 404 Not Found');
+        echo "Document file missing.";
+        exit(0);
+    }
+
+    $mime = ($ext === 'pdf') ? 'application/pdf' : 'image/jpeg';
+    $safeTitle = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $meta['title'] ?? 'scanned_doc') . '.' . $ext;
+
+    header('Content-Type: ' . $mime);
+    header('Content-Disposition: attachment; filename="' . $safeTitle . '"');
+    header('Content-Length: ' . filesize($filePath));
+    readfile($filePath);
+    exit(0);
+}
+
+// 8. Responsive CamScanner-Style Web Viewer (Desktop & Mobile)
+if ($action === 'view') {
+    $id = preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['id'] ?? '');
+    $cloudDir = __DIR__ . '/../docu_cloud';
+    $metaFile = $cloudDir . '/' . $id . '.json';
+    if (!file_exists($metaFile)) {
+        header('HTTP/1.0 404 Not Found');
+        echo "<!DOCTYPE html><html><body style='font-family:sans-serif;text-align:center;padding:50px;'><h2>404 - Document Not Found</h2><p>This document may have been deleted or expired.</p></body></html>";
+        exit(0);
+    }
+
+    $meta = json_decode(file_get_contents($metaFile), true);
+    $title = htmlspecialchars($meta['title'] ?? 'Scanned Document');
+    $ext = $meta['ext'] ?? 'pdf';
+    $createdDate = htmlspecialchars($meta['created_date'] ?? date('d M Y'));
+    $fileSize = round(($meta['file_size'] ?? 0) / 1024, 1) . ' KB';
+    $pagesCount = intval($meta['pages_count'] ?? 1);
+
+    $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
+    $fileDirectUrl = $baseUrl . "/api/docu_ai.php?action=download&id=" . $id;
+    $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($baseUrl . "/api/docu_ai.php?action=view&id=" . $id);
+
+    header('Content-Type: text/html; charset=utf-8');
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $title; ?> - DocuEdit Cloud Web Viewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        header { background: #1e293b; border-bottom: 1px solid #334155; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .logo-wrap { display: flex; align-items: center; gap: 10px; }
+        .logo-badge { background: linear-gradient(135deg, #2563eb, #38bdf8); color: white; font-weight: 800; font-size: 14px; padding: 6px 12px; border-radius: 8px; letter-spacing: 0.5px; }
+        .doc-title { font-size: 16px; font-weight: 700; color: #f1f5f9; max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .doc-sub { font-size: 12px; color: #94a3b8; }
+        .actions-wrap { display: flex; align-items: center; gap: 10px; }
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.2s ease; border: none; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-outline { background: #334155; color: #e2e8f0; }
+        .btn-outline:hover { background: #475569; }
+        .btn-emerald { background: #059669; color: white; }
+        .btn-emerald:hover { background: #047857; }
+        main { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; background: #090d16; overflow: auto; padding: 16px; }
+        .viewer-card { width: 100%; height: 100%; max-width: 1080px; background: #1e293b; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        iframe { width: 100%; height: 100%; border: none; background: white; }
+        img.doc-preview { max-width: 100%; max-height: 100%; object-fit: contain; }
+        /* QR Modal */
+        #qrModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; }
+        .modal-content { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 24px; text-align: center; max-width: 320px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+        .qr-img { width: 220px; height: 220px; border-radius: 12px; margin: 16px 0; background: white; padding: 8px; }
+        @media (max-width: 768px) {
+            header { flex-direction: column; gap: 10px; align-items: flex-start; }
+            .actions-wrap { width: 100%; justify-content: space-between; }
+            .doc-title { max-width: 200px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-wrap">
+            <span class="logo-badge">DOCUEDIT ☁️</span>
+            <div>
+                <div class="doc-title"><?php echo $title; ?></div>
+                <div class="doc-sub"><?php echo $pagesCount; ?> page(s) • <?php echo $fileSize; ?> • Synced: <?php echo $createdDate; ?></div>
+            </div>
+        </div>
+        <div class="actions-wrap">
+            <button class="btn btn-outline" onclick="copyLink()">📋 Copy Link</button>
+            <button class="btn btn-outline" onclick="openQr()">📱 QR Code</button>
+            <button class="btn btn-emerald" onclick="window.print()">🖨️ Print</button>
+            <a href="<?php echo $fileDirectUrl; ?>" class="btn btn-primary" download>⬇️ Download <?php echo strtoupper($ext); ?></a>
+        </div>
+    </header>
+
+    <main>
+        <div class="viewer-card">
+            <?php if ($ext === 'pdf'): ?>
+                <iframe src="<?php echo $fileDirectUrl; ?>#toolbar=1&navpanes=0"></iframe>
+            <?php else: ?>
+                <img src="<?php echo $fileDirectUrl; ?>" alt="Document Preview" class="doc-preview" />
+            <?php endif; ?>
+        </div>
+    </main>
+
+    <div id="qrModal" onclick="closeQr(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="font-size:16px; font-weight:700;">Scan to View on Phone</h3>
+            <p style="font-size:12px; color:#94a3b8; margin-top:4px;">Open your phone camera to view or download instantly.</p>
+            <img src="<?php echo $qrUrl; ?>" alt="QR Code" class="qr-img" />
+            <button class="btn btn-outline" style="width:100%;" onclick="closeQr()">Done</button>
+        </div>
+    </div>
+
+    <script>
+        function openQr() { document.getElementById('qrModal').style.display = 'flex'; }
+        function closeQr() { document.getElementById('qrModal').style.display = 'none'; }
+        function copyLink() {
+            navigator.clipboard.writeText(window.location.href);
+            alert("✅ Web Viewer link copied to clipboard!");
+        }
+    </script>
+</body>
+</html>
+<?php
+    exit(0);
+}
+
 header('Content-Type: application/json; charset=utf-8');
 echo json_encode(['success' => false, 'error' => 'Invalid action'], JSON_UNESCAPED_UNICODE);
