@@ -23,13 +23,34 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
+    <!-- Android 11+ Package Visibility for Anti-Spoof Location Security -->
+    <queries>
+        <package android:name="com.lexa.fakegps" />
+        <package android:name="com.rosteam.gpsemulator" />
+        <package android:name="com.incorporateapps.fakegps.fre" />
+        <package android:name="com.incorporateapps.fakegps" />
+        <package android:name="com.fakegps.mock" />
+        <package android:name="com.blogspot.newprocess.fakegps" />
+        <package android:name="com.gsmartstudio.fakegps" />
+        <package android:name="org.hola.gpslocation" />
+        <package android:name="com.location.changer" />
+        <package android:name="com.mock.location" />
+        <package android:name="com.hopeway.fakegps" />
+        <package android:name="com.usefullapps.fakegpslocationpro" />
+        <package android:name="com.ninja.gps" />
+        <package android:name="com.marlon.floating.fake.location" />
+        <package android:name="com.pe.fakegps" />
+        <package android:name="com.lkr.fakegps" />
+        <package android:name="com.dreams.fakegps" />
+    </queries>
+
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true"
+        android:usesCleartextTraffic="false"
         android:largeHeap="true"
         android:hardwareAccelerated="true"
         android:theme="@style/Theme.ShriBalajiKripaDham">

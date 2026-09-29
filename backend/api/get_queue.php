@@ -21,59 +21,24 @@ header('Content-Type: application/json; charset=utf-8');
 header("Access-Control-Allow-Origin: *");
 
 $darbarDate = trim($_GET['date'] ?? date('Y-m-d'));
+$darbarVenue = trim($_GET['venue'] ?? $_GET['darbar_venue'] ?? '');
 $pdo = getDB();
 
 try {
     $settingsStmt = $pdo->query("SELECT * FROM ashram_settings WHERE id = 1 LIMIT 1");
     $settings = $settingsStmt->fetch() ?: [];
 
-    $stmt = $pdo->prepare("SELECT * FROM tokens WHERE darbar_date = :darbar_date ORDER BY token_number ASC");
-    $stmt->execute([':darbar_date' => $darbarDate]);
-    $rawTokens = $stmt->fetchAll();
-
-    $reservedSlots = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
-    $existingMap = [];
-    $maxTokenNum = 0;
-    foreach ($rawTokens as $t) {
-        $num = intval($t['token_number']);
-        $existingMap[$num] = $t;
-        if ($num > $maxTokenNum) $maxTokenNum = $num;
+    $sql = "SELECT * FROM tokens WHERE darbar_date = :darbar_date";
+    $params = [':darbar_date' => $darbarDate];
+    if (!empty($darbarVenue)) {
+        $sql .= " AND darbar_venue = :darbar_venue";
+        $params[':darbar_venue'] = $darbarVenue;
     }
+    $sql .= " ORDER BY token_number ASC";
 
-    $tokens = [];
-    // If there are tokens today, display sequence including any unfilled VIP reserved slots up to maxTokenNum
-    if ($maxTokenNum > 0) {
-        for ($i = 1; $i <= $maxTokenNum; $i++) {
-            if (isset($existingMap[$i])) {
-                $tokens[] = $existingMap[$i];
-            } elseif (in_array($i, $reservedSlots)) {
-                // Unfilled reserved VIP slot
-                $tokens[] = [
-                    "id" => -($i),
-                    "darbar_date" => $darbarDate,
-                    "token_number" => $i,
-                    "patient_name" => "व्यवस्थापक आरक्षित",
-                    "phone_number" => "---",
-                    "city" => "विशेष आरक्षित",
-                    "device_id" => "",
-                    "latitude" => 0,
-                    "longitude" => 0,
-                    "distance_km" => 0,
-                    "origin_address" => "व्यवस्थापक आरक्षित स्लॉट",
-                    "destination_address" => "श्री बालाजी कृपा धाम",
-                    "photo_url" => "",
-                    "status" => "WAITING",
-                    "status_description" => "प्रतीक्षारत / मरीज अभी उपस्थित नहीं है",
-                    "registered_by" => "RESERVED_SLOT",
-                    "is_darshan_completed" => 0,
-                    "is_reserved_unfilled" => 1,
-                    "created_at" => time() * 1000
-                ];
-            }
-        }
-    } else {
-        $tokens = $rawTokens;
-    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $tokens = $stmt->fetchAll();
 
     $waiting = 0;
     $completed = 0;

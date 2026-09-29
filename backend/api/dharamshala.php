@@ -121,6 +121,12 @@ try {
                 exit;
             }
 
+            if (strtotime($checkoutDate) < strtotime($checkinDate)) {
+                http_response_code(400);
+                echo json_encode(["success" => false, "error" => "चेकआउट की तारीख चेकइन से पहले नहीं हो सकती।"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
             // Fetch room
             $rStmt = $pdo->prepare("SELECT * FROM dharamshala_rooms WHERE id = :id LIMIT 1");
             $rStmt->execute([':id' => $roomId]);

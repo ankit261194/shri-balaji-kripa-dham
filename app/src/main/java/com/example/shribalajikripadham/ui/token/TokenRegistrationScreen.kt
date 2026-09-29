@@ -480,6 +480,7 @@ fun TokenRegistrationScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
@@ -1601,8 +1602,9 @@ fun TokenRegistrationScreen(
                                     errorMessage = if (isHindi) "कृपया मरीज/भक्त का नाम दर्ज करें।" else "Please enter patient name."
                                     return@Button
                                 }
-                                if (phoneNumber.length < 10) {
-                                    errorMessage = if (isHindi) "कृपया 10 अंकों का मोबाइल नंबर दर्ज करें।" else "Please enter valid 10-digit mobile number."
+                                val cleanPhone = phoneNumber.trim().filter { it.isDigit() }
+                                if (cleanPhone.length != 10 || cleanPhone[0] !in '6'..'9') {
+                                    errorMessage = if (isHindi) "कृपया मान्य 10 अंकों का मोबाइल नंबर दर्ज करें (6, 7, 8 या 9 से प्रारंभ)।" else "Please enter a valid 10-digit Indian mobile number starting with 6-9."
                                     return@Button
                                 }
                                 val devoteeVillageOrCity = originAddress.trim().ifEmpty { city.trim() }.ifEmpty { if (isHindi) "स्थानीय" else "Local" }

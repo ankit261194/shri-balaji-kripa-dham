@@ -73,20 +73,12 @@ object AppTelemetryManager {
                 resolvedCity = tokCity
             }
 
-            // 3. Fallback to local SQLite database if still blank
-            if (resolvedName.isBlank() || resolvedPhone.isBlank() || resolvedCity.isBlank()) {
-                val dbHelper = DatabaseHelper(context)
-                val db = dbHelper.readableDatabase
-                val cursor = db.rawQuery(
-                    "SELECT patient_name, phone_number, village_or_city FROM tokens WHERE patient_name != '' ORDER BY id DESC LIMIT 1",
-                    null
-                )
-                if (cursor.moveToFirst()) {
-                    if (resolvedName.isBlank()) resolvedName = cursor.getString(0) ?: ""
-                    if (resolvedPhone.isBlank()) resolvedPhone = cursor.getString(1) ?: ""
-                    if (resolvedCity.isBlank()) resolvedCity = cursor.getString(2) ?: ""
-                }
-                cursor.close()
+            // 3. Devotee device fallback (NEVER steal random patient names from tokens table)
+            if (resolvedName.isBlank()) {
+                resolvedName = "भक्त (${getDeviceModelName()})"
+            }
+            if (resolvedCity.isBlank()) {
+                resolvedCity = "ऑनलाइन भक्त"
             }
         } catch (e: Exception) {
             e.printStackTrace()

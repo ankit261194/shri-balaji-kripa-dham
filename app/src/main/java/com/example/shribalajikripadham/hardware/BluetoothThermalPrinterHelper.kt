@@ -44,8 +44,22 @@ object BluetoothThermalPrinterHelper {
     private val ESC_FEED_PAPER = byteArrayOf(0x1B, 0x64, 0x03) // Feed 3 lines
     private val ESC_CUT_PAPER = byteArrayOf(0x1D, 0x56, 0x41, 0x10) // Full cut
 
+    fun hasBluetoothPermission(context: Context): Boolean {
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.BLUETOOTH_CONNECT
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            true
+        }
+    }
+
     @SuppressLint("MissingPermission")
     fun getPairedPrinters(context: Context): List<BluetoothDevice> {
+        if (!hasBluetoothPermission(context)) {
+            Log.w(TAG, "BLUETOOTH_CONNECT permission not granted on Android 12+")
+            return emptyList()
+        }
         return try {
             val adapter = BluetoothAdapter.getDefaultAdapter() ?: return emptyList()
             if (!adapter.isEnabled) return emptyList()

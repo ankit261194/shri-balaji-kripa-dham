@@ -224,13 +224,22 @@ class AshramBackgroundPushJobService : JobService() {
                             }
                         } catch (e: Exception) {}
 
-                        if (prefs.contains(KEY_LAST_SERVING_TOKEN)) {
+                        // Only send queue advancement notification if the devotee actually holds a token for today
+                        val myTokPrefs = try {
+                            context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
+                        } catch (e: Exception) { null }
+                        val devoteeToken = myTokPrefs?.getInt("my_token_number", 0) ?: 0
+                        val devoteeDate = myTokPrefs?.getString("my_token_date", "") ?: ""
+                        val todayStr = com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
+                        val hasTokenToday = devoteeToken > 0 && (devoteeDate == todayStr || devoteeDate.isBlank())
+
+                        if (hasTokenToday && prefs.contains(KEY_LAST_SERVING_TOKEN)) {
                             val lastToken = prefs.getInt(KEY_LAST_SERVING_TOKEN, 0)
                             if (lastToken > 0 && currentServingToken > lastToken) {
                                 NotificationHelper.showSystemNotification(
                                     context = context,
-                                    title = "🎫 लाइव टोकन अपडेट",
-                                    message = "वर्तमान में टोकन नंबर $currentServingToken बुलाया जा रहा है। कृपया अपनी बारी हेतु तैयार रहें।",
+                                    title = "🎫 लाइव कतार अपडेट",
+                                    message = "दरबार में अब टोकन नंबर $currentServingToken बुलाया जा रहा है। (आपका टोकन #$devoteeToken)",
                                     notificationId = 10005
                                 )
                                 prefs.edit().putInt(KEY_LAST_SERVING_TOKEN, currentServingToken).apply()

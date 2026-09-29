@@ -36,7 +36,7 @@ try {
         device_id VARCHAR(120) NOT NULL UNIQUE,
         device_model VARCHAR(100) NOT NULL DEFAULT 'Android Device',
         android_version VARCHAR(50) NOT NULL DEFAULT '',
-        app_version VARCHAR(50) NOT NULL DEFAULT '2.56.13',
+        app_version VARCHAR(50) NOT NULL DEFAULT '2.56.16',
         user_name VARCHAR(100) NOT NULL DEFAULT '',
         phone_number VARCHAR(30) NOT NULL DEFAULT '',
         city VARCHAR(100) NOT NULL DEFAULT '',
@@ -80,24 +80,9 @@ try {
             $role = 'USER';
         }
 
-        // If user_name or phone_number is missing, lookup from tokens table on server
-        if (empty($userName) || empty($phoneNumber)) {
-            try {
-                $tokStmt = $pdo->prepare("SELECT patient_name, phone_number, city FROM tokens WHERE device_id = :did AND status != 'CANCELLED' ORDER BY id DESC LIMIT 1");
-                $tokStmt->execute([':did' => $deviceId]);
-                $tok = $tokStmt->fetch(PDO::FETCH_ASSOC);
-                if ($tok) {
-                    if (empty($userName) && !empty($tok['patient_name'])) {
-                        $userName = $tok['patient_name'];
-                    }
-                    if (empty($phoneNumber) && !empty($tok['phone_number'])) {
-                        $phoneNumber = $tok['phone_number'];
-                    }
-                    if (empty($city) && !empty($tok['city'])) {
-                        $city = $tok['city'];
-                    }
-                }
-            } catch (Exception $e) {}
+        // If user_name is missing, assign clean devotee device name based on model
+        if (empty($userName)) {
+            $userName = "भक्त (" . ($deviceModel ?: 'Android Device') . ")";
         }
 
         // Upsert into active_devices
@@ -147,29 +132,6 @@ try {
     // =========================================================================
     // 2. FETCH ALL ACTIVE DEVICES TELEMETRY (GET)
     // =========================================================================
-    // Auto-seed past token registrations into active_devices if not present
-    try {
-        $pdo->exec("
-            INSERT IGNORE INTO active_devices 
-                (device_id, device_model, android_version, app_version, user_name, phone_number, city, role, open_count, ip_address, last_seen_at, created_at)
-            SELECT 
-                t.device_id,
-                'Android Smartphone',
-                '',
-                '2.56.13',
-                t.patient_name,
-                t.phone_number,
-                t.city,
-                'USER',
-                1,
-                '',
-                t.created_at,
-                t.created_at
-            FROM tokens t
-            WHERE t.device_id IS NOT NULL AND t.device_id != '' AND t.status != 'CANCELLED'
-            GROUP BY t.device_id
-        ");
-    } catch (Exception $e) {}
 
     // Today midnight in IST (UTC+5:30)
     $todayMidnightMs = (strtotime('today midnight')) * 1000;

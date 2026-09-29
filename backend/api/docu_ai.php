@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 $GEMINI_API_KEY = getenv('GEMINI_API_KEY') ?: base64_decode("QVEuQWI4Uk42SjhUaC1hekxIdUtweXVOUjI0dWJ2d2g2UkhQRFZnWEI2WllIVlFfbi1oSkE=");
-$PRIMARY_MODEL = "gemini-3.1-flash-lite";
+$PRIMARY_MODEL = "gemini-1.5-flash";
 
 $FONT_CATALOG = [
     'roboto' => [

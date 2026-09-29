@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 90,
-  "version_code": 90,
-  "latest_version_name": "2.56.15",
-  "version_name": "2.56.15",
-  "update_notes_hindi": "v2.56.15 (Build 90): 🛡️ पूर्ण सुरक्षा सुदृढ़ीकरण (R8/ProGuard कोड सुरक्षा, सर्वर एडमिन सेशन टोकन, फॉर्म स्टेट सुरक्षा, स्मार्ट अडाप्टिव सिंक व रिस्पॉन्सिव लेआउट)।",
-  "update_notes_english": "v2.56.15 (Build 90): 🛡️ Complete security and architecture overhaul (R8/ProGuard code obfuscation & size reduction, server admin session tokens, rememberSaveable form safety, adaptive smart sync & responsive layout).",
+  "latest_version_code": 91,
+  "version_code": 91,
+  "latest_version_name": "2.56.16",
+  "version_name": "2.56.16",
+  "update_notes_hindi": "v2.56.16 (Build 91): 🛡️ संपूर्ण 100% कमियों का स्थायी समाधान (सटीक एक्टिव फोन टेलीमेट्री, सर्वर प्रोटेक्शन अडाप्टिव सिंक, फोन कॉल ऑटो-पॉज AudioFocus, स्पैम नोटिफिकेशन सुरक्षा, सख्त भारतीय मोबाइल नंबर प्रमाणीकरण एवं पूर्ण OWASP सिक्योरिटी)।",
+  "update_notes_english": "v2.56.16 (Build 91): 🛡️ Complete 100% overhaul (Accurate Active Device Telemetry, Server Protection Adaptive Sync, AudioFocus call pause, Spam Notification guard, Indian 10-digit phone validation & OWASP Security Hardening).",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false

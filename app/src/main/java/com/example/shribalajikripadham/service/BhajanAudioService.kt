@@ -113,6 +113,92 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
     private var trackUrl: String = ""
     private var trackIndex: Int = -1
 
+    // AudioFocus Management: Prevents playing over phone calls or other media apps
+    private var audioManager: android.media.AudioManager? = null
+    private var focusRequestObj: Any? = null
+    private var pausedByTransientLoss = false
+
+    private val audioFocusChangeListener = android.media.AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            android.media.AudioManager.AUDIOFOCUS_LOSS -> {
+                pausedByTransientLoss = false
+                if (mediaPlayer?.isPlaying == true) {
+                    mediaPlayer?.pause()
+                    _isPlaying.value = false
+                    updateNotification(false)
+                }
+            }
+            android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                // Incoming phone call or navigation prompt: automatically pause
+                if (mediaPlayer?.isPlaying == true) {
+                    pausedByTransientLoss = true
+                    mediaPlayer?.pause()
+                    _isPlaying.value = false
+                    updateNotification(false)
+                }
+            }
+            android.media.AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                // Notification beep: duck audio volume temporarily
+                try {
+                    if (mediaPlayer?.isPlaying == true) {
+                        mediaPlayer?.setVolume(0.2f, 0.2f)
+                    }
+                } catch (e: Exception) {}
+            }
+            android.media.AudioManager.AUDIOFOCUS_GAIN -> {
+                try {
+                    mediaPlayer?.setVolume(1.0f, 1.0f)
+                } catch (e: Exception) {}
+                if (pausedByTransientLoss) {
+                    pausedByTransientLoss = false
+                    if (mediaPlayer != null) {
+                        mediaPlayer?.start()
+                        _isPlaying.value = true
+                        updateNotification(true)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun requestAudioFocus(): Boolean {
+        audioManager = getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val audioAttributes = AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .build()
+            val req = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN)
+                .setAudioAttributes(audioAttributes)
+                .setAcceptsDelayedFocusGain(false)
+                .setOnAudioFocusChangeListener(audioFocusChangeListener)
+                .build()
+            focusRequestObj = req
+            return audioManager?.requestAudioFocus(req) == android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        } else {
+            @Suppress("DEPRECATION")
+            return audioManager?.requestAudioFocus(
+                audioFocusChangeListener,
+                android.media.AudioManager.STREAM_MUSIC,
+                android.media.AudioManager.AUDIOFOCUS_GAIN
+            ) == android.media.AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        }
+    }
+
+    private fun abandonAudioFocus() {
+        try {
+            audioManager?.let { am ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val req = focusRequestObj as? android.media.AudioFocusRequest
+                    if (req != null) am.abandonAudioFocusRequest(req)
+                } else {
+                    @Suppress("DEPRECATION")
+                    am.abandonAudioFocus(audioFocusChangeListener)
+                }
+            }
+        } catch (e: Exception) {}
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -204,6 +290,7 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
                 if (isLocalOfflineFile) {
                     // Synchronous instant 0.0s preparation for offline files
                     prepare()
+                    requestAudioFocus()
                     start()
                     _isBuffering.value = false
                     _isPlaying.value = true
@@ -231,6 +318,7 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
 
     override fun onPrepared(mp: MediaPlayer?) {
         _isBuffering.value = false
+        requestAudioFocus()
         mp?.start()
         _isPlaying.value = true
         _durationMs.value = mp?.duration ?: 0
@@ -329,6 +417,7 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
     }
 
     private fun stopSelfService() {
+        abandonAudioFocus()
         progressJob?.cancel()
         try {
             mediaPlayer?.stop()

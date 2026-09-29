@@ -313,12 +313,13 @@ fun HomeScreen(
                 val todayStr = com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
                 val hasActiveTokenToday = myToken > 0 && (myTokenDate == todayStr || myTokenDate.isBlank())
 
-                // ⚡ Instant 0ms fetch on entry, then high-frequency 2.5s live polling on active/Sunday
+                // Adaptive smart sync: balances responsiveness with server resource protection
                 if (!isFirstIteration) {
                     val baseDelayMs = when {
-                        consecutiveErrors > 0 -> (5_000L * consecutiveErrors.coerceAtMost(3))
-                        hasActiveTokenToday || settings.isDarbarActive -> 2_500L
-                        else -> 5_000L
+                        consecutiveErrors > 0 -> (10_000L * consecutiveErrors.coerceAtMost(4))
+                        hasActiveTokenToday -> 12_000L // 12 seconds for devotee holding active token
+                        settings.isDarbarActive -> 18_000L // 18 seconds during active darbar
+                        else -> 25_000L // 25 seconds during off-hours
                     }
                     delay(baseDelayMs)
                 }

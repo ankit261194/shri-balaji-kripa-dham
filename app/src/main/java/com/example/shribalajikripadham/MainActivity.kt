@@ -25,6 +25,7 @@ import com.example.shribalajikripadham.theme.SaffronPrimary
 import com.example.shribalajikripadham.theme.ShriBalajiKripaDhamTheme
 import com.example.shribalajikripadham.util.AppUpdateManager
 import com.example.shribalajikripadham.util.NotificationHelper
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -92,12 +93,19 @@ class MainActivity : ComponentActivity() {
                     // Background telemetry heartbeat & immediate broadcast push check
                     kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                         try {
-                            com.example.shribalajikripadham.data.network.AppTelemetryManager.recordAppHeartbeat(context)
                             com.example.shribalajikripadham.notification.AshramBackgroundPushJobService.executeBackgroundCheck(context)
-                            // 📿 Silent, hidden background devotional audio pre-cache (0ms buffer + self-healing)
                             com.example.shribalajikripadham.util.DevotionalAudioCacheManager.startSilentBackgroundSync(context)
                         } catch (e: Exception) {
                             e.printStackTrace()
+                        }
+                        // Continuous foreground heartbeat loop: keeps device marked "Online Now" while app is actively used
+                        while (isActive) {
+                            try {
+                                com.example.shribalajikripadham.data.network.AppTelemetryManager.recordAppHeartbeat(context)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                            kotlinx.coroutines.delay(180_000L) // Ping every 3 minutes
                         }
                     }
 
