@@ -78,7 +78,7 @@ foreach ($filesToSync as $relPath) {
             @mkdir($dir, 0755, true);
         }
         if (@file_put_contents($targetPath, $content) !== false) {
-            $updated[] = $relPath;
+            $updated[] = $relPath . " (" . strlen($content) . " bytes)";
         } else {
             $failed[] = $relPath . " (Write error)";
         }
