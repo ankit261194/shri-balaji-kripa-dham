@@ -1186,9 +1186,10 @@ fun HomeScreen(
                     HomeTab.DARSHAN_TOKEN -> {
                         // 📖 BHAKT APP MARGDARSHIKA (USER MANUAL PDF) BANNER
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9E6)),
-                            shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
-                            border = BorderStroke(1.2.dp, Color(0xFFFFB300)),
+                            colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+                            shape = currentTheme.cardShape,
+                            border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
+                            elevation = CardDefaults.cardElevation(defaultElevation = currentTheme.cardElevation),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = sectionSpacing)
@@ -1203,7 +1204,7 @@ fun HomeScreen(
                                     modifier = Modifier
                                         .size(if (isCompact) 32.dp else 42.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFFFFECB3)),
+                                        .background(currentTheme.primaryColor.copy(alpha = 0.12f)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text("📖", fontSize = if (isCompact) 17.sp else 22.sp)
@@ -1214,14 +1215,14 @@ fun HomeScreen(
                                         text = if (isHindi) "भक्त संपूर्ण ऐप मार्गदर्शिका (PDF)" else "Devotee User Manual (PDF)",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = if (isCompact) 12.sp else 13.5.sp,
-                                        color = MaroonPrimary,
+                                        color = currentTheme.primaryColor,
                                         maxLines = 1
                                     )
                                     if (!isUltraCompact) {
                                         Text(
                                             text = if (isHindi) "ऐप में क्या-क्या है और कैसे उपयोग करें - संपूर्ण विवरण पढ़ें" else "Learn everything you can do and see in the app",
                                             fontSize = if (isCompact) 9.5.sp else 10.5.sp,
-                                            color = TextSecondaryDark,
+                                            color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781),
                                             maxLines = 1,
                                             lineHeight = 13.sp
                                         )
@@ -1241,8 +1242,8 @@ fun HomeScreen(
                                             Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
                                         }
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                                    shape = currentTheme.buttonShape,
                                     contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 10.dp, vertical = if (isCompact) 4.dp else 6.dp)
                                 ) {
                                     Text(
@@ -1267,21 +1268,18 @@ fun HomeScreen(
                             colors = CardDefaults.cardColors(
                                 containerColor = when (scheduleState) {
                                     is SundayScheduleState.Open -> Color(0xFFE8F5E9)
-                                    else -> Color(0xFFFFFBEA)
+                                    else -> currentTheme.surfaceLight
                                 }
                             ),
-                            shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
+                            shape = currentTheme.cardShape,
                             border = BorderStroke(
-                                if (isCompact) 1.5.dp else 2.dp,
+                                currentTheme.cardBorderWidth,
                                 when (scheduleState) {
                                     is SundayScheduleState.Open -> Color(0xFF2E7D32)
-                                    is SundayScheduleState.SundayBeforeStart -> Color(0xFFD84315)
-                                    is SundayScheduleState.SundayClosedEvening -> Color(0xFF8B0000)
-                                    is SundayScheduleState.NonSunday -> Color(0xFFD84315)
-                                    else -> Color(0xFF8B0000)
+                                    else -> currentTheme.cardBorderColor
                                 }
                             ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = if (isCompact) 2.dp else 4.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = currentTheme.cardElevation),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = sectionSpacing)
@@ -1300,10 +1298,7 @@ fun HomeScreen(
                                         .background(
                                             when (scheduleState) {
                                                 is SundayScheduleState.Open -> Color(0xFF2E7D32)
-                                                is SundayScheduleState.SundayBeforeStart -> Color(0xFFD84315)
-                                                is SundayScheduleState.SundayClosedEvening -> Color(0xFF8B0000)
-                                                is SundayScheduleState.NonSunday -> Color(0xFFD84315)
-                                                else -> Color(0xFF8B0000)
+                                                else -> currentTheme.primaryColor.copy(alpha = 0.12f)
                                             }
                                         ),
                                     contentAlignment = Alignment.Center
@@ -1334,7 +1329,7 @@ fun HomeScreen(
                                         fontSize = if (isCompact) 13.sp else 15.sp,
                                         color = when (scheduleState) {
                                             is SundayScheduleState.Open -> Color(0xFF1B5E20)
-                                            else -> Color(0xFF8B0000)
+                                            else -> currentTheme.primaryColor
                                         }
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
@@ -1352,7 +1347,7 @@ fun HomeScreen(
                                         lineHeight = if (isCompact) 14.sp else 18.sp,
                                         color = when (scheduleState) {
                                             is SundayScheduleState.Open -> Color(0xFF1B5E20)
-                                            else -> Color(0xFF111111)
+                                            else -> if (currentTheme.isDark) Color(0xFFD1D7DB) else Color(0xFF3B4A54)
                                         }
                                     )
                                 }
@@ -1362,10 +1357,10 @@ fun HomeScreen(
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = when (scheduleState) {
                                             is SundayScheduleState.Open -> Color(0xFF2E7D32)
-                                            else -> Color(0xFF8B0000)
+                                            else -> currentTheme.primaryColor
                                         }
                                     ),
-                                    shape = RoundedCornerShape(8.dp),
+                                    shape = currentTheme.buttonShape,
                                     contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 10.dp, vertical = if (isCompact) 4.dp else 6.dp)
                                 ) {
                                     Text(
@@ -1413,6 +1408,7 @@ fun HomeScreen(
                             devoteeToken = if (isMyTokenToday) devoteeMyToken else 0,
                             isHindi = isHindi,
                             isCompact = isCompact,
+                            currentTheme = currentTheme,
                             onNavigateToToken = onNavigateToToken
                         )
                         Spacer(modifier = Modifier.height(sectionSpacing))
@@ -1420,7 +1416,8 @@ fun HomeScreen(
                         // 🌺 दैनिक अलौकिक श्रृंगार दर्शन
                         DailyDarshanQuickCard(
                             isHindi = isHindi,
-                            ashramSettings = settings
+                            ashramSettings = settings,
+                            currentTheme = currentTheme
                         )
                         Spacer(modifier = Modifier.height(sectionSpacing))
 
@@ -1493,10 +1490,11 @@ fun HomeScreen(
 
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = if (bottomIsUpdateAvailable) Color(0xFFFFF8E1) else Color(0xFFF1F8E9)
+                                containerColor = currentTheme.surfaceLight
                             ),
-                            shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
-                            border = BorderStroke(1.5.dp, if (bottomIsUpdateAvailable) Color(0xFFFFB300) else Color(0xFF81C784)),
+                            shape = currentTheme.cardShape,
+                            elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+                            border = BorderStroke(currentTheme.cardBorderWidth, if (bottomIsUpdateAvailable) currentTheme.primaryColor else currentTheme.cardBorderColor),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = sectionSpacing)
@@ -1514,7 +1512,7 @@ fun HomeScreen(
                                         modifier = Modifier
                                             .size(if (isCompact) 36.dp else 44.dp)
                                             .clip(CircleShape)
-                                            .background(if (bottomIsUpdateAvailable) Color(0xFFFFB300) else Color(0xFFC8E6C9)),
+                                            .background(currentTheme.primaryColor.copy(alpha = 0.15f)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Text(if (bottomIsUpdateAvailable) "🔔" else "📲", fontSize = if (isCompact) 18.sp else 22.sp)
@@ -1533,18 +1531,18 @@ fun HomeScreen(
                                                 },
                                                 fontWeight = FontWeight.ExtraBold,
                                                 fontSize = if (isCompact) 13.sp else 14.5.sp,
-                                                color = if (bottomIsUpdateAvailable) MaroonPrimary else Color(0xFF1B5E20)
+                                                color = currentTheme.primaryColor
                                             )
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Surface(
-                                                color = if (bottomIsUpdateAvailable) Color(0xFFFFE082) else Color(0xFFA5D6A7),
+                                                color = currentTheme.primaryColor.copy(alpha = 0.12f),
                                                 shape = RoundedCornerShape(8.dp)
                                             ) {
                                                 Text(
                                                     text = if (bottomIsUpdateAvailable) "Build #${settings.latestVersionCode}" else "Build #$bottomCurrentCode",
                                                     fontSize = if (isCompact) 9.5.sp else 10.5.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = if (bottomIsUpdateAvailable) Color(0xFFB78103) else Color(0xFF1B5E20),
+                                                    color = currentTheme.primaryColor,
                                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                                 )
                                             }
@@ -1558,7 +1556,7 @@ fun HomeScreen(
                                             },
                                             fontSize = if (isCompact) 10.5.sp else 11.5.sp,
                                             fontWeight = if (bottomIsUpdateAvailable) FontWeight.Normal else FontWeight.SemiBold,
-                                            color = if (bottomIsUpdateAvailable) TextSecondaryDark else Color(0xFF2E7D32)
+                                            color = if (bottomIsUpdateAvailable) (if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781)) else currentTheme.primaryColor
                                         )
                                     }
                                 }
@@ -1609,8 +1607,8 @@ fun HomeScreen(
                                             }
                                         },
                                         modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(8.dp),
-                                        border = BorderStroke(1.dp, if (bottomIsUpdateAvailable) Color(0xFFFFB300) else Color(0xFF81C784)),
+                                        shape = currentTheme.buttonShape,
+                                        border = BorderStroke(1.dp, currentTheme.primaryColor),
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                                     ) {
                                         Text("🔄", fontSize = 13.sp)
@@ -1619,7 +1617,7 @@ fun HomeScreen(
                                             text = if (isHindi) "अपडेट जांचें" else "Check Update",
                                             fontSize = if (isCompact) 11.sp else 12.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (bottomIsUpdateAvailable) MaroonPrimary else Color(0xFF2E7D32)
+                                            color = currentTheme.primaryColor
                                         )
                                     }
 
@@ -1636,9 +1634,9 @@ fun HomeScreen(
                                         },
                                         modifier = Modifier.weight(1f),
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (bottomIsUpdateAvailable) MaroonPrimary else Color(0xFF2E7D32)
+                                            containerColor = currentTheme.primaryColor
                                         ),
-                                        shape = RoundedCornerShape(8.dp),
+                                        shape = currentTheme.buttonShape,
                                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                                     ) {
                                         Text(if (bottomIsUpdateAvailable) "⚡" else "📥", fontSize = 13.sp)
@@ -2348,14 +2346,15 @@ fun ActionTile(
     isCompact: Boolean = false,
     onClick: () -> Unit
 ) {
-    val cornerRadius = if (isCompact) 13.dp else 18.dp
+    val currentTheme = LocalSacredStyle.current.theme
+    val cornerRadius = if (isCompact) 12.dp else 16.dp
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(cornerRadius),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isCompact) 2.5.dp else 4.dp, pressedElevation = 1.dp),
-        border = BorderStroke(1.dp, badgeColor.copy(alpha = 0.22f)),
+        colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+        shape = if (isCompact) RoundedCornerShape(cornerRadius) else currentTheme.cardShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isCompact) 1.dp else currentTheme.cardElevation, pressedElevation = 1.dp),
+        border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
         modifier = modifier
-            .clip(RoundedCornerShape(cornerRadius))
+            .clip(if (isCompact) RoundedCornerShape(cornerRadius) else currentTheme.cardShape)
             .clickable { onClick() }
     ) {
         Column(
@@ -2382,14 +2381,14 @@ fun ActionTile(
                 if (isPopular) {
                     Surface(
                         shape = RoundedCornerShape(if (isCompact) 6.dp else 8.dp),
-                        color = GoldSecondary.copy(alpha = 0.15f),
-                        border = BorderStroke(0.8.dp, GoldDark)
+                        color = currentTheme.primaryColor.copy(alpha = 0.12f),
+                        border = BorderStroke(0.8.dp, currentTheme.primaryColor.copy(alpha = 0.35f))
                     ) {
                         Text(
                             text = "★ मुख्य",
                             fontSize = if (isCompact) 8.5.sp else 10.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = SaffronDark,
+                            color = currentTheme.primaryColor,
                             modifier = Modifier.padding(horizontal = if (isCompact) 4.dp else 6.dp, vertical = if (isCompact) 1.dp else 2.dp)
                         )
                     }
@@ -2402,14 +2401,14 @@ fun ActionTile(
                 text = title,
                 fontSize = if (isCompact) 13.sp else 15.sp,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaroonAccent,
+                color = currentTheme.primaryColor,
                 maxLines = 1
             )
             Spacer(modifier = Modifier.height(if (isCompact) 1.5.dp else 3.dp))
             Text(
                 text = subtitle,
                 fontSize = if (isCompact) 10.sp else 11.5.sp,
-                color = TextSecondaryDark,
+                color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781),
                 fontWeight = FontWeight.Medium,
                 maxLines = 1
             )
@@ -2420,11 +2419,12 @@ fun ActionTile(
 @Composable
 fun SevadarCard(sevadar: SevadarProfile, isHindi: Boolean) {
     val context = LocalContext.current
+    val currentTheme = LocalSacredStyle.current.theme
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(3.dp),
-        border = BorderStroke(1.dp, Color(0xFFFFCC80)),
+        colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+        shape = currentTheme.cardShape,
+        elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+        border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
         modifier = Modifier.width(220.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -2433,8 +2433,8 @@ fun SevadarCard(sevadar: SevadarProfile, isHindi: Boolean) {
                     photoUri = sevadar.photoUri,
                     fallbackText = sevadar.name,
                     size = 50.dp,
-                    primaryColor = SaffronPrimary,
-                    borderColor = GoldDark
+                    primaryColor = currentTheme.primaryColor,
+                    borderColor = currentTheme.secondaryColor
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
@@ -2590,9 +2590,9 @@ fun RenderClassicSection(
         val contentText = if (isHindi) sectionConfig.customContentHindi.ifEmpty { sectionConfig.customContentEnglish } else sectionConfig.customContentEnglish.ifEmpty { sectionConfig.customContentHindi }
 
         Card(
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9EE)),
-            shape = RoundedCornerShape(if (isCompact) 8.dp else 12.dp),
-            border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.6f)),
+            colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+            shape = currentTheme.cardShape,
+            border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
             modifier = Modifier.fillMaxWidth().padding(bottom = if (isCompact) 4.dp else 6.dp)
         ) {
             Column(modifier = Modifier.padding(if (isCompact) 8.dp else 12.dp)) {
@@ -2603,7 +2603,7 @@ fun RenderClassicSection(
                         text = if (isHindi) sectionConfig.titleHindi else sectionConfig.titleEnglish,
                         fontWeight = FontWeight.Bold,
                         fontSize = if (isCompact) 11.5.sp else 13.sp,
-                        color = MaroonPrimary
+                        color = currentTheme.primaryColor
                     )
                     if (subtitleText.isNotBlank()) {
                         Spacer(modifier = Modifier.width(if (isCompact) 4.dp else 6.dp))
@@ -2644,8 +2644,7 @@ fun RenderClassicSection(
                             Brush.verticalGradient(
                                 colors = listOf(
                                     currentTheme.headerGradientStart,
-                                    currentTheme.headerGradientEnd,
-                                    Color(0xFF28000C)
+                                    currentTheme.headerGradientEnd
                                 )
                             )
                         )
@@ -2760,10 +2759,10 @@ fun RenderClassicSection(
             // 🔴 LIVE DARBAR STREAMING ON AIR TICKER
             if (settings.isDarbarLiveNow) {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = MaroonPrimary),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(2.dp, Color(0xFFFFD54F)),
-                    elevation = CardDefaults.cardElevation(6.dp),
+                    colors = CardDefaults.cardColors(containerColor = currentTheme.primaryColor),
+                    shape = currentTheme.cardShape,
+                    border = BorderStroke(currentTheme.cardBorderWidth + 0.5.dp, currentTheme.secondaryColor),
+                    elevation = CardDefaults.cardElevation(currentTheme.cardElevation + 2.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onNavigateToLiveDarbar() }
@@ -2791,7 +2790,7 @@ fun RenderClassicSection(
                                         text = if (isHindi) "🔴 दिव्य दरबार लाइव चालू है" else "🔴 Live Darbar Streaming Now",
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = 13.sp,
-                                        color = Color(0xFFFFD54F)
+                                        color = Color.White
                                     )
                                     Spacer(Modifier.width(6.dp))
                                     Surface(
@@ -2875,10 +2874,10 @@ fun RenderClassicSection(
         UiSectionConfig.ID_FREE_TREATMENT_BOX -> {
             // 100% FREE TREATMENT CERTIFIED TRUST SEAL
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(if (isCompact) 14.dp else 20.dp),
-                elevation = CardDefaults.cardElevation(if (isCompact) 3.dp else 5.dp),
-                border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
+                colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+                shape = currentTheme.cardShape,
+                elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+                border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(if (isCompact) 10.dp else 16.dp)) {
@@ -2887,9 +2886,9 @@ fun RenderClassicSection(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
-                            color = Color(0xFFFFF3E0),
-                            border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.4f)),
+                            shape = currentTheme.buttonShape,
+                            color = currentTheme.primaryColor.copy(alpha = 0.10f),
+                            border = BorderStroke(1.dp, currentTheme.primaryColor.copy(alpha = 0.25f)),
                             modifier = Modifier.size(if (isCompact) 40.dp else 52.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -2900,13 +2899,13 @@ fun RenderClassicSection(
                         Column(modifier = Modifier.weight(1f)) {
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFE8F5E9)
+                                color = currentTheme.primaryColor.copy(alpha = 0.12f)
                             ) {
                                 Text(
                                     text = if (isHindi) "★ पूर्णतः निःशुल्क (100% FREE)" else "★ 100% FREE OF COST",
                                     fontSize = if (isCompact) 9.5.sp else 10.5.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFF1B5E20),
+                                    color = currentTheme.primaryColor,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
@@ -2915,7 +2914,7 @@ fun RenderClassicSection(
                                 text = if (isHindi) "आध्यात्मिक कष्ट निवारण सेवा" else "Spiritual Healing Service",
                                 fontSize = if (isCompact) 14.sp else 16.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = MaroonAccent
+                                color = currentTheme.primaryColor
                             )
                         }
                     }
@@ -2952,17 +2951,17 @@ fun RenderClassicSection(
                     val formattedHindi = SundayTokenScheduleHelper.formatCountdownHindi(schedule.remainingMillis)
 
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                        shape = RoundedCornerShape(if (isCompact) 14.dp else 18.dp),
-                        border = BorderStroke(2.dp, Color(0xFFFFB300)),
-                        elevation = CardDefaults.cardElevation(if (isCompact) 4.dp else 6.dp),
+                        colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+                        shape = currentTheme.cardShape,
+                        border = BorderStroke(currentTheme.cardBorderWidth + 0.5.dp, currentTheme.primaryColor),
+                        elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(if (isCompact) 12.dp else 16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = Color(0xFFFF6F00),
+                                    shape = currentTheme.buttonShape,
+                                    color = currentTheme.primaryColor.copy(alpha = 0.15f),
                                     modifier = Modifier.size(if (isCompact) 32.dp else 40.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -2975,12 +2974,12 @@ fun RenderClassicSection(
                                         text = if (isHindi) "रविवार टोकन पंजीकरण: 12-घंटे पूर्व काउंटडाउन" else "Sunday Token Registration: 12h Countdown",
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = if (isCompact) 13.sp else 15.sp,
-                                        color = Color(0xFFE65100)
+                                        color = currentTheme.primaryColor
                                     )
                                     Text(
                                         text = if (isHindi) "खुलने का समय: ${schedule.formattedTarget}" else "Opens at: ${schedule.formattedTarget}",
                                         fontSize = if (isCompact) 10.5.sp else 12.sp,
-                                        color = Color(0xFF5D4037)
+                                        color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781)
                                     )
                                 }
                             }
@@ -3000,12 +2999,12 @@ fun RenderClassicSection(
                                     Text(
                                         text = if (isHindi) "टोकन पंजीकरण खुलने में शेष समय:" else "Time Remaining Until Registration Opens:",
                                         fontSize = if (isCompact) 10.5.sp else 11.5.sp,
-                                        color = Color(0xFFFFD54F),
+                                        color = currentTheme.secondaryColor,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = formattedClock,
+                                        formattedClock,
                                         fontSize = if (isCompact) 26.sp else 32.sp,
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color.White,
@@ -3013,7 +3012,7 @@ fun RenderClassicSection(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = formattedHindi,
+                                        formattedHindi,
                                         fontSize = if (isCompact) 10.sp else 11.sp,
                                         color = Color.White.copy(alpha = 0.85f),
                                         fontWeight = FontWeight.Medium
@@ -3036,8 +3035,8 @@ fun RenderClassicSection(
                                 )
                                 Button(
                                     onClick = onNavigateToToken,
-                                    colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
-                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                                    shape = currentTheme.buttonShape,
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp)
                                 ) {
                                     Text(if (isHindi) "टोकन पेज देखें" else "View Token Page", fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -3049,9 +3048,9 @@ fun RenderClassicSection(
                 is SundayScheduleState.Open -> {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-                        shape = RoundedCornerShape(if (isCompact) 14.dp else 18.dp),
-                        border = BorderStroke(2.dp, Color(0xFF2E7D32)),
-                        elevation = CardDefaults.cardElevation(if (isCompact) 4.dp else 6.dp),
+                        shape = currentTheme.cardShape,
+                        border = BorderStroke(currentTheme.cardBorderWidth + 1.dp, Color(0xFF2E7D32)),
+                        elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -3079,7 +3078,7 @@ fun RenderClassicSection(
                             Button(
                                 onClick = onNavigateToToken,
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                                shape = RoundedCornerShape(10.dp),
+                                shape = currentTheme.buttonShape,
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                             ) {
                                 Text(if (isHindi) "🎟️ टोकन लें" else "Get Token", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
@@ -3090,8 +3089,8 @@ fun RenderClassicSection(
                 is SundayScheduleState.ServiceDisabled -> {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
-                        shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
-                        border = BorderStroke(1.5.dp, Color(0xFFE57373)),
+                        shape = currentTheme.cardShape,
+                        border = BorderStroke(currentTheme.cardBorderWidth, Color(0xFFE57373)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -3115,25 +3114,33 @@ fun RenderClassicSection(
                 }
                 is SundayScheduleState.CustomScheduled -> {
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                        shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
-                        border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
+                        colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+                        shape = currentTheme.cardShape,
+                        border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("⏳", fontSize = 22.sp)
+                            Surface(
+                                shape = currentTheme.buttonShape,
+                                color = currentTheme.primaryColor.copy(alpha = 0.12f),
+                                modifier = Modifier.size(34.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text("⏳", fontSize = 18.sp)
+                                }
+                            }
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
                                     text = if (isHindi) "टोकन पंजीकरण पूर्व-निर्धारित है" else "Token Registration Scheduled",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
-                                    color = Color(0xFFE65100)
+                                    color = currentTheme.primaryColor
                                 )
                                 Text(
                                     text = if (isHindi) schedule.messageHindi else schedule.messageEnglish,
                                     fontSize = 11.sp,
-                                    color = Color(0xFF5D4037)
+                                    color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781)
                                 )
                             }
                         }
@@ -3143,20 +3150,28 @@ fun RenderClassicSection(
                 is SundayScheduleState.SundayBeforeStart,
                 is SundayScheduleState.SundayClosedEvening -> {
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-                        shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
-                        border = BorderStroke(1.5.dp, Color(0xFFFFB74D)),
+                        colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+                        shape = currentTheme.cardShape,
+                        border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("⏱️", fontSize = 22.sp)
+                            Surface(
+                                shape = currentTheme.buttonShape,
+                                color = currentTheme.primaryColor.copy(alpha = 0.12f),
+                                modifier = Modifier.size(34.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text("⏱️", fontSize = 18.sp)
+                                }
+                            }
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
                                     text = if (isHindi) "आगामी रविवार दरबार टोकन पंजीकरण" else "Upcoming Sunday Darbar Token",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
-                                    color = Color(0xFFE65100)
+                                    color = currentTheme.primaryColor
                                 )
                                 Text(
                                     text = if (isHindi)
@@ -3164,7 +3179,7 @@ fun RenderClassicSection(
                                     else
                                         "Tokens are issued Sundays 8:00 AM - 5:00 PM. 12h countdown starts Saturday 8:00 PM.",
                                     fontSize = 11.sp,
-                                    color = Color(0xFFBF360C)
+                                    color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781)
                                 )
                             }
                         }
@@ -3187,11 +3202,11 @@ fun RenderClassicSection(
             if (settings.isTokenServiceEnabled) {
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isBeforeSchedule) Color(0xFF422018) else Color(0xFF5C001E)
+                        containerColor = currentTheme.primaryColor
                     ),
-                    shape = RoundedCornerShape(if (isCompact) 14.dp else 20.dp),
-                    elevation = CardDefaults.cardElevation(if (isCompact) 4.dp else 6.dp),
-                    border = BorderStroke(1.5.dp, GoldSecondary),
+                    shape = currentTheme.cardShape,
+                    elevation = CardDefaults.cardElevation(currentTheme.cardElevation + 2.dp),
+                    border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.secondaryColor),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Box(
@@ -3200,8 +3215,8 @@ fun RenderClassicSection(
                             .background(
                                 Brush.horizontalGradient(
                                     listOf(
-                                        if (isBeforeSchedule) Color(0xFF422018) else Color(0xFF5C001E),
-                                        if (isBeforeSchedule) Color(0xFF2D1610) else Color(0xFF800028)
+                                        currentTheme.headerGradientStart,
+                                        currentTheme.headerGradientEnd
                                     )
                                 )
                             )
@@ -3217,9 +3232,9 @@ fun RenderClassicSection(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Surface(
-                                    shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
+                                    shape = currentTheme.buttonShape,
                                     color = Color.White.copy(alpha = 0.15f),
-                                    border = BorderStroke(1.dp, GoldLight.copy(alpha = 0.5f)),
+                                    border = BorderStroke(1.dp, currentTheme.secondaryColor.copy(alpha = 0.5f)),
                                     modifier = Modifier.size(if (isCompact) 38.dp else 50.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -3231,14 +3246,14 @@ fun RenderClassicSection(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             text = if (isHindi) "स्मार्ट चेहरा टोकन" else "Smart Face Token",
-                                            color = GoldLight,
+                                            color = Color.White,
                                             fontSize = if (isCompact) 13.5.sp else 15.5.sp,
                                             fontWeight = FontWeight.ExtraBold
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Surface(
                                             shape = RoundedCornerShape(5.dp),
-                                            color = SaffronPrimary
+                                            color = currentTheme.secondaryColor
                                         ) {
                                             Text(
                                                 text = "< 1s",
@@ -3266,10 +3281,10 @@ fun RenderClassicSection(
                             Button(
                                 onClick = onNavigateToFaceToken,
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isBeforeSchedule) Color.White.copy(alpha = 0.2f) else GoldSecondary,
-                                    contentColor = if (isBeforeSchedule) Color.White else Color(0xFF4A0017)
+                                    containerColor = if (isBeforeSchedule) Color.White.copy(alpha = 0.2f) else currentTheme.secondaryColor,
+                                    contentColor = Color.White
                                 ),
-                                shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
+                                shape = currentTheme.buttonShape,
                                 elevation = ButtonDefaults.buttonElevation(if (isCompact) 2.dp else 4.dp),
                                 contentPadding = PaddingValues(horizontal = if (isCompact) 10.dp else 14.dp, vertical = if (isCompact) 5.dp else 8.dp)
                             ) {
@@ -3295,11 +3310,11 @@ fun RenderClassicSection(
 
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = if (!isTuesdayOpen) Color(0xFF2C2216) else Color(0xFF1B4332)
+                        containerColor = if (!isTuesdayOpen) currentTheme.headerGradientStart else Color(0xFF1B4332)
                     ),
-                    shape = RoundedCornerShape(if (isCompact) 14.dp else 20.dp),
-                    elevation = CardDefaults.cardElevation(if (isCompact) 4.dp else 6.dp),
-                    border = BorderStroke(1.5.dp, if (isTuesdayOpen) Color(0xFF40916C) else Color(0xFFD4A373)),
+                    shape = currentTheme.cardShape,
+                    elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+                    border = BorderStroke(1.5.dp, if (isTuesdayOpen) Color(0xFF40916C) else currentTheme.cardBorderColor),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Box(
@@ -3308,8 +3323,8 @@ fun RenderClassicSection(
                             .background(
                                 Brush.horizontalGradient(
                                     listOf(
-                                        if (!isTuesdayOpen) Color(0xFF2C2216) else Color(0xFF1B4332),
-                                        if (!isTuesdayOpen) Color(0xFF1F170E) else Color(0xFF2D6A4F)
+                                        if (!isTuesdayOpen) currentTheme.headerGradientStart else Color(0xFF1B4332),
+                                        if (!isTuesdayOpen) currentTheme.headerGradientEnd else Color(0xFF2D6A4F)
                                     )
                                 )
                             )
@@ -3325,9 +3340,9 @@ fun RenderClassicSection(
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Surface(
-                                    shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
-                                    color = Color.White.copy(alpha = 0.15f),
-                                    border = BorderStroke(1.dp, Color(0xFFD4A373).copy(alpha = 0.5f)),
+                                    shape = currentTheme.buttonShape,
+                                    color = Color.White.copy(alpha = 0.18f),
+                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.3f)),
                                     modifier = Modifier.size(if (isCompact) 38.dp else 50.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -3339,14 +3354,14 @@ fun RenderClassicSection(
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
                                             text = if (isHindi) "मंगलवार टोकन (बुलन्दशहर)" else "Tuesday Token (Bulandshahr)",
-                                            color = Color(0xFFFFD54F),
+                                            color = Color.White,
                                             fontSize = if (isCompact) 13.5.sp else 15.5.sp,
                                             fontWeight = FontWeight.ExtraBold
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Surface(
                                             shape = RoundedCornerShape(5.dp),
-                                            color = Color(0xFFE65100)
+                                            color = if (isTuesdayOpen) Color(0xFF2E7D32) else currentTheme.primaryColor
                                         ) {
                                             Text(
                                                 text = if (isTuesdayOpen) "LIVE" else "मंगलवार",
@@ -3386,10 +3401,10 @@ fun RenderClassicSection(
                             Button(
                                 onClick = onNavigateToTuesdayToken,
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (!isTuesdayOpen) Color.White.copy(alpha = 0.2f) else Color(0xFF40916C),
+                                    containerColor = if (!isTuesdayOpen) Color.White.copy(alpha = 0.25f) else Color(0xFF40916C),
                                     contentColor = Color.White
                                 ),
-                                shape = RoundedCornerShape(if (isCompact) 10.dp else 14.dp),
+                                shape = currentTheme.buttonShape,
                                 elevation = ButtonDefaults.buttonElevation(if (isCompact) 2.dp else 4.dp),
                                 contentPadding = PaddingValues(horizontal = if (isCompact) 10.dp else 14.dp, vertical = if (isCompact) 5.dp else 8.dp)
                             ) {
@@ -3649,9 +3664,9 @@ fun RenderClassicSection(
 
                 // 📲 OFFICIAL APP DIRECT DOWNLOAD & SHARE CARD
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                    shape = RoundedCornerShape(if (isCompact) 12.dp else 16.dp),
-                    border = BorderStroke(1.5.dp, Color(0xFFFFB300)),
+                    colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+                    shape = currentTheme.cardShape,
+                    border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(if (isCompact) 10.dp else 14.dp)) {
@@ -3662,8 +3677,8 @@ fun RenderClassicSection(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                 Surface(
-                                    shape = RoundedCornerShape(10.dp),
-                                    color = SaffronPrimary,
+                                    shape = currentTheme.buttonShape,
+                                    color = currentTheme.primaryColor.copy(alpha = 0.12f),
                                     modifier = Modifier.size(if (isCompact) 36.dp else 42.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -3676,12 +3691,12 @@ fun RenderClassicSection(
                                         text = if (isHindi) "धाम का आधिकारिक ऐप (Direct APK)" else "Official Ashram App (Direct APK)",
                                         fontWeight = FontWeight.ExtraBold,
                                         fontSize = if (isCompact) 12.5.sp else 14.sp,
-                                        color = MaroonPrimary
+                                        color = currentTheme.primaryColor
                                     )
                                     Text(
                                         text = if (isHindi) "सीधा APK डाउनलोड करें या व्हाट्सएप पर शेयर करें" else "Direct APK download & share with devotees",
                                         fontSize = if (isCompact) 10.sp else 11.5.sp,
-                                        color = Color(0xFF5D4037)
+                                        color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781)
                                     )
                                 }
                             }
@@ -3699,8 +3714,8 @@ fun RenderClassicSection(
                                     val apkUrl = settings.apkDownloadUrl.ifBlank { AppUpdateManager.DEFAULT_APK_URL }
                                     AppUpdateManager.downloadAndInstallUpdate(context, apkUrl)
                                 },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
-                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                                shape = currentTheme.buttonShape,
                                 modifier = Modifier.weight(1.2f),
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                             ) {
@@ -3749,7 +3764,7 @@ fun RenderClassicSection(
                                     shareAppContent(context, msg, if (isHindi) "धाम ऐप शेयर करें" else "Share Ashram App")
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
-                                shape = RoundedCornerShape(8.dp),
+                                shape = currentTheme.buttonShape,
                                 modifier = Modifier.weight(1.2f),
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                             ) {
@@ -3764,7 +3779,8 @@ fun RenderClassicSection(
                             // More details modal button
                             OutlinedButton(
                                 onClick = { showSectionAppDownloadShareDialog = true },
-                                shape = RoundedCornerShape(8.dp),
+                                shape = currentTheme.buttonShape,
+                                border = BorderStroke(1.dp, currentTheme.primaryColor),
                                 modifier = Modifier.weight(0.9f),
                                 contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
                             ) {
@@ -3772,7 +3788,7 @@ fun RenderClassicSection(
                                     text = if (isHindi) "अन्य..." else "More...",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = MaroonPrimary
+                                    color = currentTheme.primaryColor
                                 )
                             }
                         }
@@ -3785,10 +3801,10 @@ fun RenderClassicSection(
             // Dedicated Aarti & Darbar Timings Card
             if (settings.isAartiTimingsVisible) {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(18.dp),
-                    elevation = CardDefaults.cardElevation(4.dp),
-                    border = BorderStroke(1.dp, GoldSecondary.copy(alpha = 0.5f)),
+                    colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+                    shape = currentTheme.cardShape,
+                    elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+                    border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -3796,9 +3812,9 @@ fun RenderClassicSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFFFF8E1),
-                            border = BorderStroke(1.dp, GoldSecondary.copy(alpha = 0.5f)),
+                            shape = currentTheme.buttonShape,
+                            color = currentTheme.primaryColor.copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, currentTheme.primaryColor.copy(alpha = 0.25f)),
                             modifier = Modifier.size(50.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -3811,7 +3827,7 @@ fun RenderClassicSection(
                                 text = if (isHindi) "आरती व दरबार समय सारणी" else "Aarti & Darbar Timings",
                                 fontWeight = FontWeight.ExtraBold,
                                 fontSize = 15.sp,
-                                color = MaroonAccent
+                                color = currentTheme.primaryColor
                             )
                             Spacer(modifier = Modifier.height(3.dp))
                             Text(
@@ -3830,10 +3846,10 @@ fun RenderClassicSection(
             // Guruji Profile & Darbar Details Card
             if (settings.isGurujiInfoVisible) {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(5.dp),
-                    border = BorderStroke(1.dp, currentTheme.secondaryColor.copy(alpha = 0.5f)),
+                    colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+                    shape = currentTheme.cardShape,
+                    elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+                    border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
@@ -3853,12 +3869,12 @@ fun RenderClassicSection(
                                     },
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = MaroonAccent
+                                    color = currentTheme.primaryColor
                                 )
                                 Text(
                                     text = if (isHindi) "आश्रम प्रमुख एवं मार्गदर्शक" else "Ashram Head & Spiritual Guide",
                                     fontSize = 13.sp,
-                                    color = SaffronDark,
+                                    color = currentTheme.secondaryColor,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
@@ -4161,9 +4177,10 @@ fun RenderClassicSection(
         UiSectionConfig.ID_CONTACT_FOOTER -> {
             // Official App Branding & Ashram Contact / Location Footer
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(18.dp),
-                elevation = CardDefaults.cardElevation(3.dp),
+                colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+                shape = currentTheme.cardShape,
+                elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+                border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -4174,7 +4191,7 @@ fun RenderClassicSection(
                         text = "🚩 श्री बालाजी कृपा धाम 🚩",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaroonAccent
+                        color = currentTheme.primaryColor
                     )
                     Text(
                         text = "ग्राम डूँगरा जाट, जिला बुलन्दशहर (उ०प्र०)",
@@ -4182,17 +4199,17 @@ fun RenderClassicSection(
                         color = TextSecondaryDark,
                         textAlign = TextAlign.Center
                     )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFFEEEEEE))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = currentTheme.cardBorderColor)
                     Text(
                         text = "Developer: Ankit Chaudhary",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = SaffronDark
+                        color = currentTheme.primaryColor
                     )
                     Text(
                         text = "Anti Gravity • High-Performance Native Android Engineering",
                         fontSize = 11.sp,
-                        color = TextSecondaryDark
+                        color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781)
                     )
                 }
             }
@@ -4300,11 +4317,12 @@ fun DevoteeSponsorAdBanner(
         bmp?.let { com.example.shribalajikripadham.util.DevoteePhotoHelper.toSoftwareBitmap(it) }
     }
 
+    val currentTheme = LocalSacredStyle.current.theme
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF0)),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(4.dp),
-        border = BorderStroke(1.2.dp, secondaryColor.copy(alpha = 0.8f)),
+        colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+        shape = currentTheme.cardShape,
+        elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+        border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = targetUrl.isNotBlank()) {
@@ -4318,7 +4336,7 @@ fun DevoteeSponsorAdBanner(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFFFF3E0))
+                    .background(currentTheme.primaryColor.copy(alpha = 0.10f))
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -4328,7 +4346,7 @@ fun DevoteeSponsorAdBanner(
                     text = "धर्मार्थ सहयोग एवं प्रायोजक (Ashram Sponsorship)",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFE65100)
+                    color = currentTheme.primaryColor
                 )
             }
             if (safeBmp != null) {
@@ -4346,7 +4364,7 @@ fun DevoteeSponsorAdBanner(
                     text = title.ifEmpty { "आश्रम सेवा व गौशाला सहयोग" },
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaroonAccent
+                    color = currentTheme.primaryColor
                 )
                 if (description.isNotBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
@@ -4377,6 +4395,7 @@ fun DevoteeSmartQueueEtaCard(
     devoteeToken: Int,
     isHindi: Boolean,
     isCompact: Boolean,
+    currentTheme: SacredTheme = LocalSacredStyle.current.theme,
     onNavigateToToken: () -> Unit
 ) {
     val isServingMe = queueEta.isNowServing
@@ -4388,21 +4407,20 @@ fun DevoteeSmartQueueEtaCard(
             containerColor = when {
                 isServingMe -> Color(0xFFE8F5E9)
                 hasPassed -> Color(0xFFFFEBEE)
-                isWaiting -> Color(0xFFFFF8E1)
-                else -> Color(0xFFFFF9EE)
+                else -> currentTheme.surfaceLight
             }
         ),
-        shape = RoundedCornerShape(if (isCompact) 14.dp else 18.dp),
+        shape = currentTheme.cardShape,
         border = BorderStroke(
-            1.5.dp,
+            currentTheme.cardBorderWidth,
             when {
                 isServingMe -> Color(0xFF2E7D32)
                 hasPassed -> Color(0xFFC62828)
-                isWaiting -> Color(0xFFFFB300)
-                else -> SaffronPrimary.copy(alpha = 0.7f)
+                isWaiting -> currentTheme.primaryColor
+                else -> currentTheme.cardBorderColor
             }
         ),
-        elevation = CardDefaults.cardElevation(if (isCompact) 3.dp else 6.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = currentTheme.cardElevation),
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onNavigateToToken() }
@@ -4441,8 +4459,7 @@ fun DevoteeSmartQueueEtaCard(
                         color = when {
                             isServingMe -> Color(0xFF1B5E20)
                             hasPassed -> Color(0xFFB71C1C)
-                            isWaiting -> Color(0xFFE65100)
-                            else -> MaroonPrimary
+                            else -> currentTheme.primaryColor
                         }
                     )
                 }
@@ -4451,8 +4468,7 @@ fun DevoteeSmartQueueEtaCard(
                     color = when {
                         isServingMe -> Color(0xFF2E7D32)
                         hasPassed -> Color(0xFFC62828)
-                        isWaiting -> Color(0xFFF57C00)
-                        else -> MaroonPrimary
+                        else -> currentTheme.primaryColor
                     },
                     shape = RoundedCornerShape(20.dp)
                 ) {
@@ -4477,9 +4493,9 @@ fun DevoteeSmartQueueEtaCard(
                 // Currently Serving Box
                 Surface(
                     modifier = Modifier.weight(1f),
-                    color = Color.White,
+                    color = currentTheme.surfaceLight,
                     shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, Color(0xFFFFD54F))
+                    border = BorderStroke(1.dp, currentTheme.cardBorderColor)
                 ) {
                     Column(
                         modifier = Modifier.padding(vertical = 8.dp, horizontal = 10.dp),
@@ -4488,14 +4504,14 @@ fun DevoteeSmartQueueEtaCard(
                         Text(
                             text = if (isHindi) "वर्तमान में सेवारत" else "Now Calling",
                             fontSize = 10.5.sp,
-                            color = Color.Gray,
+                            color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781),
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
                             text = if (runningTokenNumber > 0) "#$runningTokenNumber" else "--",
                             fontSize = if (isCompact) 20.sp else 24.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFFB71C1C)
+                            color = currentTheme.primaryColor
                         )
                     }
                 }
@@ -4503,9 +4519,9 @@ fun DevoteeSmartQueueEtaCard(
                 // Devotee's Personal Token Box
                 Surface(
                     modifier = Modifier.weight(1f),
-                    color = if (devoteeToken > 0) Color(0xFFFFFDE7) else Color.White,
+                    color = if (devoteeToken > 0) currentTheme.primaryColor.copy(alpha = 0.08f) else currentTheme.surfaceLight,
                     shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, if (devoteeToken > 0) Color(0xFFFFA000) else Color.LightGray)
+                    border = BorderStroke(1.dp, if (devoteeToken > 0) currentTheme.primaryColor.copy(alpha = 0.35f) else currentTheme.cardBorderColor)
                 ) {
                     Column(
                         modifier = Modifier.padding(vertical = 8.dp, horizontal = 10.dp),
@@ -4514,14 +4530,14 @@ fun DevoteeSmartQueueEtaCard(
                         Text(
                             text = if (isHindi) "आपका टोकन" else "Your Token",
                             fontSize = 10.5.sp,
-                            color = Color.Gray,
+                            color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781),
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
                             text = if (devoteeToken > 0) "#$devoteeToken" else if (isHindi) "उपलब्ध नहीं" else "None",
                             fontSize = if (isCompact) 18.sp else 22.sp,
                             fontWeight = FontWeight.Black,
-                            color = if (devoteeToken > 0) Color(0xFF1B5E20) else Color.DarkGray
+                            color = if (devoteeToken > 0) currentTheme.primaryColor else Color.DarkGray
                         )
                     }
                 }
@@ -4532,9 +4548,9 @@ fun DevoteeSmartQueueEtaCard(
             // ETA Status Details
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color.White.copy(alpha = 0.85f),
+                color = currentTheme.surfaceLight,
                 shape = RoundedCornerShape(8.dp),
-                border = BorderStroke(0.5.dp, Color.LightGray.copy(alpha = 0.5f))
+                border = BorderStroke(0.5.dp, currentTheme.cardBorderColor)
             ) {
                 Row(
                     modifier = Modifier
@@ -4547,14 +4563,14 @@ fun DevoteeSmartQueueEtaCard(
                         text = if (isHindi) queueEta.statusTextHindi else queueEta.statusTextEnglish,
                         fontSize = if (isCompact) 11.5.sp else 12.5.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF263238),
+                        color = if (currentTheme.isDark) Color(0xFFD1D7DB) else Color(0xFF263238),
                         modifier = Modifier.weight(1f)
                     )
                     Text(
                         text = " ➔",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaroonPrimary
+                        color = currentTheme.primaryColor
                     )
                 }
             }
@@ -4686,11 +4702,12 @@ fun DevoteeSacredGranthQuickCard(
     isHindi: Boolean,
     onNavigateToSacredGranth: () -> Unit
 ) {
+    val currentTheme = LocalSacredStyle.current.theme
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDF5)),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color(0xFFD7CCC8)),
-        elevation = CardDefaults.cardElevation(4.dp),
+        colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+        shape = currentTheme.cardShape,
+        border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
+        elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onNavigateToSacredGranth() }
@@ -4711,19 +4728,19 @@ fun DevoteeSacredGranthQuickCard(
                         text = if (isHindi) "पावन ग्रंथ (सुंदरकाण्ड, बाहुक, हनुमानाष्टक)" else "Sacred Texts (Sundarkand, Bahuk)",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
-                        color = MaroonPrimary
+                        color = currentTheme.primaryColor
                     )
                 }
 
                 Surface(
-                    color = Color(0xFFFFF3E0),
+                    color = currentTheme.primaryColor.copy(alpha = 0.12f),
                     shape = RoundedCornerShape(6.dp),
-                    border = BorderStroke(0.5.dp, Color(0xFFFFB74D))
+                    border = BorderStroke(0.5.dp, currentTheme.primaryColor.copy(alpha = 0.3f))
                 ) {
                     Text(
                         text = if (isHindi) "१०८% ऑफ़लाइन" else "100% Offline",
                         fontSize = 10.sp,
-                        color = Color(0xFFE65100),
+                        color = currentTheme.primaryColor,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
@@ -4741,8 +4758,8 @@ fun DevoteeSacredGranthQuickCard(
             )
 
             Surface(
-                color = MaroonPrimary,
-                shape = RoundedCornerShape(8.dp),
+                color = currentTheme.primaryColor,
+                shape = currentTheme.buttonShape,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -4758,7 +4775,7 @@ fun DevoteeSacredGranthQuickCard(
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
-                    Text("➔", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = AmberGold)
+                    Text("➔", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = currentTheme.secondaryColor)
                 }
             }
         }
@@ -4797,13 +4814,14 @@ fun DevoteeSacredAartiBhaktiTab(
         }
     }
 
+    val currentTheme = LocalSacredStyle.current.theme
     Column(modifier = Modifier.fillMaxWidth()) {
         // 1. Grand Header Card with Offline Status
         Card(
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(18.dp),
-            elevation = CardDefaults.cardElevation(4.dp),
-            border = BorderStroke(1.5.dp, GoldSecondary),
+            colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+            shape = currentTheme.cardShape,
+            elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+            border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -4817,8 +4835,8 @@ fun DevoteeSacredAartiBhaktiTab(
                         modifier = Modifier.weight(1f)
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = SaffronPrimary.copy(alpha = 0.15f),
+                            shape = currentTheme.buttonShape,
+                            color = currentTheme.primaryColor.copy(alpha = 0.12f),
                             modifier = Modifier.size(44.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -4831,7 +4849,7 @@ fun DevoteeSacredAartiBhaktiTab(
                                 text = if (isHindi) "नित्य सेवा व आरती संग्रह" else "Daily Aarti & Chalisa",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = MaroonPrimary
+                                color = currentTheme.primaryColor
                             )
                             Text(
                                 text = if (isHindi) "पावन पाठ • बफर-मुक्त ध्वनि" else "Sacred Tracks • Zero Buffering",
@@ -4885,7 +4903,8 @@ fun DevoteeSacredAartiBhaktiTab(
                                 Toast.makeText(context, if (isHindi) "✅ ऑफ़लाइन बैकअप अद्यतन किया जा रहा है" else "Offline cache syncing...", Toast.LENGTH_SHORT).show()
                             }
                         },
-                        shape = RoundedCornerShape(10.dp),
+                        shape = currentTheme.buttonShape,
+                        border = BorderStroke(1.dp, currentTheme.primaryColor),
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                     ) {
@@ -4893,14 +4912,14 @@ fun DevoteeSacredAartiBhaktiTab(
                             text = if (isSyncing) "🔄 सिंक जारी..." else "🔄 बैकअप सिंक",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaroonPrimary
+                            color = currentTheme.primaryColor
                         )
                     }
 
                     Button(
                         onClick = onNavigateToLiveDarbar,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                        shape = currentTheme.buttonShape,
                         modifier = Modifier.weight(1.3f),
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                     ) {
@@ -4919,9 +4938,9 @@ fun DevoteeSacredAartiBhaktiTab(
         if (isPlaying || currentTitle.isNotBlank()) {
             Spacer(modifier = Modifier.height(10.dp))
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-                shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.2.dp, SaffronPrimary),
+                colors = CardDefaults.cardColors(containerColor = currentTheme.primaryColor.copy(alpha = 0.08f)),
+                shape = currentTheme.cardShape,
+                border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.primaryColor.copy(alpha = 0.4f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -5036,14 +5055,14 @@ fun DevoteeSacredAartiBhaktiTab(
 
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isThisPlaying) Color(0xFFFFF8E1) else Color.White
+                        containerColor = if (isThisPlaying) currentTheme.primaryColor.copy(alpha = 0.08f) else currentTheme.surfaceLight
                     ),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = currentTheme.cardShape,
                     border = BorderStroke(
-                        if (isThisPlaying) 1.5.dp else 1.dp,
-                        if (isThisPlaying) GoldDark else Color(0xFFEEEEEE)
+                        if (isThisPlaying) 1.5.dp else currentTheme.cardBorderWidth,
+                        if (isThisPlaying) currentTheme.primaryColor else currentTheme.cardBorderColor
                     ),
-                    elevation = CardDefaults.cardElevation(if (isThisPlaying) 4.dp else 2.dp),
+                    elevation = CardDefaults.cardElevation(if (isThisPlaying) currentTheme.cardElevation + 1.dp else currentTheme.cardElevation),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
@@ -5060,7 +5079,7 @@ fun DevoteeSacredAartiBhaktiTab(
                             ) {
                                 Surface(
                                     shape = CircleShape,
-                                    color = if (isThisPlaying) SaffronPrimary else Color(0xFFF5F5F5),
+                                    color = if (isThisPlaying) currentTheme.primaryColor else currentTheme.primaryColor.copy(alpha = 0.12f),
                                     modifier = Modifier.size(28.dp)
                                 ) {
                                     Box(contentAlignment = Alignment.Center) {
@@ -5068,7 +5087,7 @@ fun DevoteeSacredAartiBhaktiTab(
                                             text = "${index + 1}",
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = if (isThisPlaying) Color.White else MaroonPrimary
+                                            color = if (isThisPlaying) Color.White else currentTheme.primaryColor
                                         )
                                     }
                                 }
@@ -5078,7 +5097,7 @@ fun DevoteeSacredAartiBhaktiTab(
                                         text = if (isHindi) track.titleHindi else track.titleEnglish,
                                         fontSize = 13.5.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaroonPrimary
+                                        color = currentTheme.primaryColor
                                     )
                                     Text(
                                         text = track.subtitleHindi,
@@ -5131,7 +5150,7 @@ fun DevoteeSacredAartiBhaktiTab(
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (isThisPlaying) Color(0xFF2E7D32) else currentTheme.primaryColor
                                 ),
-                                shape = RoundedCornerShape(8.dp),
+                                shape = currentTheme.buttonShape,
                                 modifier = Modifier.weight(1f),
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                             ) {
@@ -5146,7 +5165,8 @@ fun DevoteeSacredAartiBhaktiTab(
                             // Lyrics Button
                             OutlinedButton(
                                 onClick = { onOpenLyrics(track) },
-                                shape = RoundedCornerShape(8.dp),
+                                shape = currentTheme.buttonShape,
+                                border = BorderStroke(1.dp, currentTheme.primaryColor),
                                 modifier = Modifier.weight(1f),
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                             ) {
@@ -5154,7 +5174,7 @@ fun DevoteeSacredAartiBhaktiTab(
                                     text = "📖 संपूर्ण पाठ",
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaroonPrimary
+                                    color = currentTheme.primaryColor
                                 )
                             }
                         }
@@ -5189,17 +5209,17 @@ fun DevoteeDharamshalaYatraTab(
         // 1. Dharamshala Room Booking Card (Controlled by SuperAdmin isDharamshalaLive)
         if (isDharamshalaLive) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(18.dp),
-                elevation = CardDefaults.cardElevation(4.dp),
-                border = BorderStroke(1.2.dp, Color(0xFF00796B)),
+                colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+                shape = currentTheme.cardShape,
+                elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+                border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFE0F2F1),
+                            shape = currentTheme.buttonShape,
+                            color = currentTheme.primaryColor.copy(alpha = 0.12f),
                             modifier = Modifier.size(44.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -5212,7 +5232,7 @@ fun DevoteeDharamshalaYatraTab(
                                 text = if (isHindi) "धर्मशाला व कमरा आरक्षण" else "Dharamshala Room Booking",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF004D40)
+                                color = currentTheme.primaryColor
                             )
                             Text(
                                 text = if (isHindi) "आश्रम में रात्रि विश्राम एवं आवास व्यवस्था" else "Clean Rooms & Rest Facilities",
@@ -5238,8 +5258,8 @@ fun DevoteeDharamshalaYatraTab(
 
                     Button(
                         onClick = onNavigateToDharamshala,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00796B)),
-                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                        shape = currentTheme.buttonShape,
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(vertical = 11.dp)
                     ) {
@@ -5254,10 +5274,10 @@ fun DevoteeDharamshalaYatraTab(
             }
         } else {
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(18.dp),
-                elevation = CardDefaults.cardElevation(2.dp),
-                border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+                colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+                shape = currentTheme.cardShape,
+                elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+                border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -5265,8 +5285,8 @@ fun DevoteeDharamshalaYatraTab(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFFF5F5F5),
+                        shape = currentTheme.buttonShape,
+                        color = currentTheme.primaryColor.copy(alpha = 0.12f),
                         modifier = Modifier.size(54.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -5278,7 +5298,7 @@ fun DevoteeDharamshalaYatraTab(
                         text = if (isHindi) "धर्मशाला व कमरा आरक्षण सेवा अभी बंद है" else "Dharamshala Booking is Currently Inactive",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF37474F)
+                        color = currentTheme.primaryColor
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -5296,17 +5316,17 @@ fun DevoteeDharamshalaYatraTab(
 
         // 2. Balaji Yatra & Bus Booking Card
         Card(
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(18.dp),
-            elevation = CardDefaults.cardElevation(4.dp),
-            border = BorderStroke(1.2.dp, GoldDark),
+            colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+            shape = currentTheme.cardShape,
+            elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+            border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFFFF8E1),
+                        shape = currentTheme.buttonShape,
+                        color = currentTheme.primaryColor.copy(alpha = 0.12f),
                         modifier = Modifier.size(44.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -5319,7 +5339,7 @@ fun DevoteeDharamshalaYatraTab(
                             text = if (isHindi) "श्री बालाजी यात्रा व बस सेवा" else "Balaji Yatra & Bus Booking",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = MaroonAccent
+                            color = currentTheme.primaryColor
                         )
                         Text(
                             text = if (isHindi) "आश्रम हेतु सीधी बस व सीट आरक्षण" else "Direct Bus Service to Ashram",
@@ -5349,8 +5369,8 @@ fun DevoteeDharamshalaYatraTab(
                 ) {
                     Button(
                         onClick = onNavigateToYatra,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaroonAccent),
-                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                        shape = currentTheme.buttonShape,
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(vertical = 10.dp)
                     ) {
@@ -5364,7 +5384,8 @@ fun DevoteeDharamshalaYatraTab(
 
                     OutlinedButton(
                         onClick = onNavigateToYatraExpenses,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = currentTheme.buttonShape,
+                        border = BorderStroke(1.dp, currentTheme.primaryColor),
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(vertical = 10.dp)
                     ) {
@@ -5372,7 +5393,7 @@ fun DevoteeDharamshalaYatraTab(
                             text = if (isHindi) "💰 खर्च डायरी" else "Expense Diary",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaroonAccent
+                            color = currentTheme.primaryColor
                         )
                     }
                 }
@@ -5383,17 +5404,17 @@ fun DevoteeDharamshalaYatraTab(
 
         // 3. Distance & GPS Route Card
         Card(
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(18.dp),
-            elevation = CardDefaults.cardElevation(4.dp),
-            border = BorderStroke(1.2.dp, Color(0xFF3949AB).copy(alpha = 0.5f)),
+            colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+            shape = currentTheme.cardShape,
+            elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+            border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFE8EAF6),
+                        shape = currentTheme.buttonShape,
+                        color = currentTheme.primaryColor.copy(alpha = 0.12f),
                         modifier = Modifier.size(44.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -5406,7 +5427,7 @@ fun DevoteeDharamshalaYatraTab(
                             text = if (isHindi) "आश्रम दूरी व सड़क मार्ग (GPS Route)" else "Ashram Route & Distance",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF1A237E)
+                            color = currentTheme.primaryColor
                         )
                         Text(
                             text = "ग्राम डूँगरा जाट, बुलन्दशहर (उ.प्र.)",
@@ -5441,7 +5462,7 @@ fun DevoteeDharamshalaYatraTab(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(city, fontSize = 10.5.sp, fontWeight = FontWeight.SemiBold, color = TextSecondaryDark)
-                                Text(dist, fontSize = 11.5.sp, fontWeight = FontWeight.ExtraBold, color = MaroonPrimary)
+                                Text(dist, fontSize = 11.5.sp, fontWeight = FontWeight.ExtraBold, color = currentTheme.primaryColor)
                             }
                         }
                     }
@@ -5461,8 +5482,8 @@ fun DevoteeDharamshalaYatraTab(
                             context.startActivity(webMapIntent)
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3949AB)),
-                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                    shape = currentTheme.buttonShape,
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(vertical = 11.dp)
                 ) {
@@ -5498,17 +5519,17 @@ fun DevoteeAshramAboutTab(
     Column(modifier = Modifier.fillMaxWidth()) {
         // 1. Digital Sacred Parchas Card
         Card(
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(18.dp),
-            elevation = CardDefaults.cardElevation(4.dp),
-            border = BorderStroke(1.2.dp, Color(0xFF6A1B9A)),
+            colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+            shape = currentTheme.cardShape,
+            elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+            border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFF3E5F5),
+                        shape = currentTheme.buttonShape,
+                        color = currentTheme.primaryColor.copy(alpha = 0.12f),
                         modifier = Modifier.size(44.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -5521,7 +5542,7 @@ fun DevoteeAshramAboutTab(
                             text = if (isHindi) "आश्रम के पावन पर्चे व नियम" else "Sacred Parchas & Rules",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF4A148C)
+                            color = currentTheme.primaryColor
                         )
                         Text(
                             text = if (isHindi) "हवन सामग्री, उतारा विधि व विशेष नियम" else "Hawan Samagri, Utara & Ritual Rules",
@@ -5547,8 +5568,8 @@ fun DevoteeAshramAboutTab(
 
                 Button(
                     onClick = onNavigateToParchas,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A1B9A)),
-                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                    shape = currentTheme.buttonShape,
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(vertical = 11.dp)
                 ) {
@@ -5566,17 +5587,17 @@ fun DevoteeAshramAboutTab(
 
         // 2. Ashram Rules & Info Card
         Card(
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(18.dp),
-            elevation = CardDefaults.cardElevation(4.dp),
-            border = BorderStroke(1.2.dp, Color(0xFF3949AB)),
+            colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+            shape = currentTheme.cardShape,
+            elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+            border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFE8EAF6),
+                        shape = currentTheme.buttonShape,
+                        color = currentTheme.primaryColor.copy(alpha = 0.12f),
                         modifier = Modifier.size(44.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -5589,7 +5610,7 @@ fun DevoteeAshramAboutTab(
                             text = if (isHindi) "आश्रम परिचय एवं दरबार नियम" else "Ashram Info & Darbar Rules",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF1A237E)
+                            color = currentTheme.primaryColor
                         )
                         Text(
                             text = if (isHindi) "इतिहास, मर्यादा एवं दर्शन दिशा-निर्देश" else "History, Discipline & Guidelines",
@@ -5615,8 +5636,8 @@ fun DevoteeAshramAboutTab(
 
                 Button(
                     onClick = onNavigateToInfo,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3949AB)),
-                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                    shape = currentTheme.buttonShape,
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(vertical = 11.dp)
                 ) {
@@ -5701,9 +5722,9 @@ fun DevoteeAshramAboutTab(
                     context.startActivity(intent)
                 } catch (e: Exception) {}
             },
-            color = Color(0xFFE3F2FD),
-            shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, Color(0xFF90CAF9)),
+            color = currentTheme.surfaceLight,
+            shape = currentTheme.cardShape,
+            border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
@@ -5719,16 +5740,16 @@ fun DevoteeAshramAboutTab(
                             text = if (isHindi) "आश्रम की आधिकारिक वेबसाइट" else "Official Ashram Website",
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
-                            color = Color(0xFF0D47A1)
+                            color = currentTheme.primaryColor
                         )
                         Text(
                             text = "shribalajikripadham.online • लाइव टोकन व दर्शन",
                             fontSize = 11.sp,
-                            color = Color(0xFF1976D2)
+                            color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781)
                         )
                     }
                 }
-                Text("खोलें ➔", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF0D47A1))
+                Text("खोलें ➔", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = currentTheme.primaryColor)
             }
         }
 
@@ -5780,10 +5801,12 @@ fun HomeTabBottomSwitcher(
     isHindi: Boolean,
     onSelectTab: (HomeTab) -> Unit
 ) {
+    val currentTheme = LocalSacredStyle.current.theme
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9E6)),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, GoldDark.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+        shape = currentTheme.cardShape,
+        border = BorderStroke(1.dp, currentTheme.cardBorderColor),
+        elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -5791,7 +5814,7 @@ fun HomeTabBottomSwitcher(
                 text = if (isHindi) "📑 अन्य मुख्य पृष्ठ देखें (Direct Page Switch):" else "📑 Direct Page Switch:",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaroonPrimary
+                color = currentTheme.primaryColor
             )
             Spacer(modifier = Modifier.height(10.dp))
             Row(
@@ -5801,9 +5824,9 @@ fun HomeTabBottomSwitcher(
                 HomeTab.values().filter { it != currentTab }.forEach { tab ->
                     Surface(
                         onClick = { onSelectTab(tab) },
-                        shape = RoundedCornerShape(10.dp),
+                        shape = currentTheme.buttonShape,
                         color = Color.White,
-                        border = BorderStroke(1.dp, MaroonPrimary.copy(alpha = 0.3f)),
+                        border = BorderStroke(1.dp, currentTheme.cardBorderColor),
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(
@@ -5816,7 +5839,7 @@ fun HomeTabBottomSwitcher(
                                 text = if (isHindi) tab.titleHindi else tab.titleEnglish,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaroonPrimary,
+                                color = currentTheme.primaryColor,
                                 textAlign = TextAlign.Center,
                                 maxLines = 1
                             )
@@ -5835,6 +5858,7 @@ fun SacredLyricsViewerDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val currentTheme = LocalSacredStyle.current.theme
     var fontSizeSp by remember { mutableFloatStateOf(16f) }
 
     Dialog(
@@ -5842,10 +5866,10 @@ fun SacredLyricsViewerDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDF5)),
-            border = BorderStroke(2.dp, GoldSecondary),
-            elevation = CardDefaults.cardElevation(10.dp),
+            shape = currentTheme.cardShape,
+            colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+            border = BorderStroke(1.5.dp, currentTheme.cardBorderColor),
+            elevation = CardDefaults.cardElevation(currentTheme.cardElevation.coerceAtLeast(8.dp)),
             modifier = Modifier
                 .fillMaxWidth(0.94f)
                 .fillMaxHeight(0.88f)
@@ -5866,7 +5890,7 @@ fun SacredLyricsViewerDialog(
                             text = if (isHindi) track.titleHindi else track.titleEnglish,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = MaroonPrimary
+                            color = currentTheme.primaryColor
                         )
                         Text(
                             text = track.subtitleHindi,
@@ -5882,13 +5906,13 @@ fun SacredLyricsViewerDialog(
                             onClick = { if (fontSizeSp > 12f) fontSizeSp -= 2f },
                             modifier = Modifier.size(32.dp)
                         ) {
-                            Text("A-", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaroonPrimary)
+                            Text("A-", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = currentTheme.primaryColor)
                         }
                         IconButton(
                             onClick = { if (fontSizeSp < 26f) fontSizeSp += 2f },
                             modifier = Modifier.size(32.dp)
                         ) {
-                            Text("A+", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaroonPrimary)
+                            Text("A+", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = currentTheme.primaryColor)
                         }
                         IconButton(
                             onClick = onDismiss,
@@ -5899,7 +5923,7 @@ fun SacredLyricsViewerDialog(
                     }
                 }
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = AmberGold.copy(alpha = 0.5f))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = currentTheme.cardBorderColor.copy(alpha = 0.5f))
 
                 // Scrollable Lyrics Content
                 Box(
@@ -5907,7 +5931,7 @@ fun SacredLyricsViewerDialog(
                         .weight(1f)
                         .fillMaxWidth()
                         .background(Color.White, RoundedCornerShape(12.dp))
-                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp))
+                        .border(1.dp, currentTheme.cardBorderColor.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                         .padding(14.dp)
                         .verticalScroll(rememberScrollState())
                 ) {
@@ -5934,16 +5958,17 @@ fun SacredLyricsViewerDialog(
                             clipboard.setPrimaryClip(clip)
                             Toast.makeText(context, if (isHindi) "पाठ कॉपी किया गया!" else "Lyrics copied!", Toast.LENGTH_SHORT).show()
                         },
-                        shape = RoundedCornerShape(10.dp),
+                        shape = currentTheme.buttonShape,
+                        border = BorderStroke(1.dp, currentTheme.primaryColor),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("📋 " + (if (isHindi) "कॉपी करें" else "Copy"), fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                        Text("📋 " + (if (isHindi) "कॉपी करें" else "Copy"), fontWeight = FontWeight.Bold, color = currentTheme.primaryColor)
                     }
 
                     Button(
                         onClick = onDismiss,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                        shape = currentTheme.buttonShape,
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(if (isHindi) "🙏 बन्द करें" else "Close", fontWeight = FontWeight.Bold, color = Color.White)
@@ -5961,15 +5986,16 @@ fun AppDownloadShareDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    val currentTheme = LocalSacredStyle.current.theme
     val apkUrl = settings.apkDownloadUrl.ifBlank { AppUpdateManager.DEFAULT_APK_URL }
     val sharePageUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.online/download.php" }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = BorderStroke(2.dp, SaffronPrimary),
-            elevation = CardDefaults.cardElevation(10.dp),
+            shape = currentTheme.cardShape,
+            colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+            border = BorderStroke(1.5.dp, currentTheme.cardBorderColor),
+            elevation = CardDefaults.cardElevation(currentTheme.cardElevation.coerceAtLeast(8.dp)),
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(10.dp)
@@ -5983,8 +6009,8 @@ fun AppDownloadShareDialog(
                 // Header with App Icon
                 Surface(
                     shape = CircleShape,
-                    color = Color(0xFFFFF3E0),
-                    border = BorderStroke(2.dp, SaffronPrimary),
+                    color = currentTheme.primaryColor.copy(alpha = 0.12f),
+                    border = BorderStroke(2.dp, currentTheme.primaryColor),
                     modifier = Modifier.size(60.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -5998,22 +6024,22 @@ fun AppDownloadShareDialog(
                     text = if (isHindi) "श्री बालाजी कृपा धाम" else "Shri Balaji Kripa Dham",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = MaroonPrimary
+                    color = currentTheme.primaryColor
                 )
                 Text(
                     text = if (isHindi) "आधिकारिक ऐप डाउनलोड व शेयर करें" else "Official App Download & Share",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = SaffronDark
+                    color = currentTheme.secondaryColor
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // Feature Highlights
                 Surface(
-                    color = Color(0xFFFFFDE7),
+                    color = Color.White,
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, Color(0xFFFFD54F)),
+                    border = BorderStroke(1.dp, currentTheme.cardBorderColor),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
@@ -6021,21 +6047,21 @@ fun AppDownloadShareDialog(
                             text = if (isHindi) "✨ 1-क्लिक रविवार टोकन जनरेशन व लाइव कतार" else "✨ 1-Click Sunday Token & Live Queue",
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF3E2723)
+                            color = Color(0xFF263238)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = if (isHindi) "✨ 15 संपूर्ण नित्य आरतियाँ, चालीसा व ऑडियो भजन" else "✨ 15 Sacred Daily Aartis, Chalisa & Audio",
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF3E2723)
+                            color = Color(0xFF263238)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = if (isHindi) "✨ भूत-प्रेत व कष्ट निवारण का 100% निःशुल्क इलाज" else "✨ 100% Free Spiritual Healing Information",
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF3E2723)
+                            color = Color(0xFF263238)
                         )
                     }
                 }
@@ -6047,8 +6073,8 @@ fun AppDownloadShareDialog(
                     onClick = {
                         AppUpdateManager.downloadAndInstallUpdate(context, apkUrl)
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
-                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                    shape = currentTheme.buttonShape,
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(vertical = 12.dp)
                 ) {
@@ -6108,7 +6134,7 @@ fun AppDownloadShareDialog(
                         shareAppContent(context, shareMessage, if (isHindi) "धाम ऐप शेयर करें" else "Share Ashram App")
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = currentTheme.buttonShape,
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(vertical = 12.dp)
                 ) {
@@ -6134,7 +6160,8 @@ fun AppDownloadShareDialog(
                         clipboard.setPrimaryClip(clip)
                         Toast.makeText(context, if (isHindi) "✅ ऐप डाउनलोड लिंक कॉपी हो गया!" else "✅ App download link copied!", Toast.LENGTH_SHORT).show()
                     },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = currentTheme.buttonShape,
+                    border = BorderStroke(1.dp, currentTheme.cardBorderColor),
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(vertical = 10.dp)
                 ) {
@@ -6145,7 +6172,7 @@ fun AppDownloadShareDialog(
                             text = if (isHindi) "डाउनलोड लिंक कॉपी करें" else "Copy Download Link",
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaroonPrimary
+                            color = currentTheme.primaryColor
                         )
                     }
                 }
@@ -6164,7 +6191,7 @@ fun AppDownloadShareDialog(
                     Text(
                         text = if (isHindi) "🌐 डाउनलोड वेब पेज खोलें (download.php)" else "🌐 Open Download Page in Browser",
                         fontSize = 11.5.sp,
-                        color = Color(0xFF0D47A1),
+                        color = currentTheme.primaryColor,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -6173,8 +6200,8 @@ fun AppDownloadShareDialog(
 
                 Button(
                     onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                    shape = currentTheme.buttonShape,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(if (isHindi) "🙏 बन्द करें" else "Close", color = Color.White, fontWeight = FontWeight.Bold)

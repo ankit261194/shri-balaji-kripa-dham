@@ -192,6 +192,7 @@ https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk
 fun DailyDarshanQuickCard(
     isHindi: Boolean,
     ashramSettings: AshramSettings,
+    currentTheme: SacredTheme = LocalSacredStyle.current.theme,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -232,47 +233,18 @@ fun DailyDarshanQuickCard(
         }
     }
 
-    // Sacred pulsing glow animation
-    val infiniteTransition = rememberInfiniteTransition(label = "DarshanPulse")
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.5f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "GlowAlpha"
-    )
-
-    val goldBorderBrush = Brush.linearGradient(
-        colors = listOf(
-            Color(0xFFD4AF37),
-            Color(0xFFFFD700).copy(alpha = glowAlpha),
-            Color(0xFFFF8C00),
-            Color(0xFFD4AF37)
-        )
-    )
-
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(10.dp, RoundedCornerShape(20.dp))
-            .border(BorderStroke(2.dp, goldBorderBrush), RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .border(BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor), currentTheme.cardShape),
+        shape = currentTheme.cardShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = currentTheme.cardElevation),
+        colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFFFFBF5),
-                            Color(0xFFFFF3E0),
-                            Color(0xFFFFF8E7)
-                        )
-                    )
-                )
+                .background(currentTheme.surfaceLight)
                 .padding(14.dp)
         ) {
             // Header: Sacred Title + Date
@@ -285,8 +257,8 @@ fun DailyDarshanQuickCard(
                     Box(
                         modifier = Modifier
                             .size(34.dp)
-                            .background(Color(0xFFFFE082), CircleShape)
-                            .border(1.dp, Color(0xFFFFA000), CircleShape),
+                            .background(currentTheme.primaryColor.copy(alpha = 0.12f), CircleShape)
+                            .border(1.dp, currentTheme.primaryColor.copy(alpha = 0.25f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Text("🌺", fontSize = 18.sp)
@@ -297,28 +269,28 @@ fun DailyDarshanQuickCard(
                             text = if (isHindi) "आज का पावन अलौकिक दर्शन" else "Today's Sacred Darshan",
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 15.sp,
-                            color = MaroonAccent
+                            color = currentTheme.primaryColor
                         )
                         Text(
                             text = darshanData.dateHindi,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color(0xFF795548)
+                            color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781)
                         )
                     }
                 }
 
                 // Devotee count tag
                 Surface(
-                    color = Color(0xFF800000).copy(alpha = 0.08f),
+                    color = currentTheme.primaryColor.copy(alpha = 0.08f),
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, Color(0xFFD4AF37).copy(alpha = 0.5f))
+                    border = BorderStroke(0.8.dp, currentTheme.primaryColor.copy(alpha = 0.3f))
                 ) {
                     Text(
                         text = "👁️ ${darshanData.viewsCount}+ भक्त",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaroonAccent,
+                        color = currentTheme.primaryColor,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
@@ -331,8 +303,8 @@ fun DailyDarshanQuickCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .border(BorderStroke(2.dp, Color(0xFFFFD700)), RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(BorderStroke(1.dp, currentTheme.cardBorderColor), RoundedCornerShape(14.dp))
                     .clickable { showZoomDialog = true }
             ) {
                 if (remoteBitmap != null) {
@@ -349,7 +321,7 @@ fun DailyDarshanQuickCard(
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color(0xFF4A0000))
+                            .background(currentTheme.primaryColor.copy(alpha = 0.2f))
                             .padding(16.dp)
                     )
                 }
@@ -391,9 +363,9 @@ fun DailyDarshanQuickCard(
 
             // Auspicious Chaupai / Blessing
             Surface(
-                color = Color.White.copy(alpha = 0.9f),
+                color = if (currentTheme.isDark) Color(0xFF202C33) else Color(0xFFF7F8FA),
                 shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(1.dp, Color(0xFFFFE082)),
+                border = BorderStroke(0.8.dp, currentTheme.cardBorderColor),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -406,7 +378,7 @@ fun DailyDarshanQuickCard(
                         text = darshanData.quote,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF424242),
+                        color = if (currentTheme.isDark) Color(0xFFD1D7DB) else Color(0xFF3B4A54),
                         lineHeight = 18.sp
                     )
                 }
@@ -422,9 +394,9 @@ fun DailyDarshanQuickCard(
                 OutlinedButton(
                     onClick = { showZoomDialog = true },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaroonAccent),
-                    border = BorderStroke(1.dp, MaroonAccent)
+                    shape = currentTheme.buttonShape,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = currentTheme.primaryColor),
+                    border = BorderStroke(1.dp, currentTheme.primaryColor)
                 ) {
                     Text(
                         text = if (isHindi) "🔍 दर्शन बड़ा करें" else "Zoom Darshan",
@@ -442,12 +414,12 @@ fun DailyDarshanQuickCard(
                         )
                     },
                     modifier = Modifier.weight(1.3f),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = currentTheme.buttonShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF25D366),
                         contentColor = Color.White
                     ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 1.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("💬", fontSize = 14.sp)

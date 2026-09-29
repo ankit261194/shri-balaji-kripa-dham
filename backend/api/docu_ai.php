@@ -297,11 +297,62 @@ if ($action === 'analyze_text' || $action === 'replace_text') {
     if ($userBold) $parsedResult['is_bold'] = true;
     if (!empty($userColorOverride)) $parsedResult['ink_color_hex'] = $userColorOverride;
 
+    // Server-Side Image Patch Synthesis with GD & TrueType
+    $editedPatchBase64 = null;
+    $decodedImg = @base64_decode($base64Image);
+    if ($decodedImg && ($srcImg = @imagecreatefromstring($decodedImg))) {
+        $imgW = imagesx($srcImg);
+        $imgH = imagesy($srcImg);
+
+        // Parse ink color
+        $inkHex = ltrim($parsedResult['ink_color_hex'] ?? '#000000', '#');
+        $r = hexdec(substr($inkHex, 0, 2) ?: '00');
+        $g = hexdec(substr($inkHex, 2, 2) ?: '00');
+        $b = hexdec(substr($inkHex, 4, 2) ?: '00');
+
+        // Parse paper color
+        $paperHex = ltrim($parsedResult['paper_hex'] ?? '#FFFFFF', '#');
+        $pr = hexdec(substr($paperHex, 0, 2) ?: 'FF');
+        $pg = hexdec(substr($paperHex, 2, 2) ?: 'FF');
+        $pb = hexdec(substr($paperHex, 4, 2) ?: 'FF');
+
+        $paperColor = imagecolorallocate($srcImg, $pr, $pg, $pb);
+        $textColor = imagecolorallocate($srcImg, $r, $g, $b);
+
+        // Clear text zone with ambient paper color
+        $pad = 4;
+        imagefilledrectangle($srcImg, $pad, $pad, $imgW - $pad, $imgH - $pad, $paperColor);
+
+        // Determine font TTF
+        $fontName = ($parsedResult['font_family'] === 'SERIF') ? 'merriweather' : 'roboto';
+        $fontPath = __DIR__ . '/../fonts_cache/' . $fontName . ($parsedResult['is_bold'] ? '_bold.ttf' : '_regular.ttf');
+
+        $fontSize = max(9, min(40, intval(($imgH - $pad * 2) * 0.65)));
+        $textX = $pad + 4;
+        $textY = intval($imgH / 2 + $fontSize / 2.3);
+
+        if (file_exists($fontPath)) {
+            @imagettftext($srcImg, $fontSize, 0, $textX, $textY, $textColor, $fontPath, $replacementText);
+        } else {
+            @imagestring($srcImg, 5, $textX, intval($imgH / 2 - 8), $replacementText, $textColor);
+        }
+
+        ob_start();
+        imagejpeg($srcImg, null, 92);
+        $jpgData = ob_get_clean();
+        imagedestroy($srcImg);
+
+        if (!empty($jpgData)) {
+            $editedPatchBase64 = base64_encode($jpgData);
+        }
+    }
+
     echo json_encode([
         'success' => true,
         'cloud_processed' => true,
         'model_used' => $PRIMARY_MODEL,
         'typography' => $parsedResult,
+        'edited_patch_base64' => $editedPatchBase64,
         'replacement_text' => $replacementText,
         'original_text' => $currentText,
         'timestamp' => time()

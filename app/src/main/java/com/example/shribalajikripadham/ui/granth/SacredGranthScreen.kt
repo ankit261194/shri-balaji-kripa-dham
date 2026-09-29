@@ -32,7 +32,7 @@ import kotlinx.coroutines.isActive
 
 enum class SacredReaderTheme(val label: String, val bgColor: Color, val cardColor: Color, val textColor: Color, val meaningColor: Color, val accentColor: Color) {
     PARCHMENT("📜 पीताम्बरी", Color(0xFFFFF9E6), Color(0xFFFFFDF5), Color(0xFF3E1208), Color(0xFF5D2E14), Color(0xFFB8860B)),
-    LIGHT("☀️ श्वेत", Color(0xFFF5F5F5), Color(0xFFFFFFFF), Color(0xFF1E1E1E), Color(0xFF37474F), MaroonPrimary),
+    LIGHT("☀️ श्वेत", Color(0xFFF5F5F5), Color(0xFFFFFFFF), Color(0xFF1E1E1E), Color(0xFF37474F), Color(0xFF5C001E)),
     DARK("🌙 रात्रि", Color(0xFF121212), Color(0xFF1E1E1E), Color(0xFFEEEEEE), Color(0xFFCFD8DC), AmberGold)
 }
 

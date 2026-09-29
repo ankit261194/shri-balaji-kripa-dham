@@ -1,5 +1,7 @@
 package com.example.shribalajikripadham.theme
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 
 // Sacred Devotional Colors
@@ -12,11 +14,35 @@ val GoldLight = Color(0xFFFFE54C)
 val GoldDark = Color(0xFFC68400)
 val AmberGold = GoldSecondary
 
-val MaroonAccent = Color(0xFF5C001E) // Sacred Mandir Maroon
-val MaroonPrimary = MaroonAccent
-val MaroonSurface = Color(0xFFFAF7F0)
-val SacredSurfaceLight = Color(0xFFFFFDF8)
-val SacredBackgroundLight = Color(0xFFFAF7F0)
+// Static fallback constant
+val StaticMandirMaroon = Color(0xFF5C001E)
+
+// Dynamic Theme Colors: Automatically adapts EVERY MaroonPrimary / MaroonAccent call
+// across the entire application to the currently active theme (WhatsApp, Telegram, Slate, etc.)!
+val MaroonAccent: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalSacredStyle.current.theme.primaryColor
+
+val MaroonPrimary: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalSacredStyle.current.theme.primaryColor
+
+val MaroonSurface: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalSacredStyle.current.theme.backgroundLight
+
+val SacredSurfaceLight: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalSacredStyle.current.theme.surfaceLight
+
+val SacredBackgroundLight: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalSacredStyle.current.theme.backgroundLight
 
 val TextPrimaryDark = Color(0xFF111111) // Jet Black High-Contrast
 val TextSecondaryDark = Color(0xFF222222) // Deep Charcoal High-Contrast
