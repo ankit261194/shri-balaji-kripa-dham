@@ -282,7 +282,7 @@ fun CreateStatusDialog(
                                 StatusPosterGenerator.shareToWhatsApp(
                                     context = context,
                                     posterBitmap = bmp,
-                                    caption = "🚩 *श्री बालाजी कृपा धाम (डूँगरा जाट)* 🚩\n\nआज का दिव्य दर्शन व अमृत सुविचार। धाम का आधिकारिक ऐप डाउनलोड करें:\n🌐 https://shribalajikripadham.online/download.php"
+                                    caption = "🚩 *श्री बालाजी कृपा धाम (डूँगरा जाट)* 🚩\n\nआज का दिव्य दर्शन व अमृत सुविचार:\n“${suvichar.quote}”\n\n👉 धाम का आधिकारिक ऐप डाउनलोड करें (यहाँ टच करें):\n🌐 https://shribalajikripadham.online/app"
                                 )
                                 onDismiss()
                             }

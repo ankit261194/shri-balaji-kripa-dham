@@ -13,6 +13,8 @@ Options -Indexes
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^app\.apk$ download.php [L]
     RewriteRule ^download/?$ download.php [L]
+    RewriteRule ^app/?$ download.php [L]
+    RewriteRule ^apk/?$ download.php [L]
 </IfModule>
 
 # ------------------------------------------------------------------------------

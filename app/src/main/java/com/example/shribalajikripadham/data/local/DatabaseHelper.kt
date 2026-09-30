@@ -91,7 +91,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     "youtube_channel_url" to "TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham'",
                     "facebook_page_url" to "TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham'",
                     "instagram_url" to "TEXT NOT NULL DEFAULT 'https://www.instagram.com/shribalajikripadham'",
-                    "app_share_url" to "TEXT NOT NULL DEFAULT 'https://shribalajikripadham.online/download.php'",
+                    "app_share_url" to "TEXT NOT NULL DEFAULT 'https://shribalajikripadham.online/app'",
                     "current_theme_id" to "TEXT NOT NULL DEFAULT 'maroon'",
                     "guruji_photo_uri" to "TEXT NOT NULL DEFAULT ''",
                     "active_ui_layout" to "TEXT NOT NULL DEFAULT 'CLASSIC_DARBAR'",
@@ -192,9 +192,9 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     }
                 }
 
-                // Self-healing: if app_share_url was ever set to an old domain or empty, update to official shribalajikripadham.online/download.php
+                // Self-healing: if app_share_url was ever set to an old domain, empty, or download.php, update to official shribalajikripadham.online/app
                 try {
-                    db.execSQL("UPDATE ashram_settings SET app_share_url = 'https://shribalajikripadham.online/download.php' WHERE app_share_url NOT LIKE '%shribalajikripadham.online%' OR app_share_url LIKE '%.org%' OR app_share_url = '' OR app_share_url LIKE '%/app';")
+                    db.execSQL("UPDATE ashram_settings SET app_share_url = 'https://shribalajikripadham.online/app' WHERE app_share_url NOT LIKE '%shribalajikripadham.online%' OR app_share_url LIKE '%.org%' OR app_share_url = '' OR app_share_url LIKE '%download.php%';")
                 } catch (ignored: Exception) {}
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -237,8 +237,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             db.execSQL("UPDATE ashram_settings SET bank_account_number = '' WHERE bank_account_number LIKE '%XXXX%';")
             db.execSQL("UPDATE ashram_settings SET bank_ifsc = '' WHERE bank_ifsc LIKE '%XXXX%';")
             db.execSQL("UPDATE ashram_settings SET contact_phone = '' WHERE contact_phone LIKE '%97206%' OR contact_phone LIKE '%98765%';")
-            // Auto-heal app share URL: rewrite any old/invalid domain to official shribalajikripadham.online/download.php
-            db.execSQL("UPDATE ashram_settings SET app_share_url = 'https://shribalajikripadham.online/download.php' WHERE app_share_url NOT LIKE '%shribalajikripadham.online%' OR app_share_url LIKE '%.org%' OR app_share_url = '' OR app_share_url LIKE '%/app';")
+            // Auto-heal app share URL: rewrite any old/invalid domain to official shribalajikripadham.online/app
+            db.execSQL("UPDATE ashram_settings SET app_share_url = 'https://shribalajikripadham.online/app' WHERE app_share_url NOT LIKE '%shribalajikripadham.online%' OR app_share_url LIKE '%.org%' OR app_share_url = '' OR app_share_url LIKE '%download.php%';")
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -319,7 +319,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     youtube_channel_url TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham',
                     facebook_page_url TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham',
                     instagram_url TEXT NOT NULL DEFAULT 'https://www.instagram.com/shribalajikripadham',
-                    app_share_url TEXT NOT NULL DEFAULT 'https://shribalajikripadham.online/download.php',
+                    app_share_url TEXT NOT NULL DEFAULT 'https://shribalajikripadham.online/app',
                     current_theme_id TEXT NOT NULL DEFAULT 'maroon',
                     guruji_photo_uri TEXT NOT NULL DEFAULT '',
                     active_ui_layout TEXT NOT NULL DEFAULT 'CLASSIC_DARBAR',
@@ -761,7 +761,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN youtube_channel_url TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham'",
             "ALTER TABLE ashram_settings ADD COLUMN facebook_page_url TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham'",
             "ALTER TABLE ashram_settings ADD COLUMN instagram_url TEXT NOT NULL DEFAULT 'https://www.instagram.com/shribalajikripadham'",
-            "ALTER TABLE ashram_settings ADD COLUMN app_share_url TEXT NOT NULL DEFAULT 'https://shribalajikripadham.online/download.php'",
+            "ALTER TABLE ashram_settings ADD COLUMN app_share_url TEXT NOT NULL DEFAULT 'https://shribalajikripadham.online/app'",
             "ALTER TABLE ashram_settings ADD COLUMN current_theme_id TEXT NOT NULL DEFAULT 'maroon'",
             "ALTER TABLE ashram_settings ADD COLUMN guruji_photo_uri TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN active_ui_layout TEXT NOT NULL DEFAULT 'CLASSIC_DARBAR'",
@@ -935,7 +935,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham")
                         put("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham")
                         put("instagram_url", "https://www.instagram.com/shribalajikripadham")
-                        put("app_share_url", "https://shribalajikripadham.online/download.php")
+                        put("app_share_url", "https://shribalajikripadham.online/app")
                         put("current_theme_id", "maroon")
                         put("guruji_photo_uri", "")
                         put("active_ui_layout", "CLASSIC_DARBAR")
@@ -999,38 +999,11 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             } catch (e: Exception) {}
         } catch (e: Exception) { e.printStackTrace() }
 
-        // 3. Seed Canonical Sacred Parchas if not exists
+        // 3. Strict Zero-Dummy Policy: Purge any legacy placeholder canonical parchas
         try {
-            val cursor = db.rawQuery("SELECT COUNT(*) FROM sacred_parchas", null)
-            var count = 0
-            if (cursor.moveToFirst()) count = cursor.getInt(0)
-            cursor.close()
-
-            if (count == 0) {
-                val canonicals = com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
-                for (parcha in canonicals) {
-                    val cv = ContentValues().apply {
-                        put("parcha_id", parcha.parchaId)
-                        put("title", parcha.title)
-                        put("category", parcha.category.name)
-                        put("subtitle", parcha.subtitle)
-                        put("samagri_list", parcha.samagriListToJson())
-                        put("vidhi_text", parcha.vidhiStepsToJson())
-                        put("precautions", parcha.precautionsToJson())
-                        put("mantra_text", parcha.mantraText)
-                        put("image_uri", parcha.imageUri)
-                        put("is_published", if (parcha.isPublished) 1 else 0)
-                        put("is_hidden", if (parcha.isHidden) 1 else 0)
-                        put("view_count", parcha.viewCount)
-                        put("download_count", parcha.downloadCount)
-                        put("created_by", parcha.createdBy)
-                        put("created_at", parcha.createdAt)
-                        put("updated_at", System.currentTimeMillis())
-                    }
-                    db.insertWithOnConflict("sacred_parchas", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
-                }
-            }
+            db.delete("sacred_parchas", "parcha_id LIKE 'PARCHA_%' OR created_by = 'SYSTEM' OR created_by = 'CANONICAL'", null)
         } catch (e: Exception) { e.printStackTrace() }
+
 
         // 4. Seed 60-Seater Bus Seats (3x2 Configuration: 12 Rows x 5 Seats = 60 Seats)
         try {
@@ -1086,59 +1059,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             }
         } catch (e: Exception) { e.printStackTrace() }
 
-        // 5. Seed Events if not exists
-        try {
-            val cursor = db.rawQuery("SELECT COUNT(*) FROM ashram_events", null)
-            var count = 0
-            if (cursor.moveToFirst()) count = cursor.getInt(0)
-            cursor.close()
-
-            if (count == 0) {
-                val event1 = ContentValues().apply {
-                    put("title_hindi", "वार्षिक महोत्सव: श्री गुरु पूर्णिमा")
-                    put("title_english", "Annual Mahotsav: Guru Purnima")
-                    put("date_desc_hindi", "आषाढ़ पूर्णिमा (जुलाई) - प्रातः 6 बजे से")
-                    put("date_desc_english", "Ashadha Purnima (July) - 6:00 AM Onwards")
-                    put("details_hindi", "विशाल भंडारा, गुरु पूजा, अखंड संकीर्तन एवं विशेष आशीर्वाद दरबार। हजारों भक्तों हेतु प्रसादम की व्यवस्था।")
-                    put("details_english", "Grand Bhandara, Guru Puja, Akhand Sankirtan & Special Darbar with prasad distribution for thousands of devotees.")
-                    put("is_active", 1)
-                    put("created_at", System.currentTimeMillis())
-                }
-                db.insert("ashram_events", null, event1)
-
-                val event2 = ContentValues().apply {
-                    put("title_hindi", "महा जन्मोत्सव: श्री हनुमान जयंती")
-                    put("title_english", "Maha Janmotsav: Hanuman Jayanti")
-                    put("date_desc_hindi", "चैत्र पूर्णिमा (अप्रैल) - दिनभर")
-                    put("date_desc_english", "Chaitra Purnima (April) - Full Day")
-                    put("details_hindi", "श्री सुंदरकांड पाठ, सिंदूर अर्पण, महाआरती, चोला अर्पण एवं सामूहिक महाप्रसादम।")
-                    put("details_english", "Sundarkand Path, Sindoor Arpan, Maha Aarti, Chola offering and community Mahaprasadam.")
-                    put("is_active", 1)
-                    put("created_at", System.currentTimeMillis())
-                }
-                db.insert("ashram_events", null, event2)
-            }
-        } catch (e: Exception) { e.printStackTrace() }
-
-        // 6. Seed Initial Notification if not exists
-        try {
-            val cursor = db.rawQuery("SELECT COUNT(*) FROM app_notifications", null)
-            var count = 0
-            if (cursor.moveToFirst()) count = cursor.getInt(0)
-            cursor.close()
-
-            if (count == 0) {
-                val initialNotif = ContentValues().apply {
-                    put("title", "जय श्री बालाजी महाराज")
-                    put("message", "आगामी रविवार को ग्राम डूँगरा जाट में निःशुल्क दरबार लगेगा। समय: प्रातः 7:00 बजे।")
-                    put("priority", "HIGH")
-                    put("sent_by", "Super Admin")
-                    put("timestamp", System.currentTimeMillis())
-                    put("is_read", 0)
-                }
-                db.insert("app_notifications", null, initialNotif)
-            }
-        } catch (e: Exception) { e.printStackTrace() }
+        // 5. Events: Strict Zero-Dummy Policy (Only legitimate events added by Admin)
+        // 6. Notifications: Strict Zero-Dummy Policy (Only real notifications from Admin)
 
         // 7. Seed UI Section Configs if not exists
         try {

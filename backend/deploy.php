@@ -46,6 +46,7 @@ $filesToSync = [
     "api/docu_ai.php",
     "api/admin_auth.php",
     "api/status_service.php",
+    "api/delete_parcha.php",
     "sync_apk.php"
 ];
 

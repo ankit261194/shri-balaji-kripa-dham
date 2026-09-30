@@ -696,7 +696,7 @@ fun HomeScreen(
                         add(NavDrawerItem("💬", if (isHindi) "व्हाट्सएप पर ऐप लिंक शेयर करें" else "Share App Link on WhatsApp", {
                             scope.launch { drawerState.close() }
                             val apkUrl = settings.apkDownloadUrl.ifBlank { AppUpdateManager.DEFAULT_APK_URL }
-                            val sharePageUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.online/download.php" }
+                            val sharePageUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.online/app" }
                             val msg = if (isHindi) {
                                 """
                                 🙏 *श्री बालाजी कृपा धाम, डूँगरा जाट (बुलन्दशहर)* 🙏
@@ -1002,8 +1002,8 @@ fun HomeScreen(
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            val shareUrl = if (settings.appShareUrl.contains(".org") || settings.appShareUrl.isBlank() || settings.appShareUrl.endsWith("/app")) {
-                                "https://shribalajikripadham.online/download.php"
+                            val shareUrl = if (settings.appShareUrl.contains(".org") || settings.appShareUrl.isBlank() || settings.appShareUrl.contains("download.php")) {
+                                "https://shribalajikripadham.online/app"
                             } else {
                                 settings.appShareUrl
                             }
@@ -3917,7 +3917,7 @@ fun RenderClassicSection(
 
                         Button(
                             onClick = {
-                                val shareUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.online/download.php" }
+                                val shareUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.online/app" }
                                 val apkUrl = settings.apkDownloadUrl.ifBlank { AppUpdateManager.DEFAULT_APK_URL }
                                 val shareMessage = if (isHindi) {
                                     """
@@ -5787,7 +5787,7 @@ fun AppDownloadShareDialog(
     val context = LocalContext.current
     val currentTheme = LocalSacredStyle.current.theme
     val apkUrl = settings.apkDownloadUrl.ifBlank { AppUpdateManager.DEFAULT_APK_URL }
-    val sharePageUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.online/download.php" }
+    val sharePageUrl = settings.appShareUrl.ifBlank { "https://shribalajikripadham.online/app" }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -5988,7 +5988,7 @@ fun AppDownloadShareDialog(
                     }
                 ) {
                     Text(
-                        text = if (isHindi) "🌐 डाउनलोड वेब पेज खोलें (download.php)" else "🌐 Open Download Page in Browser",
+                        text = if (isHindi) "🌐 आधिकारिक डाउनलोड वेब पेज खोलें (/app)" else "🌐 Open Official Download Page in Browser",
                         fontSize = 11.5.sp,
                         color = currentTheme.primaryColor,
                         fontWeight = FontWeight.SemiBold

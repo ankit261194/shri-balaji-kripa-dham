@@ -11,14 +11,116 @@ import com.example.shribalajikripadham.data.model.DailySuvichar
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
 object StatusPosterGenerator {
 
     /**
+     * Day-wise Divine Color Themes (7-Day Dynamic Theme System).
+     * Prevents visual monotony so devotees see a vibrant, unique sacred poster every single day.
+     */
+    data class DayTheme(
+        val dayNameHindi: String,
+        val primaryHex: Int,
+        val secondaryHex: Int,
+        val accentGold: Int,
+        val cardBgHex: Int,
+        val quoteBgHex: Int,
+        val devoteeBgHex: Int,
+        val daySubtitle: String
+    )
+
+    fun getDayTheme(calendar: Calendar = Calendar.getInstance()): DayTheme {
+        return when (calendar.get(Calendar.DAY_OF_WEEK)) {
+            Calendar.SUNDAY -> DayTheme(
+                dayNameHindi = "रविवार",
+                primaryHex = 0xFF5C001E.toInt(), // Sacred Royal Crimson / Maroon
+                secondaryHex = 0xFFFF6F00.toInt(),
+                accentGold = 0xFFFFD54F.toInt(),
+                cardBgHex = 0xFF260E16.toInt(),
+                quoteBgHex = 0xFF1F0A11.toInt(),
+                devoteeBgHex = 0xFF2E101B.toInt(),
+                daySubtitle = "रविवार महा-दरबार • सूर्य तेज व बालाजी महाराज की विशेष अनुकंपा"
+            )
+            Calendar.MONDAY -> DayTheme(
+                dayNameHindi = "सोमवार",
+                primaryHex = 0xFF1A237E.toInt(), // Nilkanth Mahadev Royal Indigo
+                secondaryHex = 0xFF00B0FF.toInt(),
+                accentGold = 0xFFFFE082.toInt(),
+                cardBgHex = 0xFF0D1442.toInt(),
+                quoteBgHex = 0xFF080D2B.toInt(),
+                devoteeBgHex = 0xFF131B54.toInt(),
+                daySubtitle = "सोमवार पावन बेला • ॐ नमः शिवाय व संकटमोचन कृपा"
+            )
+            Calendar.TUESDAY -> DayTheme(
+                dayNameHindi = "मंगलवार",
+                primaryHex = 0xFFB71C1C.toInt(), // Sacred Sindoor Red
+                secondaryHex = 0xFFFF3D00.toInt(),
+                accentGold = 0xFFFFD700.toInt(),
+                cardBgHex = 0xFF400606.toInt(),
+                quoteBgHex = 0xFF2B0303.toInt(),
+                devoteeBgHex = 0xFF520B0B.toInt(),
+                daySubtitle = "मंगलवार महा-पर्व • पवनपुत्र श्री हनुमान जी महाराज की विशेष कृपा"
+            )
+            Calendar.WEDNESDAY -> DayTheme(
+                dayNameHindi = "बुधवार",
+                primaryHex = 0xFF004D40.toInt(), // Divine Emerald / Peacock Teal
+                secondaryHex = 0xFF00E676.toInt(),
+                accentGold = 0xFFFFD54F.toInt(),
+                cardBgHex = 0xFF00241E.toInt(),
+                quoteBgHex = 0xFF001713.toInt(),
+                devoteeBgHex = 0xFF013028.toInt(),
+                daySubtitle = "बुधवार पावन दिवस • श्री विघ्नहर्ता व बालाजी रक्षा कवच"
+            )
+            Calendar.THURSDAY -> DayTheme(
+                dayNameHindi = "गुरुवार",
+                primaryHex = 0xFF4A148C.toInt(), // Imperial Guru Kripa Deep Purple
+                secondaryHex = 0xFFFFC107.toInt(),
+                accentGold = 0xFFFFE082.toInt(),
+                cardBgHex = 0xFF240647.toInt(),
+                quoteBgHex = 0xFF17032E.toInt(),
+                devoteeBgHex = 0xFF2E0959.toInt(),
+                daySubtitle = "गुरुवार दिव्य दिवस • परम पूज्य गुरुदेव कृपा व आत्मज्ञान"
+            )
+            Calendar.FRIDAY -> DayTheme(
+                dayNameHindi = "शुक्रवार",
+                primaryHex = 0xFF880E4F.toInt(), // Sacred Ruby Rose / Magenta
+                secondaryHex = 0xFFFF4081.toInt(),
+                accentGold = 0xFFFFD54F.toInt(),
+                cardBgHex = 0xFF3B0421.toInt(),
+                quoteBgHex = 0xFF240214.toInt(),
+                devoteeBgHex = 0xFF47082A.toInt(),
+                daySubtitle = "शुक्रवार विशेष • सुख, समृद्धि व भगवती-बालाजी का आशीर्वाद"
+            )
+            Calendar.SATURDAY -> DayTheme(
+                dayNameHindi = "शनिवार",
+                primaryHex = 0xFF0D1B2A.toInt(), // Midnight Cosmic Steel
+                secondaryHex = 0xFFFF9100.toInt(),
+                accentGold = 0xFFFFD54F.toInt(),
+                cardBgHex = 0xFF142236.toInt(),
+                quoteBgHex = 0xFF0B1420.toInt(),
+                devoteeBgHex = 0xFF1B2E47.toInt(),
+                daySubtitle = "शनिवार संकटमोचन दिवस • शनि दोष व सर्व बाधा निवारण"
+            )
+            else -> DayTheme(
+                dayNameHindi = "शुभ दिवस",
+                primaryHex = 0xFF5C001E.toInt(),
+                secondaryHex = 0xFFFF8F00.toInt(),
+                accentGold = 0xFFFFD54F.toInt(),
+                cardBgHex = 0xFF260E16.toInt(),
+                quoteBgHex = 0xFF1F0A11.toInt(),
+                devoteeBgHex = 0xFF2E101B.toInt(),
+                daySubtitle = "दैनिक दिव्य दर्शन व अमृत सुविचार"
+            )
+        }
+    }
+
+    /**
      * Renders a 9:16 (1080x1920) high-resolution WhatsApp Story & Status Poster.
-     * Contains locked Balaji Maharaj, Guruji, Ashram Logo, Suvichar, and optional devotee photo.
+     * Contains locked Balaji Maharaj, Guruji, Ashram Logo, Suvichar, scannable QR Code,
+     * status touch helper callout, and optional devotee photo.
      */
     fun generateBhaktiPoster(
         context: Context,
@@ -34,15 +136,24 @@ object StatusPosterGenerator {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
+        // Resolve 7-Day Day-wise Dynamic Theme
+        val todayTheme = getDayTheme()
+        val effPrimaryHex = if (primaryHex == 0xFF5C001E.toInt()) todayTheme.primaryHex else primaryHex
+        val effSecondaryHex = if (secondaryHex == 0xFFE65100.toInt()) todayTheme.secondaryHex else secondaryHex
+        val effCardBgHex = todayTheme.cardBgHex
+        val effQuoteBgHex = todayTheme.quoteBgHex
+        val effDevoteeBgHex = todayTheme.devoteeBgHex
+        val effAccentGold = todayTheme.accentGold
+
         // 1. Draw Sacred Gradient Background
         val bgPaint = Paint().apply {
             shader = LinearGradient(
                 0f, 0f, 0f, height.toFloat(),
                 intArrayOf(
-                    primaryHex,
-                    0xFF1A0A0E.toInt(),
-                    0xFF2D0F18.toInt(),
-                    0xFF120307.toInt()
+                    effPrimaryHex,
+                    0xFF120307.toInt(),
+                    0xFF1C0812.toInt(),
+                    0xFF0A0205.toInt()
                 ),
                 floatArrayOf(0f, 0.35f, 0.75f, 1f),
                 Shader.TileMode.CLAMP
@@ -54,14 +165,14 @@ object StatusPosterGenerator {
         val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 14f
-            color = Color.parseColor("#FFD54F")
+            color = effAccentGold
         }
         canvas.drawRoundRect(20f, 20f, width - 20f, height - 20f, 40f, 40f, borderPaint)
 
         val innerBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 3f
-            color = Color.parseColor("#FFFFFF").apply { }
+            color = Color.WHITE
             alpha = 150
         }
         canvas.drawRoundRect(35f, 35f, width - 35f, height - 35f, 30f, 30f, innerBorderPaint)
@@ -69,107 +180,107 @@ object StatusPosterGenerator {
         // 3. Top Sacred Header (Logo + Temple Name)
         val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textAlign = Paint.Align.CENTER
-            color = Color.parseColor("#FFD54F")
+            color = effAccentGold
             textSize = 34f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
-        canvas.drawText("॥ ॐ श्री हनुमते नमः ॥", width / 2f, 105f, textPaint)
+        canvas.drawText("॥ ॐ श्री हनुमते नमः ॥", width / 2f, 95f, textPaint)
 
         textPaint.apply {
             color = Color.WHITE
-            textSize = 52f
+            textSize = 50f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
-        canvas.drawText("श्री बालाजी कृपा धाम", width / 2f, 175f, textPaint)
+        canvas.drawText("श्री बालाजी कृपा धाम", width / 2f, 160f, textPaint)
 
         textPaint.apply {
             color = Color.parseColor("#FFE082")
-            textSize = 28f
+            textSize = 27f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
         }
-        canvas.drawText("ग्राम डूँगरा जाट, तहसील: अनूपशहर, जिला: बुलन्दशहर (उ.प्र.)", width / 2f, 225f, textPaint)
+        canvas.drawText("ग्राम डूँगरा जाट, तहसील: अनूपशहर, जिला: बुलन्दशहर (उ.प्र.)", width / 2f, 210f, textPaint)
 
         // Divider Line
         val divPaint = Paint().apply {
-            color = Color.parseColor("#FFD54F")
+            color = effAccentGold
             strokeWidth = 3f
             alpha = 180
         }
-        canvas.drawLine(150f, 255f, width - 150f, 255f, divPaint)
+        canvas.drawLine(150f, 238f, width - 150f, 238f, divPaint)
 
         // 4. Ashram Logo Watermark / Emblem
         val logoBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.app_logo)
         if (logoBitmap != null) {
-            val logoSize = 130
+            val logoSize = 120
             val scaledLogo = Bitmap.createScaledBitmap(logoBitmap, logoSize, logoSize, true)
-            canvas.drawBitmap(scaledLogo, 60f, 80f, null)
-            canvas.drawBitmap(scaledLogo, width - 60f - logoSize, 80f, null)
+            canvas.drawBitmap(scaledLogo, 55f, 75f, null)
+            canvas.drawBitmap(scaledLogo, width - 55f - logoSize, 75f, null)
         }
 
         // 5. Central Divine Arch / Frame (Balaji Maharaj & Guruji Image)
-        val cardRect = RectF(70f, 280f, width - 70f, 1020f)
+        val cardRect = RectF(70f, 260f, width - 70f, 960f)
         val cardPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#260E16")
+            color = effCardBgHex
         }
         canvas.drawRoundRect(cardRect, 32f, 32f, cardPaint)
 
         val cardBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 6f
-            color = Color.parseColor("#FFB300")
+            color = effAccentGold
         }
         canvas.drawRoundRect(cardRect, 32f, 32f, cardBorder)
 
         // Draw Balaji Maharaj Divine Portrait
         if (logoBitmap != null) {
-            val balajiSize = 480
+            val balajiSize = 440
             val scaledBalaji = Bitmap.createScaledBitmap(logoBitmap, balajiSize, balajiSize, true)
             val balajiLeft = (width - balajiSize) / 2f
-            canvas.drawBitmap(scaledBalaji, balajiLeft, 310f, null)
+            canvas.drawBitmap(scaledBalaji, balajiLeft, 285f, null)
 
             // Circular frame around Balaji
             val circleBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
                 strokeWidth = 8f
-                color = Color.parseColor("#FFD54F")
+                color = effAccentGold
             }
-            canvas.drawCircle(width / 2f, 310f + balajiSize / 2f, balajiSize / 2f + 4f, circleBorder)
+            canvas.drawCircle(width / 2f, 285f + balajiSize / 2f, balajiSize / 2f + 4f, circleBorder)
         }
 
         // Subtitle below portrait
         textPaint.apply {
             color = Color.parseColor("#FFF8E1")
-            textSize = 34f
+            textSize = 33f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
-        canvas.drawText("🚩 परम पूज्य गुरुदेव तेजवीर सिंह जी के पावन सानिध्य में 🚩", width / 2f, 850f, textPaint)
+        canvas.drawText("🚩 परम पूज्य गुरुदेव तेजवीर सिंह जी के पावन सानिध्य में 🚩", width / 2f, 785f, textPaint)
 
         textPaint.apply {
-            color = Color.parseColor("#FFCA28")
+            color = effAccentGold
             textSize = 28f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
         val dateStr = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale("hi", "IN")).format(Date())
-        canvas.drawText("॥ दैनिक दिव्य दर्शन व अमृत सुविचार • $dateStr ॥", width / 2f, 900f, textPaint)
+        canvas.drawText("॥ ${todayTheme.daySubtitle} ॥", width / 2f, 840f, textPaint)
 
         textPaint.apply {
-            color = Color.parseColor("#80CBC4")
+            color = Color.parseColor("#B2DFDB")
             textSize = 26f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
         }
-        canvas.drawText("प्रत्येक रविवार प्रातः 8:30 बजे से दिव्य दरबार", width / 2f, 950f, textPaint)
+        canvas.drawText("प्रत्येक रविवार प्रातः 8:30 बजे से 100% निःशुल्क दिव्य दरबार • $dateStr", width / 2f, 895f, textPaint)
 
         // 6. Sacred Suvichar Section
-        val quoteBoxRect = RectF(70f, 1050f, width - 70f, 1420f)
+        val quoteBoxRect = RectF(70f, 985f, width - 70f, 1375f)
         val quoteBoxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#1F0A11")
+            color = effQuoteBgHex
         }
         canvas.drawRoundRect(quoteBoxRect, 28f, 28f, quoteBoxPaint)
 
         val quoteBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
             strokeWidth = 4f
-            color = Color.parseColor("#FFD54F")
+            color = effAccentGold
             alpha = 180
         }
         canvas.drawRoundRect(quoteBoxRect, 28f, 28f, quoteBorder)
@@ -177,7 +288,7 @@ object StatusPosterGenerator {
         // Suvichar text drawing with multi-line wrap
         val quotePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#FFF9C4")
-            textSize = 42f
+            textSize = 36f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
@@ -186,14 +297,14 @@ object StatusPosterGenerator {
             canvas,
             "“ " + suvichar.quote + " ”",
             width / 2f,
-            1130f,
+            1055f,
             quotePaint,
             width - 200
         )
 
         val meaningPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
-            textSize = 30f
+            textSize = 28f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
             textAlign = Paint.Align.CENTER
         }
@@ -202,23 +313,23 @@ object StatusPosterGenerator {
             canvas,
             "भावार्थ: " + suvichar.meaning,
             width / 2f,
-            1270f,
+            1225f,
             meaningPaint,
             width - 220
         )
 
         val sourcePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor("#FFB74D")
-            textSize = 26f
+            textSize = 25f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.ITALIC)
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("— ${suvichar.source}", width / 2f, 1380f, sourcePaint)
+        canvas.drawText("— ${suvichar.source}", width / 2f, 1345f, sourcePaint)
 
         // 7. Devotee Personalized Badge (or Ashram Blessing Badge if devoteePhoto is null)
-        val devoteeBoxRect = RectF(70f, 1450f, width - 70f, 1780f)
+        val devoteeBoxRect = RectF(70f, 1395f, width - 70f, 1695f)
         val devoteeBoxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#2E101B")
+            color = effDevoteeBgHex
         }
         canvas.drawRoundRect(devoteeBoxRect, 24f, 24f, devoteeBoxPaint)
 
@@ -232,38 +343,38 @@ object StatusPosterGenerator {
         if (devoteePhoto != null) {
             // Draw Circular Devotee Photo
             val safePhoto = DevoteePhotoHelper.toSoftwareBitmap(devoteePhoto)
-            val pSize = 240
+            val pSize = 220
             val scaledPhoto = Bitmap.createScaledBitmap(safePhoto, pSize, pSize, true)
             val circularPhoto = getCircularBitmap(scaledPhoto)
 
-            canvas.drawBitmap(circularPhoto, 120f, 1490f, null)
+            canvas.drawBitmap(circularPhoto, 110f, 1435f, null)
 
             // Circle border around devotee
             val pBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
                 strokeWidth = 6f
-                color = Color.parseColor("#FFD54F")
+                color = effAccentGold
             }
-            canvas.drawCircle(120f + pSize / 2f, 1490f + pSize / 2f, pSize / 2f + 3f, pBorder)
+            canvas.drawCircle(110f + pSize / 2f, 1435f + pSize / 2f, pSize / 2f + 3f, pBorder)
 
             // Devotee Details on the right
             val devNamePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.WHITE
-                textSize = 42f
+                textSize = 40f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 textAlign = Paint.Align.LEFT
             }
             val displayName = devoteeName.ifBlank { "श्री बालाजी भक्त" }
-            canvas.drawText(displayName, 390f, 1570f, devNamePaint)
+            canvas.drawText(displayName, 370f, 1515f, devNamePaint)
 
             val devCityPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#81C784")
-                textSize = 32f
+                textSize = 30f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
                 textAlign = Paint.Align.LEFT
             }
             val displayCity = if (devoteeCity.isNotBlank()) "निवासी: $devoteeCity" else "॥ कृपाकांक्षी ॥"
-            canvas.drawText(displayCity, 390f, 1630f, devCityPaint)
+            canvas.drawText(displayCity, 370f, 1575f, devCityPaint)
 
             val prayPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = Color.parseColor("#FFE082")
@@ -271,25 +382,25 @@ object StatusPosterGenerator {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 textAlign = Paint.Align.LEFT
             }
-            canvas.drawText("॥ जय श्री बालाजी महाराज ॥", 390f, 1690f, prayPaint)
+            canvas.drawText("॥ जय श्री बालाजी महाराज • जय श्री राम ॥", 370f, 1635f, prayPaint)
 
         } else {
             // Default Ashram Devotional Greeting
             textPaint.apply {
-                color = Color.parseColor("#FFD54F")
-                textSize = 46f
+                color = effAccentGold
+                textSize = 44f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 textAlign = Paint.Align.CENTER
             }
-            canvas.drawText("🚩 ॥ जय श्री राम • जय बालाजी महाराज ॥ 🚩", width / 2f, 1570f, textPaint)
+            canvas.drawText("🚩 ॥ जय श्री राम • जय बालाजी महाराज ॥ 🚩", width / 2f, 1495f, textPaint)
 
             textPaint.apply {
                 color = Color.WHITE
-                textSize = 32f
+                textSize = 31f
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
                 textAlign = Paint.Align.CENTER
             }
-            canvas.drawText("सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।", width / 2f, 1640f, textPaint)
+            canvas.drawText("सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।", width / 2f, 1565f, textPaint)
 
             textPaint.apply {
                 color = Color.parseColor("#A5D6A7")
@@ -297,24 +408,66 @@ object StatusPosterGenerator {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 textAlign = Paint.Align.CENTER
             }
-            canvas.drawText("100% निःशुल्क भूत-प्रेत व आध्यात्मिक कष्ट निवारण दरबार", width / 2f, 1710f, textPaint)
+            canvas.drawText("100% निःशुल्क भूत-प्रेत व आध्यात्मिक कष्ट निवारण दरबार", width / 2f, 1635f, textPaint)
         }
 
-        // 8. Bottom App & Website Branding Footer
-        val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#FFD54F")
-            textSize = 26f
+        // 8. Bottom Scannable QR Code & WhatsApp Status Touch Helper Footer
+        val footerBoxRect = RectF(70f, 1715f, width - 70f, 1895f)
+        val footerBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#120308")
+            alpha = 240
+        }
+        canvas.drawRoundRect(footerBoxRect, 24f, 24f, footerBg)
+
+        val footerBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = 3f
+            color = effAccentGold
+            alpha = 200
+        }
+        canvas.drawRoundRect(footerBoxRect, 24f, 24f, footerBorder)
+
+        // Render Golden Scannable QR Code for https://shribalajikripadham.online/app
+        val qrBitmap = QrCodeGenerator.generateQrBitmap("https://shribalajikripadham.online/app", 155)
+        if (qrBitmap != null) {
+            val qrBackRect = RectF(90f, 1728f, 245f, 1883f)
+            val qrBackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
+            canvas.drawRoundRect(qrBackRect, 16f, 16f, qrBackPaint)
+            canvas.drawBitmap(qrBitmap, 90f, 1728f, null)
+        }
+
+        // Footer Text and Callout on the right of QR code (from X = 265f)
+        val appLinkPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = effAccentGold
+            textSize = 29f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textAlign = Paint.Align.CENTER
+            textAlign = Paint.Align.LEFT
         }
-        canvas.drawText("📲 आधिकारिक ऐप डाउनलोड करें: shribalajikripadham.online/download.php", width / 2f, 1845f, footerPaint)
+        canvas.drawText("📲 आधिकारिक ऐप: shribalajikripadham.online/app", 265f, 1768f, appLinkPaint)
 
-        footerPaint.apply {
-            color = Color.parseColor("#B0BEC5")
+        val touchLinkPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 25f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textAlign = Paint.Align.LEFT
+        }
+        canvas.drawText("👆 नीचे दिए गए स्टेटस लिंक को छूकर ऐप डाउनलोड करें", 265f, 1810f, touchLinkPaint)
+
+        val trustSubPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#80CBC4")
             textSize = 22f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            textAlign = Paint.Align.LEFT
         }
-        canvas.drawText("© 2026 श्री बालाजी कृपा धाम। सर्वाधिकार सुरक्षित।", width / 2f, 1885f, footerPaint)
+        canvas.drawText("🚩 100% निःशुल्क कष्ट निवारण • जन-जन की आस्था", 265f, 1848f, trustSubPaint)
+
+        val copyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.parseColor("#90A4AE")
+            textSize = 19f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+            textAlign = Paint.Align.LEFT
+        }
+        canvas.drawText("© श्री बालाजी कृपा धाम (डूँगरा जाट) • क्यूआर स्कैन करें या लिंक छुएं", 265f, 1880f, copyPaint)
 
         return bitmap
     }
@@ -369,12 +522,13 @@ object StatusPosterGenerator {
     }
 
     /**
-     * Saves poster bitmap to cache and launches WhatsApp share intent
+     * Saves poster bitmap to cache and launches WhatsApp share intent.
+     * Includes clickable download link in status caption so status viewers can tap and download directly.
      */
     fun shareToWhatsApp(
         context: Context,
         posterBitmap: Bitmap,
-        caption: String = "🚩 *श्री बालाजी कृपा धाम (डूँगरा जाट)* 🚩\n\nआज का दिव्य दर्शन व अमृत सुविचार। धाम का आधिकारिक ऐप डाउनलोड करें:\n🌐 https://shribalajikripadham.online/download.php"
+        caption: String = "🚩 *श्री बालाजी कृपा धाम (डूँगरा जाट)* 🚩\n\nआज का दिव्य दर्शन व अमृत सुविचार।\n\n👉 आधिकारिक ऐप डाउनलोड करें (यहाँ टच करें):\n🌐 https://shribalajikripadham.online/app"
     ) {
         try {
             val cacheDir = File(context.cacheDir, "shared_statuses").apply { mkdirs() }

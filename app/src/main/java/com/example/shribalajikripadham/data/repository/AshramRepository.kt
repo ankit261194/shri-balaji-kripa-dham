@@ -92,7 +92,7 @@ class AshramRepository(context: Context) {
             youtubeChannelUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("youtube_channel_url")) } catch (e: Exception) { "https://www.youtube.com/@ShriBalajiKripaDham" },
             facebookPageUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("facebook_page_url")) } catch (e: Exception) { "https://www.facebook.com/ShriBalajiKripaDham" },
             instagramUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("instagram_url")) } catch (e: Exception) { "https://www.instagram.com/shribalajikripadham" },
-            appShareUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("app_share_url")) } catch (e: Exception) { "https://shribalajikripadham.online/download.php" },
+            appShareUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("app_share_url")) } catch (e: Exception) { "https://shribalajikripadham.online/app" },
             currentThemeId = try { cursor.getString(cursor.getColumnIndexOrThrow("current_theme_id")) } catch (e: Exception) { "maroon" },
             gurujiPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("guruji_photo_uri")) } catch (e: Exception) { "" } ?: "",
             activeUiLayout = try { cursor.getString(cursor.getColumnIndexOrThrow("active_ui_layout")) } catch (e: Exception) { "CLASSIC_DARBAR" } ?: "CLASSIC_DARBAR",
@@ -5120,60 +5120,17 @@ class AshramRepository(context: Context) {
     // SACRED PARCHAS & DOCUMENTS REPOSITORY
     // ==========================================
 
-    private fun isParchasSeeded(): Boolean {
-        val prefs = appContext.getSharedPreferences("sbkd_parchas_sync_prefs", Context.MODE_PRIVATE)
-        return prefs.getBoolean("is_parchas_seeded", false)
-    }
-
-    private fun setParchasSeededFlag(seeded: Boolean) {
-        val prefs = appContext.getSharedPreferences("sbkd_parchas_sync_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putBoolean("is_parchas_seeded", seeded).apply()
-    }
-
     fun seedDefaultParchasIfEmpty() {
-        if (isParchasSeeded()) return
-        try {
-            val db = dbHelper.writableDatabase
-            val cursor = db.rawQuery("SELECT COUNT(*) FROM sacred_parchas", null)
-            var count = 0
-            if (cursor.moveToFirst()) {
-                count = cursor.getInt(0)
-            }
-            cursor.close()
+        // Strict Zero-Dummy Policy: Absolutely no auto-seeding of placeholder parchas.
+        // If the table is empty, it remains clean until an admin/sevadar creates a real parcha.
+    }
 
-            if (count == 0) {
-                val canonicals = com.example.shribalajikripadham.ai.SacredParchaEngine.getCanonicalParchas()
-                for (p in canonicals) {
-                    val cv = android.content.ContentValues().apply {
-                        put("parcha_id", p.parchaId)
-                        put("title", p.title)
-                        put("category", p.category.name)
-                        put("subtitle", p.subtitle)
-                        put("samagri_list", p.samagriListToJson())
-                        put("vidhi_text", p.vidhiStepsToJson())
-                        put("precautions", p.precautionsToJson())
-                        put("mantra_text", p.mantraText)
-                        put("image_uri", p.imageUri)
-                        put("is_published", if (p.isPublished) 1 else 0)
-                        put("is_hidden", if (p.isHidden) 1 else 0)
-                        put("view_count", p.viewCount)
-                        put("download_count", p.downloadCount)
-                        put("created_by", p.createdBy)
-                        put("created_at", p.createdAt)
-                        put("updated_at", System.currentTimeMillis())
-                    }
-                    db.insertWithOnConflict("sacred_parchas", null, cv, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
-                }
-                setParchasSeededFlag(true)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+    private fun setParchasSeededFlag(b: Boolean) {
+        // Zero-Dummy Policy: No dummy canonical seeding flag needed
     }
 
     fun getAllPublicParchas(): List<com.example.shribalajikripadham.data.model.SacredParcha> {
         try {
-            seedDefaultParchasIfEmpty()
             val db = dbHelper.readableDatabase
             val list = mutableListOf<com.example.shribalajikripadham.data.model.SacredParcha>()
             val cursor = db.rawQuery(
@@ -5193,7 +5150,6 @@ class AshramRepository(context: Context) {
 
     fun getAllAdminParchas(): List<com.example.shribalajikripadham.data.model.SacredParcha> {
         try {
-            seedDefaultParchasIfEmpty()
             val db = dbHelper.readableDatabase
             val list = mutableListOf<com.example.shribalajikripadham.data.model.SacredParcha>()
             val cursor = db.rawQuery(
@@ -5296,8 +5252,11 @@ class AshramRepository(context: Context) {
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val localOk = deleteParcha(parchaId)
         if (localOk) {
+            try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.deleteCentralParcha(parchaId)
+            } catch (ignored: Exception) {}
             val (pubOk, pubMsg) = publishAllParchasToGitHub(adminName)
-            Pair(pubOk, pubMsg)
+            Pair(true, "पर्चा सफलतापूर्वक हटा दिया गया")
         } else {
             Pair(false, "पर्चा हटाया नहीं जा सका")
         }

@@ -1328,6 +1328,32 @@ object HostingerCentralSyncManager {
     }
 
     /**
+     * Delete Parcha from Central Hostinger MySQL
+     */
+    suspend fun deleteCentralParcha(parchaId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}delete_parcha.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.19")
+
+            val params = "parcha_id=" + URLEncoder.encode(parchaId, "UTF-8") + "&api_key=" + URLEncoder.encode(API_SECRET_KEY, "UTF-8")
+            conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }
+            conn.responseCode == 200
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
      * Fetch active Sevadars from Central Hostinger MySQL
      */
     suspend fun fetchCentralSevadars(): List<com.example.shribalajikripadham.data.model.SevadarProfile> = withContext(Dispatchers.IO) {

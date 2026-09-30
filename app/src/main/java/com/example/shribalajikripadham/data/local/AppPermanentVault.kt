@@ -476,7 +476,7 @@ object AppPermanentVault {
                 put("youtube_channel_url", prefs.getString("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham"))
                 put("facebook_page_url", prefs.getString("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham"))
                 put("instagram_url", prefs.getString("instagram_url", "https://www.instagram.com/shribalajikripadham"))
-                put("app_share_url", prefs.getString("app_share_url", "https://shribalajikripadham.online/download.php"))
+                put("app_share_url", prefs.getString("app_share_url", "https://shribalajikripadham.online/app"))
                 put("current_theme_id", prefs.getString("current_theme_id", "maroon"))
                 put("guruji_photo_uri", prefs.getString("guruji_photo_uri", ""))
                 put("active_ui_layout", prefs.getString("active_ui_layout", "CLASSIC_DARBAR"))

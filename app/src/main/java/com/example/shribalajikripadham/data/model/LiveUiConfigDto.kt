@@ -33,7 +33,7 @@ data class AshramDetailsConfigDto(
     val youtubeChannelUrl: String = "https://www.youtube.com/@ShriBalajiKripaDham",
     val facebookPageUrl: String = "https://www.facebook.com/ShriBalajiKripaDham",
     val instagramUrl: String = "https://www.instagram.com/shribalajikripadham",
-    val appShareUrl: String = "https://shribalajikripadham.online/download.php",
+    val appShareUrl: String = "https://shribalajikripadham.online/app",
     val gurujiPhotoUrl: String = ""
 )
 
@@ -252,8 +252,8 @@ data class LiveUiConfigDto(
                         youtubeChannelUrl = detObj.optString("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham"),
                         facebookPageUrl = detObj.optString("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham"),
                         instagramUrl = detObj.optString("instagram_url", "https://www.instagram.com/shribalajikripadham"),
-                        appShareUrl = detObj.optString("app_share_url", "https://shribalajikripadham.online/download.php").let {
-                            if (it.contains(".org") || it.isBlank() || it.endsWith("/app")) "https://shribalajikripadham.online/download.php" else it
+                        appShareUrl = detObj.optString("app_share_url", "https://shribalajikripadham.online/app").let {
+                            if (it.contains(".org") || it.isBlank() || it.contains("download.php")) "https://shribalajikripadham.online/app" else it
                         },
                         gurujiPhotoUrl = detObj.optString("guruji_photo_url", "")
                     )
