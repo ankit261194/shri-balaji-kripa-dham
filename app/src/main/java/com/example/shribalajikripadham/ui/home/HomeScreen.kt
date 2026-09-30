@@ -212,6 +212,8 @@ fun HomeScreen(
     var dailySuvichar by remember { mutableStateOf(DailySuvichar.default()) }
     var selectedViewingStatus by remember { mutableStateOf<BhaktiStatusItem?>(null) }
     var showCreateStatusDialog by remember { mutableStateOf(false) }
+    var showSuvicharModal by remember { mutableStateOf(false) }
+    var showAartiTimingsModal by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val res = StatusSyncManager.fetchActiveStatuses()
@@ -1177,36 +1179,46 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // 🌟 PINNED SACRED GOLDEN TAB BAR (Side-Toggle & Page Selector)
-            ScrollableTabRow(
-                selectedTabIndex = selectedHomeTab.ordinal,
-                containerColor = currentTheme.surfaceLight,
-                contentColor = currentTheme.primaryColor,
-                edgePadding = 8.dp,
-                divider = {
-                    HorizontalDivider(color = currentTheme.cardBorderColor, thickness = 1.dp)
-                }
-            ) {
-                HomeTab.values().forEach { tab ->
-                    Tab(
-                        selected = selectedHomeTab == tab,
-                        onClick = {
-                            selectedHomeTab = tab
-                            scope.launch { homeScrollState.scrollTo(0) }
-                        },
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(tab.icon, fontSize = if (isCompact) 13.sp else 15.sp)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (isHindi) tab.titleHindi else tab.titleEnglish,
-                                    fontWeight = if (selectedHomeTab == tab) FontWeight.ExtraBold else FontWeight.SemiBold,
-                                    fontSize = if (isCompact) 12.sp else 13.5.sp,
-                                    color = if (selectedHomeTab == tab) currentTheme.primaryColor else if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF54656F)
-                                )
-                            }
+            // Sub-page breadcrumb bar (Only visible if navigated to sub-page via side drawer)
+            if (selectedHomeTab != HomeTab.DARSHAN_TOKEN) {
+                Surface(
+                    color = currentTheme.surfaceLight,
+                    shadowElevation = 2.dp,
+                    border = BorderStroke(1.dp, currentTheme.cardBorderColor),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(selectedHomeTab.icon, fontSize = 18.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isHindi) selectedHomeTab.titleHindi else selectedHomeTab.titleEnglish,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = currentTheme.primaryColor
+                            )
                         }
-                    )
+                        Button(
+                            onClick = {
+                                selectedHomeTab = HomeTab.DARSHAN_TOKEN
+                                scope.launch { homeScrollState.scrollTo(0) }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = currentTheme.primaryColor.copy(alpha = 0.12f),
+                                contentColor = currentTheme.primaryColor
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(if (isHindi) "🏠 मुख्य पृष्ठ पर लौटें" else "🏠 Back to Home", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
 
@@ -1225,6 +1237,14 @@ fun HomeScreen(
                             isHindi = isHindi,
                             onOpenCreateStatus = { showCreateStatusDialog = true },
                             onOpenStatus = { selectedViewingStatus = it },
+                            onOpenDailyDarshan = {
+                                scope.launch { homeScrollState.animateScrollTo(600) }
+                            },
+                            onOpenLiveDarbar = onNavigateToLiveDarbar,
+                            onOpenSuvichar = { showSuvicharModal = true },
+                            onOpenArzi = onNavigateToParchas,
+                            onOpenAartiTimings = { showAartiTimingsModal = true },
+                            onOpenYatra = onNavigateToYatra,
                             modifier = Modifier.padding(bottom = sectionSpacing)
                         )
 
@@ -1397,7 +1417,8 @@ fun HomeScreen(
                         if (activeLayout == AppUiLayout.CLASSIC_DARBAR) {
                             val classicDarbarSectionIds = listOf(
                                 UiSectionConfig.ID_EMERGENCY_NOTICE,
-                                UiSectionConfig.ID_QUICK_SERVICES
+                                UiSectionConfig.ID_QUICK_SERVICES,
+                                UiSectionConfig.ID_FREE_TREATMENT_BOX
                             )
                             for (secId in classicDarbarSectionIds) {
                                 RenderClassicSection(
@@ -2359,6 +2380,249 @@ fun HomeScreen(
                 }
             }
         )
+    }
+
+    // 🌅 Today's Sacred Guru Vichar / Suvichar Dialog
+    if (showSuvicharModal) {
+        val todayVichar = remember { DailyDarshanHelper.getTodayGuruVichar() }
+        val todayHindiDate = remember { DailyDarshanHelper.getTodayHindiDate() }
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showSuvicharModal = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.5.dp, currentTheme.cardBorderColor),
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .wrapContentHeight()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(currentTheme.primaryColor.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("📜", fontSize = 28.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = if (isHindi) "🌅 आज का पावन सुविचार" else "🌅 Today's Divine Quote",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 18.sp,
+                        color = currentTheme.primaryColor
+                    )
+
+                    Text(
+                        text = "📅 $todayHindiDate • श्री बालाजी कृपा धाम",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Gray
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Surface(
+                        color = Color(0xFFFFF8E1),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFFD54F)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "“ $todayVichar ”",
+                            fontSize = 14.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            lineHeight = 22.sp,
+                            color = Color(0xFF3E2723),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { showSuvicharModal = false },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(if (isHindi) "बंद करें" else "Close", fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = {
+                                val shareText = """
+🚩 *श्री बालाजी कृपा धाम, डूँगरा जाट* 🚩
+*परम पूज्य गुरुजी तेजवीर सिंह जी*
+══════════════════════════
+🌅 *आज का पावन सुविचार* 🌅
+📅 *तिथि:* $todayHindiDate
+
+"$todayVichar"
+══════════════════════════
+🙏 *भूत-प्रेत व असाध्य मानसिक कष्टों का 100% निःशुल्क इलाज।*
+🌐 ऐप डाउनलोड करें: https://shribalajikripadham.online/app
+                                """.trimIndent()
+
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                try {
+                                    intent.setPackage("com.whatsapp")
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    context.startActivity(Intent.createChooser(intent, "सुविचार शेयर करें"))
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1.3f)
+                        ) {
+                            Text("व्हाट्सएप शेयर 📲", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 🔔 Daily Aarti Timings Schedule Dialog
+    if (showAartiTimingsModal) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showAartiTimingsModal = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.5.dp, currentTheme.cardBorderColor),
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .wrapContentHeight()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE0F2F1)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("🔔", fontSize = 28.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = if (isHindi) "🔔 आश्रम दैनिक पावन आरती समय" else "🔔 Ashram Daily Aarti Timings",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 17.5.sp,
+                        color = currentTheme.primaryColor
+                    )
+
+                    Text(
+                        text = "श्री बालाजी कृपा धाम (डूँगरा जाट)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Gray
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    val aartiItems = listOf(
+                        Triple("🌅 प्रातः मंगला आरती", "प्रातः 5:30 बजे", "दिव्य जागरण व अमृत वेला स्तुति"),
+                        Triple("🌺 पावन अलौकिक श्रृंगार आरती", "प्रातः 8:00 बजे", "सिंदूर अर्पण व महाप्रभु दर्शन"),
+                        Triple("🍲 दोपहर राजभोग आरती", "दोपहर 12:00 बजे", "पावन भोग व नैवेद्य समर्पण"),
+                        Triple("🪔 सांध्य दीप आरती", "सायं 7:00 बजे", "संध्या वंदन व अखंड ज्योति दर्शन"),
+                        Triple("🌙 शयन आरती", "रात्रि 9:30 बजे", "रात्रि विश्राम व मंगल आशीष")
+                    )
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        aartiItems.forEach { (name, time, desc) ->
+                            Surface(
+                                color = Color(0xFFF9F9F9),
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(0.8.dp, Color(0xFFEEEEEE)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(name, fontWeight = FontWeight.Bold, fontSize = 13.5.sp, color = Color(0xFF263238))
+                                        Text(desc, fontSize = 11.sp, color = Color.Gray)
+                                    }
+                                    Surface(
+                                        color = currentTheme.primaryColor.copy(alpha = 0.12f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = time,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            fontSize = 12.sp,
+                                            color = currentTheme.primaryColor,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Surface(
+                        color = Color(0xFFFFF3E0),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(0.8.dp, Color(0xFFFFB74D)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "🚩 रविवार पावन दरबार: प्रातः 8:00 बजे से निरंतर पूज्य गुरुजी द्वारा झाड़ा व दर्शन सेवा।",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFFE65100),
+                            modifier = Modifier.padding(8.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = { showAartiTimingsModal = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(if (isHindi) "समझ गया / बंद करें" else "Close", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
     }
 }
 

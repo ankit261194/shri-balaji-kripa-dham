@@ -23,6 +23,9 @@ class AshramBackgroundPushJobService : JobService() {
         private const val KEY_LAST_NOTIFIED_BROADCAST_TS = "last_notified_broadcast_timestamp"
         private const val KEY_LAST_EMERGENCY_HASH = "last_notified_emergency_hash"
         private const val KEY_LAST_DARBAR_STATUS = "last_notified_darbar_status"
+        private const val KEY_LAST_DARBAR_STARTED_DATE = "last_darbar_started_date"
+        private const val KEY_LAST_DARBAR_ENDED_DATE = "last_darbar_ended_date"
+        private const val KEY_LAST_SUVICHAR_DATE = "last_suvichar_date"
         private const val KEY_LAST_SERVING_TOKEN = "last_notified_serving_token"
 
         private const val RAW_BROADCASTS_URL =
@@ -163,31 +166,73 @@ class AshramBackgroundPushJobService : JobService() {
                         }
                     }
 
-                    // 3B. Darbar Start / End State Alert
-                    val isDarbarActive = root.optBoolean("is_darbar_active", true)
-                    if (prefs.contains(KEY_LAST_DARBAR_STATUS)) {
-                        val prevDarbarStatus = prefs.getBoolean(KEY_LAST_DARBAR_STATUS, true)
-                        if (prevDarbarStatus != isDarbarActive) {
-                            if (isDarbarActive) {
-                                val timings = root.optString("darbar_timings", "प्रत्येक रविवार प्रातःकाल 8:00 बजे से")
-                                NotificationHelper.showSystemNotification(
-                                    context = context,
-                                    title = "🚩 पावन दरबार प्रारंभ हो चुका है!",
-                                    message = "पूज्य गुरुजी द्वारा दिव्य दरबार प्रारंभ हो गया है ($timings)। श्रद्धालु दर्शन व आशीर्वाद प्राप्त करें।",
-                                    notificationId = 10004
-                                )
-                            } else {
-                                NotificationHelper.showSystemNotification(
-                                    context = context,
-                                    title = "🙏 आज का दिव्य दरबार संपन्न हुआ",
-                                    message = "आज का पावन दरबार संपन्न हो चुका है। सभी श्रद्धालुओं पर बालाजी महाराज की कृपा बनी रहे।",
-                                    notificationId = 10004
-                                )
+                    // 3B. Darbar Start / End State Alert (STRICTLY ON SUNDAY / DARBAR DAYS ONLY)
+                    val cal = java.util.Calendar.getInstance()
+                    val dayOfWeek = cal.get(java.util.Calendar.DAY_OF_WEEK)
+                    val currentHour = cal.get(java.util.Calendar.HOUR_OF_DAY)
+                    val todayDateStr = com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
+                    val isTuesdayDarbar = (root.optBoolean("is_tuesday_token_enabled", false) || root.optBoolean("is_tuesday_darbar_enabled", false)) && dayOfWeek == java.util.Calendar.TUESDAY
+                    val isSundayDarbar = dayOfWeek == java.util.Calendar.SUNDAY
+                    val isDarbarDay = isSundayDarbar || isTuesdayDarbar
+
+                    val isDarbarActive = root.optBoolean("is_darbar_active", false)
+
+                    if (isDarbarDay) {
+                        if (prefs.contains(KEY_LAST_DARBAR_STATUS)) {
+                            val prevDarbarStatus = prefs.getBoolean(KEY_LAST_DARBAR_STATUS, false)
+                            if (prevDarbarStatus != isDarbarActive) {
+                                if (isDarbarActive) {
+                                    val lastStartedDate = prefs.getString(KEY_LAST_DARBAR_STARTED_DATE, "")
+                                    if (lastStartedDate != todayDateStr && currentHour in 6..18) {
+                                        val timings = root.optString("darbar_timings", "प्रातःकाल 8:00 बजे से")
+                                        NotificationHelper.showSystemNotification(
+                                            context = context,
+                                            title = "🚩 पावन दरबार प्रारंभ हो चुका है!",
+                                            message = "पूज्य गुरुजी द्वारा दिव्य दरबार प्रारंभ हो गया है ($timings)। श्रद्धालु दर्शन व आशीर्वाद प्राप्त करें।",
+                                            notificationId = 10004
+                                        )
+                                        prefs.edit().putString(KEY_LAST_DARBAR_STARTED_DATE, todayDateStr).apply()
+                                    }
+                                } else {
+                                    // Darbar ended notification: ONLY if it was previously active, it's afternoon/evening (>= 12), and not notified yet today
+                                    val lastEndedDate = prefs.getString(KEY_LAST_DARBAR_ENDED_DATE, "")
+                                    if (lastEndedDate != todayDateStr && currentHour >= 12 && prevDarbarStatus) {
+                                        NotificationHelper.showSystemNotification(
+                                            context = context,
+                                            title = "🙏 आज का दिव्य दरबार संपन्न हुआ",
+                                            message = "आज का पावन दरबार संपन्न हो चुका है। सभी श्रद्धालुओं पर बालाजी महाराज की कृपा बनी रहे।",
+                                            notificationId = 10004
+                                        )
+                                        prefs.edit().putString(KEY_LAST_DARBAR_ENDED_DATE, todayDateStr).apply()
+                                    }
+                                }
+                                prefs.edit().putBoolean(KEY_LAST_DARBAR_STATUS, isDarbarActive).apply()
                             }
+                        } else {
                             prefs.edit().putBoolean(KEY_LAST_DARBAR_STATUS, isDarbarActive).apply()
                         }
                     } else {
-                        prefs.edit().putBoolean(KEY_LAST_DARBAR_STATUS, isDarbarActive).apply()
+                        // Weekday / Non-Darbar Day: Reset status to false so weekday syncs NEVER trigger "दरबार संपन्न"
+                        prefs.edit().putBoolean(KEY_LAST_DARBAR_STATUS, false).apply()
+                    }
+
+                    // 3C. Daily Morning Sacred Suvichar Notification (6:30 AM to 11:30 AM)
+                    val lastSuvicharDate = prefs.getString(KEY_LAST_SUVICHAR_DATE, "")
+                    if (lastSuvicharDate != todayDateStr && currentHour in 6..12) {
+                        try {
+                            val fullQuote = com.example.shribalajikripadham.ui.home.DailyDarshanHelper.getTodayGuruVichar()
+                            val cleanQuote = fullQuote.replace("\n", " ").trim()
+                            val shortQuote = if (cleanQuote.length > 140) cleanQuote.take(137) + "..." else cleanQuote
+                            NotificationHelper.showSystemNotification(
+                                context = context,
+                                title = "🌅 आज का पावन सुविचार | श्री बालाजी कृपा धाम",
+                                message = shortQuote,
+                                notificationId = 10008
+                            )
+                            prefs.edit().putString(KEY_LAST_SUVICHAR_DATE, todayDateStr).apply()
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to send morning suvichar notification: ${e.message}")
+                        }
                     }
 
                     // 3C. Live Serving Token Updates & Devotee Proximity Alerts

@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 96,
-  "version_code": 96,
-  "latest_version_name": "2.56.21",
-  "version_name": "2.56.21",
-  "update_notes_hindi": "v2.56.21 (Build 96): 🔴 ब्रॉडकास्ट-ग्रेड इन-ऐप लाइव स्ट्रीमिंग प्लेयर (Media3 ExoPlayer HLS/MP4 + हार्डवेयर-एक्सेलरेटेड लाइव प्रसारण, फुलस्क्रीन, भक्ति रिएक्शंस) एवं 🔊 हिंदी AI वॉयस टोकन लाउडस्पीकर अनाउंसर (पवित्र 528Hz कांस्य मंदिर घंटी की झंकार, शुद्ध देवनागरी व हिंदी शब्द उच्चारण 'टोकन नंबर ४५, पैंतालीस', वॉल्यूम बूस्ट, और कतार स्क्रीन में लाइव कंसोल)।",
-  "update_notes_english": "v2.56.21 (Build 96): 🔴 Broadcast-Grade In-App Live Streaming Player (Media3 ExoPlayer HLS/MP4 + Hardware-Accelerated Live Stream, Fullscreen, Devotional Reactions) and 🔊 Hindi AI Voice Token Loudspeaker Announcer (Sacred 528Hz Temple Bell Chime, Pure Devanagari Hindi Words 'टोकन नंबर ४५, पैंतालीस', Loudspeaker Volume Boost, and Live Announcer Console).",
+  "latest_version_code": 97,
+  "version_code": 97,
+  "latest_version_name": "2.56.22",
+  "version_name": "2.56.22",
+  "update_notes_hindi": "v2.56.22 (Build 97): 🔔 पुश नोटिफिकेशन आइकॉन फिक्स (स्टेटस बार में शुद्ध श्वेत त्रिशूल-गदा आइकॉन + ट्रे में आश्रम का पावन लोगो), 🚩 'दरबार संपन्न' नोटिफिकेशन केवल रविवार शाम को ही आएगा (सप्ताह के बाकी दिनों में नहीं), 🌅 नित्य प्रातः 'आज का पावन सुविचार' पुश नोटिफिकेशन, एवं 📱 होम स्क्रीन का सुव्यवस्थित WhatsApp-स्टाइल स्टेटस अवतार बार (दैनिक दर्शन, लाइव दरबार, सुविचार, अर्जी, आरती समय, यात्रा) व प्राथमिकता अनुसार व्यवस्थित होम फीड।",
+  "update_notes_english": "v2.56.22 (Build 97): 🔔 Push Notification Icon Fixed (pure white status bar silhouette + full Ashram logo in shade), 🚩 'Darbar Completed' Notification restricted strictly to Sunday evening, 🌅 Daily morning inspiring 'Guru Vichar' push notification, and 📱 Systematic Home Screen with WhatsApp-style circular Status/Stories bar (Darshan, Live, Quote, Arzi, Aarti, Yatra) and prioritized feed.",
   "apk_url": "https://shribalajikripadham.online/download.php?dl=1",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
