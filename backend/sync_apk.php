@@ -55,6 +55,36 @@ if (isset($_GET['upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// 1B. Chunked Upload Mode (Appends 5MB chunks to avoid timeouts)
+if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $chunkIndex = intval($_GET['chunk'] ?? 0);
+    $isLast = isset($_GET['last']) && ($_GET['last'] === '1' || $_GET['last'] === 'true');
+    $fp = fopen($tmpFile, $chunkIndex === 0 ? 'wb' : 'ab');
+    $input = fopen('php://input', 'rb');
+    if ($input && $fp) {
+        stream_copy_to_stream($input, $fp);
+        fclose($input);
+        fclose($fp);
+        $currentSize = file_exists($tmpFile) ? filesize($tmpFile) : 0;
+        if ($isLast && $currentSize > 10000000) {
+            rename($tmpFile, $targetFile);
+            echo json_encode([
+                "success" => true,
+                "complete" => true,
+                "size" => filesize($targetFile),
+                "size_mb" => round(filesize($targetFile) / (1024 * 1024), 2) . " MB"
+            ]);
+            exit;
+        }
+        echo json_encode([
+            "success" => true,
+            "chunk" => $chunkIndex,
+            "bytes_so_far" => $currentSize
+        ]);
+        exit;
+    }
+}
+
 // 2. Resumable Chunked Download from GitHub CDN
 $chHead = curl_init($apkUrl);
 curl_setopt($chHead, CURLOPT_NOBODY, true);
