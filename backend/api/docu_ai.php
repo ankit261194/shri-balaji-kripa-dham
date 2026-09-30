@@ -449,6 +449,83 @@ if ($action === 'handwriting_ocr') {
     exit(0);
 }
 
+// 5.5 Enterprise Document Line OCR with Bounding Boxes (Gemini 1.5 Flash)
+if ($action === 'detect_text_boxes') {
+    header('Content-Type: application/json; charset=utf-8');
+    $base64Image = $inputData['image'] ?? null;
+    $customKey = $inputData['gemini_api_key'] ?? $_SERVER['HTTP_X_GEMINI_KEY'] ?? null;
+    $activeKey = (!empty($customKey) && strlen($customKey) > 10) ? $customKey : $GEMINI_API_KEY;
+
+    if (empty($base64Image)) {
+        echo json_encode(['success' => false, 'error' => 'Missing image parameter'], JSON_UNESCAPED_UNICODE);
+        exit(0);
+    }
+
+    if (preg_match('/^data:image\/\w+;base64,/', $base64Image, $type)) {
+        $base64Image = substr($base64Image, strpos($base64Image, ',') + 1);
+    }
+
+    $prompt = "You are an enterprise document OCR engine. Detect ALL lines of text in this document image (in Hindi or English).\n" .
+              "For each line, return its text and its 2D bounding box normalized to 0..1000 in [ymin, xmin, ymax, xmax] format.\n" .
+              "STRICT JSON output only in this structure:\n" .
+              "{\"lines\": [{\"text\": \"string\", \"box_2d\": [ymin, xmin, ymax, xmax]}]}";
+
+    $geminiPayload = [
+        'contents' => [
+            [
+                'parts' => [
+                    ['text' => $prompt],
+                    [
+                        'inlineData' => [
+                            'mimeType' => 'image/jpeg',
+                            'data' => $base64Image
+                        ]
+                    ]
+                ]
+            ]
+        ],
+        'generationConfig' => [
+            'responseMimeType' => 'application/json',
+            'temperature' => 0.1,
+            'maxOutputTokens' => 4096
+        ]
+    ];
+
+    $geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$PRIMARY_MODEL}:generateContent?key={$activeKey}";
+
+    $ch = curl_init($geminiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($geminiPayload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+    $geminiResponse = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $lines = [];
+    if ($httpCode === 200 && !empty($geminiResponse)) {
+        $respJson = json_decode($geminiResponse, true);
+        $candidateText = $respJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        if (!empty($candidateText)) {
+            $parsed = json_decode($candidateText, true);
+            if (isset($parsed['lines']) && is_array($parsed['lines'])) {
+                $lines = $parsed['lines'];
+            }
+        }
+    }
+
+    echo json_encode([
+        'success' => true,
+        'cloud_ai' => true,
+        'count' => count($lines),
+        'lines' => $lines
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    exit(0);
+}
+
 // 6. Multi-Device Cloud Sync & Document Hosting (CamScanner-Style Web Portal)
 if ($action === 'cloud_upload') {
     header('Content-Type: application/json; charset=utf-8');
