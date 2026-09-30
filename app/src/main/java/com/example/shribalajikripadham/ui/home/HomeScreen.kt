@@ -3234,7 +3234,9 @@ fun RenderClassicSection(
                     shape = currentTheme.cardShape,
                     elevation = CardDefaults.cardElevation(currentTheme.cardElevation + 2.dp),
                     border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.secondaryColor),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToFaceToken() }
                 ) {
                     Box(
                         modifier = Modifier
@@ -3342,7 +3344,9 @@ fun RenderClassicSection(
                     shape = currentTheme.cardShape,
                     elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
                     border = BorderStroke(1.5.dp, if (isTuesdayOpen) Color(0xFF40916C) else currentTheme.cardBorderColor),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToTuesdayToken() }
                 ) {
                     Box(
                         modifier = Modifier
@@ -3560,7 +3564,9 @@ fun RenderClassicSection(
                     colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
                     shape = currentTheme.cardShape,
                     border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToInfo() }
                 ) {
                     Row(
                         modifier = Modifier.padding(if (isCompact) 10.dp else 14.dp),
@@ -3604,7 +3610,9 @@ fun RenderClassicSection(
                     shape = currentTheme.cardShape,
                     elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
                     border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToInfo() }
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -3649,7 +3657,9 @@ fun RenderClassicSection(
                     shape = currentTheme.cardShape,
                     elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
                     border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToInfo() }
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {

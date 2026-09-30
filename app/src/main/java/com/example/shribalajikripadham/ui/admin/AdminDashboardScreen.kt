@@ -1121,6 +1121,7 @@ fun AdminDashboardScreen(
             if (admin.canChangeLocation || isSuper) allowedTabs.add(if (isHindi) "GPS लोकेशन" else "Location")
             if (admin.canSendNotifications || isSuper) allowedTabs.add(if (isHindi) "सूचना भेजें" else "Broadcast")
             if (isSuper || admin.canEditAshramInfo) {
+                allowedTabs.add(if (isHindi) "🌺 दैनिक दर्शन" else "Daily Darshan Studio")
                 allowedTabs.add(if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control")
                 allowedTabs.add(if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager")
                 allowedTabs.add(if (isHindi) "🔴 लाइव स्टूडियो" else "🔴 Live Studio")
@@ -2345,6 +2346,13 @@ fun AdminDashboardScreen(
                             AdminAudioAartiManagerTab(
                                 isHindi = isHindi,
                                 repository = repository
+                            )
+                        }
+                        currentTabTitle == "🌺 दैनिक दर्शन" || currentTabTitle == "Daily Darshan Studio" -> {
+                            AdminDailyDarshanTab(
+                                isHindi = isHindi,
+                                repository = repository,
+                                settings = settings
                             )
                         }
                         currentTabTitle == "🔴 लाइव स्टूडियो" || currentTabTitle == "🔴 Live Studio" -> {

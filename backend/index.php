@@ -31,11 +31,23 @@ if (!$siteData || !isset($siteData['settings'])) {
         try {
             $donors = $pdo->query("SELECT * FROM donors WHERE is_active = 1 ORDER BY display_order ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [];
         } catch (Throwable $e) {}
+        $todayDarshan = null;
+        try {
+            $todayD = date('Y-m-d');
+            $darshanStmt = $pdo->prepare("SELECT * FROM daily_darshan WHERE darshan_date = :d LIMIT 1");
+            $darshanStmt->execute([':d' => $todayD]);
+            $todayDarshan = $darshanStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+            if (!$todayDarshan) {
+                $latestStmt = $pdo->query("SELECT * FROM daily_darshan ORDER BY darshan_date DESC LIMIT 1");
+                $todayDarshan = $latestStmt ? ($latestStmt->fetch(PDO::FETCH_ASSOC) ?: null) : null;
+            }
+        } catch (Throwable $e) {}
     }
     $siteData = [
         'settings' => $settings,
         'sevadars' => $sevadars,
         'donors' => $donors,
+        'darshan' => $todayDarshan,
         'timestamp' => time()
     ];
     if (!is_dir($cacheDir)) {
@@ -47,6 +59,7 @@ if (!$siteData || !isset($siteData['settings'])) {
 $settings = $siteData['settings'] ?? [];
 $sevadars = $siteData['sevadars'] ?? [];
 $donors = $siteData['donors'] ?? [];
+$darshan = $siteData['darshan'] ?? null;
 
 // Version Info from version.json
 $verFile = __DIR__ . '/version.json';
@@ -169,6 +182,12 @@ $whatsappChannelUrl = !empty($settings['whatsapp_channel_url']) ? $settings['wha
 $footerTitle = !empty($settings['footer_title']) ? $settings['footer_title'] : 'श्री बालाजी कृपा धाम';
 $footerDedication = !empty($settings['footer_dedication']) ? $settings['footer_dedication'] : 'सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।';
 $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_copyright'] : '© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।';
+
+// Consecrated Daily Darshan & Guru Vichar (App & Web Live Synced)
+$darshanPhoto = !empty($darshan['photo_url']) ? $darshan['photo_url'] : 'media/balaji_darshan_today.jpg';
+$darshanTitle = !empty($darshan['title']) ? $darshan['title'] : 'श्री बालाजी महाराज दैनिक दिव्य अलौकिक श्रृंगार दर्शन';
+$darshanQuote = !empty($darshan['blessings_quote']) ? $darshan['blessings_quote'] : 'जब जीवन में हर तरफ से रास्ते बंद दिखने लगें, मन अशांत हो और अपने भी साथ छोड़ दें, तब घबराकर कभी अधर्म का रास्ता मत चुनना। संकट की घड़ी भक्त के धैर्य की परीक्षा होती है। पूज्य गुरुदेव समझाते हैं कि अपनी विपत्ति का बोझ अपने सिर पर मत ढोओ, उसे पूर्ण विश्वास के साथ श्री बालाजी महाराज के चरणों में समर्पित कर दो। बालाजी महाराज स्वयं ढाल बनकर तुम्हारे सारे कष्ट हर लेंगे।';
+$darshanViews = !empty($darshan['views_count']) ? intval($darshan['views_count']) : 108;
 ?>
 <!DOCTYPE html>
 <html lang="hi">
@@ -406,6 +425,140 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
             font-size: 0.85rem;
             color: var(--text-muted);
             line-height: 1.35;
+        }
+
+        /* Consecrated Daily Darshan & Guru Vichar Card */
+        .darshan-card-container {
+            max-width: 650px;
+            margin: 0 auto 30px;
+            background: #FFFFFF;
+            border-radius: 20px;
+            border: 2px solid #FFE082;
+            box-shadow: 0 10px 30px rgba(128, 0, 0, 0.12);
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .darshan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(90deg, #4A0000, #800000);
+            padding: 10px 18px;
+            color: #FFD54F;
+        }
+
+        .darshan-badge {
+            font-size: 0.95rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .darshan-views {
+            font-size: 0.82rem;
+            background: rgba(255, 213, 79, 0.2);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .darshan-media-wrap {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            background: #212121;
+            overflow: hidden;
+        }
+
+        .darshan-media-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .darshan-media-wrap:hover img {
+            transform: scale(1.03);
+        }
+
+        .darshan-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 25px 18px 12px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+            color: #FFFFFF;
+        }
+
+        .darshan-overlay h3 {
+            font-size: 1.22rem;
+            font-weight: 800;
+            color: #FFD54F;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .darshan-quote-box {
+            padding: 18px 20px 20px;
+            background: #FFFDF9;
+        }
+
+        .quote-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #E65100;
+        }
+
+        .quote-date {
+            font-size: 0.8rem;
+            color: #8D6E63;
+        }
+
+        .darshan-quote-box p {
+            font-size: 0.96rem;
+            line-height: 1.6;
+            color: #3E2723;
+            font-style: italic;
+            border-left: 3px solid #FF8F00;
+            padding-left: 12px;
+            margin-bottom: 16px;
+        }
+
+        .darshan-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-darshan-share {
+            flex: 1;
+            min-width: 200px;
+            background: #25D366;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 9px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .btn-darshan-expand {
+            background: #FFF8E1;
+            color: #E65100;
+            border: 1px solid #FFE082;
+            text-decoration: none;
+            padding: 9px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            text-align: center;
+            display: inline-block;
         }
 
         /* Glowing Live Running Token Banner */
@@ -1061,6 +1214,38 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
             </div>
         </div>
 
+        <!-- 🌺 Consecrated Daily Darshan & Guru Vichar Widget (Synchronized with App & Live Admin Studio) -->
+        <div class="darshan-card-container">
+            <div class="darshan-header">
+                <div class="darshan-badge">🌺 आज का पावन दैनिक दर्शन</div>
+                <div class="darshan-views">👁️ <?= number_format($darshanViews) ?> दर्शनार्थी</div>
+            </div>
+            
+            <div class="darshan-media-wrap">
+                <img id="dailyDarshanImg" src="<?= htmlspecialchars($darshanPhoto) ?>?t=<?= time() ?>" alt="<?= htmlspecialchars($darshanTitle) ?>" onerror="this.src='media/balaji_darshan_today.jpg'">
+                <div class="darshan-overlay">
+                    <h3 id="dailyDarshanTitle"><?= htmlspecialchars($darshanTitle) ?></h3>
+                </div>
+            </div>
+
+            <div class="darshan-quote-box">
+                <div class="quote-header">
+                    <span>✨ पूज्य गुरुदेव अमृत विचार (दैनिक प्रेरणा)</span>
+                    <span class="quote-date">📅 <?= date("d/m/Y") ?></span>
+                </div>
+                <p id="dailyDarshanQuote">"<?= htmlspecialchars($darshanQuote) ?>"</p>
+                
+                <div class="darshan-actions">
+                    <a href="https://api.whatsapp.com/send?text=<?= urlencode("🌺 श्री बालाजी महाराज दैनिक दिव्य दर्शन एवं अमृत विचार:\n\n" . $darshanTitle . "\n\n\"" . $darshanQuote . "\"\n\nदर्शन हेतु देखें: https://shribalajikripadham.online") ?>" target="_blank" class="btn-darshan-share">
+                        📲 व्हाट्सएप पर दर्शन शेयर करें
+                    </a>
+                    <a href="<?= htmlspecialchars($darshanPhoto) ?>" target="_blank" class="btn-darshan-expand">
+                        🔍 पूर्ण दर्शन देखें
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- Glowing Live Running Token Section (Sunday Dungra Jaat + Tuesday Bulandshahr) -->
         <div style="display: flex; flex-direction: column; gap: 16px; max-width: 850px; margin: 0 auto 25px;">
             <!-- Sunday Darbar Token Banner (Dungra Jaat) -->
@@ -1339,6 +1524,27 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
             </div>
             <?php endif; ?>
         </div>
+
+        <?php if ($isBusLive): ?>
+        <!-- Bus Yatra Service Live Box (App & Super Admin Controlled) -->
+        <div class="info-box" style="border: 2px solid #FF8F00; background: #FFFDE7;">
+            <h4>🚌 श्री बालाजी धाम यात्रा बस सेवा</h4>
+            <p style="font-size: 0.95rem; color: #37474F; margin-bottom: 8px;">
+                श्रद्धालुओं की सुगम यात्रा हेतु धाम द्वारा डीलक्स बस सेवा उपलब्ध है।
+            </p>
+            <div class="timing-row">
+                <span>प्रति सीट किराया</span>
+                <span class="time">₹<?= !empty($settings['bus_seat_fare_amount']) ? $settings['bus_seat_fare_amount'] : '0' ?></span>
+            </div>
+            <div class="timing-row">
+                <span>सीट बुकिंग माध्यम</span>
+                <span class="time" style="color: #2E7D32;">आधिकारिक मोबाइल ऐप</span>
+            </div>
+            <a href="download.php" class="btn-main-download" style="margin-top: 14px; font-size: 0.95rem; padding: 10px 18px; width: 100%; text-align: center; justify-content: center;">
+                📲 ऐप से बस सीट बुक करें
+            </a>
+        </div>
+        <?php endif; ?>
 
         <!-- Ashram Location & Contact (Strictly Real Numbers Only) -->
         <div class="info-box">

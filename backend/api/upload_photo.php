@@ -34,9 +34,15 @@ if (!is_dir($uploadDir)) {
 
 $photoType = strtolower(trim($_POST['photo_type'] ?? $_POST['type'] ?? 'devotee'));
 $isGuruji = ($photoType === 'guruji' || strpos(strtolower($file['name']), 'guruji') !== false);
+$isDarshan = ($photoType === 'darshan' || strpos(strtolower($file['name']), 'darshan') !== false);
+$isCarousel = ($photoType === 'carousel' || strpos(strtolower($file['name']), 'carousel') !== false);
 
 if ($isGuruji) {
     $filename = 'guruji_' . time() . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+} elseif ($isDarshan) {
+    $filename = 'darshan_' . time() . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+} elseif ($isCarousel) {
+    $filename = 'carousel_' . time() . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
 } else {
     $filename = 'devotee_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
 }
@@ -47,6 +53,15 @@ if (move_uploaded_file($file['tmp_name'], $targetPath)) {
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
     $host = $_SERVER['HTTP_HOST'];
     $photoUrl = "{$protocol}://{$host}/uploads/{$filename}";
+
+    // If it's Darshan photo, mirror to media/balaji_darshan_today.jpg
+    if ($isDarshan) {
+        $mediaDir = __DIR__ . '/../media/';
+        if (!is_dir($mediaDir)) {
+            @mkdir($mediaDir, 0755, true);
+        }
+        @copy($targetPath, $mediaDir . 'balaji_darshan_today.jpg');
+    }
 
     // If it's Guruji photo, also mirror to canonical uploads/guruji_profile.jpg
     if ($isGuruji) {

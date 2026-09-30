@@ -100,7 +100,8 @@ fun SacredGranthScreen(
                             text = when (selectedTab) {
                                 0 -> if (isHindi) "📖 सम्पूर्ण सुंदरकाण्ड" else "📖 Shri Sundarkand"
                                 1 -> if (isHindi) "🛡️ सम्पूर्ण हनुमान बाहुक" else "🛡️ Shri Hanuman Bahuk"
-                                else -> if (isHindi) "🚩 संकटमोचन हनुमानाष्टक" else "🚩 Sankatmochan Hanumanashtak"
+                                2 -> if (isHindi) "🚩 संकटमोचन हनुमानाष्टक" else "🚩 Sankatmochan Hanumanashtak"
+                                else -> if (isHindi) "🪔 आश्रम ध्यान व संपुट" else "🪔 Ashram Dhyan & Samput"
                             },
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -254,6 +255,20 @@ fun SacredGranthScreen(
                         )
                     }
                 )
+                Tab(
+                    selected = selectedTab == 3,
+                    onClick = {
+                        selectedTab = 3
+                        isAutoScrolling = false
+                    },
+                    text = {
+                        Text(
+                            "ध्यान व संपुट",
+                            fontSize = 12.sp,
+                            fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                )
             }
 
             // Auto-scroll active status chip
@@ -356,6 +371,66 @@ fun SacredGranthScreen(
                         item {
                             SacredVerseCard(
                                 verse = HanumanashtakData.concludingDoha,
+                                theme = selectedTheme,
+                                fontSize = fontSizeSp
+                            )
+                        }
+                    }
+                    3 -> {
+                        // TAB 3: ASHRAM DHYAN, MANTRA & SANKALPA
+                        item {
+                            IntroductoryNoticeCard(
+                                title = "॥ श्री बालाजी कृपा धाम नित्य ध्यान व संपुट विधान ॥",
+                                note = "पूज्य गुरुदेव द्वारा अनुभूत अलौकिक संपुट एवं ध्यान मंत्र। प्रतिदिन प्रातः अथवा संकट के समय इन पावन मंत्रों का जप करने से सर्व भय, रोग, शोक व बाधाओं का नाश होता है।",
+                                theme = selectedTheme
+                            )
+                        }
+
+                        item {
+                            MangalacharanCard(
+                                title = "🚩 १. श्री बालाजी महाराज दिव्य ध्यान श्लोक",
+                                devanagariText = "मनोजवं मारुततुल्यवेगं जितेन्द्रियं बुद्धिमतां वरिष्ठम्।\nवातात्मजं वानरयूथमुख्यं श्रीरामदूतं शरणं प्रपद्ये॥",
+                                meaning = "भावार्थ: जिनकी मन के समान तीव्र गति और वायु के समान वेग है, जो समस्त इन्द्रियों के विजेता और बुद्धिमानों में सर्वश्रेष्ठ हैं, पवनपुत्र, वानर सेना के मुख्य नायक और श्रीरामचन्द्र जी के अनन्य दूत श्री हनुमान जी महाराज के पावन चरणों में हम नतमस्तक होकर शरण ग्रहण करते हैं।",
+                                theme = selectedTheme,
+                                fontSize = fontSizeSp
+                            )
+                        }
+
+                        item {
+                            MangalacharanCard(
+                                title = "🛡️ २. श्री हनुमान महामंत्र (सर्वकष्ट निवारक)",
+                                devanagariText = "ॐ ऐं भ्रीम हनुमते, श्री राम दूताय नमः॥\n\nॐ हं हनुमते रुद्रात्मकाय हुं फट्॥",
+                                meaning = "भावार्थ: यह मंत्र साक्षात् रुद्रावतार श्री हनुमान जी का अमोघ बीज मंत्र है। इसके नित्य ११ या २१ बार जप करने से ऊपरी बाधा, नकारात्मक ऊर्जा, भय और असाध्य रोगों से रक्षा होती है।",
+                                theme = selectedTheme,
+                                fontSize = fontSizeSp
+                            )
+                        }
+
+                        item {
+                            MangalacharanCard(
+                                title = "✨ ३. पावन संपुट दोहा (दरबार अर्जी संपुट)",
+                                devanagariText = "संकट कटै मिटै सब पीरा।\nजो सुमरै हनुमत बलबीरा॥\n\nनासै रोग हरै सब पीरा।\nजपत निरंतर हनुमत बीरा॥",
+                                meaning = "भावार्थ: जो भी भक्त बल के सागर श्री हनुमान जी का स्मरण करता है, उसके जीवन के समस्त संकट कट जाते हैं और शारीरिक-मानसिक पीड़ाएं मिट जाती हैं। निरंतर नाम जप से समस्त असाध्य व्याधियाँ नष्ट हो जाती हैं।",
+                                theme = selectedTheme,
+                                fontSize = fontSizeSp
+                            )
+                        }
+
+                        item {
+                            MangalacharanCard(
+                                title = "🪔 ४. धाम नित्य संकल्प व शरणागति प्रार्थना",
+                                devanagariText = "हे संकटमोचन श्री बालाजी महाराज! हे पूज्य गुरुदेव!\nमैं तन-मन से आपकी शरण में हूँ। मेरे घर-परिवार पर आपकी रक्षा का छत्र सदैव बना रहे।\nसत्य, धर्म और सेवा के मार्ग पर चलने की शक्ति प्रदान करें।",
+                                meaning = "भावार्थ: निष्काम भाव से की गई शरणागति ही भक्ति की पराकाष्ठा है। जब भक्त अपना सर्वस्व बालाजी के चरणों में सौंप देता है, तब संकट मोचन स्वयं उसकी ढाल बनकर रक्षा करते हैं।",
+                                theme = selectedTheme,
+                                fontSize = fontSizeSp
+                            )
+                        }
+
+                        item {
+                            MangalacharanCard(
+                                title = "⚔️ ५. श्री भैरव बाबा व प्रेतराज सरकार स्मरण",
+                                devanagariText = "ॐ भ्रं भैरवाय नमः।\nॐ नमो भगवते भैरवाय, सर्व विघ्न विनाशाय, सर्व भूत प्रेत बाधा निवारणाय नमः॥",
+                                meaning = "भावार्थ: धाम की पावन भूमि पर श्री भैरव बाबा और प्रेतराज सरकार की उपस्थिति से समस्त दुष्ट आत्माओं और नकारात्मक शक्तियों का शमन होता है और सत्य धर्म की विजय होती है।",
                                 theme = selectedTheme,
                                 fontSize = fontSizeSp
                             )

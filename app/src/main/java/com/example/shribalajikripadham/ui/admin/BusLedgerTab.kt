@@ -60,6 +60,7 @@ fun BusLedgerTab(
     // Dialog States
     var seatDetailTarget by remember { mutableStateOf<BusSeat?>(null) }
     var showCounterBookingDialog by remember { mutableStateOf(false) }
+    var showSuperAdminSettingsDialog by remember { mutableStateOf(false) }
     var preselectedSeatForCounter by remember { mutableStateOf<BusSeat?>(null) }
     var cancelConfirmationSeat by remember { mutableStateOf<BusSeat?>(null) }
 
@@ -247,6 +248,23 @@ fun BusLedgerTab(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(if (isHindi) "☁️ बैकअप" else "☁️ Backup", fontSize = 12.sp)
+                    }
+                }
+
+                if (isSuperAdmin) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { showSuperAdminSettingsDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = AmberGold),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (isHindi) "⚙️ यात्रा व बस सेटिंग (Super Admin)" else "⚙️ Yatra & Bus Settings (Super Admin)",
+                            color = Color(0xFF3E1208),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
                     }
                 }
             }
@@ -1185,6 +1203,211 @@ fun BusLedgerTab(
                             CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
                         } else {
                             Text(if (isHindi) "सीट कन्फर्म करें व A4 टिकट निकालें" else "Confirm & Generate A4 Ticket", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showSuperAdminSettingsDialog) {
+        var isBusLiveState by remember { mutableStateOf(settings.isBusBookingLive) }
+        var isYatraServiceState by remember { mutableStateOf(settings.isYatraServiceEnabled) }
+        var fareInput by remember { mutableStateOf(settings.busSeatFareAmount.toString()) }
+        var isSaving by remember { mutableStateOf(false) }
+
+        Dialog(onDismissRequest = { if (!isSaving) showSuperAdminSettingsDialog = false }) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("⚙️", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isHindi) "यात्रा व बस सेटिंग्स" else "Yatra & Bus Settings",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaroonPrimary
+                            )
+                        }
+                        IconButton(onClick = { if (!isSaving) showSuperAdminSettingsDialog = false }) {
+                            Text("✕", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 1. Live Online Seat Booking Switch
+                    Surface(
+                        color = if (isBusLiveState) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, if (isBusLiveState) Color(0xFF81C784) else Color(0xFFEF9A9A)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (isHindi) "ऑनलाइन बस बुकिंग लाइव (App & Web)" else "Online Bus Booking Live",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = if (isBusLiveState) Color(0xFF2E7D32) else Color(0xFFC62828)
+                                )
+                                Text(
+                                    text = if (isHindi) "भक्तों के लिए सीट बुकिंग चालू अथवा बंद करें" else "Toggle seat booking for devotees",
+                                    fontSize = 11.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                            Switch(
+                                checked = isBusLiveState,
+                                onCheckedChange = { isBusLiveState = it }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // 2. Yatra Service on Devotee Home Screen
+                    Surface(
+                        color = Color(0xFFF9FBE7),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFFDCE775)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (isHindi) "होम स्क्रीन पर यात्रा कार्ड दिखाएं" else "Show Yatra Card on Devotee Home",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF33691E)
+                                )
+                                Text(
+                                    text = if (isHindi) "ऐप मुख्य पृष्ठ पर बालाजी यात्रा टाइल सक्रिय होगी" else "Enables Balaji Yatra tile on Home",
+                                    fontSize = 11.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                            Switch(
+                                checked = isYatraServiceState,
+                                onCheckedChange = { isYatraServiceState = it }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 3. Seat Fare Amount Editor
+                    Text(
+                        text = if (isHindi) "प्रति सीट किराया (₹ Fare Per Seat)" else "Fare Per Seat (₹)",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = MaroonPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = fareInput,
+                        onValueChange = { fareInput = it.filter { ch -> ch.isDigit() } },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        placeholder = { Text("उदाहरण: 350") }
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Quick Fare Presets
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(0, 200, 350, 500, 650).forEach { preset ->
+                            OutlinedButton(
+                                onClick = { fareInput = preset.toString() },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(2.dp),
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text("₹$preset", fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // Save Button
+                    Button(
+                        onClick = {
+                            isSaving = true
+                            scope.launch {
+                                try {
+                                    val parsedFare = fareInput.toIntOrNull() ?: settings.busSeatFareAmount
+                                    val updated = settings.copy(
+                                        isBusBookingLive = isBusLiveState,
+                                        isYatraServiceEnabled = isYatraServiceState,
+                                        busSeatFareAmount = parsedFare
+                                    )
+                                    val ok = repository.updateSettings(updated)
+                                    if (ok) {
+                                        Toast.makeText(
+                                            context,
+                                            if (isHindi) "बस व यात्रा सेटिंग्स सफलतापूर्वक लाइव पब्लिश हुईं!" else "Bus settings saved & published live!",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                        showSuperAdminSettingsDialog = false
+                                    } else {
+                                        Toast.makeText(context, if (isHindi) "सेव विफल! पुनः प्रयास करें" else "Save failed", Toast.LENGTH_SHORT).show()
+                                    }
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Error: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                } finally {
+                                    isSaving = false
+                                }
+                            }
+                        },
+                        enabled = !isSaving,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        if (isSaving) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                        } else {
+                            Text(
+                                text = if (isHindi) "💾 सेटिंग्स सुरक्षित व लाइव पब्लिश करें" else "💾 Save & Publish Live",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
                         }
                     }
                 }
