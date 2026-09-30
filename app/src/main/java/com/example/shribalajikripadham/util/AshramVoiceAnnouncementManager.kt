@@ -1,7 +1,10 @@
 package com.example.shribalajikripadham.util
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioFormat
 import android.media.AudioManager
+import android.media.AudioTrack
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.media.ToneGenerator
@@ -13,11 +16,18 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
+import kotlin.math.PI
+import kotlin.math.exp
+import kotlin.math.sin
+
 
 data class VoicePresetInfo(
     val id: String,
@@ -107,6 +117,16 @@ object AshramVoiceAnnouncementManager {
     private var isInitialized = false
     private var pendingSpeech: String? = null
     private var lastAnnouncementText: String = ""
+
+    private val _isAnnouncing = MutableStateFlow(false)
+    val isAnnouncing: StateFlow<Boolean> = _isAnnouncing.asStateFlow()
+
+    private val _currentAnnouncedToken = MutableStateFlow<Int?>(null)
+    val currentAnnouncedToken: StateFlow<Int?> = _currentAnnouncedToken.asStateFlow()
+
+    private val _currentAnnouncedText = MutableStateFlow<String>("")
+    val currentAnnouncedText: StateFlow<String> = _currentAnnouncedText.asStateFlow()
+
 
     // Media Recorder & Player for Live In-App Recordings
     private var activeMediaRecorder: MediaRecorder? = null
@@ -258,10 +278,16 @@ object AshramVoiceAnnouncementManager {
                 val currentPreset = getSelectedVoicePreset(context)
                 applyVoiceSettings(context, currentPreset)
                 tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {}
-                    override fun onDone(utteranceId: String?) {}
+                    override fun onStart(utteranceId: String?) {
+                        _isAnnouncing.value = true
+                    }
+                    override fun onDone(utteranceId: String?) {
+                        _isAnnouncing.value = false
+                    }
                     @Deprecated("Deprecated in Java")
-                    override fun onError(utteranceId: String?) {}
+                    override fun onError(utteranceId: String?) {
+                        _isAnnouncing.value = false
+                    }
                 })
                 isInitialized = true
                 pendingSpeech?.let { speech ->
@@ -308,71 +334,214 @@ object AshramVoiceAnnouncementManager {
     }
 
     /**
-     * Sacred Dual-Tone Temple Bell Chime:
-     * Plays a resonant sacred temple bell chime tone to alert the darbar hall before calling a token.
+     * Converts western digits 0-9 into pure Devanagari numerals (०-९)
+     */
+    fun toDevanagariDigits(num: Int): String {
+        val digits = arrayOf('०', '१', '२', '३', '४', '५', '६', '७', '८', '९')
+        return num.toString().map { if (it in '0'..'9') digits[it - '0'] else it }.joinToString("")
+    }
+
+    /**
+     * Converts numeric token numbers (1 to 999) into pure spoken Devanagari Hindi words
+     * so every listener in the temple courtyard clearly hears the number without distortion.
+     */
+    fun numberToHindiWords(num: Int): String {
+        if (num <= 0) return num.toString()
+        val words1To100 = arrayOf(
+            "", "एक", "दो", "तीन", "चार", "पाँच", "छह", "सात", "आठ", "नौ", "दस",
+            "ग्यारह", "बारह", "तेरह", "चौदह", "पंद्रह", "सोलह", "सत्रह", "अठारह", "उन्नीस", "बीस",
+            "इक्कीस", "बाईस", "तेईस", "चौबीस", "पच्चीस", "छब्बीस", "सत्ताईस", "अट्ठाईस", "उनतीस", "तीस",
+            "इकतीस", "बत्तीस", "तैंतीस", "चौंतीस", "पैंतीस", "छत्तीस", "सैंतीस", "अड़तीस", "उनतालीस", "चालीस",
+            "इकतालीस", "बयालीस", "तैंतालीस", "चवालीस", "पैंतालीस", "छियालीस", "सैंतालीस", "अड़तालीस", "उनचास", "पचास",
+            "इक्यावन", "बावन", "तिरेपन", "चौवन", "पचपन", "छप्पन", "सत्तावन", "अट्ठावन", "उनसठ", "साठ",
+            "इकसठ", "बासठ", "तिरेसठ", "चौंसठ", "पैंसठ", "छियासठ", "सरसठ", "अड़सठ", "उनहत्तर", "सत्तर",
+            "इकहत्तर", "बहत्तर", "तिहत्तर", "चौहत्तर", "पचहत्तर", "छिहत्तर", "सतहत्तर", "अठहत्तर", "उन्नासी", "अस्सी",
+            "इक्यासी", "बयासी", "तिरासी", "चौरासी", "पचासी", "छियासी", "सत्तासी", "अट्ठासी", "नवासी", "नब्बे",
+            "इक्यानवे", "बानवे", "तिरानवे", "चौरानवे", "पंचानवे", "छियानवे", "सत्तानवे", "अट्ठानवे", "निन्यानवे", "एक सौ"
+        )
+        if (num in 1..100) return words1To100[num]
+        if (num in 101..999) {
+            val hundreds = num / 100
+            val rem = num % 100
+            val prefix = when (hundreds) {
+                1 -> "एक सौ"
+                2 -> "दो सौ"
+                3 -> "तीन सौ"
+                4 -> "चार सौ"
+                5 -> "पाँच सौ"
+                6 -> "छह सौ"
+                7 -> "सात सौ"
+                8 -> "आठ सौ"
+                9 -> "नौ सौ"
+                else -> "$hundreds सौ"
+            }
+            return if (rem == 0) prefix else "$prefix ${words1To100[rem]}"
+        }
+        return num.toString()
+    }
+
+    /**
+     * Sacred Harmonic Temple Bell / Chime Synthesizer:
+     * Generates a resonant dual-frequency acoustic brass bell tone (528 Hz + 1056 Hz harmonic overtone)
+     * with exponential acoustic decay to alert the ashram hall before calling a token.
      */
     fun playTempleChime(onFinished: (() -> Unit)? = null) {
-        try {
-            val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 95)
-            // Resonant sacred chime tone
-            toneGen.startTone(ToneGenerator.TONE_PROP_BEEP2, 380)
-            CoroutineScope(Dispatchers.IO).launch {
-                delay(420)
-                try {
-                    toneGen.release()
-                } catch (e: Exception) {}
-                withContext(Dispatchers.Main) {
-                    onFinished?.invoke()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val sampleRate = 44100
+                val durationSeconds = 0.85
+                val numSamples = (sampleRate * durationSeconds).toInt()
+                val buffer = ShortArray(numSamples)
+                for (i in 0 until numSamples) {
+                    val t = i.toDouble() / sampleRate
+                    // Dual sacred harmonic: 528 Hz (fundamental) + 1056 Hz (octave) with exponential decay
+                    val decay = exp(-4.2 * t)
+                    val sampleVal = decay * (0.68 * sin(2.0 * PI * 528.0 * t) + 0.32 * sin(2.0 * PI * 1056.0 * t))
+                    buffer[i] = (sampleVal * Short.MAX_VALUE * 0.95).toInt().toShort()
                 }
+                val audioTrack = AudioTrack.Builder()
+                    .setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build()
+                    )
+                    .setAudioFormat(
+                        AudioFormat.Builder()
+                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                            .setSampleRate(sampleRate)
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                            .build()
+                    )
+                    .setBufferSizeInBytes(buffer.size * 2)
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .build()
+                audioTrack.write(buffer, 0, buffer.size)
+                audioTrack.play()
+                delay(880)
+                try {
+                    audioTrack.stop()
+                    audioTrack.release()
+                } catch (e: Exception) {}
+            } catch (e: Exception) {
+                Log.w(TAG, "AudioTrack chime fallback to ToneGenerator: ${e.message}")
+                try {
+                    val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 95)
+                    toneGen.startTone(ToneGenerator.TONE_PROP_BEEP2, 350)
+                    delay(380)
+                    toneGen.release()
+                } catch (ex: Exception) {}
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Temple chime fallback: ${e.message}")
-            onFinished?.invoke()
+            withContext(Dispatchers.Main) {
+                onFinished?.invoke()
+            }
         }
     }
 
+    /**
+     * Loudspeaker Volume Boost Helper:
+     * Raises media volume to ensure announcements are clear over Bluetooth speakers and outdoor horns.
+     */
+    fun boostAudioVolumeForLoudspeaker(context: Context) {
+        try {
+            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+            audioManager?.let { am ->
+                val maxVol = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                val currentVol = am.getStreamVolume(AudioManager.STREAM_MUSIC)
+                if (currentVol < maxVol * 0.85) {
+                    am.setStreamVolume(AudioManager.STREAM_MUSIC, (maxVol * 0.9).toInt(), 0)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Cannot boost audio volume: ${e.message}")
+        }
+    }
+
+    /**
+     * 📢 ACOUSTIC TEMPLE LOUDSPEAKER TOKEN ANNOUNCER
+     * 
+     * Formats announcement with authentic reverence:
+     * "ध्यान दें... टोकन नंबर ४५, पैंतालीस... श्री रमेश कुमार जी, बुलन्दशहर से... कृपया पावन दरबार कक्ष में पधारें।"
+     */
     fun announceNextToken(
         context: Context,
         tokenNumber: Int,
         devoteeName: String = "",
-        city: String = ""
+        city: String = "",
+        repeatCount: Int = 1
     ) {
         if (isMuted(context)) return
 
+        boostAudioVolumeForLoudspeaker(context)
+
         val cleanName = devoteeName.trim()
         val cleanCity = city.trim()
+        val devDigits = toDevanagariDigits(tokenNumber)
+        val hindiWords = numberToHindiWords(tokenNumber)
 
-        val fullAnnouncementText = when {
+        val tokenSpoken = if (hindiWords.isNotBlank() && hindiWords != tokenNumber.toString()) {
+            "टोकन नंबर $devDigits... $hindiWords"
+        } else {
+            "टोकन नंबर $tokenNumber"
+        }
+
+        val primaryAnnouncementText = when {
             cleanName.isNotBlank() && cleanCity.isNotBlank() -> {
-                "टोकन नंबर $tokenNumber, श्री $cleanName जी, $cleanCity से, आपका नंबर आ गया है। कृपया गुरुजी के समीप पधारें।"
+                "ध्यान दें... $tokenSpoken... श्री $cleanName जी, $cleanCity से... आपका नंबर आ गया है, कृपया पावन दरबार कक्ष में पधारें।"
             }
             cleanName.isNotBlank() -> {
-                "टोकन नंबर $tokenNumber, श्री $cleanName जी, आपका नंबर आ गया है। कृपया गुरुजी के समीप पधारें।"
+                "ध्यान दें... $tokenSpoken... श्री $cleanName जी... आपका नंबर आ गया है, कृपया पावन दरबार कक्ष में पधारें।"
             }
             else -> {
-                "टोकन नंबर $tokenNumber, आपका नंबर आ गया है। कृपया गुरुजी के समीप पधारें।"
+                "ध्यान दें... $tokenSpoken... कृपया पावन दरबार कक्ष में पधारें।"
             }
         }
 
-        lastAnnouncementText = fullAnnouncementText
+        val repeatAnnouncementText = when {
+            cleanName.isNotBlank() -> {
+                "एक बार पुनः ध्यान दें... $tokenSpoken... श्री $cleanName जी... कृपया पावन दरबार कक्ष में पधारें।"
+            }
+            else -> {
+                "एक बार पुनः ध्यान दें... $tokenSpoken... कृपया पावन दरबार कक्ष में पधारें।"
+            }
+        }
+
+        lastAnnouncementText = primaryAnnouncementText
+        _currentAnnouncedToken.value = tokenNumber
+        _currentAnnouncedText.value = primaryAnnouncementText
+        _isAnnouncing.value = true
+
         val activePreset = getSelectedVoicePreset(context)
 
-        // 🔔 Play sacred temple bell chime first, then announce clearly
+        // 🔔 1. Play sacred temple bell chime first, then announce clearly
         playTempleChime {
             if (activePreset == PRESET_CUSTOM_RECORDED && hasCustomRecording(context)) {
                 // Play authentic custom recorded human announcement from ashram
                 playCustomRecording(context) {
                     if (cleanName.isNotBlank()) {
                         speakWithCurrentPreset(context, "श्री $cleanName जी, कृपया पधारें।")
+                    } else {
+                        _isAnnouncing.value = false
                     }
                 }
             } else {
-                speakWithCurrentPreset(context, fullAnnouncementText)
+                speakWithCurrentPreset(context, primaryAnnouncementText)
+
+                // Optional 2nd announcement after pause
+                if (repeatCount > 1) {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        delay(6500)
+                        playTempleChime {
+                            speakWithCurrentPreset(context, repeatAnnouncementText)
+                        }
+                    }
+                }
             }
         }
     }
 
     fun testVoice(context: Context, presetId: String) {
+        boostAudioVolumeForLoudspeaker(context)
         if (presetId == PRESET_CUSTOM_RECORDED) {
             if (hasCustomRecording(context)) {
                 playTempleChime {
@@ -385,11 +554,7 @@ object AshramVoiceAnnouncementManager {
             return
         }
 
-        val testText = when (presetId) {
-            PRESET_NATURAL_FEMALE -> "जय श्री बालाजी! टोकन नंबर एक, श्री रमेश कुमार जी, आपका नंबर आ गया है। कृपया गुरुजी के समीप पधारें।"
-            PRESET_NATURAL_MALE -> "जय श्री बालाजी! टोकन नंबर एक, श्री रमेश कुमार जी, आपका नंबर आ गया है। कृपया गुरुजी के समीप पधारें।"
-            else -> "जय श्री बालाजी! टोकन नंबर एक, श्री रमेश कुमार जी, आपका नंबर आ गया है। कृपया गुरुजी के समीप पधारें।"
-        }
+        val testText = "जय श्री बालाजी महाराज! ध्यान दें... टोकन नंबर एक... श्री रमेश कुमार जी, बुलन्दशहर से... आपका नंबर आ गया है, कृपया पावन दरबार कक्ष में पधारें।"
 
         playTempleChime {
             initIfNeeded(context)
@@ -400,7 +565,8 @@ object AshramVoiceAnnouncementManager {
 
     fun repeatLastAnnouncement(context: Context) {
         if (lastAnnouncementText.isNotBlank()) {
-            announceNextToken(context, 0, lastAnnouncementText)
+            val tokenNum = _currentAnnouncedToken.value ?: 0
+            announceNextToken(context, tokenNum, lastAnnouncementText)
         }
     }
 
@@ -442,11 +608,14 @@ object AshramVoiceAnnouncementManager {
 
     private fun speakRaw(text: String) {
         try {
+            _isAnnouncing.value = true
             tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "token_announcement_${System.currentTimeMillis()}")
         } catch (e: Exception) {
             Log.e(TAG, "Error executing speakRaw", e)
+            _isAnnouncing.value = false
         }
     }
+
 
     fun stop() {
         stopAudioPlayback()

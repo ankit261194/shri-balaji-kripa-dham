@@ -3403,6 +3403,8 @@ fun TokenQueueTab(
     var selectedSortOrder by remember { mutableStateOf(TokenSortOrder.TOKEN_NUMBER) }
     var isExportingPdf by remember { mutableStateOf(false) }
     var isVoiceMuted by remember { mutableStateOf(AshramVoiceAnnouncementManager.isMuted(context)) }
+    val isAnnouncingActive by AshramVoiceAnnouncementManager.isAnnouncing.collectAsState()
+    val currentAnnouncedTextStr by AshramVoiceAnnouncementManager.currentAnnouncedText.collectAsState()
     var tokenToCancel by remember { mutableStateOf<Token?>(null) }
     var tokenToDelete by remember { mutableStateOf<Token?>(null) }
     var zoomedPhotoToken by remember { mutableStateOf<Token?>(null) }
@@ -3634,6 +3636,50 @@ fun TokenQueueTab(
                         }
                     }
 
+                    if (isAnnouncingActive) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.5.dp, SaffronPrimary),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("📢", fontSize = 20.sp)
+                                Spacer(Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "लाउडस्पीकर घोषणा जारी है...",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = MaroonPrimary
+                                    )
+                                    Text(
+                                        text = currentAnnouncedTextStr,
+                                        fontSize = 11.sp,
+                                        color = Color.DarkGray,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color.Red.copy(alpha = 0.1f),
+                                    modifier = Modifier
+                                        .size(30.dp)
+                                        .clickable { AshramVoiceAnnouncementManager.stop() }
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text("⏹️", fontSize = 13.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -3671,7 +3717,7 @@ fun TokenQueueTab(
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         OutlinedButton(
@@ -3681,14 +3727,29 @@ fun TokenQueueTab(
                                     context = context,
                                     tokenNumber = settings.runningTokenNumber,
                                     devoteeName = dev?.patientName ?: "",
-                                    city = dev?.city ?: ""
+                                    city = dev?.city ?: "",
+                                    repeatCount = 2
                                 )
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaroonPrimary)
                         ) {
-                            Text(if (isHindi) "📢 पुनः बोलें" else "📢 Repeat Call", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(if (isHindi) "📢 पुनः बोलें" else "📢 Repeat", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                val activePreset = AshramVoiceAnnouncementManager.getSelectedVoicePreset(context)
+                                AshramVoiceAnnouncementManager.testVoice(context, activePreset)
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronPrimary)
+                        ) {
+                            Text(if (isHindi) "🔔 घंटी टेस्ट" else "🔔 Bell Test", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
 
                         OutlinedButton(
@@ -3704,17 +3765,19 @@ fun TokenQueueTab(
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = if (isVoiceMuted) Color.Red else Color(0xFF2E7D32)
                             )
                         ) {
                             Text(
                                 text = if (isVoiceMuted) (if (isHindi) "🔇 आवाज बंद" else "🔇 Muted") else (if (isHindi) "🔊 आवाज चालू" else "🔊 Voice ON"),
-                                fontSize = 12.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                     }
+
 
                     Spacer(modifier = Modifier.height(10.dp))
                     Button(
@@ -4768,7 +4831,7 @@ fun TokenQueueTab(
                                 modifier = Modifier.height(28.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE65100))
                             ) {
-                                Text("📢 बोलें", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text("📢 लाउडस्पीकर", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                         }
 

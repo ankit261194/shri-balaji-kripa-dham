@@ -94,10 +94,7 @@ fun AshramHallDisplayScreen(
     }
 
     fun playSacredChime() {
-        try {
-            val toneG = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
-            toneG.startTone(ToneGenerator.TONE_PROP_BEEP2, 400)
-        } catch (e: Exception) {}
+        AshramVoiceAnnouncementManager.playTempleChime()
     }
 
     fun announceCurrentToken(tokenNum: Int, devoteeName: String, devoteeCity: String) {

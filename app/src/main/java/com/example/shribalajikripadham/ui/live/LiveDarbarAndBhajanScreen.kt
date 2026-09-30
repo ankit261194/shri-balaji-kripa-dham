@@ -258,143 +258,16 @@ fun LiveDarbarAndBhajanScreen(
                     val isDarbarLive = ashramSettings.isDarbarActive && ashramSettings.isDarbarLiveNow
                     var showInAppPlayer by remember { mutableStateOf(false) }
 
-                    // Clean YouTube Embed URL Generator (Zero-cookie, no redirects)
-                    fun getYouTubeEmbedUrl(url: String): String {
-                        val clean = url.trim()
-                        if (clean.contains("youtube.com/embed/")) {
-                            return clean.substringBefore("?") + "?autoplay=1&modestbranding=1&rel=0&playsinline=1&controls=1"
-                        }
-                        val shortMatch = Regex("""youtu\.be/([a-zA-Z0-9_\-]+)""").find(clean)
-                        if (shortMatch != null) {
-                            val vid = shortMatch.groupValues[1]
-                            return "https://www.youtube-nocookie.com/embed/$vid?autoplay=1&modestbranding=1&rel=0&playsinline=1&controls=1"
-                        }
-                        val watchMatch = Regex("""[?&]v=([a-zA-Z0-9_\-]+)""").find(clean)
-                        if (watchMatch != null) {
-                            val vid = watchMatch.groupValues[1]
-                            return "https://www.youtube-nocookie.com/embed/$vid?autoplay=1&modestbranding=1&rel=0&playsinline=1&controls=1"
-                        }
-                        val liveMatch = Regex("""youtube\.com/live/([a-zA-Z0-9_\-]+)""").find(clean)
-                        if (liveMatch != null) {
-                            val vid = liveMatch.groupValues[1]
-                            return "https://www.youtube-nocookie.com/embed/$vid?autoplay=1&modestbranding=1&rel=0&playsinline=1&controls=1"
-                        }
-                        if (clean.contains("/channel/")) {
-                            val chId = clean.substringAfter("/channel/").substringBefore("/").substringBefore("?")
-                            return "https://www.youtube-nocookie.com/embed/live_stream?channel=$chId&autoplay=1&modestbranding=1&rel=0&playsinline=1"
-                        }
-                        val handle = if (clean.contains("/@")) clean.substringAfter("/@").substringBefore("/").substringBefore("?") else ""
-                        return if (handle.isNotBlank()) {
-                            "https://www.youtube-nocookie.com/embed/live_stream?channel=$handle&autoplay=1&modestbranding=1&rel=0&playsinline=1"
-                        } else {
-                            "https://www.youtube-nocookie.com/embed/live_stream?autoplay=1&modestbranding=1&rel=0&playsinline=1"
-                        }
-                    }
-
                     if (isDarbarLive || showInAppPlayer) {
-                        // 🟢 IN-APP HIGH-PERFORMANCE VIDEO PLAYER (CLEAN EMBED)
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(16f / 9f),
-                            shape = RoundedCornerShape(16.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.Black)
-                        ) {
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                AndroidView(
-                                    factory = { ctx ->
-                                        WebView(ctx).apply {
-                                            layoutParams = ViewGroup.LayoutParams(
-                                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                                ViewGroup.LayoutParams.MATCH_PARENT
-                                            )
-                                            @SuppressLint("SetJavaScriptEnabled")
-                                            val webConfig = this.settings
-                                            webConfig.javaScriptEnabled = true
-                                            webConfig.domStorageEnabled = true
-                                            webConfig.mediaPlaybackRequiresUserGesture = false
-                                            webConfig.loadWithOverviewMode = true
-                                            webConfig.useWideViewPort = true
-                                            webChromeClient = WebChromeClient()
-                                            webViewClient = object : WebViewClient() {
-                                                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                                                    val reqUrl = request?.url?.toString() ?: ""
-                                                    if (reqUrl.contains("youtube.com") || reqUrl.contains("googlevideo.com") || reqUrl.contains("youtube-nocookie.com")) {
-                                                        return false
-                                                    }
-                                                    try {
-                                                        val extIntent = Intent(Intent.ACTION_VIEW, Uri.parse(reqUrl))
-                                                        ctx.startActivity(extIntent)
-                                                    } catch (e: Exception) {}
-                                                    return true
-                                                }
-                                            }
-
-                                            val embedUrl = getYouTubeEmbedUrl(liveVideoUrl)
-                                            val html = """
-                                                <!DOCTYPE html>
-                                                <html>
-                                                <head>
-                                                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                                                    <style>
-                                                        * { margin:0; padding:0; box-sizing:border-box; }
-                                                        html, body { width:100%; height:100%; background-color:#000000; overflow:hidden; display:flex; align-items:center; justify-content:center; }
-                                                        iframe { width:100%; height:100%; border:none; }
-                                                    </style>
-                                                </head>
-                                                <body>
-                                                    <iframe 
-                                                        src="$embedUrl" 
-                                                        title="Shri Balaji Live Darbar"
-                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                                                        allowfullscreen>
-                                                    </iframe>
-                                                </body>
-                                                </html>
-                                            """.trimIndent()
-
-                                            loadDataWithBaseURL("https://www.youtube-nocookie.com", html, "text/html", "UTF-8", null)
-                                        }
-                                    },
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        }
-
-                        Spacer(Modifier.height(10.dp))
-
-                        // In-App player controls
-                        Row(
+                        // 🔴 BROADCAST-GRADE NATIVE LIVE STREAMING PLAYER (MEDIA3 & HARDWARE ACCELERATED)
+                        NativeDarbarLivePlayer(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = { showInAppPlayer = false },
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(if (isHindi) "वीडियो बंद करें" else "Close Video", fontSize = 12.sp)
-                            }
-
-                            Button(
-                                onClick = {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)).apply {
-                                        setPackage("com.google.android.youtube")
-                                    }
-                                    try {
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(liveVideoUrl)))
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000)),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.weight(1.5f)
-                            ) {
-                                Text(if (isHindi) "▶ YouTube में खोलें" else "▶ Open in YouTube", fontSize = 12.sp, color = Color.White)
-                            }
-                        }
+                            streamUrl = if (ashramSettings.liveStreamUrl.isNotBlank()) ashramSettings.liveStreamUrl else liveVideoUrl,
+                            title = if (ashramSettings.liveStreamTitle.isNotBlank()) ashramSettings.liveStreamTitle else if (isHindi) "श्री बालाजी कृपा धाम • दिव्य दरबार सजीव दर्शन" else "Shri Balaji Kripa Dham Live Darbar",
+                            isDarbarLiveNow = isDarbarLive,
+                            onClosePlayer = { showInAppPlayer = false }
+                        )
+                        Spacer(Modifier.height(10.dp))
                     } else {
                         // 🪔 DIVINE DARBAR CARD: With Instant In-App Video Play Button!
                         Card(
