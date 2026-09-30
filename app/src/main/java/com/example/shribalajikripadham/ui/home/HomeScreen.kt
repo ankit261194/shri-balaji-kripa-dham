@@ -64,6 +64,8 @@ import com.example.shribalajikripadham.data.network.StatusSyncManager
 import com.example.shribalajikripadham.ui.status.BhaktiStatusBar
 import com.example.shribalajikripadham.ui.status.CreateStatusDialog
 import com.example.shribalajikripadham.ui.status.StatusViewerDialog
+import com.example.shribalajikripadham.ui.status.BhaktiPosterStoryViewerDialog
+import com.example.shribalajikripadham.util.StatusPosterGenerator
 import android.content.ClipData
 import android.content.ClipboardManager
 
@@ -211,6 +213,7 @@ fun HomeScreen(
     var activeStatuses by remember { mutableStateOf<List<BhaktiStatusItem>>(emptyList()) }
     var dailySuvichar by remember { mutableStateOf(DailySuvichar.default()) }
     var selectedViewingStatus by remember { mutableStateOf<BhaktiStatusItem?>(null) }
+    var selectedPosterType by remember { mutableStateOf<String?>(null) }
     var showCreateStatusDialog by remember { mutableStateOf(false) }
     var showSuvicharModal by remember { mutableStateOf(false) }
     var showAartiTimingsModal by remember { mutableStateOf(false) }
@@ -552,59 +555,7 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = if (isHindi) "📑 मुख्य पृष्ठ अनुभाग (Page Toggles)" else "📑 Home Pages",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = currentTheme.primaryColor,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                    )
-
-                    HomeTab.values().forEach { tab ->
-                        val isSelected = selectedHomeTab == tab
-                        NavigationDrawerItem(
-                            icon = { Text(tab.icon, fontSize = 20.sp) },
-                            label = {
-                                Text(
-                                    text = if (isHindi) {
-                                        when (tab) {
-                                            HomeTab.DARSHAN_TOKEN -> "पेज 1: मुख्य दर्शन व टोकन"
-                                            HomeTab.BHAKTI_AARTI -> "पेज 2: नित्य सेवा व भक्ति (15 पाठ)"
-                                            HomeTab.DHARAMSHALA_YATRA -> "पेज 3: आश्रम आवास व यात्रा"
-                                            HomeTab.ASHRAM_ABOUT -> "पेज 4: आश्रम परिचय व नियम"
-                                        }
-                                    } else {
-                                        when (tab) {
-                                            HomeTab.DARSHAN_TOKEN -> "Page 1: Darshan & Token"
-                                            HomeTab.BHAKTI_AARTI -> "Page 2: Sacred Bhakti (15 Aartis)"
-                                            HomeTab.DHARAMSHALA_YATRA -> "Page 3: Stay & Yatra"
-                                            HomeTab.ASHRAM_ABOUT -> "Page 4: Ashram Info & Rules"
-                                        }
-                                    },
-                                    fontSize = 13.5.sp,
-                                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
-                                    color = if (isSelected) MaroonPrimary else TextPrimaryDark
-                                )
-                            },
-                            selected = isSelected,
-                            onClick = {
-                                selectedHomeTab = tab
-                                scope.launch {
-                                    drawerState.close()
-                                    homeScrollState.scrollTo(0)
-                                }
-                            },
-                            colors = NavigationDrawerItemDefaults.colors(
-                                selectedContainerColor = GoldSecondary.copy(alpha = 0.25f),
-                                unselectedContainerColor = Color.Transparent
-                            ),
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
-                        )
-                    }
-
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp), color = Color(0xFFEEEEEE))
-
-                    Text(
-                        text = if (isHindi) "🚩 मुख्य सेवाएं व स्क्रीन" else "🚩 Main Screens & Services",
+                        text = if (isHindi) "🚩 धाम सेवाएं व सुविधाएं" else "🚩 Ashram Services & Features",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = currentTheme.primaryColor,
@@ -614,7 +565,7 @@ fun HomeScreen(
                     // Navigation Items
                     data class NavDrawerItem(val icon: String, val title: String, val action: () -> Unit)
                     val navItems = buildList {
-                        add(NavDrawerItem("🏠", if (isHindi) "मुख्य पृष्ठ (Home)" else "Home", {
+                        add(NavDrawerItem("🏠", if (isHindi) "मुख्य पृष्ठ (दर्शन व टोकन)" else "Home (Darshan & Token)", {
                             selectedHomeTab = HomeTab.DARSHAN_TOKEN
                             scope.launch {
                                 drawerState.close()
@@ -622,22 +573,41 @@ fun HomeScreen(
                             }
                         }))
                         add(NavDrawerItem("🔴", if (isHindi) "🔴 लाइव दर्शन व आरती/भजन" else "🔴 Live Darbar & Bhajans", onNavigateToLiveDarbar))
-                        add(NavDrawerItem("🎟️", if (isHindi) "दरबार टोकन जनरेट करें" else "Generate Darbar Token", onNavigateToToken))
+                        add(NavDrawerItem("🎟️", if (isHindi) "रविवार दरबार टोकन" else "Sunday Darbar Token", onNavigateToToken))
                         add(NavDrawerItem("🤳", if (isHindi) "फेस वेरिफिकेशन टोकन (रविवार)" else "Face Token (Sunday)", onNavigateToFaceToken))
                         if (settings.isTuesdayDarbarEnabled) {
                             add(NavDrawerItem("🚩", if (isHindi) "मंगलवार टोकन (बुलन्दशहर)" else "Tuesday Token (Bulandshahr)", onNavigateToTuesdayToken))
                         }
                         add(NavDrawerItem("📜", if (isHindi) "डिजिटल पर्चा देखें" else "Digital Parchas", onNavigateToParchas))
+                        add(NavDrawerItem("📿", if (isHindi) "नित्य सेवा व आरती (15 पावन पाठ)" else "Sacred Bhakti & Aarti (15 Tracks)", {
+                            selectedHomeTab = HomeTab.BHAKTI_AARTI
+                            scope.launch {
+                                drawerState.close()
+                                homeScrollState.scrollTo(0)
+                            }
+                        }))
+                        if (settings.isDharamshalaLive) {
+                            add(NavDrawerItem("🏨", if (isHindi) "धर्मशाला व कमरा आरक्षण" else "Dharamshala Room Booking", {
+                                selectedHomeTab = HomeTab.DHARAMSHALA_YATRA
+                                scope.launch {
+                                    drawerState.close()
+                                    homeScrollState.scrollTo(0)
+                                }
+                            }))
+                        }
                         if (settings.isYatraServiceEnabled) {
-                            add(NavDrawerItem("🚗", if (isHindi) "यात्रा व दूरी विवरण" else "Yatra & Distance Info", onNavigateToYatra))
+                            add(NavDrawerItem("🚗", if (isHindi) "धाम यात्रा व दूरी मार्ग" else "Yatra Route & Distance", onNavigateToYatra))
                             if (settings.canDevoteeViewYatraDiary) {
                                 add(NavDrawerItem("💰", if (isHindi) "यात्रा खर्च डायरी" else "Yatra Expense Diary", onNavigateToYatraExpenses))
                             }
                         }
-                        add(NavDrawerItem("ℹ️", if (isHindi) "आश्रम परिचय व नियम" else "Ashram Info & Rules", onNavigateToInfo))
-                        if (settings.isDharamshalaLive) {
-                            add(NavDrawerItem("🏨", if (isHindi) "धर्मशाला व कमरा आरक्षण" else "Dharamshala Room Booking", onNavigateToDharamshala))
-                        }
+                        add(NavDrawerItem("ℹ️", if (isHindi) "आश्रम परिचय व नियम" else "Ashram Info & Rules", {
+                            selectedHomeTab = HomeTab.ASHRAM_ABOUT
+                            scope.launch {
+                                drawerState.close()
+                                homeScrollState.scrollTo(0)
+                            }
+                        }))
                         add(NavDrawerItem("📖", if (isHindi) "ऐप संपूर्ण मार्गदर्शिका (PDF)" else "Devotee User Manual (PDF)", {
                             scope.launch { drawerState.close() }
                             val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
@@ -1237,14 +1207,9 @@ fun HomeScreen(
                             isHindi = isHindi,
                             onOpenCreateStatus = { showCreateStatusDialog = true },
                             onOpenStatus = { selectedViewingStatus = it },
-                            onOpenDailyDarshan = {
-                                scope.launch { homeScrollState.animateScrollTo(600) }
+                            onOpenPoster = { posterType ->
+                                selectedPosterType = posterType
                             },
-                            onOpenLiveDarbar = onNavigateToLiveDarbar,
-                            onOpenSuvichar = { showSuvicharModal = true },
-                            onOpenArzi = onNavigateToParchas,
-                            onOpenAartiTimings = { showAartiTimingsModal = true },
-                            onOpenYatra = onNavigateToYatra,
                             modifier = Modifier.padding(bottom = sectionSpacing)
                         )
 
@@ -1693,19 +1658,7 @@ fun HomeScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Bottom Page Switcher / Quick Navigation Pills
-                HomeTabBottomSwitcher(
-                    currentTab = selectedHomeTab,
-                    isHindi = isHindi,
-                    onSelectTab = { tab ->
-                        selectedHomeTab = tab
-                        scope.launch { homeScrollState.scrollTo(0) }
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }
@@ -2359,6 +2312,16 @@ fun HomeScreen(
         )
     }
 
+    // 🚩 Bhakti Poster Story Viewer Modal (1-Click WhatsApp Status with HD Images)
+    if (selectedPosterType != null) {
+        BhaktiPosterStoryViewerDialog(
+            posterType = selectedPosterType!!,
+            dailySuvichar = dailySuvichar,
+            isHindi = isHindi,
+            onDismiss = { selectedPosterType = null }
+        )
+    }
+
     // 🚩 Create Devotee Status Frame Modal
     if (showCreateStatusDialog) {
         CreateStatusDialog(
@@ -2464,35 +2427,27 @@ fun HomeScreen(
 
                         Button(
                             onClick = {
-                                val shareText = """
-🚩 *श्री बालाजी कृपा धाम, डूँगरा जाट* 🚩
-*परम पूज्य गुरुजी तेजवीर सिंह जी*
-══════════════════════════
-🌅 *आज का पावन सुविचार* 🌅
-📅 *तिथि:* $todayHindiDate
-
-"$todayVichar"
-══════════════════════════
-🙏 *भूत-प्रेत व असाध्य मानसिक कष्टों का 100% निःशुल्क इलाज।*
-🌐 ऐप डाउनलोड करें: https://shribalajikripadham.online/app
-                                """.trimIndent()
-
-                                val intent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, shareText)
-                                }
-                                try {
-                                    intent.setPackage("com.whatsapp")
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    context.startActivity(Intent.createChooser(intent, "सुविचार शेयर करें"))
+                                scope.launch {
+                                    Toast.makeText(context, if (isHindi) "सुविचार पोस्टर तैयार हो रहा है..." else "Preparing Vichar Poster...", Toast.LENGTH_SHORT).show()
+                                    val bmp = StatusPosterGenerator.generateBhaktiPoster(
+                                        context = context,
+                                        devoteePhoto = null,
+                                        devoteeName = "श्री बालाजी कृपा धाम",
+                                        devoteeCity = "डूँगरा जाट",
+                                        suvichar = dailySuvichar
+                                    )
+                                    StatusPosterGenerator.shareToWhatsApp(
+                                        context = context,
+                                        posterBitmap = bmp,
+                                        caption = "🌅 *आज का पावन सुविचार* 🌅\n\n“$todayVichar”\n\n— श्री बालाजी कृपा धाम (डूँगरा जाट)\n👉 धाम का आधिकारिक ऐप डाउनलोड करें:\n🌐 https://shribalajikripadham.online/app"
+                                    )
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1.3f)
                         ) {
-                            Text("व्हाट्सएप शेयर 📲", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(if (isHindi) "व्हाट्सएप स्टेटस लगाएं 📲" else "Share to WhatsApp 📲", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
                     }
                 }

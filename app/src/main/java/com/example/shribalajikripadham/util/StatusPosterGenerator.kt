@@ -1,9 +1,14 @@
 package com.example.shribalajikripadham.util
 
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.*
+import android.media.MediaScannerConnection
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.example.shribalajikripadham.R
@@ -473,6 +478,66 @@ object StatusPosterGenerator {
     }
 
     /**
+     * Pre-rendered high-impact Hanuman Chalisa Chaupai Poster for WhatsApp Status
+     */
+    fun generateChalisaPoster(context: Context): Bitmap {
+        val suvichar = DailySuvichar(
+            quote = "नासै रोग हरै सब पीरा।\nजपत निरंतर हनुमत बीरा॥\nसंकट कटै मिटै सब पीरा।\nजो सुमिरै हनुमत बलबीरा॥",
+            meaning = "हे संकटमोचन! जो भक्त आपके पावन नाम का निरंतर स्मरण करता है, आप उसके समस्त शारीरिक रोग, कष्ट, प्रेत-बाधा और संकटों का तत्काल समूल नाश कर देते हैं।",
+            source = "श्री हनुमान चालीसा सिद्ध चौपाई"
+        )
+        return generateBhaktiPoster(
+            context = context,
+            devoteePhoto = null,
+            devoteeName = "श्री बालाजी कृपा धाम",
+            devoteeCity = "डूँगरा जाट धाम",
+            suvichar = suvichar,
+            primaryHex = 0xFFB71C1C.toInt(),
+            secondaryHex = 0xFFFF6F00.toInt()
+        )
+    }
+
+    /**
+     * Pre-rendered Bajrang Baan Protection Shield Poster for WhatsApp Status
+     */
+    fun generateBajrangBaanPoster(context: Context): Bitmap {
+        val suvichar = DailySuvichar(
+            quote = "भूत प्रेत पिसाच निसाचर। अगिन बेताल काल मारी मर॥\nइन्हें मारु तोहि सपथ राम की। राखु नाथ मरजाद नाम की॥",
+            meaning = "श्रीराम की पावन आण से समस्त ऊपरी बाधाएं, नजर-दोष, भय व व्याधियां पलायन कर जाती हैं। बालाजी महाराज का अभय रक्षा कवच सदा साथ रहता है।",
+            source = "श्री बजरंग बाण सिद्ध रक्षा कवच"
+        )
+        return generateBhaktiPoster(
+            context = context,
+            devoteePhoto = null,
+            devoteeName = "श्री बालाजी कृपा धाम",
+            devoteeCity = "डूँगरा जाट धाम",
+            suvichar = suvichar,
+            primaryHex = 0xFF1A237E.toInt(),
+            secondaryHex = 0xFFFFD54F.toInt()
+        )
+    }
+
+    /**
+     * Pre-rendered Daily Consecrated Darshan Poster for WhatsApp Status
+     */
+    fun generateDarshanPoster(context: Context, quoteText: String): Bitmap {
+        val cleanQuote = quoteText.replace("\n", " ").trim()
+        val shortQuote = if (cleanQuote.length > 140) cleanQuote.take(137) + "..." else cleanQuote
+        val suvichar = DailySuvichar(
+            quote = shortQuote,
+            meaning = "पूज्य गुरुदेव श्री तेजवीर सिंह जी के पावन सानिध्य में आज का दिव्य अलौकिक दर्शन व अमृत आशीर्वाद।",
+            source = "श्री बालाजी कृपा धाम (डूँगरा जाट)"
+        )
+        return generateBhaktiPoster(
+            context = context,
+            devoteePhoto = null,
+            devoteeName = "दैनिक दिव्य अलौकिक दर्शन",
+            devoteeCity = "डूँगरा जाट धाम",
+            suvichar = suvichar
+        )
+    }
+
+    /**
      * Helper to draw text with automatic line wrapping
      */
     private fun drawMultilineText(
@@ -570,6 +635,59 @@ object StatusPosterGenerator {
 
         } catch (e: Exception) {
             Toast.makeText(context, "शेयर करने में समस्या आई: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Saves poster bitmap to device Gallery (Pictures/ShriBalajiKripaDham).
+     */
+    fun savePosterToGallery(context: Context, posterBitmap: Bitmap, title: String = "BhaktiPoster"): Uri? {
+        return try {
+            val cleanTitle = title.replace("[^a-zA-Z0-9]".toRegex(), "_")
+            val fileName = "Balaji_${cleanTitle}_${System.currentTimeMillis()}.jpg"
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/ShriBalajiKripaDham")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+
+                val resolver = context.contentResolver
+                val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+                if (imageUri != null) {
+                    resolver.openOutputStream(imageUri)?.use { out ->
+                        posterBitmap.compress(Bitmap.CompressFormat.JPEG, 95, out)
+                        out.flush()
+                    }
+                    contentValues.clear()
+                    contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                    resolver.update(imageUri, contentValues, null, null)
+                }
+                imageUri
+            } else {
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val customDir = File(picturesDir, "ShriBalajiKripaDham").apply {
+                    if (!exists()) mkdirs()
+                }
+                val destFile = File(customDir, fileName)
+                FileOutputStream(destFile).use { fos ->
+                    posterBitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos)
+                    fos.flush()
+                }
+
+                MediaScannerConnection.scanFile(
+                    context,
+                    arrayOf(destFile.absolutePath),
+                    arrayOf("image/jpeg"),
+                    null
+                )
+                Uri.fromFile(destFile)
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 }

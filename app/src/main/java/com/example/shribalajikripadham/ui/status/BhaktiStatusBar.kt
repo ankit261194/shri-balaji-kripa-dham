@@ -30,12 +30,7 @@ fun BhaktiStatusBar(
     isHindi: Boolean,
     onOpenCreateStatus: () -> Unit,
     onOpenStatus: (BhaktiStatusItem) -> Unit,
-    onOpenDailyDarshan: () -> Unit = {},
-    onOpenLiveDarbar: () -> Unit = {},
-    onOpenSuvichar: () -> Unit = {},
-    onOpenArzi: () -> Unit = {},
-    onOpenAartiTimings: () -> Unit = {},
-    onOpenYatra: () -> Unit = {},
+    onOpenPoster: (posterType: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currentTheme = LocalSacredStyle.current.theme
@@ -60,7 +55,7 @@ fun BhaktiStatusBar(
                     Text("🪔", fontSize = 16.sp)
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = if (isHindi) "दैनिक भक्ति स्थिति व दर्शन (Stories)" else "Daily Darshan & Bhakti Stories",
+                        text = if (isHindi) "भक्ति स्टेटस व WhatsApp स्टोरीज़" else "Bhakti Stories & WhatsApp Status",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = currentTheme.primaryColor
@@ -74,7 +69,7 @@ fun BhaktiStatusBar(
                     modifier = Modifier.clickable { onOpenCreateStatus() }
                 ) {
                     Text(
-                        text = if (isHindi) "➕ स्टेटस लगाएं" else "➕ Add Story",
+                        text = if (isHindi) "➕ स्टेटस बनाएं" else "➕ Create Story",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = currentTheme.primaryColor,
@@ -85,13 +80,13 @@ fun BhaktiStatusBar(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // WhatsApp / Instagram-style Horizontal Story Reel
+            // WhatsApp / Instagram-style Visual Story Posters Reel
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 1. Add My Status Bubble
+                // 1. Add My Custom Status Bubble
                 item {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -122,13 +117,13 @@ fun BhaktiStatusBar(
                     }
                 }
 
-                // 2. Daily Consecrated Darshan Bubble
+                // 2. Daily Consecrated Darshan Poster Bubble
                 item {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .width(68.dp)
-                            .clickable { onOpenDailyDarshan() }
+                            .clickable { onOpenPoster("DARSHAN") }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -164,55 +159,13 @@ fun BhaktiStatusBar(
                     }
                 }
 
-                // 3. Live Darbar Stream Bubble
+                // 3. Today's Guru Vichar Poster Bubble
                 item {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .width(68.dp)
-                            .clickable { onOpenLiveDarbar() }
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.sweepGradient(
-                                        listOf(
-                                            Color(0xFFE53935),
-                                            Color(0xFFFF7043),
-                                            Color(0xFFD32F2F),
-                                            Color(0xFFE53935)
-                                        )
-                                    )
-                                )
-                                .padding(2.5.dp)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                        ) {
-                            Text("🔴", fontSize = 22.sp)
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (isHindi) "लाइव दरबार" else "Live Darbar",
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFD32F2F),
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                // 4. Today's Guru Vichar / Suvichar Bubble
-                item {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .width(68.dp)
-                            .clickable { onOpenSuvichar() }
+                            .clickable { onOpenPoster("SUVICHAR") }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -233,11 +186,11 @@ fun BhaktiStatusBar(
                                 .clip(CircleShape)
                                 .background(Color.White)
                         ) {
-                            Text("📜", fontSize = 23.sp)
+                            Text("🌅", fontSize = 23.sp)
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (isHindi) "आज का सुविचार" else "Guru Vichar",
+                            text = if (isHindi) "आज का विचार" else "Guru Vichar",
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = currentTheme.primaryColor,
@@ -248,13 +201,13 @@ fun BhaktiStatusBar(
                     }
                 }
 
-                // 5. Sacred Arzi Bubble
+                // 4. Hanuman Chalisa Chaupai Poster Bubble
                 item {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .width(68.dp)
-                            .clickable { onOpenArzi() }
+                            .clickable { onOpenPoster("CHALISA") }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -264,10 +217,10 @@ fun BhaktiStatusBar(
                                 .background(
                                     Brush.sweepGradient(
                                         listOf(
-                                            Color(0xFF8E24AA),
-                                            Color(0xFFE91E63),
-                                            Color(0xFFBA68C8),
-                                            Color(0xFF8E24AA)
+                                            Color(0xFFD32F2F),
+                                            Color(0xFFFF7043),
+                                            Color(0xFFFFD54F),
+                                            Color(0xFFD32F2F)
                                         )
                                     )
                                 )
@@ -275,14 +228,14 @@ fun BhaktiStatusBar(
                                 .clip(CircleShape)
                                 .background(Color.White)
                         ) {
-                            Text("🥥", fontSize = 23.sp)
+                            Text("🚩", fontSize = 23.sp)
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (isHindi) "मनोकामना अर्जी" else "Sacred Arzi",
+                            text = if (isHindi) "हनुमान चालीसा" else "Chalisa",
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
-                            color = currentTheme.primaryColor,
+                            color = Color(0xFFD32F2F),
                             textAlign = TextAlign.Center,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -290,13 +243,13 @@ fun BhaktiStatusBar(
                     }
                 }
 
-                // 6. Aarti Timings Bubble
+                // 5. Bajrang Baan Protection Shield Poster Bubble
                 item {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .width(68.dp)
-                            .clickable { onOpenAartiTimings() }
+                            .clickable { onOpenPoster("BAJRANG_BAAN") }
                     ) {
                         Box(
                             contentAlignment = Alignment.Center,
@@ -306,10 +259,10 @@ fun BhaktiStatusBar(
                                 .background(
                                     Brush.sweepGradient(
                                         listOf(
-                                            Color(0xFF00897B),
-                                            Color(0xFF43A047),
-                                            Color(0xFF80CBC4),
-                                            Color(0xFF00897B)
+                                            Color(0xFF1A237E),
+                                            Color(0xFF0288D1),
+                                            Color(0xFFFFD54F),
+                                            Color(0xFF1A237E)
                                         )
                                     )
                                 )
@@ -317,56 +270,14 @@ fun BhaktiStatusBar(
                                 .clip(CircleShape)
                                 .background(Color.White)
                         ) {
-                            Text("🔔", fontSize = 23.sp)
+                            Text("🛡️", fontSize = 23.sp)
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (isHindi) "आरती समय" else "Aarti Time",
+                            text = if (isHindi) "बजरंग बाण" else "Bajrang Baan",
                             fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
-                            color = currentTheme.primaryColor,
-                            textAlign = TextAlign.Center,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                // 7. Ashram Route & Yatra Bubble
-                item {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .width(68.dp)
-                            .clickable { onOpenYatra() }
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    Brush.sweepGradient(
-                                        listOf(
-                                            Color(0xFF1E88E5),
-                                            Color(0xFF039BE5),
-                                            Color(0xFF90CAF9),
-                                            Color(0xFF1E88E5)
-                                        )
-                                    )
-                                )
-                                .padding(2.5.dp)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                        ) {
-                            Text("🚌", fontSize = 23.sp)
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (isHindi) "धाम यात्रा" else "Dham Yatra",
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = currentTheme.primaryColor,
+                            color = Color(0xFF1A237E),
                             textAlign = TextAlign.Center,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
