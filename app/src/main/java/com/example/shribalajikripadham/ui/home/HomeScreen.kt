@@ -387,31 +387,15 @@ fun HomeScreen(
                         val appDownloadUrl = if (liveCfg.has("app_download_url")) liveCfg.optString("app_download_url", settings.apkDownloadUrl) else settings.apkDownloadUrl
                         val appShareUrl = if (liveCfg.has("app_share_url")) liveCfg.optString("app_share_url", settings.appShareUrl) else settings.appShareUrl
 
-                        // ⚡ Instant Devotee Token Calling Alert
+                        // ⚡ PRO Smart Token Calling Engine (Vibration + Chime + Voice + Heads-up Notification)
                         if (currentServing != settings.runningTokenNumber && currentServing > 0) {
                             try {
                                 if (myTokPrefs != null && hasActiveTokenToday) {
-                                    val lastAlertServing = myTokPrefs.getInt("last_alerted_serving", 0)
-                                    if (currentServing != lastAlertServing) {
-                                        if (currentServing == myToken) {
-                                            NotificationHelper.showSystemNotification(
-                                                context = context,
-                                                title = "🔔 आपका टोकन नंबर $myToken आ चुका है!",
-                                                message = "आपका पावन दर्शन हेतु नंबर आ गया है। कृपया तुरंत पूज्य गुरुजी के समक्ष दरबार में पधारें!",
-                                                notificationId = 10006
-                                            )
-                                            myTokPrefs.edit().putInt("last_alerted_serving", currentServing).apply()
-                                        } else if (myToken > currentServing && (myToken - currentServing) <= 5) {
-                                            val remaining = myToken - currentServing
-                                            NotificationHelper.showSystemNotification(
-                                                context = context,
-                                                title = "🚨 आपका टोकन समीप है ($remaining टोकन शेष)",
-                                                message = "वर्तमान में टोकन #$currentServing बुलाया जा रहा है। आपका टोकन #$myToken है। कृपया तुरंत आश्रम हॉल में उपस्थित रहें!",
-                                                notificationId = 10007
-                                            )
-                                            myTokPrefs.edit().putInt("last_alerted_serving", currentServing).apply()
-                                        }
-                                    }
+                                    com.example.shribalajikripadham.util.SmartTokenAlertHelper.evaluateAndTriggerAlert(
+                                        context = context,
+                                        myToken = myToken,
+                                        currentServing = currentServing
+                                    )
                                 }
                             } catch (e: Exception) {}
                         }
@@ -2184,6 +2168,131 @@ fun HomeScreen(
             },
             containerColor = Color.White,
             shape = RoundedCornerShape(16.dp)
+        )
+    }
+
+    // --- 🔔 PRO TOKEN CALLING ALERT DIALOG (LIVE VOICE, VIBRATE & NOTICE) ---
+    val proInAppAlert by com.example.shribalajikripadham.util.SmartTokenAlertHelper.inAppAlertState.collectAsState()
+    if (proInAppAlert != null) {
+        val alert = proInAppAlert!!
+        AlertDialog(
+            onDismissRequest = { com.example.shribalajikripadham.util.SmartTokenAlertHelper.dismissInAppAlert() },
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(62.dp)
+                        .clip(CircleShape)
+                        .background(if (alert.isTurnNow) Color(0xFFE8F5E9) else Color(0xFFFFF3E0)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(if (alert.isTurnNow) "🔔" else "🚨", fontSize = 32.sp)
+                }
+            },
+            title = {
+                Text(
+                    text = alert.title,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 18.sp,
+                    color = if (alert.isTurnNow) Color(0xFF1B5E20) else Color(0xFFB71C1C),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Surface(
+                        color = if (alert.isTurnNow) Color(0xFFF1F8E9) else Color(0xFFFFF8E1),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.5.dp, if (alert.isTurnNow) Color(0xFF2E7D32) else Color(0xFFFF9800)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(14.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = if (isHindi) "आपका पावन टोकन क्रमांक" else "Your Token Number",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "#${alert.tokenNumber}",
+                                fontSize = 34.sp,
+                                fontWeight = FontWeight.Black,
+                                color = MaroonPrimary
+                            )
+                            if (!alert.isTurnNow && alert.remaining > 0) {
+                                Text(
+                                    text = if (isHindi)
+                                        "वर्तमान में टोकन #${alert.currentServing} बुलाया जा रहा है (${alert.remaining} टोकन शेष)"
+                                    else
+                                        "Calling token #${alert.currentServing} now (${alert.remaining} remaining)",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFE65100),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = alert.message,
+                        fontSize = 13.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 18.sp,
+                        color = TextPrimaryDark
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            val speechText = if (alert.isTurnNow) {
+                                "जय श्री बालाजी महाराज! भक्तजी ध्यान दें, आपका टोकन नंबर ${alert.tokenNumber} आ चुका है! कृपया तुरंत पूज्य गुरुजी के समक्ष पावन दर्शन हेतु पधारें।"
+                            } else {
+                                "जय श्री बालाजी महाराज! भक्तजी ध्यान दें, आपका टोकन नंबर ${alert.tokenNumber} जल्द ही आने वाला है। केवल ${alert.remaining} नंबर शेष हैं। कृपया मुख्य दरबार हॉल में उपस्थित रहें।"
+                            }
+                            com.example.shribalajikripadham.util.SmartTokenAlertHelper.speak(speechText)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronDark),
+                        border = BorderStroke(1.dp, SaffronDark)
+                    ) {
+                        Text(
+                            text = if (isHindi) "🔊 आवाज़ में पुनः सुनें" else "🔊 Repeat Voice Announcement",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { com.example.shribalajikripadham.util.SmartTokenAlertHelper.dismissInAppAlert() },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = if (alert.isTurnNow) Color(0xFF2E7D32) else MaroonPrimary)
+                ) {
+                    Text(
+                        text = if (alert.isTurnNow)
+                            (if (isHindi) "✅ मैं दरबार हॉल में पहुँच रहा हूँ" else "✅ Heading to Darbar Hall")
+                        else
+                            (if (isHindi) "✅ समझ गया (हॉल में उपस्थित रहूँगा)" else "✅ Got it (Will wait in Hall)"),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(18.dp)
         )
     }
 
@@ -4604,6 +4713,63 @@ fun DevoteeSmartQueueEtaCard(
                         fontWeight = FontWeight.Bold,
                         color = currentTheme.primaryColor
                     )
+                }
+            }
+
+            if (devoteeToken > 0) {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color(0xFFFFF8E7),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, GoldDark.copy(alpha = 0.45f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 10.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("🔔", fontSize = 16.sp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "प्रो टोकन कॉलिंग अलर्ट: सक्रिय" else "Pro Token Alert: ACTIVE",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaroonPrimary
+                                )
+                                Text(
+                                    text = if (isHindi) "5 टोकन पूर्व तीव्र वाइब्रेशन + घंटी + हिंदी आवाज़" else "Vibration + Chime + Voice before turn",
+                                    fontSize = 10.sp,
+                                    color = Color(0xFF5D4037)
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                com.example.shribalajikripadham.util.SmartTokenAlertHelper.testAlert(context)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.height(28.dp)
+                        ) {
+                            Text(
+                                text = if (isHindi) "🔊 टेस्ट करें" else "🔊 Test",
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }

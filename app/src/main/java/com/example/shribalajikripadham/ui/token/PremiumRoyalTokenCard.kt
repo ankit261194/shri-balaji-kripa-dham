@@ -470,6 +470,66 @@ fun PremiumRoyalTokenCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
+            // 5.8. 🔔 PRO LIVE TOKEN CALLING ALERT CARD
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E7)),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.2.dp, Color(0xFFD4AF37)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF800000).copy(alpha = 0.12f),
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("🔔", fontSize = 20.sp)
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isHindi) "प्रो स्मार्ट टोकन कॉलिंग अलर्ट" else "Pro Smart Token Calling Alert",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF800000)
+                            )
+                            Text(
+                                text = if (isHindi) "सक्रिय: 5 टोकन पूर्व तीव्र वाइब्रेशन, घंटी व हिंदी आवाज़" else "Active: Vibration, Chime & Voice 5 tokens prior",
+                                fontSize = 11.sp,
+                                color = Color(0xFF5D4037)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
+                        onClick = {
+                            com.example.shribalajikripadham.util.SmartTokenAlertHelper.testAlert(context)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF800000)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (isHindi) "🔊 आवाज़, घंटी व वाइब्रेशन टेस्ट करें" else "🔊 Test Voice, Chime & Vibrate",
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             // 6. ACTION BUTTONS: View in Gallery, Share, Back to Home
             Row(
                 modifier = Modifier.fillMaxWidth(),

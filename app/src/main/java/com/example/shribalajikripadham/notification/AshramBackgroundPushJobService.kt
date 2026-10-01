@@ -245,27 +245,11 @@ class AshramBackgroundPushJobService : JobService() {
                             val todayStr = com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
 
                             if (myToken > 0 && (myTokenDate == todayStr || myTokenDate.isBlank())) {
-                                val lastAlertServing = myTokPrefs.getInt("last_alerted_serving", 0)
-                                if (currentServingToken != lastAlertServing) {
-                                    if (currentServingToken == myToken) {
-                                        NotificationHelper.showSystemNotification(
-                                            context = context,
-                                            title = "🔔 आपका टोकन नंबर $myToken आ चुका है!",
-                                            message = "आपका पावन दर्शन हेतु नंबर आ गया है। कृपया तुरंत पूज्य गुरुजी के समक्ष दरबार में पधारें!",
-                                            notificationId = 10006
-                                        )
-                                        myTokPrefs.edit().putInt("last_alerted_serving", currentServingToken).apply()
-                                    } else if (myToken > currentServingToken && (myToken - currentServingToken) <= 5) {
-                                        val remaining = myToken - currentServingToken
-                                        NotificationHelper.showSystemNotification(
-                                            context = context,
-                                            title = "🚨 आपका टोकन समीप है ($remaining टोकन शेष)",
-                                            message = "वर्तमान में टोकन #$currentServingToken चल रहा है। आपका टोकन #$myToken है। कृपया तुरंत आश्रम हॉल में उपस्थित रहें!",
-                                            notificationId = 10007
-                                        )
-                                        myTokPrefs.edit().putInt("last_alerted_serving", currentServingToken).apply()
-                                    }
-                                }
+                                com.example.shribalajikripadham.util.SmartTokenAlertHelper.evaluateAndTriggerAlert(
+                                    context = context,
+                                    myToken = myToken,
+                                    currentServing = currentServingToken
+                                )
                             }
                         } catch (e: Exception) {}
 
