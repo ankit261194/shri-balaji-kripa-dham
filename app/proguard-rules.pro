@@ -57,3 +57,8 @@
 -dontwarn okio.**
 -dontwarn retrofit2.**
 
+# 10. OneSignal Push Notification SDK
+-keep class com.onesignal.** { *; }
+-dontwarn com.onesignal.**
+
+

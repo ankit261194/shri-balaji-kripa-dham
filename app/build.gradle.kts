@@ -139,6 +139,9 @@ dependencies {
   implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
   implementation("com.google.firebase:firebase-messaging-ktx")
 
+  // OneSignal Push Notification SDK v5
+  implementation("com.onesignal:OneSignal:5.1.28")
+
   // AndroidX Media3 for Native High-Performance Live Video Streaming
   implementation("androidx.media3:media3-exoplayer:1.5.1")
   implementation("androidx.media3:media3-ui:1.5.1")

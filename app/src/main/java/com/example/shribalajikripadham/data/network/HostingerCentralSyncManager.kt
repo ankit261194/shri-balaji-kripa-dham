@@ -1596,6 +1596,41 @@ object HostingerCentralSyncManager {
     }
 
     /**
+     * Send OneSignal Push Notification Broadcast to All Devotees
+     */
+    suspend fun sendOneSignalBroadcast(
+        title: String,
+        message: String,
+        priority: String = "HIGH"
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}onesignal_service.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.28")
+
+            val json = JSONObject().apply {
+                put("action", "broadcast")
+                put("title", title)
+                put("message", message)
+                put("priority", priority)
+            }
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+            conn.responseCode == 200
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
      * Atomic Server-Side Bus Seat Hold (5-Minute Lock via book_bus_seat.php)
      */
     suspend fun holdBusSeatsRemote(

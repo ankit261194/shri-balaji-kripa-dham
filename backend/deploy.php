@@ -43,15 +43,20 @@ $filesToSync = [
     "api/check_device.php",
     "api/device_telemetry.php",
     "api/get_devotee_notifications.php",
-    "api/docu_ai.php",
     "api/admin_auth.php",
     "api/status_service.php",
     "api/delete_parcha.php",
     "api/havan_service.php",
+    "api/onesignal_service.php",
     "havan_admin.php",
     "media/balaji_darshan_today.jpg",
     "sync_apk.php"
 ];
+
+// Clean up orphaned legacy files
+if (file_exists(__DIR__ . '/api/docu_ai.php')) {
+    @unlink(__DIR__ . '/api/docu_ai.php');
+}
 
 $baseDir = __DIR__;
 $updated = [];

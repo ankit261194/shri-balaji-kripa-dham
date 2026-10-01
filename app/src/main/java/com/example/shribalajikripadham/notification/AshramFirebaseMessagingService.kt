@@ -27,6 +27,13 @@ class AshramFirebaseMessagingService : FirebaseMessagingService() {
             val prefs = context.getSharedPreferences(PREFS_FCM, Context.MODE_PRIVATE)
             prefs.edit().putString(KEY_LAST_PHONE, phoneNumber.trim()).apply()
 
+            // Register devotee with OneSignal for targeted push notifications
+            try {
+                OneSignalHelper.registerDevoteeUser(phoneNumber.trim())
+            } catch (e: Exception) {
+                Log.e(TAG, "Error binding OneSignal devotee user: ${e.localizedMessage}")
+            }
+
             val token = getStoredFcmToken(context)
             if (token.isNullOrBlank()) return
 

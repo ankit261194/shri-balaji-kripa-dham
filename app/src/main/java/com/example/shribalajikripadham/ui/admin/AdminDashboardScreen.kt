@@ -1699,6 +1699,16 @@ fun AdminDashboardScreen(
                                         } catch (e: Exception) {
                                             e.printStackTrace()
                                         }
+                                        // Instant OneSignal Cloud Push Broadcast to all registered devices
+                                        try {
+                                            com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.sendOneSignalBroadcast(
+                                                title = notifTitle,
+                                                message = notifMsg,
+                                                priority = notifPriority
+                                            )
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
                                         // Trigger heads-up system alert
                                         NotificationHelper.showSystemNotification(context, notifTitle, notifMsg)
                                         notifSuccessMsg = if (isHindi) "सूचना प्रसारित व सभी भक्तों के फोन पर लाइव अपडेट कर दी गई!" else "Notification successfully broadcasted live to all devotees!"
