@@ -73,7 +73,7 @@ if (file_exists($verFile)) {
 
 $ashramName = !empty($settings['ashram_name']) ? $settings['ashram_name'] : 'श्री बालाजी कृपा धाम';
 $bannerTitle = !empty($settings['banner_title']) ? $settings['banner_title'] : 'श्री बालाजी कृपा धाम';
-$bannerSubtitle = !empty($settings['banner_subtitle']) ? $settings['banner_subtitle'] : '📍 ग्राम डूँगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर (उ.प्र.)';
+$bannerSubtitle = !empty($settings['banner_subtitle']) ? $settings['banner_subtitle'] : '📍 ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.)';
 $emergencyNotice = !empty($settings['emergency_notice']) ? $settings['emergency_notice'] : '';
 $isEmergencyVisible = (!empty($settings['is_emergency_notice_visible']) && !empty($emergencyNotice));
 $darbarTimings = !empty($settings['darbar_timings']) ? $settings['darbar_timings'] : 'प्रत्येक रविवार प्रातःकाल 8:30 बजे से सायं 5:00 बजे तक';
@@ -212,9 +212,9 @@ $bankAccountNumber = (!empty($settings['bank_account_number']) && strpos($settin
 $bankIfsc = (!empty($settings['bank_ifsc']) && strpos($settings['bank_ifsc'], 'XXXX') === false) ? $settings['bank_ifsc'] : '';
 $bankBranch = !empty($settings['bank_branch']) ? $settings['bank_branch'] : '';
 $hasBankDetails = (!empty($bankAccountNumber) || !empty($upiId));
-$ashramAddress = (!empty($settings['ashram_address']) && strpos($settings['ashram_address'], 'अनूपशहर') === false) 
+$ashramAddress = (!empty($settings['ashram_address']) && strpos($settings['ashram_address'], 'अनूपशहर') !== false) 
     ? $settings['ashram_address'] 
-    : "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील जहांगीराबाद,\nजिला बुलन्दशहर, उत्तर प्रदेश - 202394";
+    : "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील अनूपशहर,\nजिला बुलन्दशहर, उत्तर प्रदेश - 202394";
 $ashramDirections = (!empty($settings['ashram_directions']) && strpos($settings['ashram_directions'], 'बबराला') === false) 
     ? $settings['ashram_directions'] 
     : "🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी) • अनूपशहर (~16 किमी)";
@@ -1372,7 +1372,7 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                 🕒 <strong>समय:</strong> <span id="upcomingDarbarTimingsText"><?= htmlspecialchars($darbarTimings) ?></span>
             </div>
             <p class="darbar-info-text">
-                🙏 <strong>स्थान:</strong> ग्राम डूँगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर (उत्तर प्रदेश)<br>
+                🙏 <strong>स्थान:</strong> ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उत्तर प्रदेश)<br>
                 🕊️ <strong>100% निःशुल्क सेवा:</strong> भूत-प्रेत व मानसिक कष्टों का निःशुल्क इलाज। कोई शुल्क या दक्षिणा नहीं ली जाती।<br>
                 📱 <strong>रविवार टोकन नियम:</strong> पारदर्शी कतार व GPS सुरक्षा हेतु टोकन केवल आधिकारिक Android ऐप से ही प्राप्त होता है।
             </p>
@@ -1785,7 +1785,7 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
     <!-- Footer -->
     <footer>
         <h3 id="dynamicFooterTitle" style="color: var(--gold); font-size: 1.4rem; margin-bottom: 6px;"><?= htmlspecialchars($footerTitle) ?></h3>
-        <p>ग्राम डूँगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर (उत्तर प्रदेश) - 202394</p>
+        <p>ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उत्तर प्रदेश) - 202394</p>
         <p id="dynamicFooterDedication" style="font-size: 0.88rem; color: #FFD54F;"><?= htmlspecialchars($footerDedication) ?></p>
         
         <!-- Social Media Official Links Hub -->

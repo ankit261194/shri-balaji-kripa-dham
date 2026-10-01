@@ -41,6 +41,9 @@ Options -Indexes
     ExpiresActive On
     ExpiresDefault "access plus 1 month"
 
+    # APK Android Application Packages: NO CACHE (Immediate updates)
+    ExpiresByType application/vnd.android.package-archive "access plus 0 seconds"
+
     # Images & Media: 7 days
     ExpiresByType image/jpeg "access plus 7 days"
     ExpiresByType image/jpg "access plus 7 days"
@@ -73,8 +76,18 @@ Options -Indexes
     Header set X-Content-Type-Options "nosniff"
 </IfModule>
 
+# Direct High-Speed APK file download headers
+<FilesMatch "\.apk$">
+    Header set Content-Type "application/vnd.android.package-archive"
+    Header set Content-Disposition "attachment; filename=\"ShriBalajiKripaDham.apk\""
+    Header set Cache-Control "public, no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</FilesMatch>
+
 # Protect sensitive storage directories
 <FilesMatch "\.(jsonl|sql|log|lock)$">
     Order allow,deny
     Deny from all
 </FilesMatch>
+

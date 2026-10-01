@@ -2,12 +2,11 @@ package com.example.shribalajikripadham
 
 import android.app.Application
 import android.util.Log
+import androidx.annotation.Keep
 import com.onesignal.OneSignal
 import com.onesignal.debug.LogLevel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
+@Keep
 class ShriBalajiApp : Application() {
 
     companion object {
@@ -19,22 +18,14 @@ class ShriBalajiApp : Application() {
         super.onCreate()
 
         try {
-            // OneSignal Debugging
+            // OneSignal Debugging set to WARN for production
             OneSignal.Debug.logLevel = LogLevel.WARN
 
-            // Initialize OneSignal with Temple App ID
+            // Safe async initialization of OneSignal with Temple App ID
             OneSignal.initWithContext(this, ONESIGNAL_APP_ID)
-
-            // Request Notification Permission prompt for Android 13+
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    OneSignal.Notifications.requestPermission(true)
-                } catch (e: Exception) {
-                    Log.e(TAG, "OneSignal permission request failed: ${e.localizedMessage}")
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "OneSignal initialization failed: ${e.localizedMessage}")
+        } catch (t: Throwable) {
+            // Gracefully catch any linkage or initialization issues so the app ALWAYS launches smoothly
+            Log.e(TAG, "OneSignal initialization gracefully bypassed: ${t.localizedMessage}", t)
         }
     }
 }

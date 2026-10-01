@@ -57,8 +57,19 @@
 -dontwarn okio.**
 -dontwarn retrofit2.**
 
-# 10. OneSignal Push Notification SDK
+# 10. Application & Entry Points
+-keep class com.example.shribalajikripadham.ShriBalajiApp { *; }
+-keepclassmembers class com.example.shribalajikripadham.ShriBalajiApp { *; }
+-keep class com.example.shribalajikripadham.MainActivity { *; }
+-keepclassmembers class com.example.shribalajikripadham.MainActivity { *; }
+-keep class com.example.shribalajikripadham.notification.** { *; }
+-keepclassmembers class com.example.shribalajikripadham.notification.** { *; }
+
+# 11. OneSignal Push Notification SDK
 -keep class com.onesignal.** { *; }
 -dontwarn com.onesignal.**
+-keepclassmembers class com.onesignal.** { *; }
+-keep interface com.onesignal.** { *; }
+
 
 

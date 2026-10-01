@@ -1,7 +1,7 @@
 <?php
 // ==============================================================================
 // श्री बालाजी कृपा धाम (ग्राम डूँगरा जाट) - आधिकारिक हाई-स्पीड APK डाउनलोड सेवा
-// High-Speed Direct Ashram Server APK Delivery Engine (v2.56.6 Build 81)
+// Ultra High-Speed Direct Ashram Server APK Delivery Engine (v2.56.28)
 // ==============================================================================
 
 $targetFile = __DIR__ . '/downloads/ShriBalajiKripaDham-release.apk';
@@ -14,51 +14,52 @@ if (!file_exists($targetFile) || filesize($targetFile) < 10000000) {
     }
 }
 
-// 1. Direct High-Speed Download Delivery if file exists on server
+// 1. Direct High-Speed Static Delivery
 if (file_exists($targetFile) && filesize($targetFile) > 10000000) {
     $filesize = filesize($targetFile);
-    $filename = "ShriBalajiKripaDham-release.apk";
+    $filename = "ShriBalajiKripaDham.apk";
+    $mtime = filemtime($targetFile);
 
-    // Clean any prior output buffering to avoid memory limits and enable max speed
-    while (ob_get_level()) {
-        ob_end_clean();
+    // LiteSpeed internal location acceleration (instant kernel-level sendfile)
+    if (isset($_SERVER['SERVER_SOFTWARE']) && stripos($_SERVER['SERVER_SOFTWARE'], 'litespeed') !== false) {
+        while (ob_get_level()) ob_end_clean();
+        header("Content-Type: application/vnd.android.package-archive");
+        header("Content-Disposition: attachment; filename=\"{$filename}\"");
+        header("Accept-Ranges: bytes");
+        header("Cache-Control: public, no-cache, no-store, must-revalidate, max-age=0");
+        header("X-LiteSpeed-Location: /downloads/ShriBalajiKripaDham-release.apk");
+        exit;
     }
 
+    // Direct 302 Redirect to static file with cache-buster timestamp:
+    // Enables multi-threaded HTTP/2 and HTTP/3 download direct from web server SSD at full 50-100 Mbps
+    if (!isset($_GET['stream'])) {
+        header("Cache-Control: no-cache, no-store, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        header("Expires: 0");
+        header("Location: downloads/ShriBalajiKripaDham-release.apk?v=" . $mtime, true, 302);
+        exit;
+    }
+
+    // Direct chunked stream fallback for clients that don't follow redirects
+    while (ob_get_level()) ob_end_clean();
     header("Content-Type: application/vnd.android.package-archive");
     header("Content-Disposition: attachment; filename=\"{$filename}\"");
     header("Accept-Ranges: bytes");
     header("Cache-Control: no-cache, no-store, must-revalidate, max-age=0");
     header("Pragma: no-cache");
     header("Expires: 0");
-
-    if (isset($_SERVER['HTTP_RANGE'])) {
-        list($param, $range) = explode('=', $_SERVER['HTTP_RANGE']);
-        if (strtolower(trim($param)) === 'bytes') {
-            list($from, $to) = explode('-', $range);
-            $from = trim($from) === '' ? 0 : intval($from);
-            $to = trim($to) === '' ? $filesize - 1 : intval($to);
-            if ($to >= $filesize) $to = $filesize - 1;
-
-            header('HTTP/1.1 206 Partial Content');
-            header("Content-Range: bytes {$from}-{$to}/{$filesize}");
-            header('Content-Length: ' . ($to - $from + 1));
-
-            $fp = fopen($targetFile, 'rb');
-            fseek($fp, $from);
-            $remaining = $to - $from + 1;
-            while (!feof($fp) && $remaining > 0) {
-                $read = min(262144, $remaining);
-                echo fread($fp, $read);
-                $remaining -= $read;
-                flush();
-            }
-            fclose($fp);
-            exit;
-        }
-    }
-
     header("Content-Length: {$filesize}");
-    readfile($targetFile);
+
+    @set_time_limit(0);
+    $fp = fopen($targetFile, 'rb');
+    if ($fp) {
+        while (!feof($fp)) {
+            echo fread($fp, 1048576); // 1 MB chunks for high throughput
+            flush();
+        }
+        fclose($fp);
+    }
     exit;
 }
 

@@ -34,8 +34,8 @@ fun AshramTravelGuideScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val ashramAddressHindi = "श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर (उत्तर प्रदेश) - 202394"
-    val ashramAddressEnglish = "Shri Balaji Kripa Dham, Gram Dungra Jaat, Tehsil Jahangirabad, Dist. Bulandshahr (U.P.) - 202394"
+    val ashramAddressHindi = "श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उत्तर प्रदेश) - 202394"
+    val ashramAddressEnglish = "Shri Balaji Kripa Dham, Gram Dungra Jaat, Tehsil Anupshahr, Dist. Bulandshahr (U.P.) - 202394"
     val ashramLat = 28.3972915
     val ashramLng = 78.1460410
 

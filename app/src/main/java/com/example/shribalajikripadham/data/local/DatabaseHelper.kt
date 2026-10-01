@@ -158,10 +158,10 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     "bank_account_holder" to "TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम सेवा ट्रस्ट'",
                     "bank_account_number" to "TEXT NOT NULL DEFAULT ''",
                     "bank_ifsc" to "TEXT NOT NULL DEFAULT ''",
-                    "bank_branch" to "TEXT NOT NULL DEFAULT 'जहांगीराबाद, बुलन्दशहर'",
+                    "bank_branch" to "TEXT NOT NULL DEFAULT 'अनूपशहर, बुलन्दशहर'",
                     "bank_upi_id" to "TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
-                    "ashram_address" to "TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर, उत्तर प्रदेश - 202394'",
-                    "ashram_directions" to "TEXT NOT NULL DEFAULT '🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी) • अनूपशहर (~16 किमी)'",
+                    "ashram_address" to "TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश - 202394'",
+                    "ashram_directions" to "TEXT NOT NULL DEFAULT '🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: अनूपशहर (~16 किमी) • जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी)'",
                     "contact_email" to "TEXT NOT NULL DEFAULT ''",
                     "footer_title" to "TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम'",
                     "footer_dedication" to "TEXT NOT NULL DEFAULT 'सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।'",
@@ -875,10 +875,10 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN bank_account_holder TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम ट्रस्ट'",
             "ALTER TABLE ashram_settings ADD COLUMN bank_account_number TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN bank_ifsc TEXT NOT NULL DEFAULT ''",
-            "ALTER TABLE ashram_settings ADD COLUMN bank_branch TEXT NOT NULL DEFAULT 'जहांगीराबाद, बुलन्दशहर'",
+            "ALTER TABLE ashram_settings ADD COLUMN bank_branch TEXT NOT NULL DEFAULT 'अनूपशहर, बुलन्दशहर'",
             "ALTER TABLE ashram_settings ADD COLUMN bank_upi_id TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
-            "ALTER TABLE ashram_settings ADD COLUMN ashram_address TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर, उत्तर प्रदेश - 202394'",
-            "ALTER TABLE ashram_settings ADD COLUMN ashram_directions TEXT NOT NULL DEFAULT '🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी) • अनूपशहर (~16 किमी)'",
+            "ALTER TABLE ashram_settings ADD COLUMN ashram_address TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश - 202394'",
+            "ALTER TABLE ashram_settings ADD COLUMN ashram_directions TEXT NOT NULL DEFAULT '🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: अनूपशहर (~16 किमी) • जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी)'",
             "ALTER TABLE ashram_settings ADD COLUMN footer_copyright TEXT NOT NULL DEFAULT '© 2026 श्री बालाजी कृपा धाम। सर्वाधिकार सुरक्षित।'",
             "ALTER TABLE ashram_settings ADD COLUMN token_service_mode TEXT NOT NULL DEFAULT 'AUTO_SUNDAY'",
             "ALTER TABLE ashram_settings ADD COLUMN is_tuesday_darbar_enabled INTEGER NOT NULL DEFAULT 0",
@@ -935,7 +935,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("id", 1)
                         put("ashram_name", "श्री बालाजी कृपा धाम")
                         put("guruji_name", "परम पूज्य गुरुजी")
-                        put("address", "ग्राम डूंगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर (उ.प्र.) - 202394")
+                        put("address", "ग्राम डूंगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.) - 202394")
                         put("latitude", 28.3972915)
                         put("longitude", 78.1460410)
                         put("allowed_radius_meters", 200.0)

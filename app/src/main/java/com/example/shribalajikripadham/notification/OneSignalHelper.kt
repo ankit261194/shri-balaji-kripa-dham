@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
  * Helper to manage OneSignal devotee identity and tags
  * Enables targeted token call push notifications by devotee phone number
  */
+@androidx.annotation.Keep
 object OneSignalHelper {
 
     private const val TAG = "OneSignalHelper"
@@ -35,8 +36,8 @@ object OneSignalHelper {
                 OneSignal.User.addTag("role", "devotee")
 
                 Log.d(TAG, "Devotee phone registered with OneSignal: $cleanPhone")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to register devotee with OneSignal: ${e.localizedMessage}")
+            } catch (t: Throwable) {
+                Log.e(TAG, "Failed to register devotee with OneSignal: ${t.localizedMessage}")
             }
         }
     }

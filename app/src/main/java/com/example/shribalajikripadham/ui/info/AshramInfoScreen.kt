@@ -258,9 +258,9 @@ fun AshramInfoScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = if (isHindi)
-                            "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर (उत्तर प्रदेश) - 202394"
+                            "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उत्तर प्रदेश) - 202394"
                         else
-                            "Shri Balaji Kripa Dham\nGram Dungra Jaat, Tehsil Jahangirabad, Dist. Bulandshahr (U.P.) - 202394",
+                            "Shri Balaji Kripa Dham\nGram Dungra Jaat, Tehsil Anupshahr, Dist. Bulandshahr (U.P.) - 202394",
                         fontSize = 14.sp,
                         color = TextPrimaryDark,
                         fontWeight = FontWeight.Medium,
