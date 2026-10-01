@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 100,
-  "version_code": 100,
-  "latest_version_name": "2.56.25",
-  "version_name": "2.56.25",
-  "update_notes_hindi": "v2.56.25 (Build 100): 🪔 श्री बालाजी व संकटमोचन वीर हनुमान जी के 5 अलौकिक व मनमोहक HD वॉलपेपर जोड़े गए (अब हर स्टेटस पर अलग-अलग दिव्य रूप लगेगा, स्टेटस बनाते समय भगवान का स्वरूप चुनने की सुविधा), 📲 WhatsApp जैसा शुद्ध व खुला स्टेटस बार (अनावश्यक फंक्शन बटन हटाकर केवल 'मेरा स्टेटस', 'आश्रम दर्शन' व भक्तों के स्टेटस), एवं 🧹 स्क्रीन से सारा घिच-पिच व भारीपन समाप्त।",
-  "update_notes_english": "v2.56.25 (Build 100): 🪔 Added 5 ultra HD divine wallpapers of Shri Balaji & Hanuman Ji (selectable deity portraits for every status), 📲 Clean WhatsApp-style Status Bar (dedicated My Status, Ashram Story, and Devotee stories without extra functional buttons), and 🧹 completely decluttered and open home layout.",
+  "latest_version_code": 101,
+  "version_code": 101,
+  "latest_version_name": "2.56.26",
+  "version_name": "2.56.26",
+  "update_notes_hindi": "v2.56.26 (Build 101): 🌺 दैनिक अलौकिक दर्शन में श्री बालाजी महाराज की दिव्य HD मूर्ति दर्शन हमेशा प्रत्यक्ष व अक्षुण्ण, 📲 स्टेटस बार में अनावश्यक डुप्लीकेट गोले हटाए गए (अब केवल 'मेरा स्टेटस', 'आश्रम दर्शन' और वही अन्य भक्त दिखेंगे जिन्होंने वास्तव में स्टेटस लगाया है), एवं 📸 भक्तों को कोई भी फ़ोटो, दर्शन या अपने विचार सीधे स्टेटस पर लगाने की पूर्ण स्वतंत्रता।",
+  "update_notes_english": "v2.56.26 (Build 101): 🌺 Daily Sacred Darshan always displays Balaji Maharaj HD darshan without blank cards, 📲 Removed duplicate dummy circles from status bar (only My Status, Ashram Story, and real devotee statuses appear), and 📸 full freedom for devotees to post any photo, darshan, or custom caption thoughts.",
   "apk_url": "https://shribalajikripadham.online/download.php?dl=1",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false

@@ -138,6 +138,11 @@ function ensureDailyOfficialStatus($pdo) {
         $todayStart = strtotime("today 00:00:00");
         $todayEnd = strtotime("today 23:59:59");
 
+        // Clean up duplicate official statuses
+        $pdo->exec("DELETE s1 FROM ashram_statuses s1
+                    INNER JOIN ashram_statuses s2 
+                    WHERE s1.is_official = 1 AND s2.is_official = 1 AND s1.id < s2.id");
+
         $stmt = $pdo->prepare("SELECT id FROM ashram_statuses WHERE is_official = 1 AND created_at >= :tstart LIMIT 1");
         $stmt->execute([':tstart' => $todayStart]);
         if (!$stmt->fetch()) {
@@ -177,6 +182,10 @@ switch ($action) {
     case 'get_active_statuses':
         try {
             $now = time();
+            $pdo->exec("DELETE s1 FROM ashram_statuses s1
+                        INNER JOIN ashram_statuses s2 
+                        WHERE s1.is_official = 1 AND s2.is_official = 1 AND s1.id < s2.id");
+
             $stmt = $pdo->prepare("SELECT id, device_id, user_name, phone_number, city, caption, media_url, is_official, audio_snippet_url, created_at, expires_at, views_count 
                                    FROM ashram_statuses 
                                    WHERE expires_at > :now AND status = 'ACTIVE' 

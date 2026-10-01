@@ -1,5 +1,7 @@
 package com.example.shribalajikripadham.ui.status
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -11,12 +13,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +30,11 @@ import androidx.compose.ui.unit.sp
 import com.example.shribalajikripadham.R
 import com.example.shribalajikripadham.data.model.BhaktiStatusItem
 import com.example.shribalajikripadham.theme.LocalSacredStyle
+import com.example.shribalajikripadham.util.DevoteePhotoHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 
 @Composable
 fun BhaktiStatusBar(
@@ -39,8 +47,10 @@ fun BhaktiStatusBar(
     modifier: Modifier = Modifier
 ) {
     val currentTheme = LocalSacredStyle.current.theme
-    val myStatus = statuses.find { it.deviceId == currentDeviceId }
-    val otherStatuses = statuses.filter { it.deviceId != currentDeviceId }
+    val myStatus = statuses.find { it.deviceId == currentDeviceId && !it.isOfficial }
+    val otherStatuses = statuses.filter { 
+        it.deviceId != currentDeviceId && !it.isOfficial && it.mediaUrl.isNotBlank() && it.userName.isNotBlank() 
+    }
 
     Column(
         modifier = modifier
@@ -269,9 +279,9 @@ fun BhaktiStatusBar(
                                 .clip(CircleShape)
                                 .background(Color.White)
                         ) {
-                            Text(
-                                text = if (status.isOfficial) "🚩" else "🙏",
-                                fontSize = 24.sp
+                            DevoteeStoryThumbnail(
+                                mediaUrl = status.mediaUrl,
+                                userName = status.userName
                             )
                         }
                     }
@@ -296,6 +306,61 @@ fun BhaktiStatusBar(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun DevoteeStoryThumbnail(
+    mediaUrl: String,
+    userName: String,
+    modifier: Modifier = Modifier
+) {
+    var bitmap by remember(mediaUrl) { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(mediaUrl) {
+        if (mediaUrl.isNotBlank()) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val conn = URL(mediaUrl).openConnection() as HttpURLConnection
+                    conn.connectTimeout = 4000
+                    conn.readTimeout = 4000
+                    if (conn.responseCode == 200) {
+                        val bmp = BitmapFactory.decodeStream(conn.inputStream)
+                        if (bmp != null) {
+                            val soft = DevoteePhotoHelper.toSoftwareBitmap(bmp)
+                            withContext(Dispatchers.Main) {
+                                bitmap = soft
+                            }
+                        }
+                    }
+                } catch (ignored: Exception) {}
+            }
+        }
+    }
+
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap!!.asImageBitmap(),
+            contentDescription = userName,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+        )
+    } else {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .clip(CircleShape)
+                .background(Color(0xFFE8F5E9)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = userName.trim().take(1).ifBlank { "🙏" },
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF2E7D32)
+            )
         }
     }
 }

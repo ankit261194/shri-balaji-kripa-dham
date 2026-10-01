@@ -700,6 +700,127 @@ object StatusPosterGenerator {
     }
 
     /**
+     * Generates a Direct Photo Status for any custom photo picked or taken by the devotee.
+     * Fits or crops into standard 9:16 WhatsApp story format (1080 x 1920),
+     * overlays subtle gradient, devotee name/city, and custom caption text.
+     */
+    fun generateDirectPhotoStatus(
+        context: Context,
+        photo: Bitmap,
+        devoteeName: String,
+        devoteeCity: String,
+        caption: String
+    ): Bitmap {
+        val width = 1080
+        val height = 1920
+        val output = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(output)
+
+        // 1. Draw rich dark devotional background
+        val bgPaint = Paint().apply {
+            color = Color.BLACK
+        }
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+
+        // 2. Draw user photo scaled to fill cleanly
+        val photoWidth = photo.width.toFloat().coerceAtLeast(1f)
+        val photoHeight = photo.height.toFloat().coerceAtLeast(1f)
+        val scale = Math.max(width / photoWidth, height / photoHeight)
+        val scaledW = photoWidth * scale
+        val scaledH = photoHeight * scale
+        val dx = (width - scaledW) / 2f
+        val dy = (height - scaledH) / 2f
+
+        val photoMatrix = Matrix().apply {
+            postScale(scale, scale)
+            postTranslate(dx, dy)
+        }
+        val paintFilter = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+        canvas.drawBitmap(photo, photoMatrix, paintFilter)
+
+        // 3. Top subtle vignette/gradient with Ashram branding
+        val topGradient = LinearGradient(
+            0f, 0f, 0f, 260f,
+            intArrayOf(Color.argb(200, 0, 0, 0), Color.argb(80, 0, 0, 0), Color.TRANSPARENT),
+            floatArrayOf(0f, 0.6f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        val topPaint = Paint().apply { shader = topGradient }
+        canvas.drawRect(0f, 0f, width.toFloat(), 260f, topPaint)
+
+        val brandPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(255, 215, 0) // Gold
+            textSize = 34f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            setShadowLayer(6f, 0f, 3f, Color.BLACK)
+        }
+        canvas.drawText("🚩 श्री बालाजी कृपा धाम • डूँगरा जाट", 50f, 90f, brandPaint)
+
+        // Devotee info badge at top
+        if (devoteeName.isNotBlank()) {
+            val userTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textSize = 28f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
+                setShadowLayer(5f, 0f, 2f, Color.BLACK)
+            }
+            val devoteeLoc = if (devoteeCity.isNotBlank()) " ($devoteeCity)" else ""
+            canvas.drawText("भक्त: $devoteeName$devoteeLoc", 50f, 140f, userTextPaint)
+        }
+
+        // 4. Bottom gradient for caption readability
+        val bottomGradient = LinearGradient(
+            0f, (height - 450).toFloat(), 0f, height.toFloat(),
+            intArrayOf(Color.TRANSPARENT, Color.argb(160, 0, 0, 0), Color.argb(230, 0, 0, 0)),
+            floatArrayOf(0f, 0.4f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        val bottomPaint = Paint().apply { shader = bottomGradient }
+        canvas.drawRect(0f, (height - 450).toFloat(), width.toFloat(), height.toFloat(), bottomPaint)
+
+        // 5. Draw Custom Caption if present
+        if (caption.isNotBlank()) {
+            val captionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textSize = 36f
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                setShadowLayer(8f, 0f, 4f, Color.BLACK)
+            }
+            val textPaint = android.text.TextPaint(captionPaint)
+            val staticLayout = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                android.text.StaticLayout.Builder.obtain(caption, 0, caption.length, textPaint, width - 120)
+                    .setAlignment(android.text.Layout.Alignment.ALIGN_CENTER)
+                    .setLineSpacing(6f, 1.15f)
+                    .setMaxLines(4)
+                    .build()
+            } else {
+                @Suppress("DEPRECATION")
+                android.text.StaticLayout(
+                    caption, textPaint, width - 120,
+                    android.text.Layout.Alignment.ALIGN_CENTER, 1.15f, 6f, false
+                )
+            }
+
+            canvas.save()
+            val layoutY = (height - 240 - staticLayout.height).toFloat().coerceAtLeast(height - 400f)
+            canvas.translate(60f, layoutY)
+            staticLayout.draw(canvas)
+            canvas.restore()
+        }
+
+        // Bottom footer banner
+        val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(255, 224, 130)
+            textSize = 24f
+            textAlign = Paint.Align.CENTER
+            setShadowLayer(4f, 0f, 2f, Color.BLACK)
+        }
+        canvas.drawText("॥ ॐ श्री हनुमते नमः ॥ • shribalajikripadham.online", width / 2f, height - 50f, footerPaint)
+
+        return output
+    }
+
+    /**
      * Saves poster bitmap to device Gallery (Pictures/ShriBalajiKripaDham).
      */
     fun savePosterToGallery(context: Context, posterBitmap: Bitmap, title: String = "BhaktiPoster"): Uri? {

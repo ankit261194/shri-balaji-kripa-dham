@@ -219,12 +219,17 @@ object DailyDarshanHelper {
     ) {
         try {
             var imageUri: Uri? = null
-            if (bitmap != null) {
+            val finalBitmap = bitmap ?: try {
+                BitmapFactory.decodeResource(context.resources, R.drawable.img_balaji_darshan)
+            } catch (e: Exception) {
+                null
+            }
+            if (finalBitmap != null) {
                 val shareDir = File(context.cacheDir, "darshan_shares")
                 if (!shareDir.exists()) shareDir.mkdirs()
                 val shareFile = File(shareDir, "Darshan_${System.currentTimeMillis()}.png")
                 FileOutputStream(shareFile).use { fos ->
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 95, fos)
+                    finalBitmap.compress(Bitmap.CompressFormat.PNG, 95, fos)
                     fos.flush()
                 }
                 imageUri = androidx.core.content.FileProvider.getUriForFile(
@@ -426,13 +431,10 @@ fun DailyDarshanQuickCard(
                     )
                 } else {
                     Image(
-                        painter = painterResource(id = R.drawable.app_logo),
+                        painter = painterResource(id = R.drawable.img_balaji_darshan),
                         contentDescription = "श्री बालाजी अलौकिक श्रृंगार दर्शन",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(currentTheme.primaryColor.copy(alpha = 0.2f))
-                            .padding(16.dp)
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
 
@@ -649,7 +651,7 @@ fun DailyDarshanZoomDialog(
                     )
                 } else {
                     Image(
-                        painter = painterResource(id = R.drawable.app_logo),
+                        painter = painterResource(id = R.drawable.img_balaji_darshan),
                         contentDescription = "दर्शन",
                         contentScale = ContentScale.Fit,
                         modifier = Modifier

@@ -2,6 +2,7 @@ package com.example.shribalajikripadham.ui.status
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -22,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -36,7 +38,11 @@ import com.example.shribalajikripadham.data.network.StatusSyncManager
 import com.example.shribalajikripadham.theme.LocalSacredStyle
 import com.example.shribalajikripadham.util.DevoteePhotoHelper
 import com.example.shribalajikripadham.util.StatusPosterGenerator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -100,19 +106,46 @@ fun StatusViewerDialog(
                 .fillMaxSize()
                 .background(Color.Black)
         ) {
-            // Main Story Content / Poster Rendering
+            // Main Story Content / Photo Rendering
             var posterBitmap by remember { mutableStateOf<Bitmap?>(null) }
+            var isLoadingPhoto by remember { mutableStateOf(true) }
 
-            LaunchedEffect(status.id) {
-                // Generate high-resolution poster for this status
-                val bmp = StatusPosterGenerator.generateBhaktiPoster(
-                    context = context,
-                    devoteePhoto = null,
-                    devoteeName = status.userName,
-                    devoteeCity = status.city,
-                    suvichar = dailySuvichar
-                )
-                posterBitmap = bmp
+            LaunchedEffect(status.id, status.mediaUrl) {
+                isLoadingPhoto = true
+                if (status.mediaUrl.isNotBlank()) {
+                    withContext(Dispatchers.IO) {
+                        try {
+                            val conn = URL(status.mediaUrl).openConnection() as HttpURLConnection
+                            conn.connectTimeout = 8000
+                            conn.readTimeout = 8000
+                            if (conn.responseCode == 200) {
+                                val rawBmp = BitmapFactory.decodeStream(conn.inputStream)
+                                if (rawBmp != null) {
+                                    val soft = DevoteePhotoHelper.toSoftwareBitmap(rawBmp)
+                                    withContext(Dispatchers.Main) {
+                                        posterBitmap = soft
+                                        isLoadingPhoto = false
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+
+                // If remote photo download failed or was empty, fallback to generated poster
+                if (posterBitmap == null) {
+                    val bmp = StatusPosterGenerator.generateBhaktiPoster(
+                        context = context,
+                        devoteePhoto = null,
+                        devoteeName = status.userName,
+                        devoteeCity = status.city,
+                        suvichar = dailySuvichar
+                    )
+                    posterBitmap = bmp
+                    isLoadingPhoto = false
+                }
             }
 
             posterBitmap?.let { bmp ->
@@ -120,6 +153,7 @@ fun StatusViewerDialog(
                 androidx.compose.foundation.Image(
                     bitmap = safeBmp.asImageBitmap(),
                     contentDescription = "Bhakti Story",
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .fillMaxSize()
                         .clickable {
@@ -282,14 +316,40 @@ fun StatusViewerDialog(
                     Spacer(modifier = Modifier.height(10.dp))
                 }
 
+                // Devotee Custom Caption Overlay (if present)
+                if (status.caption.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.Black.copy(alpha = 0.65f),
+                        border = BorderStroke(0.8.dp, Color.White.copy(alpha = 0.2f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 10.dp)
+                    ) {
+                        Text(
+                            text = status.caption,
+                            color = Color.White,
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+
                 // 1-Click WhatsApp Status Button
                 Button(
                     onClick = {
                         posterBitmap?.let { bmp ->
+                            val shareCaption = if (status.caption.isNotBlank()) {
+                                "${status.caption}\n\n🚩 *श्री बालाजी कृपा धाम (डूँगरा जाट)* 🚩\n👉 धाम ऐप डाउनलोड करें: https://shribalajikripadham.online/app"
+                            } else {
+                                "🚩 *श्री बालाजी कृपा धाम (डूँगरा जाट)* 🚩\n\nआज का दिव्य दर्शन व अमृत सुविचार:\n“${dailySuvichar.quote}”\n\n👉 धाम का आधिकारिक मोबाइल ऐप डाउनलोड करें (यहाँ टच करें):\n🌐 https://shribalajikripadham.online/app"
+                            }
                             StatusPosterGenerator.shareToWhatsApp(
                                 context = context,
                                 posterBitmap = bmp,
-                                caption = "🚩 *श्री बालाजी कृपा धाम (डूँगरा जाट)* 🚩\n\nआज का दिव्य दर्शन व अमृत सुविचार:\n“${dailySuvichar.quote}”\n\n👉 धाम का आधिकारिक मोबाइल ऐप डाउनलोड करें (यहाँ टच करें):\n🌐 https://shribalajikripadham.online/app"
+                                caption = shareCaption
                             )
                         }
                     },
