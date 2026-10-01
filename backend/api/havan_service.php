@@ -172,7 +172,7 @@ if ($action === 'SUBMIT' || $action === 'SUBMIT_APPLICATION' || ($_SERVER['REQUE
     $devoteeName = trim($input['devotee_name'] ?? '');
     $phoneNumber = preg_replace('/[^0-9]/', '', $input['phone_number'] ?? '');
     $whatsappNumber = preg_replace('/[^0-9]/', '', $input['whatsapp_number'] ?? $phoneNumber);
-    $preferredDate = trim($input['preferred_date'] ?? '');
+    $preferredDate = !empty(trim($input['preferred_date'] ?? '')) ? trim($input['preferred_date']) : 'आश्रम द्वारा तय होगी';
     $address = trim($input['address'] ?? '');
     $villageCity = trim($input['village_city'] ?? '');
     $district = trim($input['district'] ?? '');
@@ -180,11 +180,11 @@ if ($action === 'SUBMIT' || $action === 'SUBMIT_APPLICATION' || ($_SERVER['REQUE
     $pincode = trim($input['pincode'] ?? '');
     $gotra = trim($input['gotra'] ?? '');
     $familyMembers = intval($input['family_members_count'] ?? 1);
-    $havanPurpose = trim($input['havan_purpose'] ?? '');
+    $havanPurpose = !empty(trim($input['havan_purpose'] ?? '')) ? trim($input['havan_purpose']) : 'पावन हवन अनुष्ठान';
     $problemDetails = trim($input['problem_details'] ?? '');
-    $costAck = !empty($input['cost_ack']) ? 1 : 0;
-    $travelFareAck = !empty($input['travel_fare_ack']) ? 1 : 0;
-    $deviceInfo = substr(trim($_SERVER['HTTP_USER_AGENT'] ?? 'Web Devotee'), 0, 150);
+    $costAck = (!empty($input['cost_ack']) || !empty($input['cost_acknowledged'])) ? 1 : 0;
+    $travelFareAck = (!empty($input['travel_fare_ack']) || !empty($input['travel_fare_acknowledged'])) ? 1 : 0;
+    $deviceInfo = substr(trim($_SERVER['HTTP_USER_AGENT'] ?? 'Devotee App'), 0, 150);
 
     // Validation
     if (empty($devoteeName) || mb_strlen($devoteeName) < 2) {
@@ -202,18 +202,6 @@ if ($action === 'SUBMIT' || $action === 'SUBMIT_APPLICATION' || ($_SERVER['REQUE
     if (empty($address) || mb_strlen($address) < 6) {
         http_response_code(400);
         echo json_encode(["success" => false, "error" => "कृपया हवन कराने का पूरा पता (ग्राम/मोहल्ला, तहसील, जिला) विस्तार से लिखें।"], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    if (empty($preferredDate)) {
-        http_response_code(400);
-        echo json_encode(["success" => false, "error" => "कृपया हवन हेतु प्रस्तावित तिथि का चयन करें।"], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    if (empty($havanPurpose)) {
-        http_response_code(400);
-        echo json_encode(["success" => false, "error" => "कृपया हवन का प्रयोजन (उदा. गृह शांति, संकट निवारण) चुनें या दर्ज करें।"], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

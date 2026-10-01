@@ -1,6 +1,5 @@
 package com.example.shribalajikripadham.ui.havan
 
-import android.app.DatePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -19,7 +18,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -32,10 +30,6 @@ import com.example.shribalajikripadham.theme.AmberGold
 import com.example.shribalajikripadham.theme.MaroonPrimary
 import com.example.shribalajikripadham.theme.SaffronPrimary
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,11 +45,9 @@ fun HavanApplicationScreen(
     var devoteeName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var whatsappNumber by remember { mutableStateOf("") }
-    var preferredDate by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var gotra by remember { mutableStateOf("") }
     var familyMembersCount by remember { mutableIntStateOf(4) }
-    var selectedPurpose by remember { mutableStateOf("गृह शांति एवं परिवार सुख-समृद्धि") }
     var problemDetails by remember { mutableStateOf("") }
 
     // Mandatory Terms Acknowledgements
@@ -66,46 +58,6 @@ fun HavanApplicationScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var submittedAppNo by remember { mutableStateOf<String?>(null) }
     var showSuccessDialog by remember { mutableStateOf(false) }
-
-    // Pre-fill tomorrow's date by default if empty
-    LaunchedEffect(Unit) {
-        if (preferredDate.isBlank()) {
-            val cal = Calendar.getInstance()
-            cal.add(Calendar.DAY_OF_YEAR, 2)
-            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            preferredDate = sdf.format(cal.time)
-        }
-    }
-
-    val purposeList = remember {
-        listOf(
-            "गृह शांति एवं परिवार सुख-समृद्धि",
-            "भूत-प्रेत व नकारात्मक ऊर्जा बाधा निवारण",
-            "पितृ दोष एवं कालसर्प शांति",
-            "व्यापार वृद्धि एवं आर्थिक संकट मुक्ति",
-            "असाध्य रोग निवारण एवं उत्तम स्वास्थ्य",
-            "नया मकान / गृह प्रवेश अनुष्ठान",
-            "अन्य विशेष आध्यात्मिक अनुष्ठान"
-        )
-    }
-
-    // Date Picker Launcher
-    fun openDatePicker() {
-        val cal = Calendar.getInstance()
-        cal.add(Calendar.DAY_OF_YEAR, 1)
-        val y = cal.get(Calendar.YEAR)
-        val m = cal.get(Calendar.MONTH)
-        val d = cal.get(Calendar.DAY_OF_MONTH)
-
-        DatePickerDialog(context, { _, year, month, dayOfMonth ->
-            val selCal = Calendar.getInstance()
-            selCal.set(year, month, dayOfMonth)
-            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            preferredDate = sdf.format(selCal.time)
-        }, y, m, d).apply {
-            datePicker.minDate = cal.timeInMillis
-        }.show()
-    }
 
     Scaffold(
         topBar = {
@@ -145,7 +97,7 @@ fun HavanApplicationScreen(
                 .padding(16.dp)
         ) {
             // =================================================================
-            // 📢 TOP SACRED NOTICE CARD: EXPENSES & VEHICLE TRAVEL TERMS
+            // 📢 TOP SACRED NOTICE CARD: EXPENSES & TERMS
             // "form ke upar ye sari cheeze likhi hogi kharcha pani jo bhi btaya thaa"
             // =================================================================
             Card(
@@ -169,7 +121,7 @@ fun HavanApplicationScreen(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = if (isHindi) "पावन हवन एवं विशेष अनुष्ठान सेवा" else "Sacred Havan & Anushthan Rules",
+                                text = if (isHindi) "पावन हवन अनुष्ठान सेवा" else "Sacred Havan Anushthan Rules",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFBF360C)
@@ -197,7 +149,7 @@ fun HavanApplicationScreen(
                             )
                             Text(
                                 text = if (isHindi)
-                                    "समस्त हवन समिधा, आहुति द्रव्य, विशेष पूजन सामग्री, सूखा गोला-देशी घी एवं वैदिक ब्राह्मण व्यवस्था हेतु।"
+                                    "समस्त हवन समिधा, आहुति द्रव्य, पूजन सामग्री, सूखा गोला, देशी घी एवं वैदिक ब्राह्मण व्यवस्था हेतु।"
                                 else
                                     "For complete sacred wood, puja samagri, desi ghee, and arrangements.",
                                 fontSize = 12.sp,
@@ -255,7 +207,31 @@ fun HavanApplicationScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Rule 4: Date Decision by Ashram
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Text("📅 ", fontSize = 16.sp)
+                        Column {
+                            Text(
+                                text = if (isHindi) "हवन की पावन तिथि: आश्रम द्वारा निर्धारित होगी" else "Havan Date: Scheduled by Ashram",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFE65100)
+                            )
+                            Text(
+                                text = if (isHindi)
+                                    "आवेदन प्राप्त होने के उपरांत आश्रम सेवा दल द्वारा आपसे संपर्क कर शुभ तिथि निर्धारित की जाएगी।"
+                                else
+                                    "After reviewing your application, the Ashram team will contact you to schedule an auspicious date.",
+                                fontSize = 11.5.sp,
+                                color = Color(0xFF5D4037),
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
                         text = if (isHindi)
@@ -272,7 +248,7 @@ fun HavanApplicationScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // =================================================================
-            // DEVOTEE APPLICATION FORM
+            // DEVOTEE APPLICATION FORM (NO DATE SELECTION, NO HAVAN CATEGORY)
             // =================================================================
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -335,27 +311,7 @@ fun HavanApplicationScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // 3. Preferred Date with Date Picker
-                    OutlinedTextField(
-                        value = preferredDate,
-                        onValueChange = { preferredDate = it },
-                        label = { Text(if (isHindi) "हवन हेतु प्रस्तावित तिथि *" else "Preferred Date *") },
-                        placeholder = { Text("YYYY-MM-DD") },
-                        trailingIcon = {
-                            IconButton(onClick = { openDatePicker() }) {
-                                Text("📅", fontSize = 18.sp)
-                            }
-                        },
-                        readOnly = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { openDatePicker() },
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // 4. Complete Address
+                    // 3. Complete Address
                     OutlinedTextField(
                         value = address,
                         onValueChange = { address = it },
@@ -369,7 +325,7 @@ fun HavanApplicationScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // 5. Gotra & Family Members
+                    // 4. Gotra & Family Members
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         OutlinedTextField(
                             value = gotra,
@@ -392,57 +348,14 @@ fun HavanApplicationScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // 6. Purpose of Havan (Dropdown / Picker)
-                    Text(
-                        text = if (isHindi) "हवन का मुख्य प्रयोजन / संकल्प *" else "Main Purpose of Havan *",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF37474F)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    var purposeExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = purposeExpanded,
-                        onExpandedChange = { purposeExpanded = !purposeExpanded },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            value = selectedPurpose,
-                            onValueChange = {},
-                            readOnly = true,
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = purposeExpanded) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .menuAnchor(),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        ExposedDropdownMenu(
-                            expanded = purposeExpanded,
-                            onDismissRequest = { purposeExpanded = false }
-                        ) {
-                            purposeList.forEach { purp ->
-                                DropdownMenuItem(
-                                    text = { Text(purp, fontSize = 13.5.sp) },
-                                    onClick = {
-                                        selectedPurpose = purp
-                                        purposeExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // 7. Special Notes / Prayer
+                    // 5. Special Notes / Prayer
                     OutlinedTextField(
                         value = problemDetails,
                         onValueChange = { problemDetails = it },
-                        label = { Text(if (isHindi) "विशेष समस्या / मनोकामना का विवरण (वैकल्पिक)" else "Special Details / Prayer (Optional)") },
-                        placeholder = { Text("अपनी समस्या अथवा विशेष मनोकामना का संक्षिप्त विवरण दें...") },
+                        label = { Text(if (isHindi) "विशेष प्रार्थना / टिप्पणी (वैकल्पिक)" else "Special Prayer / Notes (Optional)") },
+                        placeholder = { Text("हवन से संबंधित कोई विशेष टिप्पणी या प्रार्थना लिखें...") },
                         minLines = 2,
                         maxLines = 4,
                         modifier = Modifier.fillMaxWidth(),
@@ -542,10 +455,6 @@ fun HavanApplicationScreen(
                                 errorMessage = if (isHindi) "कृपया 10 अंकों का मान्य मोबाइल नंबर दर्ज करें।" else "Please enter 10-digit mobile number."
                                 return@Button
                             }
-                            if (preferredDate.isBlank()) {
-                                errorMessage = if (isHindi) "कृपया प्रस्तावित तिथि का चयन करें।" else "Please select preferred date."
-                                return@Button
-                            }
                             if (cleanAddress.length < 6) {
                                 errorMessage = if (isHindi) "कृपया हवन कराने का पूरा पता दर्ज करें।" else "Please enter complete address."
                                 return@Button
@@ -564,11 +473,11 @@ fun HavanApplicationScreen(
                                     devoteeName = cleanName,
                                     phoneNumber = cleanPhone,
                                     whatsappNumber = whatsappNumber.trim(),
-                                    preferredDate = preferredDate,
+                                    preferredDate = "आश्रम द्वारा तय होगी",
                                     address = cleanAddress,
                                     gotra = gotra.trim(),
                                     familyMembersCount = familyMembersCount,
-                                    havanPurpose = selectedPurpose,
+                                    havanPurpose = "पावन हवन अनुष्ठान",
                                     problemDetails = problemDetails.trim(),
                                     costAcknowledged = costAcknowledged,
                                     travelFareAcknowledged = travelFareAcknowledged
@@ -676,8 +585,9 @@ fun HavanApplicationScreen(
                                 modifier = Modifier.padding(vertical = 4.dp)
                             )
                             Text(
-                                text = "यजमान: $devoteeName | तिथि: $preferredDate",
-                                fontSize = 11.5.sp,
+                                text = "यजमान: $devoteeName",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = Color(0xFF5D4037)
                             )
                         }
@@ -687,9 +597,9 @@ fun HavanApplicationScreen(
 
                     Text(
                         text = if (isHindi)
-                            "पूज्य गुरुदेव जी के सान्निध्य में आश्रम सेवा दल आपके आवेदन की समीक्षा कर जल्द ही आपसे संपर्क करेगा।"
+                            "पूज्य गुरुदेव जी के सान्निध्य में आश्रम सेवा दल आपके आवेदन की समीक्षा कर तिथि निर्धारण हेतु जल्द ही आपसे संपर्क करेगा।"
                         else
-                            "Ashram team will review your application and contact you soon.",
+                            "Ashram team will review your application and contact you soon to schedule the date.",
                         fontSize = 11.5.sp,
                         color = Color.Gray,
                         textAlign = TextAlign.Center,
@@ -701,7 +611,7 @@ fun HavanApplicationScreen(
                 Button(
                     onClick = {
                         try {
-                            val msg = "जय श्री बालाजी महाराज! 🙏\nमैंने श्री बालाजी कृपा धाम (डूँगरा जाट) के ऐप से हवन हेतु आवेदन किया है।\nआवेदन क्रमांक: $submittedAppNo\nयजमान: $devoteeName\nप्रस्तावित तिथि: $preferredDate\nपता: $address"
+                            val msg = "जय श्री बालाजी महाराज! 🙏\nमैंने श्री बालाजी कृपा धाम (डूँगरा जाट) के ऐप से हवन हेतु आवेदन किया है।\nआवेदन क्रमांक: $submittedAppNo\nयजमान: $devoteeName\nपता: $address"
                             val uri = Uri.parse("https://api.whatsapp.com/send?text=" + Uri.encode(msg))
                             context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                         } catch (e: Exception) {

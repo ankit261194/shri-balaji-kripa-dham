@@ -6396,8 +6396,8 @@ class AshramRepository(context: Context) {
     suspend fun submitDevoteeHavanApplication(
         devoteeName: String,
         phoneNumber: String,
-        whatsappNumber: String,
-        preferredDate: String,
+        whatsappNumber: String = "",
+        preferredDate: String = "आश्रम द्वारा तय होगी",
         address: String,
         villageCity: String = "",
         district: String = "",
@@ -6405,7 +6405,7 @@ class AshramRepository(context: Context) {
         pincode: String = "",
         gotra: String = "",
         familyMembersCount: Int = 4,
-        havanPurpose: String,
+        havanPurpose: String = "पावन हवन अनुष्ठान",
         problemDetails: String = "",
         costAcknowledged: Boolean = true,
         travelFareAcknowledged: Boolean = true
