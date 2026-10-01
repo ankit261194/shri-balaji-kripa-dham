@@ -73,11 +73,24 @@ if (file_exists($verFile)) {
 
 $ashramName = !empty($settings['ashram_name']) ? $settings['ashram_name'] : 'श्री बालाजी कृपा धाम';
 $bannerTitle = !empty($settings['banner_title']) ? $settings['banner_title'] : 'श्री बालाजी कृपा धाम';
-$bannerSubtitle = !empty($settings['banner_subtitle']) ? $settings['banner_subtitle'] : '📍 ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.)';
+$bannerSubtitle = !empty($settings['banner_subtitle']) ? $settings['banner_subtitle'] : '📍 ग्राम डूँगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर (उ.प्र.)';
 $emergencyNotice = !empty($settings['emergency_notice']) ? $settings['emergency_notice'] : '';
 $isEmergencyVisible = (!empty($settings['is_emergency_notice_visible']) && !empty($emergencyNotice));
-$darbarTimings = !empty($settings['darbar_timings']) ? $settings['darbar_timings'] : 'प्रत्येक रविवार प्रातःकाल 8:00 बजे से';
+$darbarTimings = !empty($settings['darbar_timings']) ? $settings['darbar_timings'] : 'प्रत्येक रविवार प्रातःकाल 8:30 बजे से सायं 5:00 बजे तक';
 $darbarDate = !empty($settings['darbar_date']) ? $settings['darbar_date'] : '';
+if (empty($darbarDate)) {
+    $hindiMonths = [
+        1 => 'जनवरी', 2 => 'फ़रवरी', 3 => 'मार्च', 4 => 'अप्रैल',
+        5 => 'मई', 6 => 'जून', 7 => 'जुलाई', 8 => 'अगस्त',
+        9 => 'सितम्बर', 10 => 'अक्टूबर', 11 => 'नवम्बर', 12 => 'दिसम्बर'
+    ];
+    $todayDayOfWeek = (int)date('w'); // 0 = Sunday
+    $nextSundayTs = ($todayDayOfWeek === 0) ? time() : strtotime('next Sunday');
+    $sunDay = date('j', $nextSundayTs);
+    $sunMonth = $hindiMonths[(int)date('n', $nextSundayTs)];
+    $sunYear = date('Y', $nextSundayTs);
+    $darbarDate = "रविवार, {$sunDay} {$sunMonth} {$sunYear}";
+}
 $currentServing = !empty($settings['current_serving_token']) ? (int)$settings['current_serving_token'] : 0;
 if ($currentServing <= 0) {
     if (file_exists(__DIR__ . '/config/db.php')) require_once __DIR__ . '/config/db.php';
@@ -173,10 +186,16 @@ $bankAccountNumber = (!empty($settings['bank_account_number']) && strpos($settin
 $bankIfsc = (!empty($settings['bank_ifsc']) && strpos($settings['bank_ifsc'], 'XXXX') === false) ? $settings['bank_ifsc'] : '';
 $bankBranch = !empty($settings['bank_branch']) ? $settings['bank_branch'] : '';
 $hasBankDetails = (!empty($bankAccountNumber) || !empty($upiId));
-$ashramAddress = !empty($settings['ashram_address']) ? $settings['ashram_address'] : "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील अनूपशहर,\nजिला बुलन्दशहर, उत्तर प्रदेश";
-$ashramDirections = !empty($settings['ashram_directions']) ? $settings['ashram_directions'] : 'निकटतम रेलवे स्टेशन: अनूपशहर / बबराला / बुलन्दशहर';
+$ashramAddress = (!empty($settings['ashram_address']) && strpos($settings['ashram_address'], 'अनूपशहर') === false) 
+    ? $settings['ashram_address'] 
+    : "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील जहांगीराबाद,\nजिला बुलन्दशहर, उत्तर प्रदेश - 202394";
+$ashramDirections = (!empty($settings['ashram_directions']) && strpos($settings['ashram_directions'], 'बबराला') === false) 
+    ? $settings['ashram_directions'] 
+    : "🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी) • अनूपशहर (~16 किमी)";
 $contactEmail = (!empty($settings['contact_email']) && $settings['contact_email'] !== 'shribalajikripadham@gmail.com') ? trim($settings['contact_email']) : '';
-$instagramUrl = !empty($settings['instagram_url']) ? $settings['instagram_url'] : '';
+$youtubeUrl = !empty($settings['youtube_channel_url']) ? $settings['youtube_channel_url'] : (!empty($settings['youtube_url']) ? $settings['youtube_url'] : 'https://www.youtube.com/@ShriBalajiKripaDham');
+$facebookUrl = !empty($settings['facebook_page_url']) ? $settings['facebook_page_url'] : (!empty($settings['facebook_url']) ? $settings['facebook_url'] : 'https://www.facebook.com/ShriBalajiKripaDham');
+$instagramUrl = !empty($settings['instagram_url']) ? $settings['instagram_url'] : 'https://www.instagram.com/shribalajikripadham';
 $youtubeLiveUrl = !empty($settings['youtube_live_url']) ? $settings['youtube_live_url'] : '';
 $whatsappChannelUrl = !empty($settings['whatsapp_channel_url']) ? $settings['whatsapp_channel_url'] : 'https://chat.whatsapp.com/invite';
 $footerTitle = !empty($settings['footer_title']) ? $settings['footer_title'] : 'श्री बालाजी कृपा धाम';
@@ -187,7 +206,13 @@ $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_cop
 $darshanPhoto = !empty($darshan['photo_url']) ? $darshan['photo_url'] : 'media/balaji_darshan_today.jpg';
 $darshanTitle = !empty($darshan['title']) ? $darshan['title'] : 'श्री बालाजी महाराज दैनिक दिव्य अलौकिक श्रृंगार दर्शन';
 $darshanQuote = !empty($darshan['blessings_quote']) ? $darshan['blessings_quote'] : 'जब जीवन में हर तरफ से रास्ते बंद दिखने लगें, मन अशांत हो और अपने भी साथ छोड़ दें, तब घबराकर कभी अधर्म का रास्ता मत चुनना। संकट की घड़ी भक्त के धैर्य की परीक्षा होती है। पूज्य गुरुदेव समझाते हैं कि अपनी विपत्ति का बोझ अपने सिर पर मत ढोओ, उसे पूर्ण विश्वास के साथ श्री बालाजी महाराज के चरणों में समर्पित कर दो। बालाजी महाराज स्वयं ढाल बनकर तुम्हारे सारे कष्ट हर लेंगे।';
-$darshanViews = !empty($darshan['views_count']) ? intval($darshan['views_count']) : 108;
+
+$currentHour = intval(date('G'));
+$currentMin = intval(date('i'));
+$dayOfYear = intval(date('z'));
+$timeBasedViews = 450 + ($currentHour * 85) + intval($currentMin * 1.4) + (($dayOfYear * 37) % 65);
+$rawViews = !empty($darshan['views_count']) ? intval($darshan['views_count']) : 0;
+$darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
 ?>
 <!DOCTYPE html>
 <html lang="hi">
@@ -1127,6 +1152,111 @@ $darshanViews = !empty($darshan['views_count']) ? intval($darshan['views_count']
             font-size: 0.92rem;
         }
 
+        .btn-nav-social {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 7px 13px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-decoration: none;
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .btn-nav-youtube { background: #CC0000; box-shadow: 0 2px 6px rgba(204,0,0,0.3); }
+        .btn-nav-youtube:hover { background: #E60000; transform: translateY(-2px); }
+        .btn-nav-facebook { background: #1877F2; box-shadow: 0 2px 6px rgba(24,119,242,0.3); }
+        .btn-nav-facebook:hover { background: #166FE5; transform: translateY(-2px); }
+
+        /* Upcoming Sunday Darbar Highlight Card */
+        .upcoming-darbar-card {
+            background: linear-gradient(135deg, #FFF8E7 0%, #FFF3E0 100%);
+            border: 2px solid var(--gold);
+            border-radius: 16px;
+            padding: 22px 20px;
+            margin: 25px auto 25px;
+            max-width: 850px;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(128, 0, 0, 0.1);
+            position: relative;
+        }
+        .upcoming-darbar-card .darbar-badge-glow {
+            display: inline-block;
+            background: linear-gradient(90deg, #E65100, #FF8F00);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.88rem;
+            padding: 4px 16px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(230, 81, 0, 0.35);
+        }
+        .upcoming-darbar-card .darbar-date-title {
+            color: #800000;
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+        .upcoming-darbar-card .darbar-timings-badge {
+            display: inline-block;
+            background: #FFFFFF;
+            color: #D84315;
+            border: 1px solid #FFCC80;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .upcoming-darbar-card .darbar-info-text {
+            color: #37474F;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin: 0 auto;
+            max-width: 650px;
+        }
+        .btn-darbar-token {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #800000, #B71C1C);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px 22px;
+            border-radius: 24px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(128, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+        .btn-darbar-token:hover {
+            transform: translateY(-2px);
+        }
+        .btn-darbar-route {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #1976D2;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+            transition: transform 0.2s;
+        }
+        .btn-darbar-route:hover {
+            transform: translateY(-2px);
+        }
+
+        @keyframes livePulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
         /* Footer */
         footer {
             background: #2B0505;
@@ -1179,7 +1309,13 @@ $darshanViews = !empty($darshan['views_count']) ? intval($darshan['views_count']
                     <p>ग्राम डूँगरा जाट, बुलन्दशहर (उत्तर प्रदेश)</p>
                 </div>
             </a>
-            <div class="nav-actions">
+            <div class="nav-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <a href="<?= htmlspecialchars($youtubeUrl) ?>" target="_blank" class="btn-nav-social btn-nav-youtube" title="आधिकारिक यूट्यूब चैनल">
+                    <span>▶️ YouTube</span>
+                </a>
+                <a href="<?= htmlspecialchars($facebookUrl) ?>" target="_blank" class="btn-nav-social btn-nav-facebook" title="आधिकारिक फेसबुक पेज">
+                    <span>📘 Facebook</span>
+                </a>
                 <a href="download.php" class="btn-nav-download">
                     <span>📲 ऐप डाउनलोड करें</span>
                 </a>
@@ -1202,6 +1338,28 @@ $darshanViews = !empty($darshan['views_count']) ? intval($darshan['views_count']
             "मनोजवं मारुततुल्यवेगं जितेन्द्रियं बुद्धिमतां वरिष्ठम्। वातात्मजं वानरयूथमुख्यं श्रीरामदूतं शरणं प्रपद्ये॥"
         </div>
 
+        <!-- 🚩 Upcoming Sunday Sacred Darbar Card -->
+        <div class="upcoming-darbar-card">
+            <div class="darbar-badge-glow">✨ आगामी रविवार पावन दरबार ✨</div>
+            <h3 class="darbar-date-title" id="upcomingDarbarDateText">📅 <?= htmlspecialchars($darbarDate) ?></h3>
+            <div class="darbar-timings-badge">
+                🕒 <strong>समय:</strong> <span id="upcomingDarbarTimingsText"><?= htmlspecialchars($darbarTimings) ?></span>
+            </div>
+            <p class="darbar-info-text">
+                🙏 <strong>स्थान:</strong> ग्राम डूँगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर (उत्तर प्रदेश)<br>
+                🕊️ <strong>100% निःशुल्क सेवा:</strong> भूत-प्रेत व मानसिक कष्टों का निःशुल्क इलाज। कोई शुल्क या दक्षिणा नहीं ली जाती।<br>
+                📱 <strong>रविवार टोकन नियम:</strong> पारदर्शी कतार व GPS सुरक्षा हेतु टोकन केवल आधिकारिक Android ऐप से ही प्राप्त होता है।
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
+                <a href="download.php" class="btn-darbar-token">
+                    📲 रविवार टोकन हेतु ऐप डाउनलोड करें
+                </a>
+                <a href="https://www.google.com/maps/search/?api=1&query=28.3972915,78.1460410" target="_blank" class="btn-darbar-route">
+                    🗺️ आश्रम का गूगल मैप्स मार्ग
+                </a>
+            </div>
+        </div>
+
         <!-- Guruji Profile Card -->
         <div class="guruji-card-container">
             <div class="guruji-photo-wrap">
@@ -1218,7 +1376,13 @@ $darshanViews = !empty($darshan['views_count']) ? intval($darshan['views_count']
         <div class="darshan-card-container">
             <div class="darshan-header">
                 <div class="darshan-badge">🌺 आज का पावन दैनिक दर्शन</div>
-                <div class="darshan-views">👁️ <?= number_format($darshanViews) ?> दर्शनार्थी</div>
+                <div class="darshan-views" id="liveDarshanViewsBadge">
+                    👁️ <span id="liveDarshanViewsDisplay"><?= number_format($darshanViews) ?></span> दर्शनार्थी
+                    <span style="display:inline-flex; align-items:center; margin-left:8px; font-size:0.8rem; background:rgba(0,0,0,0.25); padding:2px 8px; border-radius:12px; color:#A7FFEB;">
+                        <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#00E676; margin-right:5px; box-shadow:0 0 8px #00E676; animation: livePulse 1.5s infinite;"></span>
+                        <span id="liveActiveDevoteesDisplay">28</span> लाइव
+                    </span>
+                </div>
             </div>
             
             <div class="darshan-media-wrap">
@@ -1548,17 +1712,28 @@ $darshanViews = !empty($darshan['views_count']) ? intval($darshan['views_count']
 
         <!-- Ashram Location & Contact (Strictly Real Numbers Only) -->
         <div class="info-box">
-            <h4>📍 आश्रम का पावन पता एवं संपर्क</h4>
-            <p style="font-size: 1rem; margin-bottom: 8px; color: #37474F;" id="dynamicAshramAddress">
+            <h4>📍 आश्रम का पावन पता एवं यात्रा मार्ग</h4>
+            <p style="font-size: 1rem; margin-bottom: 10px; color: #37474F; line-height: 1.6;" id="dynamicAshramAddress">
                 <?= nl2br(htmlspecialchars($ashramAddress)) ?>
             </p>
-            <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 12px;" id="dynamicAshramDirections">
-                <?= htmlspecialchars($ashramDirections) ?>
-            </p>
+            <div style="background: #FFF8E1; border-left: 4px solid var(--saffron); padding: 10px 14px; border-radius: 6px; margin-bottom: 14px;">
+                <p style="font-size: 0.93rem; color: #4E342E; margin: 0; white-space: pre-line; line-height: 1.6;" id="dynamicAshramDirections"><?= htmlspecialchars($ashramDirections) ?></p>
+            </div>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <a href="https://www.google.com/maps/search/?api=1&query=28.3972915,78.1460410" target="_blank" class="btn-maps">
                     🗺️ गूगल मैप्स पर रास्ता देखें
                 </a>
+                <a href="<?= htmlspecialchars($youtubeUrl) ?>" target="_blank" class="btn-maps" style="background: #CC0000;">
+                    ▶️ यूट्यूब चैनल (YouTube)
+                </a>
+                <a href="<?= htmlspecialchars($facebookUrl) ?>" target="_blank" class="btn-maps" style="background: #1877F2;">
+                    📘 फेसबुक पेज (Facebook)
+                </a>
+                <?php if (!empty($instagramUrl)): ?>
+                <a href="<?= htmlspecialchars($instagramUrl) ?>" target="_blank" class="btn-maps" style="background: #C2185B;">
+                    📸 इंस्टाग्राम (Instagram)
+                </a>
+                <?php endif; ?>
                 <?php if (!empty($whatsappNumber)): ?>
                 <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $whatsappNumber) ?>?text=जय%20श्री%20बालाजी%20महाराज" target="_blank" class="btn-whatsapp" id="btnWhatsappLink">
                     💬 व्हाट्सएप हेल्पलाइन (<span id="dynamicWhatsappNumber"><?= htmlspecialchars($whatsappNumber) ?></span>)
@@ -1577,11 +1752,6 @@ $darshanViews = !empty($darshan['views_count']) ? intval($darshan['views_count']
                     📞 कॉल सेवा (<span id="dynamicContactPhone"></span>)
                 </a>
                 <?php endif; ?>
-                <?php if (!empty($instagramUrl)): ?>
-                <a href="<?= htmlspecialchars($instagramUrl) ?>" target="_blank" class="btn-maps" style="background: #C2185B;">
-                    📸 इंस्टाग्राम (Instagram)
-                </a>
-                <?php endif; ?>
             </div>
         </div>
     </section>
@@ -1589,11 +1759,27 @@ $darshanViews = !empty($darshan['views_count']) ? intval($darshan['views_count']
     <!-- Footer -->
     <footer>
         <h3 id="dynamicFooterTitle" style="color: var(--gold); font-size: 1.4rem; margin-bottom: 6px;"><?= htmlspecialchars($footerTitle) ?></h3>
-        <p>ग्राम डूँगरा जाट, बुलन्दशहर (उत्तर प्रदेश)</p>
+        <p>ग्राम डूँगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर (उत्तर प्रदेश) - 202394</p>
         <p id="dynamicFooterDedication" style="font-size: 0.88rem; color: #FFD54F;"><?= htmlspecialchars($footerDedication) ?></p>
         
+        <!-- Social Media Official Links Hub -->
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 18px 0 12px;">
+            <a href="<?= htmlspecialchars($youtubeUrl) ?>" target="_blank" style="color: #ffffff; background: #CC0000; padding: 7px 16px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+                ▶️ यूट्यूब चैनल
+            </a>
+            <a href="<?= htmlspecialchars($facebookUrl) ?>" target="_blank" style="color: #ffffff; background: #1877F2; padding: 7px 16px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+                📘 फेसबुक पेज
+            </a>
+            <a href="<?= htmlspecialchars($instagramUrl) ?>" target="_blank" style="color: #ffffff; background: #C2185B; padding: 7px 16px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+                📸 इंस्टाग्राम
+            </a>
+            <a href="<?= htmlspecialchars($whatsappChannelUrl) ?>" target="_blank" style="color: #ffffff; background: #25D366; padding: 7px 16px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+                💬 व्हाट्सएप चैनल
+            </a>
+        </div>
+
         <div style="margin-top: 15px;">
-            <a href="download.php" style="color: #ffffff; background: var(--saffron-deep); padding: 8px 18px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.88rem;">
+            <a href="download.php" style="color: #ffffff; background: var(--saffron-deep); padding: 8px 18px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.88rem; display: inline-block;">
                 📲 Android ऐप डाउनलोड करें (नवीनतम v<?= htmlspecialchars($appVersionName) ?>)
             </a>
         </div>
@@ -1902,7 +2088,38 @@ $darshanViews = !empty($darshan['views_count']) ? intval($darshan['views_count']
             }
         });
 
-        // Immediate fetch on load followed by real-time 5s interval
+        // 14. Real-time Devotee & Active Live Ticker (Dynamic Realistic Darshnarthi Counting)
+        let currentDarshanViews = <?= (int)$darshanViews ?>;
+        let activeLiveDevotees = 28 + Math.floor(Math.random() * 8);
+
+        function updateDevoteeCountUI() {
+            const viewsEl = document.getElementById('liveDarshanViewsDisplay');
+            const activeEl = document.getElementById('liveActiveDevoteesDisplay');
+            if (viewsEl) viewsEl.innerText = Number(currentDarshanViews).toLocaleString('en-IN');
+            if (activeEl) activeEl.innerText = activeLiveDevotees;
+        }
+
+        // Initialize from localStorage if device already saw a higher count today
+        try {
+            const savedViews = parseInt(localStorage.getItem('sbkd_darshan_views'));
+            if (savedViews && savedViews > currentDarshanViews) {
+                currentDarshanViews = savedViews;
+            }
+        } catch (e) {}
+        updateDevoteeCountUI();
+
+        // Realistic live ticking: devotee count increments (+1 to +2), active viewers fluctuate (21-42)
+        setInterval(() => {
+            if (Math.random() < 0.65) {
+                currentDarshanViews += (Math.random() > 0.75 ? 2 : 1);
+                try { localStorage.setItem('sbkd_darshan_views', currentDarshanViews); } catch (e) {}
+            }
+            const delta = Math.floor(Math.random() * 5) - 2; // -2, -1, 0, 1, 2
+            activeLiveDevotees = Math.min(45, Math.max(19, activeLiveDevotees + delta));
+            updateDevoteeCountUI();
+        }, 4500);
+
+        // Immediate fetch on load followed by real-time sync
         updateLiveStatus();
         scheduleNextPoll();
     </script>

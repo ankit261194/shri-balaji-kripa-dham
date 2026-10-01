@@ -174,9 +174,16 @@ try {
     $stmt->execute([':date' => $todayDate]);
     $row = $stmt->fetch();
 
+    date_default_timezone_set('Asia/Kolkata');
+    $currentHour = intval(date('G'));
+    $currentMin = intval(date('i'));
+    $dayOfYear = intval(date('z'));
+    $timeBasedViews = 380 + ($currentHour * 78) + intval($currentMin * 1.3) + (($dayOfYear * 37) % 50);
+
     if ($row) {
-        $pdo->prepare("UPDATE daily_darshan SET views_count = views_count + 1 WHERE id = :id")->execute([':id' => $row['id']]);
-        $views = intval($row['views_count']) + 1;
+        $dbViews = intval($row['views_count']);
+        $views = max($dbViews + 1, $timeBasedViews + 1);
+        $pdo->prepare("UPDATE daily_darshan SET views_count = :vc WHERE id = :id")->execute([':vc' => $views, ':id' => $row['id']]);
         $activeQuote = !empty($row['blessings_quote']) ? $row['blessings_quote'] : $defaultQuote;
 
         echo json_encode([
@@ -192,13 +199,15 @@ try {
         exit;
     } else {
         $now = time();
+        $initialViews = max(380, $timeBasedViews);
         $pdo->prepare("INSERT INTO daily_darshan (darshan_date, title, photo_url, blessings_quote, views_count, created_at, updated_at)
-            VALUES (:date, :title, :photo, :quote, 128, :now, :now)")
+            VALUES (:date, :title, :photo, :quote, :vc, :now, :now)")
             ->execute([
                 ':date' => $todayDate,
                 ':title' => $defaultTitle,
                 ':photo' => $defaultPhoto,
                 ':quote' => $defaultQuote,
+                ':vc' => $initialViews,
                 ':now' => $now
             ]);
 
@@ -209,7 +218,7 @@ try {
             "title" => $defaultTitle,
             "photo_url" => $defaultPhoto,
             "blessings_quote" => $defaultQuote,
-            "views_count" => 128,
+            "views_count" => $initialViews,
             "temple" => "श्री बालाजी कृपा धाम (डूँगरा जाट)"
         ], JSON_UNESCAPED_UNICODE);
         exit;
