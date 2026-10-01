@@ -399,24 +399,6 @@ fun FaceTokenRegistrationScreen(
         }
     }
 
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            try {
-                cameraLauncher.launch(null)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                errorMessage = if (isHindi) "कैमरा खोलने में त्रुटि: ${e.message}" else "Camera error: ${e.message}"
-            }
-        } else {
-            errorMessage = if (isHindi)
-                "कैमरा अनुमति अस्वीकृत: कृपया सेटिंग्स से अनुमति दें या नीचे 'गैलरी से फोटो चुनें' बटन दबाएं।"
-            else
-                "Camera permission denied. Please allow camera in settings or choose from gallery."
-        }
-    }
-
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
     ) { uri ->
@@ -436,6 +418,27 @@ fun FaceTokenRegistrationScreen(
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            try {
+                cameraLauncher.launch(null)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage = if (isHindi) "कैमरा खोलने में त्रुटि: ${e.message}" else "Camera error: ${e.message}"
+            }
+        } else {
+            errorMessage = if (isHindi)
+                "कैमरा उपलब्ध नहीं है। आप नीचे 'गैलरी से फोटो चुनें' द्वारा फोटो लगा सकते हैं।"
+            else
+                "Camera not available. You can choose photo from gallery."
+            try {
+                galleryLauncher.launch("image/*")
+            } catch (_: Exception) {}
         }
     }
 

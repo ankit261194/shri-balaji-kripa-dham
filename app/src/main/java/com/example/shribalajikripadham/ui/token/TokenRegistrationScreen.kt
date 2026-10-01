@@ -95,6 +95,25 @@ fun TokenRegistrationScreen(
     var isResolvingLocationName by remember { mutableStateOf(false) }
     var autoFillBanner by remember { mutableStateOf<String?>(null) }
 
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context, android.Manifest.permission.CAMERA
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        )
+    }
+
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = TakeFrontPicturePreview()
     ) { bitmap ->
@@ -107,24 +126,6 @@ fun TokenRegistrationScreen(
             capturedBitmap = safeBmp
             capturedPhotoUri = DevoteePhotoHelper.saveDevoteePhoto(context, safeBmp, "devotee_selfie")
             errorMessage = null
-        }
-    }
-
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            try {
-                cameraLauncher.launch(null)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                errorMessage = if (isHindi) "कैमरा खोलने में त्रुटि हुई।" else "Error opening camera."
-            }
-        } else {
-            errorMessage = if (isHindi)
-                "कैमरा अनुमति अस्वीकृत: कृपया सेटिंग्स से अनुमति दें या नीचे गैलरी से फोटो चुनें।"
-            else
-                "Camera permission denied. Please allow camera in settings or pick from gallery."
         }
     }
 
@@ -146,7 +147,27 @@ fun TokenRegistrationScreen(
         }
     }
 
-    var showPermissionSettingsDialog by remember { mutableStateOf(false) }
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasCameraPermission = isGranted
+        if (isGranted) {
+            try {
+                cameraLauncher.launch(null)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                errorMessage = if (isHindi) "कैमरा खोलने में त्रुटि हुई।" else "Error opening camera."
+            }
+        } else {
+            errorMessage = if (isHindi)
+                "कैमरा उपलब्ध नहीं है। आप नीचे 'गैलरी से फोटो चुनें' द्वारा फोटो लगा सकते हैं।"
+            else
+                "Camera not available. You can choose photo from gallery."
+            try {
+                galleryLauncher.launch("image/*")
+            } catch (_: Exception) {}
+        }
+    }
 
     fun launchCameraSafely() {
         val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(
@@ -222,24 +243,7 @@ fun TokenRegistrationScreen(
         list.toTypedArray()
     }
 
-    var hasLocationPermission by remember {
-        mutableStateOf(
-            androidx.core.content.ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED ||
-            androidx.core.content.ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.ACCESS_COARSE_LOCATION
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        )
-    }
 
-    var hasCameraPermission by remember {
-        mutableStateOf(
-            androidx.core.content.ContextCompat.checkSelfPermission(
-                context, android.Manifest.permission.CAMERA
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        )
-    }
 
     fun triggerFreshLocationFix() {
         val locManager = context.getSystemService(Context.LOCATION_SERVICE) as? android.location.LocationManager
@@ -835,8 +839,8 @@ fun TokenRegistrationScreen(
                     }
                 }
 
-                // Missing Core Permissions Banner
-                if (!hasLocationPermission || !hasCameraPermission) {
+                // Missing Location Permission Banner (Only if Geofence is active and location is not granted)
+                if (!hasLocationPermission && settings.isGeofenceEnforced) {
                     Surface(
                         color = Color(0xFFFFF3E0),
                         shape = RoundedCornerShape(12.dp),
@@ -847,20 +851,20 @@ fun TokenRegistrationScreen(
                             modifier = Modifier.padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(text = "🔐", fontSize = 22.sp)
+                            Text(text = "📍", fontSize = 22.sp)
                             Spacer(modifier = Modifier.width(8.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = if (isHindi) "आवश्यक अनुमतियाँ बंद हैं" else "Permissions Disabled",
+                                    text = if (isHindi) "जीपीएस लोकेशन अनुमति" else "GPS Location Needed",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFE65100)
                                 )
                                 Text(
                                     text = if (isHindi)
-                                        "टोकन व फोटो हेतु लोकेशन और कैमरा अनुमति चालू करें।"
+                                        "आश्रम दूरी व रविवार टोकन सत्यापन हेतु लोकेशन चालू करें।"
                                     else
-                                        "Location & Camera permissions are required.",
+                                        "Location is required for Ashram token verification.",
                                     fontSize = 11.sp,
                                     color = Color(0xFFBF360C)
                                 )
@@ -868,7 +872,12 @@ fun TokenRegistrationScreen(
                             Spacer(modifier = Modifier.width(6.dp))
                             Button(
                                 onClick = {
-                                    showPermissionSettingsDialog = true
+                                    unifiedPermissionLauncher.launch(
+                                        arrayOf(
+                                            android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                            android.Manifest.permission.ACCESS_COARSE_LOCATION
+                                        )
+                                    )
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
@@ -1552,15 +1561,19 @@ fun TokenRegistrationScreen(
                                     SundayScheduleState.Open -> { /* Open! Proceed */ }
                                 }
 
-                                // 1b. Check Required Permissions
-                                if (!hasLocationPermission) {
-                                    showPermissionSettingsDialog = true
-                                    errorMessage = if (isHindi) "टोकन पंजीकरण हेतु लोकेशन अनुमति आवश्यक है।" else "Location permission is required."
+                                // 1b. Check Required Permissions & Devotee Photo
+                                if (settings.isGeofenceEnforced && !hasLocationPermission) {
+                                    unifiedPermissionLauncher.launch(
+                                        arrayOf(
+                                            android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                            android.Manifest.permission.ACCESS_COARSE_LOCATION
+                                        )
+                                    )
+                                    errorMessage = if (isHindi) "टोकन पंजीकरण हेतु लोकेशन (GPS) अनुमति आवश्यक है।" else "Location permission is required."
                                     return@Button
                                 }
-                                if (!hasCameraPermission) {
-                                    showPermissionSettingsDialog = true
-                                    errorMessage = if (isHindi) "टोकन पंजीकरण हेतु कैमरा अनुमति आवश्यक है।" else "Camera permission is required."
+                                if (capturedBitmap == null && capturedPhotoUri.isNullOrBlank()) {
+                                    errorMessage = if (isHindi) "कृपया टोकन हेतु भक्त की फोटो खींचें या नीचे गैलरी से चुनें।" else "Please take or pick devotee photo."
                                     return@Button
                                 }
 
@@ -1843,77 +1856,6 @@ fun TokenRegistrationScreen(
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Text(if (isHindi) "समझ गया / ठीक है" else "Got It", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 15.sp)
-                    }
-                }
-            )
-        }
-
-        // Alert Dialog: Mandatory Permissions Required
-        if (showPermissionSettingsDialog) {
-            AlertDialog(
-                onDismissRequest = { showPermissionSettingsDialog = false },
-                containerColor = Color.White,
-                icon = { Text("🔐", fontSize = 36.sp) },
-                title = {
-                    Text(
-                        text = if (isHindi) "अनुमतियाँ आवश्यक हैं" else "Permissions Required",
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF8B0000),
-                        fontSize = 18.sp
-                    )
-                },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = if (isHindi)
-                                "श्री बालाजी कृपा धाम के नियमों के अनुसार टोकन जनरेट करने के लिए निम्नलिखित अनुमतियाँ अनिवार्य हैं:"
-                            else
-                                "The following permissions are strictly required to generate your token:",
-                            fontSize = 14.sp,
-                            color = Color(0xFF212121)
-                        )
-                        Text(
-                            text = if (isHindi)
-                                "📍 1. लोकेशन (GPS): आश्रम दूरी (200मी / 30किमी) नियम सत्यापन हेतु।\n📷 2. कैमरा: भक्त की लाइव फोटो व टोकन दर्शन हेतु।"
-                            else
-                                "📍 1. Location (GPS): To verify Ashram distance policy.\n📷 2. Camera: For devotee live verification photo.",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp,
-                            color = Color(0xFF333333)
-                        )
-                        Text(
-                            text = if (isHindi)
-                                "कृपया '⚙️ सेटिंग्स में अनुमति दें' बटन दबाएं और Permissions में Location तथा Camera को Allow करें।"
-                            else
-                                "Please tap 'Open Settings' and allow Location and Camera permissions.",
-                            fontSize = 12.sp,
-                            color = Color.DarkGray
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showPermissionSettingsDialog = false
-                            try {
-                                val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                    data = android.net.Uri.fromParts("package", context.packageName, null)
-                                    flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-                                }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text(if (isHindi) "⚙️ सेटिंग्स में अनुमति दें" else "⚙️ Open Settings", fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showPermissionSettingsDialog = false }) {
-                        Text(if (isHindi) "रद्द करें" else "Cancel", color = Color.Gray)
                     }
                 }
             )
