@@ -1138,6 +1138,7 @@ fun AdminDashboardScreen(
             if (isSuper || (settings.canAdminViewPaymentHistory && admin.canManageExpenses)) {
                 allowedTabs.add(if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊")
             }
+            allowedTabs.add(if (isHindi) "🔥 हवन आवेदन" else "🔥 Havan Requests")
             if (isSuper) {
                 allowedTabs.add(if (isHindi) "सेवाएं ऑन/ऑफ" else "Services")
                 allowedTabs.add(if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar")
@@ -1843,6 +1844,13 @@ fun AdminDashboardScreen(
                                 isSuperAdmin = isSuper,
                                 scope = scope,
                                 context = context
+                            )
+                        }
+                        currentTabTitle == "🔥 हवन आवेदन" || currentTabTitle == "🔥 Havan Requests" -> {
+                            HavanLedgerTab(
+                                isHindi = isHindi,
+                                context = context,
+                                adminPin = "1234"
                             )
                         }
                         currentTabTitle == "त्रिमूर्ति क्लाउड सिंक ☁️" || currentTabTitle == "Triple Cloud Sync ☁️" || currentTabTitle == "Google Sheet 📊" || currentTabTitle == "Google Sheet बही-खाता 📊" -> {

@@ -47,6 +47,8 @@ $filesToSync = [
     "api/admin_auth.php",
     "api/status_service.php",
     "api/delete_parcha.php",
+    "api/havan_service.php",
+    "havan_admin.php",
     "media/balaji_darshan_today.jpg",
     "sync_apk.php"
 ];
