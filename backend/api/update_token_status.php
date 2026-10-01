@@ -160,37 +160,19 @@ try {
                 $fcmTokens = $fcmStmt->fetchAll(PDO::FETCH_COLUMN);
 
                 if (!empty($fcmTokens)) {
-                    $apiKey = 'AIzaSyDbJQvMUopfPb0at-_upRMnR6MjL6z9lRo';
-                    $fields = [
-                        'registration_ids' => $fcmTokens,
-                        'priority' => 'high',
-                        'notification' => [
-                            'title' => $title,
-                            'body' => $body,
-                            'sound' => 'default',
-                            'badge' => '1',
-                            'channel_id' => 'ashram_darbar_channel'
-                        ],
-                        'data' => [
-                            'type' => 'TOKEN_CALL',
-                            'token_number' => strval($tokenNumber),
-                            'patient_name' => $devotee['patient_name'],
-                            'status' => 'SERVING'
-                        ]
-                    ];
-                    $ch = curl_init();
-                    curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send');
-                    curl_setopt($ch, CURLOPT_POST, true);
-                    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                        'Authorization: key=' . $apiKey,
-                        'Content-Type: application/json'
-                    ]);
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fields));
-                    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-                    curl_exec($ch);
-                    curl_close($ch);
+                    if (file_exists(__DIR__ . '/send_fcm.php')) {
+                        require_once __DIR__ . '/send_fcm.php';
+                        if (function_exists('sendFcmV1')) {
+                            foreach ($fcmTokens as $fToken) {
+                                @sendFcmV1($fToken, $title, $body, [
+                                    'type' => 'TOKEN_CALL',
+                                    'token_number' => strval($tokenNumber),
+                                    'patient_name' => $devotee['patient_name'],
+                                    'status' => 'SERVING'
+                                ]);
+                            }
+                        }
+                    }
                 }
             }
         } catch (Exception $ex) {

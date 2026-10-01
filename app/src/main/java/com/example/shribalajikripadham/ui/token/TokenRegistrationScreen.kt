@@ -456,6 +456,20 @@ fun TokenRegistrationScreen(
         }
     }
 
+    // 🔔 Live Smart Token Calling Evaluation (Sound + Vibration + TTS Voice)
+    LaunchedEffect(existingToken, settings.runningTokenNumber) {
+        val tok = existingToken
+        if (tok != null && settings.runningTokenNumber > 0) {
+            try {
+                com.example.shribalajikripadham.util.SmartTokenAlertHelper.evaluateAndTriggerAlert(
+                    context = context,
+                    myToken = tok.tokenNumber,
+                    currentServing = settings.runningTokenNumber
+                )
+            } catch (e: Exception) {}
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(

@@ -117,9 +117,11 @@ if ($action === 'release_hold') {
     try {
         if (!empty($seatNumbers)) {
             $inClause = implode(',', array_map('intval', $seatNumbers));
-            $pdo->exec("UPDATE bus_seats SET seat_status = 'AVAILABLE', hold_expires_at = 0, held_by = '' WHERE yatra_date = '$yatraDate' AND seat_status = 'HELD' AND (held_by = '$deviceId' OR '$deviceId' = '') AND seat_number IN ($inClause)");
+            $stmt = $pdo->prepare("UPDATE bus_seats SET seat_status = 'AVAILABLE', hold_expires_at = 0, held_by = '' WHERE yatra_date = :ydate AND seat_status = 'HELD' AND (held_by = :devid OR :devid = '') AND seat_number IN ($inClause)");
+            $stmt->execute([':ydate' => $yatraDate, ':devid' => $deviceId]);
         } else {
-            $pdo->exec("UPDATE bus_seats SET seat_status = 'AVAILABLE', hold_expires_at = 0, held_by = '' WHERE yatra_date = '$yatraDate' AND seat_status = 'HELD' AND held_by = '$deviceId'");
+            $stmt = $pdo->prepare("UPDATE bus_seats SET seat_status = 'AVAILABLE', hold_expires_at = 0, held_by = '' WHERE yatra_date = :ydate AND seat_status = 'HELD' AND held_by = :devid");
+            $stmt->execute([':ydate' => $yatraDate, ':devid' => $deviceId]);
         }
         echo json_encode(["success" => true, "action" => "release_hold", "message" => "होल्ड निरस्त कर सीटें पुनः उपलब्ध कर दी गईं।"], JSON_UNESCAPED_UNICODE);
         exit;

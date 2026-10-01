@@ -101,7 +101,7 @@ if ($action === 'LOGIN') {
     $authenticatedAdmin = null;
 
     // Check Master Super Admin password
-    if ($password === 'Aa@8006518960' || $password === 'Balaji@2026' || $password === '123456') {
+    if ($password === 'Aa@8006518960' || $password === 'Balaji@2026') {
         $authenticatedAdmin = [
             "id" => "1",
             "name" => "अंकित चौधरी",

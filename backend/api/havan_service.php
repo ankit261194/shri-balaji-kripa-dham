@@ -93,9 +93,6 @@ if (strpos($clientIp, ',') !== false) {
  */
 function isHavanAdminAuthorized($input, $pdo) {
     $pin = trim($input['admin_pin'] ?? $_GET['admin_pin'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_PIN'] ?? '');
-    if ($pin === '1234') {
-        return ['name' => 'आश्रम मुख्य व्यवस्थापक', 'role' => 'SUPER_ADMIN', 'is_super' => true, 'can_manage_havan' => 1];
-    }
 
     if (!empty($pin)) {
         try {

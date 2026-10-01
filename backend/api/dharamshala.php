@@ -72,6 +72,20 @@ try {
         case 'list_rooms':
             $stmt = $pdo->query("SELECT * FROM dharamshala_rooms ORDER BY id ASC");
             $rooms = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            if (empty($rooms)) {
+                // Auto-seed initial authentic Ashram guest rooms
+                try {
+                    $pdo->exec("INSERT IGNORE INTO dharamshala_rooms (room_number, room_type, title_hindi, floor, capacity, daily_seva_rate, status, notes) VALUES
+                        ('101', 'NON_AC', 'कमरा नं 101 (भूतल, अटैच्ड शौचालय)', 'Ground', 4, 250.00, 'AVAILABLE', 'साफ-सुथरा बिस्तर, पंखा व अटैच्ड स्नानघर'),
+                        ('102', 'NON_AC', 'कमरा नं 102 (भूतल, अटैच्ड शौचालय)', 'Ground', 4, 250.00, 'AVAILABLE', 'साफ-सुथरा बिस्तर, पंखा व अटैच्ड स्नानघर'),
+                        ('103', 'NON_AC', 'कमरा नं 103 (भूतल)', 'Ground', 4, 250.00, 'AVAILABLE', 'हवादार कमरा, पवित्र वातावरण'),
+                        ('104', 'NON_AC', 'कमरा नं 104 (प्रथम तल)', 'First', 4, 250.00, 'AVAILABLE', 'प्रथम तल, शांत व सुरम्य वातावरण'),
+                        ('105', 'AC', 'कमरा नं 105 (एसी कक्ष, प्रथम तल)', 'First', 4, 500.00, 'AVAILABLE', 'वातानुकूलित (AC), डबल बेड, अटैच्ड टॉयलेट'),
+                        ('HALL-1', 'HALL_BED', 'मुख्य सत्संग भवन (सामूहिक विश्राम)', 'Ground', 25, 100.00, 'AVAILABLE', 'भक्तों हेतु सामूहिक गद्दा व कंबल व्यवस्था')");
+                    $stmt = $pdo->query("SELECT * FROM dharamshala_rooms ORDER BY id ASC");
+                    $rooms = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+                } catch (Exception $e) {}
+            }
             echo json_encode([
                 "success" => true,
                 "rooms" => $rooms,

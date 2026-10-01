@@ -79,7 +79,7 @@ fun LiveDarbarAndBhajanScreen(
     var playbackErrorMessage by remember { mutableStateOf<String?>(null) }
     var showLyricsDialog by remember { mutableStateOf<SacredTrack?>(null) }
     var cacheRefreshCounter by remember { mutableIntStateOf(0) }
-    var tracksList by remember { mutableStateOf<List<SacredTrack>>(emptyList()) }
+    var tracksList by remember { mutableStateOf<List<SacredTrack>>(com.example.shribalajikripadham.data.sacred.SACRED_TRACKS) }
     var isTracksLoading by remember { mutableStateOf(false) }
 
     val isVaniReciting by SacredOfflineVaniEngine.isReciting.collectAsState()
@@ -98,7 +98,8 @@ fun LiveDarbarAndBhajanScreen(
 
     LaunchedEffect(Unit) {
         ashramSettings = repository.getSettings()
-        tracksList = repository.getSacredTracks(publishedOnly = true)
+        val localDbTracks = repository.getSacredTracks(publishedOnly = true)
+        tracksList = if (localDbTracks.isNotEmpty()) localDbTracks else com.example.shribalajikripadham.data.sacred.SACRED_TRACKS
         scope.launch {
             isTracksLoading = true
             val (ok, list) = repository.syncSacredTracksFromHostinger(admin = false)
