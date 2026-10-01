@@ -38,6 +38,7 @@ enum class AppScreen {
     YATRA_EXPENSES,
     ADMIN,
     ASHRAM_INFO,
+    TRAVEL_GUIDE,
     PARCHAS,
     LIVE_DARBAR,
     HALL_DISPLAY,
@@ -134,6 +135,7 @@ fun MainNavigation(
                     }
                 },
                 onNavigateToInfo = { navigateTo(AppScreen.ASHRAM_INFO) },
+                onNavigateToTravelGuide = { navigateTo(AppScreen.TRAVEL_GUIDE) },
                 onNavigateToAdmin = { navigateTo(AppScreen.ADMIN) },
                 onNavigateToParchas = { navigateTo(AppScreen.PARCHAS) },
                 onNavigateToLiveDarbar = { navigateTo(AppScreen.LIVE_DARBAR) },
@@ -224,6 +226,12 @@ fun MainNavigation(
             )
 
             AppScreen.ASHRAM_INFO -> AshramInfoScreen(
+                isHindi = isHindi,
+                onBack = { navigateBack() },
+                onNavigateToTravelGuide = { navigateTo(AppScreen.TRAVEL_GUIDE) }
+            )
+
+            AppScreen.TRAVEL_GUIDE -> com.example.shribalajikripadham.ui.info.AshramTravelGuideScreen(
                 isHindi = isHindi,
                 onBack = { navigateBack() }
             )

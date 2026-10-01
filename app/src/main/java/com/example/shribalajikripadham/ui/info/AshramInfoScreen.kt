@@ -30,7 +30,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun AshramInfoScreen(
     isHindi: Boolean,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToTravelGuide: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val repository = remember { AshramRepository(context) }
@@ -242,43 +243,90 @@ fun AshramInfoScreen(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(3.dp),
+                border = BorderStroke(1.2.dp, GoldDark.copy(alpha = 0.35f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = if (isHindi) "आश्रम का पता एवं मार्ग" else "Ashram Address & Directions",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaroonAccent
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (isHindi) "🗺️ आश्रम का पता एवं मार्ग" else "🗺️ Ashram Address & Directions",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonAccent
+                        )
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = if (isHindi)
-                            "श्री बालाजी कृपा धाम\nग्राम डुंगरा जाट, जिला बुलंदशहर, उत्तर प्रदेश"
+                            "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील जहांगीराबाद, जिला बुलन्दशहर (उत्तर प्रदेश) - 202394"
                         else
-                            "Shri Balaji Kripa Dham\nGram Dungra Jaat, District Bulandshahr, Uttar Pradesh",
+                            "Shri Balaji Kripa Dham\nGram Dungra Jaat, Tehsil Jahangirabad, Dist. Bulandshahr (U.P.) - 202394",
                         fontSize = 14.sp,
                         color = TextPrimaryDark,
                         fontWeight = FontWeight.Medium,
                         lineHeight = 20.sp
                     )
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    Button(
-                        onClick = {
-                            val uri = Uri.parse("geo:28.3972915,78.1460410?q=28.3972915,78.1460410(Shri+Balaji+Kripa+Dham)")
-                            val intent = Intent(Intent.ACTION_VIEW, uri)
-                            context.startActivity(intent)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
-                        shape = RoundedCornerShape(12.dp),
+                    Surface(
+                        color = Color(0xFFF1F8E9),
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = if (isHindi) "🗺️ गूगल मैप्स पर दिशा देखें" else "🗺️ Open in Google Maps",
-                            fontWeight = FontWeight.Bold
-                        )
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = if (isHindi) "🚆 नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर (BSC) (~30 किमी)" else "🚆 Nearest Railway Station: Bulandshahr Only (BSC) (~30 km)",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0277BD)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isHindi) "🏙️ निकटवर्ती प्रमुख 3 शहर: जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी) • अनूपशहर (~16 किमी)" else "🏙️ Nearby Cities: Jahangirabad (~10 km) • Bulandshahr (~30 km) • Anoopshahr (~16 km)",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF2E7D32)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                val uri = Uri.parse("geo:28.3972915,78.1460410?q=28.3972915,78.1460410(Shri+Balaji+Kripa+Dham,+Dungra+Jaat)")
+                                val intent = Intent(Intent.ACTION_VIEW, uri)
+                                context.startActivity(intent)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1.2f)
+                        ) {
+                            Text(
+                                text = if (isHindi) "🗺️ गूगल मैप्स" else "🗺️ Google Maps",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.5.sp
+                            )
+                        }
+
+                        Button(
+                            onClick = onNavigateToTravelGuide,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1.3f)
+                        ) {
+                            Text(
+                                text = if (isHindi) "🧭 मार्ग गाइड देखें" else "🧭 Route Guide",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.5.sp,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }

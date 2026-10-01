@@ -152,6 +152,7 @@ fun HomeScreen(
     onNavigateToTuesdayToken: () -> Unit = onNavigateToFaceToken,
     onNavigateToYatra: () -> Unit,
     onNavigateToInfo: () -> Unit,
+    onNavigateToTravelGuide: () -> Unit = onNavigateToInfo,
     onNavigateToAdmin: () -> Unit,
     onNavigateToParchas: () -> Unit = {},
     onNavigateToYatraExpenses: () -> Unit = {},
@@ -607,6 +608,10 @@ fun HomeScreen(
                                 drawerState.close()
                                 homeScrollState.scrollTo(0)
                             }
+                        }))
+                        add(NavDrawerItem("🗺️", if (isHindi) "आश्रम कैसे पहुँचें? (मार्ग गाइड)" else "How to Reach Ashram (Travel Guide)", {
+                            scope.launch { drawerState.close() }
+                            onNavigateToTravelGuide()
                         }))
                         add(NavDrawerItem("📖", if (isHindi) "ऐप संपूर्ण मार्गदर्शिका (PDF)" else "Devotee User Manual (PDF)", {
                             scope.launch { drawerState.close() }
@@ -1648,6 +1653,7 @@ fun HomeScreen(
                             isCompact = isCompact,
                             onNavigateToParchas = onNavigateToParchas,
                             onNavigateToInfo = onNavigateToInfo,
+                            onNavigateToTravelGuide = onNavigateToTravelGuide,
                             onNavigateToToken = onNavigateToToken,
                             onNavigateToFaceToken = onNavigateToFaceToken,
                             onNavigateToYatra = onNavigateToYatra,
@@ -5537,6 +5543,7 @@ fun DevoteeAshramAboutTab(
     isCompact: Boolean,
     onNavigateToParchas: () -> Unit,
     onNavigateToInfo: () -> Unit,
+    onNavigateToTravelGuide: () -> Unit,
     onNavigateToToken: () -> Unit,
     onNavigateToFaceToken: () -> Unit,
     onNavigateToYatra: () -> Unit,
@@ -5679,7 +5686,75 @@ fun DevoteeAshramAboutTab(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // 3. Guruji Profile & Darbar Mission
+        // 3. Smart Travel Guide Card ("आश्रम कैसे पहुँचें?")
+        Card(
+            colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
+            shape = currentTheme.cardShape,
+            elevation = CardDefaults.cardElevation(currentTheme.cardElevation),
+            border = BorderStroke(currentTheme.cardBorderWidth, currentTheme.cardBorderColor),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = currentTheme.buttonShape,
+                        color = currentTheme.primaryColor.copy(alpha = 0.12f),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("🗺️", fontSize = 24.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (isHindi) "आश्रम कैसे पहुँचें? (मार्ग गाइड)" else "How to Reach Ashram (Travel Guide)",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = currentTheme.primaryColor
+                        )
+                        Text(
+                            text = if (isHindi) "रेलवे स्टेशन, बस मार्ग व लाइव GPS नेविगेशन" else "Railway Station, Bus Routes & Live GPS",
+                            fontSize = 11.5.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = if (isHindi)
+                        "एकमात्र नजदीकी रेलवे स्टेशन: बुलन्दशहर (BSC) ~30 किमी।\nनिकटवर्ती प्रमुख शहर: जहांगीराबाद (~10 किमी), बुलन्दशहर (~30 किमी), अनूपशहर (~16 किमी)। सीधा गूगल मैप्स नेविगेशन उपलब्ध है।"
+                    else
+                        "Nearest Railway Station: Bulandshahr (BSC) ~30 km.\nNearby Cities: Jahangirabad (~10 km), Bulandshahr (~30 km), Anoopshahr (~16 km). Direct GPS navigation available.",
+                    fontSize = 12.sp,
+                    color = Color(0xFF333333),
+                    lineHeight = 17.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = onNavigateToTravelGuide,
+                    colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                    shape = currentTheme.buttonShape,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 11.dp)
+                ) {
+                    Text(
+                        text = if (isHindi) "🗺️ संपूर्ण मार्ग गाइड व GPS मैप खोलें ➔" else "Open Route Guide & GPS Map ➔",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // 4. Guruji Profile & Darbar Mission
         RenderClassicSection(
             sectionId = UiSectionConfig.ID_DARBAR_STATUS,
             settings = settings,
