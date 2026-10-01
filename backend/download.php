@@ -27,8 +27,9 @@ if (file_exists($targetFile) && filesize($targetFile) > 10000000) {
     header("Content-Type: application/vnd.android.package-archive");
     header("Content-Disposition: attachment; filename=\"{$filename}\"");
     header("Accept-Ranges: bytes");
-    header("Cache-Control: public, max-age=3600");
-    header("Pragma: public");
+    header("Cache-Control: no-cache, no-store, must-revalidate, max-age=0");
+    header("Pragma: no-cache");
+    header("Expires: 0");
 
     if (isset($_SERVER['HTTP_RANGE'])) {
         list($param, $range) = explode('=', $_SERVER['HTTP_RANGE']);

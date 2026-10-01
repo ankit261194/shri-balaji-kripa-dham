@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 98,
-  "version_code": 98,
-  "latest_version_name": "2.56.23",
-  "version_name": "2.56.23",
-  "update_notes_hindi": "v2.56.23 (Build 98): 📲 प्रीमियम WhatsApp स्टेटस शेयरिंग (अब सादा टेक्स्ट नहीं, बल्कि श्री बालाजी व हनुमान जी के आकर्षक HD फोटो पोस्टर सीधे WhatsApp स्टेटस पर लगेंगे), 🪔 स्टेटस बार से अनावश्यक बटन हटाकर केवल पावन दर्शन व स्टोरीज़ रखी गईं, 📑 साइड मेनू से 'पेज 1, 2, 3' की उलझन खत्म कर सीधी व स्पष्ट सेवाएं जोड़ी गईं, एवं 🧹 होम स्क्रीन से अतिरिक्त स्विच व भीड़भाड़ हटाकर ऐप को अत्यंत सरल व सुंदर बनाया गया।",
-  "update_notes_english": "v2.56.23 (Build 98): 📲 Premium WhatsApp Status Sharing (Generates divine HD Balaji & Hanuman Ji graphic posters directly for WhatsApp Status, no plain text), 🪔 Status Bar restricted purely to visual sacred stories, 📑 Removed confusing 'Page 1, 2, 3' drawer toggles in favor of direct service points, and 🧹 Eliminated home screen clutter for a clean, effortless experience.",
+  "latest_version_code": 99,
+  "version_code": 99,
+  "latest_version_name": "2.56.24",
+  "version_name": "2.56.24",
+  "update_notes_hindi": "v2.56.24 (Build 99): 🪔 होम स्क्रीन से 4 अनावश्यक टाइल्स हटाकर केवल जरूरी सेवाएं रखी गईं, 📲 प्रीमियम WhatsApp स्टेटस शेयरिंग (अब सादा टेक्स्ट नहीं, बल्कि श्री बालाजी व हनुमान जी के आकर्षक HD फोटो पोस्टर सीधे WhatsApp स्टेटस पर लगेंगे), 📑 साइड मेनू से 'पेज 1, 2, 3' की उलझन खत्म कर सीधी सेवाएं जोड़ी गईं, एवं 🔔 पुश नोटिफिकेशन आइकॉन व केवल रविवार दरबार संपन्न अलर्ट सुधार।",
+  "update_notes_english": "v2.56.24 (Build 99): 🪔 Removed 4 redundant quick tiles from home screen, 📲 Premium WhatsApp Status Sharing (HD image posters for WhatsApp Status), 📑 Streamlined drawer menu without page numbers, and 🔔 Notification icon and Sunday-only Darbar completion alerts.",
   "apk_url": "https://shribalajikripadham.online/download.php?dl=1",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false

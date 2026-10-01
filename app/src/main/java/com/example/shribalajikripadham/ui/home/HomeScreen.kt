@@ -1378,11 +1378,10 @@ fun HomeScreen(
                         )
                         Spacer(modifier = Modifier.height(sectionSpacing))
 
-                        // IF CLASSIC_DARBAR: render core darbar sections
+                        // IF CLASSIC_DARBAR: render core darbar sections (Clean, uncluttered, no duplicate 4-tile hub)
                         if (activeLayout == AppUiLayout.CLASSIC_DARBAR) {
                             val classicDarbarSectionIds = listOf(
                                 UiSectionConfig.ID_EMERGENCY_NOTICE,
-                                UiSectionConfig.ID_QUICK_SERVICES,
                                 UiSectionConfig.ID_FREE_TREATMENT_BOX
                             )
                             for (secId in classicDarbarSectionIds) {

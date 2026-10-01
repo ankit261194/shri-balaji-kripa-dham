@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 86,
-  "version_code": 86,
-  "latest_version_name": "2.56.11",
-  "version_name": "2.56.11",
-  "update_notes_hindi": "v2.56.11 (Build 86): 🚩 मंगलवार बुलन्दशहर दरबार टोकन सिस्टम; सुपर एडमिन पूर्ण नियंत्रण (चालू/बंद व 1-क्लिक GPS सेटिंग); वेबसाइट पर मंगलवार लाइव टोकन काउंटर।",
-  "update_notes_english": "v2.56.11 (Build 86): 🚩 Tuesday Bulandshahr Darbar Token System; Super Admin full control (Toggle On/Off & 1-click GPS setup); Tuesday live token counter on website.",
-  "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
+  "latest_version_code": 99,
+  "version_code": 99,
+  "latest_version_name": "2.56.24",
+  "version_name": "2.56.24",
+  "update_notes_hindi": "v2.56.24 (Build 99): 🪔 होम स्क्रीन से 4 अनावश्यक टाइल्स हटाकर केवल जरूरी सेवाएं रखी गईं, 📲 प्रीमियम WhatsApp स्टेटस शेयरिंग (अब सादा टेक्स्ट नहीं, बल्कि श्री बालाजी व हनुमान जी के आकर्षक HD फोटो पोस्टर सीधे WhatsApp स्टेटस पर लगेंगे), 📑 साइड मेनू से 'पेज 1, 2, 3' की उलझन खत्म कर सीधी सेवाएं जोड़ी गईं, एवं 🔔 पुश नोटिफिकेशन आइकॉन व केवल रविवार दरबार संपन्न अलर्ट सुधार।",
+  "update_notes_english": "v2.56.24 (Build 99): 🪔 Removed 4 redundant quick tiles from home screen, 📲 Premium WhatsApp Status Sharing (HD image posters for WhatsApp Status), 📑 Streamlined drawer menu without page numbers, and 🔔 Notification icon and Sunday-only Darbar completion alerts.",
+  "apk_url": "https://shribalajikripadham.online/download.php?dl=1",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }
