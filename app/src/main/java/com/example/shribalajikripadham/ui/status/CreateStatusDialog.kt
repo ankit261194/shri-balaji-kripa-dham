@@ -11,6 +11,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -86,16 +88,20 @@ fun CreateStatusDialog(
         }
     }
 
+    // Selected Deity Wallpaper (Defaults to today's sacred day theme)
+    var selectedDeityRes by remember { mutableIntStateOf(StatusPosterGenerator.getDefaultDeityResForDay()) }
+
     // Live Generated Poster Preview
     var posterPreview by remember { mutableStateOf<Bitmap?>(null) }
 
-    LaunchedEffect(devoteeBitmap, userName, userCity) {
+    LaunchedEffect(devoteeBitmap, userName, userCity, selectedDeityRes) {
         val bmp = StatusPosterGenerator.generateBhaktiPoster(
             context = context,
             devoteePhoto = devoteeBitmap,
             devoteeName = userName,
             devoteeCity = userCity,
-            suvichar = suvichar
+            suvichar = suvichar,
+            deityImageRes = selectedDeityRes
         )
         posterPreview = bmp
     }
@@ -171,6 +177,78 @@ fun CreateStatusDialog(
                         } ?: run {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(color = Color(0xFFFFD54F))
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 🪔 Selectable Deity Wallpapers Row
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = if (isHindi) "🪔 भगवान का पावन स्वरूप चुनें:" else "Select Sacred Deity:",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = currentTheme.primaryColor,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(StatusPosterGenerator.DEITY_WALLPAPERS) { deity ->
+                                val isSelected = selectedDeityRes == deity.resId
+                                Card(
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(
+                                        if (isSelected) 2.5.dp else 1.dp,
+                                        if (isSelected) currentTheme.primaryColor else Color.LightGray.copy(alpha = 0.6f)
+                                    ),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isSelected) currentTheme.primaryColor.copy(alpha = 0.08f) else Color.White
+                                    ),
+                                    modifier = Modifier
+                                        .width(135.dp)
+                                        .clickable { selectedDeityRes = deity.resId }
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier.padding(6.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(62.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                        ) {
+                                            androidx.compose.foundation.Image(
+                                                painter = androidx.compose.ui.res.painterResource(id = deity.resId),
+                                                contentDescription = deity.titleHindi,
+                                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                            if (isSelected) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxSize()
+                                                        .background(Color.Black.copy(alpha = 0.3f)),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text("✓", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+                                                }
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = deity.titleHindi,
+                                            fontSize = 11.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) currentTheme.primaryColor else Color(0xFF263238),
+                                            textAlign = TextAlign.Center,
+                                            maxLines = 2,
+                                            lineHeight = 13.sp
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

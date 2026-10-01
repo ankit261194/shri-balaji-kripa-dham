@@ -122,6 +122,31 @@ object StatusPosterGenerator {
         }
     }
 
+    data class DeityWallpaperOption(
+        val id: String,
+        val titleHindi: String,
+        val resId: Int
+    )
+
+    val DEITY_WALLPAPERS = listOf(
+        DeityWallpaperOption("balaji", "श्री बालाजी दिव्य दर्शन", R.drawable.img_balaji_darshan),
+        DeityWallpaperOption("hanuman_veer", "श्री संकटमोचन वीर हनुमान", R.drawable.img_hanuman_veer),
+        DeityWallpaperOption("panchmukhi", "पंचमुखी हनुमान जी", R.drawable.img_panchmukhi_hanuman),
+        DeityWallpaperOption("ram_darbar", "श्री राम दरबार", R.drawable.img_ram_darbar),
+        DeityWallpaperOption("mehandipur", "श्री मेहंदीपुर बालाजी", R.drawable.img_mehandipur_balaji)
+    )
+
+    fun getDefaultDeityResForDay(calendar: Calendar = Calendar.getInstance()): Int {
+        return when (calendar.get(Calendar.DAY_OF_WEEK)) {
+            Calendar.SUNDAY -> R.drawable.img_balaji_darshan
+            Calendar.TUESDAY -> R.drawable.img_hanuman_veer
+            Calendar.WEDNESDAY -> R.drawable.img_panchmukhi_hanuman
+            Calendar.MONDAY, Calendar.THURSDAY -> R.drawable.img_ram_darbar
+            Calendar.FRIDAY, Calendar.SATURDAY -> R.drawable.img_mehandipur_balaji
+            else -> R.drawable.img_balaji_darshan
+        }
+    }
+
     /**
      * Renders a 9:16 (1080x1920) high-resolution WhatsApp Story & Status Poster.
      * Contains locked Balaji Maharaj, Guruji, Ashram Logo, Suvichar, scannable QR Code,
@@ -134,7 +159,8 @@ object StatusPosterGenerator {
         devoteeCity: String,
         suvichar: DailySuvichar,
         primaryHex: Int = 0xFF5C001E.toInt(),
-        secondaryHex: Int = 0xFFE65100.toInt()
+        secondaryHex: Int = 0xFFE65100.toInt(),
+        deityImageRes: Int? = null
     ): Bitmap {
         val width = 1080
         val height = 1920
@@ -236,44 +262,76 @@ object StatusPosterGenerator {
         }
         canvas.drawRoundRect(cardRect, 32f, 32f, cardBorder)
 
-        // Draw Balaji Maharaj Divine Portrait
-        if (logoBitmap != null) {
-            val balajiSize = 440
-            val scaledBalaji = Bitmap.createScaledBitmap(logoBitmap, balajiSize, balajiSize, true)
-            val balajiLeft = (width - balajiSize) / 2f
-            canvas.drawBitmap(scaledBalaji, balajiLeft, 285f, null)
+        // Resolve Deity Portrait (Ultra HD Day-wise / Selected Deity)
+        val effDeityRes = deityImageRes ?: getDefaultDeityResForDay()
+        val deityBitmap = try {
+            BitmapFactory.decodeResource(context.resources, effDeityRes)
+        } catch (e: Exception) {
+            null
+        } ?: logoBitmap
 
-            // Circular frame around Balaji
-            val circleBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        // Draw Deity Portrait with Temple Arch Frame & Double Gold Border
+        if (deityBitmap != null) {
+            val portraitWidth = 580f
+            val portraitHeight = 500f
+            val portraitLeft = (width - portraitWidth) / 2f
+            val portraitTop = 275f
+            val portraitRect = RectF(portraitLeft, portraitTop, portraitLeft + portraitWidth, portraitTop + portraitHeight)
+
+            canvas.save()
+            val clipPath = Path().apply {
+                addRoundRect(portraitRect, 24f, 24f, Path.Direction.CW)
+            }
+            canvas.clipPath(clipPath)
+
+            val srcRect = Rect(0, 0, deityBitmap.width, deityBitmap.height)
+            val dstRect = RectF(portraitRect)
+            val filterPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+            canvas.drawBitmap(deityBitmap, srcRect, dstRect, filterPaint)
+            canvas.restore()
+
+            // Temple Gold Border around Deity Portrait
+            val deityBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
-                strokeWidth = 8f
+                strokeWidth = 7f
                 color = effAccentGold
             }
-            canvas.drawCircle(width / 2f, 285f + balajiSize / 2f, balajiSize / 2f + 4f, circleBorder)
+            canvas.drawRoundRect(portraitRect, 24f, 24f, deityBorderPaint)
+
+            val deityOuterGlow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = 2f
+                color = Color.WHITE
+                alpha = 160
+            }
+            canvas.drawRoundRect(
+                RectF(portraitLeft - 5f, portraitTop - 5f, portraitLeft + portraitWidth + 5f, portraitTop + portraitHeight + 5f),
+                28f, 28f, deityOuterGlow
+            )
         }
 
-        // Subtitle below portrait
+        // Subtitles below deity portrait
         textPaint.apply {
             color = Color.parseColor("#FFF8E1")
-            textSize = 33f
+            textSize = 30f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
-        canvas.drawText("🚩 परम पूज्य गुरुदेव तेजवीर सिंह जी के पावन सानिध्य में 🚩", width / 2f, 785f, textPaint)
+        canvas.drawText("🚩 परम पूज्य गुरुदेव तेजवीर सिंह जी के पावन सानिध्य में 🚩", width / 2f, 825f, textPaint)
 
         textPaint.apply {
             color = effAccentGold
-            textSize = 28f
+            textSize = 27f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
         val dateStr = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale("hi", "IN")).format(Date())
-        canvas.drawText("॥ ${todayTheme.daySubtitle} ॥", width / 2f, 840f, textPaint)
+        canvas.drawText("॥ ${todayTheme.daySubtitle} ॥", width / 2f, 875f, textPaint)
 
         textPaint.apply {
             color = Color.parseColor("#B2DFDB")
-            textSize = 26f
+            textSize = 24f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL)
         }
-        canvas.drawText("प्रत्येक रविवार प्रातः 8:30 बजे से 100% निःशुल्क दिव्य दरबार • $dateStr", width / 2f, 895f, textPaint)
+        canvas.drawText("प्रत्येक रविवार प्रातः 8:30 बजे से 100% निःशुल्क दिव्य दरबार • $dateStr", width / 2f, 925f, textPaint)
 
         // 6. Sacred Suvichar Section
         val quoteBoxRect = RectF(70f, 985f, width - 70f, 1375f)
@@ -493,7 +551,8 @@ object StatusPosterGenerator {
             devoteeCity = "डूँगरा जाट धाम",
             suvichar = suvichar,
             primaryHex = 0xFFB71C1C.toInt(),
-            secondaryHex = 0xFFFF6F00.toInt()
+            secondaryHex = 0xFFFF6F00.toInt(),
+            deityImageRes = R.drawable.img_hanuman_veer
         )
     }
 
@@ -513,7 +572,8 @@ object StatusPosterGenerator {
             devoteeCity = "डूँगरा जाट धाम",
             suvichar = suvichar,
             primaryHex = 0xFF1A237E.toInt(),
-            secondaryHex = 0xFFFFD54F.toInt()
+            secondaryHex = 0xFFFFD54F.toInt(),
+            deityImageRes = R.drawable.img_panchmukhi_hanuman
         )
     }
 
@@ -533,7 +593,8 @@ object StatusPosterGenerator {
             devoteePhoto = null,
             devoteeName = "दैनिक दिव्य अलौकिक दर्शन",
             devoteeCity = "डूँगरा जाट धाम",
-            suvichar = suvichar
+            suvichar = suvichar,
+            deityImageRes = R.drawable.img_balaji_darshan
         )
     }
 

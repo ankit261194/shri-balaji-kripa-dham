@@ -1204,12 +1204,11 @@ fun HomeScreen(
                         // 🚩 DIVINE 24-HOUR BHAKTI STATUS & WHATSAPP STORY BAR
                         BhaktiStatusBar(
                             statuses = activeStatuses,
+                            currentDeviceId = deviceId,
                             isHindi = isHindi,
                             onOpenCreateStatus = { showCreateStatusDialog = true },
                             onOpenStatus = { selectedViewingStatus = it },
-                            onOpenPoster = { posterType ->
-                                selectedPosterType = posterType
-                            },
+                            onOpenAshramStatus = { selectedPosterType = "DARSHAN" },
                             modifier = Modifier.padding(bottom = sectionSpacing)
                         )
 
