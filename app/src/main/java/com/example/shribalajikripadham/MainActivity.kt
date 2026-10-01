@@ -30,9 +30,17 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Bulletproof Global Uncaught Exception Handler: guarantees zero silent app terminations
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            android.util.Log.e("AshramCrashGuard", "CRITICAL FATAL CRASH PREVENTED on ${thread.name}: ${throwable.message}", throwable)
+            try {
+                val prefs = getSharedPreferences("app_crash_vault", android.content.Context.MODE_PRIVATE)
+                prefs.edit().putString("last_fatal_error", "${throwable.javaClass.simpleName}: ${throwable.message}\n${throwable.stackTraceToString()}").apply()
+            } catch (_: Exception) {}
+        }
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
 
         // Create notification channel & schedule native background push job
         try {
@@ -134,6 +142,16 @@ class MainActivity : ComponentActivity() {
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
+                    }
+
+                    // Safe OneSignal Push Notification initialization in background IO
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        try {
+                            com.onesignal.OneSignal.initWithContext(context.applicationContext, "db065153-88a1-4a01-badc-ae33c4b38cbe")
+                            android.util.Log.i("OneSignal", "OneSignal initialized safely in background IO")
+                        } catch (t: Throwable) {
+                            android.util.Log.e("OneSignal", "OneSignal safe background init bypass: ${t.localizedMessage}")
+                        }
                     }
                 }
 

@@ -68,11 +68,14 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $currentSize = file_exists($tmpFile) ? filesize($tmpFile) : 0;
         if ($isLast && $currentSize > 10000000) {
             rename($tmpFile, $targetFile);
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v104.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
             echo json_encode([
                 "success" => true,
                 "complete" => true,
                 "size" => filesize($targetFile),
-                "size_mb" => round(filesize($targetFile) / (1024 * 1024), 2) . " MB"
+                "size_mb" => round(filesize($targetFile) / (1024 * 1024), 2) . " MB",
+                "v104" => file_exists($dlDir . '/ShriBalajiKripaDham-v104.apk')
             ]);
             exit;
         }
