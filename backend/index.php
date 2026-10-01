@@ -77,17 +77,43 @@ $bannerSubtitle = !empty($settings['banner_subtitle']) ? $settings['banner_subti
 $emergencyNotice = !empty($settings['emergency_notice']) ? $settings['emergency_notice'] : '';
 $isEmergencyVisible = (!empty($settings['is_emergency_notice_visible']) && !empty($emergencyNotice));
 $darbarTimings = !empty($settings['darbar_timings']) ? $settings['darbar_timings'] : 'प्रत्येक रविवार प्रातःकाल 8:30 बजे से सायं 5:00 बजे तक';
-$darbarDate = !empty($settings['darbar_date']) ? $settings['darbar_date'] : '';
-if (empty($darbarDate)) {
-    $hindiMonths = [
-        1 => 'जनवरी', 2 => 'फ़रवरी', 3 => 'मार्च', 4 => 'अप्रैल',
-        5 => 'मई', 6 => 'जून', 7 => 'जुलाई', 8 => 'अगस्त',
-        9 => 'सितम्बर', 10 => 'अक्टूबर', 11 => 'नवम्बर', 12 => 'दिसम्बर'
-    ];
+$hindiMonths = [
+    1 => 'जनवरी', 2 => 'फ़रवरी', 3 => 'मार्च', 4 => 'अप्रैल',
+    5 => 'मई', 6 => 'जून', 7 => 'जुलाई', 8 => 'अगस्त',
+    9 => 'सितम्बर', 10 => 'अक्टूबर', 11 => 'नवम्बर', 12 => 'दिसम्बर'
+];
+$rawDarbarDate = !empty($settings['darbar_date']) ? trim($settings['darbar_date']) : '';
+$todayMidnight = strtotime('today');
+$isPastDate = false;
+$parsedTargetTs = false;
+
+if (!empty($rawDarbarDate)) {
+    $t = strtotime($rawDarbarDate);
+    if ($t === false && preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $rawDarbarDate, $m)) {
+        $t = strtotime("{$m[3]}-{$m[2]}-{$m[1]}");
+    }
+    if ($t !== false) {
+        if ($t < $todayMidnight) {
+            $isPastDate = true;
+        } else {
+            $parsedTargetTs = $t;
+        }
+    }
+}
+
+if ($parsedTargetTs !== false && !$isPastDate) {
+    $sunDay = date('j', $parsedTargetTs);
+    $sunMonth = $hindiMonths[(int)date('n', $parsedTargetTs)] ?? date('M', $parsedTargetTs);
+    $sunYear = date('Y', $parsedTargetTs);
+    $w = (int)date('w', $parsedTargetTs);
+    $dayNameHindi = [0 => 'रविवार', 1 => 'सोमवार', 2 => 'मंगलवार', 3 => 'बुधवार', 4 => 'गुरुवार', 5 => 'शुक्रवार', 6 => 'शनिवार'][$w] ?? 'रविवार';
+    $darbarDate = "{$dayNameHindi}, {$sunDay} {$sunMonth} {$sunYear}";
+} else {
+    // If empty OR date has already passed, automatically roll over to next upcoming Sunday!
     $todayDayOfWeek = (int)date('w'); // 0 = Sunday
-    $nextSundayTs = ($todayDayOfWeek === 0) ? time() : strtotime('next Sunday');
+    $nextSundayTs = ($todayDayOfWeek === 0 && (int)date('H') < 18) ? time() : strtotime('next Sunday');
     $sunDay = date('j', $nextSundayTs);
-    $sunMonth = $hindiMonths[(int)date('n', $nextSundayTs)];
+    $sunMonth = $hindiMonths[(int)date('n', $nextSundayTs)] ?? 'अक्टूबर';
     $sunYear = date('Y', $nextSundayTs);
     $darbarDate = "रविवार, {$sunDay} {$sunMonth} {$sunYear}";
 }
@@ -1290,226 +1316,6 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
             .sevadar-card { flex: 0 0 220px; }
             .donor-card { flex: 0 0 210px; }
         }
-
-        /* Havan & Anushthan Styles */
-        .havan-highlight-card {
-            background: linear-gradient(135deg, #FFF9F0 0%, #FFF3E0 100%);
-            border: 2px solid #FF8F00;
-            border-radius: 16px;
-            padding: 24px 20px;
-            margin: 25px auto 25px;
-            max-width: 850px;
-            text-align: center;
-            box-shadow: 0 6px 22px rgba(230, 81, 0, 0.12);
-            position: relative;
-        }
-        .havan-badge-glow {
-            display: inline-block;
-            background: linear-gradient(90deg, #D84315, #E65100);
-            color: #ffffff;
-            font-weight: 800;
-            font-size: 0.9rem;
-            padding: 5px 18px;
-            border-radius: 20px;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 10px rgba(216, 67, 21, 0.35);
-        }
-        .havan-terms-pill-box {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-width: 720px;
-            margin: 14px auto 16px;
-            text-align: left;
-        }
-        .terms-pill {
-            background: #FFFFFF;
-            border-left: 4px solid #E65100;
-            padding: 8px 14px;
-            border-radius: 6px;
-            font-size: 0.92rem;
-            color: #37474F;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-        }
-        .btn-havan-apply {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: linear-gradient(135deg, #D84315, #BF360C);
-            color: #ffffff;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 26px;
-            font-weight: 800;
-            font-size: 1.02rem;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(191, 54, 12, 0.35);
-            transition: all 0.2s;
-        }
-        .btn-havan-apply:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(191, 54, 12, 0.45);
-        }
-
-        /* Havan Application Modal */
-        #havanModalOverlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(4px);
-            z-index: 99999;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-            overflow-y: auto;
-        }
-        .havan-modal {
-            background: #FFFFFF;
-            border-radius: 20px;
-            width: 100%;
-            max-width: 620px;
-            max-height: 92vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
-            position: relative;
-            animation: modalFadeIn 0.25s ease-out;
-            border: 2px solid #FF8F00;
-        }
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .havan-modal-header {
-            background: linear-gradient(135deg, #4A0000, #800000);
-            color: white;
-            padding: 20px 22px;
-            border-top-left-radius: 18px;
-            border-top-right-radius: 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .havan-modal-header h3 {
-            color: #FFD54F;
-            font-size: 1.25rem;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-modal-close {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .btn-modal-close:hover { background: rgba(255, 255, 255, 0.35); }
-        .havan-modal-body {
-            padding: 20px 24px;
-        }
-        .havan-cost-alert {
-            background: #FFF8E1;
-            border: 1.5px solid #FFD54F;
-            border-left: 5px solid #FF8F00;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 18px;
-            font-size: 0.92rem;
-            color: #3E2723;
-            line-height: 1.6;
-        }
-        .havan-cost-alert strong {
-            color: #BF360C;
-        }
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 14px;
-        }
-        @media (max-width: 540px) {
-            .form-row { grid-template-columns: 1fr; }
-        }
-        .form-group {
-            margin-bottom: 14px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 0.88rem;
-            font-weight: 700;
-            color: #37474F;
-            margin-bottom: 6px;
-        }
-        .form-group label span.req {
-            color: #D32F2F;
-        }
-        .form-control {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1.5px solid #CFD8DC;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            outline: none;
-            transition: border-color 0.2s;
-            font-family: inherit;
-        }
-        .form-control:focus {
-            border-color: #E65100;
-            box-shadow: 0 0 0 3px rgba(230, 81, 0, 0.12);
-        }
-        .terms-checkbox-wrap {
-            background: #FFF3E0;
-            border: 1.5px solid #FFCC80;
-            padding: 12px 14px;
-            border-radius: 8px;
-            margin: 16px 0;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            font-size: 0.88rem;
-            color: #4E342E;
-            line-height: 1.5;
-            cursor: pointer;
-        }
-        .terms-checkbox-wrap input {
-            margin-top: 3px;
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: #E65100;
-        }
-        .btn-submit-havan {
-            width: 100%;
-            background: linear-gradient(135deg, #800000, #B71C1C);
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 10px;
-            font-size: 1.05rem;
-            font-weight: 800;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(128, 0, 0, 0.3);
-            transition: all 0.2s;
-        }
-        .btn-submit-havan:hover {
-            background: linear-gradient(135deg, #9B0000, #D32F2F);
-            transform: translateY(-1px);
-        }
-        .btn-submit-havan:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
     </style>
 </head>
 <body>
@@ -1530,9 +1336,6 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                 </div>
             </a>
             <div class="nav-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <button onclick="openHavanModal()" class="btn-nav-social" style="background: linear-gradient(135deg, #D84315, #BF360C); color: #ffffff; border: none; cursor: pointer;" title="पावन हवन अनुष्ठान आवेदन">
-                    <span>🔥 हवन आवेदन</span>
-                </button>
                 <a href="<?= htmlspecialchars($youtubeUrl) ?>" target="_blank" class="btn-nav-social btn-nav-youtube" title="आधिकारिक यूट्यूब चैनल">
                     <span>▶️ YouTube</span>
                 </a>
@@ -1580,35 +1383,6 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                 <a href="https://www.google.com/maps/search/?api=1&query=28.3972915,78.1460410" target="_blank" class="btn-darbar-route">
                     🗺️ आश्रम का गूगल मैप्स मार्ग
                 </a>
-            </div>
-        </div>
-
-        <!-- 🔥 Sacred Havan & Anushthan Devotee Application Card -->
-        <div class="havan-highlight-card">
-            <div class="havan-badge-glow">🔥 पावन संकट निवारण एवं गृह शांति हवन अनुष्ठान सेवा 🔥</div>
-            <h3 style="color: #4A0000; font-size: 1.4rem; font-weight: 800; margin-bottom: 8px;">
-                घर अथवा प्रतिष्ठान पर हवन कराने हेतु ऑनलाइन आवेदन
-            </h3>
-            <p style="font-size: 0.95rem; color: #37474F; line-height: 1.6; max-width: 700px; margin: 0 auto 12px;">
-                परम पूज्य गुरुजी के मार्गदर्शन में भूत-प्रेत बाधा निवारण, ऊपरी कष्ट, पितृ दोष, असाध्य रोग एवं परिवार की सुख-शांति हेतु विशेष वैदिक संकट मोचन हवन अनुष्ठान करवाया जाता है।
-            </p>
-            
-            <div class="havan-terms-pill-box">
-                <div class="terms-pill">
-                    💰 <strong>अनुमानित हवन सामग्री खर्च:</strong> लगभग <strong>₹14,000 (चौदह हज़ार रुपये)</strong> — समस्त आवश्यक पूजन सामग्री, हवन समिधा, धूप-द्रव्य, आहुति द्रव्य एवं आचार्य व्यवस्था हेतु।
-                </div>
-                <div class="terms-pill">
-                    🚗 <strong>वाहन आवागमन व्यवस्था:</strong> <strong>गाड़ी का आने-जाने का सम्पूर्ण किराया भगत/यजमान को स्वयं देना होगा।</strong>
-                </div>
-                <div class="terms-pill">
-                    🚩 <strong>निःशुल्क गुरु कृपा:</strong> आश्रम एवं गुरुजी द्वारा सेवा व मार्गदर्शन पूर्णतः निःशुल्क (FREE) है, कोई दक्षिणा या चढ़ावा नहीं लिया जाता।
-                </div>
-            </div>
-
-            <div style="margin-top: 16px;">
-                <button type="button" onclick="openHavanModal()" class="btn-havan-apply">
-                    🔥 हवन सेवा हेतु आवेदन करें (Apply Now)
-                </button>
             </div>
         </div>
 
@@ -1819,17 +1593,6 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                 <div class="service-icon">🎫</div>
                 <h4>रविवार टोकन पंजीकरण</h4>
                 <p>मोबाइल ऐप द्वारा घर बैठे आगामी रविवार के पावन दरबार का टोकन प्राप्त करें। शून्य डुप्लीकेट गारंटी एवं पूर्ण निष्पक्षता।</p>
-            </div>
-
-            <div class="service-card" style="border: 2px solid #FF8F00; background: #FFFDF7;">
-                <div class="service-icon">🔥</div>
-                <h4 style="color: #B71C1C;">पावन हवन व अनुष्ठान सेवा</h4>
-                <p>घर या स्थान पर संकट निवारण व गृह शांति हवन। सामग्री खर्च लगभग ₹14,000 एवं वाहन किराया यजमान द्वारा देय।</p>
-                <div style="margin-top: 10px;">
-                    <button type="button" onclick="openHavanModal()" style="background: #B71C1C; color: white; border: none; padding: 7px 16px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
-                        🔥 आवेदन फॉर्म भरें
-                    </button>
-                </div>
             </div>
 
             <?php if ($isBusLive): ?>
@@ -2044,15 +1807,6 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
         <div style="margin-top: 15px;">
             <a href="download.php" style="color: #ffffff; background: var(--saffron-deep); padding: 8px 18px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.88rem; display: inline-block;">
                 📲 Android ऐप डाउनलोड करें (नवीनतम v<?= htmlspecialchars($appVersionName) ?>)
-            </a>
-        </div>
-
-        <div style="margin-top: 12px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-            <button type="button" onclick="openHavanModal()" style="background: rgba(255, 143, 0, 0.2); border: 1px solid var(--gold); color: #FFE082; padding: 5px 14px; border-radius: 16px; font-size: 0.82rem; font-weight: 700; cursor: pointer;">
-                🔥 पावन हवन अनुष्ठान आवेदन
-            </button>
-            <a href="havan_admin.php" target="_blank" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255,255,255,0.2); color: #FFE082; padding: 5px 14px; border-radius: 16px; font-size: 0.82rem; text-decoration: none; display: inline-block;">
-                🔐 हवन व्यवस्थापक पोर्टल (Admin)
             </a>
         </div>
 
@@ -2394,287 +2148,6 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
         // Immediate fetch on load followed by real-time sync
         updateLiveStatus();
         scheduleNextPoll();
-
-        // 15. Sacred Havan & Anushthan Devotee Application Modal & AJAX Handler
-        function openHavanModal() {
-            const overlay = document.getElementById('havanModalOverlay');
-            if (overlay) {
-                overlay.style.display = 'flex';
-                document.body.style.overflow = 'hidden';
-                // Reset form and view state if previously submitted
-                const formEl = document.getElementById('havanApplicationForm');
-                const succEl = document.getElementById('havanSuccessBox');
-                if (formEl) formEl.style.display = 'block';
-                if (succEl) succEl.style.display = 'none';
-            }
-        }
-
-        function closeHavanModal() {
-            const overlay = document.getElementById('havanModalOverlay');
-            if (overlay) {
-                overlay.style.display = 'none';
-                document.body.style.overflow = '';
-            }
-        }
-
-        // Close on clicking outside modal
-        window.addEventListener('click', function(e) {
-            const overlay = document.getElementById('havanModalOverlay');
-            if (e.target === overlay) {
-                closeHavanModal();
-            }
-        });
-
-        // Set min date for preferred_date to tomorrow
-        window.addEventListener('DOMContentLoaded', function() {
-            const dateInput = document.getElementById('havanPreferredDate');
-            if (dateInput) {
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const yyyy = tomorrow.getFullYear();
-                const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
-                const dd = String(tomorrow.getDate()).padStart(2, '0');
-                dateInput.min = `${yyyy}-${mm}-${dd}`;
-            }
-        });
-
-        async function submitHavanApplication(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btnSubmitHavan');
-            const errEl = document.getElementById('havanFormError');
-            errEl.style.display = 'none';
-
-            const name = document.getElementById('havanDevoteeName').value.trim();
-            const phone = document.getElementById('havanPhoneNumber').value.trim();
-            const wa = document.getElementById('havanWhatsappNumber').value.trim();
-            const date = document.getElementById('havanPreferredDate').value;
-            const address = document.getElementById('havanAddress').value.trim();
-            const gotra = document.getElementById('havanGotra').value.trim();
-            const familyCnt = document.getElementById('havanFamilyCount').value;
-            const purpose = document.getElementById('havanPurpose').value;
-            const details = document.getElementById('havanProblemDetails').value.trim();
-            const costAck = document.getElementById('havanCostAck').checked;
-            const travelAck = document.getElementById('havanTravelAck').checked;
-
-            if (!name || name.length < 2) {
-                showHavanError('कृपया यजमान/भक्त का पूरा नाम दर्ज करें।');
-                return;
-            }
-            if (!phone || phone.replace(/[^0-9]/g, '').length < 10) {
-                showHavanError('कृपया 10 अंकों का मान्य मोबाइल नंबर दर्ज करें।');
-                return;
-            }
-            if (!date) {
-                showHavanError('कृपया हवन हेतु प्रस्तावित तिथि का चयन करें।');
-                return;
-            }
-            if (!address || address.length < 6) {
-                showHavanError('कृपया हवन स्थल का पूरा पता (स्थान, गाँव/शहर, जिला, पिनकोड) दर्ज करें।');
-                return;
-            }
-            if (!purpose) {
-                showHavanError('कृपया हवन का मुख्य प्रयोजन चुनें।');
-                return;
-            }
-            if (!costAck || !travelAck) {
-                showHavanError('हवन हेतु अनुमानित खर्च (~₹14,000) एवं गाड़ी का आने-जाने का किराया वहन करने की सहमति अनिवार्य है।');
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerText = '⏳ आवेदन दर्ज हो रहा है...';
-
-            try {
-                const payload = {
-                    action: 'SUBMIT_APPLICATION',
-                    devotee_name: name,
-                    phone_number: phone,
-                    whatsapp_number: wa || phone,
-                    preferred_date: date,
-                    address: address,
-                    gotra: gotra,
-                    family_members_count: familyCnt || 1,
-                    havan_purpose: purpose,
-                    problem_details: details,
-                    cost_ack: 1,
-                    travel_fare_ack: 1
-                };
-
-                const res = await fetch('api/havan_service.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    document.getElementById('havanApplicationForm').style.display = 'none';
-                    const succBox = document.getElementById('havanSuccessBox');
-                    document.getElementById('succAppNoDisplay').innerText = data.application_no || 'HVN-CONFIRMED';
-                    document.getElementById('succDevoteeDisplay').innerText = name;
-                    document.getElementById('succDateDisplay').innerText = date;
-
-                    // WhatsApp notification link to temple
-                    const waTempleMsg = encodeURIComponent(`जय श्री बालाजी महाराज! 🙏\nमैंने श्री बालाजी कृपा धाम के सानिध्य में पावन हवन हेतु आवेदन किया है।\n\n📌 आवेदन क्रमांक: ${data.application_no}\n👤 यजमान: ${name}\n📞 मोबाइल: ${phone}\n📅 प्रस्तावित तिथि: ${date}\n📍 स्थान: ${address}\n🎯 प्रयोजन: ${purpose}\n\nकृपया आश्रम व्यवस्थापक मार्गदर्शन प्रदान करें।`);
-                    document.getElementById('btnNotifyAshramWa').href = `https://wa.me/919100100251?text=${waTempleMsg}`;
-
-                    succBox.style.display = 'block';
-                } else {
-                    showHavanError(data.error || 'आवेदन दर्ज नहीं हो सका। कृपया पुनः प्रयास करें।');
-                }
-            } catch (err) {
-                showHavanError('नेटवर्क अथवा सर्वर त्रुटि! कृपया कुछ समय बाद पुनः प्रयास करें।');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = '🔥 पावन हवन आवेदन सबमिट करें';
-            }
-        }
-
-        function showHavanError(msg) {
-            const errEl = document.getElementById('havanFormError');
-            if (errEl) {
-                errEl.innerText = '⚠️ ' + msg;
-                errEl.style.display = 'block';
-                errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        }
     </script>
-
-    <!-- Havan Devotee Application Modal Overlay -->
-    <div id="havanModalOverlay">
-        <div class="havan-modal">
-            <div class="havan-modal-header">
-                <h3>🔥 पावन हवन एवं अनुष्ठान सेवा आवेदन</h3>
-                <button type="button" class="btn-modal-close" onclick="closeHavanModal()" title="बंद करें">✕</button>
-            </div>
-            
-            <div class="havan-modal-body">
-                <!-- Important Cost & Travel Notice Card -->
-                <div class="havan-cost-alert">
-                    <div style="font-weight: 800; font-size: 0.98rem; margin-bottom: 4px; color: #BF360C;">
-                        📢 महत्वपूर्ण नियम एवं खर्च संबंधी स्पष्ट सूचना:
-                    </div>
-                    <div>
-                        1. 💰 <strong>हवन का अनुमानित खर्च:</strong> लगभग <strong>₹14,000 (चौदह हज़ार रुपये)</strong> होगा (समस्त हवन समिधा, आहुति द्रव्य, पूजन सामग्री, गोला-घी एवं ब्राह्मण/आचार्य व्यवस्था हेतु)।<br>
-                        2. 🚗 <strong>वाहन आवागमन व्यवस्था:</strong> <strong>गाड़ी का आने-जाने का सम्पूर्ण किराया भगत/यजमान को खुद देना होगा।</strong><br>
-                        3. 🚩 <strong>आश्रम सेवा:</strong> पूज्य गुरुदेव जी का सानिध्य एवं कृपा सेवा पूर्णतः निःशुल्क (FREE) है, कोई दक्षिणा या चढ़ावा नहीं लिया जाता।
-                    </div>
-                </div>
-
-                <div id="havanFormError" style="display: none; background: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; margin-bottom: 14px;"></div>
-
-                <!-- Form -->
-                <form id="havanApplicationForm" onsubmit="submitHavanApplication(event)">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>भक्त / यजमान का पूरा नाम <span class="req">*</span></label>
-                            <input type="text" id="havanDevoteeName" class="form-control" placeholder="उदा. रामकुमार शर्मा" required>
-                        </div>
-                        <div class="form-group">
-                            <label>संपर्क मोबाइल नंबर <span class="req">*</span></label>
-                            <input type="tel" id="havanPhoneNumber" class="form-control" maxlength="10" placeholder="10-अंकीय मोबाइल नंबर" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>व्हाट्सएप नंबर (वैकल्पिक)</label>
-                            <input type="tel" id="havanWhatsappNumber" class="form-control" maxlength="10" placeholder="व्हाट्सएप नंबर">
-                        </div>
-                        <div class="form-group">
-                            <label>हवन हेतु प्रस्तावित तिथि <span class="req">*</span></label>
-                            <input type="date" id="havanPreferredDate" class="form-control" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>हवन कराने का पूरा पता (स्थान / गाँव / शहर / जिला / पिनकोड) <span class="req">*</span></label>
-                        <textarea id="havanAddress" class="form-control" rows="2" placeholder="मकान नं, मोहल्ला/गाँव, लैंडमार्क, तहसील, जिला व पिनकोड लिखें..." required></textarea>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>गोत्र एवं कुलदेवता (वैकल्पिक)</label>
-                            <input type="text" id="havanGotra" class="form-control" placeholder="उदा. कश्यप / कुलदेवता का नाम">
-                        </div>
-                        <div class="form-group">
-                            <label>परिवार के सदस्यों की संख्या</label>
-                            <input type="number" id="havanFamilyCount" class="form-control" min="1" max="100" value="4">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>हवन का मुख्य प्रयोजन <span class="req">*</span></label>
-                        <select id="havanPurpose" class="form-control" required>
-                            <option value="">-- प्रयोजन चुनें --</option>
-                            <option value="भूत-प्रेत व नकारात्मक ऊर्जा बाधा निवारण">भूत-प्रेत व नकारात्मक ऊर्जा बाधा निवारण</option>
-                            <option value="गृह शांति एवं परिवार सुख-समृद्धि">गृह शांति एवं परिवार सुख-समृद्धि</option>
-                            <option value="पितृ दोष एवं कालसर्प शांति">पितृ दोष एवं कालसर्प शांति</option>
-                            <option value="व्यापार वृद्धि एवं आर्थिक संकट मुक्ति">व्यापार वृद्धि एवं आर्थिक संकट मुक्ति</option>
-                            <option value="असाध्य रोग निवारण एवं उत्तम स्वास्थ्य">असाध्य रोग निवारण एवं उत्तम स्वास्थ्य</option>
-                            <option value="नया मकान / गृह प्रवेश अनुष्ठान">नया मकान / गृह प्रवेश अनुष्ठान</option>
-                            <option value="अन्य विशेष आध्यात्मिक अनुष्ठान">अन्य विशेष आध्यात्मिक अनुष्ठान</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>समस्या या संकल्प का संक्षिप्त विवरण (वैकल्पिक)</label>
-                        <textarea id="havanProblemDetails" class="form-control" rows="2" placeholder="अपनी समस्या अथवा विशेष मनोकामना का संक्षिप्त विवरण दें..."></textarea>
-                    </div>
-
-                    <!-- Mandatory Agreement Checkboxes -->
-                    <label class="terms-checkbox-wrap">
-                        <input type="checkbox" id="havanCostAck" checked required>
-                        <span>
-                            <strong>सहमति 1:</strong> मुझे ज्ञात है कि हवन सामग्री व पूजन विधि का अनुमानित खर्च लगभग <strong>₹14,000 (चौदह हज़ार रुपये)</strong> होगा, जो मेरे द्वारा वहन किया जाएगा। <span class="req">*</span>
-                        </span>
-                    </label>
-
-                    <label class="terms-checkbox-wrap" style="margin-top: 0;">
-                        <input type="checkbox" id="havanTravelAck" checked required>
-                        <span>
-                            <strong>सहमति 2:</strong> गाड़ी का आश्रम से आने-जाने का सम्पूर्ण किराया भगत/यजमान (मेरे) द्वारा स्वयं दिया जाएगा। <span class="req">*</span>
-                        </span>
-                    </label>
-
-                    <div style="margin-top: 20px;">
-                        <button type="submit" id="btnSubmitHavan" class="btn-submit-havan">
-                            🔥 पावन हवन आवेदन सबमिट करें
-                        </button>
-                    </div>
-                </form>
-
-                <!-- Success Box -->
-                <div id="havanSuccessBox" style="display: none; text-align: center; padding: 25px 10px;">
-                    <div style="font-size: 3.5rem; margin-bottom: 12px;">🚩</div>
-                    <h3 style="color: #2E7D32; font-size: 1.45rem; margin-bottom: 8px;">जय श्री बालाजी महाराज!</h3>
-                    <p style="font-size: 1.05rem; color: #37474F; margin-bottom: 16px;">
-                        आपका पावन हवन आवेदन सफलतापूर्वक दर्ज हो गया है।
-                    </p>
-
-                    <div style="background: #FFF8E1; border: 2px dashed #FFB300; border-radius: 12px; padding: 16px; max-width: 440px; margin: 0 auto 20px;">
-                        <div style="font-size: 0.85rem; color: #795548; font-weight: 700;">आपका आवेदन संदर्भ क्रमांक (Application No.)</div>
-                        <div style="font-size: 1.6rem; font-weight: 900; color: #B71C1C; margin: 6px 0;" id="succAppNoDisplay">HVN-XXXX</div>
-                        <div style="font-size: 0.9rem; color: #5D4037;">
-                            यजमान: <strong id="succDevoteeDisplay"></strong> | तिथि: <strong id="succDateDisplay"></strong>
-                        </div>
-                    </div>
-
-                    <p style="font-size: 0.92rem; color: #616161; line-height: 1.6; max-width: 460px; margin: 0 auto 20px;">
-                        पूज्य गुरुदेव जी के सान्निध्य में आश्रम सेवा दल आपके आवेदन की समीक्षा कर जल्द ही आपसे फोन अथवा व्हाट्सएप पर संपर्क करेगा।
-                    </p>
-
-                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                        <a id="btnNotifyAshramWa" href="#" target="_blank" style="background: #25D366; color: white; padding: 10px 22px; border-radius: 24px; text-decoration: none; font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px;">
-                            💬 व्हाट्सएप पर आश्रम को सूचित करें
-                        </a>
-                        <button type="button" onclick="closeHavanModal()" style="background: #ECEFF1; color: #37474F; border: none; padding: 10px 20px; border-radius: 24px; font-weight: 700; font-size: 0.95rem; cursor: pointer;">
-                            ✕ विंडो बंद करें
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

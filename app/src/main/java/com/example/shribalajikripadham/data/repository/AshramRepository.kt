@@ -38,6 +38,7 @@ data class AdminPermissionsUpdate(
     val canScanPaperRegister: Boolean = false,
     val canManageParchas: Boolean = false,
     val canManageArzi: Boolean = false,
+    val canManageHavan: Boolean = false,
     val canCancelTokens: Boolean = false,
     val canDeleteTokens: Boolean = false,
     val canSetCustomTokenNumber: Boolean = false,
@@ -2608,6 +2609,7 @@ class AshramRepository(context: Context) {
             canScanPaperRegister = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_scan_paper_register")) == 1 } catch (e: Exception) { false },
             canManageParchas = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_parchas")) == 1 } catch (e: Exception) { false },
             canManageArzi = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_arzi")) == 1 } catch (e: Exception) { false },
+            canManageHavan = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_havan")) == 1 } catch (e: Exception) { false },
             canCancelTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_cancel_tokens")) == 1 } catch (e: Exception) { false },
             canDeleteTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_delete_tokens")) == 1 } catch (e: Exception) { false },
             canSetCustomTokenNumber = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_custom_token_number")) == 1 } catch (e: Exception) { false },
@@ -2739,6 +2741,7 @@ class AshramRepository(context: Context) {
         canScanPaperRegister: Boolean = false,
         canManageParchas: Boolean = false,
         canManageArzi: Boolean = false,
+        canManageHavan: Boolean = false,
         canCancelTokens: Boolean = false,
         canDeleteTokens: Boolean = false,
         canSetCustomTokenNumber: Boolean = false,
@@ -2771,6 +2774,7 @@ class AshramRepository(context: Context) {
             put("can_scan_paper_register", if (canScanPaperRegister || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_manage_parchas", if (canManageParchas || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_manage_arzi", if (canManageArzi || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_havan", if (canManageHavan || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_cancel_tokens", if (canCancelTokens || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_delete_tokens", if (canDeleteTokens || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_custom_token_number", if (canSetCustomTokenNumber || role == AdminRole.SUPER_ADMIN) 1 else 0)
@@ -2834,6 +2838,7 @@ class AshramRepository(context: Context) {
                 put("can_scan_paper_register", if (p.canScanPaperRegister) 1 else 0)
                 put("can_manage_parchas", if (p.canManageParchas) 1 else 0)
                 put("can_manage_arzi", if (p.canManageArzi) 1 else 0)
+                put("can_manage_havan", if (p.canManageHavan) 1 else 0)
                 put("can_cancel_tokens", if (p.canCancelTokens) 1 else 0)
                 put("can_delete_tokens", if (p.canDeleteTokens) 1 else 0)
                 put("can_custom_token_number", if (p.canSetCustomTokenNumber) 1 else 0)
@@ -2895,6 +2900,7 @@ class AshramRepository(context: Context) {
         canScanPaperRegister: Boolean = false,
         canManageParchas: Boolean = false,
         canManageArzi: Boolean = false,
+        canManageHavan: Boolean = false,
         canCancelTokens: Boolean = false,
         canDeleteTokens: Boolean = false,
         canSetCustomTokenNumber: Boolean = false,
@@ -2915,6 +2921,7 @@ class AshramRepository(context: Context) {
             put("can_scan_paper_register", if (canScanPaperRegister) 1 else 0)
             put("can_manage_parchas", if (canManageParchas) 1 else 0)
             put("can_manage_arzi", if (canManageArzi) 1 else 0)
+            put("can_manage_havan", if (canManageHavan) 1 else 0)
             put("can_cancel_tokens", if (canCancelTokens) 1 else 0)
             put("can_delete_tokens", if (canDeleteTokens) 1 else 0)
             put("can_custom_token_number", if (canSetCustomTokenNumber) 1 else 0)
@@ -2932,6 +2939,14 @@ class AshramRepository(context: Context) {
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
             put("can_manage_parchas", if (canManageParchas) 1 else 0)
+        }
+        db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
+    }
+
+    suspend fun updateAdminHavanPermission(adminId: Long, canManageHavan: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("can_manage_havan", if (canManageHavan) 1 else 0)
         }
         db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
     }
@@ -3610,6 +3625,7 @@ class AshramRepository(context: Context) {
                 put("can_edit_ashram_info", a.canEditAshramInfo)
                 put("can_manage_admins", a.canManageAdmins)
                 put("can_view_devotee_photos", a.canViewDevoteePhotos)
+                put("can_manage_havan", a.canManageHavan)
                 put("photo_uri", a.photoUri)
             })
         }
@@ -4705,6 +4721,7 @@ class AshramRepository(context: Context) {
                         put("can_scan_paper_register", if (a.canScanPaperRegister) 1 else 0)
                         put("can_manage_parchas", if (a.canManageParchas) 1 else 0)
                         put("can_manage_arzi", if (a.canManageArzi || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_manage_havan", if (a.canManageHavan || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
                         put("can_export_pdf", if (a.canExportPdf) 1 else 0)
                         put("is_active", if (a.isActive) 1 else 0)
                     }
@@ -6371,6 +6388,125 @@ class AshramRepository(context: Context) {
             db.update("ashram_settings", cv, "id = 1", null)
         } catch (ignored: Exception) {}
         Pair(ok, msg)
+    }
+
+    // ==========================================
+    // 🔥 SACRED HAVAN APPLICATION SUBMISSION
+    // ==========================================
+    suspend fun submitDevoteeHavanApplication(
+        devoteeName: String,
+        phoneNumber: String,
+        whatsappNumber: String,
+        preferredDate: String,
+        address: String,
+        villageCity: String = "",
+        district: String = "",
+        state: String = "उत्तर प्रदेश",
+        pincode: String = "",
+        gotra: String = "",
+        familyMembersCount: Int = 4,
+        havanPurpose: String,
+        problemDetails: String = "",
+        costAcknowledged: Boolean = true,
+        travelFareAcknowledged: Boolean = true
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val datePart = java.text.SimpleDateFormat("yyMMdd", java.util.Locale.getDefault()).format(java.util.Date())
+        val randNum = (1000..9999).random()
+        val appNo = "HVN-$datePart-$randNum"
+        val now = System.currentTimeMillis()
+
+        // 1. Save in local database
+        try {
+            val db = dbHelper.writableDatabase
+            val cv = ContentValues().apply {
+                put("application_no", appNo)
+                put("devotee_name", devoteeName)
+                put("phone_number", phoneNumber)
+                put("whatsapp_number", if (whatsappNumber.isNotBlank()) whatsappNumber else phoneNumber)
+                put("preferred_date", preferredDate)
+                put("address", address)
+                put("village_city", villageCity)
+                put("district", district)
+                put("state", state)
+                put("pincode", pincode)
+                put("gotra", gotra)
+                put("family_members_count", familyMembersCount)
+                put("havan_purpose", havanPurpose)
+                put("problem_details", problemDetails)
+                put("estimated_cost", 14000.0)
+                put("cost_acknowledged", if (costAcknowledged) 1 else 0)
+                put("travel_fare_acknowledged", if (travelFareAcknowledged) 1 else 0)
+                put("status", "PENDING")
+                put("created_at", now)
+                put("synced_to_cloud", 0)
+            }
+            db.insertWithOnConflict("havan_applications", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // 2. Transmit to server API
+        try {
+            val jsonPayload = org.json.JSONObject().apply {
+                put("action", "SUBMIT_APPLICATION")
+                put("devotee_name", devoteeName)
+                put("phone_number", phoneNumber)
+                put("whatsapp_number", if (whatsappNumber.isNotBlank()) whatsappNumber else phoneNumber)
+                put("preferred_date", preferredDate)
+                put("address", address)
+                put("village_city", villageCity)
+                put("district", district)
+                put("state", state)
+                put("pincode", pincode)
+                put("gotra", gotra)
+                put("family_members_count", familyMembersCount)
+                put("havan_purpose", havanPurpose)
+                put("problem_details", problemDetails)
+                put("cost_acknowledged", costAcknowledged)
+                put("travel_fare_acknowledged", travelFareAcknowledged)
+                put("application_no", appNo)
+                put("source", "DEVOTEE_APP")
+            }
+
+            val url = java.net.URL("https://shribalajikripadham.online/api/havan_service.php")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+            conn.setRequestProperty("Accept", "application/json")
+            conn.connectTimeout = 12000
+            conn.readTimeout = 12000
+            conn.doOutput = true
+
+            conn.outputStream.use { os ->
+                os.write(jsonPayload.toString().toByteArray(Charsets.UTF_8))
+            }
+
+            val respCode = conn.responseCode
+            val respText = if (respCode in 200..299) {
+                conn.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                conn.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+            }
+
+            val respJson = try { org.json.JSONObject(respText) } catch (e: Exception) { null }
+            if (respJson != null && respJson.optBoolean("success", false)) {
+                val serverAppNo = respJson.optString("application_no", appNo)
+                try {
+                    val db = dbHelper.writableDatabase
+                    val cv = ContentValues().apply {
+                        put("application_no", serverAppNo)
+                        put("synced_to_cloud", 1)
+                    }
+                    db.update("havan_applications", cv, "application_no = ?", arrayOf(appNo))
+                } catch (e: Exception) {}
+                Pair(true, serverAppNo)
+            } else {
+                Pair(true, appNo) // Still success locally!
+            }
+        } catch (e: Exception) {
+            // Local success
+            Pair(true, appNo)
+        }
     }
 }
 

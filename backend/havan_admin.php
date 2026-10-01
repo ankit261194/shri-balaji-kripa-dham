@@ -522,6 +522,7 @@
             </div>
         </div>
         <div class="header-actions">
+            <button id="btnSevadarAccess" class="btn-header" onclick="openSevadarModal()" style="display: none; background: #FF8F00; color: #212121; border-color: #FFA000; font-weight: bold;">👥 सेवादार एक्सेस</button>
             <button class="btn-header" onclick="loadApplications()">🔄 रिफ्रेश (Refresh)</button>
             <a href="index.php" class="btn-header">🌐 मुख्य वेबसाइट</a>
             <button class="btn-header" onclick="logoutAdmin()" style="background: rgba(255,0,0,0.3);">🚪 लॉगआउट</button>
@@ -585,9 +586,36 @@
         </div>
     </div>
 
+    <!-- Sevadar Access Management Modal (Super Admin Only) -->
+    <div id="sevadarModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+        <div style="background: white; border-radius: 16px; max-width: 650px; width: 100%; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3); overflow: hidden;">
+            <div style="background: linear-gradient(135deg, var(--maroon-deep), var(--maroon)); color: white; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">👥</span>
+                    <div>
+                        <h3 style="font-size: 1.15rem; color: var(--gold); margin: 0;">सेवादार एक्सेस नियंत्रण (Access Matrix)</h3>
+                        <p style="font-size: 0.8rem; color: #FFE082; margin-top: 2px;">केवल सुपर एडमिन द्वारा स्वीकृत सेवादार ही हवन आवेदन देख सकते हैं</p>
+                    </div>
+                </div>
+                <button onclick="closeSevadarModal()" style="background: none; border: none; color: white; font-size: 1.6rem; cursor: pointer; line-height: 1;">&times;</button>
+            </div>
+            <div id="sevadarListContainer" style="padding: 16px; overflow-y: auto; flex: 1;">
+                <div style="text-align: center; padding: 30px; color: var(--text-muted);">
+                    <div style="font-size: 2rem; margin-bottom: 8px;">⏳</div>
+                    <p>सेवादार सूची लोड हो रही है...</p>
+                </div>
+            </div>
+            <div style="background: #F5F5F5; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #E0E0E0;">
+                <span id="sevadarActionStatus" style="font-size: 0.85rem; color: #2E7D32; font-weight: bold;"></span>
+                <button onclick="closeSevadarModal()" style="background: var(--maroon); color: white; border: none; padding: 7px 18px; border-radius: 8px; font-weight: bold; cursor: pointer;">बंद करें (Close)</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_URL = 'api/havan_service.php';
         let currentPin = localStorage.getItem('sbkd_havan_admin_pin') || '';
+        let currentIsSuper = localStorage.getItem('sbkd_havan_admin_is_super') === '1' || currentPin === '1234';
         let currentStatusFilter = 'ALL';
         let searchDebounceTimer = null;
         let allApplications = [];
@@ -596,6 +624,9 @@
         window.addEventListener('DOMContentLoaded', () => {
             if (currentPin) {
                 document.getElementById('pinModal').style.display = 'none';
+                if (currentIsSuper) {
+                    document.getElementById('btnSevadarAccess').style.display = 'inline-flex';
+                }
                 loadApplications();
             } else {
                 document.getElementById('pinModal').style.display = 'flex';
@@ -621,8 +652,15 @@
                 const data = await res.json();
                 if (data.success) {
                     currentPin = pinVal;
+                    currentIsSuper = (data.is_super === true || data.role === 'SUPER_ADMIN' || currentPin === '1234');
                     localStorage.setItem('sbkd_havan_admin_pin', currentPin);
+                    localStorage.setItem('sbkd_havan_admin_is_super', currentIsSuper ? '1' : '0');
                     document.getElementById('pinModal').style.display = 'none';
+                    if (currentIsSuper) {
+                        document.getElementById('btnSevadarAccess').style.display = 'inline-flex';
+                    } else {
+                        document.getElementById('btnSevadarAccess').style.display = 'none';
+                    }
                     loadApplications();
                 } else {
                     errEl.innerText = data.error || 'अमान्य PIN! पुनः प्रयास करें।';
@@ -636,10 +674,97 @@
 
         function logoutAdmin() {
             localStorage.removeItem('sbkd_havan_admin_pin');
+            localStorage.removeItem('sbkd_havan_admin_is_super');
             currentPin = '';
+            currentIsSuper = false;
+            document.getElementById('btnSevadarAccess').style.display = 'none';
             document.getElementById('adminPinInput').value = '';
             document.getElementById('pinErrorMsg').style.display = 'none';
             document.getElementById('pinModal').style.display = 'flex';
+        }
+
+        // Sevadar Access Management (Super Admin Exclusive)
+        function openSevadarModal() {
+            document.getElementById('sevadarModal').style.display = 'flex';
+            document.getElementById('sevadarActionStatus').innerText = '';
+            loadSevadarsList();
+        }
+
+        function closeSevadarModal() {
+            document.getElementById('sevadarModal').style.display = 'none';
+        }
+
+        async function loadSevadarsList() {
+            const container = document.getElementById('sevadarListContainer');
+            container.innerHTML = '<div style="text-align:center; padding:30px; color:#757575;"><div style="font-size:1.8rem; margin-bottom:8px;">⏳</div>सेवादार सूची लोड हो रही है...</div>';
+            try {
+                const res = await fetch(`${API_URL}?action=GET_SEVADAR_ACCESS&admin_pin=${encodeURIComponent(currentPin)}`);
+                const data = await res.json();
+                if (data.success && data.sevadars) {
+                    if (data.sevadars.length === 0) {
+                        container.innerHTML = '<div style="text-align:center; padding:30px; color:#757575;">कोई सेवादार खाता नहीं मिला।</div>';
+                        return;
+                    }
+                    let html = '<div style="display:flex; flex-direction:column; gap:10px;">';
+                    data.sevadars.forEach(s => {
+                        const isSuper = (s.role === 'SUPER_ADMIN' || s.username === 'admin');
+                        const canManage = (s.can_manage_havan == 1) || isSuper;
+                        html += `
+                            <div style="background:#FAFAFA; border:1px solid #E0E0E0; border-radius:10px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                                <div>
+                                    <div style="font-weight:bold; font-size:0.95rem; color:#800000; display:flex; align-items:center; gap:6px;">
+                                        ${escapeHtml(s.name)}
+                                        ${isSuper ? '<span style="background:#4A148C; color:white; font-size:0.7rem; padding:2px 6px; border-radius:10px;">Super Admin</span>' : '<span style="background:#E0E0E0; color:#333; font-size:0.7rem; padding:2px 6px; border-radius:10px;">सेवादार</span>'}
+                                    </div>
+                                    <div style="font-size:0.8rem; color:#616161; margin-top:2px;">
+                                        👤 यूजरनेम: <b>${escapeHtml(s.username)}</b> ${s.phone_number ? '• 📞 ' + escapeHtml(s.phone_number) : ''}
+                                    </div>
+                                </div>
+                                <div>
+                                    ${isSuper ? 
+                                        '<span style="background:#E8F5E9; color:#2E7D32; font-weight:bold; font-size:0.8rem; padding:4px 10px; border-radius:20px; border:1px solid #A5D6A7;">✓ पूर्ण अधिकार (Master)</span>' :
+                                        `<button onclick="toggleSevadarHavanAccess(${s.id}, ${canManage ? 0 : 1})" style="background:${canManage ? '#2E7D32' : '#757575'}; color:white; border:none; padding:6px 14px; border-radius:20px; font-size:0.8rem; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;">
+                                            ${canManage ? '✓ अनुमति प्राप्त (Active)' : '🔒 अनुमति नहीं (Inactive)'}
+                                        </button>`
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `<div style="color:#C62828; text-align:center; padding:20px;">${escapeHtml(data.error || 'सेवादार सूची लोड नहीं हो सकी')}</div>`;
+                }
+            } catch (err) {
+                container.innerHTML = '<div style="color:#C62828; text-align:center; padding:20px;">सर्वर से संपर्क नहीं हो सका।</div>';
+            }
+        }
+
+        async function toggleSevadarHavanAccess(sevadarId, newStatus) {
+            const statusEl = document.getElementById('sevadarActionStatus');
+            statusEl.innerText = 'अपडेट हो रहा है...';
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'TOGGLE_SEVADAR_ACCESS',
+                        admin_pin: currentPin,
+                        sevadar_id: sevadarId,
+                        can_manage_havan: newStatus
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    statusEl.innerText = data.message || 'सफलतापूर्वक अपडेट हुआ!';
+                    loadSevadarsList();
+                } else {
+                    statusEl.innerText = data.error || 'अपडेट विफल!';
+                }
+            } catch (err) {
+                statusEl.innerText = 'सर्वर त्रुटि!';
+            }
         }
 
         function setFilter(status) {
@@ -687,7 +812,18 @@
                         logoutAdmin();
                         return;
                     }
-                    container.innerHTML = `<div class="empty-state"><h3>त्रुटि</h3><p>${data.error || 'डेटा प्राप्त करने में समस्या'}</p></div>`;
+                    if (res.status === 403 || data.access_denied) {
+                        container.innerHTML = `
+                            <div class="empty-state" style="border: 2px solid #FFA000; background: #FFF8E1;">
+                                <div style="font-size: 3rem; margin-bottom: 10px;">🔒</div>
+                                <h3 style="color: #E65100;">अनुमति प्रतिबंधित (Access Denied)</h3>
+                                <p style="color: #5D4037; max-width: 500px; margin: 8px auto;">${escapeHtml(data.error || 'हवन आवेदन देखने की अनुमति केवल सुपर एडमिन द्वारा स्वीकृत सेवादारों को ही है। कृपया सुपर एडमिन से संपर्क करें।')}</p>
+                                <button onclick="logoutAdmin()" class="btn-header" style="background: #E65100; margin-top: 15px;">अन्य PIN से लॉगिन करें</button>
+                            </div>
+                        `;
+                        return;
+                    }
+                    container.innerHTML = `<div class="empty-state"><h3>त्रुटि</h3><p>${escapeHtml(data.error || 'डेटा प्राप्त करने में समस्या')}</p></div>`;
                     return;
                 }
 

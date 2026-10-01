@@ -67,6 +67,14 @@ try {
     // Ignore schema errors if already exists
 }
 
+// Ensure admins table has can_manage_havan column
+try {
+    $pdo->exec("ALTER TABLE admins ADD COLUMN can_manage_havan TINYINT(1) NOT NULL DEFAULT 0");
+} catch (Exception $e) {}
+try {
+    $pdo->exec("UPDATE admins SET can_manage_havan = 1 WHERE role = 'SUPER_ADMIN' OR username = 'admin'");
+} catch (Exception $e) {}
+
 $rawInput = file_get_contents('php://input');
 $input = json_decode($rawInput, true) ?: $_POST;
 $action = strtoupper(trim($input['action'] ?? $_GET['action'] ?? ''));
@@ -86,27 +94,72 @@ if (strpos($clientIp, ',') !== false) {
 function isHavanAdminAuthorized($input, $pdo) {
     $pin = trim($input['admin_pin'] ?? $_GET['admin_pin'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_PIN'] ?? '');
     if ($pin === '1234') {
-        return ['name' => 'आश्रम व्यवस्थापक', 'role' => 'SUPER_ADMIN'];
+        return ['name' => 'आश्रम मुख्य व्यवस्थापक', 'role' => 'SUPER_ADMIN', 'is_super' => true, 'can_manage_havan' => 1];
     }
 
     if (!empty($pin)) {
         try {
-            $stmt = $pdo->prepare("SELECT name, role FROM admins WHERE pin = :pin AND is_active = 1 LIMIT 1");
+            $stmt = $pdo->prepare("SELECT id, name, username, phone_number, role, can_manage_havan FROM admins WHERE pin = :pin AND is_active = 1 LIMIT 1");
             $stmt->execute([':pin' => $pin]);
             $adm = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($adm) return $adm;
+            if ($adm) {
+                $isSuper = ($adm['role'] === 'SUPER_ADMIN' || $adm['username'] === 'admin');
+                $canHavan = !empty($adm['can_manage_havan']) || $isSuper;
+                if ($canHavan) {
+                    return [
+                        'id' => $adm['id'],
+                        'name' => $adm['name'],
+                        'username' => $adm['username'],
+                        'phone_number' => $adm['phone_number'],
+                        'role' => $adm['role'],
+                        'is_super' => $isSuper,
+                        'can_manage_havan' => 1
+                    ];
+                } else {
+                    return [
+                        'access_denied' => true,
+                        'name' => $adm['name'],
+                        'reason' => 'हवन आवेदन देखने की अनुमति केवल सुपर एडमिन द्वारा स्वीकृत सेवादारों को ही है।'
+                    ];
+                }
+            }
         } catch (Exception $e) {}
     }
 
     $adminToken = $input['admin_token'] ?? $_GET['admin_token'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_TOKEN'] ?? '';
     if (!empty($adminToken)) {
         $sess = verifyAdminSessionToken($adminToken, $pdo);
-        if ($sess) return ['name' => $sess['admin_name'], 'role' => $sess['admin_role']];
+        if ($sess) {
+            $isSuper = ($sess['admin_role'] === 'SUPER_ADMIN');
+            $canHavan = $isSuper;
+            if (!$canHavan && !empty($sess['admin_id'])) {
+                try {
+                    $chk = $pdo->prepare("SELECT can_manage_havan FROM admins WHERE id = :id LIMIT 1");
+                    $chk->execute([':id' => $sess['admin_id']]);
+                    $canHavan = intval($chk->fetchColumn()) === 1;
+                } catch (Exception $e) {}
+            }
+            if ($canHavan) {
+                return [
+                    'id' => $sess['admin_id'] ?? 0,
+                    'name' => $sess['admin_name'],
+                    'role' => $sess['admin_role'],
+                    'is_super' => $isSuper,
+                    'can_manage_havan' => 1
+                ];
+            } else {
+                return [
+                    'access_denied' => true,
+                    'name' => $sess['admin_name'],
+                    'reason' => 'हवन आवेदन देखने की अनुमति केवल सुपर एडमिन द्वारा स्वीकृत सेवादारों को ही है।'
+                ];
+            }
+        }
     }
 
     $apiKey = $input['api_key'] ?? $_GET['api_key'] ?? $_SERVER['HTTP_X_SBKD_API_KEY'] ?? '';
     if (!empty($apiKey) && defined('SBKD_API_SECRET') && $apiKey === SBKD_API_SECRET) {
-        return ['name' => 'सुपर एडमिन (API)', 'role' => 'SUPER_ADMIN'];
+        return ['name' => 'सुपर एडमिन (API)', 'role' => 'SUPER_ADMIN', 'is_super' => true, 'can_manage_havan' => 1];
     }
 
     return false;
@@ -271,20 +324,36 @@ if ($action === 'ADMIN_LOGIN') {
             "success" => true,
             "admin_name" => "आश्रम मुख्य व्यवस्थापक",
             "role" => "SUPER_ADMIN",
+            "is_super" => true,
+            "can_manage_havan" => 1,
             "token" => "SBKD_HAVAN_" . md5(time() . "1234")
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
     try {
-        $stmt = $pdo->prepare("SELECT name, role FROM admins WHERE pin = :pin AND is_active = 1 LIMIT 1");
+        $stmt = $pdo->prepare("SELECT id, name, username, phone_number, role, can_manage_havan FROM admins WHERE pin = :pin AND is_active = 1 LIMIT 1");
         $stmt->execute([':pin' => $pin]);
         $adm = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($adm) {
+            $isSuper = ($adm['role'] === 'SUPER_ADMIN' || $adm['username'] === 'admin');
+            $canHavan = !empty($adm['can_manage_havan']) || $isSuper;
+            if (!$canHavan) {
+                http_response_code(403);
+                echo json_encode([
+                    "success" => false,
+                    "access_denied" => true,
+                    "error" => "नमस्ते {$adm['name']} जी। हवन आवेदन देखने की अनुमति केवल सुपर एडमिन द्वारा स्वीकृत सेवादारों को ही है। कृपया सुपर एडमिन से अनुमति प्राप्त करें।"
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
             echo json_encode([
                 "success" => true,
                 "admin_name" => $adm['name'],
                 "role" => $adm['role'],
+                "is_super" => $isSuper,
+                "can_manage_havan" => 1,
                 "token" => "SBKD_HAVAN_" . md5(time() . $adm['name'])
             ], JSON_UNESCAPED_UNICODE);
             exit;
@@ -293,6 +362,17 @@ if ($action === 'ADMIN_LOGIN') {
 
     http_response_code(401);
     echo json_encode(["success" => false, "error" => "अमान्य एडमिन पिन। कृपया सही 4-अंकीय पिन दर्ज करें।"], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// Check if user is authenticated but denied permission
+if (is_array($adminUser) && !empty($adminUser['access_denied'])) {
+    http_response_code(403);
+    echo json_encode([
+        "success" => false,
+        "access_denied" => true,
+        "error" => $adminUser['reason'] ?? "हवन आवेदन देखने की अनुमति केवल सुपर एडमिन द्वारा स्वीकृत सेवादारों को ही है।"
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -479,6 +559,75 @@ if ($action === 'DELETE' || $action === 'DELETE_APPLICATION') {
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(["success" => false, "error" => "हटाने में त्रुटि: " . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 6. GET SEVADARS LIST & HAVAN ACCESS (Super Admin Exclusive)
+// -----------------------------------------------------------------------------
+if ($action === 'GET_SEVADAR_ACCESS' || $action === 'GET_SEVADARS') {
+    if (empty($adminUser['is_super'])) {
+        http_response_code(403);
+        echo json_encode(["success" => false, "error" => "यह अधिकार केवल सुपर एडमिन को है।"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    try {
+        $stmt = $pdo->query("SELECT id, name, username, phone_number, role, can_manage_havan, is_active FROM admins ORDER BY id ASC");
+        $sevadars = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        echo json_encode([
+            "success" => true,
+            "sevadars" => $sevadars
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => "सेवादार सूची प्राप्त करने में त्रुटि: " . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 7. TOGGLE SEVADAR HAVAN ACCESS (Super Admin Exclusive)
+// -----------------------------------------------------------------------------
+if ($action === 'TOGGLE_SEVADAR_ACCESS') {
+    if (empty($adminUser['is_super'])) {
+        http_response_code(403);
+        echo json_encode(["success" => false, "error" => "यह अधिकार केवल सुपर एडमिन को है।"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $sevadarId = intval($input['sevadar_id'] ?? 0);
+    $canManage = !empty($input['can_manage_havan']) ? 1 : 0;
+
+    if ($sevadarId <= 0) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "error" => "अमान्य सेवादार आईडी।"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    try {
+        $stmt = $pdo->prepare("UPDATE admins SET can_manage_havan = :cm WHERE id = :id");
+        $stmt->execute([':cm' => $canManage, ':id' => $sevadarId]);
+
+        // Get sevadar name
+        $nameStmt = $pdo->prepare("SELECT name FROM admins WHERE id = :id LIMIT 1");
+        $nameStmt->execute([':id' => $sevadarId]);
+        $sevName = $nameStmt->fetchColumn() ?: "सेवादार";
+
+        $statusMsg = $canManage ? "हवन आवेदन देखने की अनुमति प्रदान कर दी गई है।" : "हवन आवेदन देखने की अनुमति वापस ले ली गई है।";
+
+        echo json_encode([
+            "success" => true,
+            "sevadar_id" => $sevadarId,
+            "can_manage_havan" => $canManage,
+            "message" => "✓ {$sevName} को {$statusMsg}"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => "अनुमति अपडेट करने में त्रुटि: " . $e->getMessage()], JSON_UNESCAPED_UNICODE);
         exit;
     }
 }

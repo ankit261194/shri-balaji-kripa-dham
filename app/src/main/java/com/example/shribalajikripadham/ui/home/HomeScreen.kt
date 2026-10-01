@@ -160,6 +160,7 @@ fun HomeScreen(
     onNavigateToPanchang: () -> Unit = {},
     onNavigateToSacredGranth: () -> Unit = {},
     onNavigateToDharamshala: () -> Unit = {},
+    onNavigateToHavanApplication: () -> Unit = {},
     onToggleLanguage: () -> Unit
 ) {
     val context = LocalContext.current
@@ -539,6 +540,53 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
+                    // 🔥 Prominent Sacred Havan Button (Top Action in Side Drawer)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 6.dp)
+                            .clickable {
+                                scope.launch { drawerState.close() }
+                                onNavigateToHavanApplication()
+                            },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                        border = BorderStroke(1.5.dp, Color(0xFFFF9800)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFFF5722)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("🔥", fontSize = 18.sp)
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (isHindi) "हवन कराने हेतु आवेदन" else "Apply for Sacred Havan",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFBF360C)
+                                )
+                                Text(
+                                    text = if (isHindi) "संकट निवारण एवं गृह शांति अनुष्ठान" else "Crisis Relief & Griha Shanti",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF795548)
+                                )
+                            }
+                            Text("👉", fontSize = 16.sp)
+                        }
+                    }
+
                     Text(
                         text = if (isHindi) "🚩 धाम सेवाएं व सुविधाएं" else "🚩 Ashram Services & Features",
                         fontSize = 12.sp,
@@ -550,6 +598,10 @@ fun HomeScreen(
                     // Navigation Items
                     data class NavDrawerItem(val icon: String, val title: String, val action: () -> Unit)
                     val navItems = buildList {
+                        add(NavDrawerItem("🔥", if (isHindi) "हवन कराने हेतु आवेदन" else "Apply for Sacred Havan", {
+                            scope.launch { drawerState.close() }
+                            onNavigateToHavanApplication()
+                        }))
                         add(NavDrawerItem("🏠", if (isHindi) "मुख्य पृष्ठ (दर्शन व टोकन)" else "Home (Darshan & Token)", {
                             selectedHomeTab = HomeTab.DARSHAN_TOKEN
                             scope.launch {

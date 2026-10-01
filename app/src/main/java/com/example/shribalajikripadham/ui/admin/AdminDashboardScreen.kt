@@ -238,6 +238,7 @@ fun AdminDashboardScreen(
     var newSevCanContent by remember { mutableStateOf(false) }
     var newSevCanPhotos by remember { mutableStateOf(false) }
     var newSevCanArzi by remember { mutableStateOf(false) }
+    var newSevCanHavan by remember { mutableStateOf(false) }
     var createSevErrorMsg by remember { mutableStateOf<String?>(null) }
 
     // App Customizer
@@ -353,6 +354,7 @@ fun AdminDashboardScreen(
     var editSevCanCustomTokenNumber by remember { mutableStateOf(false) }
     var editSevCanExportPdf by remember { mutableStateOf(true) }
     var editSevCanArzi by remember { mutableStateOf(false) }
+    var editSevCanHavan by remember { mutableStateOf(false) }
     var customDistancesList by remember { mutableStateOf<List<CustomCityDistance>>(emptyList()) }
     var uiSectionsList by remember { mutableStateOf<List<UiSectionConfig>>(emptyList()) }
 
@@ -1138,7 +1140,9 @@ fun AdminDashboardScreen(
             if (isSuper || (settings.canAdminViewPaymentHistory && admin.canManageExpenses)) {
                 allowedTabs.add(if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊")
             }
-            allowedTabs.add(if (isHindi) "🔥 हवन आवेदन" else "🔥 Havan Requests")
+            if (isSuper || admin.canManageHavan) {
+                allowedTabs.add(if (isHindi) "🔥 हवन आवेदन" else "🔥 Havan Requests")
+            }
             if (isSuper) {
                 allowedTabs.add(if (isHindi) "सेवाएं ऑन/ऑफ" else "Services")
                 allowedTabs.add(if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar")
@@ -1262,6 +1266,7 @@ fun AdminDashboardScreen(
                             Triple("सेवादार नियंत्रण", isSuper, "👥"),
                             Triple("भक्त फोटो", admin.canViewDevoteePhotos || isSuper, "📸"),
                             Triple("अर्जी लेजर", isSuper || admin.canManageArzi, "📦"),
+                            Triple("हवन आवेदन", isSuper || admin.canManageHavan, "🔥"),
                             Triple("महा-लेजर", isSuper || (settings.canAdminViewPaymentHistory && admin.canManageExpenses), "📊"),
                             Triple("ID कार्ड स्टूडियो", isSuper, "🪪")
                         )
@@ -1743,6 +1748,17 @@ fun AdminDashboardScreen(
                                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                     }
                                 },
+                                onToggleHavan = { targetAdmin, isEnabled ->
+                                    scope.launch {
+                                        repository.updateAdminHavanPermission(targetAdmin.id, isEnabled)
+                                        refreshData()
+                                        val msg = if (isEnabled)
+                                            (if (isHindi) "हवन आवेदन प्रबंधन अधिकार दिया गया" else "Havan permission granted.")
+                                        else
+                                            (if (isHindi) "हवन आवेदन प्रबंधन अधिकार वापस लिया गया" else "Havan permission revoked.")
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    }
+                                },
                                 onSendWhatsApp = { targetAdmin ->
                                     sevadarToShareViaWhatsApp = targetAdmin
                                     customSharePassword = ""
@@ -1773,6 +1789,7 @@ fun AdminDashboardScreen(
                                     editSevCanCustomTokenNumber = targetAdmin.canSetCustomTokenNumber
                                     editSevCanExportPdf = targetAdmin.canExportPdf
                                     editSevCanArzi = targetAdmin.canManageArzi
+                                    editSevCanHavan = targetAdmin.canManageHavan
                                 },
                                 onToggleActive = { targetAdmin ->
                                     scope.launch {
@@ -1790,6 +1807,7 @@ fun AdminDashboardScreen(
                                             canScanPaperRegister = targetAdmin.canScanPaperRegister,
                                             canManageParchas = targetAdmin.canManageParchas,
                                             canManageArzi = targetAdmin.canManageArzi,
+                                            canManageHavan = targetAdmin.canManageHavan,
                                             isActive = !targetAdmin.isActive
                                         )
                                         try { repository.publishAdminsToGitHub() } catch (e: Exception) {}
@@ -2602,6 +2620,10 @@ fun AdminDashboardScreen(
                         Checkbox(checked = newSevCanArzi, onCheckedChange = { newSevCanArzi = it })
                         Text(if (isHindi) "📦 अर्जी डिब्बा वितरण व लेजर प्रबंधन" else "Manage Arzi Distribution & Ledger", fontSize = 13.sp)
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = newSevCanHavan, onCheckedChange = { newSevCanHavan = it })
+                        Text(if (isHindi) "🔥 हवन आवेदन प्रबंधन अधिकार" else "Manage Havan Applications", fontSize = 13.sp)
+                    }
                 }
             },
             confirmButton = {
@@ -2622,6 +2644,7 @@ fun AdminDashboardScreen(
                                 if (newSevCanScanRegister) perms.add("रजिस्टर कॉपी स्कैन")
                                 if (newSevCanParchas) perms.add("आश्रम पावन पर्चे")
                                 if (newSevCanArzi) perms.add("अर्जी डिब्बा व लेजर")
+                                if (newSevCanHavan) perms.add("हवन आवेदन प्रबंधन")
 
                                 val (createdOk, createMsg) = repository.createSevadarAdmin(
                                     name = newSevName,
@@ -2646,6 +2669,7 @@ fun AdminDashboardScreen(
                                     canSetCustomTokenNumber = newSevCanCustomTokenNumber,
                                     canExportPdf = newSevCanExportPdf,
                                     canManageArzi = newSevCanArzi,
+                                    canManageHavan = newSevCanHavan,
                                     photoUri = newSevPhotoUri
                                 )
 
@@ -3219,6 +3243,10 @@ fun AdminDashboardScreen(
                         Checkbox(checked = editSevCanArzi, onCheckedChange = { editSevCanArzi = it })
                         Text(if (isHindi) "📦 अर्जी डिब्बा वितरण व लेजर प्रबंधन" else "Manage Arzi Distribution & Ledger", fontSize = 13.sp)
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = editSevCanHavan, onCheckedChange = { editSevCanHavan = it })
+                        Text(if (isHindi) "🔥 हवन आवेदन प्रबंधन अधिकार" else "Manage Havan Applications", fontSize = 13.sp)
+                    }
                 }
             },
             confirmButton = {
@@ -3250,6 +3278,7 @@ fun AdminDashboardScreen(
                                     canSetCustomTokenNumber = editSevCanCustomTokenNumber,
                                     canExportPdf = editSevCanExportPdf,
                                     canManageArzi = editSevCanArzi,
+                                    canManageHavan = editSevCanHavan,
                                     isActive = target.isActive
                                 )
                             )
@@ -6800,6 +6829,7 @@ fun SevadarManagementTab(
     onToggleAnywhere: (Admin, Boolean) -> Unit,
     onToggleScanRegister: (Admin, Boolean) -> Unit,
     onToggleParchas: (Admin, Boolean) -> Unit,
+    onToggleHavan: (Admin, Boolean) -> Unit,
     onSendWhatsApp: (Admin) -> Unit,
     onDelete: (Admin) -> Unit
 ) {
@@ -6877,7 +6907,8 @@ fun SevadarManagementTab(
                             if (a.canEditAshramInfo) "कंटेंट" else null,
                             if (a.canViewDevoteePhotos) "भक्त फोटो" else null,
                             if (a.canScanPaperRegister) "रजिस्टर स्कैन" else null,
-                            if (a.canManageParchas) "आश्रम पर्चे" else null
+                            if (a.canManageParchas) "आश्रम पर्चे" else null,
+                            if (a.canManageHavan) "हवन आवेदन" else null
                         ).joinToString(", "),
                         fontSize = 12.sp,
                         color = Color.DarkGray
@@ -6993,6 +7024,44 @@ fun SevadarManagementTab(
                                     checked = a.canManageParchas,
                                     onCheckedChange = { isChecked ->
                                         onToggleParchas(a, isChecked)
+                                    }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+                        // Sacred Havan Applications Management Quick Switch (Super Admin Control)
+                        Surface(
+                            color = if (a.canManageHavan) Color(0xFFFFF3E0) else Color(0xFFFAFAFA),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (a.canManageHavan) Color(0xFFFF9800) else Color(0xFFE0E0E0)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isHindi) "🔥 हवन आवेदन प्रबंधन अधिकार (Super Admin Control)" else "🔥 Havan Applications Access",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = if (a.canManageHavan) Color(0xFFE65100) else Color.DarkGray
+                                    )
+                                    Text(
+                                        text = if (a.canManageHavan)
+                                            (if (isHindi) "सक्रिय: हवन आवेदन देखने, स्थिति बदलने व संपर्क करने की अनुमति है।" else "Active: Can view and manage havan applications.")
+                                        else
+                                            (if (isHindi) "अक्रिय: केवल सुपर एडमिन ही हवन आवेदन देख सकते हैं।" else "Inactive: Restricted to Super Admin."),
+                                        fontSize = 10.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                                Switch(
+                                    checked = a.canManageHavan,
+                                    onCheckedChange = { isChecked ->
+                                        onToggleHavan(a, isChecked)
                                     }
                                 )
                             }

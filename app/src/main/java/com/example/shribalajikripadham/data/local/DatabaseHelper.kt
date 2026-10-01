@@ -374,6 +374,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     can_issue_tokens_anywhere INTEGER NOT NULL DEFAULT 0,
                     can_scan_paper_register INTEGER NOT NULL DEFAULT 0,
                     can_manage_parchas INTEGER NOT NULL DEFAULT 0,
+                    can_manage_arzi INTEGER NOT NULL DEFAULT 0,
+                    can_manage_havan INTEGER NOT NULL DEFAULT 0,
                     can_cancel_tokens INTEGER NOT NULL DEFAULT 0,
                     can_delete_tokens INTEGER NOT NULL DEFAULT 0,
                     can_custom_token_number INTEGER NOT NULL DEFAULT 0,
@@ -607,6 +609,36 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             """.trimIndent())
         } catch (e: Exception) { e.printStackTrace() }
 
+        // 16. Havan Applications Table (Devotee Requests Ledger)
+        try {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS havan_applications (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    application_no TEXT NOT NULL UNIQUE,
+                    devotee_name TEXT NOT NULL,
+                    phone_number TEXT NOT NULL,
+                    whatsapp_number TEXT NOT NULL DEFAULT '',
+                    preferred_date TEXT NOT NULL,
+                    address TEXT NOT NULL,
+                    village_city TEXT NOT NULL DEFAULT '',
+                    district TEXT NOT NULL DEFAULT '',
+                    state TEXT NOT NULL DEFAULT 'उत्तर प्रदेश',
+                    pincode TEXT NOT NULL DEFAULT '',
+                    gotra TEXT NOT NULL DEFAULT '',
+                    family_members_count INTEGER NOT NULL DEFAULT 4,
+                    havan_purpose TEXT NOT NULL,
+                    problem_details TEXT NOT NULL DEFAULT '',
+                    estimated_cost REAL NOT NULL DEFAULT 14000.0,
+                    cost_acknowledged INTEGER NOT NULL DEFAULT 1,
+                    travel_fare_acknowledged INTEGER NOT NULL DEFAULT 1,
+                    status TEXT NOT NULL DEFAULT 'PENDING',
+                    admin_notes TEXT NOT NULL DEFAULT '',
+                    created_at INTEGER NOT NULL,
+                    synced_to_cloud INTEGER NOT NULL DEFAULT 0
+                )
+            """.trimIndent())
+        } catch (e: Exception) { e.printStackTrace() }
+
         // Safe Index Creation - Guaranteed to execute only after all tables exist
         try { db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_device_darbar ON device_registrations (device_id, darbar_date)") } catch (e: Exception) {}
         try { db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_device_darbar ON tokens (device_id, darbar_date) WHERE registered_by NOT IN ('SUPER_ADMIN', 'SEVADAR_DESK')") } catch (e: Exception) {}
@@ -824,6 +856,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN ad_target_url TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN ad_placement TEXT NOT NULL DEFAULT 'HOME_BOTTOM'",
             "ALTER TABLE admins ADD COLUMN can_manage_arzi INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_havan INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ui_section_configs ADD COLUMN target_audience TEXT NOT NULL DEFAULT 'ALL'",
             "ALTER TABLE ashram_settings ADD COLUMN is_outstation_advance_allowed INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN outstation_min_distance_km REAL NOT NULL DEFAULT 30.0",
@@ -874,7 +907,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         }
         autoMigrateSettingsColumns(db)
         try {
-            db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1, can_manage_arzi = 1 WHERE role = 'SUPER_ADMIN'")
+            db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1, can_manage_arzi = 1, can_manage_havan = 1 WHERE role = 'SUPER_ADMIN'")
         } catch (ignored: Exception) {}
     }
 
@@ -982,6 +1015,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     put("can_custom_token_number", 1)
                     put("can_export_pdf", 1)
                     put("can_manage_arzi", 1)
+                    put("can_manage_havan", 1)
                     put("photo_uri", "")
                     put("is_active", 1)
                     put("created_at", System.currentTimeMillis())

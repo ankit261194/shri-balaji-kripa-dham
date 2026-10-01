@@ -634,6 +634,26 @@ try {
         } catch (Throwable $tokEx) {}
     }
 
+    // Auto-rollover if past date
+    $rawDDate = !empty($row['darbar_date']) ? $row['darbar_date'] : $fb['darbar_date'];
+    $todayMidnight = strtotime('today');
+    $activeDarbarDate = $rawDDate;
+    $dTs = strtotime($rawDDate);
+    if ($dTs !== false && $dTs < $todayMidnight) {
+        $todayW = (int)date('w');
+        $nextSunTs = ($todayW === 0 && (int)date('H') < 18) ? time() : strtotime('next Sunday');
+        $activeDarbarDate = date('Y-m-d', $nextSunTs);
+    }
+
+    $rawTDate = !empty($row['tuesday_darbar_date']) ? $row['tuesday_darbar_date'] : $fb['tuesday_darbar_date'];
+    $activeTuesdayDate = $rawTDate;
+    $tTs = strtotime($rawTDate);
+    if ($tTs !== false && $tTs < $todayMidnight) {
+        $todayW = (int)date('w');
+        $nextTuesTs = ($todayW === 2 && (int)date('H') < 18) ? time() : strtotime('next Tuesday');
+        $activeTuesdayDate = date('Y-m-d', $nextTuesTs);
+    }
+
     $configData = [
         "ashram_name" => !empty($row['ashram_name']) ? $row['ashram_name'] : $fb['ashram_name'],
         "latitude" => isset($row['ashram_latitude']) ? floatval($row['ashram_latitude']) : $fb['latitude'],
@@ -657,7 +677,7 @@ try {
         "tuesday_darbar_timings" => !empty($row['tuesday_darbar_timings']) ? $row['tuesday_darbar_timings'] : $fb['tuesday_darbar_timings'],
         "tuesday_token_service_mode" => !empty($row['tuesday_token_service_mode']) ? $row['tuesday_token_service_mode'] : $fb['tuesday_token_service_mode'],
         "tuesday_scheduled_open_timestamp" => isset($row['tuesday_scheduled_open_timestamp']) ? intval($row['tuesday_scheduled_open_timestamp']) : $fb['tuesday_scheduled_open_timestamp'],
-        "tuesday_darbar_date" => !empty($row['tuesday_darbar_date']) ? $row['tuesday_darbar_date'] : $fb['tuesday_darbar_date'],
+        "tuesday_darbar_date" => $activeTuesdayDate,
         "tuesday_current_serving_token" => isset($row['tuesday_current_serving_token']) ? intval($row['tuesday_current_serving_token']) : $fb['tuesday_current_serving_token'],
         "tuesday_running_token_number" => isset($row['tuesday_running_token_number']) ? intval($row['tuesday_running_token_number']) : (isset($row['tuesday_current_serving_token']) ? intval($row['tuesday_current_serving_token']) : $fb['tuesday_running_token_number']),
         "tuesday_token_notice" => $row['tuesday_token_notice'] ?? $fb['tuesday_token_notice'],
@@ -671,7 +691,7 @@ try {
         "badi_arzi_rate" => isset($row['badi_arzi_rate']) ? floatval($row['badi_arzi_rate']) : $fb['badi_arzi_rate'],
         "chhoti_arzi_rate" => isset($row['chhoti_arzi_rate']) ? floatval($row['chhoti_arzi_rate']) : $fb['chhoti_arzi_rate'],
         "is_darbar_active" => isset($row['is_darbar_active']) ? boolval($row['is_darbar_active']) : $fb['is_darbar_active'],
-        "darbar_date" => !empty($row['darbar_date']) ? $row['darbar_date'] : $fb['darbar_date'],
+        "darbar_date" => $activeDarbarDate,
         "darbar_timings" => !empty($row['darbar_timings']) ? $row['darbar_timings'] : $fb['darbar_timings'],
         "emergency_notice" => $row['emergency_notice'] ?? $fb['emergency_notice'],
         "is_emergency_notice_visible" => isset($row['is_emergency_notice_visible']) ? boolval($row['is_emergency_notice_visible']) : $fb['is_emergency_notice_visible'],

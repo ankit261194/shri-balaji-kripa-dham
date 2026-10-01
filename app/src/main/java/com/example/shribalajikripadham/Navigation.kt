@@ -45,7 +45,8 @@ enum class AppScreen {
     PANCHANG,
     SACRED_GRANTH,
     DATA_VAULT,
-    DHARAMSHALA
+    DHARAMSHALA,
+    HAVAN_APPLICATION
 }
 
 @Composable
@@ -153,6 +154,7 @@ fun MainNavigation(
                         ).show()
                     }
                 },
+                onNavigateToHavanApplication = { navigateTo(AppScreen.HAVAN_APPLICATION) },
                 onToggleLanguage = { isHindi = !isHindi }
             )
 
@@ -265,6 +267,11 @@ fun MainNavigation(
             AppScreen.DHARAMSHALA -> com.example.shribalajikripadham.ui.dharamshala.DharamshalaBookingScreen(
                 isHindi = isHindi,
                 isDharamshalaLive = settings.isDharamshalaLive,
+                onBack = { navigateBack() }
+            )
+
+            AppScreen.HAVAN_APPLICATION -> com.example.shribalajikripadham.ui.havan.HavanApplicationScreen(
+                isHindi = isHindi,
                 onBack = { navigateBack() }
             )
         }
