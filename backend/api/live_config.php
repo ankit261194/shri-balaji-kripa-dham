@@ -118,7 +118,8 @@ function getFallbackConfig() {
         "youtube_url" => "https://www.youtube.com/@ShriBalajiKripaDham",
         "facebook_url" => "https://www.facebook.com/ShriBalajiKripaDham",
         "instagram_url" => "https://www.instagram.com/shribalajikripadham",
-        "whatsapp_channel_url" => "https://chat.whatsapp.com/invite",
+        "whatsapp_channel_url" => "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0",
+        "whatsapp_group_url" => "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0",
         "footer_title" => "श्री बालाजी कृपा धाम",
         "footer_dedication" => "सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।",
         "footer_copyright" => "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।",
@@ -213,7 +214,8 @@ $targetCols = [
     "youtube_url" => "VARCHAR(500) DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham'",
     "facebook_url" => "VARCHAR(500) DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham'",
     "instagram_url" => "VARCHAR(500) DEFAULT ''",
-    "whatsapp_channel_url" => "VARCHAR(500) DEFAULT ''",
+    "whatsapp_channel_url" => "VARCHAR(500) DEFAULT 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0'",
+    "whatsapp_group_url" => "VARCHAR(500) DEFAULT 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0'",
     "footer_title" => "VARCHAR(255) NOT NULL DEFAULT 'श्री बालाजी कृपा धाम'",
     "footer_dedication" => "VARCHAR(500) NOT NULL DEFAULT 'सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।'",
     "footer_copyright" => "VARCHAR(255) NOT NULL DEFAULT '© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।'",
@@ -282,6 +284,8 @@ function runSchemaMigrations($pdo, $targetCols) {
         $pdo->exec("UPDATE ashram_settings SET whatsapp_number = '' WHERE whatsapp_number LIKE '%97206%' OR whatsapp_number LIKE '%98765%'");
         $pdo->exec("UPDATE ashram_settings SET contact_email = '' WHERE contact_email LIKE '%shribalajikripadham@gmail.com%'");
         $pdo->exec("UPDATE ashram_settings SET upi_id = '' WHERE upi_id = 'shribalajikripadham@upi'");
+        $pdo->exec("UPDATE ashram_settings SET whatsapp_channel_url = 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0' WHERE whatsapp_channel_url = '' OR whatsapp_channel_url LIKE '%/invite%' OR whatsapp_channel_url IS NULL");
+        $pdo->exec("UPDATE ashram_settings SET whatsapp_group_url = 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0' WHERE whatsapp_group_url = '' OR whatsapp_group_url LIKE '%/invite%' OR whatsapp_group_url IS NULL");
         $pdo->exec("DELETE FROM sevadars WHERE phone LIKE '%987654321%' OR phone = '' OR name IN ('अंकित शर्मा', 'दीपक कुमार', 'राहुल सिंह', 'सोनू तेवतिया') OR name LIKE '%?%'");
         $pdo->exec("DELETE FROM donors WHERE phone LIKE '%987654321%' OR name IN ('सेठ राधेश्याम जी', 'चौधरी वीरेन्द्र सिंह जी', 'श्री रमेश चंद्र गोयल जी', 'श्री अजय तेवतिया जी', 'श्री Ajay तेवतिया जी') OR name LIKE '%?%'");
     } catch (Throwable $e) {
@@ -731,7 +735,8 @@ try {
         "youtube_url" => $row['youtube_url'] ?? $fb['youtube_url'],
         "facebook_url" => $row['facebook_url'] ?? $fb['facebook_url'],
         "instagram_url" => $row['instagram_url'] ?? $fb['instagram_url'],
-        "whatsapp_channel_url" => $row['whatsapp_channel_url'] ?? $fb['whatsapp_channel_url'],
+        "whatsapp_channel_url" => (!empty($row['whatsapp_channel_url']) && strpos($row['whatsapp_channel_url'], '/invite') === false) ? $row['whatsapp_channel_url'] : $fb['whatsapp_channel_url'],
+        "whatsapp_group_url" => (!empty($row['whatsapp_group_url']) && strpos($row['whatsapp_group_url'], '/invite') === false) ? $row['whatsapp_group_url'] : $fb['whatsapp_group_url'],
         "footer_title" => $row['footer_title'] ?? $fb['footer_title'],
         "footer_dedication" => $row['footer_dedication'] ?? $fb['footer_dedication'],
         "footer_copyright" => $row['footer_copyright'] ?? $fb['footer_copyright'],

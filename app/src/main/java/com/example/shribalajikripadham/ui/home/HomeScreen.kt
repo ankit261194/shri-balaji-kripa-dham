@@ -741,6 +741,16 @@ fun HomeScreen(
                             }
                             shareAppContent(context, msg, if (isHindi) "धाम ऐप शेयर करें" else "Share Ashram App")
                         }))
+                        add(NavDrawerItem("👥", if (isHindi) "व्हाट्सएप ग्रुप से जुड़ें" else "Join WhatsApp Group", {
+                            scope.launch { drawerState.close() }
+                            openSocialMediaLink(
+                                context = context,
+                                rawUrl = settings.whatsappGroupUrl,
+                                defaultUrl = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0",
+                                isWhatsApp = true,
+                                errorMessage = if (isHindi) "व्हाट्सएप्प लिंक या ऐप खोलने में असमर्थ" else "Unable to open WhatsApp"
+                            )
+                        }))
                         add(NavDrawerItem("🔐", if (isHindi) "प्रबंधक / सेवादार लॉगिन" else "Sevadar & Admin Portal", onNavigateToAdmin))
                     }
 
@@ -4237,7 +4247,7 @@ fun RenderClassicSection(
                                 openSocialMediaLink(
                                     context = context,
                                     rawUrl = settings.whatsappGroupUrl,
-                                    defaultUrl = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4",
+                                    defaultUrl = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0",
                                     isWhatsApp = true,
                                     errorMessage = if (isHindi) "व्हाट्सएप्प लिंक या ऐप खोलने में असमर्थ" else "Unable to open WhatsApp"
                                 )

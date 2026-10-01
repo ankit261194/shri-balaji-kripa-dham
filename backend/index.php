@@ -223,7 +223,7 @@ $youtubeUrl = !empty($settings['youtube_channel_url']) ? $settings['youtube_chan
 $facebookUrl = !empty($settings['facebook_page_url']) ? $settings['facebook_page_url'] : (!empty($settings['facebook_url']) ? $settings['facebook_url'] : 'https://www.facebook.com/ShriBalajiKripaDham');
 $instagramUrl = !empty($settings['instagram_url']) ? $settings['instagram_url'] : 'https://www.instagram.com/shribalajikripadham';
 $youtubeLiveUrl = !empty($settings['youtube_live_url']) ? $settings['youtube_live_url'] : '';
-$whatsappChannelUrl = !empty($settings['whatsapp_channel_url']) ? $settings['whatsapp_channel_url'] : 'https://chat.whatsapp.com/invite';
+$whatsappChannelUrl = (!empty($settings['whatsapp_channel_url']) && strpos($settings['whatsapp_channel_url'], '/invite') === false) ? $settings['whatsapp_channel_url'] : 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0';
 $footerTitle = !empty($settings['footer_title']) ? $settings['footer_title'] : 'श्री बालाजी कृपा धाम';
 $footerDedication = !empty($settings['footer_dedication']) ? $settings['footer_dedication'] : 'सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।';
 $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_copyright'] : '© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।';
@@ -1339,6 +1339,9 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                 <a href="<?= htmlspecialchars($youtubeUrl) ?>" target="_blank" class="btn-nav-social btn-nav-youtube" title="आधिकारिक यूट्यूब चैनल">
                     <span>▶️ YouTube</span>
                 </a>
+                <a href="<?= htmlspecialchars($whatsappChannelUrl) ?>" target="_blank" class="btn-nav-social" style="background: #25D366; color: #ffffff;" title="आधिकारिक व्हाट्सएप ग्रुप में शामिल हों">
+                    <span>💬 WhatsApp</span>
+                </a>
                 <a href="<?= htmlspecialchars($facebookUrl) ?>" target="_blank" class="btn-nav-social btn-nav-facebook" title="आधिकारिक फेसबुक पेज">
                     <span>📘 Facebook</span>
                 </a>
@@ -1379,6 +1382,9 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
             <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 15px;">
                 <a href="download.php" class="btn-darbar-token">
                     📲 रविवार टोकन हेतु ऐप डाउनलोड करें
+                </a>
+                <a href="<?= htmlspecialchars($whatsappChannelUrl) ?>" target="_blank" style="background: #25D366; color: #ffffff; padding: 11px 22px; border-radius: 25px; text-decoration: none; font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4); transition: transform 0.2s ease;">
+                    💬 व्हाट्सएप ग्रुप से जुड़ें (Join Group)
                 </a>
                 <a href="https://www.google.com/maps/search/?api=1&query=28.3972915,78.1460410" target="_blank" class="btn-darbar-route">
                     🗺️ आश्रम का गूगल मैप्स मार्ग
@@ -1800,7 +1806,7 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                 📸 इंस्टाग्राम
             </a>
             <a href="<?= htmlspecialchars($whatsappChannelUrl) ?>" target="_blank" style="color: #ffffff; background: #25D366; padding: 7px 16px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
-                💬 व्हाट्सएप चैनल
+                💬 व्हाट्सएप ग्रुप से जुड़ें
             </a>
         </div>
 

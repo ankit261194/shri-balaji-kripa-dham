@@ -35,7 +35,7 @@ data class AshramSettings(
     val apkDownloadUrl: String = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
     val isForceUpdate: Boolean = false,
     // Social Media Links & App Sharing
-    val whatsappGroupUrl: String = "https://chat.whatsapp.com/invite",
+    val whatsappGroupUrl: String = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0",
     val whatsappNumber: String = "",
     val youtubeChannelUrl: String = "https://www.youtube.com/@ShriBalajiKripaDham",
     val facebookPageUrl: String = "https://www.facebook.com/ShriBalajiKripaDham",
@@ -118,7 +118,7 @@ data class AshramSettings(
     val websiteAshramDirections: String = "🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: अनूपशहर (~16 किमी) • जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी)",
     val websiteContactEmail: String = "",
     val websiteInstagramUrl: String = "https://www.instagram.com/shribalajikripadham",
-    val websiteWhatsappChannelUrl: String = "https://chat.whatsapp.com/invite",
+    val websiteWhatsappChannelUrl: String = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0",
     val websiteFooterTitle: String = "श्री बालाजी कृपा धाम",
     val websiteFooterDedication: String = "सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।",
     val websiteFooterCopyright: String = "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।",

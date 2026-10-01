@@ -85,8 +85,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 c.close()
 
                 val targetCols = mapOf(
-                    "whatsapp_channel_url" to "TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite'",
-                    "whatsapp_group_url" to "TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite'",
+                    "whatsapp_channel_url" to "TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0'",
+                    "whatsapp_group_url" to "TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0'",
                     "whatsapp_number" to "TEXT NOT NULL DEFAULT ''",
                     "youtube_channel_url" to "TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham'",
                     "facebook_page_url" to "TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham'",
@@ -314,7 +314,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     update_notes TEXT NOT NULL,
                     apk_download_url TEXT NOT NULL,
                     is_force_update INTEGER NOT NULL,
-                    whatsapp_group_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite',
+                    whatsapp_group_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0',
                     whatsapp_number TEXT NOT NULL DEFAULT '',
                     youtube_channel_url TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham',
                     facebook_page_url TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham',
@@ -345,7 +345,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     tuesday_current_serving_token INTEGER NOT NULL DEFAULT 0,
                     tuesday_running_token_number INTEGER NOT NULL DEFAULT 1,
                     tuesday_token_notice TEXT NOT NULL DEFAULT 'बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।',
-                    whatsapp_channel_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite'
+                    whatsapp_channel_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0'
                 )
             """.trimIndent())
             autoMigrateSettingsColumns(db)
@@ -788,7 +788,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN is_guruji_info_visible INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN is_emergency_notice_visible INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN scheduled_token_open_timestamp INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE ashram_settings ADD COLUMN whatsapp_group_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite'",
+            "ALTER TABLE ashram_settings ADD COLUMN whatsapp_group_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0'",
             "ALTER TABLE ashram_settings ADD COLUMN whatsapp_number TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN youtube_channel_url TEXT NOT NULL DEFAULT 'https://www.youtube.com/@ShriBalajiKripaDham'",
             "ALTER TABLE ashram_settings ADD COLUMN facebook_page_url TEXT NOT NULL DEFAULT 'https://www.facebook.com/ShriBalajiKripaDham'",
@@ -895,7 +895,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN tuesday_current_serving_token INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN tuesday_running_token_number INTEGER NOT NULL DEFAULT 1",
             "ALTER TABLE ashram_settings ADD COLUMN tuesday_token_notice TEXT NOT NULL DEFAULT 'बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।'",
-            "ALTER TABLE ashram_settings ADD COLUMN whatsapp_channel_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/invite'",
+            "ALTER TABLE ashram_settings ADD COLUMN whatsapp_channel_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0'",
             "ALTER TABLE tokens ADD COLUMN darbar_venue TEXT NOT NULL DEFAULT 'DUNGRA_JAAT'",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_darbar_number ON tokens (darbar_date, token_number)",
             "CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date)"
@@ -963,7 +963,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("update_notes", "शून्य डमी डेटा गारंटी, वेबसाइट व एडिटर लाइव सिंक।")
                         put("apk_download_url", "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk")
                         put("is_force_update", 0)
-                        put("whatsapp_group_url", "https://chat.whatsapp.com/invite")
+                        put("whatsapp_group_url", "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0")
                         put("whatsapp_number", "")
                         put("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham")
                         put("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham")
