@@ -87,81 +87,6 @@ $isTokenServiceEnabled = !isset($settings['is_token_service_enabled']) || (int)$
 $isDarbarActive = !isset($settings['is_darbar_active']) || (int)$settings['is_darbar_active'] === 1;
 $allowAdminReservedTokens = isset($settings['allow_admin_reserved_tokens']) && (int)$settings['allow_admin_reserved_tokens'] === 1;
 
-// Gating: Tuesday Bulandshahr vs Sunday Dungra Jaat
-if ($isTuesdayVenue) {
-    $isTuesdayDarbarEnabled = !empty($settings['is_tuesday_darbar_enabled']);
-    $tuesdayServiceMode = $settings['tuesday_token_service_mode'] ?? 'AUTO_TUESDAY';
-    $isTuesdayOpen = ($tuesdayServiceMode === 'FORCE_OPEN');
-    if ($tuesdayServiceMode === 'AUTO_TUESDAY') {
-        $dayOfWeek = date('w'); // 2 is Tuesday
-        $hour = intval(date('G'));
-        $isTuesdayOpen = ($dayOfWeek == 2 && $hour >= 8 && $hour < 17);
-    }
-
-    if ($isAdmin && !$isSuperAdmin) {
-        $hasAnytimePermission = $canAdminAnytime || $allowAdminReservedTokens;
-        if ((!$isTuesdayDarbarEnabled || $tuesdayServiceMode === 'FORCE_CLOSED' || !$isTuesdayOpen) && !$hasAnytimePermission) {
-            http_response_code(403);
-            echo json_encode([
-                "success" => false,
-                "error" => "⚠️ मंगलवार बुलन्दशहर टोकन सेवा वर्तमान में बंद है। सामान्य एडमिन केवल टोकन सेवा खुली होने पर ही टोकन बना सकते हैं।"
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-    }
-
-    if (!$isAdmin) {
-        if (!$isTuesdayDarbarEnabled || $tuesdayServiceMode === 'FORCE_CLOSED' || !$isTuesdayOpen) {
-            http_response_code(403);
-            echo json_encode([
-                "success" => false,
-                "error" => "⚠️ मंगलवार बुलन्दशहर दरबार टोकन सेवा वर्तमान में विश्राम पर है। कृपया मंगलवार प्रातः 8:00 बजे प्रयास करें।"
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-    }
-} else {
-    // Sunday gating: 8:30 AM to 5:00 PM (17:00) IST
-    $tokenServiceMode = $settings['token_service_mode'] ?? 'AUTO_SUNDAY';
-    $isSundayOpen = ($tokenServiceMode === 'FORCE_OPEN');
-    if ($tokenServiceMode === 'AUTO_SUNDAY') {
-        $dayOfWeek = intval(date('w')); // 0 is Sunday
-        $hour = intval(date('G'));      // 0-23
-        $minute = intval(date('i'));    // 0-59
-        $currentMinutes = $hour * 60 + $minute;
-        $startMinutes = 8 * 60 + 30;    // 8:30 AM (510 minutes)
-        $endMinutes = 17 * 60;          // 5:00 PM (1020 minutes)
-        $isSundayOpen = ($dayOfWeek === 0 && $currentMinutes >= $startMinutes && $currentMinutes < $endMinutes);
-    }
-
-    if ($isAdmin && !$isSuperAdmin) {
-        $hasAnytimePermission = $canAdminAnytime || $allowAdminReservedTokens;
-        if ((!$isTokenServiceEnabled || !$isDarbarActive || $tokenServiceMode === 'FORCE_CLOSED' || !$isSundayOpen) && !$hasAnytimePermission) {
-            http_response_code(403);
-            echo json_encode([
-                "success" => false,
-                "error" => "⚠️ रविवार टोकन सेवा वर्तमान में बंद है। सामान्य एडमिन केवल टोकन सेवा खुली होने पर (रविवार प्रातः 8:30 से सायं 5:00) ही टोकन बना सकते हैं। बंद समय में टोकन बनाने हेतु सुपर एडमिन की अनुमति आवश्यक है।"
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-    }
-
-    if (!$isAdmin) {
-        if (!$isTokenServiceEnabled || !$isDarbarActive || $tokenServiceMode === 'FORCE_CLOSED' || !$isSundayOpen) {
-            http_response_code(403);
-            $msg = "⚠️ रविवार दरबार टोकन सेवा वर्तमान में विश्राम पर है। टोकन प्रत्येक रविवार प्रातः 8:30 बजे से सायं 5:00 बजे तक ही प्राप्त किए जा सकते हैं।";
-            if ($tokenServiceMode === 'FORCE_CLOSED' || !$isTokenServiceEnabled || !$isDarbarActive) {
-                $msg = "⚠️ रविवार टोकन सेवा वर्तमान में व्यवस्थापक द्वारा विश्राम/स्थगित की गई है। कृपया सेवा पुनः प्रारंभ होने की प्रतीक्षा करें।";
-            }
-            echo json_encode([
-                "success" => false,
-                "error" => $msg
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-    }
-}
-
 // Active Darbar Date determination
 $activeDarbarDate = $isTuesdayVenue 
     ? (!empty($settings['tuesday_darbar_date']) ? $settings['tuesday_darbar_date'] : date('Y-m-d'))
@@ -302,6 +227,81 @@ if (!$isAdmin) {
             }
         } elseif ($isPhysicallyAtAshram) {
             $distanceKm = round($gpsDistanceKm, 2);
+        }
+    }
+}
+
+// 4. Gating: Tuesday Bulandshahr vs Sunday Dungra Jaat Schedule & Timing
+if ($isTuesdayVenue) {
+    $isTuesdayDarbarEnabled = !empty($settings['is_tuesday_darbar_enabled']);
+    $tuesdayServiceMode = $settings['tuesday_token_service_mode'] ?? 'AUTO_TUESDAY';
+    $isTuesdayOpen = ($tuesdayServiceMode === 'FORCE_OPEN');
+    if ($tuesdayServiceMode === 'AUTO_TUESDAY') {
+        $dayOfWeek = date('w'); // 2 is Tuesday
+        $hour = intval(date('G'));
+        $isTuesdayOpen = ($dayOfWeek == 2 && $hour >= 8 && $hour < 17);
+    }
+
+    if ($isAdmin && !$isSuperAdmin) {
+        $hasAnytimePermission = $canAdminAnytime || $allowAdminReservedTokens;
+        if ((!$isTuesdayDarbarEnabled || $tuesdayServiceMode === 'FORCE_CLOSED' || !$isTuesdayOpen) && !$hasAnytimePermission) {
+            http_response_code(403);
+            echo json_encode([
+                "success" => false,
+                "error" => "⚠️ मंगलवार बुलन्दशहर टोकन सेवा वर्तमान में बंद है। सामान्य एडमिन केवल टोकन सेवा खुली होने पर ही टोकन बना सकते हैं।"
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+
+    if (!$isAdmin) {
+        if (!$isTuesdayDarbarEnabled || $tuesdayServiceMode === 'FORCE_CLOSED' || !$isTuesdayOpen) {
+            http_response_code(403);
+            echo json_encode([
+                "success" => false,
+                "error" => "⚠️ मंगलवार बुलन्दशहर दरबार टोकन सेवा वर्तमान में विश्राम पर है। कृपया मंगलवार प्रातः 8:00 बजे प्रयास करें।"
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+} else {
+    // Sunday gating: 8:30 AM to 5:00 PM (17:00) IST
+    $tokenServiceMode = $settings['token_service_mode'] ?? 'AUTO_SUNDAY';
+    $isSundayOpen = ($tokenServiceMode === 'FORCE_OPEN');
+    if ($tokenServiceMode === 'AUTO_SUNDAY') {
+        $dayOfWeek = intval(date('w')); // 0 is Sunday
+        $hour = intval(date('G'));      // 0-23
+        $minute = intval(date('i'));    // 0-59
+        $currentMinutes = $hour * 60 + $minute;
+        $startMinutes = 8 * 60 + 30;    // 8:30 AM (510 minutes)
+        $endMinutes = 17 * 60;          // 5:00 PM (1020 minutes)
+        $isSundayOpen = ($dayOfWeek === 0 && $currentMinutes >= $startMinutes && $currentMinutes < $endMinutes);
+    }
+
+    if ($isAdmin && !$isSuperAdmin) {
+        $hasAnytimePermission = $canAdminAnytime || $allowAdminReservedTokens;
+        if ((!$isTokenServiceEnabled || !$isDarbarActive || $tokenServiceMode === 'FORCE_CLOSED' || !$isSundayOpen) && !$hasAnytimePermission) {
+            http_response_code(403);
+            echo json_encode([
+                "success" => false,
+                "error" => "⚠️ रविवार टोकन सेवा वर्तमान में बंद है। सामान्य एडमिन केवल टोकन सेवा खुली होने पर (रविवार प्रातः 8:30 से सायं 5:00) ही टोकन बना सकते हैं। बंद समय में टोकन बनाने हेतु सुपर एडमिन की अनुमति आवश्यक है।"
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+
+    if (!$isAdmin) {
+        if (!$isTokenServiceEnabled || !$isDarbarActive || $tokenServiceMode === 'FORCE_CLOSED' || !$isSundayOpen) {
+            http_response_code(403);
+            $msg = "⚠️ रविवार दरबार टोकन सेवा वर्तमान में विश्राम पर है। टोकन प्रत्येक रविवार प्रातः 8:30 बजे से सायं 5:00 बजे तक ही प्राप्त किए जा सकते हैं।";
+            if ($tokenServiceMode === 'FORCE_CLOSED' || !$isTokenServiceEnabled || !$isDarbarActive) {
+                $msg = "⚠️ रविवार टोकन सेवा वर्तमान में व्यवस्थापक द्वारा विश्राम/स्थगित की गई है। कृपया सेवा पुनः प्रारंभ होने की प्रतीक्षा करें।";
+            }
+            echo json_encode([
+                "success" => false,
+                "error" => $msg
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
         }
     }
 }
