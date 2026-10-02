@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 101,
-  "version_code": 101,
-  "latest_version_name": "2.56.26",
-  "version_name": "2.56.26",
-  "update_notes_hindi": "v2.56.26 (Build 101): 🌺 दैनिक अलौकिक दर्शन में श्री बालाजी महाराज की दिव्य HD मूर्ति दर्शन हमेशा प्रत्यक्ष व अक्षुण्ण, 📲 स्टेटस बार में अनावश्यक डुप्लीकेट गोले हटाए गए (अब केवल 'मेरा स्टेटस', 'आश्रम दर्शन' और वही अन्य भक्त दिखेंगे जिन्होंने वास्तव में स्टेटस लगाया है), एवं 📸 भक्तों को कोई भी फ़ोटो, दर्शन या अपने विचार सीधे स्टेटस पर लगाने की पूर्ण स्वतंत्रता।",
-  "update_notes_english": "v2.56.26 (Build 101): 🌺 Daily Sacred Darshan always displays Balaji Maharaj HD darshan without blank cards, 📲 Removed duplicate dummy circles from status bar (only My Status, Ashram Story, and real devotee statuses appear), and 📸 full freedom for devotees to post any photo, darshan, or custom caption thoughts.",
-  "apk_url": "https://shribalajikripadham.online/download.php?dl=1",
+  "latest_version_code": 105,
+  "version_code": 105,
+  "latest_version_name": "2.56.30",
+  "version_name": "2.56.30",
+  "update_notes_hindi": "v2.56.30 (Build 105): 🎨 थीम सेलेक्टर अब आकर्षक ड्रॉपडाउन मेनू में! 🛡️ वन-टाइम अनुमतियाँ (स्थान, कैमरा व सूचनाएं अब केवल पहली बार), बार-बार परमिशन मांगना पूरी तरह बंद।",
+  "update_notes_english": "v2.56.30 (Build 105): 🎨 Theme selection moved to Dropdown Menu! 🛡️ One-time unified permissions on launch (no repeated prompts).",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=105",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
-  "is_force_update": false
+  "is_force_update": true
 }

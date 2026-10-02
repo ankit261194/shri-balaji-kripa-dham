@@ -4,7 +4,10 @@
 // Ultra High-Speed Direct Ashram Server APK Delivery Engine (v2.56.28)
 // ==============================================================================
 
-$targetFile = __DIR__ . '/downloads/ShriBalajiKripaDham-v104.apk';
+$targetFile = __DIR__ . '/downloads/ShriBalajiKripaDham-v105.apk';
+if (!file_exists($targetFile) || filesize($targetFile) < 10000000) {
+    $targetFile = __DIR__ . '/downloads/ShriBalajiKripaDham-v104.apk';
+}
 if (!file_exists($targetFile) || filesize($targetFile) < 10000000) {
     $targetFile = __DIR__ . '/downloads/ShriBalajiKripaDham-release.apk';
 }

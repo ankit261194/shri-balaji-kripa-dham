@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 104,
-  "version_code": 104,
-  "latest_version_name": "2.56.29",
-  "version_name": "2.56.29",
-  "update_notes_hindi": "v2.56.29 (Build 104): 🚀 अति-सुरक्षित एवं सुपरफास्ट ऐप स्टार्टअप। क्रैश समस्या का संपूर्ण समाधान। 🔔 वनसिग्नल व लाइव टोकन नोटिफिकेशन अपडेट।",
-  "update_notes_english": "v2.56.29 (Build 104): 🚀 Rock-solid crash-free startup architecture. Instant smooth launch on all Android devices. OneSignal & Live token notifications fully optimized.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=104",
+  "latest_version_code": 105,
+  "version_code": 105,
+  "latest_version_name": "2.56.30",
+  "version_name": "2.56.30",
+  "update_notes_hindi": "v2.56.30 (Build 105): 🎨 थीम सेलेक्टर अब आकर्षक ड्रॉपडाउन मेनू में! 🛡️ वन-टाइम अनुमतियाँ (स्थान, कैमरा व सूचनाएं अब केवल पहली बार), बार-बार परमिशन मांगना पूरी तरह बंद।",
+  "update_notes_english": "v2.56.30 (Build 105): 🎨 Theme selection moved to Dropdown Menu! 🛡️ One-time unified permissions on launch (no repeated prompts).",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=105",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
-  "is_force_update": false
+  "is_force_update": true
 }

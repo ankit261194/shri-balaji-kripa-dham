@@ -27,6 +27,26 @@ if (isset($_GET['sync_docu'])) {
     }
 }
 
+// Sync version.json hook
+if (isset($_GET['sync_version'])) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $raw = file_get_contents('php://input');
+        if (!empty($raw)) {
+            @file_put_contents(__DIR__ . '/version.json', $raw);
+            echo json_encode(["success" => true, "version_synced" => true, "bytes" => strlen($raw)]);
+            exit;
+        }
+    }
+    $sha = $_GET['sha'] ?? 'main';
+    $url = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/{$sha}/backend/version.json?t=" . time();
+    $verContent = @file_get_contents($url);
+    if ($verContent) {
+        @file_put_contents(__DIR__ . '/version.json', $verContent);
+        echo json_encode(["success" => true, "version_synced" => true, "bytes" => strlen($verContent), "sha" => $sha]);
+        exit;
+    }
+}
+
 // Reset requested
 if (isset($_GET['reset'])) {
     if (file_exists($tmpFile)) @unlink($tmpFile);
@@ -68,6 +88,7 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $currentSize = file_exists($tmpFile) ? filesize($tmpFile) : 0;
         if ($isLast && $currentSize > 10000000) {
             rename($tmpFile, $targetFile);
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v105.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v104.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
             echo json_encode([
@@ -75,6 +96,7 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 "complete" => true,
                 "size" => filesize($targetFile),
                 "size_mb" => round(filesize($targetFile) / (1024 * 1024), 2) . " MB",
+                "v105" => file_exists($dlDir . '/ShriBalajiKripaDham-v105.apk'),
                 "v104" => file_exists($dlDir . '/ShriBalajiKripaDham-v104.apk')
             ]);
             exit;
