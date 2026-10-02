@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 108,
-  "version_code": 108,
-  "latest_version_name": "2.56.33",
-  "version_name": "2.56.33",
-  "update_notes_hindi": "v2.56.33 (Build 108): 🛡️ उच्च सुरक्षा अपडेट: रूट व Magisk डिटेक्शन, 60 मीटर कड़ी GPS सटीकता नियम, फ़ेक लोकेशन प्रोवाइडर ब्लॉकिंग और आपातकालीन जीपीएस बाईपास कंट्रोल।",
-  "update_notes_english": "v2.56.33 (Build 108): 🛡️ Advanced Security Update: Root & Magisk detection, 60m strict GPS accuracy enforcement, mock provider blocking, and emergency GPS override control.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=108",
+  "latest_version_code": 109,
+  "version_code": 109,
+  "latest_version_name": "2.56.34",
+  "version_name": "2.56.34",
+  "update_notes_hindi": "v2.56.34 (Build 109): 🛡️ सुरक्षा व फ्रॉड ऑडिट लेज़र: फेक जीपीएस, रूट, डुप्लीकेट फोन व दायरा उल्लंघन प्रयासों का ऑटो-लॉगिंग व एडमिन लाइव डैशबोर्ड।",
+  "update_notes_english": "v2.56.34 (Build 109): 🛡️ Security & Fraud Audit Trail: Automatic logging and admin live dashboard for fake GPS, root, duplicate devices, and geofence violations.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=109",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

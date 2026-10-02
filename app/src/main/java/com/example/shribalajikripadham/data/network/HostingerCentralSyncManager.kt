@@ -2282,6 +2282,67 @@ object HostingerCentralSyncManager {
         }
         Triple(0, 0, emptyList())
     }
+
+    suspend fun fetchCloudSecurityLogs(context: Context, limit: Int = 100): List<com.example.shribalajikripadham.data.model.AuditLogEntry> = withContext(Dispatchers.IO) {
+        val list = mutableListOf<com.example.shribalajikripadham.data.model.AuditLogEntry>()
+        try {
+            val url = URL("${BASE_URL}get_security_logs.php?limit=$limit&nocache=${System.currentTimeMillis()}")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "GET"
+                setRequestProperty("Accept", "application/json")
+                setRequestProperty("User-Agent", "ShriBalajiApp/2.56.34")
+            }
+            if (conn.responseCode in 200..299) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(resp)
+                if (root.optBoolean("success", false)) {
+                    val arr = root.optJSONArray("logs") ?: JSONArray()
+                    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                    for (i in 0 until arr.length()) {
+                        val o = arr.getJSONObject(i)
+                        var timeMillis = System.currentTimeMillis()
+                        val createdAtStr = o.optString("created_at", "")
+                        if (createdAtStr.isNotBlank()) {
+                            try {
+                                timeMillis = sdf.parse(createdAtStr)?.time ?: System.currentTimeMillis()
+                            } catch (ignored: Exception) {}
+                        }
+                        val patientName = o.optString("patient_name", "अज्ञात भक्त")
+                        val phone = o.optString("phone_number", "")
+                        val devId = o.optString("device_id", "")
+                        val ip = o.optString("ip_address", "")
+                        val details = o.optString("details", "")
+                        val combinedDetails = buildString {
+                            if (phone.isNotBlank()) append("📱 फोन: $phone  ")
+                            if (ip.isNotBlank()) append("🌐 IP: $ip  ")
+                            if (devId.isNotBlank()) append("🔑 ID: ${devId.take(16)}...  ")
+                            if (details.isNotBlank()) append("ℹ️ $details")
+                        }.trim()
+
+                        list.add(
+                            com.example.shribalajikripadham.data.model.AuditLogEntry(
+                                id = o.optLong("id", 0L),
+                                action = o.optString("action", "SECURITY_BLOCKED"),
+                                tokenNumber = 0,
+                                performedBy = if (patientName.isNotBlank()) patientName else "अज्ञात भक्त",
+                                role = "BLOCKED_DEVICE",
+                                reason = o.optString("reason", "सुरक्षा नियम उल्लंघन"),
+                                darbarDate = o.optString("darbar_date", ""),
+                                details = combinedDetails,
+                                timestamp = timeMillis
+                            )
+                        )
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        list
+    }
 }
 
 

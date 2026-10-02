@@ -1151,7 +1151,7 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "सुपर कंट्रोल" else "Super Control")
                 allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
                 allowedTabs.add(if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️")
-                allowedTabs.add(if (isHindi) "📜 ऑडिट लेज़र" else "Audit Trail")
+                allowedTabs.add(if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit")
                 allowedTabs.add(if (isHindi) "ऐप कस्टमाइजर" else "Customizer")
                 allowedTabs.add(if (isHindi) "कस्टम दूरियाँ" else "Distances")
                 allowedTabs.add(if (isHindi) "🪪 ID कार्ड स्टूडियो" else "🪪 ID Card Studio")
@@ -1719,7 +1719,7 @@ fun AdminDashboardScreen(
                                 }
                             )
                         }
-                        currentTabTitle == "📜 ऑडिट लेज़र" || currentTabTitle == "Audit Trail" -> {
+                        currentTabTitle == "🛡️ सुरक्षा व ऑडिट" || currentTabTitle == "Security & Audit" || currentTabTitle == "📜 ऑडिट लेज़र" || currentTabTitle == "Audit Trail" -> {
                             AuditTrailTab(
                                 isHindi = isHindi,
                                 repository = repository,
@@ -12797,7 +12797,7 @@ fun AuditTrailTab(
         scope.launch {
             isLoading = true
             try {
-                auditLogs = repository.getAuditLogs(200)
+                auditLogs = repository.getCombinedAuditLogs(context, 200)
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
@@ -12810,8 +12810,11 @@ fun AuditTrailTab(
         loadLogs()
     }
 
+    val securityLogsCount = remember(auditLogs) { auditLogs.count { it.action.startsWith("SECURITY") } }
+
     val filteredLogs = remember(auditLogs, selectedFilter) {
         when (selectedFilter) {
+            "SECURITY" -> auditLogs.filter { it.action.startsWith("SECURITY") }
             "CANCEL" -> auditLogs.filter { it.action == "TOKEN_CANCELLED" }
             "DELETE" -> auditLogs.filter { it.action == "TOKEN_DELETED" }
             "BACKUP" -> auditLogs.filter { it.action.contains("BACKUP") }
@@ -12973,6 +12976,112 @@ fun AuditTrailTab(
             }
         }
 
+        // SECTION 2B: 🛡️ SECURITY & FRAUD PREVENTION KPI SUMMARY CARD
+        item {
+            val fakeGpsCount = remember(auditLogs) { auditLogs.count { it.action.contains("FAKE_GPS") } }
+            val dupCount = remember(auditLogs) { auditLogs.count { it.action.contains("DUPLICATE") } }
+            val rootCount = remember(auditLogs) { auditLogs.count { it.action.contains("ROOT") } }
+            val geofenceCount = remember(auditLogs) { auditLogs.count { it.action.contains("GEOFENCE") } }
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF5F5)),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.2.dp, Color(0xFFE53935)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("🛡️", fontSize = 22.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "सुरक्षा व फ्रॉड रोकथाम लेज़र" else "Security & Fraud Guard",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp,
+                                    color = Color(0xFFC62828)
+                                )
+                                Text(
+                                    text = if (isHindi) "फेक GPS, रूट, डुप्लीकेट फोन व दायरा उल्लंघन रिकॉर्ड्स" else "Fake GPS, Root, Duplicate Devices & Geofence blocks",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF5D4037)
+                                )
+                            }
+                        }
+                        Surface(
+                            color = Color(0xFFC62828),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text(
+                                text = if (isHindi) "कुल ब्लॉक: $securityLogsCount" else "Blocked: $securityLogsCount",
+                                color = Color.White,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Badge 1: Fake GPS
+                        Surface(
+                            color = Color.White,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFFCDD2)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("📍 फेक GPS", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFC62828))
+                                Text("$fakeGpsCount", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                            }
+                        }
+                        // Badge 2: Duplicate Phone
+                        Surface(
+                            color = Color.White,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFFCDD2)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("📱 डुप्लीकेट फोन", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFC62828))
+                                Text("$dupCount", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                            }
+                        }
+                        // Badge 3: Geofence / Root
+                        Surface(
+                            color = Color.White,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFFCDD2)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("🚫 दायरा / रूट", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFC62828))
+                                Text("${geofenceCount + rootCount}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // SECTION 3: 📜 AUDIT TRAIL LOGS WITH FILTER CHIPS
         item {
             Card(
@@ -13011,6 +13120,7 @@ fun AuditTrailTab(
                     ) {
                         val filters = listOf(
                             "ALL" to (if (isHindi) "समस्त (${auditLogs.size})" else "All (${auditLogs.size})"),
+                            "SECURITY" to (if (isHindi) "🛡️ सुरक्षा व फ्रॉड ($securityLogsCount)" else "Security ($securityLogsCount)"),
                             "CANCEL" to (if (isHindi) "निरस्त" else "Cancelled"),
                             "DELETE" to (if (isHindi) "डिलीट" else "Deleted"),
                             "BACKUP" to (if (isHindi) "बैकअप" else "Backups"),
@@ -13053,12 +13163,16 @@ fun AuditTrailTab(
             }
         } else {
             items(filteredLogs) { log ->
+                val isSecurity = log.action.startsWith("SECURITY")
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSecurity) Color(0xFFFFF8F8) else Color.White
+                    ),
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(
-                        1.dp,
+                        if (isSecurity) 1.2.dp else 1.dp,
                         when {
+                            isSecurity -> Color(0xFFE53935)
                             log.action.contains("DELETE") -> Color(0xFFFFCDD2)
                             log.action.contains("CANCEL") -> Color(0xFFFFE0B2)
                             log.action.contains("BACKUP") -> Color(0xFFD1C4E9)
@@ -13076,6 +13190,7 @@ fun AuditTrailTab(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = when {
+                                        isSecurity -> "🛡️"
                                         log.action.contains("DELETE") -> "🗑️"
                                         log.action.contains("CANCEL") -> "❌"
                                         log.action.contains("BACKUP") -> "💾"
@@ -13088,16 +13203,25 @@ fun AuditTrailTab(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = when (log.action) {
+                                        "SECURITY_BLOCKED_FAKE_GPS" -> if (isHindi) "🚫 सुरक्षा ब्लॉक: फ़ेक जीपीएस (Fake GPS)" else "Blocked: Fake GPS"
+                                        "SECURITY_BLOCKED_ROOT" -> if (isHindi) "🚫 सुरक्षा ब्लॉक: रूटेड फोन (Rooted/Magisk)" else "Blocked: Rooted Device"
+                                        "SECURITY_BLOCKED_ACCURACY" -> if (isHindi) "⚠️ सुरक्षा ब्लॉक: कमजोर जीपीएस सिग्नल" else "Blocked: Inaccurate GPS"
+                                        "SECURITY_BLOCKED_DUPLICATE_DEVICE" -> if (isHindi) "🚫 सुरक्षा ब्लॉक: 1 फोन = 1 टोकन नियम उल्लंघन" else "Blocked: 1 Device = 1 Token"
+                                        "SECURITY_BLOCKED_DUPLICATE_PHONE" -> if (isHindi) "🚫 सुरक्षा ब्लॉक: 1 नंबर = 1 टोकन नियम उल्लंघन" else "Blocked: Duplicate Phone"
+                                        "SECURITY_BLOCKED_GEOFENCE" -> if (isHindi) "🚫 सुरक्षा ब्लॉक: 30 KM लोकल दायरा उल्लंघन" else "Blocked: 30 KM Geofence"
+                                        "SECURITY_BLOCKED_DEVICE" -> if (isHindi) "🚫 सुरक्षा ब्लॉक: डिवाइस अवरुद्ध" else "Blocked: Device Blocked"
+                                        "SECURITY_BLOCKED_POLICY" -> if (isHindi) "🚫 सुरक्षा ब्लॉक: नीति उल्लंघन" else "Blocked: Policy Violation"
                                         "TOKEN_CANCELLED" -> if (isHindi) "टोकन निरस्त" else "Token Cancelled"
                                         "TOKEN_DELETED" -> if (isHindi) "टोकन डिलीट" else "Token Deleted"
                                         "DB_BACKUP_EXPORTED" -> if (isHindi) "डेटाबेस बैकअप एक्सपोर्ट" else "Database Backup Exported"
                                         "DARBAR_LIVE_STATUS_CHANGED" -> if (isHindi) "लाइव प्रसारण स्थिति परिवर्तन" else "Live Stream Changed"
                                         "VIP_TOKEN_ISSUED" -> if (isHindi) "VIP टोकन जारी" else "VIP Token Issued"
-                                        else -> log.action
+                                        else -> if (isSecurity) (if (isHindi) "🚫 सुरक्षा ब्लॉक: ${log.action}" else "Security Block") else log.action
                                     },
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.5.sp,
                                     color = when {
+                                        isSecurity -> Color(0xFFC62828)
                                         log.action.contains("DELETE") -> Color(0xFFC62828)
                                         log.action.contains("CANCEL") -> Color(0xFFE65100)
                                         log.action.contains("BACKUP") -> Color(0xFF4A148C)
@@ -13132,10 +13256,10 @@ fun AuditTrailTab(
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "👤 कर्ता: ${log.performedBy}",
+                                text = if (isSecurity) "👤 लक्षित भक्त: ${log.performedBy}" else "👤 कर्ता: ${log.performedBy}",
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF37474F)
+                                color = if (isSecurity) Color(0xFFB71C1C) else Color(0xFF37474F)
                             )
                             if (log.role.isNotBlank()) {
                                 Text(
@@ -13149,10 +13273,28 @@ fun AuditTrailTab(
                         if (log.reason.isNotBlank()) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "📌 कारण/विवरण: ${log.reason}",
+                                text = if (isSecurity) "📌 ब्लॉक का कारण: ${log.reason}" else "📌 कारण/विवरण: ${log.reason}",
                                 fontSize = 11.5.sp,
-                                color = Color(0xFF424242)
+                                fontWeight = if (isSecurity) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (isSecurity) Color(0xFFC62828) else Color(0xFF424242)
                             )
+                        }
+
+                        if (isSecurity && log.details.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Surface(
+                                color = Color.White,
+                                shape = RoundedCornerShape(6.dp),
+                                border = BorderStroke(1.dp, Color(0xFFFFCDD2)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "🔍 ${log.details}",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF4E342E),
+                                    modifier = Modifier.padding(6.dp)
+                                )
+                            }
                         }
                     }
                 }

@@ -3531,6 +3531,17 @@ class AshramRepository(context: Context) {
         dbHelper.getAuditLogs(limit)
     }
 
+    suspend fun getCombinedAuditLogs(context: Context, limit: Int = 150): List<AuditLogEntry> = withContext(Dispatchers.IO) {
+        val localLogs = dbHelper.getAuditLogs(limit)
+        try {
+            val cloudLogs = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchCloudSecurityLogs(context, limit)
+            val combined = (localLogs + cloudLogs).distinctBy { "${it.action}_${it.timestamp / 1000}_${it.performedBy}" }
+            combined.sortedByDescending { it.timestamp }
+        } catch (e: Exception) {
+            localLogs
+        }
+    }
+
     suspend fun exportDatabaseBackup(context: Context): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         dbHelper.exportDatabaseBackup(context)
     }

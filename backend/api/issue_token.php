@@ -95,11 +95,44 @@ if (empty($input['darbar_date'])) {
     $darbarDate = $activeDarbarDate;
 }
 
+function logSecurityViolation($pdo, $action, $reason, $details, $patientName, $phoneNumber, $deviceId, $darbarDate) {
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS security_audit_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            action VARCHAR(100) NOT NULL,
+            reason VARCHAR(255) NOT NULL,
+            details TEXT,
+            patient_name VARCHAR(150),
+            phone_number VARCHAR(30),
+            device_id VARCHAR(150),
+            ip_address VARCHAR(50),
+            darbar_date DATE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        $stmt = $pdo->prepare("INSERT INTO security_audit_logs 
+            (action, reason, details, patient_name, phone_number, device_id, ip_address, darbar_date) 
+            VALUES (:action, :reason, :details, :name, :phone, :dev, :ip, :date)");
+        $stmt->execute([
+            ':action' => $action,
+            ':reason' => $reason,
+            ':details' => $details,
+            ':name' => $patientName,
+            ':phone' => $phoneNumber,
+            ':dev' => $deviceId,
+            ':ip' => $ip,
+            ':date' => $darbarDate ?: date('Y-m-d')
+        ]);
+    } catch (Throwable $e) {}
+}
+
 // 0. Mock Location & Fake GPS Check (Anti-Bypass Protection)
 $isMockLocationSubmitted = !empty($input['is_mock_location']) || !empty($input['is_mock']) || 
                            (isset($_POST['is_mock_location']) && ($_POST['is_mock_location'] == '1' || $_POST['is_mock_location'] === 'true')) ||
                            (isset($input['is_mock_location']) && $input['is_mock_location'] === true);
 if (!$isAdmin && $isMockLocationSubmitted) {
+    logSecurityViolation($pdo, 'SECURITY_BLOCKED_FAKE_GPS', 'फ़ेक जीपीएस (Fake GPS / Mock Location) पकड़ा गया', 'Coords: '.$lat.','.$long.' Accuracy: '.round($accuracy).'m', $patientName, $phoneNumber, $deviceId, $darbarDate);
     http_response_code(403);
     echo json_encode([
         "success" => false,
@@ -112,6 +145,7 @@ if (!$isAdmin && $isMockLocationSubmitted) {
 $isRootedSubmitted = !empty($input['is_rooted']) || !empty($input['is_device_rooted']) ||
                      (isset($_POST['is_rooted']) && ($_POST['is_rooted'] == '1' || $_POST['is_rooted'] === 'true'));
 if (!$isAdmin && $isRootedSubmitted) {
+    logSecurityViolation($pdo, 'SECURITY_BLOCKED_ROOT', 'रूटेड डिवाइस (Root / Magisk / KernelSU) पकड़ा गया', 'Device ID: '.$deviceId, $patientName, $phoneNumber, $deviceId, $darbarDate);
     http_response_code(403);
     echo json_encode([
         "success" => false,
@@ -123,6 +157,7 @@ if (!$isAdmin && $isRootedSubmitted) {
 // 0C. Accuracy Verification (Must be within 60m)
 $accuracy = floatval($input['location_accuracy'] ?? $input['accuracy'] ?? 10.0);
 if (!$isAdmin && $accuracy > 60.0 && (!isset($settings['is_geofence_enforced']) || (int)$settings['is_geofence_enforced'] === 1)) {
+    logSecurityViolation($pdo, 'SECURITY_BLOCKED_ACCURACY', 'कमजोर जीपीएस सिग्नल (' . round($accuracy) . 'm > 60m)', 'Device ID: '.$deviceId.', Accuracy: '.round($accuracy).'m', $patientName, $phoneNumber, $deviceId, $darbarDate);
     http_response_code(403);
     echo json_encode([
         "success" => false,
@@ -146,6 +181,7 @@ if (!$isAdmin) {
     $devCheck->execute([':dev' => $deviceId, ':date' => $darbarDate, ':active_date' => $activeDarbarDate]);
     $existingDev = $devCheck->fetch(PDO::FETCH_ASSOC);
     if ($existingDev) {
+        logSecurityViolation($pdo, 'SECURITY_BLOCKED_DUPLICATE_DEVICE', '1 फोन = 1 टोकन नियम उल्लंघन (आज पहले से टोकन #' . $existingDev['token_number'] . ' जारी)', 'Already issued to: ' . $existingDev['patient_name'] . ', Device: ' . $deviceId, $patientName, $phoneNumber, $deviceId, $darbarDate);
         http_response_code(403);
         $venueLabel = $isTuesdayVenue ? "मंगलवार बुलन्दशहर दरबार" : "रविवार दरबार";
         echo json_encode([
@@ -165,6 +201,7 @@ if (!$isAdmin && !empty($phoneNumber)) {
         $phoneCheck->execute([':phone' => $cleanPhone10, ':date' => $darbarDate, ':active_date' => $activeDarbarDate]);
         $existingPhone = $phoneCheck->fetch(PDO::FETCH_ASSOC);
         if ($existingPhone) {
+            logSecurityViolation($pdo, 'SECURITY_BLOCKED_DUPLICATE_PHONE', '1 मोबाइल नंबर = 1 टोकन नियम उल्लंघन (आज पहले से टोकन #' . $existingPhone['token_number'] . ' जारी)', 'Already issued to: ' . $existingPhone['patient_name'] . ', Phone: ' . $phoneNumber, $patientName, $phoneNumber, $deviceId, $darbarDate);
             http_response_code(403);
             $venueLabel = $isTuesdayVenue ? "मंगलवार बुलन्दशहर दरबार" : "रविवार दरबार";
             echo json_encode([
@@ -231,9 +268,10 @@ if (!$isAdmin) {
         // 4. Any devotee whose GPS distance is <= 30 km OR whose road distance is < 30 km is BLOCKED!
         if (!$isPhysicallyAtAshram) {
             if (!$isOutstationAllowed || !$isGpsOutstation || ($distanceKm > 0 && !$isRoadOutstation)) {
-                http_response_code(403);
                 $distStr = number_format($gpsDistanceKm, 1);
                 $radDesc = ($allowedRadiusM >= 1000) ? number_format($allowedRadiusM / 1000, 1) . " किमी" : round($allowedRadiusM) . " मीटर";
+                logSecurityViolation($pdo, 'SECURITY_BLOCKED_GEOFENCE', 'लोकल दायरे (30 KM) में बिना आश्रम परिसर (' . $radDesc . ') आए टोकन प्रयास', 'Actual distance: ' . $distStr . ' km, Lat: ' . $lat . ', Lng: ' . $long, $patientName, $phoneNumber, $deviceId, $darbarDate);
+                http_response_code(403);
                 echo json_encode([
                     "success" => false,
                     "error" => "⚠️ दूरी नियम उल्लंघन:\n\n{$outstationMinKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल {$venueNameForNotice} परिसर (" . $radDesc . " के भीतर) में ही मान्य है।\n\nआपकी वास्तविक दूरी " . $distStr . " किमी है। कृपया परिसर में पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का हक न छूटे।"

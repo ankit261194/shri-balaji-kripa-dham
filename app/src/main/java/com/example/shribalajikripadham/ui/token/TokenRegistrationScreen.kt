@@ -1686,6 +1686,15 @@ fun TokenRegistrationScreen(
                                                 "⚠️ फ़ेक जीपीएस चेतावनी: आपके डिवाइस में नकली लोकेशन / Fake GPS स्पूफिंग का उपयोग पकड़ा गया है। श्री बालाजी कृपा धाम के नियमों के अनुसार केवल वास्तविक जीपीएस से ही टोकन मान्य है। कृपया फ़ेक ऐप बंद करके पुनः प्रयास करें।"
                                             else
                                                 "⚠️ Fake GPS Alert: Mock location or spoofing detected. Please disable Fake GPS and use genuine location."
+                                            try {
+                                                repository.logAuditEvent(
+                                                    action = "SECURITY_BLOCKED_FAKE_GPS",
+                                                    performedBy = patientName.trim().ifBlank { "अज्ञात भक्त" },
+                                                    role = "BLOCKED_DEVICE",
+                                                    reason = "फ़ेक जीपीएस (Mock Location / Fake GPS) का उपयोग पकड़ा गया",
+                                                    details = "Phone: ${phoneNumber.trim()}"
+                                                )
+                                            } catch (ignored: Exception) {}
                                             isSubmitting = false
                                             return@launch
                                         }
@@ -1696,6 +1705,15 @@ fun TokenRegistrationScreen(
                                                 "⚠️ सुरक्षा चेतावनी: आपके डिवाइस में रूट (Root / Magisk) का उपयोग पकड़ा गया है। सुरक्षा कारणों से रूटेड डिवाइस पर टोकन पंजीकरण अवरुद्ध है।"
                                             else
                                                 "⚠️ Security Alert: Rooted device detected. Token registration is blocked on rooted devices."
+                                            try {
+                                                repository.logAuditEvent(
+                                                    action = "SECURITY_BLOCKED_ROOT",
+                                                    performedBy = patientName.trim().ifBlank { "अज्ञात भक्त" },
+                                                    role = "BLOCKED_DEVICE",
+                                                    reason = "रूटेड डिवाइस (Root / Magisk / KernelSU) से टोकन प्रयास",
+                                                    details = "Phone: ${phoneNumber.trim()}"
+                                                )
+                                            } catch (ignored: Exception) {}
                                             isSubmitting = false
                                             return@launch
                                         }
@@ -1707,6 +1725,15 @@ fun TokenRegistrationScreen(
                                                 "⚠️ कमजोर जीपीएस सिग्नल (${String.format(Locale.US, "%.0f", accuracy)}m)। कृपया खुले आसमान के नीचे आकर पुनः प्रयास करें (सटीकता $maxAcc मीटर से कम होनी चाहिए)।"
                                             else
                                                 "⚠️ Inaccurate GPS signal (${String.format(Locale.US, "%.0f", accuracy)}m). Please stand under open sky (must be within $maxAcc meters)."
+                                            try {
+                                                repository.logAuditEvent(
+                                                    action = "SECURITY_BLOCKED_ACCURACY",
+                                                    performedBy = patientName.trim().ifBlank { "अज्ञात भक्त" },
+                                                    role = "BLOCKED_DEVICE",
+                                                    reason = "कमजोर जीपीएस सिग्नल (${accuracy.toInt()}m > $maxAcc m)",
+                                                    details = "Phone: ${phoneNumber.trim()}"
+                                                )
+                                            } catch (ignored: Exception) {}
                                             isSubmitting = false
                                             return@launch
                                         }
@@ -1734,6 +1761,15 @@ fun TokenRegistrationScreen(
                                                     "⚠️ आश्रम दूरी नियम: ${outKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radM के भीतर) में ही मान्य है। आपकी वास्तविक दूरी $distKm किमी है। कृपया परिसर में पहुँचकर ही टोकन जनरेट करें।"
                                                 else
                                                     "Local devotees within $outKm km can only register inside Ashram premises ($radM). Your distance is $distKm km."
+                                                try {
+                                                    repository.logAuditEvent(
+                                                        action = "SECURITY_BLOCKED_GEOFENCE",
+                                                        performedBy = patientName.trim().ifBlank { "अज्ञात भक्त" },
+                                                        role = "BLOCKED_DEVICE",
+                                                        reason = "लोकल दायरे ($outKm KM) में बिना आश्रम ($radM) आए टोकन प्रयास",
+                                                        details = "Phone: ${phoneNumber.trim()}, Distance: $distKm km"
+                                                    )
+                                                } catch (ignored: Exception) {}
                                                 isSubmitting = false
                                                 return@launch
                                             }
@@ -1816,9 +1852,31 @@ fun TokenRegistrationScreen(
                                             } catch (e: Exception) {}
                                         }
                                     } catch (e: SecurityException) {
-                                        errorMessage = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
+                                        val err = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
+                                        errorMessage = err
+                                        try {
+                                            repository.logAuditEvent(
+                                                action = "SECURITY_BLOCKED_DEVICE",
+                                                performedBy = patientName.trim().ifBlank { "अज्ञात भक्त" },
+                                                role = "BLOCKED_DEVICE",
+                                                reason = err,
+                                                details = "Phone: ${phoneNumber.trim()}"
+                                            )
+                                        } catch (ignored: Exception) {}
                                     } catch (e: Exception) {
-                                        errorMessage = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
+                                        val err = e.message ?: "Security Exception: Spoofed Location or Duplicate Device Request Denied."
+                                        errorMessage = err
+                                        if (err.contains("सुरक्षा") || err.contains("Security") || err.contains("दूरी") || err.contains("1 फोन") || err.contains("नियम")) {
+                                            try {
+                                                repository.logAuditEvent(
+                                                    action = if (err.contains("1 फोन")) "SECURITY_BLOCKED_DUPLICATE_DEVICE" else "SECURITY_BLOCKED_POLICY",
+                                                    performedBy = patientName.trim().ifBlank { "अज्ञात भक्त" },
+                                                    role = "BLOCKED_DEVICE",
+                                                    reason = err,
+                                                    details = "Phone: ${phoneNumber.trim()}"
+                                                )
+                                            } catch (ignored: Exception) {}
+                                        }
                                     } finally {
                                         isSubmitting = false
                                     }
