@@ -94,7 +94,7 @@ function getFallbackConfig() {
         "tts_auto_next_enabled" => true,
         "tts_auto_next_delay_seconds" => 20,
         "tts_primary_template" => "टोकन नंबर {tokenNumber}, श्री {devoteeName} जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।",
-        "tts_standby_template" => "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, अगला नंबर आपका है, कृपया {currentDevoteeName} जी के पीछे आकर बैठें।",
+        "tts_standby_template" => "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, अगला नंबर आपका है, कृपया {currentDevoteeName} जी के पीछे आकर बैठें, और सब पीछे जाके बैठ जाओ।",
         "contact_phone" => "",
         "whatsapp_number" => "",
         "upi_id" => "",

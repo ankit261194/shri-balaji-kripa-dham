@@ -76,7 +76,7 @@ object AshramVoiceAnnouncementManager {
     private const val KEY_STANDBY_TEMPLATE = "tts_standby_template"
 
     const val DEFAULT_PRIMARY_TEMPLATE = "टोकन नंबर {tokenNumber}, श्री {devoteeName} जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
-    const val DEFAULT_STANDBY_TEMPLATE = "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, अगला नंबर आपका है, कृपया {currentDevoteeName} जी के पीछे आकर बैठें।"
+    const val DEFAULT_STANDBY_TEMPLATE = "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, अगला नंबर आपका है, कृपया {currentDevoteeName} जी के पीछे आकर बैठें, और सब पीछे जाके बैठ जाओ।"
 
     const val PRESET_ELEVENLABS_MALE = "ELEVENLABS_MALE"
     const val PRESET_ELEVENLABS_FEMALE = "ELEVENLABS_FEMALE"
@@ -899,7 +899,7 @@ object AshramVoiceAnnouncementManager {
      * 
      * Stage 1: "टोकन नंबर {४}, श्री रमेश कुमार जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
      * Stage 2 (Auto 20s or manual tap):
-     * "टोकन नंबर {५}, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें।"
+     * "टोकन नंबर {५}, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें, और सब पीछे जाके बैठ जाओ।"
      */
     fun announceNextToken(
         context: Context,
@@ -1056,8 +1056,8 @@ object AshramVoiceAnnouncementManager {
     }
 
     /**
-     * 📢 STANDBY DEVOTEE ANNOUNCEMENT:
-     * "टोकन नंबर {next}, श्री {nextDevotee} जी, अगला नंबर आपका है, कृपया {currentDevotee} जी के पीछे आकर बैठें।"
+     * 📢 STANDBY DEVOTEE & CROWD CONTROL ANNOUNCEMENT:
+     * "टोकन नंबर {next}, श्री {nextDevotee} जी, अगला नंबर आपका है, कृपया {currentDevotee} जी के पीछे आकर बैठें, और सब पीछे जाके बैठ जाओ।"
      */
     fun announceStandbyDevotee(
         context: Context,
@@ -1238,7 +1238,7 @@ object AshramVoiceAnnouncementManager {
         }
 
         val testPrimary = "टोकन नंबर एक, श्री रमेश कुमार जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
-        val testStandby = "टोकन नंबर दो, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें।"
+        val testStandby = "टोकन नंबर दो, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें, और सब पीछे जाके बैठ जाओ।"
 
         speakDevotionalText(context, testPrimary) {
             CoroutineScope(Dispatchers.Main).launch {

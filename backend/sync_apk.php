@@ -89,6 +89,7 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($isLast && $currentSize > 10000000) {
             rename($tmpFile, $targetFile);
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v117.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v116.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v115.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v114.apk');

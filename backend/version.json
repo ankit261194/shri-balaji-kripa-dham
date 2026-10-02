@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 116,
-  "version_code": 116,
-  "latest_version_name": "2.56.41",
-  "version_name": "2.56.41",
-  "update_notes_hindi": "v2.56.41 (Build 116): 🎙️ 1 से 150 तक शुद्ध हिंदी टोन में देववाणी टोकन कॉलिंग (Zero English Accent) + 👥 स्टैंडबाय कॉलिंग ('अगला नंबर आपका है, कृपया पीछे आकर बैठें') + 🏛️ 95% फुल-स्क्रीन एडमिन कंट्रोल हब व स्लिम कतार + 🌐 वेबसाइट लाइव CMS (इतिहास, मार्ग, आरती बोल 1-क्लिक लाइव)!",
-  "update_notes_english": "v2.56.41 (Build 116): 🎙️ Pure Hindi Intonation Calling 1-150 (Zero English Accent) + 👥 Standby Devotee prompt + 🏛️ 95% Full-Screen Admin Hub & Slim Queue + 🌐 Website Live CMS (History, Route, Aarti Lyrics 1-Click Sync)!",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=116",
+  "latest_version_code": 117,
+  "version_code": 117,
+  "latest_version_name": "2.56.42",
+  "version_name": "2.56.42",
+  "update_notes_hindi": "v2.56.42 (Build 117): 🎙️ स्टैंडबाय कॉलिंग में भीड़ नियंत्रण निर्देश ('और सब पीछे जाके बैठ जाओ') जोड़ा गया + 1 से 150 शुद्ध देववाणी + 🏛️ 95% स्क्रीन एडमिन हब व स्लिम कतार + 🌐 वेबसाइट लाइव CMS!",
+  "update_notes_english": "v2.56.42 (Build 117): 🎙️ Standby crowd control prompt ('aur sab piche jake beth jao') added + Pure Hindi 1-150 calling + 🏛️ 95% Screen Admin Hub + 🌐 Website Live CMS!",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=117",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }
