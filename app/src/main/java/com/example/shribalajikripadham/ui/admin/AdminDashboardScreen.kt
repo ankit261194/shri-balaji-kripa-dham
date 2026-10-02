@@ -3452,6 +3452,9 @@ fun TokenQueueTab(
     var isVoiceMuted by remember { mutableStateOf(AshramVoiceAnnouncementManager.isMuted(context)) }
     val isAnnouncingActive by AshramVoiceAnnouncementManager.isAnnouncing.collectAsState()
     val currentAnnouncedTextStr by AshramVoiceAnnouncementManager.currentAnnouncedText.collectAsState()
+    val standbySecondsRemaining by AshramVoiceAnnouncementManager.standbySecondsRemaining.collectAsState()
+    val standbyNextTokenNum by AshramVoiceAnnouncementManager.standbyNextToken.collectAsState()
+    val standbyNextNameStr by AshramVoiceAnnouncementManager.standbyNextName.collectAsState()
     var tokenToCancel by remember { mutableStateOf<Token?>(null) }
     var tokenToDelete by remember { mutableStateOf<Token?>(null) }
     var zoomedPhotoToken by remember { mutableStateOf<Token?>(null) }
@@ -3747,11 +3750,15 @@ fun TokenQueueTab(
                                 val nextNum = effectiveCallingNum + 1
                                 onUpdateRunningToken(nextNum)
                                 val nextDev = todayTokens.find { it.tokenNumber == nextNum }
+                                val standbyNum = nextNum + 1
+                                val standbyDev = todayTokens.find { it.tokenNumber == standbyNum }
                                 AshramVoiceAnnouncementManager.announceNextToken(
                                     context = context,
                                     tokenNumber = nextNum,
                                     devoteeName = nextDev?.patientName ?: "",
-                                    city = nextDev?.city ?: ""
+                                    city = nextDev?.city ?: "",
+                                    nextTokenNumber = standbyNum,
+                                    nextDevoteeName = standbyDev?.patientName ?: ""
                                 )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
@@ -3770,12 +3777,16 @@ fun TokenQueueTab(
                         OutlinedButton(
                             onClick = {
                                 val dev = todayTokens.find { it.tokenNumber == settings.runningTokenNumber }
+                                val standbyNum = settings.runningTokenNumber + 1
+                                val standbyDev = todayTokens.find { it.tokenNumber == standbyNum }
                                 AshramVoiceAnnouncementManager.announceNextToken(
                                     context = context,
                                     tokenNumber = settings.runningTokenNumber,
                                     devoteeName = dev?.patientName ?: "",
                                     city = dev?.city ?: "",
-                                    repeatCount = 2
+                                    repeatCount = 1,
+                                    nextTokenNumber = standbyNum,
+                                    nextDevoteeName = standbyDev?.patientName ?: ""
                                 )
                             },
                             modifier = Modifier.weight(1f),
@@ -3822,6 +3833,80 @@ fun TokenQueueTab(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
+                        }
+                    }
+
+                    // --- Live Standby Alert & Crowd Control Status Widget ---
+                    if (standbySecondsRemaining != null && standbySecondsRemaining!! > 0) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                            border = BorderStroke(1.2.dp, Color(0xFFFF9800)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "⏳ अगला टोकन #${standbyNextTokenNum ?: ""} (${standbyNextNameStr.ifBlank { "कतार भक्त" }})",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = Color(0xFFE65100)
+                                    )
+                                    Text(
+                                        text = "⏱️ ${standbySecondsRemaining}s में घोषणा होगी (पीछे बैठने की हिदायत)",
+                                        fontSize = 11.sp,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Button(
+                                        onClick = { AshramVoiceAnnouncementManager.announceStandbyImmediately(context) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.height(28.dp)
+                                    ) {
+                                        Text("🔊 अभी बोलें", fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                    }
+                                    OutlinedButton(
+                                        onClick = { AshramVoiceAnnouncementManager.cancelStandbyCountdown() },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.height(28.dp)
+                                    ) {
+                                        Text("❌ रद्द", fontSize = 10.sp)
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        val nextStandbyCandidate = todayTokens.find { it.tokenNumber == settings.runningTokenNumber + 1 }
+                        if (nextStandbyCandidate != null && !nextStandbyCandidate.isDarshanCompleted) {
+                            OutlinedButton(
+                                onClick = {
+                                    val currDev = todayTokens.find { it.tokenNumber == settings.runningTokenNumber }
+                                    AshramVoiceAnnouncementManager.announceStandbyDevotee(
+                                        context = context,
+                                        currentDevoteeName = currDev?.patientName ?: "",
+                                        nextTokenNumber = nextStandbyCandidate.tokenNumber,
+                                        nextDevoteeName = nextStandbyCandidate.patientName
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE65100)),
+                                border = BorderStroke(1.dp, Color(0xFFFFB74D))
+                            ) {
+                                Text(
+                                    text = "📢 अगला टोकन #${nextStandbyCandidate.tokenNumber} तैयार करें (${nextStandbyCandidate.patientName} - पीछे बैठें)",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
 
@@ -9586,6 +9671,11 @@ fun SuperControlTab(
     // --- Token TTS Human Voice State ---
     var selectedVoicePreset by remember(settings.tokenVoicePreset) { mutableStateOf(settings.tokenVoicePreset) }
     var voiceSuccessMsg by remember { mutableStateOf<String?>(null) }
+    var googleTtsApiKeyInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getGoogleTtsApiKey(context)) }
+    var isAutoNextEnabledChecked by remember { mutableStateOf(AshramVoiceAnnouncementManager.isAutoNextEnabled(context)) }
+    var autoNextDelayInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getAutoNextDelaySeconds(context)) }
+    var primaryTemplateInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getPrimaryTemplate(context)) }
+    var standbyTemplateInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getStandbyTemplate(context)) }
 
     // --- Ashram Main Home Banner Manager State ---
     var bannerPhotoUriInput by remember(settings.bannerPhotoUri) { mutableStateOf(settings.bannerPhotoUri) }
@@ -10319,6 +10409,115 @@ fun SuperControlTab(
                         }
                     }
 
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        text = "🌐 Google Cloud Text-to-Speech (Neural2 AI API Key):",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = googleTtsApiKeyInput,
+                        onValueChange = { googleTtsApiKeyInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Google Cloud API Key (वैकल्पिक)") },
+                        placeholder = { Text("AIzaSy...") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    Text(
+                        text = "💡 Google हर महीने 10 लाख अक्षर मुफ़्त देता है। की न होने पर ऐप अपने-आप मुफ़्त ऑफलाइन मंदिर स्वर में बोलेगी।",
+                        fontSize = 11.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 2.dp, bottom = 10.dp)
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFEEEEEE))
+
+                    // --- Two-Stage Devotee Calling & Crowd Control ---
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "📢 अगला भक्त अग्रिम अलर्ट व भीड़ नियंत्रण",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = MaroonPrimary
+                            )
+                            Text(
+                                text = "वर्तमान टोकन के बाद अगले भक्त को आगे आने व बाकी भक्तों को पीछे बैठने की हिदायत",
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
+                        }
+                        Switch(
+                            checked = isAutoNextEnabledChecked,
+                            onCheckedChange = { isAutoNextEnabledChecked = it },
+                            colors = SwitchDefaults.colors(checkedThumbColor = SaffronPrimary, checkedTrackColor = SaffronPrimary.copy(alpha = 0.5f))
+                        )
+                    }
+
+                    if (isAutoNextEnabledChecked) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "⏱️ कितनी देर बाद दूसरी आवाज़ (भीड़ नियंत्रण) बोले:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.DarkGray
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+                            listOf(10, 15, 20, 30).forEach { sec ->
+                                val isSecSelected = (autoNextDelayInput == sec)
+                                FilterChip(
+                                    selected = isSecSelected,
+                                    onClick = { autoNextDelayInput = sec },
+                                    label = { Text("${sec}s") },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = SaffronPrimary,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "📝 प्राथमिक उद्घोषणा वाक्य:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.DarkGray
+                    )
+                    OutlinedTextField(
+                        value = primaryTemplateInput,
+                        onValueChange = { primaryTemplateInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "📝 कतार व भीड़ नियंत्रण वाक्य (दूसरा अलर्ट):",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.DarkGray
+                    )
+                    OutlinedTextField(
+                        value = standbyTemplateInput,
+                        onValueChange = { standbyTemplateInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
                     if (voiceSuccessMsg != null) {
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(voiceSuccessMsg!!, color = Color(0xFF2E7D32), fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -10330,9 +10529,14 @@ fun SuperControlTab(
                             kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                                 repository?.updateTokenVoicePreset(selectedVoicePreset)
                                 AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoicePreset)
+                                AshramVoiceAnnouncementManager.setGoogleTtsApiKey(context, googleTtsApiKeyInput)
+                                AshramVoiceAnnouncementManager.setAutoNextEnabled(context, isAutoNextEnabledChecked)
+                                AshramVoiceAnnouncementManager.setAutoNextDelaySeconds(context, autoNextDelayInput)
+                                AshramVoiceAnnouncementManager.setPrimaryTemplate(context, primaryTemplateInput)
+                                AshramVoiceAnnouncementManager.setStandbyTemplate(context, standbyTemplateInput)
                                 withContext(Dispatchers.Main) {
-                                    voiceSuccessMsg = if (isHindi) "✓ टोकन उद्घोषणा आवाज़ सुरक्षित व लागू हुई!" else "Voice preset updated successfully!"
-                                    Toast.makeText(context, if (isHindi) "✓ आवाज़ सुरक्षित हुई!" else "Voice preset saved!", Toast.LENGTH_SHORT).show()
+                                    voiceSuccessMsg = if (isHindi) "✓ टोकन उद्घोषणा व भीड़ नियंत्रण सेटिंग्स सुरक्षित हुईं!" else "Voice & crowd control settings saved!"
+                                    Toast.makeText(context, if (isHindi) "✓ सेटिंग्स सुरक्षित हुईं!" else "Settings saved!", Toast.LENGTH_SHORT).show()
                                     onRefreshData()
                                 }
                             }
@@ -10341,7 +10545,7 @@ fun SuperControlTab(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth().height(46.dp)
                     ) {
-                        Text(if (isHindi) "💾 टोकन आवाज़ सुरक्षित करें" else "💾 Save Voice Preset", fontWeight = FontWeight.Bold)
+                        Text(if (isHindi) "💾 टोकन आवाज़ व भीड़ नियंत्रण सुरक्षित करें" else "💾 Save Voice & Queue Settings", fontWeight = FontWeight.Bold)
                     }
                 }
             }

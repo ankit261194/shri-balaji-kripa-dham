@@ -97,14 +97,22 @@ fun AshramHallDisplayScreen(
         AshramVoiceAnnouncementManager.playTempleChime()
     }
 
-    fun announceCurrentToken(tokenNum: Int, devoteeName: String, devoteeCity: String) {
+    fun announceCurrentToken(
+        tokenNum: Int,
+        devoteeName: String,
+        devoteeCity: String,
+        nextTokenNum: Int = 0,
+        nextDevoteeName: String = ""
+    ) {
         if (!isAutoAnnounceEnabled) return
         scope.launch {
             AshramVoiceAnnouncementManager.announceNextToken(
                 context = context,
                 tokenNumber = tokenNum,
                 devoteeName = devoteeName,
-                city = devoteeCity
+                city = devoteeCity,
+                nextTokenNumber = nextTokenNum,
+                nextDevoteeName = nextDevoteeName
             )
         }
     }
@@ -200,19 +208,6 @@ fun AshramHallDisplayScreen(
         todayTokens.find { it.tokenNumber == runningToken }
     }
 
-    // Trigger Hindi voice announcement whenever running token changes
-    LaunchedEffect(runningToken) {
-        if (runningToken > 0 && runningToken != lastAnnouncedToken) {
-            lastAnnouncedToken = runningToken
-            val dev = currentDevotee
-            announceCurrentToken(
-                tokenNum = runningToken,
-                devoteeName = dev?.patientName ?: "",
-                devoteeCity = dev?.city ?: "डूँगरा जाट"
-            )
-        }
-    }
-
     val pastTokens = remember(runningToken, todayTokens) {
         todayTokens.filter { it.tokenNumber < runningToken && it.status != TokenStatus.CANCELLED }
             .sortedByDescending { it.tokenNumber }
@@ -223,6 +218,22 @@ fun AshramHallDisplayScreen(
         todayTokens.filter { it.tokenNumber > runningToken && it.status != TokenStatus.CANCELLED }
             .sortedBy { it.tokenNumber }
             .take(5)
+    }
+
+    // Trigger Hindi voice announcement whenever running token changes
+    LaunchedEffect(runningToken) {
+        if (runningToken > 0 && runningToken != lastAnnouncedToken) {
+            lastAnnouncedToken = runningToken
+            val dev = currentDevotee
+            val nextDev = upcomingTokens.firstOrNull()
+            announceCurrentToken(
+                tokenNum = runningToken,
+                devoteeName = dev?.patientName ?: "",
+                devoteeCity = dev?.city ?: "डूँगरा जाट",
+                nextTokenNum = nextDev?.tokenNumber ?: (runningToken + 1),
+                nextDevoteeName = nextDev?.patientName ?: ""
+            )
+        }
     }
 
     // Pulse animation for Current Serving Token Box
@@ -588,10 +599,13 @@ fun AshramHallDisplayScreen(
                     Button(
                         onClick = {
                             val dev = currentDevotee
+                            val nextDev = upcomingTokens.firstOrNull()
                             announceCurrentToken(
                                 tokenNum = runningToken,
                                 devoteeName = dev?.patientName ?: "",
-                                devoteeCity = dev?.city ?: "डूँगरा जाट"
+                                devoteeCity = dev?.city ?: "डूँगरा जाट",
+                                nextTokenNum = nextDev?.tokenNumber ?: (runningToken + 1),
+                                nextDevoteeName = nextDev?.patientName ?: ""
                             )
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),

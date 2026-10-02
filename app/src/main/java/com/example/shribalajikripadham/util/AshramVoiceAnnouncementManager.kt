@@ -15,6 +15,7 @@ import android.speech.tts.Voice
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,6 +49,14 @@ object AshramVoiceAnnouncementManager {
     private const val PREFS_NAME = "sbkd_voice_announcement_prefs"
     private const val KEY_IS_MUTED = "is_tts_muted"
     private const val KEY_VOICE_PRESET = "selected_voice_preset"
+    private const val KEY_GOOGLE_TTS_API_KEY = "google_cloud_tts_api_key"
+    private const val KEY_AUTO_NEXT_ENABLED = "tts_auto_next_enabled"
+    private const val KEY_AUTO_NEXT_DELAY = "tts_auto_next_delay_seconds"
+    private const val KEY_PRIMARY_TEMPLATE = "tts_primary_template"
+    private const val KEY_STANDBY_TEMPLATE = "tts_standby_template"
+
+    const val DEFAULT_PRIMARY_TEMPLATE = "टोकन नंबर {tokenNumber}, श्री {devoteeName} जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
+    const val DEFAULT_STANDBY_TEMPLATE = "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, अगला नंबर आपका है, कृपया {currentDevoteeName} जी के पीछे आकर बैठें, और बाकी सब पीछे होके बैठ जाओ।"
 
     const val PRESET_NATURAL_MALE = "NATURAL_MALE"
     const val PRESET_NATURAL_FEMALE = "NATURAL_FEMALE"
@@ -65,11 +74,11 @@ object AshramVoiceAnnouncementManager {
     val AVAILABLE_VOICE_PRESETS = listOf(
         VoicePresetInfo(
             id = PRESET_NATURAL_MALE,
-            nameHindi = "धीर-गंभीर पुरुष स्वर (HD Hindi Male Voice)",
+            nameHindi = "धीर-गंभीर पुरुष स्वर (Google Neural2 / HD Hindi)",
             nameEnglish = "HD Devotional Male Voice",
             gender = "MALE",
             category = "MALE",
-            description = "स्पष्ट, धीर-गंभीर उद्घोषक स्वर (Google HD देववाणी)",
+            description = "स्पष्ट, धीर-गंभीर उद्घोषक स्वर (Google Cloud Neural2-B)",
             pitch = 0.88f,
             speechRate = 0.86f,
             icon = "👨",
@@ -77,11 +86,11 @@ object AshramVoiceAnnouncementManager {
         ),
         VoicePresetInfo(
             id = PRESET_NATURAL_FEMALE,
-            nameHindi = "मधुर सेविका महिला स्वर (HD Hindi Female Voice)",
+            nameHindi = "मधुर सेविका महिला स्वर (Google Neural2 / HD Hindi)",
             nameEnglish = "HD Devotional Female Voice",
             gender = "FEMALE",
             category = "FEMALE",
-            description = "अत्यंत मधुर, शांत व वात्सल्यमयी स्वर (Google HD देववाणी)",
+            description = "अत्यंत मधुर, शांत व वात्सल्यमयी स्वर (Google Cloud Neural2-A)",
             pitch = 1.05f,
             speechRate = 0.88f,
             icon = "👩",
@@ -127,12 +136,77 @@ object AshramVoiceAnnouncementManager {
     private val _currentAnnouncedText = MutableStateFlow<String>("")
     val currentAnnouncedText: StateFlow<String> = _currentAnnouncedText.asStateFlow()
 
+    // --- Standby Devotee & Crowd Control State ---
+    private var standbyCountdownJob: Job? = null
+    private val _standbySecondsRemaining = MutableStateFlow<Int?>(null)
+    val standbySecondsRemaining: StateFlow<Int?> = _standbySecondsRemaining.asStateFlow()
+
+    private val _standbyNextToken = MutableStateFlow<Int?>(null)
+    val standbyNextToken: StateFlow<Int?> = _standbyNextToken.asStateFlow()
+
+    private val _standbyNextName = MutableStateFlow<String>("")
+    val standbyNextName: StateFlow<String> = _standbyNextName.asStateFlow()
+
+    private val _currentDevoteeName = MutableStateFlow<String>("")
+    val currentDevoteeName: StateFlow<String> = _currentDevoteeName.asStateFlow()
 
     // Media Recorder & Player for Live In-App Recordings
     private var activeMediaRecorder: MediaRecorder? = null
     private var activeMediaPlayer: MediaPlayer? = null
     var isCurrentlyRecording: Boolean = false
         private set
+
+    // --- Preferences Getters & Setters ---
+
+    fun getGoogleTtsApiKey(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_GOOGLE_TTS_API_KEY, "") ?: ""
+    }
+
+    fun setGoogleTtsApiKey(context: Context, key: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_GOOGLE_TTS_API_KEY, key.trim()).apply()
+    }
+
+    fun isAutoNextEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_AUTO_NEXT_ENABLED, true)
+    }
+
+    fun setAutoNextEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_AUTO_NEXT_ENABLED, enabled).apply()
+    }
+
+    fun getAutoNextDelaySeconds(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_AUTO_NEXT_DELAY, 20)
+    }
+
+    fun setAutoNextDelaySeconds(context: Context, seconds: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt(KEY_AUTO_NEXT_DELAY, seconds).apply()
+    }
+
+    fun getPrimaryTemplate(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_PRIMARY_TEMPLATE, DEFAULT_PRIMARY_TEMPLATE) ?: DEFAULT_PRIMARY_TEMPLATE
+    }
+
+    fun setPrimaryTemplate(context: Context, template: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_PRIMARY_TEMPLATE, template).apply()
+    }
+
+    fun getStandbyTemplate(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_STANDBY_TEMPLATE, DEFAULT_STANDBY_TEMPLATE) ?: DEFAULT_STANDBY_TEMPLATE
+    }
+
+    fun setStandbyTemplate(context: Context, template: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_STANDBY_TEMPLATE, template).apply()
+    }
 
     private fun getCustomVoiceFile(context: Context): File {
         return File(context.filesDir, "custom_token_voice.m4a")
@@ -208,14 +282,14 @@ object AshramVoiceAnnouncementManager {
         playAudioFile(file, onComplete)
     }
 
-    private fun playAudioFile(file: File, onComplete: (() -> Unit)? = null) {
+    fun playAudioFile(file: File, onComplete: (() -> Unit)? = null) {
         try {
             stopAudioPlayback()
             val player = MediaPlayer().apply {
                 setDataSource(file.absolutePath)
                 prepare()
                 setOnCompletionListener {
-                    it.release()
+                    try { it.release() } catch (e: Exception) {}
                     activeMediaPlayer = null
                     onComplete?.invoke()
                 }
@@ -229,7 +303,7 @@ object AshramVoiceAnnouncementManager {
         }
     }
 
-    private fun stopAudioPlayback() {
+    fun stopAudioPlayback() {
         try {
             activeMediaPlayer?.let {
                 if (it.isPlaying) it.stop()
@@ -343,7 +417,6 @@ object AshramVoiceAnnouncementManager {
 
     /**
      * Converts numeric token numbers (1 to 999) into pure spoken Devanagari Hindi words
-     * so every listener in the temple courtyard clearly hears the number without distortion.
      */
     fun numberToHindiWords(num: Int): String {
         if (num <= 0) return num.toString()
@@ -352,7 +425,7 @@ object AshramVoiceAnnouncementManager {
             "ग्यारह", "बारह", "तेरह", "चौदह", "पंद्रह", "सोलह", "सत्रह", "अठारह", "उन्नीस", "बीस",
             "इक्कीस", "बाईस", "तेईस", "चौबीस", "पच्चीस", "छब्बीस", "सत्ताईस", "अट्ठाईस", "उनतीस", "तीस",
             "इकतीस", "बत्तीस", "तैंतीस", "चौंतीस", "पैंतीस", "छत्तीस", "सैंतीस", "अड़तीस", "उनतालीस", "चालीस",
-            "इकतालीस", "बयालीस", "तैंतालीस", "चवालीस", "पैंतालीस", "छियालीस", "सैंतालीस", "अड़तालीस", "उनचास", "पचास",
+            "इकतालीस", "बयालीस", "तैंतालीस", "चवालीस", "पैंतालीस", "छियालीस", "सैंतालीस", "अड़तीस", "उनचास", "पचास",
             "इक्यावन", "बावन", "तिरेपन", "चौवन", "पचपन", "छप्पन", "सत्तावन", "अट्ठावन", "उनसठ", "साठ",
             "इकसठ", "बासठ", "तिरेसठ", "चौंसठ", "पैंसठ", "छियासठ", "सरसठ", "अड़सठ", "उनहत्तर", "सत्तर",
             "इकहत्तर", "बहत्तर", "तिहत्तर", "चौहत्तर", "पचहत्तर", "छिहत्तर", "सतहत्तर", "अठहत्तर", "उन्नासी", "अस्सी",
@@ -381,6 +454,36 @@ object AshramVoiceAnnouncementManager {
     }
 
     /**
+     * Resonant Temple Bell Chime:
+     * First attempts to play high-fidelity brass temple bell WAV from res/raw/temple_bell.wav.
+     * Falls back to dual-harmonic synthesis (528 Hz + 1056 Hz) via AudioTrack if file unavailable.
+     */
+    fun playTempleBell(context: Context, onFinished: (() -> Unit)? = null) {
+        CoroutineScope(Dispatchers.Main).launch {
+            var played = false
+            try {
+                val resId = context.resources.getIdentifier("temple_bell", "raw", context.packageName)
+                if (resId != 0) {
+                    val player = MediaPlayer.create(context, resId)
+                    if (player != null) {
+                        player.setOnCompletionListener { mp ->
+                            try { mp.release() } catch (e: Exception) {}
+                            onFinished?.invoke()
+                        }
+                        player.start()
+                        played = true
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Error playing raw temple_bell: ${e.message}")
+            }
+            if (!played) {
+                playTempleChime(onFinished)
+            }
+        }
+    }
+
+    /**
      * Sacred Harmonic Temple Bell / Chime Synthesizer:
      * Generates a resonant dual-frequency acoustic brass bell tone (528 Hz + 1056 Hz harmonic overtone)
      * with exponential acoustic decay to alert the ashram hall before calling a token.
@@ -394,7 +497,6 @@ object AshramVoiceAnnouncementManager {
                 val buffer = ShortArray(numSamples)
                 for (i in 0 until numSamples) {
                     val t = i.toDouble() / sampleRate
-                    // Dual sacred harmonic: 528 Hz (fundamental) + 1056 Hz (octave) with exponential decay
                     val decay = exp(-4.2 * t)
                     val sampleVal = decay * (0.68 * sin(2.0 * PI * 528.0 * t) + 0.32 * sin(2.0 * PI * 1056.0 * t))
                     buffer[i] = (sampleVal * Short.MAX_VALUE * 0.95).toInt().toShort()
@@ -458,93 +560,257 @@ object AshramVoiceAnnouncementManager {
     }
 
     /**
-     * 📢 ACOUSTIC TEMPLE LOUDSPEAKER TOKEN ANNOUNCER
+     * Speaks devotional text using Google Cloud Neural2 (if key configured / cached)
+     * with automatic seamless fallback to local high-quality Android TTS.
+     */
+    fun speakDevotionalText(
+        context: Context,
+        text: String,
+        onFinished: (() -> Unit)? = null
+    ) {
+        if (isMuted(context)) {
+            onFinished?.invoke()
+            return
+        }
+
+        val apiKey = getGoogleTtsApiKey(context)
+        val preset = getSelectedVoicePreset(context)
+
+        CoroutineScope(Dispatchers.Main).launch {
+            _isAnnouncing.value = true
+            var handledByCloud = false
+
+            if (apiKey.isNotBlank() && preset != PRESET_OFFLINE_DEVICE && preset != PRESET_CUSTOM_RECORDED) {
+                val voiceName = if (preset == PRESET_NATURAL_FEMALE) {
+                    GoogleCloudTtsEngine.VOICE_NEURAL2_FEMALE
+                } else {
+                    GoogleCloudTtsEngine.VOICE_NEURAL2_MALE
+                }
+
+                val audioFile = GoogleCloudTtsEngine.synthesizeSpeechToFile(
+                    context = context,
+                    text = text,
+                    apiKey = apiKey,
+                    voiceName = voiceName
+                )
+
+                if (audioFile != null && audioFile.exists() && audioFile.length() > 500) {
+                    playAudioFile(audioFile) {
+                        _isAnnouncing.value = false
+                        onFinished?.invoke()
+                    }
+                    handledByCloud = true
+                }
+            }
+
+            if (!handledByCloud) {
+                initIfNeeded(context)
+                applyVoiceSettings(context, preset)
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {
+                        _isAnnouncing.value = true
+                    }
+                    override fun onDone(utteranceId: String?) {
+                        _isAnnouncing.value = false
+                        CoroutineScope(Dispatchers.Main).launch {
+                            onFinished?.invoke()
+                        }
+                    }
+                    @Deprecated("Deprecated in Java")
+                    override fun onError(utteranceId: String?) {
+                        _isAnnouncing.value = false
+                        CoroutineScope(Dispatchers.Main).launch {
+                            onFinished?.invoke()
+                        }
+                    }
+                })
+                speakRaw(text)
+            }
+        }
+    }
+
+    /**
+     * 📢 PRIMARY & TWO-STAGE TEMPLE TOKEN CALLING WITH CROWD CONTROL
      * 
-     * Formats announcement with authentic reverence:
-     * "ध्यान दें... टोकन नंबर ४५, पैंतालीस... श्री रमेश कुमार जी, बुलन्दशहर से... कृपया पावन दरबार कक्ष में पधारें।"
+     * Stage 1: "टोकन नंबर {४}, श्री रमेश कुमार जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
+     * Stage 2 (Auto 20s or manual tap):
+     * "टोकन नंबर {५}, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें, और बाकी सब पीछे होके बैठ जाओ।"
      */
     fun announceNextToken(
         context: Context,
         tokenNumber: Int,
         devoteeName: String = "",
         city: String = "",
-        repeatCount: Int = 1
+        repeatCount: Int = 1,
+        nextTokenNumber: Int = 0,
+        nextDevoteeName: String = "",
+        autoNextSeconds: Int = -1
     ) {
         if (isMuted(context)) return
+
+        // Cancel any pending countdown from a previous token call
+        standbyCountdownJob?.cancel()
+        _standbySecondsRemaining.value = null
 
         boostAudioVolumeForLoudspeaker(context)
 
         val cleanName = devoteeName.trim()
-        val cleanCity = city.trim()
         val devDigits = toDevanagariDigits(tokenNumber)
         val hindiWords = numberToHindiWords(tokenNumber)
 
         val tokenSpoken = if (hindiWords.isNotBlank() && hindiWords != tokenNumber.toString()) {
-            "टोकन नंबर $devDigits... $hindiWords"
+            "$devDigits, $hindiWords"
         } else {
-            "टोकन नंबर $tokenNumber"
+            tokenNumber.toString()
         }
 
-        val primaryAnnouncementText = when {
-            cleanName.isNotBlank() && cleanCity.isNotBlank() -> {
-                "ध्यान दें... $tokenSpoken... श्री $cleanName जी, $cleanCity से... आपका नंबर आ गया है, कृपया पावन दरबार कक्ष में पधारें।"
-            }
-            cleanName.isNotBlank() -> {
-                "ध्यान दें... $tokenSpoken... श्री $cleanName जी... आपका नंबर आ गया है, कृपया पावन दरबार कक्ष में पधारें।"
-            }
-            else -> {
-                "ध्यान दें... $tokenSpoken... कृपया पावन दरबार कक्ष में पधारें।"
-            }
-        }
-
-        val repeatAnnouncementText = when {
-            cleanName.isNotBlank() -> {
-                "एक बार पुनः ध्यान दें... $tokenSpoken... श्री $cleanName जी... कृपया पावन दरबार कक्ष में पधारें।"
-            }
-            else -> {
-                "एक बार पुनः ध्यान दें... $tokenSpoken... कृपया पावन दरबार कक्ष में पधारें।"
-            }
-        }
+        // Format Primary announcement using configured template
+        val template = getPrimaryTemplate(context)
+        val primaryAnnouncementText = if (cleanName.isNotBlank()) {
+            template.replace("{tokenNumber}", tokenSpoken)
+                .replace("{devoteeName}", cleanName)
+        } else {
+            template.replace("{tokenNumber}", tokenSpoken)
+                .replace("श्री {devoteeName} जी,", "")
+                .replace("श्री {devoteeName} जी", "")
+        }.trim()
 
         lastAnnouncementText = primaryAnnouncementText
         _currentAnnouncedToken.value = tokenNumber
         _currentAnnouncedText.value = primaryAnnouncementText
-        _isAnnouncing.value = true
+        _currentDevoteeName.value = cleanName
+        _standbyNextToken.value = if (nextTokenNumber > 0) nextTokenNumber else null
+        _standbyNextName.value = nextDevoteeName.trim()
 
         val activePreset = getSelectedVoicePreset(context)
 
         // 🔔 1. Play sacred temple bell chime first, then announce clearly
-        playTempleChime {
+        playTempleBell(context) {
             if (activePreset == PRESET_CUSTOM_RECORDED && hasCustomRecording(context)) {
-                // Play authentic custom recorded human announcement from ashram
                 playCustomRecording(context) {
                     if (cleanName.isNotBlank()) {
-                        speakWithCurrentPreset(context, "श्री $cleanName जी, कृपया पधारें।")
+                        speakDevotionalText(context, "श्री $cleanName जी, कृपया पधारें।") {
+                            triggerStandbyCountdownIfNeeded(context, cleanName, nextTokenNumber, nextDevoteeName, autoNextSeconds)
+                        }
                     } else {
                         _isAnnouncing.value = false
+                        triggerStandbyCountdownIfNeeded(context, cleanName, nextTokenNumber, nextDevoteeName, autoNextSeconds)
                     }
                 }
             } else {
-                speakWithCurrentPreset(context, primaryAnnouncementText)
-
-                // Optional 2nd announcement after pause
-                if (repeatCount > 1) {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        delay(6500)
-                        playTempleChime {
-                            speakWithCurrentPreset(context, repeatAnnouncementText)
-                        }
-                    }
+                speakDevotionalText(context, primaryAnnouncementText) {
+                    triggerStandbyCountdownIfNeeded(context, cleanName, nextTokenNumber, nextDevoteeName, autoNextSeconds)
                 }
             }
         }
+    }
+
+    private fun triggerStandbyCountdownIfNeeded(
+        context: Context,
+        currentDevoteeName: String,
+        nextTokenNumber: Int,
+        nextDevoteeName: String,
+        autoNextSecondsParam: Int
+    ) {
+        val isAutoEnabled = isAutoNextEnabled(context)
+        if (!isAutoEnabled || nextTokenNumber <= 0) {
+            _standbySecondsRemaining.value = null
+            return
+        }
+
+        val delaySecs = if (autoNextSecondsParam >= 0) autoNextSecondsParam else getAutoNextDelaySeconds(context)
+        if (delaySecs <= 0) {
+            announceStandbyDevotee(context, currentDevoteeName, nextTokenNumber, nextDevoteeName)
+            return
+        }
+
+        standbyCountdownJob?.cancel()
+        standbyCountdownJob = CoroutineScope(Dispatchers.Main).launch {
+            for (sec in delaySecs downTo 1) {
+                _standbySecondsRemaining.value = sec
+                delay(1000)
+            }
+            _standbySecondsRemaining.value = 0
+            delay(300)
+            _standbySecondsRemaining.value = null
+            announceStandbyDevotee(context, currentDevoteeName, nextTokenNumber, nextDevoteeName)
+        }
+    }
+
+    /**
+     * 📢 STANDBY DEVOTEE & CROWD CONTROL ANNOUNCEMENT:
+     * "टोकन नंबर {next}, श्री {nextDevotee} जी, अगला नंबर आपका है, कृपया {currentDevotee} जी के पीछे आकर बैठें, और बाकी सब पीछे होके बैठ जाओ।"
+     */
+    fun announceStandbyDevotee(
+        context: Context,
+        currentDevoteeName: String = _currentDevoteeName.value,
+        nextTokenNumber: Int = _standbyNextToken.value ?: 0,
+        nextDevoteeName: String = _standbyNextName.value
+    ) {
+        if (isMuted(context) || nextTokenNumber <= 0) return
+
+        standbyCountdownJob?.cancel()
+        _standbySecondsRemaining.value = null
+
+        val cleanNextName = nextDevoteeName.trim()
+        val cleanCurrentName = currentDevoteeName.trim()
+        val nextDevDigits = toDevanagariDigits(nextTokenNumber)
+        val nextHindiWords = numberToHindiWords(nextTokenNumber)
+
+        val nextTokenSpoken = if (nextHindiWords.isNotBlank() && nextHindiWords != nextTokenNumber.toString()) {
+            "$nextDevDigits, $nextHindiWords"
+        } else {
+            nextTokenNumber.toString()
+        }
+
+        val template = getStandbyTemplate(context)
+        var standbyText = template.replace("{nextTokenNumber}", nextTokenSpoken)
+
+        standbyText = if (cleanNextName.isNotBlank()) {
+            standbyText.replace("{nextDevoteeName}", cleanNextName)
+        } else {
+            standbyText.replace("श्री {nextDevoteeName} जी,", "")
+                .replace("श्री {nextDevoteeName} जी", "")
+        }
+
+        standbyText = if (cleanCurrentName.isNotBlank()) {
+            standbyText.replace("{currentDevoteeName}", cleanCurrentName)
+        } else {
+            standbyText.replace("कृपया {currentDevoteeName} जी के पीछे", "कृपया आगे")
+                .replace("{currentDevoteeName} जी", "आगे वाले भक्त")
+        }
+
+        playTempleBell(context) {
+            speakDevotionalText(context, standbyText)
+        }
+    }
+
+    /**
+     * Triggered by admin tapping [📢 अगला टोकन {X} तैयार करें] manually.
+     */
+    fun announceStandbyImmediately(context: Context) {
+        val nextNum = _standbyNextToken.value ?: return
+        announceStandbyDevotee(
+            context = context,
+            currentDevoteeName = _currentDevoteeName.value,
+            nextTokenNumber = nextNum,
+            nextDevoteeName = _standbyNextName.value
+        )
+    }
+
+    /**
+     * Cancels the active auto-standby countdown if sevadar does not want it to play.
+     */
+    fun cancelStandbyCountdown() {
+        standbyCountdownJob?.cancel()
+        _standbySecondsRemaining.value = null
     }
 
     fun testVoice(context: Context, presetId: String) {
         boostAudioVolumeForLoudspeaker(context)
         if (presetId == PRESET_CUSTOM_RECORDED) {
             if (hasCustomRecording(context)) {
-                playTempleChime {
+                playTempleBell(context) {
                     playCustomRecording(context)
                 }
             } else {
@@ -554,12 +820,18 @@ object AshramVoiceAnnouncementManager {
             return
         }
 
-        val testText = "जय श्री बालाजी महाराज! ध्यान दें... टोकन नंबर एक... श्री रमेश कुमार जी, बुलन्दशहर से... आपका नंबर आ गया है, कृपया पावन दरबार कक्ष में पधारें।"
+        val testPrimary = "टोकन नंबर एक, श्री रमेश कुमार जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
+        val testStandby = "टोकन नंबर दो, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें, और बाकी सब पीछे होके बैठ जाओ।"
 
-        playTempleChime {
-            initIfNeeded(context)
-            applyVoiceSettings(context, presetId)
-            speakRaw(testText)
+        playTempleBell(context) {
+            speakDevotionalText(context, testPrimary) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    delay(1200)
+                    playTempleBell(context) {
+                        speakDevotionalText(context, testStandby)
+                    }
+                }
+            }
         }
     }
 
@@ -571,19 +843,7 @@ object AshramVoiceAnnouncementManager {
     }
 
     fun speak(context: Context, text: String) {
-        speakWithCurrentPreset(context, text)
-    }
-
-    private fun speakWithCurrentPreset(context: Context, text: String) {
-        if (isMuted(context)) return
-        initIfNeeded(context)
-        val preset = getSelectedVoicePreset(context)
-        applyVoiceSettings(context, preset)
-        if (!isInitialized) {
-            pendingSpeech = text
-        } else {
-            speakRaw(text)
-        }
+        speakDevotionalText(context, text)
     }
 
     fun isHindiLanguageAvailable(): Boolean {
@@ -616,8 +876,9 @@ object AshramVoiceAnnouncementManager {
         }
     }
 
-
     fun stop() {
+        standbyCountdownJob?.cancel()
+        _standbySecondsRemaining.value = null
         stopAudioPlayback()
         try {
             tts?.stop()
@@ -627,6 +888,8 @@ object AshramVoiceAnnouncementManager {
     }
 
     fun shutdown() {
+        standbyCountdownJob?.cancel()
+        _standbySecondsRemaining.value = null
         stopAudioPlayback()
         try {
             activeMediaRecorder?.release()
