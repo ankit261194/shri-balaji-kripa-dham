@@ -348,7 +348,18 @@ fun TokenRegistrationScreen(
                 e.printStackTrace()
             }
             settings = repository.getSettings()
-            existingToken = repository.checkDeviceRegisteredToday(id)
+            var tok = repository.checkDeviceRegisteredToday(id)
+            if (tok == null) {
+                try {
+                    val serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(id, settings.darbarDate)
+                    if (serverTok != null) {
+                        tok = serverTok
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            existingToken = tok
             todayActiveTokens = repository.getTodayActiveTokenCount()
 
             // Passively evaluate permissions already requested upfront at app launch
@@ -1672,6 +1683,35 @@ fun TokenRegistrationScreen(
                                             return@launch
                                         }
 
+                                        if (settings.isGeofenceEnforced) {
+                                            val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
+                                            val ashLon = if (settings.longitude != 0.0) settings.longitude else 78.1460410
+                                            val currentGpsMeters = GeofenceLocationManager.calculateDistanceMeters(finalLat, finalLon, ashLat, ashLon)
+                                            val outstationM = settings.outstationMinDistanceKm * 1000.0
+                                            val isAtAshram = currentGpsMeters <= settings.allowedRadiusMeters
+                                            val isOutstationAdvance = currentGpsMeters > outstationM && settings.isOutstationAdvanceAllowed
+                                            if (!isAtAshram && !isOutstationAdvance) {
+                                                val distKm = String.format(Locale.US, "%.1f", currentGpsMeters / 1000.0)
+                                                val outKm = settings.outstationMinDistanceKm.toInt()
+                                                val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
+                                                errorMessage = if (isHindi)
+                                                    "⚠️ आश्रम दूरी नियम: ${outKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radM के भीतर) में ही मान्य है। आपकी वास्तविक दूरी $distKm किमी है। कृपया परिसर में पहुँचकर ही टोकन जनरेट करें।"
+                                                else
+                                                    "Local devotees within $outKm km can only register inside Ashram premises ($radM). Your distance is $distKm km."
+                                                isSubmitting = false
+                                                return@launch
+                                            }
+                                        }
+
+                                        val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
+                                        val ashLon = if (settings.longitude != 0.0) settings.longitude else 78.1460410
+                                        val distFromDarbarM = GeofenceLocationManager.calculateDistanceMeters(finalLat, finalLon, ashLat, ashLon)
+                                        val finalDistanceKm = if (distFromDarbarM <= settings.allowedRadiusMeters) {
+                                            (kotlin.math.round((distFromDarbarM / 1000.0) * 10) / 10).toFloat()
+                                        } else {
+                                            (kotlin.math.round((distFromDarbarM / 1000.0) * 1.28 * 10) / 10).toFloat()
+                                        }
+
                                         // Instant token registration: register immediately without blocking UI on heavy photo upload
                                         val created = repository.registerToken(
                                             patientName = patientName.trim(),
@@ -1686,7 +1726,8 @@ fun TokenRegistrationScreen(
                                             locationAccuracy = accuracy,
                                             originAddress = devoteeVillageOrCity,
                                             destinationAddress = "श्री बालाजी कृपा धाम, डुंगरा जाट",
-                                            distanceKm = estimatedDistanceKm
+                                            distanceKm = finalDistanceKm,
+                                            darbarDate = settings.darbarDate
                                         )
 
                                         existingToken = created

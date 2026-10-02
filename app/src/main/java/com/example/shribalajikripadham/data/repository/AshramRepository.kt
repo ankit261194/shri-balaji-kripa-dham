@@ -959,7 +959,8 @@ class AshramRepository(context: Context) {
         distanceKm: Float = -1f,
         bypassGeofence: Boolean = false,
         customTokenNumber: Int? = null,
-        darbarVenue: String = "DUNGRA_JAAT"
+        darbarVenue: String = "DUNGRA_JAAT",
+        darbarDate: String = ""
     ): Token = withContext(Dispatchers.IO) {
         val today = DatabaseHelper.getTodayDateString()
         val db = dbHelper.writableDatabase
@@ -976,10 +977,28 @@ class AshramRepository(context: Context) {
         val isTuesdayDarbar = darbarVenue.equals("BULANDSHAHR", ignoreCase = true)
         val targetVenueName = if (isTuesdayDarbar) settings.tuesdayDarbarName else "श्री बालाजी कृपा धाम, डुंगरा जाट"
         val targetVenueLabel = if (isTuesdayDarbar) "बुलन्दशहर दरबार" else "आश्रम"
-        val targetLat = if (isTuesdayDarbar) settings.tuesdayLatitude else settings.latitude
-        val targetLng = if (isTuesdayDarbar) settings.tuesdayLongitude else settings.longitude
+        val targetLat = if (isTuesdayDarbar) {
+            if (settings.tuesdayLatitude != 0.0) settings.tuesdayLatitude else 28.4069
+        } else {
+            if (settings.latitude != 0.0) settings.latitude else 28.3972915
+        }
+        val targetLng = if (isTuesdayDarbar) {
+            if (settings.tuesdayLongitude != 0.0) settings.tuesdayLongitude else 77.8498
+        } else {
+            if (settings.longitude != 0.0) settings.longitude else 78.1460410
+        }
         val targetRadius = if (isTuesdayDarbar) settings.tuesdayAllowedRadiusMeters else settings.allowedRadiusMeters
         val targetOutstationKm = if (isTuesdayDarbar) settings.tuesdayOutstationMinDistanceKm else settings.outstationMinDistanceKm
+
+        val targetDarbarDate = if (darbarDate.isNotBlank()) {
+            darbarDate
+        } else {
+            if (isTuesdayDarbar) {
+                if (settings.tuesdayDarbarDate.isNotBlank()) settings.tuesdayDarbarDate else today
+            } else {
+                if (settings.darbarDate.isNotBlank()) settings.darbarDate else today
+            }
+        }
 
         val isScheduleOpen = if (isTuesdayDarbar) {
             val tSched = com.example.shribalajikripadham.util.TuesdayTokenScheduleHelper.evaluateSchedule(settings)
@@ -1068,8 +1087,8 @@ class AshramRepository(context: Context) {
         // 2. HARDWARE-LEVEL DEVICE LOCKING (Strict 1 Device = 1 Token per Sunday for devotees)
         if (isDevoteeRequest) {
             val checkCursor = db.rawQuery(
-                "SELECT token_number FROM device_registrations WHERE device_id = ? AND darbar_date = ?",
-                arrayOf(deviceId, today)
+                "SELECT token_number FROM device_registrations WHERE device_id = ? AND (darbar_date = ? OR darbar_date = ?)",
+                arrayOf(deviceId, today, targetDarbarDate)
             )
             if (checkCursor.moveToFirst()) {
                 checkCursor.close()
@@ -1098,17 +1117,16 @@ class AshramRepository(context: Context) {
         val safeOrigin = if (originAddress.isNotBlank() && !isOutstationDevotee) originAddress.trim() else safeCity
         val safeDest = if (destinationAddress.isNotBlank() && destinationAddress != "श्री बालाजी कृपा धाम, डुंगरा जाट") destinationAddress else targetVenueName
 
-        // Priority 1: If distanceKm is explicitly passed and valid, use it
-        // Priority 2: If real GPS coordinates exist, use GPS road/local distance directly
-        // Priority 3: Fallback to text query routing
-        val calculatedDistance = if (distanceKm >= 0f) {
-            distanceKm
-        } else if (distFromDarbar >= 0.0) {
+        // Priority 1: Real GPS distance (Supremacy over text queries)
+        // Priority 2: Fallback to text query routing if GPS is unavailable
+        val calculatedDistance = if (distFromDarbar >= 0.0) {
             if (distFromDarbar <= targetRadius) {
                 (kotlin.math.round((distFromDarbar / 1000.0) * 10) / 10).toFloat()
             } else {
                 (kotlin.math.round((distFromDarbar / 1000.0) * 1.28 * 10) / 10).toFloat()
             }
+        } else if (distanceKm >= 0f) {
+            distanceKm
         } else {
             DistanceCalculatorService.resolveDrivingDistance(
                 origin = safeOrigin,
@@ -1118,13 +1136,14 @@ class AshramRepository(context: Context) {
         }
 
         if (settings.isGeofenceEnforced && !shouldBypassGeofence) {
-            // If road/city distance is within outstationKm and user is NOT within allowed radius of Darbar: BLOCK!
-            if (calculatedDistance > 0 && calculatedDistance < targetOutstationKm && distFromDarbar > targetRadius) {
+            val isPhysicallyAtVenue = distFromDarbar in 0.0..targetRadius
+            val isOutstationAdvance = distFromDarbar > (targetOutstationKm * 1000.0) && settings.isOutstationAdvanceAllowed
+            if (!isPhysicallyAtVenue && !isOutstationAdvance) {
                 val outstationKm = targetOutstationKm.toInt()
                 val allowedM = targetRadius.toInt()
                 val radiusDesc = if (allowedM >= 1000) "${String.format(java.util.Locale.US, "%.1f", allowedM / 1000.0)} किमी" else "$allowedM मीटर"
-                val cDist = String.format(java.util.Locale.US, "%.1f", calculatedDistance)
-                throw SecurityException("⚠️ $targetVenueLabel दूरी नियम: आपके शहर/गाँव ($safeOrigin - $cDist किमी) की दूरी ${outstationKm} किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल $targetVenueLabel परिसर ($radiusDesc के भीतर) में उपस्थित होकर ही मान्य है। कृपया परिसर में आकर टोकन प्राप्त करें।")
+                val realKm = if (distFromDarbar >= 0.0) String.format(java.util.Locale.US, "%.1f", distFromDarbar / 1000.0) else String.format(java.util.Locale.US, "%.1f", calculatedDistance)
+                throw SecurityException("⚠️ $targetVenueLabel दूरी नियम: आपकी वास्तविक दूरी ($realKm किमी) ${outstationKm} किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल $targetVenueLabel परिसर ($radiusDesc के भीतर) में उपस्थित होकर ही मान्य है। कृपया परिसर में आकर टोकन प्राप्त करें।")
             }
         }
 
@@ -1149,7 +1168,7 @@ class AshramRepository(context: Context) {
                 registeredBy = registeredBy,
                 originAddress = safeOrigin,
                 destinationAddress = safeDest,
-                darbarDate = today,
+                darbarDate = targetDarbarDate,
                 customTokenNumber = customTokenNumber,
                 canIssueAnytime = shouldBypassGeofence || (isAdminDesk && (bypassGeofence || settings.allowAdminReservedTokens)),
                 darbarVenue = darbarVenue
@@ -1185,8 +1204,8 @@ class AshramRepository(context: Context) {
         synchronized(tokenGenerationLock) {
             if (settings.maxDailyTokens > 0) {
                 val countCursor = db.rawQuery(
-                    "SELECT COUNT(*) FROM tokens WHERE darbar_date = ? AND status != 'CANCELLED'",
-                    arrayOf(today)
+                    "SELECT COUNT(*) FROM tokens WHERE (darbar_date = ? OR darbar_date = ?) AND status != 'CANCELLED'",
+                    arrayOf(today, targetDarbarDate)
                 )
                 var todayCount = 0
                 if (countCursor.moveToFirst()) {
@@ -1202,14 +1221,14 @@ class AshramRepository(context: Context) {
             try {
                 nextTokenNum = if (customTokenNumber != null && customTokenNumber > 0) {
                     // If replacing a previously cancelled token with this number, remove old entry
-                    db.delete("tokens", "darbar_date = ? AND token_number = ? AND status = 'CANCELLED'", arrayOf(today, customTokenNumber.toString()))
+                    db.delete("tokens", "(darbar_date = ? OR darbar_date = ?) AND token_number = ? AND status = 'CANCELLED'", arrayOf(today, targetDarbarDate, customTokenNumber.toString()))
                     customTokenNumber
                 } else if (centralTokenNumber != null && centralTokenNumber > 0) {
                     centralTokenNumber
                 } else {
                     val maxTokenCursor = db.rawQuery(
-                        "SELECT MAX(token_number) FROM tokens WHERE darbar_date = ?",
-                        arrayOf(today)
+                        "SELECT MAX(token_number) FROM tokens WHERE darbar_date = ? OR darbar_date = ?",
+                        arrayOf(today, targetDarbarDate)
                     )
                     var num = 1
                     if (maxTokenCursor.moveToFirst() && !maxTokenCursor.isNull(0)) {
@@ -1225,7 +1244,7 @@ class AshramRepository(context: Context) {
 
                 val tokenValues = ContentValues().apply {
                     put("token_number", nextTokenNum)
-                    put("darbar_date", today)
+                    put("darbar_date", targetDarbarDate)
                     put("patient_name", patientName)
                     put("phone_number", phoneNumber)
                     put("city", safeCity)
@@ -1249,7 +1268,7 @@ class AshramRepository(context: Context) {
                 if (isDevoteeRequest) {
                     val devValues = ContentValues().apply {
                         put("device_id", deviceId)
-                        put("darbar_date", today)
+                        put("darbar_date", targetDarbarDate)
                         put("token_number", nextTokenNum)
                         put("patient_name", patientName)
                         put("created_at", System.currentTimeMillis())

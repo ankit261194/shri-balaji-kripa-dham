@@ -477,6 +477,13 @@ fun FaceTokenRegistrationScreen(
                 e.printStackTrace()
             }
             settings = repository.getSettings()
+            val serverTok = repository.checkDeviceRegisteredToday(id) ?: try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(id, settings.darbarDate)
+            } catch (e: Exception) { null }
+            if (serverTok != null) {
+                generatedToken = serverTok
+                scanState = FaceScanState.TOKEN_GENERATED
+            }
             // Passively check location permissions without re-prompting dialog
             val fineGranted = androidx.core.content.ContextCompat.checkSelfPermission(
                 context, android.Manifest.permission.ACCESS_FINE_LOCATION
@@ -1273,6 +1280,27 @@ fun FaceTokenRegistrationScreen(
                                                     errorMessage = if (isHindi) "⚠️ वैध जीपीएस लोकेशन नहीं मिली। कृपया GPS चालू करें और पुनः प्रयास करें।" else "Valid GPS location required."
                                                     isSubmitting = false
                                                     return@launch
+                                                }
+
+                                                if (settings.isGeofenceEnforced) {
+                                                    val ashLat = if (targetLat != 0.0) targetLat else 28.3972915
+                                                    val ashLon = if (targetLng != 0.0) targetLng else 78.1460410
+                                                    val currentGpsMeters = GeofenceLocationManager.calculateDistanceMeters(finalLat, finalLon, ashLat, ashLon)
+                                                    val outstationM = targetOutstationKm * 1000.0
+                                                    val isAtAshram = currentGpsMeters <= targetRadius
+                                                    val isOutstationAdvance = currentGpsMeters > outstationM && settings.isOutstationAdvanceAllowed
+                                                    if (!isAtAshram && !isOutstationAdvance) {
+                                                        val distKm = String.format(Locale.US, "%.1f", currentGpsMeters / 1000.0)
+                                                        val outKm = targetOutstationKm.toInt()
+                                                        val radM = if (targetRadius >= 1000.0) "${String.format(Locale.US, "%.1f", targetRadius / 1000.0)} किमी" else "${targetRadius.toInt()} मीटर"
+                                                        val targetVenueLabel = if (darbarVenue.equals("BULANDSHAHR", ignoreCase = true)) "बुलन्दशहर दरबार" else "आश्रम"
+                                                        errorMessage = if (isHindi)
+                                                            "⚠️ $targetVenueLabel दूरी नियम: ${outKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल $targetVenueLabel परिसर ($radM के भीतर) में ही मान्य है। आपकी वास्तविक दूरी $distKm किमी है।"
+                                                        else
+                                                            "Local devotees within $outKm km can only register inside $targetVenueLabel premises ($radM). Your distance is $distKm km."
+                                                        isSubmitting = false
+                                                        return@launch
+                                                    }
                                                 }
 
                                                 val (token, updated) = repository.confirmFaceAndGenerateToken(

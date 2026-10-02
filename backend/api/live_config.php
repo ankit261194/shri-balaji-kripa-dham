@@ -245,6 +245,11 @@ function runSchemaMigrations($pdo, $targetCols) {
             }
         }
 
+        // Sacred Rule: Tehsil must always be Anupshahr
+        try {
+            $pdo->exec("UPDATE ashram_settings SET ashram_address = REPLACE(ashram_address, 'तहसील जहांगीराबाद', 'तहसील अनूपशहर') WHERE ashram_address LIKE '%तहसील जहांगीराबाद%'");
+        } catch (Throwable $t) {}
+
         // Ensure secondary tables exist
         $pdo->exec("CREATE TABLE IF NOT EXISTS sevadars (
             id BIGINT AUTO_INCREMENT PRIMARY KEY,

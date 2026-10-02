@@ -51,12 +51,22 @@ try {
         exit;
     }
 
+    $st = $pdo->query("SELECT darbar_date, tuesday_darbar_date FROM ashram_settings WHERE id = 1 LIMIT 1");
+    $settings = $st ? $st->fetch(PDO::FETCH_ASSOC) : [];
+    $sunDate = !empty($settings['darbar_date']) ? $settings['darbar_date'] : date('Y-m-d');
+    $tueDate = !empty($settings['tuesday_darbar_date']) ? $settings['tuesday_darbar_date'] : date('Y-m-d');
+
     $token = null;
 
-    // 1. Check by Device ID
+    // 1. Check by Device ID (Resistant to App Data Clear, Reinstall, and Date Offset)
     if (!empty($deviceId)) {
-        $stmt = $pdo->prepare("SELECT * FROM tokens WHERE device_id = :dev AND darbar_date = :date AND status != 'CANCELLED' ORDER BY id DESC LIMIT 1");
-        $stmt->execute([':dev' => $deviceId, ':date' => $darbarDate]);
+        $stmt = $pdo->prepare("SELECT * FROM tokens WHERE device_id = :dev AND (darbar_date = :req_date OR darbar_date = :sun_date OR darbar_date = :tue_date OR darbar_date = CURDATE()) AND status != 'CANCELLED' ORDER BY id DESC LIMIT 1");
+        $stmt->execute([
+            ':dev' => $deviceId,
+            ':req_date' => $darbarDate,
+            ':sun_date' => $sunDate,
+            ':tue_date' => $tueDate
+        ]);
         $token = $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
@@ -65,8 +75,13 @@ try {
         $cleanPhone = preg_replace('/[^0-9]/', '', $phoneNumber);
         if (strlen($cleanPhone) >= 10) {
             $last10 = substr($cleanPhone, -10);
-            $stmt = $pdo->prepare("SELECT * FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND darbar_date = :date AND status != 'CANCELLED' ORDER BY id DESC LIMIT 1");
-            $stmt->execute([':phone' => $last10, ':date' => $darbarDate]);
+            $stmt = $pdo->prepare("SELECT * FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND (darbar_date = :req_date OR darbar_date = :sun_date OR darbar_date = :tue_date OR darbar_date = CURDATE()) AND status != 'CANCELLED' ORDER BY id DESC LIMIT 1");
+            $stmt->execute([
+                ':phone' => $last10,
+                ':req_date' => $darbarDate,
+                ':sun_date' => $sunDate,
+                ':tue_date' => $tueDate
+            ]);
             $token = $stmt->fetch(PDO::FETCH_ASSOC);
         }
     }

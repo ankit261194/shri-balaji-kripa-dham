@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 105,
-  "version_code": 105,
-  "latest_version_name": "2.56.30",
-  "version_name": "2.56.30",
-  "update_notes_hindi": "v2.56.30 (Build 105): 🎨 थीम सेलेक्टर अब आकर्षक ड्रॉपडाउन मेनू में! 🛡️ वन-टाइम अनुमतियाँ (स्थान, कैमरा व सूचनाएं अब केवल पहली बार), बार-बार परमिशन मांगना पूरी तरह बंद।",
-  "update_notes_english": "v2.56.30 (Build 105): 🎨 Theme selection moved to Dropdown Menu! 🛡️ One-time unified permissions on launch (no repeated prompts).",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=105",
+  "latest_version_code": 106,
+  "version_code": 106,
+  "latest_version_name": "2.56.31",
+  "version_name": "2.56.31",
+  "update_notes_hindi": "v2.56.31 (Build 106): 🛡️ अभेद्य सुरक्षा अपडेट: 30 किमी का कड़ा नियम सर्वर द्वारा सीधा लागू (स्थानीय भक्तों को केवल आश्रम परिसर में टोकन), डेटा क्लियर करने पर दूसरा टोकन बनाने पर पूर्ण रोक, फ़ेक GPS व स्पूफिंग पर पूर्ण प्रतिबंध।",
+  "update_notes_english": "v2.56.31 (Build 106): 🛡️ Bulletproof Security Update: Strict server-side 30km geofence enforcement, permanent hardware device locking immune to clear data, and comprehensive mock location blocking.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=106",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

@@ -59,7 +59,7 @@ if ($isTuesdayVenue && empty($input['destination_address'])) {
 } else {
     $destinationAddress = trim($input['destination_address'] ?? ($isTuesdayVenue ? 'श्री बालाजी कृपा धाम (मंगलवार दरबार, बुलन्दशहर)' : 'श्री बालाजी कृपा धाम, डूँगरा जाट'));
 }
-$darbarDate = trim($input['darbar_date'] ?? date('Y-m-d'));
+$darbarDate = trim($input['darbar_date'] ?? '');
 
 if (empty($patientName) || empty($phoneNumber)) {
     http_response_code(400);
@@ -162,17 +162,47 @@ if ($isTuesdayVenue) {
     }
 }
 
+// Active Darbar Date determination
+$activeDarbarDate = $isTuesdayVenue 
+    ? (!empty($settings['tuesday_darbar_date']) ? $settings['tuesday_darbar_date'] : date('Y-m-d'))
+    : (!empty($settings['darbar_date']) ? $settings['darbar_date'] : date('Y-m-d'));
+if (empty($input['darbar_date'])) {
+    $darbarDate = $activeDarbarDate;
+}
+
+// 0. Mock Location & Fake GPS Check (Anti-Bypass Protection)
+$isMockLocationSubmitted = !empty($input['is_mock_location']) || !empty($input['is_mock']) || 
+                           (isset($_POST['is_mock_location']) && ($_POST['is_mock_location'] == '1' || $_POST['is_mock_location'] === 'true')) ||
+                           (isset($input['is_mock_location']) && $input['is_mock_location'] === true);
+if (!$isAdmin && $isMockLocationSubmitted) {
+    http_response_code(403);
+    echo json_encode([
+        "success" => false,
+        "error" => "⚠️ सुरक्षा चेतावनी: फ़ेक जीपीएस (Fake GPS) अथवा नकली लोकेशन का उपयोग पकड़ा गया है! टोकन पंजीकरण अवरुद्ध कर दिया गया है।"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // 1. Hardware-Level Device Locking (1 Phone = 1 Token per Darbar Date per Venue)
-if (!$isAdmin && !empty($deviceId)) {
-    $devCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE device_id = :dev AND darbar_date = :date AND darbar_venue = :venue AND status != 'CANCELLED' LIMIT 1");
-    $devCheck->execute([':dev' => $deviceId, ':date' => $darbarDate, ':venue' => $darbarVenue]);
+if (!$isAdmin) {
+    if (empty($deviceId)) {
+        http_response_code(400);
+        echo json_encode([
+            "success" => false,
+            "error" => "⚠️ डिवाइस सुरक्षा त्रुटि: डिवाइस हार्डवेयर आईडी प्राप्त नहीं हो सकी। कृपया ऐप पुनः प्रारंभ करें।"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $devCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE device_id = :dev AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date = CURDATE()) AND status != 'CANCELLED' LIMIT 1");
+    $devCheck->execute([':dev' => $deviceId, ':date' => $darbarDate, ':active_date' => $activeDarbarDate]);
     $existingDev = $devCheck->fetch(PDO::FETCH_ASSOC);
     if ($existingDev) {
         http_response_code(403);
         $venueLabel = $isTuesdayVenue ? "मंगलवार बुलन्दशहर दरबार" : "रविवार दरबार";
         echo json_encode([
             "success" => false,
-            "error" => "⚠️ डिवाइस सुरक्षा नियम (1 फोन = 1 टोकन):\n\nइस मोबाइल फोन से आज का टोकन (#" . $existingDev['token_number'] . " - " . $existingDev['patient_name'] . ") पहले ही पंजीकृत हो चुका है।\n\nनियम: एक फोन से प्रत्येक $venueLabel केवल एक ही टोकन प्राप्त किया जा सकता है। ऐप का डेटा रीसेट या दोबारा इंस्टॉल करने पर भी दूसरा टोकन नहीं मिल सकता।"
+            "error" => "⚠️ डिवाइस सुरक्षा नियम (1 फोन = 1 टोकन):\n\nइस मोबाइल फोन से आज का टोकन (#" . $existingDev['token_number'] . " - " . $existingDev['patient_name'] . ") पहले ही पंजीकृत हो चुका है।\n\nनियम: एक फोन से प्रत्येक $venueLabel केवल एक ही टोकन प्राप्त किया जा सकता है। ऐप का डेटा रीसेट (Clear Data) या दोबारा इंस्टॉल करने पर भी दूसरा टोकन नहीं मिल सकता।"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -183,8 +213,8 @@ if (!$isAdmin && !empty($phoneNumber)) {
     $cleanPhone = preg_replace('/[^0-9]/', '', $phoneNumber);
     if (strlen($cleanPhone) >= 10) {
         $cleanPhone10 = substr($cleanPhone, -10);
-        $phoneCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND darbar_date = :date AND darbar_venue = :venue AND status != 'CANCELLED' LIMIT 1");
-        $phoneCheck->execute([':phone' => $cleanPhone10, ':date' => $darbarDate, ':venue' => $darbarVenue]);
+        $phoneCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date = CURDATE()) AND status != 'CANCELLED' LIMIT 1");
+        $phoneCheck->execute([':phone' => $cleanPhone10, ':date' => $darbarDate, ':active_date' => $activeDarbarDate]);
         $existingPhone = $phoneCheck->fetch(PDO::FETCH_ASSOC);
         if ($existingPhone) {
             http_response_code(403);
@@ -198,7 +228,7 @@ if (!$isAdmin && !empty($phoneNumber)) {
     }
 }
 
-// 3. Central Geofence & Dual-Distance Policy Enforcement
+// 3. Central Geofence & Dual-Distance Policy Enforcement (Strict 30 KM Rule)
 if (!$isAdmin) {
     $isGeofenceEnforced = !isset($settings['is_geofence_enforced']) || (int)$settings['is_geofence_enforced'] === 1;
 
@@ -213,16 +243,21 @@ if (!$isAdmin) {
         }
 
         if ($isTuesdayVenue) {
-            $ashLat = floatval($settings['tuesday_latitude'] ?? 28.4069);
-            $ashLon = floatval($settings['tuesday_longitude'] ?? 77.8498);
-            $allowedRadiusM = floatval($settings['tuesday_allowed_radius_meters'] ?? 200.0);
-            $outstationMinKm = floatval($settings['tuesday_outstation_min_distance_km'] ?? 30.0);
+            $tRawLat = !empty($settings['tuesday_latitude']) ? $settings['tuesday_latitude'] : 28.4069;
+            $tRawLon = !empty($settings['tuesday_longitude']) ? $settings['tuesday_longitude'] : 77.8498;
+            $ashLat = floatval($tRawLat);
+            $ashLon = floatval($tRawLon);
+            $allowedRadiusM = floatval(!empty($settings['tuesday_allowed_radius_meters']) ? $settings['tuesday_allowed_radius_meters'] : 200.0);
+            $outstationMinKm = floatval(!empty($settings['tuesday_outstation_min_distance_km']) ? $settings['tuesday_outstation_min_distance_km'] : 30.0);
             $venueNameForNotice = "बुलन्दशहर दरबार";
         } else {
-            $ashLat = floatval($settings['ashram_latitude'] ?? 28.3972915);
-            $ashLon = floatval($settings['ashram_longitude'] ?? 78.1460410);
-            $allowedRadiusM = floatval($settings['allowed_radius_meters'] ?? 200.0);
-            $outstationMinKm = floatval($settings['outstation_min_distance_km'] ?? 30.0);
+            // Self-healing coordinate resolution: check ashram_latitude, then latitude, fallback to 28.3972915
+            $rawLat = !empty($settings['ashram_latitude']) ? $settings['ashram_latitude'] : (!empty($settings['latitude']) ? $settings['latitude'] : 28.3972915);
+            $rawLon = !empty($settings['ashram_longitude']) ? $settings['ashram_longitude'] : (!empty($settings['longitude']) ? $settings['longitude'] : 78.1460410);
+            $ashLat = floatval($rawLat);
+            $ashLon = floatval($rawLon);
+            $allowedRadiusM = floatval(!empty($settings['allowed_radius_meters']) ? $settings['allowed_radius_meters'] : 200.0);
+            $outstationMinKm = floatval(!empty($settings['outstation_min_distance_km']) ? $settings['outstation_min_distance_km'] : 30.0);
             $venueNameForNotice = "आश्रम";
         }
         $isOutstationAllowed = !isset($settings['is_outstation_advance_allowed']) || (int)$settings['is_outstation_advance_allowed'] === 1;
@@ -240,16 +275,20 @@ if (!$isAdmin) {
         $isGpsOutstation = ($gpsDistanceKm > $outstationMinKm);
         $isRoadOutstation = ($distanceKm >= $outstationMinKm);
 
-        // If devotee is within outstationMinKm (by GPS OR by road/city distance), they MUST be physically at venue!
+        // SACRED RULE:
+        // If devotee is NOT physically at Ashram (< allowedRadiusM):
+        // 1. Advance outstation tokens MUST be enabled ($isOutstationAllowed).
+        // 2. Real GPS distance MUST be greater than outstationMinKm (e.g. > 30 km).
+        // 3. Devotees <= 30 km CANNOT generate tokens from outside the Ashram premises!
+        // 4. Any devotee whose GPS distance is <= 30 km OR whose road distance is < 30 km is BLOCKED!
         if (!$isPhysicallyAtAshram) {
-            // Must be genuinely outstation (> outstationMinKm) on BOTH GPS and Road distance
             if (!$isOutstationAllowed || !$isGpsOutstation || ($distanceKm > 0 && !$isRoadOutstation)) {
                 http_response_code(403);
-                $distStr = number_format(min($gpsDistanceKm, $distanceKm > 0 ? $distanceKm : $gpsDistanceKm), 1);
+                $distStr = number_format($gpsDistanceKm, 1);
                 $radDesc = ($allowedRadiusM >= 1000) ? number_format($allowedRadiusM / 1000, 1) . " किमी" : round($allowedRadiusM) . " मीटर";
                 echo json_encode([
                     "success" => false,
-                    "error" => "⚠️ दूरी नियम उल्लंघन:\n\n{$outstationMinKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल {$venueNameForNotice} परिसर (" . $radDesc . " के भीतर) में ही मान्य है।\n\nआपकी दूरी " . $distStr . " किमी है। कृपया परिसर में पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का हक न छूटे।"
+                    "error" => "⚠️ दूरी नियम उल्लंघन:\n\n{$outstationMinKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल {$venueNameForNotice} परिसर (" . $radDesc . " के भीतर) में ही मान्य है।\n\nआपकी वास्तविक दूरी " . $distStr . " किमी है। कृपया परिसर में पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का हक न छूटे।"
                 ], JSON_UNESCAPED_UNICODE);
                 exit;
             }
@@ -258,7 +297,6 @@ if (!$isAdmin) {
         // Accurately assign GPS-derived distance for database persistence & Superadmin visibility
         if ($isGpsOutstation) {
             $distanceKm = round($gpsDistanceKm * 1.28, 1);
-            // Devotee is outstation: city and origin_address are strictly locked to GPS location
             if (!empty($originAddress)) {
                 $city = $originAddress;
             }
