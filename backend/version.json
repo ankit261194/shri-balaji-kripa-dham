@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 118,
-  "version_code": 118,
-  "latest_version_name": "2.56.43",
-  "version_name": "2.56.43",
-  "update_notes_hindi": "v2.56.43 (Build 118): 🪑 कतार स्क्रीन पर दूसरे नंबर (स्टैंडबाय) को जब चाहे बुलाने का मैनुअल बटन व टाइमर + ➕ कतार से तुरंत टोकन बनाएं + 🛕 हवन आवेदन में पूज्य गुरुजी व शिष्य दल तथा अनिवार्य सहमति नियम!",
-  "update_notes_english": "v2.56.43 (Build 118): 🪑 Standby manual calling button & timer in queue screen + ➕ Quick token generation in queue + 🛕 Havan application updates & mandatory dual-consent!",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=118",
+  "latest_version_code": 119,
+  "version_code": 119,
+  "latest_version_name": "2.56.44",
+  "version_name": "2.56.44",
+  "update_notes_hindi": "v2.56.44 (Build 119): 🪑 कतार स्क्रीन पर दूसरे नंबर (स्टैंडबाय) को जब चाहे बुलाने का मैनुअल बटन व 15s टाइमर + ➕ कतार से तुरंत टोकन जारी + 🛕 हवन आवेदन में पूज्य गुरुजी व शिष्य दल तथा अनिवार्य सहमति नियम!",
+  "update_notes_english": "v2.56.44 (Build 119): 🪑 Standby manual calling button & timer in queue screen + ➕ Quick token generation in queue + 🛕 Havan application updates & mandatory dual-consent!",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=119",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

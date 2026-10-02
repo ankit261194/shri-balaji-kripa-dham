@@ -3462,6 +3462,8 @@ fun TokenQueueTab(
     val completedCount = todayTokens.count { it.status == TokenStatus.COMPLETED || it.isDarshanCompleted }
     val absentCount = todayTokens.count { it.status == TokenStatus.ABSENT }
     val pendingCount = todayTokens.count { it.status != TokenStatus.COMPLETED && !it.isDarshanCompleted && it.status != TokenStatus.ABSENT && it.status != TokenStatus.CANCELLED }
+    val effectiveCallingNum = if (settings.runningTokenNumber > 0) settings.runningTokenNumber else 1
+    val currentCalledDevotee = todayTokens.find { it.tokenNumber == effectiveCallingNum }
 
     LazyColumn(
         modifier = Modifier
@@ -3622,9 +3624,6 @@ fun TokenQueueTab(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     // Line 2: Active Calling Strip + Inline Voice Controls
-                    val effectiveCallingNum = if (settings.runningTokenNumber > 0) settings.runningTokenNumber else 1
-                    val currentCalledDevotee = todayTokens.find { it.tokenNumber == effectiveCallingNum }
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -3735,6 +3734,111 @@ fun TokenQueueTab(
                                     fontSize = 12.sp,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                                 )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    HorizontalDivider(color = Color(0xFFEEEEEE))
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Line 3: Standby Calling Strip (Next / 2nd number) - Call on-demand anytime + Timer/Manual toggle
+                    val targetStandbyNum = if (effectiveCallingNum > 0) effectiveCallingNum + 1 else 1
+                    val standbyDevotee = todayTokens.find { it.tokenNumber == targetStandbyNum }
+                        ?: todayTokens.firstOrNull { it.tokenNumber > effectiveCallingNum && it.status == TokenStatus.WAITING }
+                        ?: todayTokens.firstOrNull { it.status == TokenStatus.WAITING }
+                    val currentStandbyDelaySec = AshramVoiceAnnouncementManager.getAutoNextDelaySeconds(context)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // 2nd Devotee info
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "🪑 दूसरा #${standbyDevotee?.tokenNumber ?: targetStandbyNum}",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFE65100)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = standbyDevotee?.let { "${it.patientName} (${it.city})" } ?: (if (isHindi) "प्रतीक्षारत कोई नहीं" else "No waiting devotee"),
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF5D4037),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Toggle between Manual (0s) and 15s Timer
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (currentStandbyDelaySec == 0) Color(0xFFEDE7F6) else Color(0xFFFFF3E0),
+                                border = BorderStroke(0.8.dp, if (currentStandbyDelaySec == 0) Color(0xFF7E57C2) else Color(0xFFFFA726)),
+                                modifier = Modifier.clickable {
+                                    val newDelay = if (currentStandbyDelaySec == 0) 15 else 0
+                                    AshramVoiceAnnouncementManager.setAutoNextDelaySeconds(context, newDelay)
+                                    Toast.makeText(
+                                        context,
+                                        if (newDelay == 0) (if (isHindi) "👆 स्टैंडबाय मोड: पूर्णतः मैनुअल (बटन दबाने पर ही आवाज़ लगेगी)" else "Standby: Manual Mode")
+                                        else (if (isHindi) "⏱️ स्टैंडबाय मोड: 15 सेकंड ऑटो-टाइमर" else "Standby: 15s Auto-Timer"),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            ) {
+                                Text(
+                                    text = if (currentStandbyDelaySec == 0) "👆 मैनुअल" else "⏱️ 15s",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (currentStandbyDelaySec == 0) Color(0xFF4527A0) else Color(0xFFE65100),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
+                            }
+
+                            // Prominent on-demand call button for Standby / 2nd number
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFE65100),
+                                modifier = Modifier.clickable {
+                                    val callStandbyNum = standbyDevotee?.tokenNumber ?: targetStandbyNum
+                                    val callStandbyName = standbyDevotee?.patientName ?: ""
+                                    val currName = currentCalledDevotee?.patientName ?: ""
+                                    AshramVoiceAnnouncementManager.announceStandbyDevotee(
+                                        context = context,
+                                        currentDevoteeName = currName,
+                                        nextTokenNumber = callStandbyNum,
+                                        nextDevoteeName = callStandbyName
+                                    )
+                                    Toast.makeText(
+                                        context,
+                                        if (isHindi) "📢 दूसरे नंबर (#$callStandbyNum) को पीछे आकर बैठने की आवाज़ लगाई गई!" else "Announced standby devotee #$callStandbyNum",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("📢", fontSize = 10.sp)
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = if (isHindi) "पीछे बुलाएं (#${standbyDevotee?.tokenNumber ?: targetStandbyNum})" else "Call Standby (#${standbyDevotee?.tokenNumber ?: targetStandbyNum})",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
                             }
                         }
                     }
@@ -4370,6 +4474,29 @@ fun TokenQueueTab(
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE65100))
                             ) {
                                 Text("📢 लाउडस्पीकर", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    AshramVoiceAnnouncementManager.announceStandbyDevotee(
+                                        context = context,
+                                        currentDevoteeName = currentCalledDevotee?.patientName ?: "",
+                                        nextTokenNumber = token.tokenNumber,
+                                        nextDevoteeName = token.patientName
+                                    )
+                                    Toast.makeText(
+                                        context,
+                                        if (isHindi) "📢 #${token.tokenNumber} (${token.patientName}) को पीछे बैठने की आवाज़ लगाई गई!" else "Standby called #${token.tokenNumber}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.height(28.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF7B1FA2)),
+                                border = BorderStroke(1.dp, Color(0xFFCE93D8))
+                            ) {
+                                Text("🪑 पीछे बुलाएं", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                         }
 
