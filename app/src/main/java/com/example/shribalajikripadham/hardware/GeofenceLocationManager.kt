@@ -22,7 +22,7 @@ data class LocationSecurityResult(
 
 object GeofenceLocationManager {
 
-    const val MAX_ALLOWED_ACCURACY_METERS = 250.0f
+    const val MAX_ALLOWED_ACCURACY_METERS = 60.0f
     const val OUTSTATION_MIN_DISTANCE_METERS = 30000.0 // 30 km
     const val LOCAL_ASHRAM_MAX_DISTANCE_METERS = 200.0 // 200 meters
 
@@ -74,6 +74,59 @@ object GeofenceLocationManager {
     ): Boolean {
         val distance = calculateDistanceMeters(userLat, userLon, ashramLat, ashramLon)
         return distance <= allowedRadiusMeters
+    }
+
+    private val KNOWN_ROOT_PACKAGES = listOf(
+        "com.topjohnwu.magisk",
+        "io.github.vvb2060.magisk",
+        "me.weishu.kernelsu",
+        "com.koushikdutta.superuser",
+        "eu.chainfire.supersu",
+        "com.noshufou.android.su",
+        "com.thirdparty.superuser",
+        "com.yellowes.su"
+    )
+
+    private val ROOT_BINARY_PATHS = arrayOf(
+        "/system/app/Superuser.apk",
+        "/sbin/su",
+        "/system/bin/su",
+        "/system/xbin/su",
+        "/data/local/xbin/su",
+        "/data/local/bin/su",
+        "/system/sd/xbin/su",
+        "/system/bin/failsafe/su",
+        "/data/local/su",
+        "/system/bin/.ext/.su"
+    )
+
+    /**
+     * Checks if device is rooted or has Magisk / KernelSU / su binary installed.
+     */
+    fun isDeviceRooted(context: Context): Boolean {
+        // 1. Check build tags for test-keys
+        val buildTags = Build.TAGS
+        if (buildTags != null && buildTags.contains("test-keys")) {
+            return true
+        }
+
+        // 2. Check for su binaries in system paths
+        for (path in ROOT_BINARY_PATHS) {
+            try {
+                if (java.io.File(path).exists()) return true
+            } catch (ignored: Exception) {}
+        }
+
+        // 3. Check for installed root / magisk packages
+        val pm = context.packageManager
+        for (pkg in KNOWN_ROOT_PACKAGES) {
+            try {
+                pm.getPackageInfo(pkg, 0)
+                return true
+            } catch (ignored: Exception) {}
+        }
+
+        return false
     }
 
     private val KNOWN_MOCK_LOCATION_PACKAGES = listOf(
@@ -230,6 +283,19 @@ object GeofenceLocationManager {
                 distanceMeters = calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon),
                 isInsideGeofence = false,
                 securityExceptionReason = "⚠️ सुरक्षा चेतावनी: फ़ेक जीपीएस (Fake GPS) अथवा नकली लोकेशन का उपयोग पकड़ा गया है! टोकन पंजीकरण अवरुद्ध कर दिया गया है।"
+            )
+        }
+
+        // 1B. Detect Root / Magisk / KernelSU (Anti-Hook Protection)
+        val isRooted = isDeviceRooted(context)
+        if (isRooted) {
+            return LocationSecurityResult(
+                isValid = false,
+                isMock = true,
+                accuracyMeters = location.accuracy,
+                distanceMeters = calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon),
+                isInsideGeofence = false,
+                securityExceptionReason = "⚠️ सुरक्षा चेतावनी: रूटेड डिवाइस (Root / Magisk) का उपयोग पकड़ा गया है! सुरक्षा कारणों से टोकन पंजीकरण अवरुद्ध कर दिया गया है।"
             )
         }
 

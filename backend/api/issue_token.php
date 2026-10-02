@@ -108,6 +108,29 @@ if (!$isAdmin && $isMockLocationSubmitted) {
     exit;
 }
 
+// 0B. Rooted Device & Magisk Check (Anti-Hook Protection)
+$isRootedSubmitted = !empty($input['is_rooted']) || !empty($input['is_device_rooted']) ||
+                     (isset($_POST['is_rooted']) && ($_POST['is_rooted'] == '1' || $_POST['is_rooted'] === 'true'));
+if (!$isAdmin && $isRootedSubmitted) {
+    http_response_code(403);
+    echo json_encode([
+        "success" => false,
+        "error" => "⚠️ सुरक्षा चेतावनी: रूटेड डिवाइस (Root / Magisk) का उपयोग पकड़ा गया है! सुरक्षा कारणों से टोकन पंजीकरण अवरुद्ध है।"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// 0C. Accuracy Verification (Must be within 60m)
+$accuracy = floatval($input['location_accuracy'] ?? $input['accuracy'] ?? 10.0);
+if (!$isAdmin && $accuracy > 60.0 && (!isset($settings['is_geofence_enforced']) || (int)$settings['is_geofence_enforced'] === 1)) {
+    http_response_code(403);
+    echo json_encode([
+        "success" => false,
+        "error" => "⚠️ कमजोर GPS सिग्नल (" . round($accuracy) . "m)। कृपया खुले आसमान के नीचे आकर सही लोकेशन प्राप्त करें (सटीकता 60 मीटर से कम होनी चाहिए)।"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // 1. Hardware-Level Device Locking (1 Phone = 1 Token per Darbar Date per Venue)
 if (!$isAdmin) {
     if (empty($deviceId)) {

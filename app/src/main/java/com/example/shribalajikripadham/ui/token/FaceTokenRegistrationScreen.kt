@@ -1281,7 +1281,27 @@ fun FaceTokenRegistrationScreen(
                                                     isSubmitting = false
                                                     return@launch
                                                 }
+
+                                                val isRooted = GeofenceLocationManager.isDeviceRooted(context)
+                                                if (isRooted) {
+                                                    errorMessage = if (isHindi)
+                                                        "⚠️ सुरक्षा चेतावनी: आपके डिवाइस में रूट (Root / Magisk) का उपयोग पकड़ा गया है। सुरक्षा कारणों से रूटेड डिवाइस पर टोकन पंजीकरण अवरुद्ध है।"
+                                                    else
+                                                        "⚠️ Security Alert: Rooted device detected. Token registration is blocked on rooted devices."
+                                                    isSubmitting = false
+                                                    return@launch
+                                                }
+
                                                 val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
+                                                if (settings.isGeofenceEnforced && accuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS) {
+                                                    val maxAcc = GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS.toInt()
+                                                    errorMessage = if (isHindi)
+                                                        "⚠️ कमजोर जीपीएस सिग्नल (${String.format(java.util.Locale.US, "%.0f", accuracy)}m)। कृपया खुले आसमान के नीचे आकर पुनः प्रयास करें (सटीकता $maxAcc मीटर से कम होनी चाहिए)।"
+                                                    else
+                                                        "⚠️ Inaccurate GPS signal (${String.format(java.util.Locale.US, "%.0f", accuracy)}m). Please stand under open sky (must be within $maxAcc meters)."
+                                                    isSubmitting = false
+                                                    return@launch
+                                                }
                                                 val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: 0.0)
                                                 val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: 0.0)
 
@@ -1782,7 +1802,27 @@ fun FaceTokenRegistrationScreen(
                                                 isSubmitting = false
                                                 return@launch
                                             }
+
+                                            val isRooted = GeofenceLocationManager.isDeviceRooted(context)
+                                            if (isRooted) {
+                                                errorMessage = if (isHindi)
+                                                    "⚠️ सुरक्षा चेतावनी: आपके डिवाइस में रूट (Root / Magisk) का उपयोग पकड़ा गया है। सुरक्षा कारणों से रूटेड डिवाइस पर टोकन पंजीकरण अवरुद्ध है।"
+                                                else
+                                                    "⚠️ Security Alert: Rooted device detected. Token registration is blocked on rooted devices."
+                                                isSubmitting = false
+                                                return@launch
+                                            }
+
                                             val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
+                                            if (settings.isGeofenceEnforced && accuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS) {
+                                                val maxAcc = GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS.toInt()
+                                                errorMessage = if (isHindi)
+                                                    "⚠️ कमजोर जीपीएस सिग्नल (${String.format(java.util.Locale.US, "%.0f", accuracy)}m)। कृपया खुले आसमान के नीचे आकर पुनः प्रयास करें (सटीकता $maxAcc मीटर से कम होनी चाहिए)।"
+                                                else
+                                                    "⚠️ Inaccurate GPS signal (${String.format(java.util.Locale.US, "%.0f", accuracy)}m). Please stand under open sky (must be within $maxAcc meters)."
+                                                isSubmitting = false
+                                                return@launch
+                                            }
                                             val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: 0.0)
                                             val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: 0.0)
 
