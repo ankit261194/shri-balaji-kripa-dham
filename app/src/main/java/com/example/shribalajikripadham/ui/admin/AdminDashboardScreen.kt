@@ -5,6 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -90,10 +93,18 @@ fun AdminDashboardScreen(
     var myLoginTimestamp by remember { mutableLongStateOf(0L) }
     var forceLogoutMessage by remember { mutableStateOf<String?>(null) }
     var showLogoutExitDialog by remember { mutableStateOf(false) }
+    var activeScreenTitle by rememberSaveable { mutableStateOf<String?>(null) }
+    var adminHubSearchQuery by rememberSaveable { mutableStateOf("") }
+    var adminHubSelectedCategory by rememberSaveable { mutableStateOf("सभी") }
+    var isAdminHubGridView by rememberSaveable { mutableStateOf(true) }
 
-    // Intercept back button when admin is logged in: must confirm logout before exiting
+    // Intercept back button when admin is logged in: returns to Hub menu first, then exit dialog
     BackHandler(enabled = loggedInAdmin != null) {
-        showLogoutExitDialog = true
+        if (activeScreenTitle != null) {
+            activeScreenTitle = null
+        } else {
+            showLogoutExitDialog = true
+        }
     }
 
     // Sevadar photo states (must be declared before activity result launchers)
@@ -663,26 +674,46 @@ fun AdminDashboardScreen(
                     Text(
                         text = if (loggedInAdmin == null)
                             if (isHindi) "व्यवस्थापक प्रवेश" else "Admin Authentication"
+                        else if (activeScreenTitle != null)
+                            activeScreenTitle!!
                         else
                             if (isHindi) "नियंत्रण कक्ष: ${loggedInAdmin?.name}" else "Control Panel: ${loggedInAdmin?.name}",
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        fontSize = 17.sp
+                        fontSize = 17.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 navigationIcon = {
                     TextButton(onClick = {
                         if (loggedInAdmin != null) {
-                            showLogoutExitDialog = true
+                            if (activeScreenTitle != null) {
+                                activeScreenTitle = null
+                            } else {
+                                showLogoutExitDialog = true
+                            }
                         } else {
                             onBack()
                         }
                     }) {
-                        Text(if (isHindi) "← वापस" else "← Back", color = SaffronLight, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = if (activeScreenTitle != null)
+                                (if (isHindi) "← मुख्य मेनू" else "← Menu")
+                            else
+                                (if (isHindi) "← वापस" else "← Back"),
+                            color = SaffronLight,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 },
                 actions = {
                     if (loggedInAdmin != null) {
+                        if (activeScreenTitle != null) {
+                            IconButton(onClick = { activeScreenTitle = null }) {
+                                Text("🏠", fontSize = 18.sp)
+                            }
+                        }
                         IconButton(onClick = {
                             val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
                             if (file != null) {
@@ -1115,6 +1146,9 @@ fun AdminDashboardScreen(
             val allowedTabs = mutableListOf<String>()
             if (admin.canManageTokens) allowedTabs.add(if (isHindi) "टोकन कतार" else "Tokens")
             if (admin.canIssueManualTokens) allowedTabs.add(if (isHindi) "मैनुअल टोकन" else "Manual")
+            if (isSuper || admin.canManageTokens) {
+                allowedTabs.add(if (isHindi) "🎙️ टोकन वॉइस व 5-API" else "Voice & 5-API")
+            }
             if (admin.canScanPaperRegister || isSuper) allowedTabs.add(if (isHindi) "रजिस्टर स्कैन" else "Register Scan")
             if (isSuper || admin.canManageParchas) {
                 allowedTabs.add(if (isHindi) "आश्रम पर्चे" else "Sacred Parchas")
@@ -1158,239 +1192,141 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "ऑटो-अपडेट" else "Updates")
             }
 
+            val allAdminModules = remember(isHindi) { getAshramAdminModules(isHindi) }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
                     .background(Color(0xFFF9F9F9))
             ) {
-                // NEW REDESIGNED ADMIN PORTAL HEADER WITH ASSIGNED PERMISSIONS BADGES
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(4.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSuper) Color(0xFFFFF9EE) else Color(0xFFF1F8E9)
-                    ),
-                    border = BorderStroke(1.2.dp, if (isSuper) SaffronPrimary else Color(0xFF388E3C))
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            SacredAvatar(
-                                photoUri = admin.photoUri,
-                                fallbackText = admin.name,
-                                size = 50.dp,
-                                primaryColor = if (isSuper) SaffronPrimary else Color(0xFF2E7D32),
-                                borderColor = if (isSuper) AmberGold else Color(0xFF81C784)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = if (isSuper) (if (isHindi) "अंकित चौधरी (Super Admin) 👑" else "Ankit Chaudhary (Super Admin) 👑") else admin.name,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 16.sp,
-                                    color = MaroonPrimary
-                                )
-                                Text(
-                                    text = "👤 ${admin.username.ifEmpty { "superadmin" }} | 📞 ${admin.phoneNumber}",
-                                    fontSize = 12.sp,
-                                    color = Color.DarkGray
-                                )
-                                if (isSuper) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Surface(
-                                        color = Color(0xFFE8F5E9),
-                                        shape = RoundedCornerShape(6.dp),
-                                        border = BorderStroke(1.dp, Color(0xFF81C784))
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text("📱 ", fontSize = 11.sp)
-                                            Text(
-                                                text = if (isHindi) "सक्रिय फोन: $telemetryTotalDevices (आज सक्रिय: $telemetryActiveToday)" else "Active Handsets: $telemetryTotalDevices (Today: $telemetryActiveToday)",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF1B5E20)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(14.dp),
-                                color = if (isSuper) SaffronPrimary else Color(0xFF2E7D32),
-                                shadowElevation = 2.dp
-                            ) {
-                                Text(
-                                    text = if (isSuper) "👑 SUPER ADMIN" else "🙏 SEVADAR",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-                        HorizontalDivider(color = (if (isSuper) SaffronPrimary else Color(0xFF2E7D32)).copy(alpha = 0.2f))
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = if (isHindi) "आपकी स्वीकृत सेवाएं व अनुमतियां (Assigned Access):" else "Your Assigned Permissions:",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaroonAccent
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        // Permission Badges Matrix
-                        val rbacBadges = listOf(
-                            Triple("टोकन कतार", admin.canManageTokens || isSuper, "🎟️"),
-                            Triple("मैनुअल टोकन", admin.canIssueManualTokens || isSuper, "✍️"),
-                            Triple("VIP कोटा (2..20)", isSuper || (admin.canSetCustomTokenNumber && settings.allowAdminReservedTokens), "👑"),
-                            Triple("रजिस्टर स्कैन", admin.canScanPaperRegister || isSuper, "📷"),
-                            Triple("आश्रम पर्चे", admin.canManageParchas || isSuper, "📜"),
-                            Triple("बालाजी यात्रा", admin.canManageYatra || isSuper, "🚌"),
-                            Triple("आय-व्यय", admin.canManageExpenses || isSuper, "💰"),
-                            Triple("GPS दायरा", admin.canChangeLocation || isSuper, "📍"),
-                            Triple("सूचना प्रसारण", admin.canSendNotifications || isSuper, "📢"),
-                            Triple("आश्रम विवरण", admin.canEditAshramInfo || isSuper, "⚙️"),
-                            Triple("सेवादार नियंत्रण", isSuper, "👥"),
-                            Triple("भक्त फोटो", admin.canViewDevoteePhotos || isSuper, "📸"),
-                            Triple("अर्जी लेजर", isSuper || admin.canManageArzi, "📦"),
-                            Triple("हवन आवेदन", isSuper || admin.canManageHavan, "🔥"),
-                            Triple("महा-लेजर", isSuper || (settings.canAdminViewPaymentHistory && admin.canManageExpenses), "📊"),
-                            Triple("ID कार्ड स्टूडियो", isSuper, "🪪")
-                        )
-
-                        LazyRow(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            items(rbacBadges) { (label, isGranted, icon) ->
-                                Surface(
-                                    color = if (isGranted) Color(0xFFE8F5E9) else Color(0xFFEEEEEE),
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(
-                                        1.dp,
-                                        if (isGranted) Color(0xFF4CAF50) else Color(0xFFBDBDBD)
-                                    )
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(icon, fontSize = 11.sp)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "$label: " + (if (isGranted) "✓" else "🔒"),
-                                            fontSize = 11.sp,
-                                            fontWeight = if (isGranted) FontWeight.Bold else FontWeight.Normal,
-                                            color = if (isGranted) Color(0xFF1B5E20) else Color(0xFF757575)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 📘 व्यवस्थापक एवं सेवादार कार्यप्रणाली मार्गदर्शिका (PDF) - EXCLUSIVE TO ADMIN DASHBOARD
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 3.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE7F6)),
-                    border = BorderStroke(1.dp, Color(0xFFB39DDB))
-                ) {
-                    Row(
+                if (activeScreenTitle == null) {
+                    // COMPACT 1-LINE ADMIN STATUS BAR (LEAVING 95% SCREEN FOR GRID/LIST)
+                    Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isSuper) Color(0xFFFFF9EE) else Color(0xFFF1F8E9),
+                        border = BorderStroke(1.dp, if (isSuper) AmberGold else Color(0xFF81C784)),
+                        shadowElevation = 1.dp
                     ) {
                         Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("📘", fontSize = 20.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Text(
-                                    text = if (isHindi) "व्यवस्थापक एवं सेवादार कार्यप्रणाली मार्गदर्शिका (PDF)" else "Admin & Sevadar Manual (PDF)",
+                                    text = if (isSuper) "👑" else "🙏",
+                                    fontSize = 14.sp
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isSuper) "Super Admin: Ankit Chaudhary" else admin.name,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 12.5.sp,
-                                    color = Color(0xFF4A148C)
+                                    color = MaroonPrimary,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
-                                Text(
-                                    text = if (isHindi) "समस्त कार्यप्रणाली, कतार कॉलिंग, टीवी बोर्ड व नियम - यहाँ पढ़ें व डाउनलोड करें" else "Complete operations guide, queue calling, TV board & rules",
-                                    fontSize = 10.sp,
-                                    color = Color.DarkGray
-                                )
+                                if (isSuper) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "| 📱 $telemetryTotalDevices सक्रिय",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF2E7D32)
+                                    )
+                                }
+                            }
+
+                            // Compact Guide PDF Icon-button
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFEDE7F6),
+                                border = BorderStroke(0.8.dp, Color(0xFFB39DDB)),
+                                modifier = Modifier.clickable {
+                                    val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
+                                    if (file != null) {
+                                        com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
+                                            context,
+                                            file,
+                                            if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
+                                        )
+                                    } else {
+                                        Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("📘", fontSize = 11.sp)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (isHindi) "गाइड" else "Guide",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF4A148C)
+                                    )
+                                }
                             }
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Button(
-                            onClick = {
-                                val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
-                                if (file != null) {
-                                    com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
-                                        context,
-                                        file,
-                                        if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
-                                    )
-                                } else {
-                                    Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A1B9A)),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = if (isHindi) "PDF पढ़ें" else "Open PDF",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                    }
+
+                    // UNIFIED ADMIN CONTROL HUB: LIST & GRID VIEW OF ALL MODULES
+                    AdminHubDashboardView(
+                        isHindi = isHindi,
+                        modules = allAdminModules.filter { allowedTabs.contains(it.tabTitle) },
+                        searchQuery = adminHubSearchQuery,
+                        onSearchQueryChange = { adminHubSearchQuery = it },
+                        selectedCategory = adminHubSelectedCategory,
+                        onSelectedCategoryChange = { adminHubSelectedCategory = it },
+                        isGridView = isAdminHubGridView,
+                        onToggleView = { isAdminHubGridView = it },
+                        onSelectModule = { item ->
+                            val idx = allowedTabs.indexOf(item.tabTitle)
+                            if (idx >= 0) selectedTab = idx
+                            activeScreenTitle = item.tabTitle
                         }
-                    }
-                }
+                    )
+                } else {
+                    val currentTabTitle = activeScreenTitle ?: (allowedTabs.getOrNull(selectedTab) ?: "")
 
-                // Scrollable Tabs
-                PrimaryScrollableTabRow(
-                    selectedTabIndex = selectedTab.coerceIn(0, (allowedTabs.size - 1).coerceAtLeast(0)),
-                    containerColor = MaroonPrimary,
-                    contentColor = Color.White,
-                    edgePadding = 8.dp
-                ) {
-                    allowedTabs.forEachIndexed { index, tabTitle ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = { Text(tabTitle, fontWeight = FontWeight.SemiBold, fontSize = 13.sp) }
-                        )
-                    }
-                }
+                    AdminDedicatedModuleHeader(
+                        isHindi = isHindi,
+                        title = currentTabTitle,
+                        allModules = allAdminModules,
+                        allowedTabs = allowedTabs,
+                        onBackToMenu = { activeScreenTitle = null },
+                        onNavigateToModule = { targetTab ->
+                            val idx = allowedTabs.indexOf(targetTab)
+                            if (idx >= 0) selectedTab = idx
+                            activeScreenTitle = targetTab
+                        }
+                    )
 
-                val currentTabTitle = allowedTabs.getOrNull(selectedTab) ?: ""
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(12.dp)
-                ) {
-                    when {
-                        currentTabTitle == "टोकन कतार" || currentTabTitle == "Tokens" -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        when {
+                            currentTabTitle == "🎙️ टोकन वॉइस व 5-API" || currentTabTitle == "Voice & 5-API" -> {
+                                VoiceAndApiSettingsScreen(
+                                    isHindi = isHindi,
+                                    settings = settings,
+                                    onBack = { activeScreenTitle = null }
+                                )
+                            }
+                            currentTabTitle == "टोकन कतार" || currentTabTitle == "Tokens" -> {
                             TokenQueueTab(
                                 isHindi = isHindi,
                                 settings = settings,
@@ -1573,7 +1509,13 @@ fun AdminDashboardScreen(
                                     }
                                 },
                                 onNavigateToHallDisplay = onNavigateToHallDisplay,
-                                onNavigateToDataVault = onNavigateToDataVault
+                                onNavigateToDataVault = onNavigateToDataVault,
+                                onNavigateToVoiceSettings = {
+                                    val title = if (isHindi) "🎙️ टोकन वॉइस व 5-API" else "Voice & 5-API"
+                                    val idx = allowedTabs.indexOf(title)
+                                    if (idx >= 0) selectedTab = idx
+                                    activeScreenTitle = title
+                                }
                             )
                         }
                         currentTabTitle == "मैनुअल टोकन" || currentTabTitle == "Manual" -> {
@@ -1590,7 +1532,10 @@ fun AdminDashboardScreen(
                                 onTokenIssued = { refreshData() },
                                 onNavigateToScanRegister = {
                                     val idx = allowedTabs.indexOfFirst { it == "रजिस्टर स्कैन" || it == "Register Scan" }
-                                    if (idx >= 0) selectedTab = idx
+                                    if (idx >= 0) {
+                                        selectedTab = idx
+                                        activeScreenTitle = allowedTabs[idx]
+                                    }
                                 }
                             )
                         }
@@ -1608,8 +1553,7 @@ fun AdminDashboardScreen(
                                 currentAdmin = admin,
                                 isEmbedded = true,
                                 onBack = {
-                                    val idx = allowedTabs.indexOfFirst { it == "टोकन कतार" || it == "Tokens" }
-                                    selectedTab = if (idx >= 0) idx else 0
+                                    activeScreenTitle = null
                                 }
                             )
                         }
@@ -1947,8 +1891,12 @@ fun AdminDashboardScreen(
                                 isTuesdayDarbarEnabled = svcTuesdayDarbarEnabled,
                                 onTuesdayDarbarEnabledChange = { svcTuesdayDarbarEnabled = it },
                                 onOpenTuesdayDarbarTab = {
-                                    val idx = allowedTabs.indexOf(if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar")
-                                    if (idx >= 0) selectedTab = idx
+                                    val title = if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar"
+                                    val idx = allowedTabs.indexOf(title)
+                                    if (idx >= 0) {
+                                        selectedTab = idx
+                                        activeScreenTitle = title
+                                    }
                                 },
                                 successMsg = svcSuccessMsg,
                                 onSave = {
@@ -2403,6 +2351,7 @@ fun AdminDashboardScreen(
             }
         }
     }
+}
 
     // --- CREATE SEVADAR DIALOG ---
     if (showCreateSevadarDialog) {
@@ -3436,7 +3385,8 @@ fun TokenQueueTab(
     onRejectReservedToken: ((Int) -> Unit)? = null,
     onPushAllTokensToGitHub: (() -> Unit)? = null,
     onNavigateToHallDisplay: () -> Unit = {},
-    onNavigateToDataVault: () -> Unit = {}
+    onNavigateToDataVault: () -> Unit = {},
+    onNavigateToVoiceSettings: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -3465,6 +3415,8 @@ fun TokenQueueTab(
 
     var showWipeSundayDialog by remember { mutableStateOf(false) }
     var showCustomDateDialog by remember { mutableStateOf(false) }
+    var showVoiceSettingsDialog by remember { mutableStateOf(false) }
+    var showDateSelectDialog by remember { mutableStateOf(false) }
     var customDateInput by remember(selectedDarbarDate) { mutableStateOf(selectedDarbarDate) }
 
     val filteredTokens = remember(todayTokens, searchQuery, selectedDistanceFilter, selectedSortOrder, settings) {
@@ -3489,909 +3441,308 @@ fun TokenQueueTab(
             .imePadding(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // 0. 🗓️ SUNDAY ARCHIVE SELECTOR & SUPERADMIN DATA WIPE BAR
+        // 0. COMPACT SLIM HEADER: DATE, ATTENDANCE, CALLING TOKEN & QUICK CONTROLS
         item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFDFBF7)),
-                shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.4f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                            Text("🗓️", fontSize = 20.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = if (isHindi) "रविवार दरबार चयन: $selectedDarbarDate" else "Sunday Darbar: $selectedDarbarDate",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = MaroonPrimary
-                                )
-                                Text(
-                                    text = if (isHindi) "कुल: $totalCount • दिखाया: $completedCount • नहीं दिखाया: $pendingCount • अनुपलब्ध: $absentCount" else "Tokens: $totalCount • Done: $completedCount • Pending: $pendingCount • Absent: $absentCount",
-                                    fontSize = 11.sp,
-                                    color = Color.DarkGray
-                                )
-                            }
-                        }
-
-                        if ((isSuperAdmin || canDeleteTokens) && onDeleteAllTokensForSelectedDate != null) {
-                            Button(
-                                onClick = { showWipeSundayDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                modifier = Modifier.height(32.dp)
-                            ) {
-                                Text("🗑️ इस रविवार का डेटा मिटाएं", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Date Selection Chips
-                    val datesList = (listOf(DatabaseHelper.getTodayDateString()) + allSundays).distinct()
-                    androidx.compose.foundation.lazy.LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(datesList) { dateStr ->
-                            val isSelected = dateStr == selectedDarbarDate
-                            val isToday = dateStr == DatabaseHelper.getTodayDateString()
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { onSelectDarbarDate(dateStr) },
-                                label = {
-                                    Text(
-                                        text = if (isToday) "$dateStr (आज)" else dateStr,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = SaffronPrimary,
-                                    selectedLabelColor = Color.White
-                                )
-                            )
-                        }
-                        item {
-                            OutlinedButton(
-                                onClick = { showCustomDateDialog = true },
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                                modifier = Modifier.height(32.dp)
-                            ) {
-                                Text("📅 अन्य तारीख...", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // 4-Counter Attendance Status Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Surface(
-                            color = Color(0xFFF3E5F5),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(if (isHindi) "कुल टोकन" else "Total", fontSize = 10.sp, color = Color(0xFF6A1B9A))
-                                Text("$totalCount", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF4A148C))
-                            }
-                        }
-                        Surface(
-                            color = Color(0xFFE8F5E9),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(if (isHindi) "🟢 दिखाया" else "Done", fontSize = 10.sp, color = Color(0xFF2E7D32))
-                                Text("$completedCount", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1B5E20))
-                            }
-                        }
-                        Surface(
-                            color = Color(0xFFFFF3E0),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(if (isHindi) "🟠 नहीं दिखाया" else "Pending", fontSize = 10.sp, color = Color(0xFFE65100))
-                                Text("$pendingCount", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFBF360C))
-                            }
-                        }
-                        Surface(
-                            color = Color(0xFFFFEBEE),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Column(modifier = Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(if (isHindi) "🔴 अनुपलब्ध" else "Absent", fontSize = 10.sp, color = Color(0xFFC62828))
-                                Text("$absentCount", fontSize = 15.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFB71C1C))
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        // 1. Current Calling Token
-        item {
-            val effectiveCallingNum = if (settings.runningTokenNumber > 0) settings.runningTokenNumber else 1
-            val currentCalledDevotee = todayTokens.find { it.tokenNumber == effectiveCallingNum }
-
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(if (isHindi) "वर्तमान बुलाया गया नंबर" else "Currently Active Token", fontSize = 14.sp, color = Color.Gray)
-                    Text("#$effectiveCallingNum", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = SaffronPrimary)
-
-                    if (currentCalledDevotee != null) {
-                        Surface(
-                            color = Color(0xFFFFF3E0),
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.5f)),
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("👤 ", fontSize = 14.sp)
-                                Text(
-                                    text = "${currentCalledDevotee.patientName} (${currentCalledDevotee.city})",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = MaroonPrimary
-                                )
-                            }
-                        }
-                    } else if (todayTokens.isNotEmpty()) {
-                        val firstWaiting = todayTokens.firstOrNull { it.tokenNumber >= effectiveCallingNum }
-                            ?: todayTokens.firstOrNull()
-                        if (firstWaiting != null) {
-                            Surface(
-                                color = Color(0xFFF5F5F5),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.padding(vertical = 4.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = if (isHindi) "👉 कतार में टोकन: #${firstWaiting.tokenNumber} - ${firstWaiting.patientName} (${firstWaiting.city})" else "Queue: #${firstWaiting.tokenNumber} - ${firstWaiting.patientName} (${firstWaiting.city})",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color.DarkGray
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    if (isAnnouncingActive) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.5.dp, SaffronPrimary),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("📢", fontSize = 20.sp)
-                                Spacer(Modifier.width(8.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "लाउडस्पीकर घोषणा जारी है...",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        color = MaroonPrimary
-                                    )
-                                    Text(
-                                        text = currentAnnouncedTextStr,
-                                        fontSize = 11.sp,
-                                        color = Color.DarkGray,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Color.Red.copy(alpha = 0.1f),
-                                    modifier = Modifier
-                                        .size(30.dp)
-                                        .clickable { AshramVoiceAnnouncementManager.stop() }
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text("⏹️", fontSize = 13.sp)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                val prevNum = (effectiveCallingNum - 1).coerceAtLeast(1)
-                                onUpdateRunningToken(prevNum)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("-1 पिछला", color = Color.Black)
-                        }
-                        Button(
-                            onClick = {
-                                val nextNum = effectiveCallingNum + 1
-                                onUpdateRunningToken(nextNum)
-                                val nextDev = todayTokens.find { it.tokenNumber == nextNum }
-                                val standbyNum = nextNum + 1
-                                val standbyDev = todayTokens.find { it.tokenNumber == standbyNum }
-                                AshramVoiceAnnouncementManager.announceNextToken(
-                                    context = context,
-                                    tokenNumber = nextNum,
-                                    devoteeName = nextDev?.patientName ?: "",
-                                    city = nextDev?.city ?: "",
-                                    nextTokenNumber = standbyNum,
-                                    nextDevoteeName = standbyDev?.patientName ?: ""
-                                )
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
-                            modifier = Modifier.weight(1.3f)
-                        ) {
-                            Text("🔊 +1 अगला टोकन", color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                val dev = todayTokens.find { it.tokenNumber == settings.runningTokenNumber }
-                                val standbyNum = settings.runningTokenNumber + 1
-                                val standbyDev = todayTokens.find { it.tokenNumber == standbyNum }
-                                AshramVoiceAnnouncementManager.announceNextToken(
-                                    context = context,
-                                    tokenNumber = settings.runningTokenNumber,
-                                    devoteeName = dev?.patientName ?: "",
-                                    city = dev?.city ?: "",
-                                    repeatCount = 1,
-                                    nextTokenNumber = standbyNum,
-                                    nextDevoteeName = standbyDev?.patientName ?: ""
-                                )
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaroonPrimary)
-                        ) {
-                            Text(if (isHindi) "📢 पुनः बोलें" else "📢 Repeat", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                val activePreset = AshramVoiceAnnouncementManager.getSelectedVoicePreset(context)
-                                AshramVoiceAnnouncementManager.testVoice(context, activePreset)
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronPrimary)
-                        ) {
-                            Text(if (isHindi) "🔔 घंटी टेस्ट" else "🔔 Bell Test", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                val newMuted = !isVoiceMuted
-                                AshramVoiceAnnouncementManager.setMuted(context, newMuted)
-                                isVoiceMuted = newMuted
-                                val msg = if (newMuted)
-                                    (if (isHindi) "🔇 आवाज म्यूट कर दी गई" else "Voice muted")
-                                else
-                                    (if (isHindi) "🔊 आवाज चालू कर दी गई" else "Voice enabled")
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = if (isVoiceMuted) Color.Red else Color(0xFF2E7D32)
-                            )
-                        ) {
-                            Text(
-                                text = if (isVoiceMuted) (if (isHindi) "🔇 आवाज बंद" else "🔇 Muted") else (if (isHindi) "🔊 आवाज चालू" else "🔊 Voice ON"),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    // --- Live Standby Alert & Crowd Control Status Widget ---
-                    if (standbySecondsRemaining != null && standbySecondsRemaining!! > 0) {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-                            border = BorderStroke(1.2.dp, Color(0xFFFF9800)),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp).fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "⏳ अगला टोकन #${standbyNextTokenNum ?: ""} (${standbyNextNameStr.ifBlank { "कतार भक्त" }})",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        color = Color(0xFFE65100)
-                                    )
-                                    Text(
-                                        text = "⏱️ ${standbySecondsRemaining}s में घोषणा होगी (पीछे बैठने की हिदायत)",
-                                        fontSize = 11.sp,
-                                        color = Color.DarkGray
-                                    )
-                                }
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Button(
-                                        onClick = { AshramVoiceAnnouncementManager.announceStandbyImmediately(context) },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                        shape = RoundedCornerShape(6.dp),
-                                        modifier = Modifier.height(28.dp)
-                                    ) {
-                                        Text("🔊 अभी बोलें", fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Bold)
-                                    }
-                                    OutlinedButton(
-                                        onClick = { AshramVoiceAnnouncementManager.cancelStandbyCountdown() },
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                        shape = RoundedCornerShape(6.dp),
-                                        modifier = Modifier.height(28.dp)
-                                    ) {
-                                        Text("❌ रद्द", fontSize = 10.sp)
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        val nextStandbyCandidate = todayTokens.find { it.tokenNumber == settings.runningTokenNumber + 1 }
-                        if (nextStandbyCandidate != null && !nextStandbyCandidate.isDarshanCompleted) {
-                            OutlinedButton(
-                                onClick = {
-                                    val currDev = todayTokens.find { it.tokenNumber == settings.runningTokenNumber }
-                                    AshramVoiceAnnouncementManager.announceStandbyDevotee(
-                                        context = context,
-                                        currentDevoteeName = currDev?.patientName ?: "",
-                                        nextTokenNumber = nextStandbyCandidate.tokenNumber,
-                                        nextDevoteeName = nextStandbyCandidate.patientName
-                                    )
-                                },
-                                modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE65100)),
-                                border = BorderStroke(1.dp, Color(0xFFFFB74D))
-                            ) {
-                                Text(
-                                    text = "📢 अगला टोकन #${nextStandbyCandidate.tokenNumber} तैयार करें (${nextStandbyCandidate.patientName} - पीछे बैठें)",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Button(
-                        onClick = onNavigateToHallDisplay,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text("📺 स्मार्ट टीवी व आश्रम हॉल डिस्प्ले मोड (Open TV Board)", fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = onNavigateToDataVault,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Text("🔐 अखंड डेटा वॉल्ट व ऑटो-बैकअप (Real-Time Cloud Vault)", fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                }
-            }
-        }
-
-        // 1.1 Inline Token Queue Voice Selection & Audio Preview Studio (Genuine Human & Live Recorded Voices)
-        item {
-            var selectedVoiceId by remember(settings.tokenVoicePreset) {
-                mutableStateOf(settings.tokenVoicePreset.ifBlank { AshramVoiceAnnouncementManager.getSelectedVoicePreset(context) })
-            }
-            var isRecordingAudio by remember { mutableStateOf(false) }
-            var hasRecording by remember { mutableStateOf(AshramVoiceAnnouncementManager.hasCustomRecording(context)) }
-
-            val recordAudioLauncher = rememberLauncherForActivityResult(
-                contract = ActivityResultContracts.RequestPermission()
-            ) { isGranted ->
-                if (isGranted) {
-                    val started = AshramVoiceAnnouncementManager.startCustomRecording(context)
-                    if (started) {
-                        isRecordingAudio = true
-                        Toast.makeText(context, "🎙️ रिकॉर्डिंग शुरू... स्पष्ट बोलें", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(context, "रिकॉर्डिंग शुरू करने में विफल", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(context, "ऑडियो रिकॉर्डिंग हेतु माइक्रोफ़ोन अनुमति आवश्यक है", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            val allVoices = remember { AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS }
-            val activeVoiceInfo = remember(selectedVoiceId, allVoices) {
-                allVoices.find { it.id == selectedVoiceId } ?: allVoices[0]
-            }
-
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFDFBF7)),
-                shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, SaffronPrimary.copy(alpha = 0.4f)),
+                shape = RoundedCornerShape(10.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
+                Column(modifier = Modifier.padding(10.dp)) {
+                    // Line 1: Date & Attendance summary & Action Chips (Date, PDF, Cloud Sync)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🎙️", fontSize = 22.sp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    text = if (isHindi) "टोकन घोषणा आवाज़ (प्राकृतिक HD एवं लाइव स्टूडियो)" else "Token Voice (Natural HD & Live Studio)",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = MaroonPrimary
-                                )
-                                Text(
-                                    text = if (isHindi) "100% वास्तविक इंसानी स्वर एवं लाइव माइक रिकॉर्डिंग" else "100% Real human audio & live mic recording",
-                                    fontSize = 11.sp,
-                                    color = Color.Gray
-                                )
-                            }
-                        }
-                        Surface(
-                            color = SaffronPrimary.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(6.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { showDateSelectDialog = true }
                         ) {
+                            Text("🗓️", fontSize = 13.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "${activeVoiceInfo.icon} ${activeVoiceInfo.category}",
-                                fontSize = 11.sp,
+                                text = selectedDarbarDate,
                                 fontWeight = FontWeight.Bold,
-                                color = MaroonPrimary,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                fontSize = 12.5.sp,
+                                color = MaroonPrimary
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "कुल: $totalCount • दिखाया: $completedCount • शेष: $pendingCount",
+                                fontSize = 11.sp,
+                                color = Color.DarkGray
                             )
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Live In-App Voice Recording Studio Box
-                    Surface(
-                        color = if (isRecordingAudio) Color(0xFFFFEBEE) else Color(0xFFF1F8E9),
-                        shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, if (isRecordingAudio) Color(0xFFD32F2F) else Color(0xFF81C784)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                        // Compact Action Chips (Change Date, PDF, Cloud Sync, Wipe)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = SaffronPrimary.copy(alpha = 0.12f),
+                                border = BorderStroke(0.8.dp, SaffronPrimary),
+                                modifier = Modifier.clickable { showDateSelectDialog = true }
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(if (isRecordingAudio) "🔴" else "🎙️", fontSize = 16.sp)
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "तारीख",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaroonPrimary,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
+                            }
+
+                            if (canExportPdf) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFEDE7F6),
+                                    border = BorderStroke(0.8.dp, Color(0xFFB39DDB)),
+                                    modifier = Modifier.clickable {
+                                        if (todayTokens.isEmpty()) {
+                                            Toast.makeText(context, if (isHindi) "इस तारीख का कोई टोकन नहीं है" else "No tokens for this date", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            isExportingPdf = true
+                                            try {
+                                                val pdfFile = TokenPdfExporter.exportTokensToPdf(context, todayTokens, settings, selectedDarbarDate)
+                                                TokenPdfExporter.openOrSharePdf(context, pdfFile)
+                                                Toast.makeText(context, if (isHindi) "PDF रिपोर्ट तैयार है!" else "PDF report ready!", Toast.LENGTH_SHORT).show()
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "PDF Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                            } finally {
+                                                isExportingPdf = false
+                                            }
+                                        }
+                                    }
+                                ) {
                                     Text(
-                                        text = if (isRecordingAudio) "रिकॉर्डिंग चल रही है..." else "लाइव माइक रिकॉर्डिंग स्टूडियो",
-                                        fontSize = 12.sp,
+                                        text = "📄 PDF",
+                                        fontSize = 10.5.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isRecordingAudio) Color(0xFFC62828) else Color(0xFF2E7D32)
+                                        color = Color(0xFF4A148C),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                                     )
                                 }
-                                if (hasRecording && !isRecordingAudio) {
-                                    Surface(color = Color(0xFFE8F5E9), shape = RoundedCornerShape(4.dp)) {
-                                        Text("✓ रिकॉर्डेड उपलब्ध", fontSize = 10.sp, color = Color(0xFF2E7D32), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                                    }
-                                }
                             }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFE8F5E9),
+                                border = BorderStroke(0.8.dp, Color(0xFF81C784)),
+                                modifier = Modifier.clickable { showSheetConfigDialog = true }
                             ) {
-                                if (isRecordingAudio) {
-                                    Button(
-                                        onClick = {
-                                            AshramVoiceAnnouncementManager.stopCustomRecording(context)
-                                            isRecordingAudio = false
-                                            hasRecording = true
-                                            selectedVoiceId = AshramVoiceAnnouncementManager.PRESET_CUSTOM_RECORDED
-                                            AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoiceId)
-                                            onUpdateVoicePreset?.invoke(selectedVoiceId)
-                                            Toast.makeText(context, "✓ लाइव आवाज़ सेव व लागू हो गई!", Toast.LENGTH_SHORT).show()
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("⏹️ रिकॉर्डिंग रोकें व सेव करें", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                } else {
-                                    OutlinedButton(
-                                        onClick = {
-                                            recordAudioLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-                                        },
-                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E7D32)),
-                                        border = BorderStroke(1.dp, Color(0xFF4CAF50)),
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("🎙️ अपनी आवाज़ रिकॉर्ड करें", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                    if (hasRecording) {
-                                        OutlinedButton(
-                                            onClick = {
-                                                AshramVoiceAnnouncementManager.playCustomRecording(context) { }
-                                            },
-                                            shape = RoundedCornerShape(8.dp),
-                                            contentPadding = PaddingValues(horizontal = 10.dp)
-                                        ) {
-                                            Text("▶️ सुनें", fontSize = 11.sp)
-                                        }
-                                        OutlinedButton(
-                                            onClick = {
-                                                AshramVoiceAnnouncementManager.deleteCustomRecording(context)
-                                                hasRecording = false
-                                                if (selectedVoiceId == AshramVoiceAnnouncementManager.PRESET_CUSTOM_RECORDED) {
-                                                    selectedVoiceId = AshramVoiceAnnouncementManager.PRESET_NATURAL_MALE
-                                                    AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoiceId)
-                                                    onUpdateVoicePreset?.invoke(selectedVoiceId)
-                                                }
-                                                Toast.makeText(context, "रिकॉर्डिंग हटा दी गई", Toast.LENGTH_SHORT).show()
-                                            },
-                                            shape = RoundedCornerShape(8.dp),
-                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
-                                            border = BorderStroke(1.dp, Color.Red.copy(alpha = 0.5f)),
-                                            contentPadding = PaddingValues(horizontal = 8.dp)
-                                        ) {
-                                            Text("🗑️", fontSize = 11.sp)
-                                        }
-                                    }
+                                Text(
+                                    text = "☁️ सिंक",
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1B5E20),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
+                            }
+
+                            if ((isSuperAdmin || canDeleteTokens) && onDeleteAllTokensForSelectedDate != null) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFFFEBEE),
+                                    border = BorderStroke(0.8.dp, Color(0xFFEF5350)),
+                                    modifier = Modifier.clickable { showWipeSundayDialog = true }
+                                ) {
+                                    Text(
+                                        text = "🗑️",
+                                        fontSize = 11.sp,
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp)
+                                    )
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Preset Selection Cards
-                    Text("सक्रिय उद्घोषणा स्वर चुनें:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    HorizontalDivider(color = Color(0xFFEEEEEE))
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    allVoices.forEach { voice ->
-                        val isSelected = selectedVoiceId == voice.id
-                        Surface(
-                            onClick = {
-                                selectedVoiceId = voice.id
-                                AshramVoiceAnnouncementManager.setVoicePreset(context, voice.id)
-                                onUpdateVoicePreset?.invoke(voice.id)
-                                Toast.makeText(context, "✓ आवाज़ चुनी गई: ${voice.nameHindi}", Toast.LENGTH_SHORT).show()
-                            },
-                            color = if (isSelected) Color(0xFFFFF3E0) else Color.White,
-                            shape = RoundedCornerShape(10.dp),
-                            border = BorderStroke(1.dp, if (isSelected) SaffronPrimary else Color(0xFFE0E0E0)),
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                    // Line 2: Active Calling Strip + Inline Voice Controls
+                    val effectiveCallingNum = if (settings.runningTokenNumber > 0) settings.runningTokenNumber else 1
+                    val currentCalledDevotee = todayTokens.find { it.tokenNumber == effectiveCallingNum }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Current Token Indicator
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            Text(
+                                text = "📢 #$effectiveCallingNum",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = SaffronPrimary
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = currentCalledDevotee?.let { "${it.patientName} (${it.city})" } ?: (todayTokens.firstOrNull { it.tokenNumber >= effectiveCallingNum }?.let { "${it.patientName} (${it.city})" } ?: "कतार चालू"),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaroonPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        // Compact Prev / Next / Mute / Voice Settings
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // -1 Previous Button
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFEEEEEE),
+                                modifier = Modifier.clickable {
+                                    val prevNum = (effectiveCallingNum - 1).coerceAtLeast(1)
+                                    onUpdateRunningToken(prevNum)
+                                }
                             ) {
-                                Text(voice.icon, fontSize = 20.sp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = if (isHindi) voice.nameHindi else voice.nameEnglish,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        fontSize = 12.sp,
-                                        color = if (isSelected) MaroonPrimary else Color.Black
-                                    )
-                                    Text(
-                                        text = voice.description,
-                                        fontSize = 10.sp,
-                                        color = Color.Gray,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                Text(
+                                    "-1",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.DarkGray,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
+                                )
+                            }
+
+                            // +1 Next Token Call Button (Triggers announcement)
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = SaffronPrimary,
+                                modifier = Modifier.clickable {
+                                    val nextNum = effectiveCallingNum + 1
+                                    onUpdateRunningToken(nextNum)
+                                    val nextDev = todayTokens.find { it.tokenNumber == nextNum }
+                                    val standbyNum = nextNum + 1
+                                    val standbyDev = todayTokens.find { it.tokenNumber == standbyNum }
+                                    AshramVoiceAnnouncementManager.announceNextToken(
+                                        context = context,
+                                        tokenNumber = nextNum,
+                                        devoteeName = nextDev?.patientName ?: "",
+                                        city = nextDev?.city ?: "",
+                                        nextTokenNumber = standbyNum,
+                                        nextDevoteeName = standbyDev?.patientName ?: ""
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(6.dp))
-                                OutlinedButton(
-                                    onClick = {
-                                        AshramVoiceAnnouncementManager.testVoice(context, voice.id)
-                                    },
-                                    shape = RoundedCornerShape(6.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SaffronPrimary),
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("▶️ टेस्ट", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    Text("🔊 +1 अगला", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                 }
                             }
+
+                            // Voice Mute Toggle Chip
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (isVoiceMuted) Color(0xFFFFEBEE) else Color(0xFFE8F5E9),
+                                border = BorderStroke(0.8.dp, if (isVoiceMuted) Color(0xFFEF5350) else Color(0xFF4CAF50)),
+                                modifier = Modifier.clickable {
+                                    val newMuted = !isVoiceMuted
+                                    AshramVoiceAnnouncementManager.setMuted(context, newMuted)
+                                    isVoiceMuted = newMuted
+                                }
+                            ) {
+                                Text(
+                                    text = if (isVoiceMuted) "🔇 म्यूट" else "🔊 चालू",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isVoiceMuted) Color(0xFFC62828) else Color(0xFF2E7D32),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                )
+                            }
+
+                            // Voice Settings Dialog Button
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFFFF3E0),
+                                border = BorderStroke(0.8.dp, AmberGold),
+                                modifier = Modifier.clickable { showVoiceSettingsDialog = true }
+                            ) {
+                                Text(
+                                    "⚙️",
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                )
+                            }
                         }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
-                        onClick = {
-                            AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoiceId)
-                            onUpdateVoicePreset?.invoke(selectedVoiceId)
-                            Toast.makeText(
-                                context,
-                                if (isHindi) "✓ घोषणा आवाज़ सुरक्षित व लागू हो गई!" else "✓ Announcement voice applied!",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
-                    ) {
-                        Text(if (isHindi) "✅ यह आवाज़ लागू करें" else "✅ Apply Voice", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
         }
 
-        // 2. Darshan Statistics & PDF Export Card
-        item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9FB)),
-                border = BorderStroke(1.dp, Color(0xFFE0E0E0))
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
+        // Active countdown or speaking banner (Only appears when audio is active)
+        if (isAnnouncingActive || (standbySecondsRemaining != null && standbySecondsRemaining!! > 0)) {
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, SaffronPrimary),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = if (isHindi) "📊 आज के दर्शन आंकड़े" else "📊 Today's Darshan Stats",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            color = MaroonPrimary
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Surface(
-                                color = Color(0xFFE8F5E9),
-                                shape = RoundedCornerShape(8.dp),
-                                border = BorderStroke(1.dp, Color(0xFF4CAF50))
-                            ) {
-                                Text(
-                                    "✓ संपन्न: $completedCount",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1B5E20),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                            Surface(
-                                color = Color(0xFFFFF3E0),
-                                shape = RoundedCornerShape(8.dp),
-                                border = BorderStroke(1.dp, Color(0xFFFFB74D))
-                            ) {
-                                Text(
-                                    "⏳ शेष: $pendingCount",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFE65100),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    if (canExportPdf) {
-                        Button(
-                            onClick = {
-                                if (todayTokens.isEmpty()) {
-                                    Toast.makeText(context, if (isHindi) "इस तारीख का कोई टोकन नहीं है" else "No tokens for this date", Toast.LENGTH_SHORT).show()
-                                    return@Button
-                                }
-                                isExportingPdf = true
-                                try {
-                                    val pdfFile = TokenPdfExporter.exportTokensToPdf(context, todayTokens, settings, selectedDarbarDate)
-                                    TokenPdfExporter.openOrSharePdf(context, pdfFile)
-                                    Toast.makeText(context, if (isHindi) "PDF रिपोर्ट तैयार है!" else "PDF report ready!", Toast.LENGTH_SHORT).show()
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "PDF Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                                } finally {
-                                    isExportingPdf = false
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
+                        if (standbySecondsRemaining != null && standbySecondsRemaining!! > 0) {
                             Text(
-                                text = if (isExportingPdf)
-                                    (if (isHindi) "PDF बनाई जा रही है..." else "Generating PDF...")
-                                else
-                                    ("📄 " + (if (isHindi) "टोकन सूची PDF डाउनलोड / शेयर करें ($selectedDarbarDate)" else "Export Token List to PDF ($selectedDarbarDate)")),
+                                text = "⏳ अगला #${standbyNextTokenNum ?: ""} (${standbyNextNameStr.ifBlank { "भक्त" }}): ${standbySecondsRemaining}s",
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = Color.White
+                                color = Color(0xFFE65100),
+                                modifier = Modifier.weight(1f)
                             )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Button(
-                        onClick = {
-                            if (todayTokens.isEmpty()) {
-                                Toast.makeText(context, if (isHindi) "इस तारीख का कोई टोकन नहीं है" else "No tokens for this date", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-                            try {
-                                TokenCsvExporter.shareTokensCsv(context, filteredTokens, selectedDarbarDate)
-                                Toast.makeText(context, if (isHindi) "एक्सेल / CSV रिपोर्ट तैयार है!" else "Excel / CSV report ready!", Toast.LENGTH_SHORT).show()
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "CSV Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "📊 " + (if (isHindi) "टोकन सूची एक्सेल / CSV डाउनलोड करें ($selectedDarbarDate)" else "Export Token List to Excel / CSV ($selectedDarbarDate)"),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = Color.White
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // ☁️ UNIVERSAL 100% ONLINE CLOUD TOKEN SYNC CARD (GitHub + Google Sheets)
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, Color(0xFF81C784)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("☁️", fontSize = 22.sp)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Column {
-                                        Text(
-                                            text = if (isHindi) "लाइव क्लाउड टोकन सिंक (100% ऑनलाइन)" else "Live Cloud Token Sync (100% Online)",
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 14.sp,
-                                            color = Color(0xFF1B5E20)
-                                        )
-                                        Text(
-                                            text = if (isHindi) "🟢 सेंट्रल क्लाउड सिंक सक्रिय (भक्तों के फोन से स्वतः जुड़ेगा)" else "🟢 Central Cloud Active (Auto Devotee Sync)",
-                                            fontSize = 11.sp,
-                                            color = Color(0xFF2E7D32),
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-                                }
-                                IconButton(onClick = { showSheetConfigDialog = true }) {
-                                    Text("⚙️", fontSize = 18.sp)
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Button(
-                                    onClick = {
-                                        val syncAction = onSyncFromCloud ?: onSyncFromGoogleSheet
-                                        if (syncAction != null) {
-                                            isSyncingSheet = true
-                                            syncAction()
-                                            isSyncingSheet = false
-                                        }
-                                    },
-                                    enabled = !isSyncingSheet,
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E7D32)),
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.weight(1f)
+                                    onClick = { AshramVoiceAnnouncementManager.announceStandbyImmediately(context) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(26.dp)
                                 ) {
-                                    Text(
-                                        text = if (isSyncingSheet)
-                                            (if (isHindi) "सिंक हो रहा है..." else "Syncing...")
-                                        else
-                                            ("🔄 " + (if (isHindi) "क्लाउड से सिंक करें" else "Sync Cloud Tokens")),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
+                                    Text("📢 अभी", fontSize = 10.sp, color = Color.White)
                                 }
-
                                 OutlinedButton(
-                                    onClick = { showSheetConfigDialog = true },
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1B5E20)),
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.weight(1f)
+                                    onClick = { AshramVoiceAnnouncementManager.cancelStandbyCountdown() },
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                    modifier = Modifier.height(26.dp)
                                 ) {
-                                    Text(
-                                        text = "⚙️ " + (if (isHindi) "शीट सेटिंग्स" else "Sheet Settings"),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+                                    Text("❌", fontSize = 10.sp)
                                 }
                             }
-
-                            if (onPushAllTokensToGitHub != null) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Button(
-                                    onClick = { onPushAllTokensToGitHub() },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
-                                    shape = RoundedCornerShape(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(
-                                        text = "☁️ " + (if (isHindi) "GitHub पर सभी टोकन बैकअप पुश करें" else "Push All Tokens Backup to GitHub"),
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
-                                }
+                        } else {
+                            Text(
+                                text = "📢 लाउडस्पीकर: $currentAnnouncedTextStr",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaroonPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Button(
+                                onClick = { AshramVoiceAnnouncementManager.stop() },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                modifier = Modifier.height(26.dp)
+                            ) {
+                                Text("⏹️", fontSize = 10.sp, color = Color.White)
                             }
                         }
                     }
@@ -5485,6 +4836,246 @@ fun TokenQueueTab(
             dismissButton = {
                 TextButton(onClick = { showCustomDateDialog = false }) {
                     Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // Clean Date Selector Dialog
+    if (showDateSelectDialog) {
+        AlertDialog(
+            onDismissRequest = { showDateSelectDialog = false },
+            title = {
+                Text(
+                    text = if (isHindi) "🗓️ रविवार दरबार तारीख चुनें" else "Select Sunday Date",
+                    fontWeight = FontWeight.Bold,
+                    color = MaroonPrimary
+                )
+            },
+            text = {
+                val datesList = (listOf(DatabaseHelper.getTodayDateString()) + allSundays).distinct()
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = if (isHindi) "जिस तारीख के टोकन देखने हैं उस पर टैप करें:" else "Select a date to view tokens:",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    datesList.forEach { dateStr ->
+                        val isSelected = dateStr == selectedDarbarDate
+                        Surface(
+                            onClick = {
+                                onSelectDarbarDate(dateStr)
+                                showDateSelectDialog = false
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) SaffronPrimary else Color(0xFFF5F5F5),
+                            border = BorderStroke(1.dp, if (isSelected) SaffronPrimary else Color(0xFFE0E0E0)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (dateStr == DatabaseHelper.getTodayDateString()) "$dateStr (आज)" else dateStr,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) Color.White else MaroonPrimary,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    OutlinedButton(
+                        onClick = {
+                            showDateSelectDialog = false
+                            showCustomDateDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("📅 अन्य तारीख दर्ज करें...")
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showDateSelectDialog = false }) {
+                    Text(if (isHindi) "बंद करें" else "Close")
+                }
+            }
+        )
+    }
+
+    // Clean Voice Settings Dialog
+    if (showVoiceSettingsDialog) {
+        var selectedVoiceId by remember(settings.tokenVoicePreset) {
+            mutableStateOf(settings.tokenVoicePreset.ifBlank { AshramVoiceAnnouncementManager.getSelectedVoicePreset(context) })
+        }
+        var currentDelaySecs by remember { mutableIntStateOf(AshramVoiceAnnouncementManager.getAutoNextDelaySeconds(context)) }
+        var isAutoModeEnabled by remember { mutableStateOf(AshramVoiceAnnouncementManager.isAutoNextEnabled(context)) }
+
+        AlertDialog(
+            onDismissRequest = { showVoiceSettingsDialog = false },
+            title = {
+                Text(
+                    text = "🔊 लाउडस्पीकर एवं वॉइस सेटिंग्स",
+                    fontWeight = FontWeight.Bold,
+                    color = MaroonPrimary
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Master Mute Switch
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("📢 मास्टर वॉइस स्थिति:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Button(
+                            onClick = {
+                                val newMuted = !isVoiceMuted
+                                AshramVoiceAnnouncementManager.setMuted(context, newMuted)
+                                isVoiceMuted = newMuted
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isVoiceMuted) Color(0xFFC62828) else Color(0xFF2E7D32)
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text(if (isVoiceMuted) "🔇 म्यूट (बंद)" else "🔊 चालू", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    HorizontalDivider(color = Color(0xFFEEEEEE))
+
+                    // Timer Mode
+                    Text("⏱️ अगली आवाज़ (तैयारी) टाइमर:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        listOf(10, 15, 20, 30).forEach { secs ->
+                            val isSelected = isAutoModeEnabled && currentDelaySecs == secs
+                            Surface(
+                                color = if (isSelected) SaffronPrimary else Color(0xFFF0F0F0),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable {
+                                        isAutoModeEnabled = true
+                                        currentDelaySecs = secs
+                                        AshramVoiceAnnouncementManager.setAutoNextEnabled(context, true)
+                                        AshramVoiceAnnouncementManager.setAutoNextDelaySeconds(context, secs)
+                                    }
+                            ) {
+                                Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = "${secs}s",
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) Color.White else Color.DarkGray
+                                    )
+                                }
+                            }
+                        }
+                        val isManualSelected = !isAutoModeEnabled
+                        Surface(
+                            color = if (isManualSelected) MaroonPrimary else Color(0xFFF0F0F0),
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier
+                                .weight(1.3f)
+                                .clickable {
+                                    isAutoModeEnabled = false
+                                    AshramVoiceAnnouncementManager.setAutoNextEnabled(context, false)
+                                }
+                        ) {
+                            Box(modifier = Modifier.padding(vertical = 6.dp), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "👆 मैनुअल",
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isManualSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isManualSelected) Color.White else Color.DarkGray
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = Color(0xFFEEEEEE))
+
+                    // Voice Preset Selection
+                    Text("🎙️ वॉइस स्वर चुनें:", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS.forEach { voice ->
+                        val isSelected = selectedVoiceId == voice.id
+                        Surface(
+                            onClick = {
+                                selectedVoiceId = voice.id
+                                AshramVoiceAnnouncementManager.setVoicePreset(context, voice.id)
+                                onUpdateVoicePreset?.invoke(voice.id)
+                            },
+                            color = if (isSelected) Color(0xFFFFF3E0) else Color.White,
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, if (isSelected) SaffronPrimary else Color(0xFFE0E0E0)),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(voice.icon, fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = voice.nameHindi,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 12.sp,
+                                        color = if (isSelected) MaroonPrimary else Color.Black
+                                    )
+                                    Text(voice.description, fontSize = 9.5.sp, color = Color.Gray, maxLines = 1)
+                                }
+                                OutlinedButton(
+                                    onClick = { AshramVoiceAnnouncementManager.testVoice(context, voice.id) },
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.height(26.dp)
+                                ) {
+                                    Text("▶️ टेस्ट", fontSize = 10.sp, color = SaffronPrimary)
+                                }
+                            }
+                        }
+                    }
+
+                    if (onNavigateToVoiceSettings != null) {
+                        Text(
+                            text = "🔑 ElevenLabs 5-Key पूल व क्रेडिट सेटिंग्स →",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonPrimary,
+                            modifier = Modifier.clickable {
+                                showVoiceSettingsDialog = false
+                                onNavigateToVoiceSettings.invoke()
+                            }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showVoiceSettingsDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                ) {
+                    Text("पूर्ण", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showVoiceSettingsDialog = false }) {
+                    Text("बंद करें")
                 }
             }
         )

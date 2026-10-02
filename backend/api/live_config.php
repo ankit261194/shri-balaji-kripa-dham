@@ -94,7 +94,7 @@ function getFallbackConfig() {
         "tts_auto_next_enabled" => true,
         "tts_auto_next_delay_seconds" => 20,
         "tts_primary_template" => "टोकन नंबर {tokenNumber}, श्री {devoteeName} जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।",
-        "tts_standby_template" => "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, अगला नंबर आपका है, कृपया {currentDevoteeName} जी के पीछे आकर बैठें, और बाकी सब पीछे होके बैठ जाओ।",
+        "tts_standby_template" => "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, अगला नंबर आपका है, कृपया {currentDevoteeName} जी के पीछे आकर बैठें।",
         "contact_phone" => "",
         "whatsapp_number" => "",
         "upi_id" => "",
@@ -131,7 +131,9 @@ function getFallbackConfig() {
         "footer_copyright" => "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।",
         "ashram_parichay_hindi" => "श्री बालाजी कृपा धाम (ग्राम डूँगरा जाट, तहसील अनूपशहर, ज़िला बुलन्दशहर, उ.प्र.) में परम पूज्य गुरुजी तेजवीर सिंह जी के मार्गदर्शन में भूत-प्रेत, ऊपरी बाधा व मानसिक कष्टों का इलाज 100% निःशुल्क किया जाता है। यहाँ किसी भी प्रकार का चढ़ावा या दक्षिणा नहीं ली जाती।",
         "ashram_history_hindi" => "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है। पिछले कई वर्षों से डूंगरा जाट धाम पर लाखों पीड़ित भक्तों को नई जिंदगी और शांति मिली है।",
+        "ashram_history" => "परम पूज्य गुरुजी को श्री बालाजी महाराज व भैरव बाबा का साक्षात आशीर्वाद प्राप्त है। पिछले कई वर्षों से डूंगरा जाट धाम पर लाखों पीड़ित भक्तों को नई जिंदगी और शांति मिली है।",
         "ashram_rules_hindi" => "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आधिकारिक ऐप से मान्य है।\n3. एक मोबाइल से 1 ही टोकन बनेगा।\n4. पूर्ण शांति, स्वच्छता व मर्यादा बनाए रखें।",
+        "aarti_lyrics" => "ॐ जय हनुमत वीरा, स्वामी जय हनुमत वीरा। संकट मोचन स्वामी, कृपा करो धीरा॥\n\nपवनपुत्र अतुलित बलधामा, अंजनी पुत्र पवनसुत नामा।\nहाथ वज्र औ ध्वजा विराजे, कांधे मूंज जनेऊ साजे॥\n\nसंकट कटे मिटे सब पीरा, जो सुमिरै हनुमत बलबीरा।\nजै जै जै हनुमान गोसाईं, कृपा करहु गुरुदेव की नाईं॥",
         "bus_seat_fare_amount" => 0,
         "config_version" => 1,
         "server_time" => $now,
@@ -228,6 +230,7 @@ $targetCols = [
     "ashram_parichay_hindi" => "TEXT",
     "ashram_history_hindi" => "TEXT",
     "ashram_rules_hindi" => "TEXT",
+    "aarti_lyrics" => "TEXT",
     "bus_seat_fare_amount" => "INT NOT NULL DEFAULT 0",
     "config_version" => "INT NOT NULL DEFAULT 1"
 ];
@@ -418,6 +421,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'ashram_parichay_hindi' => trim($input['ashram_parichay_hindi'] ?? ($current['ashram_parichay_hindi'] ?? '')),
         'ashram_history_hindi' => trim($input['ashram_history_hindi'] ?? ($input['ashram_history'] ?? ($current['ashram_history_hindi'] ?? ''))),
         'ashram_rules_hindi' => trim($input['ashram_rules_hindi'] ?? ($current['ashram_rules_hindi'] ?? '')),
+        'aarti_lyrics' => trim($input['aarti_lyrics'] ?? ($current['aarti_lyrics'] ?? '')),
         'bus_seat_fare_amount' => isset($input['bus_seat_fare_amount']) ? intval($input['bus_seat_fare_amount']) : intval($current['bus_seat_fare_amount'] ?? 0)
     ];
 
@@ -753,7 +757,9 @@ try {
         "footer_copyright" => $row['footer_copyright'] ?? $fb['footer_copyright'],
         "ashram_parichay_hindi" => $row['ashram_parichay_hindi'] ?? $fb['ashram_parichay_hindi'],
         "ashram_history_hindi" => $row['ashram_history_hindi'] ?? $fb['ashram_history_hindi'],
+        "ashram_history" => $row['ashram_history_hindi'] ?? $fb['ashram_history_hindi'],
         "ashram_rules_hindi" => $row['ashram_rules_hindi'] ?? $fb['ashram_rules_hindi'],
+        "aarti_lyrics" => $row['aarti_lyrics'] ?? $fb['aarti_lyrics'],
         "config_version" => isset($row['config_version']) ? intval($row['config_version']) : $fb['config_version'],
         "server_time" => time(),
         "sevadars" => $sevadars,

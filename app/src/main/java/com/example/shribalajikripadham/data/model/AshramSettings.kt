@@ -109,6 +109,7 @@ data class AshramSettings(
     val websiteAartiBalbhog: String = "प्रातः 08:00 बजे",
     val websiteAartiSandhya: String = "सायं 07:00 बजे",
     val websiteAartiShayan: String = "रात्रि 09:00 बजे",
+    val websiteAartiLyrics: String = "ॐ जय हनुमत वीरा, स्वामी जय हनुमत वीरा। संकट मोचन स्वामी, कृपा करो धीरा॥\n\nपवनपुत्र अतुलित बलधामा, अंजनी पुत्र पवनसुत नामा।\nहाथ वज्र औ ध्वजा विराजे, कांधे मूंज जनेऊ साजे॥\n\nसंकट कटे मिटे सब पीरा, जो सुमिरै हनुमत बलबीरा।\nजै जै जै हनुमान गोसाईं, कृपा करहु गुरुदेव की नाईं॥",
     val websiteBankName: String = "पंजाब नेशनल बैंक (PNB)",
     val websiteAccountHolder: String = "श्री बालाजी कृपा धाम सेवा ट्रस्ट",
     val websiteAccountNumber: String = "",

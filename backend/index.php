@@ -218,6 +218,8 @@ $ashramAddress = (!empty($settings['ashram_address']) && strpos($settings['ashra
 $ashramDirections = (!empty($settings['ashram_directions']) && strpos($settings['ashram_directions'], 'बबराला') === false) 
     ? $settings['ashram_directions'] 
     : "🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी) • अनूपशहर (~16 किमी)";
+$ashramHistory = !empty($settings['ashram_history_hindi']) ? $settings['ashram_history_hindi'] : (!empty($settings['ashram_history']) ? $settings['ashram_history'] : 'परम पूज्य गुरुजी तेजवीर सिंह जी को श्री बालाजी महाराज व श्री भैरव बाबा का साक्षात आशीर्वाद प्राप्त है। पिछले कई वर्षों से ग्राम डूँगरा जाट धाम पर लाखों पीड़ित भक्तों को नई जिंदगी, मानसिक शांति व शारीरिक व्याधियों से मुक्ति मिली है।');
+$aartiLyrics = !empty($settings['aarti_lyrics']) ? $settings['aarti_lyrics'] : "ॐ जय हनुमत वीरा, स्वामी जय हनुमत वीरा। संकट मोचन स्वामी, कृपा करो धीरा॥\n\nपवनपुत्र अतुलित बलधामा, अंजनी पुत्र पवनसुत नामा।\nहाथ वज्र औ ध्वजा विराजे, कांधे मूंज जनेऊ साजे॥\n\nसंकट कटे मिटे सब पीरा, जो सुमिरै हनुमत बलबीरा।\nजै जै जै हनुमान गोसाईं, कृपा करहु गुरुदेव की नाईं॥";
 $contactEmail = (!empty($settings['contact_email']) && $settings['contact_email'] !== 'shribalajikripadham@gmail.com') ? trim($settings['contact_email']) : '';
 $youtubeUrl = !empty($settings['youtube_channel_url']) ? $settings['youtube_channel_url'] : (!empty($settings['youtube_url']) ? $settings['youtube_url'] : 'https://www.youtube.com/@ShriBalajiKripaDham');
 $facebookUrl = !empty($settings['facebook_page_url']) ? $settings['facebook_page_url'] : (!empty($settings['facebook_url']) ? $settings['facebook_url'] : 'https://www.facebook.com/ShriBalajiKripaDham');
@@ -1742,6 +1744,37 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
         </div>
         <?php endif; ?>
 
+        <!-- Ashram History & Mahima Card (100% SuperAdmin Dynamic CMS) -->
+        <div class="info-box" style="border: 2px solid var(--gold); background: #FFFDF7;">
+            <h4>📜 धाम का पावन इतिहास एवं महिमा</h4>
+            <p style="font-size: 0.95rem; color: #4E342E; line-height: 1.8; white-space: pre-line;" id="dynamicAshramHistory"><?= htmlspecialchars($ashramHistory) ?></p>
+        </div>
+
+        <!-- Daily Aarti Timings & Lyrics Card (100% SuperAdmin Dynamic CMS) -->
+        <div class="info-box" style="border: 2px solid #FF8F00; background: #FFFDE7;">
+            <h4>🪔 नित्य आरती समय एवं आरती के बोल</h4>
+            <div class="timing-row">
+                <span>मंगला आरती</span>
+                <span class="time" id="dynamicAartiMangala"><?= !empty($settings['aarti_mangala_time']) ? htmlspecialchars($settings['aarti_mangala_time']) : 'प्रातः 05:30 बजे' ?></span>
+            </div>
+            <div class="timing-row">
+                <span>बालभोग आरती</span>
+                <span class="time" id="dynamicAartiBalbhog"><?= !empty($settings['aarti_balbhog_time']) ? htmlspecialchars($settings['aarti_balbhog_time']) : 'प्रातः 08:00 बजे' ?></span>
+            </div>
+            <div class="timing-row">
+                <span>संध्या आरती</span>
+                <span class="time" id="dynamicAartiSandhya"><?= !empty($settings['aarti_sandhya_time']) ? htmlspecialchars($settings['aarti_sandhya_time']) : 'सायं 07:00 बजे' ?></span>
+            </div>
+            <div class="timing-row">
+                <span>शयन आरती</span>
+                <span class="time" id="dynamicAartiShayan"><?= !empty($settings['aarti_shayan_time']) ? htmlspecialchars($settings['aarti_shayan_time']) : 'रात्रि 09:00 बजे' ?></span>
+            </div>
+            <div style="margin-top: 14px; background: #FFF; border: 1px dashed #FFB300; border-radius: 8px; padding: 12px;">
+                <strong style="color: #D84315; font-size: 0.92rem;">📖 श्री बालाजी आरती के बोल (Lyrics):</strong>
+                <p style="font-size: 0.90rem; color: #4E342E; margin-top: 6px; line-height: 1.7; white-space: pre-line;" id="dynamicAartiLyrics"><?= htmlspecialchars($aartiLyrics) ?></p>
+            </div>
+        </div>
+
         <!-- Ashram Location & Contact (Strictly Real Numbers Only) -->
         <div class="info-box">
             <h4>📍 आश्रम का पावन पता एवं यात्रा मार्ग</h4>
@@ -2094,6 +2127,36 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                         if (cfg.footer_copyright) {
                             const el = document.getElementById('dynamicFooterCopyright');
                             if (el) el.innerText = cfg.footer_copyright;
+                        }
+
+                        // 14. History, Route Directions & Aarti Lyrics (100% Dynamic CMS from App)
+                        if (cfg.ashram_history || cfg.ashram_history_hindi) {
+                            const el = document.getElementById('dynamicAshramHistory');
+                            if (el) el.innerText = cfg.ashram_history || cfg.ashram_history_hindi;
+                        }
+                        if (cfg.ashram_directions) {
+                            const el = document.getElementById('dynamicAshramDirections');
+                            if (el) el.innerText = cfg.ashram_directions;
+                        }
+                        if (cfg.aarti_lyrics) {
+                            const el = document.getElementById('dynamicAartiLyrics');
+                            if (el) el.innerText = cfg.aarti_lyrics;
+                        }
+                        if (cfg.aarti_mangala_time) {
+                            const el = document.getElementById('dynamicAartiMangala');
+                            if (el) el.innerText = cfg.aarti_mangala_time;
+                        }
+                        if (cfg.aarti_balbhog_time) {
+                            const el = document.getElementById('dynamicAartiBalbhog');
+                            if (el) el.innerText = cfg.aarti_balbhog_time;
+                        }
+                        if (cfg.aarti_sandhya_time) {
+                            const el = document.getElementById('dynamicAartiSandhya');
+                            if (el) el.innerText = cfg.aarti_sandhya_time;
+                        }
+                        if (cfg.aarti_shayan_time) {
+                            const el = document.getElementById('dynamicAartiShayan');
+                            if (el) el.innerText = cfg.aarti_shayan_time;
                         }
                     }
                 })

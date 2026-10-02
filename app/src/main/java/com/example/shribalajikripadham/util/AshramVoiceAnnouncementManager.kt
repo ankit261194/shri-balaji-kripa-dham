@@ -76,7 +76,7 @@ object AshramVoiceAnnouncementManager {
     private const val KEY_STANDBY_TEMPLATE = "tts_standby_template"
 
     const val DEFAULT_PRIMARY_TEMPLATE = "टोकन नंबर {tokenNumber}, श्री {devoteeName} जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
-    const val DEFAULT_STANDBY_TEMPLATE = "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, अगला नंबर आपका है, कृपया {currentDevoteeName} जी के पीछे आकर बैठें, और बाकी सब पीछे होके बैठ जाओ।"
+    const val DEFAULT_STANDBY_TEMPLATE = "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, अगला नंबर आपका है, कृपया {currentDevoteeName} जी के पीछे आकर बैठें।"
 
     const val PRESET_ELEVENLABS_MALE = "ELEVENLABS_MALE"
     const val PRESET_ELEVENLABS_FEMALE = "ELEVENLABS_FEMALE"
@@ -119,30 +119,6 @@ object AshramVoiceAnnouncementManager {
             speechStyle = "STUDIO_HUMAN"
         ),
         VoicePresetInfo(
-            id = PRESET_NATURAL_MALE,
-            nameHindi = "धीर-गंभीर पुरुष स्वर (Google Neural2 / HD Hindi)",
-            nameEnglish = "HD Devotional Male Voice",
-            gender = "MALE",
-            category = "MALE",
-            description = "स्पष्ट, धीर-गंभीर उद्घोषक स्वर (Google Cloud Neural2-B)",
-            pitch = 0.88f,
-            speechRate = 0.86f,
-            icon = "👨",
-            speechStyle = "DEVOTIONAL"
-        ),
-        VoicePresetInfo(
-            id = PRESET_NATURAL_FEMALE,
-            nameHindi = "मधुर सेविका महिला स्वर (Google Neural2 / HD Hindi)",
-            nameEnglish = "HD Devotional Female Voice",
-            gender = "FEMALE",
-            category = "FEMALE",
-            description = "अत्यंत मधुर, शांत व वात्सल्यमयी स्वर (Google Cloud Neural2-A)",
-            pitch = 1.05f,
-            speechRate = 0.88f,
-            icon = "👩",
-            speechStyle = "SWEET"
-        ),
-        VoicePresetInfo(
             id = PRESET_CUSTOM_RECORDED,
             nameHindi = "आश्रम की वास्तविक रिकॉर्डेड आवाज़ (Ashram Real Voice)",
             nameEnglish = "Ashram Custom Recorded Voice",
@@ -153,18 +129,6 @@ object AshramVoiceAnnouncementManager {
             speechRate = 1.0f,
             icon = "🎙️",
             speechStyle = "REAL_HUMAN"
-        ),
-        VoicePresetInfo(
-            id = PRESET_OFFLINE_DEVICE,
-            nameHindi = "डिवाइस का सामान्य ऑफ़लाइन स्वर (Device Hindi TTS)",
-            nameEnglish = "Offline Device Built-in TTS",
-            gender = "DEVICE",
-            category = "DEVICE",
-            description = "फ़ोन का अंतर्निर्मित ऑफ़लाइन हिंदी स्वर",
-            pitch = 1.0f,
-            speechRate = 1.0f,
-            icon = "📱",
-            speechStyle = "OFFLINE"
         )
     )
 
@@ -626,7 +590,12 @@ object AshramVoiceAnnouncementManager {
 
     fun getSelectedVoicePreset(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_VOICE_PRESET, PRESET_ELEVENLABS_MALE) ?: PRESET_ELEVENLABS_MALE
+        val saved = prefs.getString(KEY_VOICE_PRESET, PRESET_ELEVENLABS_MALE) ?: PRESET_ELEVENLABS_MALE
+        return if (saved == PRESET_ELEVENLABS_MALE || saved == PRESET_ELEVENLABS_FEMALE || saved == PRESET_CUSTOM_RECORDED) {
+            saved
+        } else {
+            PRESET_ELEVENLABS_MALE
+        }
     }
 
     fun setVoicePreset(context: Context, presetId: String) {
@@ -930,7 +899,7 @@ object AshramVoiceAnnouncementManager {
      * 
      * Stage 1: "टोकन नंबर {४}, श्री रमेश कुमार जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
      * Stage 2 (Auto 20s or manual tap):
-     * "टोकन नंबर {५}, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें, और बाकी सब पीछे होके बैठ जाओ।"
+     * "टोकन नंबर {५}, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें।"
      */
     fun announceNextToken(
         context: Context,
@@ -955,7 +924,7 @@ object AshramVoiceAnnouncementManager {
         val hindiWords = numberToHindiWords(tokenNumber)
 
         val tokenSpoken = if (hindiWords.isNotBlank() && hindiWords != tokenNumber.toString()) {
-            "$devDigits, $hindiWords"
+            hindiWords
         } else {
             tokenNumber.toString()
         }
@@ -983,7 +952,7 @@ object AshramVoiceAnnouncementManager {
         // 🌟 ELEVENLABS AUDIO STITCHING ARCHITECTURE:
         // Zero-credit, ultra-realistic human voice combining pre-baked audio clips (1 to 150)
         // with dynamic devotee name synthesis from ElevenLabs (only ~10-15 chars per new name, cached forever).
-        // Uses Multi-Key Failover Pool (Keys 1 to 4) automatically!
+        // Uses Multi-Key Failover Pool (Keys 1 to 5) automatically!
         if ((activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) && tokenNumber in 1..150) {
             val genderDir = if (activePreset == PRESET_ELEVENLABS_FEMALE) "female" else "male"
             val voiceId = if (activePreset == PRESET_ELEVENLABS_FEMALE) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
@@ -992,23 +961,20 @@ object AshramVoiceAnnouncementManager {
             CoroutineScope(Dispatchers.Main).launch {
                 val segments = mutableListOf<AudioSegment>()
 
-                // 1. Resonant Brass Temple Bell
-                val bellResId = context.resources.getIdentifier("temple_bell", "raw", context.packageName)
-                if (bellResId != 0) {
-                    segments.add(AudioSegment.RawRes(bellResId))
+                // 1. Unified Token Number: "टोकन नंबर चार" (Zero English accent, pure Indian intonation)
+                val tokenNumAsset = "audio/$genderDir/token_num_$tokenNumber.mp3"
+                if (assetExists(context, tokenNumAsset)) {
+                    segments.add(AudioSegment.Asset(tokenNumAsset))
+                } else {
+                    segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
+                    segments.add(AudioSegment.Asset("audio/$genderDir/num_$tokenNumber.mp3"))
                 }
 
-                // 2. Token Intro: "टोकन नंबर"
-                segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
-
-                // 3. Spoken Number: "num_X.mp3"
-                segments.add(AudioSegment.Asset("audio/$genderDir/num_$tokenNumber.mp3"))
-
                 if (cleanName.isNotBlank()) {
-                    // 4. Salutation: "श्री"
+                    // 3. Salutation: "श्री"
                     segments.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
 
-                    // 5. Devotee Name (Dynamic Synthesis with Multi-Key Failover Pool / Local Cache)
+                    // 4. Devotee Name (Dynamic Synthesis with Multi-Key Failover Pool / Local Cache)
                     val nameFile = if (apiKeys.isNotEmpty()) {
                         ElevenLabsTtsEngine.synthesizeSpeechWithPool(
                             context = context,
@@ -1025,7 +991,7 @@ object AshramVoiceAnnouncementManager {
                         segments.add(AudioSegment.FileAudio(nameFile))
                     }
 
-                    // 6. Guruji call prompt
+                    // 5. Guruji call prompt
                     segments.add(AudioSegment.Asset("audio/$genderDir/call_guruji.mp3"))
                 } else {
                     segments.add(AudioSegment.Asset("audio/$genderDir/call_guruji_direct.mp3"))
@@ -1038,23 +1004,21 @@ object AshramVoiceAnnouncementManager {
             return
         }
 
-        // 🔔 1. Play sacred temple bell chime first, then announce clearly
-        playTempleBell(context) {
-            if (activePreset == PRESET_CUSTOM_RECORDED && hasCustomRecording(context)) {
-                playCustomRecording(context) {
-                    if (cleanName.isNotBlank()) {
-                        speakDevotionalText(context, "श्री $cleanName जी, कृपया पधारें।") {
-                            triggerStandbyCountdownIfNeeded(context, cleanName, nextTokenNumber, nextDevoteeName, autoNextSeconds)
-                        }
-                    } else {
-                        _isAnnouncing.value = false
+        // Custom recording or cloud fallback (No bell chime)
+        if (activePreset == PRESET_CUSTOM_RECORDED && hasCustomRecording(context)) {
+            playCustomRecording(context) {
+                if (cleanName.isNotBlank()) {
+                    speakDevotionalText(context, "श्री $cleanName जी, कृपया पधारें।") {
                         triggerStandbyCountdownIfNeeded(context, cleanName, nextTokenNumber, nextDevoteeName, autoNextSeconds)
                     }
-                }
-            } else {
-                speakDevotionalText(context, primaryAnnouncementText) {
+                } else {
+                    _isAnnouncing.value = false
                     triggerStandbyCountdownIfNeeded(context, cleanName, nextTokenNumber, nextDevoteeName, autoNextSeconds)
                 }
+            }
+        } else {
+            speakDevotionalText(context, primaryAnnouncementText) {
+                triggerStandbyCountdownIfNeeded(context, cleanName, nextTokenNumber, nextDevoteeName, autoNextSeconds)
             }
         }
     }
@@ -1092,8 +1056,8 @@ object AshramVoiceAnnouncementManager {
     }
 
     /**
-     * 📢 STANDBY DEVOTEE & CROWD CONTROL ANNOUNCEMENT:
-     * "टोकन नंबर {next}, श्री {nextDevotee} जी, अगला नंबर आपका है, कृपया {currentDevotee} जी के पीछे आकर बैठें, और बाकी सब पीछे होके बैठ जाओ।"
+     * 📢 STANDBY DEVOTEE ANNOUNCEMENT:
+     * "टोकन नंबर {next}, श्री {nextDevotee} जी, अगला नंबर आपका है, कृपया {currentDevotee} जी के पीछे आकर बैठें।"
      */
     fun announceStandbyDevotee(
         context: Context,
@@ -1118,23 +1082,20 @@ object AshramVoiceAnnouncementManager {
             CoroutineScope(Dispatchers.Main).launch {
                 val segments = mutableListOf<AudioSegment>()
 
-                // 1. Resonant Brass Temple Bell
-                val bellResId = context.resources.getIdentifier("temple_bell", "raw", context.packageName)
-                if (bellResId != 0) {
-                    segments.add(AudioSegment.RawRes(bellResId))
+                // 1. Unified Token Number: "टोकन नंबर पांच" (Zero English accent, pure Indian intonation)
+                val tokenNumAsset = "audio/$genderDir/token_num_$nextTokenNumber.mp3"
+                if (assetExists(context, tokenNumAsset)) {
+                    segments.add(AudioSegment.Asset(tokenNumAsset))
+                } else {
+                    segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
+                    segments.add(AudioSegment.Asset("audio/$genderDir/num_$nextTokenNumber.mp3"))
                 }
 
-                // 2. Token Intro: "टोकन नंबर"
-                segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
-
-                // 3. Spoken Number: "num_X.mp3"
-                segments.add(AudioSegment.Asset("audio/$genderDir/num_$nextTokenNumber.mp3"))
-
                 if (cleanNextName.isNotBlank()) {
-                    // 4. Salutation: "श्री"
+                    // 3. Salutation: "श्री"
                     segments.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
 
-                    // 5. Next Devotee Name (Dynamic Synthesis with Multi-Key Failover Pool / Local Cache)
+                    // 4. Next Devotee Name (Dynamic Synthesis with Multi-Key Failover Pool / Local Cache)
                     val nextNameFile = if (apiKeys.isNotEmpty()) {
                         ElevenLabsTtsEngine.synthesizeSpeechWithPool(
                             context = context,
@@ -1151,7 +1112,7 @@ object AshramVoiceAnnouncementManager {
                         segments.add(AudioSegment.FileAudio(nextNameFile))
                     }
 
-                    // 6. Standby prompt: "कृपया इनके पीछे आकर बैठें..."
+                    // 5. Standby prompt: "कृपया इनके पीछे आकर बैठें..."
                     segments.add(AudioSegment.Asset("audio/$genderDir/standby_behind_prompt.mp3"))
                 } else {
                     segments.add(AudioSegment.Asset("audio/$genderDir/standby_direct.mp3"))
@@ -1166,7 +1127,7 @@ object AshramVoiceAnnouncementManager {
         val nextHindiWords = numberToHindiWords(nextTokenNumber)
 
         val nextTokenSpoken = if (nextHindiWords.isNotBlank() && nextHindiWords != nextTokenNumber.toString()) {
-            "$nextDevDigits, $nextHindiWords"
+            nextHindiWords
         } else {
             nextTokenNumber.toString()
         }
@@ -1188,9 +1149,7 @@ object AshramVoiceAnnouncementManager {
                 .replace("{currentDevoteeName} जी", "आगे वाले भक्त")
         }
 
-        playTempleBell(context) {
-            speakDevotionalText(context, standbyText)
-        }
+        speakDevotionalText(context, standbyText)
     }
 
     /**
@@ -1218,9 +1177,7 @@ object AshramVoiceAnnouncementManager {
         boostAudioVolumeForLoudspeaker(context)
         if (presetId == PRESET_CUSTOM_RECORDED) {
             if (hasCustomRecording(context)) {
-                playTempleBell(context) {
-                    playCustomRecording(context)
-                }
+                playCustomRecording(context)
             } else {
                 initIfNeeded(context)
                 speakRaw("कृपया नीचे दिए गए माइक रिकॉर्ड बटन से आश्रम की अपनी वास्तविक आवाज़ रिकॉर्ड करें।")
@@ -1235,10 +1192,13 @@ object AshramVoiceAnnouncementManager {
 
             CoroutineScope(Dispatchers.Main).launch {
                 val segments1 = mutableListOf<AudioSegment>()
-                val bellResId = context.resources.getIdentifier("temple_bell", "raw", context.packageName)
-                if (bellResId != 0) segments1.add(AudioSegment.RawRes(bellResId))
-                segments1.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
-                segments1.add(AudioSegment.Asset("audio/$genderDir/num_1.mp3"))
+                val tokenNum1Asset = "audio/$genderDir/token_num_1.mp3"
+                if (assetExists(context, tokenNum1Asset)) {
+                    segments1.add(AudioSegment.Asset(tokenNum1Asset))
+                } else {
+                    segments1.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
+                    segments1.add(AudioSegment.Asset("audio/$genderDir/num_1.mp3"))
+                }
                 segments1.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
 
                 val testNameFile = if (apiKey.isNotBlank()) {
@@ -1253,9 +1213,13 @@ object AshramVoiceAnnouncementManager {
                     CoroutineScope(Dispatchers.Main).launch {
                         delay(1200)
                         val segments2 = mutableListOf<AudioSegment>()
-                        if (bellResId != 0) segments2.add(AudioSegment.RawRes(bellResId))
-                        segments2.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
-                        segments2.add(AudioSegment.Asset("audio/$genderDir/num_2.mp3"))
+                        val tokenNum2Asset = "audio/$genderDir/token_num_2.mp3"
+                        if (assetExists(context, tokenNum2Asset)) {
+                            segments2.add(AudioSegment.Asset(tokenNum2Asset))
+                        } else {
+                            segments2.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
+                            segments2.add(AudioSegment.Asset("audio/$genderDir/num_2.mp3"))
+                        }
                         segments2.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
 
                         val testStandbyNameFile = if (apiKey.isNotBlank()) {
@@ -1274,16 +1238,12 @@ object AshramVoiceAnnouncementManager {
         }
 
         val testPrimary = "टोकन नंबर एक, श्री रमेश कुमार जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
-        val testStandby = "टोकन नंबर दो, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें, और बाकी सब पीछे होके बैठ जाओ।"
+        val testStandby = "टोकन नंबर दो, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें।"
 
-        playTempleBell(context) {
-            speakDevotionalText(context, testPrimary) {
-                CoroutineScope(Dispatchers.Main).launch {
-                    delay(1200)
-                    playTempleBell(context) {
-                        speakDevotionalText(context, testStandby)
-                    }
-                }
+        speakDevotionalText(context, testPrimary) {
+            CoroutineScope(Dispatchers.Main).launch {
+                delay(1200)
+                speakDevotionalText(context, testStandby)
             }
         }
     }
@@ -1354,6 +1314,15 @@ object AshramVoiceAnnouncementManager {
             isInitialized = false
         } catch (e: Exception) {
             Log.e(TAG, "Error shutting down", e)
+        }
+    }
+
+    private fun assetExists(context: Context, path: String): Boolean {
+        return try {
+            context.assets.open(path).close()
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 }

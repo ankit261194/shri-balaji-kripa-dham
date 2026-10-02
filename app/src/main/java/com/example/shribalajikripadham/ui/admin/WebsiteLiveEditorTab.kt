@@ -74,6 +74,8 @@ fun WebsiteLiveEditorTab(
     var gurujiTitle by remember { mutableStateOf(settings.websiteGurujiTitle) }
     var gurujiBio by remember { mutableStateOf(settings.websiteGurujiBio) }
     var ashramHistoryHindi by remember { mutableStateOf(settings.ashramHistoryHindi) }
+    var ashramDirections by remember { mutableStateOf(settings.websiteAshramDirections) }
+    var aartiLyrics by remember { mutableStateOf(settings.websiteAartiLyrics) }
     var tokenRulesNotice by remember { mutableStateOf(settings.websiteTokenRuleNotice) }
     var youtubeLiveUrl by remember { mutableStateOf(settings.youtubeLiveUrl) }
     var instagramUrl by remember { mutableStateOf(settings.instagramUrl) }
@@ -159,6 +161,12 @@ fun WebsiteLiveEditorTab(
 
                 val sHistory = cfg.optString("ashram_history", cfg.optString("ashram_history_hindi", ""))
                 if (sHistory.isNotBlank()) ashramHistoryHindi = sHistory
+
+                val sDirections = cfg.optString("ashram_directions", "")
+                if (sDirections.isNotBlank()) ashramDirections = sDirections
+
+                val sAarti = cfg.optString("aarti_lyrics", "")
+                if (sAarti.isNotBlank()) aartiLyrics = sAarti
 
                 val sTokenRules = cfg.optString("token_rules_notice", cfg.optString("token_rules_summary", ""))
                 if (sTokenRules.isNotBlank()) tokenRulesNotice = sTokenRules
@@ -597,7 +605,31 @@ fun WebsiteLiveEditorTab(
                 OutlinedTextField(
                     value = ashramHistoryHindi,
                     onValueChange = { ashramHistoryHindi = it },
-                    label = { Text("आश्रम का पावन इतिहास (वेबसाइट पर प्रदर्शित)", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("1. आश्रम का पावन इतिहास (वेबसाइट पर प्रदर्शित)", fontWeight = FontWeight.SemiBold) },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 6,
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = ashramDirections,
+                    onValueChange = { ashramDirections = it },
+                    label = { Text("2. बुलन्दशहर से डूँगरा जाट आने का लिखित मार्ग (यात्रा निर्देश)", fontWeight = FontWeight.SemiBold) },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 6,
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                OutlinedTextField(
+                    value = aartiLyrics,
+                    onValueChange = { aartiLyrics = it },
+                    label = { Text("3. श्री बालाजी महाराज की पावन आरती के बोल (Lyrics)", fontWeight = FontWeight.SemiBold) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     maxLines = 6,
@@ -609,7 +641,7 @@ fun WebsiteLiveEditorTab(
                 OutlinedTextField(
                     value = tokenRulesNotice,
                     onValueChange = { tokenRulesNotice = it },
-                    label = { Text("टोकन नियम व ऐप डाउनलोड निर्देश", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("4. टोकन नियम व ऐप डाउनलोड निर्देश", fontWeight = FontWeight.SemiBold) },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3,
                     maxLines = 6,
@@ -794,6 +826,8 @@ fun WebsiteLiveEditorTab(
                     websiteGurujiTitle = gurujiTitle.trim(),
                     websiteGurujiBio = gurujiBio.trim(),
                     ashramHistoryHindi = ashramHistoryHindi.trim(),
+                    websiteAshramDirections = ashramDirections.trim(),
+                    websiteAartiLyrics = aartiLyrics.trim(),
                     websiteTokenRuleNotice = tokenRulesNotice.trim(),
                     youtubeLiveUrl = youtubeLiveUrl.trim(),
                     instagramUrl = instagramUrl.trim()

@@ -1076,6 +1076,7 @@ object HostingerCentralSyncManager {
                 put("bank_branch", settings.websiteBankBranch)
                 put("ashram_address", settings.websiteAshramAddress)
                 put("ashram_directions", settings.websiteAshramDirections)
+                put("aarti_lyrics", settings.websiteAartiLyrics)
                 put("footer_title", settings.websiteFooterTitle)
                 put("footer_copyright", settings.websiteFooterCopyright)
                 put("is_tuesday_darbar_enabled", if (settings.isTuesdayDarbarEnabled) 1 else 0)
