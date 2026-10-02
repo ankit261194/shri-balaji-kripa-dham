@@ -48,6 +48,7 @@ $filesToSync = [
     "api/delete_parcha.php",
     "api/havan_service.php",
     "api/onesignal_service.php",
+    "api/get_security_logs.php",
     "havan_admin.php",
     "media/balaji_darshan_today.jpg",
     "sync_apk.php"
