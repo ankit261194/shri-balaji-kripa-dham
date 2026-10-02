@@ -25,7 +25,7 @@ if sys.platform == "win32":
         pass
 
 BASE_URL = "https://shribalajikripadham.online/api/"
-API_KEY = "SBKD_SECRET_CENTRAL_API_KEY_2026_PROD"
+API_KEY = "SBKD_SECURE_TOKEN_9100100251233433_V243"
 
 def run_test(name, func):
     try:
@@ -202,16 +202,23 @@ def main():
     print("=" * 60)
     
     results = []
+    # 1. Local Codebase Invariants
     results.append(run_test("Tehsil Anupshahr Rule", test_tehsil_anupshahr))
     results.append(run_test("Anti-Clear-Data Launch Checks", test_client_anti_clear_data_launch_check))
     results.append(run_test("GPS Distance Supremacy Rule", test_client_gps_supremacy_check))
     results.append(run_test("Version Code Synchronization", test_version_file_sync))
     
+    # 2. Live Server Security Gate (Hostinger API)
+    results.append(run_test("Live 30 KM Geofence Enforcement (<30km block)", test_30km_geofence_local))
+    results.append(run_test("Live Fake GPS / Mock Location Blocking", test_fake_gps_mock_location))
+    results.append(run_test("Live Missing Device ID Blocked", test_missing_device_id_blocked))
+    results.append(run_test("Live Central Device Check API", test_check_device_anti_clear_data))
+    
     if not all(results):
         print("\n❌ VERIFICATION FAILED! Do NOT proceed to release until fixed!")
         sys.exit(1)
     else:
-        print("\n✅ ALL LOCAL VERIFICATION CHECKS PASSED!")
+        print("\n✅ ALL LOCAL & LIVE VERIFICATION CHECKS PASSED!")
 
 if __name__ == "__main__":
     main()
