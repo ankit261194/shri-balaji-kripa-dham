@@ -71,6 +71,9 @@ object ElevenLabsTtsEngine {
         }
     }
 
+    private val keyRemainingCache = java.util.concurrent.ConcurrentHashMap<String, Int>()
+    const val LOW_CREDIT_THRESHOLD = 50
+
     /**
      * Fetches live credit balance and status for an ElevenLabs API key.
      */
@@ -105,6 +108,14 @@ object ElevenLabsTtsEngine {
                 val nextReset = json.optLong("next_character_count_reset_unix", 0L)
                 val remaining = (charLimit - charCount).coerceAtLeast(0)
 
+                keyRemainingCache[cleanKey] = remaining
+
+                val errorNote = when {
+                    remaining <= 0 -> "कोटा समाप्त (Exhausted)"
+                    remaining <= LOW_CREDIT_THRESHOLD -> "क्रेडिट कम (<= $LOW_CREDIT_THRESHOLD शेष, स्वतः अगली Key पर स्विच)"
+                    else -> null
+                }
+
                 return@withContext ElevenLabsKeyInfo(
                     key = cleanKey,
                     slotNumber = slotNumber,
@@ -114,9 +125,10 @@ object ElevenLabsTtsEngine {
                     remainingCharacters = remaining,
                     nextResetUnix = nextReset,
                     isValid = true,
-                    errorMsg = if (remaining <= 0) "कोटा समाप्त (Exhausted)" else null
+                    errorMsg = errorNote
                 )
             } else {
+                keyRemainingCache[cleanKey] = 0
                 val err = conn.errorStream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
                 val msg = if (code == 401) "अमान्य API Key (Unauthorized)" else "HTTP $code: $err"
                 return@withContext ElevenLabsKeyInfo(
@@ -138,7 +150,7 @@ object ElevenLabsTtsEngine {
 
     /**
      * Synthesizes audio using a Multi-Key Pool with automatic failover.
-     * Iterates through available keys. If Key 1 fails (exhausted/rate-limit), automatically falls back to Key 2, etc.
+     * Iterates through available keys. If Key 1 has <= 50 credits or fails, automatically switches to Key 2, etc.
      */
     suspend fun synthesizeSpeechWithPool(
         context: Context,
@@ -164,18 +176,27 @@ object ElevenLabsTtsEngine {
             return@withContext null
         }
 
-        // 2. Try each key in sequence
+        // 2. Try each key in sequence, proactively skipping keys with <= 50 credits
         for ((idx, key) in validKeys.withIndex()) {
+            val remaining = keyRemainingCache[key]
+            if (remaining != null && remaining <= LOW_CREDIT_THRESHOLD) {
+                Log.w(TAG, "Key #${idx + 1} has only $remaining credits remaining (<= $LOW_CREDIT_THRESHOLD threshold). Proactively switching to next key!")
+                continue
+            }
+
             val file = synthesizeSingleKey(context, cleanText, key, voiceId, cachedFile, stability, similarityBoost)
             if (file != null && file.exists() && file.length() > 500) {
                 Log.i(TAG, "Speech synthesized successfully using Key #${idx + 1}")
+                if (remaining != null) {
+                    keyRemainingCache[key] = (remaining - cleanText.length).coerceAtLeast(0)
+                }
                 return@withContext file
             } else {
                 Log.w(TAG, "Key #${idx + 1} failed or exhausted. Trying next key in pool...")
             }
         }
 
-        Log.e(TAG, "All ElevenLabs API keys in pool failed or exhausted.")
+        Log.e(TAG, "All ElevenLabs API keys in pool failed, exhausted, or below $LOW_CREDIT_THRESHOLD threshold.")
         return@withContext null
     }
 

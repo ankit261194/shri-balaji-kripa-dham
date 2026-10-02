@@ -9678,6 +9678,7 @@ fun SuperControlTab(
     var elevenLabsApiKey2Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 2)) }
     var elevenLabsApiKey3Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 3)) }
     var elevenLabsApiKey4Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 4)) }
+    var elevenLabsApiKey5Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 5)) }
 
     val elevenLabsBalances by AshramVoiceAnnouncementManager.elevenLabsKeyBalances.collectAsState()
     val isRefreshingBalances by AshramVoiceAnnouncementManager.isRefreshingBalances.collectAsState()
@@ -10596,15 +10597,15 @@ fun SuperControlTab(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("🎙️", fontSize = 20.sp)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Column {
+                                     Column {
                                         Text(
-                                            text = "ElevenLabs 4-Key Pool (40,000 मुफ़्त कैरेक्टर्स/माह)",
+                                            text = "ElevenLabs 5-Key Pool (50,000 मुफ़्त कैरेक्टर्स/माह)",
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = MaroonPrimary
                                         )
                                         Text(
-                                            text = "ऑटो-स्विचिंग: की 1 समाप्त होने पर की 2, 3, 4 पर स्वतः स्विच",
+                                            text = "ऑटो-स्विचिंग: किसी भी की में <= 50 क्रेडिट रहने पर अगली की पर स्वतः स्विच!",
                                             fontSize = 10.sp,
                                             color = Color.DarkGray
                                         )
@@ -10656,6 +10657,18 @@ fun SuperControlTab(
                                 onValueChange = { elevenLabsApiKey4Input = it },
                                 modifier = Modifier.fillMaxWidth(),
                                 label = { Text("स्लॉट 4 (ऑटो-स्विच बैकअप 3)") },
+                                placeholder = { Text("sk_... (वैकल्पिक)") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Key Slot 5
+                            OutlinedTextField(
+                                value = elevenLabsApiKey5Input,
+                                onValueChange = { elevenLabsApiKey5Input = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("स्लॉट 5 (ऑटो-स्विच बैकअप 4)") },
                                 placeholder = { Text("sk_... (वैकल्पिक)") },
                                 singleLine = true,
                                 shape = RoundedCornerShape(8.dp)
@@ -10915,6 +10928,7 @@ fun SuperControlTab(
                                 AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey2Input, 2)
                                 AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey3Input, 3)
                                 AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey4Input, 4)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey5Input, 5)
                                 AshramVoiceAnnouncementManager.setGoogleTtsApiKey(context, googleTtsApiKeyInput)
                                 AshramVoiceAnnouncementManager.setAutoNextEnabled(context, isAutoNextEnabledChecked)
                                 AshramVoiceAnnouncementManager.setAutoNextDelaySeconds(context, autoNextDelayInput)
@@ -10922,7 +10936,7 @@ fun SuperControlTab(
                                 AshramVoiceAnnouncementManager.setStandbyTemplate(context, standbyTemplateInput)
                                 AshramVoiceAnnouncementManager.refreshAllKeyBalances(context)
                                 withContext(Dispatchers.Main) {
-                                    voiceSuccessMsg = if (isHindi) "✓ टोकन आवाज़, 4-Key पूल व शेड्यूलर सेटिंग्स सुरक्षित हुईं!" else "Voice pool, schedule & crowd control settings saved!"
+                                    voiceSuccessMsg = if (isHindi) "✓ टोकन आवाज़, 5-Key पूल व शेड्यूलर सेटिंग्स सुरक्षित हुईं!" else "Voice pool, schedule & crowd control settings saved!"
                                     Toast.makeText(context, if (isHindi) "✓ सेटिंग्स सुरक्षित हुईं!" else "Settings saved!", Toast.LENGTH_SHORT).show()
                                     onRefreshData()
                                 }
@@ -10932,7 +10946,7 @@ fun SuperControlTab(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth().height(46.dp)
                     ) {
-                        Text(if (isHindi) "💾 टोकन आवाज़, 4-Key पूल व शेड्यूलर सुरक्षित करें" else "💾 Save Voice & Queue Settings", fontWeight = FontWeight.Bold)
+                        Text(if (isHindi) "💾 टोकन आवाज़, 5-Key पूल व शेड्यूलर सुरक्षित करें" else "💾 Save Voice & Queue Settings", fontWeight = FontWeight.Bold)
                     }
                 }
             }
