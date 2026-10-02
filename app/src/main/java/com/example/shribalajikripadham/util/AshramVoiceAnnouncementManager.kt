@@ -55,6 +55,7 @@ object AshramVoiceAnnouncementManager {
     private const val KEY_ELEVENLABS_API_KEY_2 = "elevenlabs_studio_tts_api_key_2"
     private const val KEY_ELEVENLABS_API_KEY_3 = "elevenlabs_studio_tts_api_key_3"
     private const val KEY_ELEVENLABS_API_KEY_4 = "elevenlabs_studio_tts_api_key_4"
+    const val DEFAULT_ELEVENLABS_API_KEY = "sk_13bf5df7b1cf804ee9b3b03590b2f64d90463109bddffbfe"
 
     // Master Kill-Switch & Smart Scheduler Keys
     private const val KEY_VOICE_MASTER_ENABLED = "voice_master_enabled"
@@ -285,10 +286,7 @@ object AshramVoiceAnnouncementManager {
 
     fun getElevenLabsApiKeyList(context: Context): List<String> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val k1 = prefs.getString(KEY_ELEVENLABS_API_KEY_1, "")?.trim() ?: ""
-        val legacy = prefs.getString(KEY_ELEVENLABS_API_KEY, "")?.trim() ?: ""
-        val primary = if (k1.isNotBlank()) k1 else legacy
-
+        val primary = getElevenLabsApiKey(context, 1)
         val k2 = prefs.getString(KEY_ELEVENLABS_API_KEY_2, "")?.trim() ?: ""
         val k3 = prefs.getString(KEY_ELEVENLABS_API_KEY_3, "")?.trim() ?: ""
         val k4 = prefs.getString(KEY_ELEVENLABS_API_KEY_4, "")?.trim() ?: ""
@@ -305,12 +303,17 @@ object AshramVoiceAnnouncementManager {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return when (slot) {
             1 -> {
-                val k1 = prefs.getString(KEY_ELEVENLABS_API_KEY_1, "")?.trim() ?: ""
-                if (k1.isNotBlank()) k1 else prefs.getString(KEY_ELEVENLABS_API_KEY, "") ?: ""
+                val k1 = prefs.getString(KEY_ELEVENLABS_API_KEY_1, null)?.trim()
+                val legacy = prefs.getString(KEY_ELEVENLABS_API_KEY, null)?.trim()
+                when {
+                    !k1.isNullOrBlank() -> k1
+                    !legacy.isNullOrBlank() -> legacy
+                    else -> DEFAULT_ELEVENLABS_API_KEY
+                }
             }
-            2 -> prefs.getString(KEY_ELEVENLABS_API_KEY_2, "") ?: ""
-            3 -> prefs.getString(KEY_ELEVENLABS_API_KEY_3, "") ?: ""
-            4 -> prefs.getString(KEY_ELEVENLABS_API_KEY_4, "") ?: ""
+            2 -> prefs.getString(KEY_ELEVENLABS_API_KEY_2, "")?.trim() ?: ""
+            3 -> prefs.getString(KEY_ELEVENLABS_API_KEY_3, "")?.trim() ?: ""
+            4 -> prefs.getString(KEY_ELEVENLABS_API_KEY_4, "")?.trim() ?: ""
             else -> ""
         }
     }
