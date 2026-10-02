@@ -50,6 +50,7 @@ object AshramVoiceAnnouncementManager {
     private const val KEY_IS_MUTED = "is_tts_muted"
     private const val KEY_VOICE_PRESET = "selected_voice_preset"
     private const val KEY_GOOGLE_TTS_API_KEY = "google_cloud_tts_api_key"
+    private const val KEY_ELEVENLABS_API_KEY = "elevenlabs_studio_tts_api_key"
     private const val KEY_AUTO_NEXT_ENABLED = "tts_auto_next_enabled"
     private const val KEY_AUTO_NEXT_DELAY = "tts_auto_next_delay_seconds"
     private const val KEY_PRIMARY_TEMPLATE = "tts_primary_template"
@@ -58,20 +59,46 @@ object AshramVoiceAnnouncementManager {
     const val DEFAULT_PRIMARY_TEMPLATE = "टोकन नंबर {tokenNumber}, श्री {devoteeName} जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
     const val DEFAULT_STANDBY_TEMPLATE = "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, अगला नंबर आपका है, कृपया {currentDevoteeName} जी के पीछे आकर बैठें, और बाकी सब पीछे होके बैठ जाओ।"
 
+    const val PRESET_ELEVENLABS_MALE = "ELEVENLABS_MALE"
+    const val PRESET_ELEVENLABS_FEMALE = "ELEVENLABS_FEMALE"
     const val PRESET_NATURAL_MALE = "NATURAL_MALE"
     const val PRESET_NATURAL_FEMALE = "NATURAL_FEMALE"
     const val PRESET_CUSTOM_RECORDED = "CUSTOM_RECORDED"
     const val PRESET_OFFLINE_DEVICE = "OFFLINE_DEVICE"
 
     // Backward compatibility aliases
-    const val PRESET_GURU_CALM = PRESET_NATURAL_MALE
-    const val PRESET_FEMALE_SWEET = PRESET_NATURAL_FEMALE
-    const val PRESET_ANNOUNCER_MALE = PRESET_NATURAL_MALE
-    const val PRESET_SEVIKA_FEMALE = PRESET_NATURAL_FEMALE
-    const val PRESET_YOUTH_CRISP = PRESET_NATURAL_MALE
-    const val PRESET_TRADITIONAL_VYAS = PRESET_NATURAL_MALE
+    const val PRESET_GURU_CALM = PRESET_ELEVENLABS_MALE
+    const val PRESET_FEMALE_SWEET = PRESET_ELEVENLABS_FEMALE
+    const val PRESET_ANNOUNCER_MALE = PRESET_ELEVENLABS_MALE
+    const val PRESET_SEVIKA_FEMALE = PRESET_ELEVENLABS_FEMALE
+    const val PRESET_YOUTH_CRISP = PRESET_ELEVENLABS_MALE
+    const val PRESET_TRADITIONAL_VYAS = PRESET_ELEVENLABS_MALE
 
     val AVAILABLE_VOICE_PRESETS = listOf(
+        VoicePresetInfo(
+            id = PRESET_ELEVENLABS_MALE,
+            nameHindi = "HD स्टूडियो पुरुष स्वर (ElevenLabs Brian)",
+            nameEnglish = "HD Devotional Male Voice (ElevenLabs)",
+            gender = "MALE",
+            category = "MALE",
+            description = "100% असली स्टूडियो रिकॉर्डेड उद्घोषक स्वर (1 से 150 तक प्री-लोडेड)",
+            pitch = 1.0f,
+            speechRate = 1.0f,
+            icon = "🎙️",
+            speechStyle = "STUDIO_HUMAN"
+        ),
+        VoicePresetInfo(
+            id = PRESET_ELEVENLABS_FEMALE,
+            nameHindi = "HD स्टूडियो महिला स्वर (ElevenLabs Sarah)",
+            nameEnglish = "HD Devotional Female Voice (ElevenLabs)",
+            gender = "FEMALE",
+            category = "FEMALE",
+            description = "100% असली स्टूडियो रिकॉर्डेड सेविका स्वर (1 से 150 तक प्री-लोडेड)",
+            pitch = 1.0f,
+            speechRate = 1.0f,
+            icon = "👩",
+            speechStyle = "STUDIO_HUMAN"
+        ),
         VoicePresetInfo(
             id = PRESET_NATURAL_MALE,
             nameHindi = "धीर-गंभीर पुरुष स्वर (Google Neural2 / HD Hindi)",
@@ -166,6 +193,16 @@ object AshramVoiceAnnouncementManager {
     fun setGoogleTtsApiKey(context: Context, key: String) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_GOOGLE_TTS_API_KEY, key.trim()).apply()
+    }
+
+    fun getElevenLabsApiKey(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_ELEVENLABS_API_KEY, "") ?: ""
+    }
+
+    fun setElevenLabsApiKey(context: Context, key: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_ELEVENLABS_API_KEY, key.trim()).apply()
     }
 
     fun isAutoNextEnabled(context: Context): Boolean {
@@ -315,6 +352,105 @@ object AshramVoiceAnnouncementManager {
         }
     }
 
+    sealed class AudioSegment {
+        data class RawRes(val resId: Int) : AudioSegment()
+        data class Asset(val path: String) : AudioSegment()
+        data class FileAudio(val file: File) : AudioSegment()
+    }
+
+    /**
+     * Plays a sequence of audio clips back-to-back with zero-latency human-like pacing (Audio Stitching).
+     */
+    fun playAudioSegments(
+        context: Context,
+        segments: List<AudioSegment>,
+        onFinished: (() -> Unit)? = null
+    ) {
+        if (segments.isEmpty()) {
+            onFinished?.invoke()
+            return
+        }
+
+        CoroutineScope(Dispatchers.Main).launch {
+            _isAnnouncing.value = true
+            stopAudioPlayback()
+
+            var index = 0
+
+            fun playNext() {
+                if (index >= segments.size) {
+                    _isAnnouncing.value = false
+                    onFinished?.invoke()
+                    return
+                }
+
+                val currentSeg = segments[index]
+                index++
+
+                try {
+                    val player = MediaPlayer()
+                    var prepared = false
+
+                    when (currentSeg) {
+                        is AudioSegment.RawRes -> {
+                            val afd = context.resources.openRawResourceFd(currentSeg.resId)
+                            if (afd != null) {
+                                player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                                afd.close()
+                                player.prepare()
+                                prepared = true
+                            }
+                        }
+                        is AudioSegment.Asset -> {
+                            try {
+                                val afd = context.assets.openFd(currentSeg.path)
+                                player.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                                afd.close()
+                                player.prepare()
+                                prepared = true
+                            } catch (e: Exception) {
+                                val tempFile = File(context.cacheDir, "temp_asset_${System.currentTimeMillis()}.mp3")
+                                context.assets.open(currentSeg.path).use { input ->
+                                    FileOutputStream(tempFile).use { output ->
+                                        input.copyTo(output)
+                                    }
+                                }
+                                player.setDataSource(tempFile.absolutePath)
+                                player.prepare()
+                                prepared = true
+                            }
+                        }
+                        is AudioSegment.FileAudio -> {
+                            if (currentSeg.file.exists() && currentSeg.file.length() > 500) {
+                                player.setDataSource(currentSeg.file.absolutePath)
+                                player.prepare()
+                                prepared = true
+                            }
+                        }
+                    }
+
+                    if (prepared) {
+                        activeMediaPlayer = player
+                        player.setOnCompletionListener {
+                            try { it.release() } catch (e: Exception) {}
+                            activeMediaPlayer = null
+                            playNext()
+                        }
+                        player.start()
+                    } else {
+                        try { player.release() } catch (e: Exception) {}
+                        playNext()
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Error playing audio segment: ${e.message}")
+                    playNext()
+                }
+            }
+
+            playNext()
+        }
+    }
+
     fun isMuted(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return prefs.getBoolean(KEY_IS_MUTED, false)
@@ -330,7 +466,7 @@ object AshramVoiceAnnouncementManager {
 
     fun getSelectedVoicePreset(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_VOICE_PRESET, PRESET_NATURAL_MALE) ?: PRESET_NATURAL_MALE
+        return prefs.getString(KEY_VOICE_PRESET, PRESET_ELEVENLABS_MALE) ?: PRESET_ELEVENLABS_MALE
     }
 
     fun setVoicePreset(context: Context, presetId: String) {
@@ -684,6 +820,63 @@ object AshramVoiceAnnouncementManager {
 
         val activePreset = getSelectedVoicePreset(context)
 
+        // 🌟 ELEVENLABS AUDIO STITCHING ARCHITECTURE:
+        // Zero-credit, ultra-realistic human voice combining pre-baked audio clips (1 to 150)
+        // with dynamic devotee name synthesis from ElevenLabs (only ~10-15 chars per new name, cached forever).
+        if ((activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) && tokenNumber in 1..150) {
+            val genderDir = if (activePreset == PRESET_ELEVENLABS_FEMALE) "female" else "male"
+            val voiceId = if (activePreset == PRESET_ELEVENLABS_FEMALE) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
+            val apiKey = getElevenLabsApiKey(context)
+
+            CoroutineScope(Dispatchers.Main).launch {
+                val segments = mutableListOf<AudioSegment>()
+
+                // 1. Resonant Brass Temple Bell
+                val bellResId = context.resources.getIdentifier("temple_bell", "raw", context.packageName)
+                if (bellResId != 0) {
+                    segments.add(AudioSegment.RawRes(bellResId))
+                }
+
+                // 2. Token Intro: "टोकन नंबर"
+                segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
+
+                // 3. Spoken Number: "num_X.mp3"
+                segments.add(AudioSegment.Asset("audio/$genderDir/num_$tokenNumber.mp3"))
+
+                if (cleanName.isNotBlank()) {
+                    // 4. Salutation: "श्री"
+                    segments.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
+
+                    // 5. Devotee Name (Dynamic Synthesis / Cache)
+                    val nameFile = if (apiKey.isNotBlank()) {
+                        ElevenLabsTtsEngine.synthesizeSpeechToFile(
+                            context = context,
+                            text = cleanName,
+                            apiKey = apiKey,
+                            voiceId = voiceId
+                        )
+                    } else {
+                        val cached = ElevenLabsTtsEngine.getCachedAudioFile(context, cleanName, voiceId)
+                        if (cached.exists() && cached.length() > 500) cached else null
+                    }
+
+                    if (nameFile != null && nameFile.exists()) {
+                        segments.add(AudioSegment.FileAudio(nameFile))
+                    }
+
+                    // 6. Guruji call prompt
+                    segments.add(AudioSegment.Asset("audio/$genderDir/call_guruji.mp3"))
+                } else {
+                    segments.add(AudioSegment.Asset("audio/$genderDir/call_guruji_direct.mp3"))
+                }
+
+                playAudioSegments(context, segments) {
+                    triggerStandbyCountdownIfNeeded(context, cleanName, nextTokenNumber, nextDevoteeName, autoNextSeconds)
+                }
+            }
+            return
+        }
+
         // 🔔 1. Play sacred temple bell chime first, then announce clearly
         playTempleBell(context) {
             if (activePreset == PRESET_CUSTOM_RECORDED && hasCustomRecording(context)) {
@@ -754,6 +947,60 @@ object AshramVoiceAnnouncementManager {
 
         val cleanNextName = nextDevoteeName.trim()
         val cleanCurrentName = currentDevoteeName.trim()
+
+        val activePreset = getSelectedVoicePreset(context)
+        if ((activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) && nextTokenNumber in 1..150) {
+            val genderDir = if (activePreset == PRESET_ELEVENLABS_FEMALE) "female" else "male"
+            val voiceId = if (activePreset == PRESET_ELEVENLABS_FEMALE) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
+            val apiKey = getElevenLabsApiKey(context)
+
+            CoroutineScope(Dispatchers.Main).launch {
+                val segments = mutableListOf<AudioSegment>()
+
+                // 1. Resonant Brass Temple Bell
+                val bellResId = context.resources.getIdentifier("temple_bell", "raw", context.packageName)
+                if (bellResId != 0) {
+                    segments.add(AudioSegment.RawRes(bellResId))
+                }
+
+                // 2. Token Intro: "टोकन नंबर"
+                segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
+
+                // 3. Spoken Number: "num_X.mp3"
+                segments.add(AudioSegment.Asset("audio/$genderDir/num_$nextTokenNumber.mp3"))
+
+                if (cleanNextName.isNotBlank()) {
+                    // 4. Salutation: "श्री"
+                    segments.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
+
+                    // 5. Next Devotee Name (Dynamic Synthesis / Cache)
+                    val nextNameFile = if (apiKey.isNotBlank()) {
+                        ElevenLabsTtsEngine.synthesizeSpeechToFile(
+                            context = context,
+                            text = cleanNextName,
+                            apiKey = apiKey,
+                            voiceId = voiceId
+                        )
+                    } else {
+                        val cached = ElevenLabsTtsEngine.getCachedAudioFile(context, cleanNextName, voiceId)
+                        if (cached.exists() && cached.length() > 500) cached else null
+                    }
+
+                    if (nextNameFile != null && nextNameFile.exists()) {
+                        segments.add(AudioSegment.FileAudio(nextNameFile))
+                    }
+
+                    // 6. Standby prompt: "कृपया इनके पीछे आकर बैठें..."
+                    segments.add(AudioSegment.Asset("audio/$genderDir/standby_behind_prompt.mp3"))
+                } else {
+                    segments.add(AudioSegment.Asset("audio/$genderDir/standby_direct.mp3"))
+                }
+
+                playAudioSegments(context, segments)
+            }
+            return
+        }
+
         val nextDevDigits = toDevanagariDigits(nextTokenNumber)
         val nextHindiWords = numberToHindiWords(nextTokenNumber)
 
@@ -816,6 +1063,51 @@ object AshramVoiceAnnouncementManager {
             } else {
                 initIfNeeded(context)
                 speakRaw("कृपया नीचे दिए गए माइक रिकॉर्ड बटन से आश्रम की अपनी वास्तविक आवाज़ रिकॉर्ड करें।")
+            }
+            return
+        }
+
+        if (presetId == PRESET_ELEVENLABS_MALE || presetId == PRESET_ELEVENLABS_FEMALE) {
+            val genderDir = if (presetId == PRESET_ELEVENLABS_FEMALE) "female" else "male"
+            val voiceId = if (presetId == PRESET_ELEVENLABS_FEMALE) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
+            val apiKey = getElevenLabsApiKey(context)
+
+            CoroutineScope(Dispatchers.Main).launch {
+                val segments1 = mutableListOf<AudioSegment>()
+                val bellResId = context.resources.getIdentifier("temple_bell", "raw", context.packageName)
+                if (bellResId != 0) segments1.add(AudioSegment.RawRes(bellResId))
+                segments1.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
+                segments1.add(AudioSegment.Asset("audio/$genderDir/num_1.mp3"))
+                segments1.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
+
+                val testNameFile = if (apiKey.isNotBlank()) {
+                    ElevenLabsTtsEngine.synthesizeSpeechToFile(context, "रमेश कुमार", apiKey, voiceId)
+                } else null
+                if (testNameFile != null && testNameFile.exists()) {
+                    segments1.add(AudioSegment.FileAudio(testNameFile))
+                }
+                segments1.add(AudioSegment.Asset("audio/$genderDir/call_guruji.mp3"))
+
+                playAudioSegments(context, segments1) {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        delay(1200)
+                        val segments2 = mutableListOf<AudioSegment>()
+                        if (bellResId != 0) segments2.add(AudioSegment.RawRes(bellResId))
+                        segments2.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
+                        segments2.add(AudioSegment.Asset("audio/$genderDir/num_2.mp3"))
+                        segments2.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
+
+                        val testStandbyNameFile = if (apiKey.isNotBlank()) {
+                            ElevenLabsTtsEngine.synthesizeSpeechToFile(context, "अंकित कुमार", apiKey, voiceId)
+                        } else null
+                        if (testStandbyNameFile != null && testStandbyNameFile.exists()) {
+                            segments2.add(AudioSegment.FileAudio(testStandbyNameFile))
+                        }
+                        segments2.add(AudioSegment.Asset("audio/$genderDir/standby_behind_prompt.mp3"))
+
+                        playAudioSegments(context, segments2)
+                    }
+                }
             }
             return
         }

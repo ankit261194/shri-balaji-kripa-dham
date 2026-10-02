@@ -9672,6 +9672,7 @@ fun SuperControlTab(
     var selectedVoicePreset by remember(settings.tokenVoicePreset) { mutableStateOf(settings.tokenVoicePreset) }
     var voiceSuccessMsg by remember { mutableStateOf<String?>(null) }
     var googleTtsApiKeyInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getGoogleTtsApiKey(context)) }
+    var elevenLabsApiKeyInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context)) }
     var isAutoNextEnabledChecked by remember { mutableStateOf(AshramVoiceAnnouncementManager.isAutoNextEnabled(context)) }
     var autoNextDelayInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getAutoNextDelaySeconds(context)) }
     var primaryTemplateInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getPrimaryTemplate(context)) }
@@ -10411,6 +10412,30 @@ fun SuperControlTab(
 
                     Spacer(modifier = Modifier.height(14.dp))
                     Text(
+                        text = "🎙️ ElevenLabs AI Human Studio Voice (API Key):",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = elevenLabsApiKeyInput,
+                        onValueChange = { elevenLabsApiKeyInput = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("ElevenLabs API Key (100% असली इंसानी आवाज़)") },
+                        placeholder = { Text("sk_...") },
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    Text(
+                        text = "💡 1 से 150 तक के टोकन नंबर और मंदिर के सभी संवाद ऐप में स्थायी रूप से प्री-लोडेड हैं! यह API Key सिर्फ नए भक्तों के नाम बोलने में उपयोग होती है, जिससे आपका फ्री कोटा कभी खत्म नहीं होगा।",
+                        fontSize = 11.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 2.dp, bottom = 10.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
                         text = "🌐 Google Cloud Text-to-Speech (Neural2 AI API Key):",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
@@ -10529,6 +10554,7 @@ fun SuperControlTab(
                             kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                                 repository?.updateTokenVoicePreset(selectedVoicePreset)
                                 AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoicePreset)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKeyInput)
                                 AshramVoiceAnnouncementManager.setGoogleTtsApiKey(context, googleTtsApiKeyInput)
                                 AshramVoiceAnnouncementManager.setAutoNextEnabled(context, isAutoNextEnabledChecked)
                                 AshramVoiceAnnouncementManager.setAutoNextDelaySeconds(context, autoNextDelayInput)

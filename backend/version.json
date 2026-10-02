@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 110,
-  "version_code": 110,
-  "latest_version_name": "2.56.35",
-  "version_name": "2.56.35",
-  "update_notes_hindi": "v2.56.35 (Build 110): 🔔 पावन मंदिर घंटी व Google Neural2 AI हिंदी उद्घोषणा: अगला भक्त अग्रिम कतार अलर्ट, भीड़ नियंत्रण व 20s ऑटो-टाइमिंग।",
-  "update_notes_english": "v2.56.35 (Build 110): 🔔 Sacred Temple Bell & Google Neural2 AI Hindi Voice: Two-stage token calling, crowd control discipline & 20s auto-timing.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=110",
+  "latest_version_code": 111,
+  "version_code": 111,
+  "latest_version_name": "2.56.36",
+  "version_name": "2.56.36",
+  "update_notes_hindi": "v2.56.36 (Build 111): 🎙️ ElevenLabs AI HD स्टूडियो इंसानी आवाज़: 1 से 150 तक के टोकन नंबर और मंदिर संवाद प्री-लोडेड (₹0 आजीवन मुफ़्त कोटा), मंदिर घंटी व भीड़ नियंत्रण!",
+  "update_notes_english": "v2.56.36 (Build 111): 🎙️ ElevenLabs AI HD Studio Voice: Pre-loaded tokens 1 to 150 and temple dialogues (zero-quota exhaustion architecture) with temple bell and crowd control!",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=111",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

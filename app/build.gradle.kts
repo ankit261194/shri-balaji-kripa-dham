@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.shribalajikripadham"
         minSdk = 24
         targetSdk = 34
-        versionCode = 110
-        versionName = "2.56.35"
+        versionCode = 111
+        versionName = "2.56.36"
 
         ndk {
             abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
@@ -22,6 +22,7 @@ android {
 
     androidResources {
         noCompress += "tflite"
+        noCompress += "mp3"
     }
 
     signingConfigs {
