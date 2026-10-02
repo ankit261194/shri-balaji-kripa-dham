@@ -4,19 +4,37 @@
 // Ultra High-Speed Direct Ashram Server APK Delivery Engine (v2.56.28)
 // ==============================================================================
 
-$targetFile = __DIR__ . '/downloads/ShriBalajiKripaDham-v105.apk';
-if (!file_exists($targetFile) || filesize($targetFile) < 10000000) {
-    $targetFile = __DIR__ . '/downloads/ShriBalajiKripaDham-v104.apk';
+$requestedVer = isset($_GET['v']) ? intval($_GET['v']) : 0;
+$targetFile = '';
+
+// Priority 1: Requested version if specified
+if ($requestedVer > 0) {
+    $verFile = __DIR__ . "/downloads/ShriBalajiKripaDham-v{$requestedVer}.apk";
+    if (file_exists($verFile) && filesize($verFile) > 10000000) {
+        $targetFile = $verFile;
+    }
 }
-if (!file_exists($targetFile) || filesize($targetFile) < 10000000) {
-    $targetFile = __DIR__ . '/downloads/ShriBalajiKripaDham-release.apk';
+
+// Priority 2: ShriBalajiKripaDham-release.apk (Always latest compiled build)
+if (empty($targetFile)) {
+    $relFile = __DIR__ . '/downloads/ShriBalajiKripaDham-release.apk';
+    if (file_exists($relFile) && filesize($relFile) > 10000000) {
+        $targetFile = $relFile;
+    }
 }
-if (!file_exists($targetFile) || filesize($targetFile) < 10000000) {
-    // Also check version specific APK
+
+// Priority 3: Highest version found in downloads directory
+if (empty($targetFile)) {
     $files = glob(__DIR__ . '/downloads/ShriBalajiKripaDham-*.apk');
     if (!empty($files)) {
-        rsort($files);
-        $targetFile = $files[0];
+        natsort($files);
+        $files = array_reverse($files);
+        foreach ($files as $f) {
+            if (filesize($f) > 10000000) {
+                $targetFile = $f;
+                break;
+            }
+        }
     }
 }
 
@@ -80,7 +98,7 @@ if (file_exists($targetFile) && filesize($targetFile) > 10000000) {
 $cdnUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk";
 if (file_exists(__DIR__ . '/version.json')) {
     $vj = @json_decode(file_get_contents(__DIR__ . '/version.json'), true);
-    if (!empty($vj['apk_url'])) {
+    if (!empty($vj['apk_url']) && strpos($vj['apk_url'], 'download.php') === false) {
         $cdnUrl = $vj['apk_url'];
     }
 }

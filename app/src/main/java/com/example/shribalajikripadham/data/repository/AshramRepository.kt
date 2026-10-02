@@ -838,12 +838,13 @@ class AshramRepository(context: Context) {
     }
 
     // --- Tokens & Devices ---
-    suspend fun checkDeviceRegisteredToday(deviceId: String): Token? = withContext(Dispatchers.IO) {
+    suspend fun checkDeviceRegisteredToday(deviceId: String, targetDarbarDate: String = ""): Token? = withContext(Dispatchers.IO) {
         val db = dbHelper.readableDatabase
         val today = DatabaseHelper.getTodayDateString()
+        val checkDate = if (targetDarbarDate.isNotBlank()) targetDarbarDate else today
         val cursor = db.rawQuery(
-            "SELECT * FROM tokens WHERE device_id = ? AND darbar_date = ? LIMIT 1",
-            arrayOf(deviceId, today)
+            "SELECT * FROM tokens WHERE device_id = ? AND (darbar_date = ? OR darbar_date = ? OR darbar_date >= ?) ORDER BY id DESC LIMIT 1",
+            arrayOf(deviceId, checkDate, today, today)
         )
         var token: Token? = null
         if (cursor.moveToFirst()) {
@@ -874,7 +875,10 @@ class AshramRepository(context: Context) {
         // 1. Check central server (Highest Authority):
         if (token == null) {
             try {
-                val serverToken = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, today)
+                var serverToken = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, checkDate)
+                if (serverToken == null && checkDate != today) {
+                    serverToken = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, today)
+                }
                 if (serverToken != null) {
                     val cv = ContentValues().apply {
                         put("token_number", serverToken.tokenNumber)
@@ -913,7 +917,8 @@ class AshramRepository(context: Context) {
 
         // 2. Check persistent hardware receipt stored in public device storage:
         if (token == null) {
-            val persistent = com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(deviceId, today)
+            val persistent = com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(deviceId, checkDate)
+                ?: com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(deviceId, today)
             if (persistent != null) {
                 val cv = ContentValues().apply {
                     put("token_number", persistent.tokenNumber)
@@ -1086,15 +1091,48 @@ class AshramRepository(context: Context) {
 
         // 2. HARDWARE-LEVEL DEVICE LOCKING (Strict 1 Device = 1 Token per Sunday for devotees)
         if (isDevoteeRequest) {
+            // Check local device_registrations table
             val checkCursor = db.rawQuery(
-                "SELECT token_number FROM device_registrations WHERE device_id = ? AND (darbar_date = ? OR darbar_date = ?)",
-                arrayOf(deviceId, today, targetDarbarDate)
+                "SELECT token_number FROM device_registrations WHERE device_id = ? AND (darbar_date = ? OR darbar_date = ? OR darbar_date >= ?)",
+                arrayOf(deviceId, today, targetDarbarDate, today)
             )
             if (checkCursor.moveToFirst()) {
                 checkCursor.close()
                 throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
             }
             checkCursor.close()
+
+            // Check local tokens table for device or phone number duplicate
+            val cleanPhone10 = phoneNumber.trim().filter { it.isDigit() }.takeLast(10)
+            val tokCursor = db.rawQuery(
+                "SELECT token_number FROM tokens WHERE (device_id = ? OR (length(?) = 10 AND phone_number LIKE ?)) AND (darbar_date = ? OR darbar_date = ? OR darbar_date >= ?)",
+                arrayOf(deviceId, cleanPhone10, "%$cleanPhone10", today, targetDarbarDate, today)
+            )
+            if (tokCursor.moveToFirst()) {
+                tokCursor.close()
+                throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
+            }
+            tokCursor.close()
+
+            // Anti-Clear-Data check: Query Central Server to ensure this device hasn't already registered
+            try {
+                var serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, targetDarbarDate)
+                if (serverTok == null && targetDarbarDate != today) {
+                    serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, today)
+                }
+                if (serverTok != null) {
+                    throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
+                }
+            } catch (se: SecurityException) {
+                throw se
+            } catch (e: Exception) {
+                // If offline, check persistent hardware receipt in external storage
+                val persistent = com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(deviceId, targetDarbarDate)
+                    ?: com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(deviceId, today)
+                if (persistent != null) {
+                    throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
+                }
+            }
         }
 
         val distFromDarbar = if (latitude > 0.0 && longitude > 0.0 && targetLat > 0.0) {

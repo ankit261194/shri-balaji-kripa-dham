@@ -123,12 +123,20 @@ fun FaceTokenRegistrationScreen(
     var isResolvingLocationName by remember { mutableStateOf(false) }
 
     val isTuesdayVenue = darbarVenue.equals("BULANDSHAHR", ignoreCase = true)
-    val targetLat = if (isTuesdayVenue && settings.tuesdayLatitude != 0.0) settings.tuesdayLatitude else settings.latitude
-    val targetLng = if (isTuesdayVenue && settings.tuesdayLongitude != 0.0) settings.tuesdayLongitude else settings.longitude
+    val targetLat = if (isTuesdayVenue) {
+        if (settings.tuesdayLatitude != 0.0) settings.tuesdayLatitude else 28.4069
+    } else {
+        if (settings.latitude != 0.0) settings.latitude else 28.3972915
+    }
+    val targetLng = if (isTuesdayVenue) {
+        if (settings.tuesdayLongitude != 0.0) settings.tuesdayLongitude else 77.8498
+    } else {
+        if (settings.longitude != 0.0) settings.longitude else 78.1460410
+    }
     val targetRadius = if (isTuesdayVenue) settings.tuesdayAllowedRadiusMeters else settings.allowedRadiusMeters
     val targetOutstationKm = if (isTuesdayVenue) settings.tuesdayOutstationMinDistanceKm else settings.outstationMinDistanceKm
     val targetDarbarName = if (isTuesdayVenue) settings.tuesdayDarbarName.ifBlank { "श्री बालाजी कृपा धाम (मंगलवार दरबार, बुलन्दशहर)" } else "श्री बालाजी कृपा धाम, डुंगरा जाट"
-    val targetDarbarAddress = if (isTuesdayVenue) settings.tuesdayDarbarAddress.ifBlank { "बुलन्दशहर, उत्तर प्रदेश" } else "ग्राम डुंगरा जाट, मुरादाबाद (उ.प्र.)"
+    val targetDarbarAddress = if (isTuesdayVenue) settings.tuesdayDarbarAddress.ifBlank { "बुलन्दशहर, उत्तर प्रदेश" } else "ग्राम डूंगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.) - 202394"
 
     fun evaluateDarbarSchedule(): ScheduleEvaluationResult {
         if (isTuesdayVenue) {
@@ -477,8 +485,9 @@ fun FaceTokenRegistrationScreen(
                 e.printStackTrace()
             }
             settings = repository.getSettings()
-            val serverTok = repository.checkDeviceRegisteredToday(id) ?: try {
-                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(id, settings.darbarDate)
+            val targetDate = if (isTuesdayVenue) settings.tuesdayDarbarDate else settings.darbarDate
+            val serverTok = repository.checkDeviceRegisteredToday(id, targetDate) ?: try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(id, targetDate)
             } catch (e: Exception) { null }
             if (serverTok != null) {
                 generatedToken = serverTok

@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 106,
-  "version_code": 106,
-  "latest_version_name": "2.56.31",
-  "version_name": "2.56.31",
-  "update_notes_hindi": "v2.56.31 (Build 106): 🛡️ अभेद्य सुरक्षा अपडेट: 30 किमी का कड़ा नियम सर्वर द्वारा सीधा लागू (स्थानीय भक्तों को केवल आश्रम परिसर में टोकन), डेटा क्लियर करने पर दूसरा टोकन बनाने पर पूर्ण रोक, फ़ेक GPS व स्पूफिंग पर पूर्ण प्रतिबंध।",
-  "update_notes_english": "v2.56.31 (Build 106): 🛡️ Bulletproof Security Update: Strict server-side 30km geofence enforcement, permanent hardware device locking immune to clear data, and comprehensive mock location blocking.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=106",
+  "latest_version_code": 107,
+  "version_code": 107,
+  "latest_version_name": "2.56.32",
+  "version_name": "2.56.32",
+  "update_notes_hindi": "v2.56.32 (Build 107): 🛡️ पूर्ण अभेद्य सुरक्षा लॉक: 30 किमी का कड़ा नियम (0,0 फॉलबैक बग फिक्स), डेटा क्लियर करने पर नया टोकन बनाने पर पूर्ण रोक, फ़ेक जीपीएस ब्लॉक और अनूपशहर/बुलन्दशहर आश्रम पता सुधार।",
+  "update_notes_english": "v2.56.32 (Build 107): 🛡️ Bulletproof Security Lock: Strict 30km geofence enforcement with coordinate fallback fix, foolproof anti-clear-data device lock, fake GPS rejection, and address normalization.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=107",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

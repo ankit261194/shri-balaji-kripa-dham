@@ -88,16 +88,16 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $currentSize = file_exists($tmpFile) ? filesize($tmpFile) : 0;
         if ($isLast && $currentSize > 10000000) {
             rename($tmpFile, $targetFile);
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v105.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v104.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v107.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v106.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v105.apk');
             echo json_encode([
                 "success" => true,
                 "complete" => true,
                 "size" => filesize($targetFile),
                 "size_mb" => round(filesize($targetFile) / (1024 * 1024), 2) . " MB",
-                "v105" => file_exists($dlDir . '/ShriBalajiKripaDham-v105.apk'),
-                "v104" => file_exists($dlDir . '/ShriBalajiKripaDham-v104.apk')
+                "v107" => file_exists($dlDir . '/ShriBalajiKripaDham-v107.apk')
             ]);
             exit;
         }
@@ -136,6 +136,8 @@ $endByte = min($startByte + $chunkBytes - 1, $totalSize - 1);
 
 if ($startByte >= $totalSize && $currentSize > 10000000) {
     rename($tmpFile, $targetFile);
+    @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
+    @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v107.apk');
     echo json_encode([
         "success" => true,
         "complete" => true,
@@ -170,6 +172,8 @@ $newSize = file_exists($tmpFile) ? filesize($tmpFile) : 0;
 
 if ($newSize >= $totalSize && $newSize > 10000000) {
     rename($tmpFile, $targetFile);
+    @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
+    @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v107.apk');
     echo json_encode([
         "success" => true,
         "complete" => true,

@@ -119,7 +119,7 @@ if (!$isAdmin) {
         exit;
     }
 
-    $devCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE device_id = :dev AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date = CURDATE()) AND status != 'CANCELLED' LIMIT 1");
+    $devCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE device_id = :dev AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date >= CURDATE()) AND status != 'CANCELLED' LIMIT 1");
     $devCheck->execute([':dev' => $deviceId, ':date' => $darbarDate, ':active_date' => $activeDarbarDate]);
     $existingDev = $devCheck->fetch(PDO::FETCH_ASSOC);
     if ($existingDev) {
@@ -138,7 +138,7 @@ if (!$isAdmin && !empty($phoneNumber)) {
     $cleanPhone = preg_replace('/[^0-9]/', '', $phoneNumber);
     if (strlen($cleanPhone) >= 10) {
         $cleanPhone10 = substr($cleanPhone, -10);
-        $phoneCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date = CURDATE()) AND status != 'CANCELLED' LIMIT 1");
+        $phoneCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date >= CURDATE()) AND status != 'CANCELLED' LIMIT 1");
         $phoneCheck->execute([':phone' => $cleanPhone10, ':date' => $darbarDate, ':active_date' => $activeDarbarDate]);
         $existingPhone = $phoneCheck->fetch(PDO::FETCH_ASSOC);
         if ($existingPhone) {

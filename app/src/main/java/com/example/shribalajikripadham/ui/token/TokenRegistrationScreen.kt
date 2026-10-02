@@ -202,9 +202,11 @@ fun TokenRegistrationScreen(
     // Live road distance calculation to Shri Balaji Kripa Dham, Dungra Jaat
     LaunchedEffect(city, originAddress, userLatitude, userLongitude, settings) {
         if (userLatitude != 0.0 && userLongitude != 0.0) {
+            val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
+            val ashLon = if (settings.longitude != 0.0) settings.longitude else 78.1460410
             val distMeters = GeofenceLocationManager.calculateDistanceMeters(
                 userLatitude, userLongitude,
-                settings.latitude, settings.longitude
+                ashLat, ashLon
             )
             val straightKm = (distMeters / 1000.0).toFloat()
             if (distMeters <= settings.allowedRadiusMeters) {
@@ -313,9 +315,11 @@ fun TokenRegistrationScreen(
         if (userLatitude == 0.0 && userLongitude == 0.0) {
             if (!settings.isGeofenceEnforced) 0.0 else -1.0
         } else {
+            val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
+            val ashLon = if (settings.longitude != 0.0) settings.longitude else 78.1460410
             GeofenceLocationManager.calculateDistanceMeters(
                 userLatitude, userLongitude,
-                settings.latitude, settings.longitude
+                ashLat, ashLon
             )
         }
     }
@@ -348,7 +352,7 @@ fun TokenRegistrationScreen(
                 e.printStackTrace()
             }
             settings = repository.getSettings()
-            var tok = repository.checkDeviceRegisteredToday(id)
+            var tok = repository.checkDeviceRegisteredToday(id, settings.darbarDate)
             if (tok == null) {
                 try {
                     val serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(id, settings.darbarDate)
@@ -437,9 +441,11 @@ fun TokenRegistrationScreen(
     // Auto-fetch devotee location & road distance when GPS coordinates are available (> 30 km)
     LaunchedEffect(userLatitude, userLongitude, settings) {
         if (userLatitude != 0.0 && userLongitude != 0.0) {
+            val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
+            val ashLon = if (settings.longitude != 0.0) settings.longitude else 78.1460410
             val distMeters = GeofenceLocationManager.calculateDistanceMeters(
                 userLatitude, userLongitude,
-                settings.latitude, settings.longitude
+                ashLat, ashLon
             )
             val straightKm = (distMeters / 1000.0).toFloat()
             val roadKm = (kotlin.math.round(straightKm * 1.28f * 10) / 10)
@@ -1645,10 +1651,20 @@ fun TokenRegistrationScreen(
                                 }
                                 val devoteeVillageOrCity = originAddress.trim().ifEmpty { city.trim() }.ifEmpty { if (isHindi) "स्थानीय" else "Local" }
 
-                                if (settings.isGeofenceEnforced && estimatedDistanceKm > 0f && estimatedDistanceKm < settings.outstationMinDistanceKm && distanceMeters > settings.allowedRadiusMeters) {
+                                val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
+                                val ashLon = if (settings.longitude != 0.0) settings.longitude else 78.1460410
+                                val checkGpsDistM = if (userLatitude != 0.0 && userLongitude != 0.0) {
+                                    GeofenceLocationManager.calculateDistanceMeters(userLatitude, userLongitude, ashLat, ashLon)
+                                } else {
+                                    distanceMeters
+                                }
+                                val realGpsKm = if (checkGpsDistM > 0.0) (checkGpsDistM / 1000.0).toFloat() else estimatedDistanceKm
+
+                                if (settings.isGeofenceEnforced && ((realGpsKm > 0f && realGpsKm < settings.outstationMinDistanceKm) || (estimatedDistanceKm > 0f && estimatedDistanceKm < settings.outstationMinDistanceKm)) && checkGpsDistM > settings.allowedRadiusMeters) {
                                     val outKm = settings.outstationMinDistanceKm.toInt()
                                     val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
-                                    val cDist = String.format(Locale.US, "%.1f", estimatedDistanceKm)
+                                    val displayDist = if (realGpsKm > 0f) realGpsKm else estimatedDistanceKm
+                                    val cDist = String.format(Locale.US, "%.1f", displayDist)
                                     locationAlertTitle = if (isHindi) "📍 स्थानीय भक्त नियम" else "📍 Local Devotee Policy"
                                     locationAlertMessage = if (isHindi)
                                         "⚠️ आपके चयनित शहर/गाँव ($devoteeVillageOrCity - $cDist किमी) की दूरी $outKm किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल आश्रम परिसर ($radM के भीतर) में उपस्थित होकर ही मान्य है। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें।"
