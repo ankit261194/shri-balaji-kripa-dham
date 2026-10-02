@@ -182,7 +182,14 @@ fun TokenRegistrationScreen(
                 errorMessage = if (isHindi) "कैमरा खोलने में समस्या: ${e.message}" else "Camera error: ${e.message}"
             }
         } else {
-            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+            // Do NOT re-prompt system permission! Smoothly open gallery for photo selection:
+            errorMessage = if (isHindi)
+                "कैमरा उपलब्ध नहीं है। कृपया नीचे 'गैलरी से फोटो चुनें' द्वारा फोटो लगाएं।"
+            else
+                "Camera not available. Please choose photo from gallery."
+            try {
+                galleryLauncher.launch("image/*")
+            } catch (_: Exception) {}
         }
     }
 
@@ -872,18 +879,14 @@ fun TokenRegistrationScreen(
                             Spacer(modifier = Modifier.width(6.dp))
                             Button(
                                 onClick = {
-                                    unifiedPermissionLauncher.launch(
-                                        arrayOf(
-                                            android.Manifest.permission.ACCESS_FINE_LOCATION,
-                                            android.Manifest.permission.ACCESS_COARSE_LOCATION
-                                        )
-                                    )
+                                    triggerFreshLocationFix()
+                                    android.widget.Toast.makeText(context, if (isHindi) "📍 GPS लोकेशन रिफ्रेश हो रही है..." else "Refreshing GPS location...", android.widget.Toast.LENGTH_SHORT).show()
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
-                                Text(if (isHindi) "अनुमति दें" else "Allow", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(if (isHindi) "GPS रिफ्रेश करें" else "Refresh GPS", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -1562,14 +1565,9 @@ fun TokenRegistrationScreen(
                                 }
 
                                 // 1b. Check Required Permissions & Devotee Photo
-                                if (settings.isGeofenceEnforced && !hasLocationPermission) {
-                                    unifiedPermissionLauncher.launch(
-                                        arrayOf(
-                                            android.Manifest.permission.ACCESS_FINE_LOCATION,
-                                            android.Manifest.permission.ACCESS_COARSE_LOCATION
-                                        )
-                                    )
-                                    errorMessage = if (isHindi) "टोकन पंजीकरण हेतु लोकेशन (GPS) अनुमति आवश्यक है।" else "Location permission is required."
+                                if (settings.isGeofenceEnforced && (!hasLocationPermission || (userLatitude == 0.0 && userLongitude == 0.0))) {
+                                    triggerFreshLocationFix()
+                                    errorMessage = if (isHindi) "टोकन पंजीकरण हेतु लोकेशन (GPS) चालू होना आवश्यक है। कृपया GPS ऑन करें।" else "GPS location is required for token registration. Please turn on GPS."
                                     return@Button
                                 }
                                 if (capturedBitmap == null && capturedPhotoUri.isNullOrBlank()) {

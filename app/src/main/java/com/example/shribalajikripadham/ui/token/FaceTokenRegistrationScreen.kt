@@ -455,7 +455,14 @@ fun FaceTokenRegistrationScreen(
                 errorMessage = if (isHindi) "कैमरा खोलने में समस्या: ${e.message}" else "Camera error: ${e.message}"
             }
         } else {
-            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+            // Do NOT re-prompt system permission! Smoothly open gallery for photo selection:
+            errorMessage = if (isHindi)
+                "कैमरा उपलब्ध नहीं है। कृपया नीचे 'गैलरी से फोटो चुनें' द्वारा फोटो लगाएं।"
+            else
+                "Camera not available. Please choose photo from gallery."
+            try {
+                galleryLauncher.launch("image/*")
+            } catch (_: Exception) {}
         }
     }
 

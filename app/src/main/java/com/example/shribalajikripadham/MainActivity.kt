@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
             ShriBalajiKripaDhamTheme(sacredTheme = currentSacredTheme) {
 
 
-                // Unified One-Time Permission Request (Location + Camera + Storage/Images + Notifications)
+                // Unified One-Time Permission Request on First Install/Launch
                 val allRequiredPermissions = remember {
                     val list = mutableListOf(
                         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -74,9 +74,6 @@ class MainActivity : ComponentActivity() {
                     )
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         list.add(Manifest.permission.POST_NOTIFICATIONS)
-                        list.add(Manifest.permission.READ_MEDIA_IMAGES)
-                    } else {
-                        list.add(Manifest.permission.READ_EXTERNAL_STORAGE)
                     }
                     list.toTypedArray()
                 }
@@ -85,26 +82,26 @@ class MainActivity : ComponentActivity() {
                     context.getSharedPreferences("sbkd_app_permissions", android.content.Context.MODE_PRIVATE)
                 }
                 var hasRequestedInitialPermissions by remember {
-                    mutableStateOf(permissionPrefs.getBoolean("has_requested_initial_permissions_v3", false))
+                    mutableStateOf(permissionPrefs.getBoolean("has_requested_initial_permissions_v4", false))
                 }
 
                 val unifiedPermissionsLauncher = rememberLauncherForActivityResult(
                     contract = ActivityResultContracts.RequestMultiplePermissions()
                 ) { _ ->
-                    permissionPrefs.edit().putBoolean("has_requested_initial_permissions_v3", true).apply()
+                    permissionPrefs.edit().putBoolean("has_requested_initial_permissions_v4", true).apply()
                     hasRequestedInitialPermissions = true
                 }
 
                 LaunchedEffect(Unit) {
                     if (!hasRequestedInitialPermissions) {
+                        permissionPrefs.edit().putBoolean("has_requested_initial_permissions_v4", true).apply()
+                        hasRequestedInitialPermissions = true
                         val pendingPermissions = allRequiredPermissions.filter { perm ->
                             ContextCompat.checkSelfPermission(context, perm) != PackageManager.PERMISSION_GRANTED
                         }
                         if (pendingPermissions.isNotEmpty()) {
                             unifiedPermissionsLauncher.launch(pendingPermissions.toTypedArray())
                         }
-                        permissionPrefs.edit().putBoolean("has_requested_initial_permissions_v3", true).apply()
-                        hasRequestedInitialPermissions = true
                     }
 
                     // Background telemetry heartbeat & immediate broadcast push check

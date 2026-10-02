@@ -197,6 +197,7 @@ fun HomeScreen(
     var viewingLyricsTrack by remember { mutableStateOf<SacredTrack?>(null) }
     var showAppDownloadShareDialog by remember { mutableStateOf(false) }
     var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var isThemeDropdownExpanded by remember { mutableStateOf(false) }
 
     // 🚩 Device Identity & Status State
     val deviceId = remember {
@@ -787,89 +788,124 @@ fun HomeScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
 
-                    // 🎨 8 SOOTHING CLEAN THEMES (WhatsApp, Telegram, Sage, Navy, Lavender, Slate, Amber, Dark)
+                    // 🎨 8 SOOTHING CLEAN THEMES - DROPDOWN MENU
                     Text(
-                        text = if (isHindi) "🎨 ऐप की शांत थीम व रंग (8 Soothing Themes)" else "🎨 App Themes & Calm Colors",
+                        text = if (isHindi) "🎨 ऐप की शांत थीम व रंग (Dropdown Menu)" else "🎨 App Themes & Colors",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = currentTheme.primaryColor,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
 
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp)
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
                     ) {
-                        items(SacredTheme.entries) { theme ->
-                            val isSelected = theme == currentTheme
-                            Surface(
-                                onClick = {
-                                    onThemeChanged(theme)
-                                    scope.launch {
-                                        Toast.makeText(
-                                            context,
-                                            if (isHindi) "✅ थीम बदलकर '${theme.nameHindi}' हो गई!" else "✅ Switched to ${theme.nameEnglish}!",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) theme.primaryColor.copy(alpha = 0.15f) else if (currentTheme.isDark) Color(0xFF1F2C34) else Color(0xFFFBFBFB),
-                                border = BorderStroke(
-                                    width = if (isSelected) 2.dp else 0.8.dp,
-                                    color = if (isSelected) theme.primaryColor else if (currentTheme.isDark) Color(0xFF2A3942) else Color(0xFFE0E0E0)
-                                ),
-                                modifier = Modifier.width(112.dp)
+                        Surface(
+                            onClick = { isThemeDropdownExpanded = !isThemeDropdownExpanded },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (currentTheme.isDark) Color(0xFF1F2C34) else Color(0xFFF7F8F9),
+                            border = BorderStroke(1.5.dp, currentTheme.primaryColor),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(currentTheme.primaryColor),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(34.dp)
-                                            .clip(CircleShape)
-                                            .background(theme.primaryColor),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(theme.icon, fontSize = 16.sp)
-                                    }
-                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(currentTheme.icon, fontSize = 18.sp)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = if (isHindi) theme.nameHindi else theme.nameEnglish,
-                                        fontSize = 11.5.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) theme.primaryColor else if (currentTheme.isDark) Color(0xFFE9EDEF) else TextPrimaryDark,
-                                        maxLines = 1,
-                                        textAlign = TextAlign.Center
+                                        text = if (isHindi) currentTheme.nameHindi else currentTheme.nameEnglish,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (currentTheme.isDark) Color(0xFFE9EDEF) else TextPrimaryDark
                                     )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    if (isSelected) {
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = theme.primaryColor
+                                    Text(
+                                        text = "${currentTheme.styleBadge} • " + (if (isHindi) "बदलने हेतु टैप करें" else "Tap to change"),
+                                        fontSize = 11.sp,
+                                        color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF757575)
+                                    )
+                                }
+                                Text(
+                                    text = if (isThemeDropdownExpanded) "▲" else "▼",
+                                    fontSize = 14.sp,
+                                    color = currentTheme.primaryColor,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(end = 4.dp)
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = isThemeDropdownExpanded,
+                            onDismissRequest = { isThemeDropdownExpanded = false },
+                            modifier = Modifier
+                                .fillMaxWidth(0.78f)
+                                .background(if (currentTheme.isDark) Color(0xFF1F2C34) else Color.White)
+                        ) {
+                            SacredTheme.entries.forEach { theme ->
+                                val isSelected = theme == currentTheme
+                                DropdownMenuItem(
+                                    leadingIcon = {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .clip(CircleShape)
+                                                .background(theme.primaryColor),
+                                            contentAlignment = Alignment.Center
                                         ) {
+                                            Text(theme.icon, fontSize = 14.sp)
+                                        }
+                                    },
+                                    text = {
+                                        Column {
                                             Text(
-                                                text = if (isHindi) "✓ सक्रिय" else "✓ ACTIVE",
-                                                color = Color.White,
-                                                fontSize = 8.5.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                                text = if (isHindi) theme.nameHindi else theme.nameEnglish,
+                                                fontSize = 13.5.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isSelected) theme.primaryColor else if (currentTheme.isDark) Color(0xFFE9EDEF) else Color(0xFF222222)
+                                            )
+                                            Text(
+                                                text = theme.styleBadge,
+                                                fontSize = 10.5.sp,
+                                                color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF757575)
                                             )
                                         }
-                                    } else {
-                                        Text(
-                                            text = theme.styleBadge,
-                                            fontSize = 9.sp,
-                                            color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF757575),
-                                            maxLines = 1,
-                                            textAlign = TextAlign.Center
-                                        )
+                                    },
+                                    trailingIcon = {
+                                        if (isSelected) {
+                                            Text(
+                                                text = "✓",
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = theme.primaryColor
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        isThemeDropdownExpanded = false
+                                        onThemeChanged(theme)
+                                        scope.launch {
+                                            Toast.makeText(
+                                                context,
+                                                if (isHindi) "✅ थीम बदलकर '${theme.nameHindi}' हो गई!" else "✅ Switched to ${theme.nameEnglish}!",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
                                     }
-                                }
+                                )
                             }
                         }
                     }
