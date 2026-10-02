@@ -1515,6 +1515,22 @@ fun AdminDashboardScreen(
                                     val idx = allowedTabs.indexOf(title)
                                     if (idx >= 0) selectedTab = idx
                                     activeScreenTitle = title
+                                },
+                                onNavigateToManualToken = {
+                                    val idx = allowedTabs.indexOfFirst { it == "मैनुअल टोकन" || it == "Manual" }
+                                    if (idx >= 0) {
+                                        selectedTab = idx
+                                        activeScreenTitle = allowedTabs[idx]
+                                    }
+                                },
+                                admin = admin,
+                                repository = repository,
+                                onTokenIssued = {
+                                    scope.launch {
+                                        todayTokens = repository.getAllTokensToday()
+                                        queueTokensForSelectedDate = repository.getAllTokensForDate(selectedQueueDate)
+                                        refreshData()
+                                    }
                                 }
                             )
                         }
@@ -3386,15 +3402,27 @@ fun TokenQueueTab(
     onPushAllTokensToGitHub: (() -> Unit)? = null,
     onNavigateToHallDisplay: () -> Unit = {},
     onNavigateToDataVault: () -> Unit = {},
-    onNavigateToVoiceSettings: (() -> Unit)? = null
+    onNavigateToVoiceSettings: (() -> Unit)? = null,
+    onNavigateToManualToken: (() -> Unit)? = null,
+    admin: Admin? = null,
+    repository: AshramRepository? = null,
+    onTokenIssued: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val syncManager = com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager
     var showSheetConfigDialog by remember { mutableStateOf(false) }
     var sheetWebhookUrlInput by remember { mutableStateOf(syncManager.getWebhookUrl(context)) }
     var isSyncingSheet by remember { mutableStateOf(false) }
+    var showQuickManualTokenDialog by remember { mutableStateOf(false) }
+    var quickManualName by remember { mutableStateOf("") }
+    var quickManualPhone by remember { mutableStateOf("") }
+    var quickManualCity by remember { mutableStateOf("डूँगरा जाट (स्थानीय)") }
+    var quickManualCustomNumber by remember { mutableStateOf("") }
+    var quickManualError by remember { mutableStateOf<String?>(null) }
+    var isIssuingQuickToken by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedDistanceFilter by remember { mutableStateOf(DistanceFilter.ALL) }
     var selectedSortOrder by remember { mutableStateOf(TokenSortOrder.TOKEN_NUMBER) }
@@ -3478,11 +3506,38 @@ fun TokenQueueTab(
                             )
                         }
 
-                        // Compact Action Chips (Change Date, PDF, Cloud Sync, Wipe)
+                        // Compact Action Chips (New Token, Change Date, PDF, Cloud Sync, Wipe)
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // ➕ टोकन बनाएं / Quick Manual Token
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = MaroonPrimary,
+                                modifier = Modifier.clickable {
+                                    quickManualName = ""
+                                    quickManualPhone = ""
+                                    quickManualCity = "डूँगरा जाट (स्थानीय)"
+                                    quickManualCustomNumber = ""
+                                    quickManualError = null
+                                    showQuickManualTokenDialog = true
+                                }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("➕", fontSize = 10.sp, color = Color.White)
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = if (isHindi) "टोकन बनाएं" else "New Token",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
                                 color = SaffronPrimary.copy(alpha = 0.12f),
@@ -5076,6 +5131,181 @@ fun TokenQueueTab(
             dismissButton = {
                 TextButton(onClick = { showVoiceSettingsDialog = false }) {
                     Text("बंद करें")
+                }
+            }
+        )
+    }
+
+    if (showQuickManualTokenDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!isIssuingQuickToken) showQuickManualTokenDialog = false
+            },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("➕", fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = if (isHindi) "कतार से तुरंत टोकन जारी करें" else "Quick Issue Token from Queue",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaroonPrimary
+                        )
+                        Text(
+                            text = if (isHindi) "दरबार तारीख: $selectedDarbarDate" else "Darbar Date: $selectedDarbarDate",
+                            fontSize = 11.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = quickManualName,
+                        onValueChange = { quickManualName = it },
+                        label = { Text(if (isHindi) "भक्त / यजमान का नाम *" else "Devotee Name *") },
+                        placeholder = { Text("उदा. रमेश कुमार") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = quickManualPhone,
+                        onValueChange = { if (it.length <= 10 && it.all { c -> c.isDigit() }) quickManualPhone = it },
+                        label = { Text(if (isHindi) "मोबाइल नंबर (10 अंक) *" else "Phone Number (10 digits) *") },
+                        placeholder = { Text("उदा. 9876543210") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = quickManualCity,
+                        onValueChange = { quickManualCity = it },
+                        label = { Text(if (isHindi) "शहर / गाँव" else "City / Village") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    if (isSuperAdmin || (admin?.canSetCustomTokenNumber == true && settings.allowAdminReservedTokens)) {
+                        OutlinedTextField(
+                            value = quickManualCustomNumber,
+                            onValueChange = { if (it.all { c -> c.isDigit() }) quickManualCustomNumber = it },
+                            label = { Text(if (isHindi) "कस्टम टोकन नंबर (वैकल्पिक, खाली = स्वतः क्रम)" else "Custom Token # (Optional)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                    }
+
+                    if (quickManualError != null) {
+                        Text(
+                            text = quickManualError ?: "",
+                            color = Color(0xFFD32F2F),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    if (onNavigateToManualToken != null) {
+                        TextButton(
+                            onClick = {
+                                showQuickManualTokenDialog = false
+                                onNavigateToManualToken.invoke()
+                            },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Text(
+                                text = if (isHindi) "📸 पूर्ण मैन्युअल डेस्क खोलें (फोटो सहित) →" else "📸 Open Full Desk (With Photo) →",
+                                fontSize = 11.5.sp,
+                                color = SaffronPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val cName = quickManualName.trim()
+                        val cPhone = quickManualPhone.trim()
+                        val cCity = quickManualCity.trim().ifEmpty { "डूँगरा जाट (स्थानीय)" }
+                        val customNum = quickManualCustomNumber.toIntOrNull()
+
+                        if (cName.length < 2) {
+                            quickManualError = if (isHindi) "कृपया भक्त का मान्य नाम दर्ज करें।" else "Please enter valid devotee name."
+                            return@Button
+                        }
+                        if (cPhone.length != 10) {
+                            quickManualError = if (isHindi) "कृपया 10 अंकों का मान्य मोबाइल नंबर दर्ज करें।" else "Please enter 10-digit phone number."
+                            return@Button
+                        }
+
+                        if (repository != null) {
+                            scope.launch {
+                                isIssuingQuickToken = true
+                                quickManualError = null
+                                try {
+                                    val canBypass = isSuperAdmin || (admin?.canIssueTokensAnywhere == true)
+                                    val attribution = if (isSuperAdmin) "SUPER_ADMIN (अंकित चौधरी)" else "ADMIN (${admin?.name ?: "SEVADAR"})"
+                                    val newTok = repository.registerToken(
+                                        patientName = cName,
+                                        phoneNumber = cPhone,
+                                        deviceId = "ADMIN_QUEUE_${admin?.id ?: 0}_${System.currentTimeMillis()}",
+                                        latitude = settings.latitude,
+                                        longitude = settings.longitude,
+                                        city = cCity,
+                                        registeredBy = attribution,
+                                        bypassGeofence = canBypass,
+                                        customTokenNumber = customNum,
+                                        darbarDate = selectedDarbarDate
+                                    )
+                                    Toast.makeText(
+                                        context,
+                                        if (isHindi) "✅ टोकन #${newTok.tokenNumber} (${newTok.patientName}) जारी हुआ!" else "✅ Token #${newTok.tokenNumber} issued!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    showQuickManualTokenDialog = false
+                                    onTokenIssued?.invoke()
+                                } catch (e: Exception) {
+                                    quickManualError = e.message ?: "टोकन बनाने में त्रुटि हुई।"
+                                } finally {
+                                    isIssuingQuickToken = false
+                                }
+                            }
+                        } else if (onNavigateToManualToken != null) {
+                            showQuickManualTokenDialog = false
+                            onNavigateToManualToken.invoke()
+                        }
+                    },
+                    enabled = !isIssuingQuickToken,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                ) {
+                    if (isIssuingQuickToken) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(if (isHindi) "टोकन जारी करें" else "Issue Token", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showQuickManualTokenDialog = false },
+                    enabled = !isIssuingQuickToken
+                ) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
                 }
             }
         )
@@ -9870,7 +10100,7 @@ fun SuperControlTab(
                                             color = if (isRecordingAudio) Color(0xFFC62828) else Color(0xFF2E7D32)
                                         )
                                         Text(
-                                            text = if (isRecordingAudio) "स्पष्ट टोकन उद्घोषणा बोलें..." else "पंडित जी / मुख्य सेवादार की आवाज़ में रिकॉर्ड करें",
+                                            text = if (isRecordingAudio) "स्पष्ट टोकन उद्घोषणा बोलें..." else "मुख्य सेवादार / आश्रम व्यवस्थापक की आवाज़ में रिकॉर्ड करें",
                                             fontSize = 10.sp,
                                             color = Color.DarkGray
                                         )

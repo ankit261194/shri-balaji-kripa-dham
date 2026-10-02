@@ -50,9 +50,9 @@ fun HavanApplicationScreen(
     var familyMembersCount by remember { mutableIntStateOf(4) }
     var problemDetails by remember { mutableStateOf("") }
 
-    // Mandatory Terms Acknowledgements
-    var costAcknowledged by remember { mutableStateOf(true) }
-    var travelFareAcknowledged by remember { mutableStateOf(true) }
+    // Mandatory Terms Acknowledgements (Both must be explicitly accepted by devotee)
+    var costAcknowledged by remember { mutableStateOf(false) }
+    var travelFareAcknowledged by remember { mutableStateOf(false) }
 
     var isSubmitting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -149,9 +149,9 @@ fun HavanApplicationScreen(
                             )
                             Text(
                                 text = if (isHindi)
-                                    "समस्त हवन समिधा, आहुति द्रव्य, पूजन सामग्री, सूखा गोला, देशी घी एवं वैदिक ब्राह्मण व्यवस्था हेतु।"
+                                    "समस्त हवन समिधा, आहुति द्रव्य, पूजन सामग्री, सूखा गोला, देशी घी एवं पूज्य गुरुजी व शिष्य सेवा दल व्यवस्था हेतु।"
                                 else
-                                    "For complete sacred wood, puja samagri, desi ghee, and arrangements.",
+                                    "For complete sacred wood, puja samagri, desi ghee, and Guruji & disciple sevadar arrangements.",
                                 fontSize = 12.sp,
                                 color = Color(0xFF4E342E),
                                 lineHeight = 16.sp
@@ -173,9 +173,9 @@ fun HavanApplicationScreen(
                             )
                             Text(
                                 text = if (isHindi)
-                                    "धाम से यजमान के घर तक आश्रम सेवा दल / पंडित जी के आने-जाने की गाड़ी व्यवस्था अथवा उसका समस्त किराया यजमान (भगत) को स्वयं देना होगा।"
+                                    "धाम से यजमान के घर तक पूज्य गुरुजी एवं उनके समर्पित शिष्य/सेवा दल के आने-जाने की गाड़ी व्यवस्था अथवा उसका समस्त किराया यजमान (भगत) को स्वयं देना होगा।"
                                 else
-                                    "Vehicle travel fare for arrival and departure must be borne entirely by the devotee.",
+                                    "Vehicle travel fare for arrival and departure of Guruji and disciple sevadars must be borne entirely by the devotee.",
                                 fontSize = 12.sp,
                                 color = Color(0xFF4E342E),
                                 lineHeight = 16.sp
@@ -427,6 +427,34 @@ fun HavanApplicationScreen(
                         }
                     }
 
+                    // Mandatory Consent Warning Banner
+                    if (!costAcknowledged || !travelFareAcknowledged) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFEF9A9A))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("⚠️", fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isHindi)
+                                        "आवेदन सबमिट करने हेतु ऊपर दी गई दोनों सहमतियों (✓) को स्वीकार करना अनिवार्य है।"
+                                    else
+                                        "Both consent checkboxes above must be checked to enable submission.",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFC62828),
+                                    lineHeight = 15.sp
+                                )
+                            }
+                        }
+                    }
+
                     if (errorMessage != null) {
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
@@ -437,7 +465,9 @@ fun HavanApplicationScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    val canSubmit = !isSubmitting && costAcknowledged && travelFareAcknowledged
 
                     // Submit Button
                     Button(
@@ -446,6 +476,14 @@ fun HavanApplicationScreen(
                             val cleanName = devoteeName.trim()
                             val cleanPhone = phoneNumber.trim()
                             val cleanAddress = address.trim()
+
+                            if (!costAcknowledged || !travelFareAcknowledged) {
+                                errorMessage = if (isHindi)
+                                    "⚠️ आवेदन सबमिट करने हेतु दोनों अनुमतियां (हवन सामग्री खर्च ₹14,000 एवं गाड़ी किराया) स्वीकार करना अनिवार्य है।"
+                                else
+                                    "⚠️ Both consents (Havan cost ~₹14,000 and travel fare) must be accepted to submit."
+                                return@Button
+                            }
 
                             if (cleanName.length < 2) {
                                 errorMessage = if (isHindi) "कृपया यजमान का पूरा नाम दर्ज करें।" else "Please enter devotee name."
@@ -457,13 +495,6 @@ fun HavanApplicationScreen(
                             }
                             if (cleanAddress.length < 6) {
                                 errorMessage = if (isHindi) "कृपया हवन कराने का पूरा पता दर्ज करें।" else "Please enter complete address."
-                                return@Button
-                            }
-                            if (!costAcknowledged || !travelFareAcknowledged) {
-                                errorMessage = if (isHindi)
-                                    "हवन सामग्री खर्च (~₹14,000) एवं गाड़ी किराया वहन करने की सहमति अनिवार्य है।"
-                                else
-                                    "Agreement to estimated cost (~₹14,000) and travel fare is mandatory."
                                 return@Button
                             }
 
@@ -494,11 +525,15 @@ fun HavanApplicationScreen(
                                 }
                             }
                         },
-                        enabled = !isSubmitting,
+                        enabled = canSubmit,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SaffronPrimary,
+                            disabledContainerColor = Color(0xFFE0E0E0),
+                            disabledContentColor = Color(0xFF9E9E9E)
+                        ),
                         shape = RoundedCornerShape(14.dp)
                     ) {
                         if (isSubmitting) {
@@ -508,7 +543,7 @@ fun HavanApplicationScreen(
                                 text = if (isHindi) "🔥 हवन आवेदन सबमिट करें" else "🔥 Submit Havan Application",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = if (canSubmit) Color.White else Color(0xFF757575)
                             )
                         }
                     }

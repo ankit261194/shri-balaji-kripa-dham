@@ -541,52 +541,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // 🔥 Prominent Sacred Havan Button (Top Action in Side Drawer)
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 6.dp)
-                            .clickable {
-                                scope.launch { drawerState.close() }
-                                onNavigateToHavanApplication()
-                            },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-                        border = BorderStroke(1.5.dp, Color(0xFFFF9800)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFFF5722)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("🔥", fontSize = 18.sp)
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = if (isHindi) "हवन कराने हेतु आवेदन" else "Apply for Sacred Havan",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFBF360C)
-                                )
-                                Text(
-                                    text = if (isHindi) "संकट निवारण एवं गृह शांति अनुष्ठान" else "Crisis Relief & Griha Shanti",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF795548)
-                                )
-                            }
-                            Text("👉", fontSize = 16.sp)
-                        }
-                    }
+
 
                     Text(
                         text = if (isHindi) "🚩 धाम सेवाएं व सुविधाएं" else "🚩 Ashram Services & Features",
@@ -599,10 +554,6 @@ fun HomeScreen(
                     // Navigation Items
                     data class NavDrawerItem(val icon: String, val title: String, val action: () -> Unit)
                     val navItems = buildList {
-                        add(NavDrawerItem("🔥", if (isHindi) "हवन कराने हेतु आवेदन" else "Apply for Sacred Havan", {
-                            scope.launch { drawerState.close() }
-                            onNavigateToHavanApplication()
-                        }))
                         add(NavDrawerItem("🏠", if (isHindi) "मुख्य पृष्ठ (दर्शन व टोकन)" else "Home (Darshan & Token)", {
                             selectedHomeTab = HomeTab.DARSHAN_TOKEN
                             scope.launch {
@@ -639,6 +590,11 @@ fun HomeScreen(
                                 add(NavDrawerItem("💰", if (isHindi) "यात्रा खर्च डायरी" else "Yatra Expense Diary", onNavigateToYatraExpenses))
                             }
                         }
+                        // 🔥 पावन हवन अनुष्ठान आवेदन (मध्य/धाम सेवाएं अनुभाग)
+                        add(NavDrawerItem("🔥", if (isHindi) "हवन कराने हेतु आवेदन" else "Apply for Sacred Havan", {
+                            scope.launch { drawerState.close() }
+                            onNavigateToHavanApplication()
+                        }))
                         add(NavDrawerItem("ℹ️", if (isHindi) "आश्रम परिचय व नियम" else "Ashram Info & Rules", {
                             selectedHomeTab = HomeTab.ASHRAM_ABOUT
                             scope.launch {
@@ -912,40 +868,7 @@ fun HomeScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Live Cloud Sync Action Button
-                    NavigationDrawerItem(
-                        icon = { Text("🔄", fontSize = 20.sp) },
-                        label = {
-                            Text(
-                                if (isHindi) "क्लाउड से लाइव सिंक करें" else "Sync with Cloud Now",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = TextPrimaryDark
-                            )
-                        },
-                        selected = false,
-                        onClick = {
-                            scope.launch {
-                                drawerState.close()
-                                Toast.makeText(context, if (isHindi) "🔄 क्लाउड से डेटा सिंक हो रहा है..." else "Syncing with cloud...", Toast.LENGTH_SHORT).show()
-                                try {
-                                    repository.syncLiveConfigFromGitHub()
-                                    repository.syncAdminsFromGitHub()
-                                    repository.syncLiveParchasFromGitHub()
-                                    settings = repository.getSettings()
-                                    val evs = repository.getAllEvents()
-                                    if (evs.isNotEmpty()) dynamicEvents = evs
-                                    activeSevadars = repository.getAllActiveSevadars()
-                                    uiSectionConfigs = repository.getUiSectionConfigs()
-                                    Toast.makeText(context, if (isHindi) "✅ ऐप का सारा डेटा लाइव अपडेट हो गया!" else "✅ App data updated live from cloud!", Toast.LENGTH_SHORT).show()
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "सिंक त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        },
-                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color(0xFFF5F5F5)),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
-                    )
+
 
                     // Quick Language Toggle
                     NavigationDrawerItem(

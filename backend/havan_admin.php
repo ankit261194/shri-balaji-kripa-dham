@@ -933,7 +933,7 @@
 
                     <div class="notes-box">
                         <span class="detail-label">✍️ व्यवस्थापक टिप्पणी (Admin Notes):</span>
-                        <input type="text" class="notes-input" id="notes-${app.id}" value="${escapeHtml(app.admin_notes || '')}" placeholder="यहाँ टिप्पणी लिखें (उदा. बात हो गई है, पंडित जी की तिथि तय है)...">
+                        <input type="text" class="notes-input" id="notes-${app.id}" value="${escapeHtml(app.admin_notes || '')}" placeholder="यहाँ टिप्पणी लिखें (उदा. बात हो गई है, पूज्य गुरुजी की तिथि तय है)...">
                     </div>
 
                     <div class="app-actions-bar">
