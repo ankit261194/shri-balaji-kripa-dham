@@ -51,6 +51,17 @@ object AshramVoiceAnnouncementManager {
     private const val KEY_VOICE_PRESET = "selected_voice_preset"
     private const val KEY_GOOGLE_TTS_API_KEY = "google_cloud_tts_api_key"
     private const val KEY_ELEVENLABS_API_KEY = "elevenlabs_studio_tts_api_key"
+    private const val KEY_ELEVENLABS_API_KEY_1 = "elevenlabs_studio_tts_api_key_1"
+    private const val KEY_ELEVENLABS_API_KEY_2 = "elevenlabs_studio_tts_api_key_2"
+    private const val KEY_ELEVENLABS_API_KEY_3 = "elevenlabs_studio_tts_api_key_3"
+    private const val KEY_ELEVENLABS_API_KEY_4 = "elevenlabs_studio_tts_api_key_4"
+
+    // Master Kill-Switch & Smart Scheduler Keys
+    private const val KEY_VOICE_MASTER_ENABLED = "voice_master_enabled"
+    private const val KEY_VOICE_SCHEDULE_MODE = "voice_schedule_mode" // "ALWAYS", "DAYS", "DATES"
+    private const val KEY_VOICE_SCHEDULE_DAYS = "voice_schedule_days" // "TUESDAY,SATURDAY"
+    private const val KEY_VOICE_SCHEDULE_DATES = "voice_schedule_dates" // "2026-10-05,2026-10-06"
+
     private const val KEY_AUTO_NEXT_ENABLED = "tts_auto_next_enabled"
     private const val KEY_AUTO_NEXT_DELAY = "tts_auto_next_delay_seconds"
     private const val KEY_PRIMARY_TEMPLATE = "tts_primary_template"
@@ -177,6 +188,13 @@ object AshramVoiceAnnouncementManager {
     private val _currentDevoteeName = MutableStateFlow<String>("")
     val currentDevoteeName: StateFlow<String> = _currentDevoteeName.asStateFlow()
 
+    // --- ElevenLabs Multi-Key Balance Monitoring State ---
+    private val _elevenLabsKeyBalances = MutableStateFlow<List<ElevenLabsKeyInfo>>(emptyList())
+    val elevenLabsKeyBalances: StateFlow<List<ElevenLabsKeyInfo>> = _elevenLabsKeyBalances.asStateFlow()
+
+    private val _isRefreshingBalances = MutableStateFlow(false)
+    val isRefreshingBalances: StateFlow<Boolean> = _isRefreshingBalances.asStateFlow()
+
     // Media Recorder & Player for Live In-App Recordings
     private var activeMediaRecorder: MediaRecorder? = null
     private var activeMediaPlayer: MediaPlayer? = null
@@ -184,6 +202,76 @@ object AshramVoiceAnnouncementManager {
         private set
 
     // --- Preferences Getters & Setters ---
+
+    fun isVoiceMasterEnabled(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_VOICE_MASTER_ENABLED, true)
+    }
+
+    fun setVoiceMasterEnabled(context: Context, enabled: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putBoolean(KEY_VOICE_MASTER_ENABLED, enabled).apply()
+        if (!enabled) stop()
+    }
+
+    fun getVoiceScheduleMode(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_VOICE_SCHEDULE_MODE, "ALWAYS") ?: "ALWAYS"
+    }
+
+    fun setVoiceScheduleMode(context: Context, mode: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_VOICE_SCHEDULE_MODE, mode).apply()
+    }
+
+    fun getVoiceScheduleDays(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_VOICE_SCHEDULE_DAYS, "TUESDAY,SATURDAY") ?: "TUESDAY,SATURDAY"
+    }
+
+    fun setVoiceScheduleDays(context: Context, days: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_VOICE_SCHEDULE_DAYS, days).apply()
+    }
+
+    fun getVoiceScheduleDates(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_VOICE_SCHEDULE_DATES, "") ?: ""
+    }
+
+    fun setVoiceScheduleDates(context: Context, dates: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_VOICE_SCHEDULE_DATES, dates).apply()
+    }
+
+    fun isVoiceServiceActiveToday(context: Context): Boolean {
+        if (!isVoiceMasterEnabled(context)) return false
+        val mode = getVoiceScheduleMode(context)
+        return when (mode) {
+            "DAYS" -> {
+                val cal = java.util.Calendar.getInstance()
+                val dayOfWeek = when (cal.get(java.util.Calendar.DAY_OF_WEEK)) {
+                    java.util.Calendar.SUNDAY -> "SUNDAY"
+                    java.util.Calendar.MONDAY -> "MONDAY"
+                    java.util.Calendar.TUESDAY -> "TUESDAY"
+                    java.util.Calendar.WEDNESDAY -> "WEDNESDAY"
+                    java.util.Calendar.THURSDAY -> "THURSDAY"
+                    java.util.Calendar.FRIDAY -> "FRIDAY"
+                    java.util.Calendar.SATURDAY -> "SATURDAY"
+                    else -> ""
+                }
+                val allowedDays = getVoiceScheduleDays(context).split(",").map { it.trim().uppercase() }
+                allowedDays.contains(dayOfWeek)
+            }
+            "DATES" -> {
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                val todayStr = sdf.format(java.util.Date())
+                val allowedDates = getVoiceScheduleDates(context).split(",").map { it.trim() }
+                allowedDates.contains(todayStr)
+            }
+            else -> true // "ALWAYS"
+        }
+    }
 
     fun getGoogleTtsApiKey(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -195,14 +283,68 @@ object AshramVoiceAnnouncementManager {
         prefs.edit().putString(KEY_GOOGLE_TTS_API_KEY, key.trim()).apply()
     }
 
-    fun getElevenLabsApiKey(context: Context): String {
+    fun getElevenLabsApiKeyList(context: Context): List<String> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_ELEVENLABS_API_KEY, "") ?: ""
+        val k1 = prefs.getString(KEY_ELEVENLABS_API_KEY_1, "")?.trim() ?: ""
+        val legacy = prefs.getString(KEY_ELEVENLABS_API_KEY, "")?.trim() ?: ""
+        val primary = if (k1.isNotBlank()) k1 else legacy
+
+        val k2 = prefs.getString(KEY_ELEVENLABS_API_KEY_2, "")?.trim() ?: ""
+        val k3 = prefs.getString(KEY_ELEVENLABS_API_KEY_3, "")?.trim() ?: ""
+        val k4 = prefs.getString(KEY_ELEVENLABS_API_KEY_4, "")?.trim() ?: ""
+
+        val list = mutableListOf<String>()
+        if (primary.isNotBlank()) list.add(primary)
+        if (k2.isNotBlank()) list.add(k2)
+        if (k3.isNotBlank()) list.add(k3)
+        if (k4.isNotBlank()) list.add(k4)
+        return list
     }
 
-    fun setElevenLabsApiKey(context: Context, key: String) {
+    fun getElevenLabsApiKey(context: Context, slot: Int = 1): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_ELEVENLABS_API_KEY, key.trim()).apply()
+        return when (slot) {
+            1 -> {
+                val k1 = prefs.getString(KEY_ELEVENLABS_API_KEY_1, "")?.trim() ?: ""
+                if (k1.isNotBlank()) k1 else prefs.getString(KEY_ELEVENLABS_API_KEY, "") ?: ""
+            }
+            2 -> prefs.getString(KEY_ELEVENLABS_API_KEY_2, "") ?: ""
+            3 -> prefs.getString(KEY_ELEVENLABS_API_KEY_3, "") ?: ""
+            4 -> prefs.getString(KEY_ELEVENLABS_API_KEY_4, "") ?: ""
+            else -> ""
+        }
+    }
+
+    fun setElevenLabsApiKey(context: Context, key: String, slot: Int = 1) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val clean = key.trim()
+        when (slot) {
+            1 -> {
+                prefs.edit().putString(KEY_ELEVENLABS_API_KEY_1, clean).putString(KEY_ELEVENLABS_API_KEY, clean).apply()
+            }
+            2 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_2, clean).apply()
+            3 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_3, clean).apply()
+            4 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_4, clean).apply()
+        }
+    }
+
+    fun refreshAllKeyBalances(context: Context, onComplete: (() -> Unit)? = null) {
+        CoroutineScope(Dispatchers.IO).launch {
+            _isRefreshingBalances.value = true
+            val results = mutableListOf<ElevenLabsKeyInfo>()
+            for (slot in 1..4) {
+                val key = getElevenLabsApiKey(context, slot)
+                if (key.isNotBlank()) {
+                    val info = ElevenLabsTtsEngine.fetchKeyBalance(key, slot)
+                    results.add(info)
+                }
+            }
+            _elevenLabsKeyBalances.value = results
+            _isRefreshingBalances.value = false
+            withContext(Dispatchers.Main) {
+                onComplete?.invoke()
+            }
+        }
     }
 
     fun isAutoNextEnabled(context: Context): Boolean {
@@ -704,7 +846,7 @@ object AshramVoiceAnnouncementManager {
         text: String,
         onFinished: (() -> Unit)? = null
     ) {
-        if (isMuted(context)) {
+        if (isMuted(context) || !isVoiceServiceActiveToday(context)) {
             onFinished?.invoke()
             return
         }
@@ -782,7 +924,7 @@ object AshramVoiceAnnouncementManager {
         nextDevoteeName: String = "",
         autoNextSeconds: Int = -1
     ) {
-        if (isMuted(context)) return
+        if (isMuted(context) || !isVoiceServiceActiveToday(context)) return
 
         // Cancel any pending countdown from a previous token call
         standbyCountdownJob?.cancel()
@@ -823,10 +965,11 @@ object AshramVoiceAnnouncementManager {
         // 🌟 ELEVENLABS AUDIO STITCHING ARCHITECTURE:
         // Zero-credit, ultra-realistic human voice combining pre-baked audio clips (1 to 150)
         // with dynamic devotee name synthesis from ElevenLabs (only ~10-15 chars per new name, cached forever).
+        // Uses Multi-Key Failover Pool (Keys 1 to 4) automatically!
         if ((activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) && tokenNumber in 1..150) {
             val genderDir = if (activePreset == PRESET_ELEVENLABS_FEMALE) "female" else "male"
             val voiceId = if (activePreset == PRESET_ELEVENLABS_FEMALE) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
-            val apiKey = getElevenLabsApiKey(context)
+            val apiKeys = getElevenLabsApiKeyList(context)
 
             CoroutineScope(Dispatchers.Main).launch {
                 val segments = mutableListOf<AudioSegment>()
@@ -847,12 +990,12 @@ object AshramVoiceAnnouncementManager {
                     // 4. Salutation: "श्री"
                     segments.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
 
-                    // 5. Devotee Name (Dynamic Synthesis / Cache)
-                    val nameFile = if (apiKey.isNotBlank()) {
-                        ElevenLabsTtsEngine.synthesizeSpeechToFile(
+                    // 5. Devotee Name (Dynamic Synthesis with Multi-Key Failover Pool / Local Cache)
+                    val nameFile = if (apiKeys.isNotEmpty()) {
+                        ElevenLabsTtsEngine.synthesizeSpeechWithPool(
                             context = context,
                             text = cleanName,
-                            apiKey = apiKey,
+                            apiKeys = apiKeys,
                             voiceId = voiceId
                         )
                     } else {
@@ -940,7 +1083,7 @@ object AshramVoiceAnnouncementManager {
         nextTokenNumber: Int = _standbyNextToken.value ?: 0,
         nextDevoteeName: String = _standbyNextName.value
     ) {
-        if (isMuted(context) || nextTokenNumber <= 0) return
+        if (isMuted(context) || !isVoiceServiceActiveToday(context) || nextTokenNumber <= 0) return
 
         standbyCountdownJob?.cancel()
         _standbySecondsRemaining.value = null
@@ -952,7 +1095,7 @@ object AshramVoiceAnnouncementManager {
         if ((activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) && nextTokenNumber in 1..150) {
             val genderDir = if (activePreset == PRESET_ELEVENLABS_FEMALE) "female" else "male"
             val voiceId = if (activePreset == PRESET_ELEVENLABS_FEMALE) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
-            val apiKey = getElevenLabsApiKey(context)
+            val apiKeys = getElevenLabsApiKeyList(context)
 
             CoroutineScope(Dispatchers.Main).launch {
                 val segments = mutableListOf<AudioSegment>()
@@ -973,12 +1116,12 @@ object AshramVoiceAnnouncementManager {
                     // 4. Salutation: "श्री"
                     segments.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
 
-                    // 5. Next Devotee Name (Dynamic Synthesis / Cache)
-                    val nextNameFile = if (apiKey.isNotBlank()) {
-                        ElevenLabsTtsEngine.synthesizeSpeechToFile(
+                    // 5. Next Devotee Name (Dynamic Synthesis with Multi-Key Failover Pool / Local Cache)
+                    val nextNameFile = if (apiKeys.isNotEmpty()) {
+                        ElevenLabsTtsEngine.synthesizeSpeechWithPool(
                             context = context,
                             text = cleanNextName,
-                            apiKey = apiKey,
+                            apiKeys = apiKeys,
                             voiceId = voiceId
                         )
                     } else {

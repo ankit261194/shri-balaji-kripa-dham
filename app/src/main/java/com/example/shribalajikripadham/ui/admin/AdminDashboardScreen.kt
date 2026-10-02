@@ -9668,15 +9668,31 @@ fun SuperControlTab(
     var showRestoreDialog by remember { mutableStateOf(false) }
     var restoreJsonText by remember { mutableStateOf("") }
 
-    // --- Token TTS Human Voice State ---
+    // --- Token TTS Human Voice State & Multi-Key Pool ---
+    var isVoiceMasterEnabledChecked by remember { mutableStateOf(AshramVoiceAnnouncementManager.isVoiceMasterEnabled(context)) }
+    var voiceScheduleModeInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getVoiceScheduleMode(context)) }
+    var voiceScheduleDaysInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getVoiceScheduleDays(context)) }
+    var voiceScheduleDatesInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getVoiceScheduleDates(context)) }
+
+    var elevenLabsApiKey1Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 1)) }
+    var elevenLabsApiKey2Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 2)) }
+    var elevenLabsApiKey3Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 3)) }
+    var elevenLabsApiKey4Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 4)) }
+
+    val elevenLabsBalances by AshramVoiceAnnouncementManager.elevenLabsKeyBalances.collectAsState()
+    val isRefreshingBalances by AshramVoiceAnnouncementManager.isRefreshingBalances.collectAsState()
+
     var selectedVoicePreset by remember(settings.tokenVoicePreset) { mutableStateOf(settings.tokenVoicePreset) }
     var voiceSuccessMsg by remember { mutableStateOf<String?>(null) }
     var googleTtsApiKeyInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getGoogleTtsApiKey(context)) }
-    var elevenLabsApiKeyInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context)) }
     var isAutoNextEnabledChecked by remember { mutableStateOf(AshramVoiceAnnouncementManager.isAutoNextEnabled(context)) }
     var autoNextDelayInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getAutoNextDelaySeconds(context)) }
     var primaryTemplateInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getPrimaryTemplate(context)) }
     var standbyTemplateInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getStandbyTemplate(context)) }
+
+    LaunchedEffect(Unit) {
+        AshramVoiceAnnouncementManager.refreshAllKeyBalances(context)
+    }
 
     // --- Ashram Main Home Banner Manager State ---
     var bannerPhotoUriInput by remember(settings.bannerPhotoUri) { mutableStateOf(settings.bannerPhotoUri) }
@@ -10410,31 +10426,368 @@ fun SuperControlTab(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = "🎙️ ElevenLabs AI Human Studio Voice (API Key):",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaroonPrimary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = elevenLabsApiKeyInput,
-                        onValueChange = { elevenLabsApiKeyInput = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("ElevenLabs API Key (100% असली इंसानी आवाज़)") },
-                        placeholder = { Text("sk_...") },
-                        singleLine = true,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    Text(
-                        text = "💡 1 से 150 तक के टोकन नंबर और मंदिर के सभी संवाद ऐप में स्थायी रूप से प्री-लोडेड हैं! यह API Key सिर्फ नए भक्तों के नाम बोलने में उपयोग होती है, जिससे आपका फ्री कोटा कभी खत्म नहीं होगा।",
-                        fontSize = 11.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 2.dp, bottom = 10.dp)
-                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFFE0E0E0))
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    // 1. MASTER VOICE SWITCH & SMART SCHEDULER
+                    Surface(
+                        color = if (isVoiceMasterEnabledChecked) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.2.dp, if (isVoiceMasterEnabledChecked) Color(0xFF81C784) else Color(0xFFE57373)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                    Text(if (isVoiceMasterEnabledChecked) "🔔" else "🔕", fontSize = 22.sp)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = if (isHindi) "मास्टर आवाज़ सेवा (Master Announcement)" else "Master Audio Announcement",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            color = if (isVoiceMasterEnabledChecked) Color(0xFF1B5E20) else Color(0xFFB71C1C)
+                                        )
+                                        Text(
+                                            text = if (isVoiceMasterEnabledChecked) "आवाज़ सेवा सक्रिय है" else "पूरी आवाज़ सेवा बंद है (Muted)",
+                                            fontSize = 11.sp,
+                                            color = Color.DarkGray
+                                        )
+                                    }
+                                }
+                                Switch(
+                                    checked = isVoiceMasterEnabledChecked,
+                                    onCheckedChange = { isVoiceMasterEnabledChecked = it },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color(0xFF2E7D32),
+                                        checkedTrackColor = Color(0xFF81C784),
+                                        uncheckedThumbColor = Color(0xFFC62828),
+                                        uncheckedTrackColor = Color(0xFFFFCDD2)
+                                    )
+                                )
+                            }
+
+                            if (isVoiceMasterEnabledChecked) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                HorizontalDivider(color = Color(0xFFC8E6C9))
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = if (isHindi) "📅 ऑटो शेड्यूलर (कब आवाज़ बोले):" else "📅 Voice Announcement Schedule:",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaroonPrimary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    val modes = listOf(
+                                        "ALWAYS" to "हमेशा चालू",
+                                        "DAYS" to "सप्ताह के दिन",
+                                        "DATES" to "विशिष्ट तिथियां"
+                                    )
+                                    modes.forEach { (mCode, mLabel) ->
+                                        val isSel = (voiceScheduleModeInput == mCode)
+                                        FilterChip(
+                                            selected = isSel,
+                                            onClick = { voiceScheduleModeInput = mCode },
+                                            label = { Text(mLabel, fontSize = 11.sp) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = SaffronPrimary,
+                                                selectedLabelColor = Color.White
+                                            )
+                                        )
+                                    }
+                                }
+
+                                if (voiceScheduleModeInput == "DAYS") {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "दिन चुनें जिन पर आवाज़ सक्रिय रहे (उदा. मंगलवार व शनिवार):",
+                                        fontSize = 11.sp,
+                                        color = Color.DarkGray
+                                    )
+                                    val allDays = listOf(
+                                        "TUESDAY" to "मंगलवार",
+                                        "SATURDAY" to "शनिवार",
+                                        "SUNDAY" to "रविवार",
+                                        "MONDAY" to "सोमवार",
+                                        "WEDNESDAY" to "बुधवार",
+                                        "THURSDAY" to "गुरुवार",
+                                        "FRIDAY" to "शुक्रवार"
+                                    )
+                                    val selectedDaysList = voiceScheduleDaysInput.split(",").map { it.trim().uppercase() }.toMutableSet()
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        allDays.take(4).forEach { (dayCode, dayLabel) ->
+                                            val isDaySel = selectedDaysList.contains(dayCode)
+                                            FilterChip(
+                                                selected = isDaySel,
+                                                onClick = {
+                                                    if (isDaySel) selectedDaysList.remove(dayCode) else selectedDaysList.add(dayCode)
+                                                    voiceScheduleDaysInput = selectedDaysList.joinToString(",")
+                                                },
+                                                label = { Text(dayLabel, fontSize = 10.sp) },
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    selectedContainerColor = Color(0xFF2E7D32),
+                                                    selectedLabelColor = Color.White
+                                                )
+                                            )
+                                        }
+                                    }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        allDays.drop(4).forEach { (dayCode, dayLabel) ->
+                                            val isDaySel = selectedDaysList.contains(dayCode)
+                                            FilterChip(
+                                                selected = isDaySel,
+                                                onClick = {
+                                                    if (isDaySel) selectedDaysList.remove(dayCode) else selectedDaysList.add(dayCode)
+                                                    voiceScheduleDaysInput = selectedDaysList.joinToString(",")
+                                                },
+                                                label = { Text(dayLabel, fontSize = 10.sp) },
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    selectedContainerColor = Color(0xFF2E7D32),
+                                                    selectedLabelColor = Color.White
+                                                )
+                                            )
+                                        }
+                                    }
+                                } else if (voiceScheduleModeInput == "DATES") {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    OutlinedTextField(
+                                        value = voiceScheduleDatesInput,
+                                        onValueChange = { voiceScheduleDatesInput = it },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        label = { Text("विशिष्ट तिथियां (YYYY-MM-DD कॉमा से अलग)") },
+                                        placeholder = { Text("2026-10-15, 2026-10-16, 2026-10-20") },
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 2. ELEVENLABS 4-KEY MULTI-FAILOVER POOL
+                    Surface(
+                        color = Color(0xFFFBF8F5),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.2.dp, SaffronPrimary.copy(alpha = 0.5f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🎙️", fontSize = 20.sp)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = "ElevenLabs 4-Key Pool (40,000 मुफ़्त कैरेक्टर्स/माह)",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaroonPrimary
+                                        )
+                                        Text(
+                                            text = "ऑटो-स्विचिंग: की 1 समाप्त होने पर की 2, 3, 4 पर स्वतः स्विच",
+                                            fontSize = 10.sp,
+                                            color = Color.DarkGray
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Key Slot 1
+                            OutlinedTextField(
+                                value = elevenLabsApiKey1Input,
+                                onValueChange = { elevenLabsApiKey1Input = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("स्लॉट 1 (प्राथमिक API Key)") },
+                                placeholder = { Text("sk_...") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Key Slot 2
+                            OutlinedTextField(
+                                value = elevenLabsApiKey2Input,
+                                onValueChange = { elevenLabsApiKey2Input = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("स्लॉट 2 (ऑटो-स्विच बैकअप 1)") },
+                                placeholder = { Text("sk_... (वैकल्पिक)") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Key Slot 3
+                            OutlinedTextField(
+                                value = elevenLabsApiKey3Input,
+                                onValueChange = { elevenLabsApiKey3Input = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("स्लॉट 3 (ऑटो-स्विच बैकअप 2)") },
+                                placeholder = { Text("sk_... (वैकल्पिक)") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Key Slot 4
+                            OutlinedTextField(
+                                value = elevenLabsApiKey4Input,
+                                onValueChange = { elevenLabsApiKey4Input = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("स्लॉट 4 (ऑटो-स्विच बैकअप 3)") },
+                                placeholder = { Text("sk_... (वैकल्पिक)") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "💡 1 से 150 तक टोकन व संवाद ऐप में मुफ़्त प्री-लोडेड हैं। यह की सिर्फ भक्तों के नाम बोलने में उपयोग होती है (~10 अक्षर प्रति नया नाम, हमेशा के लिए सेव)।",
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(color = Color(0xFFE0E0E0))
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // 3. LIVE CREDIT BALANCES DASHBOARD
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("📊", fontSize = 18.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "लाइव क्रेडिट बैलेंस मीटर (Live Quota)",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaroonPrimary
+                                    )
+                                }
+                                OutlinedButton(
+                                    onClick = {
+                                        AshramVoiceAnnouncementManager.refreshAllKeyBalances(context)
+                                    },
+                                    enabled = !isRefreshingBalances,
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                ) {
+                                    if (isRefreshingBalances) {
+                                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = SaffronPrimary)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text("जाँच...", fontSize = 10.sp)
+                                    } else {
+                                        Text("🔄 रिफ्रेश बैलेंस", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            if (elevenLabsBalances.isEmpty()) {
+                                Surface(
+                                    color = Color(0xFFF5F5F5),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "क्रेडिट स्थिति देखने हेतु ऊपर 'रिफ्रेश बैलेंस' दबाएं।",
+                                        fontSize = 11.sp,
+                                        color = Color.Gray,
+                                        modifier = Modifier.padding(10.dp)
+                                    )
+                                }
+                            } else {
+                                elevenLabsBalances.forEach { info ->
+                                    val keyMasked = if (info.key.length > 8) "${info.key.take(4)}...${info.key.takeLast(4)}" else info.key
+                                    val progressColor = if (info.remainingPercent > 0.25f) Color(0xFF2E7D32) else if (info.remainingPercent > 0.05f) Color(0xFFF57C00) else Color(0xFFD32F2F)
+
+                                    Surface(
+                                        color = Color.White,
+                                        shape = RoundedCornerShape(8.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "स्लॉट #${info.slotNumber} ($keyMasked)",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaroonPrimary
+                                                )
+                                                if (info.isValid && info.remainingCharacters > 0) {
+                                                    Surface(color = Color(0xFFE8F5E9), shape = RoundedCornerShape(4.dp)) {
+                                                        Text("✓ सक्रिय (${info.tier})", fontSize = 10.sp, color = Color(0xFF2E7D32), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                                    }
+                                                } else {
+                                                    Surface(color = Color(0xFFFFEBEE), shape = RoundedCornerShape(4.dp)) {
+                                                        Text(info.errorMsg ?: "अमान्य", fontSize = 10.sp, color = Color(0xFFC62828), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                                    }
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            LinearProgressIndicator(
+                                                progress = { info.remainingPercent },
+                                                modifier = Modifier.fillMaxWidth().height(6.dp),
+                                                color = progressColor,
+                                                trackColor = Color(0xFFEEEEEE)
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = "${info.remainingCharacters} / ${info.characterLimit} कैरेक्टर्स शेष",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = progressColor
+                                                )
+                                                Text(
+                                                    text = "${(info.remainingPercent * 100).toInt()}% बचा",
+                                                    fontSize = 10.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
                     Text(
                         text = "🌐 Google Cloud Text-to-Speech (Neural2 AI API Key):",
                         fontSize = 13.sp,
@@ -10554,14 +10907,22 @@ fun SuperControlTab(
                             kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                                 repository?.updateTokenVoicePreset(selectedVoicePreset)
                                 AshramVoiceAnnouncementManager.setVoicePreset(context, selectedVoicePreset)
-                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKeyInput)
+                                AshramVoiceAnnouncementManager.setVoiceMasterEnabled(context, isVoiceMasterEnabledChecked)
+                                AshramVoiceAnnouncementManager.setVoiceScheduleMode(context, voiceScheduleModeInput)
+                                AshramVoiceAnnouncementManager.setVoiceScheduleDays(context, voiceScheduleDaysInput)
+                                AshramVoiceAnnouncementManager.setVoiceScheduleDates(context, voiceScheduleDatesInput)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey1Input, 1)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey2Input, 2)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey3Input, 3)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey4Input, 4)
                                 AshramVoiceAnnouncementManager.setGoogleTtsApiKey(context, googleTtsApiKeyInput)
                                 AshramVoiceAnnouncementManager.setAutoNextEnabled(context, isAutoNextEnabledChecked)
                                 AshramVoiceAnnouncementManager.setAutoNextDelaySeconds(context, autoNextDelayInput)
                                 AshramVoiceAnnouncementManager.setPrimaryTemplate(context, primaryTemplateInput)
                                 AshramVoiceAnnouncementManager.setStandbyTemplate(context, standbyTemplateInput)
+                                AshramVoiceAnnouncementManager.refreshAllKeyBalances(context)
                                 withContext(Dispatchers.Main) {
-                                    voiceSuccessMsg = if (isHindi) "✓ टोकन उद्घोषणा व भीड़ नियंत्रण सेटिंग्स सुरक्षित हुईं!" else "Voice & crowd control settings saved!"
+                                    voiceSuccessMsg = if (isHindi) "✓ टोकन आवाज़, 4-Key पूल व शेड्यूलर सेटिंग्स सुरक्षित हुईं!" else "Voice pool, schedule & crowd control settings saved!"
                                     Toast.makeText(context, if (isHindi) "✓ सेटिंग्स सुरक्षित हुईं!" else "Settings saved!", Toast.LENGTH_SHORT).show()
                                     onRefreshData()
                                 }
@@ -10571,7 +10932,7 @@ fun SuperControlTab(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth().height(46.dp)
                     ) {
-                        Text(if (isHindi) "💾 टोकन आवाज़ व भीड़ नियंत्रण सुरक्षित करें" else "💾 Save Voice & Queue Settings", fontWeight = FontWeight.Bold)
+                        Text(if (isHindi) "💾 टोकन आवाज़, 4-Key पूल व शेड्यूलर सुरक्षित करें" else "💾 Save Voice & Queue Settings", fontWeight = FontWeight.Bold)
                     }
                 }
             }
