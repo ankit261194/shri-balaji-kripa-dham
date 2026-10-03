@@ -1,12 +1,12 @@
 {
-  "latest_version": "5.9.26",
-  "version_code": 616,
+  "latest_version": "5.9.27",
+  "version_code": 617,
   "force_update": false,
-  "title_en": "ANKIT ELEVEX ULTIMATE v5.9.26 (24x7 MNC Customer Support CRM)",
-  "title_hi": "अंकित एलेवेक्स v5.9.26 (24x7 MNC कस्टमर सपोर्ट CRM लाइव)",
-  "release_notes_en": "• 24x7 MNC Customer Support & Human CRM Desk with real MySQL backend.\n• Direct Ticket routing to Lead Systems Engineer Ankit Chaudhary (<15m SLA).\n• Live Support Chat with real-time polling & CSAT star feedback.\n• Super Admin Management Tower for live ticket resolution.\n• Production performance and stability enhancements.",
-  "release_notes_hi": "• 24x7 MNC कस्टमर सपोर्ट व ह्यूमन CRM डेस्क (रियल MySQL बैकएंड)।\n• लीड इंजीनियर अंकित चौधरी को सीधे टिकट असाइनमेंट (<15 मिनट SLA)।\n• लाइव सपोर्ट चैट, ऑटो-रिफ्रेशिंग व 1-5 स्टार CSAT रेटिंग।\n• सुपर एडमिन कंट्रोल टॉवर से टिकट मॉनिटरिंग व समाधान।\n• ऐप गति व स्थिरता में सुधार।",
+  "title_en": "ANKIT ELEVEX ULTIMATE v5.9.27 (Strict Onboarding & Genuine Diagnostics)",
+  "title_hi": "अंकित एलेवेक्स v5.9.27 (सख्त ऑनबोर्डिंग व प्रामाणिक डायग्नोस्टिक्स)",
+  "release_notes_en": "• Strict MNC Onboarding Gateway: Language Selection -> Role Selection -> Login/Signup.\n• Complete removal of demo trial countdown timers, demo restriction banners, and premature paywalls.\n• 100% Genuine system diagnostics and database counters.\n• Unlocked Pro Tools Hub for field operations.",
+  "release_notes_hi": "• सख्त MNC ऑनबोर्डिंग गेटवे: भाषा चयन ➔ रोल चयन ➔ लॉगिन/साइनअप।\n• 10 मिनट के डेमो ट्रायल काउंटडाउन टाइमर, डेमो बैनर और अनचाहे पेमेंट पॉपअप को पूरी तरह हटाया गया।\n• 100% प्रामाणिक सिस्टम डायग्नोस्टिक और 1,200+ एरर कोड्स।\n• प्रो टूल्स हब बिना किसी रुकावट के पूरी तरह खुला।",
   "apk_download_url": "https://shribalajikripadham.online/download.php?app=elevex",
   "file_size": "38.6 MB",
-  "sha256": "519DB0DDAF31A2399BE722FDBD018F42CAC6D7754EEF6E590E14EB915B919DF8"
+  "sha256": "1A2C0EE16E585FD8142D18DE23809E6F92234AF8E5766E3E1EE145A2C86B2B32"
 }
