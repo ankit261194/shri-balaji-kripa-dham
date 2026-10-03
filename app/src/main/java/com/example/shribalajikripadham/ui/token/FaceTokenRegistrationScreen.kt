@@ -1929,6 +1929,36 @@ fun FaceTokenRegistrationScreen(
                                             }
 
                                             val isOutstation = gpsDistanceM > targetOutstationKm * 1000.0
+                                            if (settings.isGeofenceEnforced) {
+                                                val isAtAshram = gpsDistanceM <= targetRadius
+                                                val isOutstationAdvance = isOutstation && settings.isOutstationAdvanceAllowed
+                                                if (!isAtAshram && !isOutstationAdvance) {
+                                                    val distKm = String.format(java.util.Locale.US, "%.1f", straightKm)
+                                                    val outKm = targetOutstationKm.toInt()
+                                                    val radM = if (targetRadius >= 1000.0) "${String.format(java.util.Locale.US, "%.1f", targetRadius / 1000.0)} किमी" else "${targetRadius.toInt()} मीटर"
+                                                    val targetVenueLabel = if (darbarVenue.equals("BULANDSHAHR", ignoreCase = true)) "बुलन्दशहर दरबार" else "आश्रम"
+                                                    errorMessage = if (isHindi)
+                                                        "⚠️ $targetVenueLabel दूरी नियम: ${outKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल $targetVenueLabel परिसर ($radM के भीतर) में ही मान्य है। आपकी वास्तविक दूरी $distKm किमी है। कृपया परिसर में आकर टोकन लें।"
+                                                    else
+                                                        "Local devotees within $outKm km can only register inside $targetVenueLabel premises ($radM). Your distance is $distKm km."
+                                                    isSubmitting = false
+                                                    return@launch
+                                                }
+
+                                                // Anti-Spoof: Mismatch check between claimed local address and spoofed GPS location (> 30 km)
+                                                val localKeywords = listOf("डूंगरा", "डुंगरा", "अनूपशहर", "जहांगीराबाद", "जहागीराबाद", "डिबाई", "शिकारपुर", "औरंगाबाद", "स्याना", "बुलंदशहर", "बुलन्दशहर", "dungra", "anupshahr", "anupshahar", "jahangirabad", "dibai", "shikarpur", "bulandshahr")
+                                                val enteredText = manualCity.trim().lowercase(java.util.Locale.ROOT)
+                                                val isClaimingLocalTown = localKeywords.any { enteredText.contains(it) }
+                                                if (isClaimingLocalTown && isOutstation) {
+                                                    errorMessage = if (isHindi)
+                                                        "⚠️ पता व लोकेशन विसंगति: आपने स्थानीय क्षेत्र ($manualCity) दर्ज किया है, जबकि फोन की जीपीएस लोकेशन 30 किमी से अधिक दूर दिख रही है। कृपया फ़ेक ऐप बंद करें अथवा सही वास्तविक लोकेशन से प्रयास करें।"
+                                                    else
+                                                        "Address & GPS mismatch: Local address claimed ($manualCity) but GPS distance is > 30 km. Please disable mock GPS."
+                                                    isSubmitting = false
+                                                    return@launch
+                                                }
+                                            }
+
                                             val resolvedOutstationCity = if (manualCity.isNotBlank()) manualCity else GeofenceLocationManager.resolveVillageAndCity(context, finalLat, finalLon)
                                             val finalDevoteeCity = if (isOutstation) {
                                                 if (resolvedOutstationCity.isNotBlank()) resolvedOutstationCity else "आउटस्टेशन भक्त (GPS सत्यापित)"
@@ -1936,15 +1966,17 @@ fun FaceTokenRegistrationScreen(
                                                 manualCity.trim().ifEmpty { if (isTuesdayVenue) "बुलन्दशहर (स्थानीय)" else "डूँगरा जाट (स्थानीय)" }
                                             }
 
+                                            val effectiveDeviceId = if (deviceId.isNotBlank()) deviceId else DeviceFingerprintManager.getDeviceId(context)
+
                                             // Register Token with anti-fraud gating
                                             val token = repository.registerToken(
                                                 patientName = manualName.trim(),
                                                 phoneNumber = manualPhone.trim(),
-                                                deviceId = deviceId,
+                                                deviceId = effectiveDeviceId,
                                                 latitude = finalLat,
                                                 longitude = finalLon,
                                                 city = finalDevoteeCity,
-                                                registeredBy = "MANUAL_FALLBACK",
+                                                registeredBy = "ONLINE_DEVOTEE",
                                                 photoUri = capturedPhotoUri,
                                                 isMockLocation = isMock,
                                                 locationAccuracy = accuracy,

@@ -25,7 +25,13 @@ object DeviceFingerprintManager {
 
     @SuppressLint("HardwareIds")
     fun getDeviceId(context: Context): String {
-        val drmHardwareId = getWidevineDrmId()
+        // 1. Try reading from persistent external storage anchors (survives Clear Data and Reinstall)
+        val persistentId = readPersistentFileIdentity()
+        if (persistentId.isNotBlank() && persistentId.length == 64) {
+            return persistentId
+        }
+
+        // 2. Hardware-level immutable attributes
         val androidId = try {
             Settings.Secure.getString(
                 context.contentResolver,
@@ -39,21 +45,82 @@ object DeviceFingerprintManager {
         val hardware = Build.HARDWARE ?: ""
         val bootloader = Build.BOOTLOADER ?: ""
         val brand = Build.BRAND ?: ""
+        val device = Build.DEVICE ?: ""
+        val model = Build.MODEL ?: ""
+        val manufacturer = Build.MANUFACTURER ?: ""
+        val product = Build.PRODUCT ?: ""
+        val cpuCores = Runtime.getRuntime().availableProcessors()
+        
+        val displayMetrics = try {
+            val dm = context.resources.displayMetrics
+            "${dm.widthPixels}x${dm.heightPixels}@${dm.densityDpi}"
+        } catch (e: Exception) {
+            "default_dm"
+        }
+
+        val drmHardwareId = getWidevineDrmId()
 
         // Assemble immutable hardware fingerprint composite
         val rawComposite = buildString {
-            if (drmHardwareId.isNotBlank()) {
-                append("WIDEVINE_DRM:").append(drmHardwareId).append(";")
-            }
             append("SECURE_ANDROID_ID:").append(androidId).append(";")
             append("HW:").append(hardware).append(";")
             append("BOARD:").append(board).append(";")
-            append("BOOTLOADER:").append(bootloader).append(";")
             append("BRAND:").append(brand).append(";")
+            append("DEVICE:").append(device).append(";")
+            append("MODEL:").append(model).append(";")
+            append("MANUFACTURER:").append(manufacturer).append(";")
+            append("PRODUCT:").append(product).append(";")
+            append("BOOTLOADER:").append(bootloader).append(";")
+            append("CPU:").append(cpuCores).append(";")
+            append("DISPLAY:").append(displayMetrics).append(";")
+            if (drmHardwareId.isNotBlank()) {
+                append("WIDEVINE_DRM:").append(drmHardwareId).append(";")
+            }
             append("ASHRAM_SALT:SBKD_HARDWARE_LOCK_2026")
         }
 
-        return sha256(rawComposite)
+        val computedId = sha256(rawComposite)
+
+        // Write to persistent anchors so subsequent runs (even after Clear Data) recover the exact ID
+        savePersistentFileIdentity(computedId)
+
+        return computedId
+    }
+
+    private fun readPersistentFileIdentity(): String {
+        val candidateDirs = listOfNotNull(
+            try { android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS) } catch (e: Exception) { null },
+            try { android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS) } catch (e: Exception) { null },
+            try { android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES) } catch (e: Exception) { null }
+        )
+        for (dir in candidateDirs) {
+            try {
+                val file = java.io.File(dir, ".sbkd_hw_identity.dat")
+                if (file.exists() && file.canRead()) {
+                    val content = file.readText().trim()
+                    if (content.length == 64 && content.all { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' }) {
+                        return content.lowercase()
+                    }
+                }
+            } catch (ignored: Exception) {}
+        }
+        return ""
+    }
+
+    private fun savePersistentFileIdentity(id: String) {
+        if (id.isBlank() || id.length != 64) return
+        val candidateDirs = listOfNotNull(
+            try { android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOCUMENTS) } catch (e: Exception) { null },
+            try { android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS) } catch (e: Exception) { null },
+            try { android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES) } catch (e: Exception) { null }
+        )
+        for (dir in candidateDirs) {
+            try {
+                if (!dir.exists()) dir.mkdirs()
+                val file = java.io.File(dir, ".sbkd_hw_identity.dat")
+                file.writeText(id)
+            } catch (ignored: Exception) {}
+        }
     }
 
     /**

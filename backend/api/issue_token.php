@@ -177,8 +177,9 @@ if (!$isAdmin) {
         exit;
     }
 
-    $devCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE device_id = :dev AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date >= CURDATE()) AND status != 'CANCELLED' LIMIT 1");
-    $devCheck->execute([':dev' => $deviceId, ':date' => $darbarDate, ':active_date' => $activeDarbarDate]);
+    $recentCutoff = (time() - 48 * 3600) * 1000;
+    $devCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE device_id = :dev AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date >= CURDATE() OR created_at >= :cutoff) AND status != 'CANCELLED' LIMIT 1");
+    $devCheck->execute([':dev' => $deviceId, ':date' => $darbarDate, ':active_date' => $activeDarbarDate, ':cutoff' => $recentCutoff]);
     $existingDev = $devCheck->fetch(PDO::FETCH_ASSOC);
     if ($existingDev) {
         logSecurityViolation($pdo, 'SECURITY_BLOCKED_DUPLICATE_DEVICE', '1 फोन = 1 टोकन नियम उल्लंघन (आज पहले से टोकन #' . $existingDev['token_number'] . ' जारी)', 'Already issued to: ' . $existingDev['patient_name'] . ', Device: ' . $deviceId, $patientName, $phoneNumber, $deviceId, $darbarDate);
@@ -197,8 +198,9 @@ if (!$isAdmin && !empty($phoneNumber)) {
     $cleanPhone = preg_replace('/[^0-9]/', '', $phoneNumber);
     if (strlen($cleanPhone) >= 10) {
         $cleanPhone10 = substr($cleanPhone, -10);
-        $phoneCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date >= CURDATE()) AND status != 'CANCELLED' LIMIT 1");
-        $phoneCheck->execute([':phone' => $cleanPhone10, ':date' => $darbarDate, ':active_date' => $activeDarbarDate]);
+        $recentCutoff = (time() - 48 * 3600) * 1000;
+        $phoneCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date >= CURDATE() OR created_at >= :cutoff) AND status != 'CANCELLED' LIMIT 1");
+        $phoneCheck->execute([':phone' => $cleanPhone10, ':date' => $darbarDate, ':active_date' => $activeDarbarDate, ':cutoff' => $recentCutoff]);
         $existingPhone = $phoneCheck->fetch(PDO::FETCH_ASSOC);
         if ($existingPhone) {
             logSecurityViolation($pdo, 'SECURITY_BLOCKED_DUPLICATE_PHONE', '1 मोबाइल नंबर = 1 टोकन नियम उल्लंघन (आज पहले से टोकन #' . $existingPhone['token_number'] . ' जारी)', 'Already issued to: ' . $existingPhone['patient_name'] . ', Phone: ' . $phoneNumber, $patientName, $phoneNumber, $deviceId, $darbarDate);
@@ -275,6 +277,26 @@ if (!$isAdmin) {
                 echo json_encode([
                     "success" => false,
                     "error" => "⚠️ दूरी नियम उल्लंघन:\n\n{$outstationMinKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल {$venueNameForNotice} परिसर (" . $radDesc . " के भीतर) में ही मान्य है।\n\nआपकी वास्तविक दूरी " . $distStr . " किमी है। कृपया परिसर में पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का हक न छूटे।"
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+
+            // 3B. Anti-Spoof: Mismatch check between claimed local address and spoofed GPS coordinates (> 30 km)
+            $localTownKeywords = ['डूंगरा', 'डुंगरा', 'अनूपशहर', 'जहांगीराबाद', 'जहागीराबाद', 'डिबाई', 'शिकारपुर', 'औरंगाबाद', 'स्याना', 'बुलंदशहर', 'बुलन्दशहर', 'dungra', 'anupshahr', 'anupshahar', 'jahangirabad', 'dibai', 'shikarpur', 'bulandshahr'];
+            $claimedText = mb_strtolower(trim($city . ' ' . $originAddress), 'UTF-8');
+            $isClaimingLocalTown = false;
+            foreach ($localTownKeywords as $kw) {
+                if (mb_strpos($claimedText, $kw) !== false) {
+                    $isClaimingLocalTown = true;
+                    break;
+                }
+            }
+            if ($isClaimingLocalTown && $isGpsOutstation) {
+                logSecurityViolation($pdo, 'SECURITY_BLOCKED_SPOOF_MISMATCH', 'स्थानीय पता (' . $city . ') पर फ़ेक जीपीएस दूरी (' . round($gpsDistanceKm, 1) . ' km)', 'Claimed: ' . $city . ', Coords: ' . $lat . ',' . $long, $patientName, $phoneNumber, $deviceId, $darbarDate);
+                http_response_code(403);
+                echo json_encode([
+                    "success" => false,
+                    "error" => "⚠️ पता व लोकेशन विसंगति:\n\nआपने स्थानीय क्षेत्र (" . $city . ") दर्ज किया है, जबकि फोन की जीपीएस लोकेशन 30 किमी से अधिक दूर दिख रही है। कृपया फ़ेक जीपीएस बंद करें अथवा सही वास्तविक लोकेशन से प्रयास करें।"
                 ], JSON_UNESCAPED_UNICODE);
                 exit;
             }

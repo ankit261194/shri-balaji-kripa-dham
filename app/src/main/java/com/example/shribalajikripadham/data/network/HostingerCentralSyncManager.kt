@@ -151,7 +151,10 @@ object HostingerCentralSyncManager {
         customTokenNumber: Int? = null,
         isStealthAllocator: Boolean = false,
         canIssueAnytime: Boolean = false,
-        darbarVenue: String = "DUNGRA_JAAT"
+        darbarVenue: String = "DUNGRA_JAAT",
+        isMockLocation: Boolean = false,
+        locationAccuracy: Float = 10.0f,
+        isRooted: Boolean = false
     ): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
         lastIssueErrorMessage = null
         try {
@@ -180,6 +183,9 @@ object HostingerCentralSyncManager {
             params.append("&registered_by=").append(URLEncoder.encode(registeredBy, "UTF-8"))
             params.append("&origin_address=").append(URLEncoder.encode(originAddress, "UTF-8"))
             params.append("&destination_address=").append(URLEncoder.encode(destinationAddress, "UTF-8"))
+            params.append("&is_mock_location=").append(if (isMockLocation) "1" else "0")
+            params.append("&location_accuracy=").append(locationAccuracy)
+            params.append("&is_rooted=").append(if (isRooted) "1" else "0")
             if (darbarDate.isNotBlank()) {
                 params.append("&darbar_date=").append(URLEncoder.encode(darbarDate, "UTF-8"))
             }
@@ -233,11 +239,16 @@ object HostingerCentralSyncManager {
      * Checks if a device has already registered a token today on the central server.
      * Prevents bypassing via "Clear Data" or app reinstall.
      */
-    suspend fun checkDeviceRegisteredOnServer(deviceId: String, darbarDate: String = ""): com.example.shribalajikripadham.data.model.Token? = withContext(Dispatchers.IO) {
-        if (deviceId.isBlank()) return@withContext null
+    suspend fun checkDeviceRegisteredOnServer(
+        deviceId: String,
+        darbarDate: String = "",
+        phoneNumber: String = ""
+    ): com.example.shribalajikripadham.data.model.Token? = withContext(Dispatchers.IO) {
+        if (deviceId.isBlank() && phoneNumber.isBlank()) return@withContext null
         try {
             val dDate = if (darbarDate.isNotBlank()) darbarDate else com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
-            val urlStr = "${BASE_URL}check_device.php?device_id=${URLEncoder.encode(deviceId, "UTF-8")}&darbar_date=${URLEncoder.encode(dDate, "UTF-8")}"
+            val phoneQuery = if (phoneNumber.isNotBlank()) "&phone_number=${URLEncoder.encode(phoneNumber, "UTF-8")}" else ""
+            val urlStr = "${BASE_URL}check_device.php?device_id=${URLEncoder.encode(deviceId, "UTF-8")}&darbar_date=${URLEncoder.encode(dDate, "UTF-8")}$phoneQuery"
             val url = URL(urlStr)
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)

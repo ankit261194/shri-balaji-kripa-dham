@@ -74,8 +74,15 @@ object PersistentTokenReceiptHelper {
     fun readPersistentReceipt(deviceId: String, darbarDate: String): Token? {
         return try {
             val folder = getReceiptsFolder() ?: return null
+            val prefix = deviceId.take(16)
             val safeDate = darbarDate.replace(" ", "_").replace("/", "_").replace("-", "_")
-            val file = File(folder, "token_${safeDate}_${deviceId.take(16)}.json")
+            var file = File(folder, "token_${safeDate}_${prefix}.json")
+            if (!file.exists()) {
+                val matchingFiles = folder.listFiles { f ->
+                    f.isFile && f.name.startsWith("token_") && f.name.endsWith("_${prefix}.json")
+                }
+                file = matchingFiles?.maxByOrNull { it.lastModified() } ?: return null
+            }
             if (!file.exists()) return null
 
             val text = file.readText()
@@ -86,7 +93,11 @@ object PersistentTokenReceiptHelper {
             if (savedDeviceId != deviceId) return null
 
             val savedDate = json.optString("darbar_date", "")
-            if (savedDate != darbarDate) return null
+            val createdAt = json.optLong("created_at", file.lastModified())
+            val isRecent = (System.currentTimeMillis() - createdAt) <= 48 * 3600 * 1000L
+
+            // Accept if date matches requested date, OR if created in the last 48 hours
+            if (savedDate != darbarDate && !isRecent) return null
 
             Token(
                 id = json.optLong("id", System.currentTimeMillis()),

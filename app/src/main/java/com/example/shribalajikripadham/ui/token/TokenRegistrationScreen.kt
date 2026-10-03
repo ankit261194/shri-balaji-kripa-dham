@@ -232,6 +232,8 @@ fun TokenRegistrationScreen(
     }
 
     var isRefreshingLocation by remember { mutableStateOf(false) }
+    var isFreshLocationMock by remember { mutableStateOf(false) }
+    var freshLocationAccuracy by remember { mutableFloatStateOf(10.0f) }
     var showLocationAlertDialog by remember { mutableStateOf(false) }
     var locationAlertTitle by remember { mutableStateOf("") }
     var locationAlertMessage by remember { mutableStateOf("") }
@@ -267,6 +269,8 @@ fun TokenRegistrationScreen(
             if (loc != null) {
                 userLatitude = loc.latitude
                 userLongitude = loc.longitude
+                isFreshLocationMock = GeofenceLocationManager.isMockLocation(loc, context)
+                freshLocationAccuracy = if (loc.hasAccuracy()) loc.accuracy else 10.0f
             }
         }
     }
@@ -352,16 +356,24 @@ fun TokenRegistrationScreen(
                 e.printStackTrace()
             }
             settings = repository.getSettings()
-            var tok = repository.checkDeviceRegisteredToday(id, settings.darbarDate)
+            val targetDate = if (settings.darbarDate.isNotBlank()) settings.darbarDate else com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
+            val savedPhone = try {
+                context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE).getString("my_phone_number", "") ?: ""
+            } catch (e: Exception) { "" }
+
+            var tok = repository.checkDeviceRegisteredToday(id, targetDate)
             if (tok == null) {
                 try {
-                    val serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(id, settings.darbarDate)
+                    val serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(id, targetDate, savedPhone)
                     if (serverTok != null) {
                         tok = serverTok
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+            }
+            if (tok == null) {
+                tok = com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(id, targetDate)
             }
             existingToken = tok
             todayActiveTokens = repository.getTodayActiveTokenCount()
@@ -1680,7 +1692,7 @@ fun TokenRegistrationScreen(
                                 scope.launch {
                                     try {
                                         val loc = GeofenceLocationManager.getLastKnownLocation(context)
-                                        val isMock = GeofenceLocationManager.isMockLocation(loc, context)
+                                        val isMock = isFreshLocationMock || GeofenceLocationManager.isMockLocation(loc, context)
                                         if (isMock) {
                                             errorMessage = if (isHindi)
                                                 "⚠️ फ़ेक जीपीएस चेतावनी: आपके डिवाइस में नकली लोकेशन / Fake GPS स्पूफिंग का उपयोग पकड़ा गया है। श्री बालाजी कृपा धाम के नियमों के अनुसार केवल वास्तविक जीपीएस से ही टोकन मान्य है। कृपया फ़ेक ऐप बंद करके पुनः प्रयास करें।"
@@ -1718,7 +1730,7 @@ fun TokenRegistrationScreen(
                                             return@launch
                                         }
 
-                                        val accuracy = if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f
+                                        val accuracy = if (freshLocationAccuracy in 0.1f..250.0f) freshLocationAccuracy else (if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f)
                                         if (settings.isGeofenceEnforced && accuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS) {
                                             val maxAcc = GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS.toInt()
                                             errorMessage = if (isHindi)
@@ -1773,6 +1785,19 @@ fun TokenRegistrationScreen(
                                                 isSubmitting = false
                                                 return@launch
                                             }
+
+                                            // Anti-Spoof: Mismatch check between claimed local address and spoofed GPS location (> 30 km)
+                                            val localKeywords = listOf("डूंगरा", "डुंगरा", "अनूपशहर", "जहांगीराबाद", "जहागीराबाद", "डिबाई", "शिकारपुर", "औरंगाबाद", "स्याना", "बुलंदशहर", "बुलन्दशहर", "dungra", "anupshahr", "anupshahar", "jahangirabad", "dibai", "shikarpur", "bulandshahr")
+                                            val enteredText = "${devoteeVillageOrCity.trim()} ${originAddress.trim()}".lowercase(Locale.ROOT)
+                                            val isClaimingLocalTown = localKeywords.any { enteredText.contains(it) }
+                                            if (isClaimingLocalTown && currentGpsMeters > outstationM) {
+                                                errorMessage = if (isHindi)
+                                                    "⚠️ पता व लोकेशन विसंगति: आपने स्थानीय क्षेत्र ($devoteeVillageOrCity) दर्ज किया है, जबकि फोन की जीपीएस लोकेशन 30 किमी से अधिक दूर दिख रही है। कृपया फ़ेक ऐप बंद करें अथवा सही वास्तविक लोकेशन से प्रयास करें।"
+                                                else
+                                                    "Address & GPS mismatch: Local address claimed ($devoteeVillageOrCity) but GPS distance is > 30 km. Please disable mock GPS."
+                                                isSubmitting = false
+                                                return@launch
+                                            }
                                         }
 
                                         val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
@@ -1784,11 +1809,14 @@ fun TokenRegistrationScreen(
                                             (kotlin.math.round((distFromDarbarM / 1000.0) * 1.28 * 10) / 10).toFloat()
                                         }
 
+                                        val effectiveDeviceId = if (deviceId.isNotBlank()) deviceId else DeviceFingerprintManager.getDeviceId(context)
+                                        val effectiveDate = if (settings.darbarDate.isNotBlank()) settings.darbarDate else com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
+
                                         // Instant token registration: register immediately without blocking UI on heavy photo upload
                                         val created = repository.registerToken(
                                             patientName = patientName.trim(),
                                             phoneNumber = phoneNumber.trim(),
-                                            deviceId = deviceId,
+                                            deviceId = effectiveDeviceId,
                                             latitude = finalLat,
                                             longitude = finalLon,
                                             city = devoteeVillageOrCity,
@@ -1799,7 +1827,7 @@ fun TokenRegistrationScreen(
                                             originAddress = devoteeVillageOrCity,
                                             destinationAddress = "श्री बालाजी कृपा धाम, डुंगरा जाट",
                                             distanceKm = finalDistanceKm,
-                                            darbarDate = settings.darbarDate
+                                            darbarDate = effectiveDate
                                         )
 
                                         existingToken = created

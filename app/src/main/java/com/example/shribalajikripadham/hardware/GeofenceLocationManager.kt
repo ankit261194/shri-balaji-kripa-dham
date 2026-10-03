@@ -2,6 +2,7 @@ package com.example.shribalajikripadham.hardware
 
 import android.app.AppOpsManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
 import android.os.Build
@@ -150,51 +151,106 @@ object GeofenceLocationManager {
     )
 
     /**
-     * Checks if any known Fake GPS or Location Spoofer app is currently installed.
+     * Checks if any known Fake GPS or Location Spoofer app is installed,
+     * or if ANY app on the device holds ACCESS_MOCK_LOCATION permission.
      */
     fun hasSpoofingAppsInstalled(context: Context): Pair<Boolean, String?> {
         val pm = context.packageManager
+        // 1. Check known mock location packages
         for (pkg in KNOWN_MOCK_LOCATION_PACKAGES) {
             try {
                 pm.getPackageInfo(pkg, 0)
                 return Pair(true, pkg)
             } catch (ignored: Exception) {}
         }
+
+        // 2. Deep scan for any package holding ACCESS_MOCK_LOCATION or selected in Developer Options
+        try {
+            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
+            val packages = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pm.getInstalledPackages(PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong()))
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+            }
+            for (pkg in packages) {
+                if (pkg.packageName == context.packageName) continue
+                
+                // Check requestedPermissions
+                val perms = pkg.requestedPermissions
+                if (perms != null) {
+                    for (p in perms) {
+                        if (p == "android.permission.ACCESS_MOCK_LOCATION") {
+                            return Pair(true, pkg.packageName)
+                        }
+                    }
+                }
+
+                // Check if selected in Developer Options as active mock provider
+                val appInfo = pkg.applicationInfo
+                if (appOps != null && appInfo != null) {
+                    val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        appOps.unsafeCheckOpNoThrow(
+                            AppOpsManager.OPSTR_MOCK_LOCATION,
+                            appInfo.uid,
+                            pkg.packageName
+                        )
+                    } else {
+                        @Suppress("DEPRECATION")
+                        appOps.checkOpNoThrow(
+                            AppOpsManager.OPSTR_MOCK_LOCATION,
+                            appInfo.uid,
+                            pkg.packageName
+                        )
+                    }
+                    if (mode == AppOpsManager.MODE_ALLOWED) {
+                        return Pair(true, pkg.packageName)
+                    }
+                }
+            }
+        } catch (ignored: Exception) {}
+
         return Pair(false, null)
     }
 
     /**
      * Comprehensive Fake GPS & Mock Location Detection:
-     * 1. Known mock location / spoofing app signature check
-     * 2. Location.isMock (API 31+) / Location.isFromMockProvider (API 18+)
-     * 3. Location bundle "mockLocation" extras check
-     * 4. AppOpsManager OPSTR_MOCK_LOCATION permission check
-     * 5. Settings.Secure.ALLOW_MOCK_LOCATION (Legacy check)
+     * 1. Known mock location / spoofing app signature check & ACCESS_MOCK_LOCATION permission scanner
+     * 2. Developer options mock location provider status
+     * 3. Location.isMock (API 31+) / Location.isFromMockProvider (API 18+)
+     * 4. Location bundle "mockLocation" extras check & artificial accuracy check
+     * 5. AppOpsManager OPSTR_MOCK_LOCATION permission check
+     * 6. Settings.Secure.ALLOW_MOCK_LOCATION (Legacy check)
      */
     fun isMockLocation(location: Location?, context: Context): Boolean {
-        // 1. Check for installed fake GPS applications
+        // 1. Check for installed fake GPS applications or apps with ACCESS_MOCK_LOCATION
         val (hasSpoofApp, _) = hasSpoofingAppsInstalled(context)
         if (hasSpoofApp) return true
 
-        if (location == null) return false
+        // 2. Native Location Object Mock Check (if location object is available)
+        if (location != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (location.isMock) return true
+            } else {
+                @Suppress("DEPRECATION")
+                if (location.isFromMockProvider) return true
+            }
 
-        // 2. Native Location Object Mock Check
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (location.isMock) return true
-        } else {
-            @Suppress("DEPRECATION")
-            if (location.isFromMockProvider) return true
-        }
+            // 3. Location bundle mock flag
+            try {
+                val extras = location.extras
+                if (extras != null && extras.getBoolean("mockLocation", false)) {
+                    return true
+                }
+            } catch (ignored: Exception) {}
 
-        // 3. Location bundle mock flag
-        try {
-            val extras = location.extras
-            if (extras != null && extras.getBoolean("mockLocation", false)) {
+            // 4. Anomaly: Accuracy <= 0.0 or exact 0.0m is a tell-tale fake GPS signature
+            if (location.hasAccuracy() && location.accuracy <= 0.001f) {
                 return true
             }
-        } catch (ignored: Exception) {}
+        }
 
-        // 4. System AppOps Mock Location Check
+        // 5. System AppOps Mock Location Check
         try {
             val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
             if (appOps != null) {
@@ -216,7 +272,7 @@ object GeofenceLocationManager {
             }
         } catch (ignored: Exception) {}
 
-        // 5. Settings Mock Location Check for legacy Android versions
+        // 6. Settings Mock Location Check for legacy Android versions
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             try {
                 @Suppress("DEPRECATION")

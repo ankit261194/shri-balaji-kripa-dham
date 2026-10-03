@@ -1116,9 +1116,9 @@ class AshramRepository(context: Context) {
 
             // Anti-Clear-Data check: Query Central Server to ensure this device hasn't already registered
             try {
-                var serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, targetDarbarDate)
+                var serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, targetDarbarDate, cleanPhone10)
                 if (serverTok == null && targetDarbarDate != today) {
-                    serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, today)
+                    serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, today, cleanPhone10)
                 }
                 if (serverTok != null) {
                     throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
@@ -1194,6 +1194,7 @@ class AshramRepository(context: Context) {
         var centralOk = false
         var centralNum = -1
         try {
+            val isRootedDevice = com.example.shribalajikripadham.hardware.GeofenceLocationManager.isDeviceRooted(appContext)
             val result = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
                 patientName = patientName,
                 phoneNumber = phoneNumber,
@@ -1209,7 +1210,10 @@ class AshramRepository(context: Context) {
                 darbarDate = targetDarbarDate,
                 customTokenNumber = customTokenNumber,
                 canIssueAnytime = shouldBypassGeofence || (isAdminDesk && (bypassGeofence || settings.allowAdminReservedTokens)),
-                darbarVenue = darbarVenue
+                darbarVenue = darbarVenue,
+                isMockLocation = isMockLocation,
+                locationAccuracy = locationAccuracy,
+                isRooted = isRootedDevice
             )
             centralOk = result.first
             centralNum = result.second
@@ -1352,7 +1356,7 @@ class AshramRepository(context: Context) {
         val createdToken = Token(
             id = insertedId,
             tokenNumber = nextTokenNum,
-            darbarDate = today,
+            darbarDate = targetDarbarDate,
             patientName = patientName,
             phoneNumber = phoneNumber,
             city = safeCity,
@@ -1374,9 +1378,13 @@ class AshramRepository(context: Context) {
         // ☁️ Smart GitHub Sync Policy: Individual real-time tokens are handled instantly by Hostinger Central MySQL & Google Sheets.
         // Consolidated token backup is pushed when Super Admin triggers "Push All to GitHub" to prevent GitHub 409 rate-limiting.
 
-        // 🛡️ ANTI-BYPASS: Save hardware-bound persistent receipt into public device storage
+        // 🛡️ ANTI-BYPASS: Save hardware-bound persistent receipt into public device storage & SharedPreferences
         try {
             com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.savePersistentReceipt(createdToken)
+            appContext.getSharedPreferences("sbkd_devotee_my_token_prefs", android.content.Context.MODE_PRIVATE)
+                .edit()
+                .putString("my_phone_number", phoneNumber)
+                .apply()
         } catch (e: Exception) {}
 
         // ⚡ NANO-SECOND RESPONSE: Offload all cloud syncs (Google Sheets, Hostinger, Directory, Drive Backup)
