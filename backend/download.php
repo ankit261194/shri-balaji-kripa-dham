@@ -40,11 +40,13 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
         header("Cache-Control: public, no-cache, no-store, must-revalidate, max-age=0");
         header("Pragma: no-cache");
         header("Expires: 0");
-        header("Content-Length: " . $filesize);
-
         readfile($targetFile);
         exit;
     }
+
+    // High-Speed GitHub Releases Cloud Mirror Fallback (Always Guaranteed)
+    header("Location: https://github.com/ankit261194/ankits-liftramban/releases/download/v5.9.24/Ankit_EleveX_v5.9.24_Final.apk");
+    exit;
 }
 
 $requestedVer = isset($_GET['v']) ? intval($_GET['v']) : 0;

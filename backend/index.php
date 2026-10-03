@@ -1860,7 +1860,7 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                onmouseover="this.style.color='#FFD54F'; this.style.borderColor='#FFD54F'; this.style.background='rgba(0,0,0,0.6)';"
                onmouseout="this.style.color='rgba(255, 255, 255, 0.7)'; this.style.borderColor='rgba(255, 255, 255, 0.25)'; this.style.background='rgba(0,0,0,0.35)';"
                title="अंकित एलेवेक्स (लिफ्ट रामबाण AI) नवीनतम APK डाउनलोड करें">
-                ⚡ Ankit EleveX (APK Download)
+                ⚡ Ankit EleveX
             </a>
         </div>
     </footer>
