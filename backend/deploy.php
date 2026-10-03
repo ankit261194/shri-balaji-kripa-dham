@@ -73,11 +73,29 @@ $filesToSync = [
     "media/balaji_darshan_today.jpg",
     "sync_apk.php",
     "sync_elevex_apk.php",
+    "elevex_gateway/config.php",
     "elevex_gateway/app_update.json",
     "elevex_gateway/submit_utr.php",
     "elevex_gateway/support_crm.php",
-    "api/elevex_update.php"
+    "api/elevex_update.php",
+    "api/login.php",
+    "api/register.php",
+    "api/gemini_diagnose.php",
+    "api/elevex_diagnose.php",
+    "api/sync_leads.php",
+    "api/send_otp.php",
+    "api/verify_otp.php",
+    "api/upload_image.php",
+    "api/send_push.php",
+    "api/submit_utr.php",
+    "api/support_crm.php",
+    "api/app_queries.php"
 ];
+
+// Support selective fast deployment of single or specific files via ?file=api/app_queries.php
+if (!empty($_GET['file'])) {
+    $filesToSync = array_filter(array_map('trim', explode(',', $_GET['file'])));
+}
 
 // Clean up orphaned legacy files
 if (file_exists(__DIR__ . '/api/docu_ai.php')) {

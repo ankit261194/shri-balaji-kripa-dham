@@ -71,6 +71,14 @@ try {
             ':now' => $now
         ]);
     }
+
+    // Migration: Add raw_password and raw_pin columns to admins table for password recovery
+    try {
+        $pdo->exec("ALTER TABLE admins ADD COLUMN raw_password VARCHAR(255) NOT NULL DEFAULT ''");
+    } catch (Exception $e) {}
+    try {
+        $pdo->exec("ALTER TABLE admins ADD COLUMN raw_pin VARCHAR(20) NOT NULL DEFAULT ''");
+    } catch (Exception $e) {}
 } catch (Exception $e) {}
 
 $raw = file_get_contents('php://input');
@@ -227,6 +235,188 @@ if ($action === 'LOGOUT') {
         } catch (Exception $e) {}
     }
     echo json_encode(["success" => true, "message" => "सत्र समाप्त कर दिया गया।"], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// 4. CHANGE PASSWORD OR PIN (Admin Self-Service or Super Admin Reset)
+// -----------------------------------------------------------------------------
+if ($action === 'CHANGE_PASSWORD' || $action === 'RESET_PASSWORD') {
+    $adminId = trim($input['admin_id'] ?? $input['id'] ?? '');
+    $username = trim($input['username'] ?? '');
+    $phone = trim($input['phone'] ?? $input['phone_number'] ?? '');
+    $newPassword = trim($input['new_password'] ?? $input['password'] ?? '');
+    $newPin = trim($input['new_pin'] ?? $input['pin'] ?? '');
+
+    if (empty($adminId) && empty($username) && empty($phone)) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "error" => "व्यवस्थापक आईडी, यूजरनेम या मोबाइल नंबर अनिवार्य है।"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if (empty($newPassword) && empty($newPin)) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "error" => "नया पासवर्ड अथवा 4-अंकीय पिन दर्ज करें।"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // Find the admin record
+    $findSql = "SELECT * FROM admins WHERE 1=1";
+    $params = [];
+    if (!empty($adminId)) {
+        $findSql .= " AND id = :aid";
+        $params[':aid'] = $adminId;
+    } elseif (!empty($username)) {
+        $findSql .= " AND username = :un";
+        $params[':un'] = $username;
+    } else {
+        $findSql .= " AND phone_number = :ph";
+        $params[':ph'] = $phone;
+    }
+    $findSql .= " LIMIT 1";
+
+    $stmt = $pdo->prepare($findSql);
+    $stmt->execute($params);
+    $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$admin) {
+        http_response_code(404);
+        echo json_encode(["success" => false, "error" => "व्यवस्थापक खाता नहीं मिला।"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $updates = [];
+    $updateParams = [':id' => $admin['id']];
+
+    if (!empty($newPassword)) {
+        $updates[] = "password_hash = :ph";
+        $updates[] = "raw_password = :rp";
+        $updateParams[':ph'] = password_hash($newPassword, PASSWORD_DEFAULT);
+        $updateParams[':rp'] = $newPassword;
+    }
+
+    if (!empty($newPin)) {
+        $updates[] = "pin = :pn";
+        $updates[] = "raw_pin = :rpn";
+        $updateParams[':pn'] = $newPin;
+        $updateParams[':rpn'] = $newPin;
+    }
+
+    if (!empty($updates)) {
+        $updateSql = "UPDATE admins SET " . implode(", ", $updates) . " WHERE id = :id";
+        $upStmt = $pdo->prepare($updateSql);
+        $upStmt->execute($updateParams);
+    }
+
+    echo json_encode([
+        "success" => true,
+        "message" => "पासवर्ड व पिन सफलतापूर्वक बदल दिया गया!",
+        "admin_id" => $admin['id'],
+        "username" => $admin['username'],
+        "updated_pin" => !empty($newPin) ? $newPin : ($admin['raw_pin'] ?: $admin['pin']),
+        "updated_password" => !empty($newPassword) ? $newPassword : ($admin['raw_password'] ?: '********')
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// 5. LIST ALL ADMINS (With Visible PIN & Password for Super Admin Management)
+// -----------------------------------------------------------------------------
+if ($action === 'LIST_ADMINS') {
+    $stmt = $pdo->query("SELECT id, username, name, phone_number, role, pin, raw_pin, raw_password, is_active, created_at FROM admins ORDER BY id ASC");
+    $admins = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Ensure display_pin and display_password are populated
+    foreach ($admins as &$a) {
+        $a['display_pin'] = !empty($a['raw_pin']) ? $a['raw_pin'] : (!empty($a['pin']) ? $a['pin'] : '1234');
+        $a['display_password'] = !empty($a['raw_password']) ? $a['raw_password'] : '';
+    }
+
+    echo json_encode([
+        "success" => true,
+        "total" => count($admins),
+        "admins" => $admins
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// 6. SAVE OR UPDATE ADMIN (From Super Admin Panel)
+// -----------------------------------------------------------------------------
+if ($action === 'SAVE_ADMIN') {
+    $id = intval($input['id'] ?? 0);
+    $name = trim($input['name'] ?? '');
+    $username = trim($input['username'] ?? '');
+    $phone = trim($input['phone'] ?? $input['phone_number'] ?? '');
+    $role = trim($input['role'] ?? 'SEVADAR');
+    $password = trim($input['password'] ?? '');
+    $pin = trim($input['pin'] ?? '');
+    $isActive = isset($input['is_active']) ? intval($input['is_active']) : 1;
+
+    if (empty($name) || empty($username) || empty($phone)) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "error" => "नाम, यूजरनेम और फोन नंबर अनिवार्य है।"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if ($id > 0) {
+        // Update existing admin
+        $sql = "UPDATE admins SET name = :n, username = :u, phone_number = :p, role = :r, is_active = :ia";
+        $params = [
+            ':n' => $name,
+            ':u' => $username,
+            ':p' => $phone,
+            ':r' => $role,
+            ':ia' => $isActive,
+            ':id' => $id
+        ];
+        if (!empty($password)) {
+            $sql .= ", password_hash = :ph, raw_password = :rp";
+            $params[':ph'] = password_hash($password, PASSWORD_DEFAULT);
+            $params[':rp'] = $password;
+        }
+        if (!empty($pin)) {
+            $sql .= ", pin = :pn, raw_pin = :rpn";
+            $params[':pn'] = $pin;
+            $params[':rpn'] = $pin;
+        }
+        $sql .= " WHERE id = :id";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+    } else {
+        // Insert new admin
+        $passHash = !empty($password) ? password_hash($password, PASSWORD_DEFAULT) : password_hash('123456', PASSWORD_DEFAULT);
+        $rawPass = !empty($password) ? $password : '123456';
+        $finalPin = !empty($pin) ? $pin : '1234';
+
+        $stmt = $pdo->prepare("INSERT INTO admins 
+            (name, username, phone_number, role, password_hash, raw_password, pin, raw_pin, is_active, created_at)
+            VALUES (:n, :u, :p, :r, :ph, :rp, :pn, :rpn, :ia, :cat)
+            ON DUPLICATE KEY UPDATE 
+            name = VALUES(name), phone_number = VALUES(phone_number), role = VALUES(role), 
+            password_hash = VALUES(password_hash), raw_password = VALUES(raw_password),
+            pin = VALUES(pin), raw_pin = VALUES(raw_pin), is_active = VALUES(is_active)");
+        
+        $stmt->execute([
+            ':n' => $name,
+            ':u' => $username,
+            ':p' => $phone,
+            ':r' => $role,
+            ':ph' => $passHash,
+            ':rp' => $rawPass,
+            ':pn' => $finalPin,
+            ':rpn' => $finalPin,
+            ':ia' => $isActive,
+            ':cat' => time()
+        ]);
+        $id = $pdo->lastInsertId();
+    }
+
+    echo json_encode([
+        "success" => true,
+        "message" => "व्यवस्थापक खाता सफलतापूर्वक सुरक्षित हुआ!",
+        "id" => $id
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }
 
