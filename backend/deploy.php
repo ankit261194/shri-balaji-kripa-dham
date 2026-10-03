@@ -58,7 +58,8 @@ $filesToSync = [
     "sync_apk.php",
     "sync_elevex_apk.php",
     "elevex_gateway/app_update.json",
-    "elevex_gateway/submit_utr.php"
+    "elevex_gateway/submit_utr.php",
+    "elevex_gateway/support_crm.php"
 ];
 
 // Clean up orphaned legacy files
