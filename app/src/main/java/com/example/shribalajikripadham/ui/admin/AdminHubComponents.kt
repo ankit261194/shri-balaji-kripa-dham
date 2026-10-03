@@ -493,14 +493,28 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "सेवादार खाते" else "Sevadars",
                 if (isHindi) "सुपर कंट्रोल" else "Super Control"
             )
+        ),
+        // 31. Feedback to Super Admin (For Sevadars & Admins)
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "📩 सुपरएडमिन को सुझाव / समस्या" else "Feedback to Super Admin",
+            icon = "📩",
+            titleHindi = "सुपरएडमिन को सुझाव / समस्या",
+            titleEnglish = "Feedback to Super Admin",
+            categoryHindi = "⚙️ सिस्टम व कंट्रोल",
+            descriptionHindi = "आश्रम व्यवस्था, कमियों या नए सुझावों की रिपोर्ट सीधे सुपर एडमिन को भेजें",
+            descriptionEnglish = "Send complaints, bugs and improvement suggestions directly to Super Admin",
+            relatedTabs = listOf(
+                if (isHindi) "टोकन कतार" else "Tokens",
+                if (isHindi) "अर्जी लेजर 📦" else "Arzi Ledger 📦"
+            )
         )
     )
 }
 
 /**
  * Dedicated Sub-Header shown at the top of each individual screen/window.
- * Includes a "← मुख्य मेनू (Back to Menu)" button, title, and a horizontal row of
- * related useful window buttons so the user's work is never interrupted!
+ * Ultra-compact 32dp sleek strip: preserves back button, title, quick shortcuts & menu button
+ * without wasting vertical screen space!
  */
 @Composable
 fun AdminDedicatedModuleHeader(
@@ -514,118 +528,103 @@ fun AdminDedicatedModuleHeader(
     val currentMod = allModules.find { it.tabTitle == title }
     val shortcuts = currentMod?.relatedTabs?.filter { allowedTabs.contains(it) } ?: emptyList()
 
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(14.dp),
-        elevation = CardDefaults.cardElevation(2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = Color.White,
+        border = BorderStroke(0.7.dp, Color(0xFFE2E8F0))
     ) {
-        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Small circular back button
+            Surface(
+                shape = CircleShape,
+                color = Color(0xFFF1F5F9),
+                modifier = Modifier
+                    .size(28.dp)
+                    .clickable { onBackToMenu() }
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(0xFFF1F5F9),
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clickable { onBackToMenu() }
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text("←", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
-                        }
-                    }
-
-                    Column {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = title,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 16.sp,
-                                color = MaroonPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            if (currentMod != null) {
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = Color(0xFFFFF3E0),
-                                    border = BorderStroke(0.8.dp, Color(0xFFFFB74D))
-                                ) {
-                                    Text(
-                                        text = currentMod.categoryHindi,
-                                        fontSize = 9.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFE65100),
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                        }
-                        Text(
-                            text = if (isHindi) "अलग स्वतंत्र स्क्रीन • बैक से मुख्य मेनू पर लौटें" else "Dedicated Window • Back returns to Main Menu",
-                            fontSize = 11.sp,
-                            color = Color.Gray
-                        )
-                    }
-                }
-
-                Button(
-                    onClick = onBackToMenu,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    modifier = Modifier.height(32.dp)
-                ) {
-                    Text(if (isHindi) "← मुख्य मेनू" else "← Menu", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
+                Box(contentAlignment = Alignment.Center) {
+                    Text("←", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
                 }
             }
 
-            // Quick Related Shortcut Buttons
-            if (shortcuts.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // Title + Compact Category Tag
+            Text(
+                text = title,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 13.5.sp,
+                color = MaroonPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            if (currentMod != null) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color(0xFFFFF3E0)
                 ) {
                     Text(
-                        text = if (isHindi) "⚡ उपयोगी शॉर्टकट:" else "⚡ Shortcuts:",
-                        fontSize = 11.sp,
+                        text = currentMod.categoryHindi.split(" ").lastOrNull() ?: currentMod.categoryHindi,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.DarkGray
+                        color = Color(0xFFE65100),
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                     )
-                    shortcuts.forEach { shortcutTabTitle ->
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Inline Compact Shortcuts
+            if (shortcuts.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    shortcuts.take(3).forEach { shortcutTabTitle ->
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(6.dp),
                             color = Color(0xFFF8FAFC),
-                            border = BorderStroke(1.dp, Color(0xFFCBD5E1)),
+                            border = BorderStroke(0.6.dp, Color(0xFFCBD5E1)),
                             modifier = Modifier.clickable { onNavigateToModule(shortcutTabTitle) }
                         ) {
                             Text(
                                 text = shortcutTabTitle,
-                                fontSize = 11.sp,
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = MaroonPrimary,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
                     }
                 }
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+
+            // Quick Menu Return Chip
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = MaroonPrimary,
+                modifier = Modifier.clickable { onBackToMenu() }
+            ) {
+                Text(
+                    text = if (isHindi) "मेनू" else "Menu",
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                )
             }
         }
     }

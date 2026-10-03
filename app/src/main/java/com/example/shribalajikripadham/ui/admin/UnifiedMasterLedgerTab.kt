@@ -97,178 +97,124 @@ fun UnifiedMasterLedgerTab(
             .fillMaxSize()
             .padding(bottom = 16.dp)
     ) {
-        // 1. Grand Audit Overview Card
+        // 1. Ultra-Compact Executive Ledger Strip (reclaiming 220+ dp)
         Card(
             colors = CardDefaults.cardColors(containerColor = MaroonPrimary),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            shape = RoundedCornerShape(10.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = if (isHindi) "संपूर्ण ऐप महा-लेजर (ऑडिट रिकॉर्ड) 📊" else "Unified Master Financial Audit 📊",
-                            color = AmberGold,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = if (isHindi) "बस + अर्जी + धर्मशाला + आश्रम व्यय का सम्पूर्ण बहीखाता" else "Complete ledger across Bus, Arzi, Dharamshala & Expenses",
+                            text = if (isHindi) "महा-लेजर शेष:" else "Ledger Balance:",
                             color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 11.sp
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
                         )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "₹${summary.netBalance.toInt()}",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (summary.netBalance >= 0) AmberGold else Color(0xFFFF8A80)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            color = if (summary.netBalance >= 0) Color(0xFF2E7D32) else Color(0xFFC62828),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = if (summary.netBalance >= 0) "बचत" else "घाटा",
+                                color = Color.White,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            )
+                        }
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Button(
                             onClick = { showAddPaymentDialog = true },
                             colors = ButtonDefaults.buttonColors(containerColor = AmberGold, contentColor = MaroonPrimary),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            modifier = Modifier.height(34.dp)
+                            shape = RoundedCornerShape(6.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.height(28.dp)
                         ) {
-                            Text(if (isHindi) "+ नया भुगतान" else "+ Add Payment", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(if (isHindi) "+ भुगतान" else "+ Add", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         IconButton(
                             onClick = {
                                 loadData()
                                 Toast.makeText(context, if (isHindi) "महा-लेजर रीफ्रेश हुआ" else "Ledger refreshed", Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(28.dp)
                                 .background(Color.White.copy(alpha = 0.2f), CircleShape)
                         ) {
-                            Text("🔄", fontSize = 18.sp)
+                            Text("🔄", fontSize = 13.sp)
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
-                // Big Net Balance Metric
-                Surface(
-                    color = Color.White.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = if (isHindi) "शुद्ध आश्रम शेष राशि (Net Balance)" else "Net Ashram Balance",
-                                fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.9f)
-                            )
-                            Text(
-                                text = "₹${summary.netBalance.toInt()}",
-                                fontSize = 26.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = if (summary.netBalance >= 0) AmberGold else Color(0xFFFF8A80)
-                            )
-                        }
-
-                        Surface(
-                            color = if (summary.netBalance >= 0) Color(0xFF2E7D32) else Color(0xFFC62828),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = if (summary.netBalance >= 0) "✅ बचत (Surplus)" else "⚠️ घाटा (Deficit)",
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Breakdown: Inflow vs Outflow
+                // Scrollable micro stats row
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(if (isHindi) "कुल प्राप्त आवक" else "Paid Inflow", fontSize = 11.sp, color = Color.White.copy(alpha = 0.75f))
-                        Text("₹${summary.totalPaidInflow.toInt()}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA5D6A7))
-                        Text("बकाया: ₹${summary.totalPendingInflow.toInt()}", fontSize = 10.sp, color = Color(0xFFFFCC80))
+                    Surface(color = Color.White.copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                        Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("आवक: ", fontSize = 10.sp, color = Color.White.copy(alpha = 0.75f))
+                            Text("₹${summary.totalPaidInflow.toInt()}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA5D6A7))
+                        }
                     }
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(if (isHindi) "कुल आश्रम व्यय" else "Total Expenses", fontSize = 11.sp, color = Color.White.copy(alpha = 0.75f))
-                        Text("₹${summary.totalOutflow.toInt()}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFAB91))
-                        Text("${summary.expenseCount} खर्च प्रविष्टियां", fontSize = 10.sp, color = Color.White.copy(alpha = 0.75f))
+                    Surface(color = Color.White.copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                        Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("व्यय: ", fontSize = 10.sp, color = Color.White.copy(alpha = 0.75f))
+                            Text("₹${summary.totalOutflow.toInt()}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFAB91))
+                        }
+                    }
+                    Surface(color = Color.White.copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                        Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("📦 अर्जी: ", fontSize = 10.sp, color = Color.White.copy(alpha = 0.75f))
+                            Text("₹${summary.arziTotalAmount.toInt()}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = AmberGold)
+                        }
+                    }
+                    Surface(color = Color.White.copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                        Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("🚌 बस: ", fontSize = 10.sp, color = Color.White.copy(alpha = 0.75f))
+                            Text("₹${summary.busTotalAmount.toInt()} (${summary.busBookedSeatsCount} सीट)", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = AmberGold)
+                        }
+                    }
+                    Surface(color = Color.White.copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                        Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("🙏 दान: ", fontSize = 10.sp, color = Color.White.copy(alpha = 0.75f))
+                            Text("₹${summary.donationTotalAmount.toInt()} (${summary.donationCount})", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = AmberGold)
+                        }
+                    }
+                    Surface(color = Color.White.copy(alpha = 0.15f), shape = RoundedCornerShape(6.dp)) {
+                        Row(modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("💸 खर्च: ", fontSize = 10.sp, color = Color.White.copy(alpha = 0.75f))
+                            Text("₹${summary.expenseTotalAmount.toInt()} (${summary.expenseCount})", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFAB91))
+                        }
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // 2. Service-Specific Quick Stats Cards (4 Columns / 2 Rows)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Card(
-                modifier = Modifier.weight(1f),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE0E0E0))
-            ) {
-                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("📦 अर्जी", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
-                    Text("₹${summary.arziTotalAmount.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
-                    Text("चुकता: ₹${summary.arziPaidAmount.toInt()}", fontSize = 9.sp, color = Color.DarkGray)
-                }
-            }
-
-            Card(
-                modifier = Modifier.weight(1f),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE0E0E0))
-            ) {
-                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("🚌 बस", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = SaffronPrimary)
-                    Text("₹${summary.busTotalAmount.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
-                    Text("${summary.busBookedSeatsCount} सीटें", fontSize = 9.sp, color = Color.DarkGray)
-                }
-            }
-
-            Card(
-                modifier = Modifier.weight(1f),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE0E0E0))
-            ) {
-                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("🙏 दान/QR", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF6A1B9A))
-                    Text("₹${summary.donationTotalAmount.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
-                    Text("${summary.donationCount} प्रविष्टियां", fontSize = 9.sp, color = Color.DarkGray)
-                }
-            }
-
-            Card(
-                modifier = Modifier.weight(1f),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE0E0E0))
-            ) {
-                Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("💸 खर्च", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFC62828))
-                    Text("₹${summary.expenseTotalAmount.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFC62828))
-                    Text("${summary.expenseCount} खर्चे", fontSize = 9.sp, color = Color.DarkGray)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // 3. Search Field
         OutlinedTextField(

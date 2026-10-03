@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 126,
-  "version_code": 126,
-  "latest_version_name": "2.56.51",
-  "version_name": "2.56.51",
-  "update_notes_hindi": "v2.56.51 (Build 126): ⚠️ दरबार अनुशासन उद्घोषणा बटन जोड़े गए (सख्त/कड़क लहजे में लाउडस्पीकर चेतावनी: 'बाहर जाके बात करो' और 'पीछे होके बैठो')!",
-  "update_notes_english": "v2.56.51 (Build 126): ⚠️ Added Darbar Discipline on-demand voice warning buttons (Stern/Strict loudspeaker warnings: 'Talk outside' & 'Sit back')!",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=126",
+  "latest_version_code": 127,
+  "version_code": 127,
+  "latest_version_name": "2.56.52",
+  "version_name": "2.56.52",
+  "update_notes_hindi": "v2.56.52 (Build 127): 🚀 महा-स्क्रीन स्पेस सुधार (अर्ज़ी, महा-लेजर, बस लेजर व टोकन कतार से अनचाहा स्पेस हटाकर फुल स्क्रीन दृश्य), व्हाट्सएप सेवा में बहु-सेवादार डायरेक्टरी (व्हाट्सएप + इन-ऐप चैट व कॉलिंग), सुपरएडमिन को खुला सुझाव बॉक्स एवं लाइव स्टूडियो प्रो!",
+  "update_notes_english": "v2.56.52 (Build 127): 🚀 UI space reclamation (Arzi, Master Ledger, Bus & Tokens compact executive strips), WhatsApp multi-sevadar directory with in-app chat & calls, Super Admin open feedback & Pro Live Studio!",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=127",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

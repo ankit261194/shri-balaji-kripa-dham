@@ -221,6 +221,7 @@ fun HomeScreen(
     var showSuvicharModal by remember { mutableStateOf(false) }
     var showAartiTimingsModal by remember { mutableStateOf(false) }
     var showDevoteeHelpdeskDialog by remember { mutableStateOf(false) }
+    var showSevadarHelpdeskDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val res = StatusSyncManager.fetchActiveStatuses()
@@ -956,17 +957,7 @@ fun HomeScreen(
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            val wa = settings.whatsappNumber.replace("+91 97206 91090", "").replace(Regex("[^0-9]"), "")
-                            if (wa.isNotEmpty()) {
-                                openSocialMediaLink(
-                                    context = context,
-                                    rawUrl = "https://wa.me/$wa",
-                                    defaultUrl = "https://wa.me/$wa",
-                                    isWhatsApp = true
-                                )
-                            } else {
-                                Toast.makeText(context, if (isHindi) "व्हाट्सएप नंबर अभी उपलब्ध नहीं है" else "WhatsApp number not available", Toast.LENGTH_SHORT).show()
-                            }
+                            showSevadarHelpdeskDialog = true
                         },
                         colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color.Transparent),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
@@ -1743,6 +1734,13 @@ fun HomeScreen(
             initialName = currentUserName,
             userRole = if (isUserAdmin) "ADMIN" else "DEVOTEE",
             onDismiss = { showDevoteeHelpdeskDialog = false }
+        )
+    }
+
+    if (showSevadarHelpdeskDialog) {
+        com.example.shribalajikripadham.ui.feedback.SevadarHelpdeskDialog(
+            isHindi = isHindi,
+            onDismiss = { showSevadarHelpdeskDialog = false }
         )
     }
 

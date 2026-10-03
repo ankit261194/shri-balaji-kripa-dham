@@ -11,6 +11,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -171,130 +173,117 @@ fun ArziLedgerTab(
                 .fillMaxSize()
                 .padding(bottom = 16.dp)
         ) {
-        // 1. Header Banner with Voice Mic & Actions
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaroonPrimary),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            modifier = Modifier.fillMaxWidth()
+        // 1. Sleek Compact Header & Metrics Strip (Reclaims 200+ dp space!)
+        Surface(
+            color = Color.White,
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(0.8.dp, Color(0xFFE2E8F0)),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                // Row 1: Rates, Sync, Settings & Quick Voice Mic Button
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = if (isHindi) "पवित्र अर्जी डिब्बा वितरण लेजर 📦" else "Sacred Arzi Distribution Ledger 📦",
-                            color = AmberGold,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
+                            text = if (isHindi) "दर: बड़ी ₹${settings.badiArziRate.toInt()} | छोटी ₹${settings.chhotiArziRate.toInt()}" else "Rate: B ₹${settings.badiArziRate.toInt()} | S ₹${settings.chhotiArziRate.toInt()}",
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaroonPrimary
                         )
-                        Text(
-                            text = if (isHindi) "दर: बड़ी ₹${settings.badiArziRate.toInt()} | छोटी ₹${settings.chhotiArziRate.toInt()}" else "Rates: Big ₹${settings.badiArziRate.toInt()} | Small ₹${settings.chhotiArziRate.toInt()}",
-                            color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 12.sp
-                        )
-                    }
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         if (isSuper) {
-                            IconButton(
-                                onClick = {
+                            Spacer(Modifier.width(4.dp))
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = Color(0xFFFFF3E0),
+                                modifier = Modifier.clickable {
                                     inputBadiRate = settings.badiArziRate.toInt().toString()
                                     inputChhotiRate = settings.chhotiArziRate.toInt().toString()
                                     showRateConfigDialog = true
-                                },
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                                }
                             ) {
-                                Text("⚙️", fontSize = 18.sp)
+                                Text("⚙️", fontSize = 11.sp, modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
                             }
                         }
-
-                        IconButton(
-                            onClick = {
+                        Spacer(Modifier.width(4.dp))
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = Color(0xFFE8F5E9),
+                            modifier = Modifier.clickable {
                                 scope.launch {
                                     val res = repository.syncLiveArziFromCloud()
                                     loadData()
-                                    Toast.makeText(context, if (res.first) "✅ क्लाउड से ${res.second} रिकॉर्ड सिंक हुए" else "सिंक पूर्ण (नवीनतम)", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, if (res.first) "✅ क्लाउड से ${res.second} रिकॉर्ड सिंक हुए" else "सिंक पूर्ण", Toast.LENGTH_SHORT).show()
                                 }
-                            },
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(Color.White.copy(alpha = 0.2f), CircleShape)
+                            }
                         ) {
-                            Text("🔄", fontSize = 18.sp)
+                            Text("🔄", fontSize = 11.sp, modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
+                        }
+                    }
+
+                    // Compact High-Visibility Voice Button
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = SaffronPrimary,
+                        modifier = Modifier.clickable { launchVoiceRecognition() }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("🎙️", fontSize = 12.sp)
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = if (isHindi) "बोलकर अर्जी" else "Voice Arzi",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
-                // Voice Mic Button (Big & Prominent)
-                Button(
-                    onClick = { launchVoiceRecognition() },
-                    colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                // Row 2: KPI Metrics in horizontal scrollable strip
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = if (isHindi) "🎙️ बोलकर अर्जी दर्ज करें (वॉयस इनपुट)" else "🎙️ Record Arzi by Spoken Voice",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFF1F5F9)) {
+                        Text(
+                            text = "📦 कुल: ${totalBadi + totalChhoti} (बड़ी: $totalBadi | छोटी: $totalChhoti)",
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF334155),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                    Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFE8F5E9)) {
+                        Text(
+                            text = "✅ चुकता: ₹${totalPaidAmount.toInt()} (${records.count { it.isPaid }})",
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1B5E20),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                    Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFFFEBEE)) {
+                        Text(
+                            text = "⏳ बकाया: ₹${totalPendingAmount.toInt()} (${records.count { !it.isPaid }})",
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFC62828),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 2. KPI Summary Cards
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Card(
-                modifier = Modifier.weight(1f),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE0E0E0))
-            ) {
-                Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (isHindi) "कुल अर्जी डिब्बे" else "Total Boxes", fontSize = 11.sp, color = Color.Gray)
-                    Text("${totalBadi + totalChhoti}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
-                    Text("बड़ी: $totalBadi | छोटी: $totalChhoti", fontSize = 10.sp, color = Color.DarkGray)
-                }
-            }
-
-            Card(
-                modifier = Modifier.weight(1f),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-                border = BorderStroke(1.dp, Color(0xFF81C784))
-            ) {
-                Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (isHindi) "चुकता राशि ✅" else "Paid Amount", fontSize = 11.sp, color = Color(0xFF2E7D32))
-                    Text("₹${totalPaidAmount.toInt()}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1B5E20))
-                    Text("${records.count { it.isPaid }} भक्त", fontSize = 10.sp, color = Color(0xFF2E7D32))
-                }
-            }
-
-            Card(
-                modifier = Modifier.weight(1f),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-                border = BorderStroke(1.dp, Color(0xFFFFB74D))
-            ) {
-                Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (isHindi) "बकाया राशि ⏳" else "Pending Due", fontSize = 11.sp, color = Color(0xFFE65100))
-                    Text("₹${totalPendingAmount.toInt()}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFFBF360C))
-                    Text("${records.count { !it.isPaid }} शेष", fontSize = 10.sp, color = Color(0xFFE65100))
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
 
         // 3. Search and Add Manual Button
         Row(

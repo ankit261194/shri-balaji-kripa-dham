@@ -7,6 +7,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -39,7 +40,8 @@ fun AdminHelpdeskTab(
     var queries by remember { mutableStateOf<List<AppQuery>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
 
-    var selectedFilter by remember { mutableStateOf("ALL") } // ALL, PENDING, REPLIED, DEVOTEE, ADMIN
+    var activeSourceTab by remember { mutableIntStateOf(0) } // 0: सेवादार/एडमिन, 1: आम भक्त
+    var statusFilter by remember { mutableStateOf("ALL") } // ALL, PENDING, REPLIED
     var replyingToQuery by remember { mutableStateOf<AppQuery?>(null) }
     var replyText by remember { mutableStateOf("") }
     var isSendingReply by remember { mutableStateOf(false) }
@@ -56,13 +58,17 @@ fun AdminHelpdeskTab(
         refreshQueries()
     }
 
-    val filteredQueries = remember(queries, selectedFilter) {
-        when (selectedFilter) {
-            "PENDING" -> queries.filter { !it.isReplied() }
-            "REPLIED" -> queries.filter { it.isReplied() }
-            "DEVOTEE" -> queries.filter { it.senderRole == "DEVOTEE" }
-            "ADMIN" -> queries.filter { it.senderRole == "ADMIN" }
-            else -> queries
+    val adminQueries = remember(queries) { queries.filter { it.senderRole == "ADMIN" } }
+    val devoteeQueries = remember(queries) { queries.filter { it.senderRole != "ADMIN" } }
+    val adminPendingCount = remember(adminQueries) { adminQueries.count { !it.isReplied() } }
+    val devoteePendingCount = remember(devoteeQueries) { devoteeQueries.count { !it.isReplied() } }
+
+    val roleQueries = if (activeSourceTab == 0) adminQueries else devoteeQueries
+    val filteredQueries = remember(roleQueries, statusFilter) {
+        when (statusFilter) {
+            "PENDING" -> roleQueries.filter { !it.isReplied() }
+            "REPLIED" -> roleQueries.filter { it.isReplied() }
+            else -> roleQueries
         }
     }
 
@@ -89,58 +95,127 @@ fun AdminHelpdeskTab(
             ) {
                 Column {
                     Text(
-                        text = if (isHindi) "📩 भक्त व एडमिन समस्या / सुझाव (Helpdesk)" else "📩 Queries & Suggestions (Helpdesk)",
+                        text = if (isHindi) "📩 हेल्पडेस्क: सुझाव व समस्या समाधान" else "📩 Helpdesk: Queries & Feedback",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = MaroonPrimary
                     )
                     Text(
-                        text = if (isHindi) "कुल: ${queries.size} | लंबित: $pendingCount" else "Total: ${queries.size} | Pending: $pendingCount",
-                        fontSize = 12.sp,
+                        text = if (isHindi) "कुल संदेश: ${queries.size} | लंबित (Pending): $pendingCount" else "Total: ${queries.size} | Pending: $pendingCount",
+                        fontSize = 11.5.sp,
                         color = Color.DarkGray
                     )
                 }
                 Button(
                     onClick = { refreshQueries() },
                     colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                    modifier = Modifier.height(32.dp)
                 ) {
-                    Text(if (isHindi) "🔄 रिफ्रेश" else "🔄 Refresh", fontSize = 12.sp)
+                    Text(if (isHindi) "🔄 रिफ्रेश" else "🔄 Refresh", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Filter Chips
+        // 2 Primary Tabs: Admin Queries vs Devotee Queries
+        TabRow(
+            selectedTabIndex = activeSourceTab,
+            containerColor = Color(0xFFF1F5F9),
+            contentColor = MaroonPrimary
+        ) {
+            Tab(
+                selected = activeSourceTab == 0,
+                onClick = { activeSourceTab = 0 },
+                text = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (isHindi) "👥 सेवादार / एडमिन (${adminQueries.size})" else "👥 Staff / Admin (${adminQueries.size})",
+                            fontWeight = if (activeSourceTab == 0) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 12.5.sp
+                        )
+                        if (adminPendingCount > 0) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Surface(
+                                color = Color(0xFFC62828),
+                                shape = CircleShape
+                            ) {
+                                Text(
+                                    text = "$adminPendingCount",
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            )
+            Tab(
+                selected = activeSourceTab == 1,
+                onClick = { activeSourceTab = 1 },
+                text = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (isHindi) "🙏 आम भक्त / यूज़र्स (${devoteeQueries.size})" else "🙏 Devotees / Users (${devoteeQueries.size})",
+                            fontWeight = if (activeSourceTab == 1) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 12.5.sp
+                        )
+                        if (devoteePendingCount > 0) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Surface(
+                                color = Color(0xFFE65100),
+                                shape = CircleShape
+                            ) {
+                                Text(
+                                    text = "$devoteePendingCount",
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Status Sub-filter Chips
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             FilterChip(
-                selected = selectedFilter == "ALL",
-                onClick = { selectedFilter = "ALL" },
-                label = { Text(if (isHindi) "सभी (${queries.size})" else "All", fontSize = 11.sp) }
+                selected = statusFilter == "ALL",
+                onClick = { statusFilter = "ALL" },
+                label = { Text(if (isHindi) "सभी (${roleQueries.size})" else "All (${roleQueries.size})", fontSize = 11.sp) }
             )
             FilterChip(
-                selected = selectedFilter == "PENDING",
-                onClick = { selectedFilter = "PENDING" },
-                label = { Text(if (isHindi) "🔴 लंबित ($pendingCount)" else "Pending", fontSize = 11.sp) }
+                selected = statusFilter == "PENDING",
+                onClick = { statusFilter = "PENDING" },
+                label = {
+                    Text(
+                        text = if (isHindi) "🔴 लंबित (${roleQueries.count { !it.isReplied() }})" else "Pending",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             )
             FilterChip(
-                selected = selectedFilter == "REPLIED",
-                onClick = { selectedFilter = "REPLIED" },
-                label = { Text(if (isHindi) "🟢 उत्तर दिया गया" else "Replied", fontSize = 11.sp) }
-            )
-            FilterChip(
-                selected = selectedFilter == "DEVOTEE",
-                onClick = { selectedFilter = "DEVOTEE" },
-                label = { Text(if (isHindi) "भक्त" else "Devotees", fontSize = 11.sp) }
-            )
-            FilterChip(
-                selected = selectedFilter == "ADMIN",
-                onClick = { selectedFilter = "ADMIN" },
-                label = { Text(if (isHindi) "सेवादार/एडमिन" else "Admins", fontSize = 11.sp) }
+                selected = statusFilter == "REPLIED",
+                onClick = { statusFilter = "REPLIED" },
+                label = {
+                    Text(
+                        text = if (isHindi) "🟢 समाधान प्राप्त (${roleQueries.count { it.isReplied() }})" else "Replied",
+                        fontSize = 11.sp
+                    )
+                }
             )
         }
 

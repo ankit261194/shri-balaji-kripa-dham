@@ -265,6 +265,7 @@ fun AdminDashboardScreen(
     var resetCredentialsErrorMsg by remember { mutableStateOf<String?>(null) }
 
     var showAdminSubmitQueryDialog by remember { mutableStateOf(false) }
+    var showManageSevadarDirectoryDialog by remember { mutableStateOf(false) }
 
     // App Customizer
     var customAshramName by remember { mutableStateOf("") }
@@ -1212,6 +1213,9 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "📩 सहायता व सुझाव" else "Helpdesk & Queries")
             }
 
+            // Universal Feedback module for all admins/sevadars to submit issues/suggestions to Super Admin:
+            allowedTabs.add(if (isHindi) "📩 सुपरएडमिन को सुझाव / समस्या" else "Feedback to Super Admin")
+
             val allAdminModules = remember(isHindi) { getAshramAdminModules(isHindi) }
 
             Column(
@@ -1365,9 +1369,13 @@ fun AdminDashboardScreen(
                         isGridView = isAdminHubGridView,
                         onToggleView = { isAdminHubGridView = it },
                         onSelectModule = { item ->
-                            val idx = allowedTabs.indexOf(item.tabTitle)
-                            if (idx >= 0) selectedTab = idx
-                            activeScreenTitle = item.tabTitle
+                            if (item.tabTitle.contains("सुझाव") || item.tabTitle.contains("Feedback") || item.tabTitle.contains("समस्या")) {
+                                showAdminSubmitQueryDialog = true
+                            } else {
+                                val idx = allowedTabs.indexOf(item.tabTitle)
+                                if (idx >= 0) selectedTab = idx
+                                activeScreenTitle = item.tabTitle
+                            }
                         }
                     )
                 } else {
@@ -1768,6 +1776,7 @@ fun AdminDashboardScreen(
                                 isHindi = isHindi,
                                 admins = adminsList,
                                 onOpenCreate = { showCreateSevadarDialog = true },
+                                onManageDirectory = { showManageSevadarDirectoryDialog = true },
                                 onToggleAnywhere = { targetAdmin, isEnabled ->
                                     scope.launch {
                                         repository.updateAdminAnywhereTokenPermission(targetAdmin.id, isEnabled)
@@ -2448,12 +2457,32 @@ fun AdminDashboardScreen(
                                 superAdminName = admin.name
                             )
                         }
+                        currentTabTitle == "📩 सुपरएडमिन को सुझाव / समस्या" || currentTabTitle == "Feedback to Super Admin" -> {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                DevoteeQueryDialog(
+                                    isHindi = isHindi,
+                                    repository = repository,
+                                    initialName = admin.name,
+                                    initialPhone = admin.phoneNumber,
+                                    userRole = if (admin.role == AdminRole.SUPER_ADMIN) "SUPER_ADMIN" else "ADMIN",
+                                    onDismiss = { activeScreenTitle = null }
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
+
+    // --- MANAGE SEVADAR DIRECTORY DIALOG ---
+    if (showManageSevadarDirectoryDialog) {
+        com.example.shribalajikripadham.ui.admin.ManageSevadarDirectoryDialog(
+            isHindi = isHindi,
+            onDismiss = { showManageSevadarDirectoryDialog = false }
+        )
+    }
 
     // --- CREATE SEVADAR DIALOG ---
     if (showCreateSevadarDialog) {
@@ -7619,6 +7648,7 @@ fun SevadarManagementTab(
     isHindi: Boolean,
     admins: List<Admin>,
     onOpenCreate: () -> Unit,
+    onManageDirectory: () -> Unit = {},
     onOpenEdit: (Admin) -> Unit,
     onToggleActive: (Admin) -> Unit,
     onToggleAnywhere: (Admin, Boolean) -> Unit,
@@ -7645,12 +7675,19 @@ fun SevadarManagementTab(
                     fontSize = 16.sp,
                     color = MaroonPrimary
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedButton(
+                        onClick = onManageDirectory,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(if (isHindi) "📞 डायरेक्टरी" else "📞 Directory", fontSize = 12.sp)
+                    }
                     Button(
                         onClick = onOpenCreate,
-                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
+                        colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text(if (isHindi) "+ नया सेवादार" else "+ Add Sevadar")
+                        Text(if (isHindi) "+ नया सेवादार" else "+ Add Sevadar", fontSize = 12.sp)
                     }
                 }
             }

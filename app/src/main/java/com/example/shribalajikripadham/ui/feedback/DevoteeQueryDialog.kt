@@ -49,6 +49,7 @@ fun DevoteeQueryDialog(
     var phone by remember { mutableStateOf(initialPhone) }
     var city by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("SUGGESTION") } // BUG, SUGGESTION, TOKEN_ISSUE, HAVAN_PARCHA, OTHER
+    var customSubject by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
 
     var isSubmitting by remember { mutableStateOf(false) }
@@ -234,6 +235,15 @@ fun DevoteeQueryDialog(
                         )
 
                         OutlinedTextField(
+                            value = customSubject,
+                            onValueChange = { customSubject = it },
+                            label = { Text(if (isHindi) "विषय / समस्या का शीर्षक (Subject) *" else "Subject / Title *") },
+                            placeholder = { Text(if (isHindi) "उदा. टोकन कतार, माइक आवाज, नया सुझाव..." else "e.g. Token queue, mic sound, new suggestion...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        OutlinedTextField(
                             value = message,
                             onValueChange = { message = it },
                             label = { Text(if (isHindi) "समस्या, कमी अथवा सुझाव का विस्तृत विवरण *" else "Detailed Description *") },
@@ -277,7 +287,7 @@ fun DevoteeQueryDialog(
                                         city = city.trim(),
                                         role = userRole,
                                         category = selectedCategory,
-                                        subject = "",
+                                        subject = customSubject.trim().ifBlank { selectedCategory },
                                         message = message.trim(),
                                         deviceId = deviceId
                                     )
@@ -285,6 +295,7 @@ fun DevoteeQueryDialog(
                                     isError = !ok
                                     submitResult = resMsg
                                     if (ok) {
+                                        customSubject = ""
                                         message = ""
                                         Toast.makeText(context, resMsg, Toast.LENGTH_LONG).show()
                                     }

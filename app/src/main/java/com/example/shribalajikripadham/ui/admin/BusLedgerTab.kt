@@ -93,44 +93,55 @@ fun BusLedgerTab(
             .fillMaxSize()
             .padding(12.dp)
     ) {
-        // TOP SUMMARY CARD
+        // TOP ULTRA-COMPACT SUMMARY STRIP (reclaiming 150+ dp)
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(10.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(14.dp)) {
+            Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🚌", fontSize = 20.sp)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (isHindi) "60-सीटर डीलक्स बस लेजर" else "60-Seater Deluxe Bus Ledger",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = MaroonPrimary
-                            )
-                        }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🚌", fontSize = 16.sp)
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (isHindi) "12 पंक्तियाँ × 5 सीटें (3+2 व्यवस्था) • ₹$farePerSeat/सीट" else "12 Rows × 5 Seats (3+2 Layout) • ₹$farePerSeat/Seat",
-                            fontSize = 11.sp,
-                            color = Color.Gray
+                            text = if (isHindi) "60-सीटर बस लेजर" else "60-Seat Bus Ledger",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = MaroonPrimary
                         )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(color = Color(0xFFF5F5F5), shape = RoundedCornerShape(4.dp)) {
+                            Text("₹$farePerSeat/सीट", fontSize = 10.sp, color = Color.DarkGray, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                        }
                     }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Button(
+                            onClick = {
+                                preselectedSeatForCounter = null
+                                showCounterBookingDialog = true
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                            shape = RoundedCornerShape(6.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.height(28.dp)
+                        ) {
+                            Text(if (isHindi) "+ काउंटर" else "+ Counter", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+
                         IconButton(
                             onClick = { refreshSeats() },
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(28.dp)
                         ) {
-                            Text("🔄", fontSize = 16.sp)
+                            Text("🔄", fontSize = 14.sp)
                         }
+
                         IconButton(
                             onClick = {
                                 scope.launch {
@@ -144,127 +155,86 @@ fun BusLedgerTab(
                                     }
                                 }
                             },
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(28.dp)
                         ) {
-                            Text("☁️", fontSize = 16.sp)
+                            Text("☁️", fontSize = 14.sp)
+                        }
+
+                        if (isSuperAdmin) {
+                            IconButton(
+                                onClick = { showSuperAdminSettingsDialog = true },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Text("⚙️", fontSize = 14.sp)
+                            }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // Stats row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Surface(
                         color = Color(0xFFE8F5E9),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(6.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "${availableSeats.size}",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2E7D32)
-                            )
-                            Text(
-                                text = if (isHindi) "खाली सीटें" else "Available",
-                                fontSize = 10.sp,
-                                color = Color(0xFF2E7D32)
-                            )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(if (isHindi) "खाली: " else "Open: ", fontSize = 11.sp, color = Color(0xFF2E7D32))
+                            Text("${availableSeats.size}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
                         }
                     }
 
                     Surface(
                         color = Color(0xFFFFEBEE),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(6.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "${bookedSeats.size}",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFC62828)
-                            )
-                            Text(
-                                text = if (isHindi) "बुक सीटें" else "Booked",
-                                fontSize = 10.sp,
-                                color = Color(0xFFC62828)
-                            )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(if (isHindi) "बुक: " else "Booked: ", fontSize = 11.sp, color = Color(0xFFC62828))
+                            Text("${bookedSeats.size}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFC62828))
                         }
                     }
 
                     Surface(
                         color = Color(0xFFFFF8E1),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(6.dp),
                         modifier = Modifier.weight(1.2f)
                     ) {
-                        Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "₹$totalRevenue",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFE65100)
-                            )
-                            Text(
-                                text = if (isHindi) "कुल संग्रह" else "Total Revenue",
-                                fontSize = 10.sp,
-                                color = Color(0xFFE65100)
-                            )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(if (isHindi) "कुल: " else "Rev: ", fontSize = 11.sp, color = Color(0xFFE65100))
+                            Text("₹$totalRevenue", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
                         }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Action buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            preselectedSeatForCounter = null
-                            showCounterBookingDialog = true
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(if (isHindi) "➕ ऑफलाइन काउंटर बुकिंग" else "➕ Counter Booking", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
 
                     OutlinedButton(
                         onClick = {
                             scope.launch {
                                 val (ok, msg) = repository.publishBusSeatsToGitHub()
-                                Toast.makeText(context, if (ok) (if (isHindi) "सीटें क्लाउड पर सुरक्षित हुईं!" else "Saved to cloud!") else msg, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, if (ok) (if (isHindi) "सीटें सुरक्षित हुईं!" else "Saved!") else msg, Toast.LENGTH_SHORT).show()
                             }
                         },
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(6.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                        modifier = Modifier.height(26.dp)
                     ) {
-                        Text(if (isHindi) "☁️ बैकअप" else "☁️ Backup", fontSize = 12.sp)
-                    }
-                }
-
-                if (isSuperAdmin) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = { showSuperAdminSettingsDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = AmberGold),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = if (isHindi) "⚙️ यात्रा व बस सेटिंग (Super Admin)" else "⚙️ Yatra & Bus Settings (Super Admin)",
-                            color = Color(0xFF3E1208),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
+                        Text(if (isHindi) "बैकअप" else "Backup", fontSize = 10.sp)
                     }
                 }
             }
