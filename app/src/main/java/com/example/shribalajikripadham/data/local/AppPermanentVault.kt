@@ -181,6 +181,9 @@ object AppPermanentVault {
                     put("can_delete_tokens", a.canDeleteTokens)
                     put("can_custom_token_number", a.canSetCustomTokenNumber)
                     put("can_export_pdf", a.canExportPdf)
+                    put("raw_pin", a.rawPin)
+                    put("raw_password", a.rawPassword)
+                    put("can_manage_havan", a.canManageHavan)
                     put("can_manage_arzi", a.canManageArzi)
                     put("created_at", a.createdAt)
                 }
@@ -320,117 +323,134 @@ object AppPermanentVault {
      */
     fun restoreVault(context: Context, db: SQLiteDatabase, force: Boolean = false): Boolean {
         try {
-            // Check if ashram_settings table already has data
-            if (!force) {
-                var rowCount = 0
-                try {
-                    val c = db.rawQuery("SELECT COUNT(*) FROM ashram_settings", null)
-                    if (c.moveToFirst()) rowCount = c.getInt(0)
-                    c.close()
-                } catch (ignored: Exception) {}
+            var restoredAny = false
 
-                // If settings exist, DO NOT overwrite them!
-                if (rowCount > 0) {
-                    Log.d(TAG, "Settings table already populated ($rowCount rows). Skipping vault restore to protect user settings.")
-                    return true
+            // 1. ALWAYS RESTORE & SYNC ADMINS FIRST (Independent of settings table)
+            try {
+                var file = File(context.filesDir, VAULT_FILE_NAME)
+                if (!file.exists()) {
+                    val extDir = context.getExternalFilesDir(null)
+                    if (extDir != null) {
+                        file = File(extDir, VAULT_FILE_NAME)
+                    }
                 }
+                if (file.exists()) {
+                    val jsonStr = file.readText(StandardCharsets.UTF_8)
+                    val root = JSONObject(jsonStr)
+
+                    val adminsArr = root.optJSONArray("admins")
+                    if (adminsArr != null && adminsArr.length() > 0) {
+                        db.beginTransaction()
+                        try {
+                            for (i in 0 until adminsArr.length()) {
+                                val a = adminsArr.getJSONObject(i)
+                                val username = a.optString("username", "")
+                                if (username.isBlank()) continue
+
+                                val cv = ContentValues().apply {
+                                    put("name", a.optString("name", ""))
+                                    put("username", username)
+                                    put("phone", a.optString("phone", ""))
+                                    put("role", a.optString("role", "SEVADAR"))
+                                    if (a.has("pin_hash") && a.optString("pin_hash").isNotBlank()) put("pin_hash", a.optString("pin_hash"))
+                                    if (a.has("password_hash") && a.optString("password_hash").isNotBlank()) put("password_hash", a.optString("password_hash"))
+                                    put("raw_pin", a.optString("raw_pin", ""))
+                                    put("raw_password", a.optString("raw_password", ""))
+                                    put("photo_uri", a.optString("photo_uri", ""))
+                                    put("is_active", if (a.optBoolean("is_active", true)) 1 else 0)
+                                    put("can_manage_tokens", if (a.optBoolean("can_manage_tokens", true)) 1 else 0)
+                                    put("can_issue_manual_tokens", if (a.optBoolean("can_issue_manual_tokens", true)) 1 else 0)
+                                    put("can_manage_yatra", if (a.optBoolean("can_manage_yatra", true)) 1 else 0)
+                                    put("can_manage_expenses", if (a.optBoolean("can_manage_expenses", true)) 1 else 0)
+                                    put("can_change_location", if (a.optBoolean("can_change_location", false)) 1 else 0)
+                                    put("can_send_notifications", if (a.optBoolean("can_send_notifications", false)) 1 else 0)
+                                    put("can_edit_ashram_info", if (a.optBoolean("can_edit_ashram_info", false)) 1 else 0)
+                                    put("can_manage_admins", if (a.optBoolean("can_manage_admins", false)) 1 else 0)
+                                    put("can_view_devotee_photos", if (a.optBoolean("can_view_devotee_photos", false)) 1 else 0)
+                                    put("can_issue_tokens_anywhere", if (a.optBoolean("can_issue_tokens_anywhere", false)) 1 else 0)
+                                    put("can_scan_paper_register", if (a.optBoolean("can_scan_paper_register", false)) 1 else 0)
+                                    put("can_manage_parchas", if (a.optBoolean("can_manage_parchas", false)) 1 else 0)
+                                    put("can_manage_havan", if (a.optBoolean("can_manage_havan", false)) 1 else 0)
+                                    put("can_cancel_tokens", if (a.optBoolean("can_cancel_tokens", false)) 1 else 0)
+                                    put("can_delete_tokens", if (a.optBoolean("can_delete_tokens", false)) 1 else 0)
+                                    put("can_custom_token_number", if (a.optBoolean("can_custom_token_number", false)) 1 else 0)
+                                    put("can_export_pdf", if (a.optBoolean("can_export_pdf", true)) 1 else 0)
+                                    put("can_manage_arzi", if (a.optBoolean("can_manage_arzi", false)) 1 else 0)
+                                    put("created_at", a.optLong("created_at", System.currentTimeMillis()))
+                                }
+
+                                val updated = db.update("admins", cv, "username = ?", arrayOf(username))
+                                if (updated == 0) {
+                                    db.insert("admins", null, cv)
+                                }
+                            }
+                            db.setTransactionSuccessful()
+                            restoredAny = true
+                        } finally {
+                            db.endTransaction()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error restoring admins in restoreVault: ${e.message}")
             }
 
-            // 1. Try restoring from SharedPreferences first (highest reliability across APK upgrades)
+            // 2. CHECK SETTINGS TABLE: Protect existing settings from being overwritten
+            var rowCount = 0
+            try {
+                val c = db.rawQuery("SELECT COUNT(*) FROM ashram_settings", null)
+                if (c.moveToFirst()) rowCount = c.getInt(0)
+                c.close()
+            } catch (ignored: Exception) {}
+
+            if (!force && rowCount > 0) {
+                Log.d(TAG, "Settings table already populated ($rowCount rows). Settings preserved.")
+                return true
+            }
+
+            // 3. Try restoring settings from SharedPreferences first (highest reliability across APK upgrades)
             val restoredFromPrefs = restoreFromPreferences(context, db)
             if (restoredFromPrefs) {
                 Log.d(TAG, "Settings restored successfully from SharedPreferences!")
                 return true
             }
 
-            // 2. If SharedPreferences was empty, try JSON vault file
-            var file = File(context.filesDir, VAULT_FILE_NAME)
-            if (!file.exists()) {
+            // 4. Fallback: restore settings from JSON vault file
+            var jsonFile = File(context.filesDir, VAULT_FILE_NAME)
+            if (!jsonFile.exists()) {
                 val extDir = context.getExternalFilesDir(null)
                 if (extDir != null) {
-                    file = File(extDir, VAULT_FILE_NAME)
+                    jsonFile = File(extDir, VAULT_FILE_NAME)
                 }
             }
-            if (!file.exists()) return false
-
-            val jsonStr = file.readText(StandardCharsets.UTF_8)
-            val root = JSONObject(jsonStr)
-
-            // Restore Admins
-            val adminsArr = root.optJSONArray("admins")
-            if (adminsArr != null && adminsArr.length() > 0) {
-                db.beginTransaction()
-                try {
-                    for (i in 0 until adminsArr.length()) {
-                        val a = adminsArr.getJSONObject(i)
-                        val username = a.optString("username", "")
-                        if (username.isBlank()) continue
-
-                        val cv = ContentValues().apply {
-                            put("name", a.optString("name", ""))
-                            put("username", username)
-                            put("phone", a.optString("phone", ""))
-                            put("role", a.optString("role", "SEVADAR"))
-                            put("pin_hash", a.optString("pin_hash", ""))
-                            put("password_hash", a.optString("password_hash", ""))
-                            put("photo_uri", a.optString("photo_uri", ""))
-                            put("is_active", if (a.optBoolean("is_active", true)) 1 else 0)
-                            put("can_manage_tokens", if (a.optBoolean("can_manage_tokens", true)) 1 else 0)
-                            put("can_issue_manual_tokens", if (a.optBoolean("can_issue_manual_tokens", true)) 1 else 0)
-                            put("can_manage_yatra", if (a.optBoolean("can_manage_yatra", true)) 1 else 0)
-                            put("can_manage_expenses", if (a.optBoolean("can_manage_expenses", true)) 1 else 0)
-                            put("can_change_location", if (a.optBoolean("can_change_location", false)) 1 else 0)
-                            put("can_send_notifications", if (a.optBoolean("can_send_notifications", false)) 1 else 0)
-                            put("can_edit_ashram_info", if (a.optBoolean("can_edit_ashram_info", false)) 1 else 0)
-                            put("can_manage_admins", if (a.optBoolean("can_manage_admins", false)) 1 else 0)
-                            put("can_view_devotee_photos", if (a.optBoolean("can_view_devotee_photos", false)) 1 else 0)
-                            put("can_issue_tokens_anywhere", if (a.optBoolean("can_issue_tokens_anywhere", false)) 1 else 0)
-                            put("can_scan_paper_register", if (a.optBoolean("can_scan_paper_register", false)) 1 else 0)
-                            put("can_manage_parchas", if (a.optBoolean("can_manage_parchas", false)) 1 else 0)
-                            put("can_cancel_tokens", if (a.optBoolean("can_cancel_tokens", false)) 1 else 0)
-                            put("can_delete_tokens", if (a.optBoolean("can_delete_tokens", false)) 1 else 0)
-                            put("can_custom_token_number", if (a.optBoolean("can_custom_token_number", false)) 1 else 0)
-                            put("can_export_pdf", if (a.optBoolean("can_export_pdf", true)) 1 else 0)
-                            put("can_manage_arzi", if (a.optBoolean("can_manage_arzi", false)) 1 else 0)
-                            put("created_at", a.optLong("created_at", System.currentTimeMillis()))
+            if (jsonFile.exists()) {
+                val jsonStr = jsonFile.readText(StandardCharsets.UTF_8)
+                val root = JSONObject(jsonStr)
+                val setObj = root.optJSONObject("settings")
+                if (setObj != null) {
+                    val cv = ContentValues().apply {
+                        setObj.keys().forEach { key ->
+                            when (val v = setObj.get(key)) {
+                                is String -> put(key, v)
+                                is Boolean -> put(key, if (v) 1 else 0)
+                                is Int -> put(key, v)
+                                is Long -> put(key, v)
+                                is Double -> put(key, v)
+                            }
                         }
-
-                        val updated = db.update("admins", cv, "username = ?", arrayOf(username))
+                    }
+                    if (cv.size() > 0) {
+                        val updated = db.update("ashram_settings", cv, "id = 1", null)
                         if (updated == 0) {
-                            db.insert("admins", null, cv)
+                            cv.put("id", 1)
+                            db.insertWithOnConflict("ashram_settings", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
                         }
-                    }
-                    db.setTransactionSuccessful()
-                } finally {
-                    db.endTransaction()
-                }
-            }
-
-            // Restore Complete Settings
-            val setObj = root.optJSONObject("settings")
-            if (setObj != null) {
-                val cv = ContentValues().apply {
-                    setObj.keys().forEach { key ->
-                        when (val v = setObj.get(key)) {
-                            is String -> put(key, v)
-                            is Boolean -> put(key, if (v) 1 else 0)
-                            is Int -> put(key, v)
-                            is Long -> put(key, v)
-                            is Double -> put(key, v)
-                        }
-                    }
-                }
-                if (cv.size() > 0) {
-                    val updated = db.update("ashram_settings", cv, "id = 1", null)
-                    if (updated == 0) {
-                        cv.put("id", 1)
-                        db.insertWithOnConflict("ashram_settings", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                        return true
                     }
                 }
             }
 
-            Log.d(TAG, "Permanent vault successfully restored from JSON file!")
-            return true
+            return restoredAny
         } catch (e: Exception) {
             Log.e(TAG, "Failed to restore permanent vault: ${e.message}")
             return false

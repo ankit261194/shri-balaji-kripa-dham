@@ -625,14 +625,20 @@ object AppUpdateManager {
                 throw (lastError ?: Exception("अपडेट डाउनलोड में असमर्थ"))
             }
         } catch (e: Exception) {
-            // Local fallback check
+            // Local fallback check (Must be STRICTLY newer than current version)
             var resolvedLocal = false
             try {
                 val publicDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 val localCandidate = File(publicDownloads, "ShriBalajiKripaDham-release.apk")
                 if (localCandidate.exists() && localCandidate.length() > 5000000L) {
-                    val valid = context.packageManager.getPackageArchiveInfo(localCandidate.absolutePath, 0) != null
-                    if (valid) {
+                    val pkg = context.packageManager.getPackageArchiveInfo(localCandidate.absolutePath, 0)
+                    val verCode = if (pkg != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        pkg.longVersionCode.toInt()
+                    } else {
+                        @Suppress("DEPRECATION")
+                        pkg?.versionCode ?: 0
+                    }
+                    if (pkg != null && pkg.packageName == context.packageName && verCode > currentVersionCode) {
                         resolvedLocal = true
                         withContext(Dispatchers.Main) {
                             onProgress(100, localCandidate.length(), localCandidate.length())

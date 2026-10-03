@@ -481,6 +481,7 @@ fun AdminDashboardScreen(
         refreshData()
         scope.launch {
             try {
+                repository.syncAdminsFromCentralHostinger()
                 repository.syncAdminsFromGitHub()
                 repository.syncLiveConfigFromGitHub()
                 refreshData()
@@ -493,6 +494,7 @@ fun AdminDashboardScreen(
             refreshData()
             try {
                 repository.syncFullHostingerToLocal()
+                repository.syncAdminsFromCentralHostinger()
                 repository.syncLiveConfigFromGitHub()
                 repository.syncLiveTokensFromCloud()
                 repository.syncAdminsFromGitHub()
@@ -3734,6 +3736,7 @@ fun TokenQueueTab(
     var showWipeSundayDialog by remember { mutableStateOf(false) }
     var showCustomDateDialog by remember { mutableStateOf(false) }
     var showVoiceSettingsDialog by remember { mutableStateOf(false) }
+    var showQuickVoicePickerDialog by remember { mutableStateOf(false) }
     var showDateSelectDialog by remember { mutableStateOf(false) }
     var customDateInput by remember(selectedDarbarDate) { mutableStateOf(selectedDarbarDate) }
 
@@ -3989,6 +3992,35 @@ fun TokenQueueTab(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("🔊 +1 अगला", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                            }
+
+                            // 🎙️ Quick Voice Selection Button in Token Queue Area
+                            val activeVoicePreset = settings.tokenVoicePreset.ifBlank { AshramVoiceAnnouncementManager.getSelectedVoicePreset(context) }
+                            val activeVoiceLabel = when (activeVoicePreset) {
+                                AshramVoiceAnnouncementManager.PRESET_ELEVENLABS_MALE -> "🎙️ पुरुष"
+                                AshramVoiceAnnouncementManager.PRESET_ELEVENLABS_FEMALE -> "👩 महिला"
+                                AshramVoiceAnnouncementManager.PRESET_CUSTOM_RECORDED -> "🛕 आश्रम"
+                                else -> "🎙️ स्वर"
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFFFF8E1),
+                                border = BorderStroke(0.8.dp, SaffronPrimary),
+                                modifier = Modifier.clickable { showQuickVoicePickerDialog = true }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = activeVoiceLabel,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaroonPrimary
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text("▾", fontSize = 10.sp, color = SaffronPrimary, fontWeight = FontWeight.Bold)
                                 }
                             }
 
@@ -5548,6 +5580,92 @@ fun TokenQueueTab(
             dismissButton = {
                 TextButton(onClick = { showVoiceSettingsDialog = false }) {
                     Text("बंद करें")
+                }
+            }
+        )
+    }
+
+    // 🎙️ Quick Voice Picker Dialog (Token Queue Area)
+    if (showQuickVoicePickerDialog) {
+        val currentPresetId = settings.tokenVoicePreset.ifBlank { AshramVoiceAnnouncementManager.getSelectedVoicePreset(context) }
+        AlertDialog(
+            onDismissRequest = { showQuickVoicePickerDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🎙️", fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "उद्घोषक आवाज़ चुनें" else "Select Announcer Voice",
+                        fontWeight = FontWeight.Bold,
+                        color = MaroonPrimary,
+                        fontSize = 17.sp
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = if (isHindi) "टोकन कतार में उद्घोषणा के लिए आवाज़ चुनें:" else "Choose announcer voice for queue calling:",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+
+                    AshramVoiceAnnouncementManager.AVAILABLE_VOICE_PRESETS.forEach { voice ->
+                        val isSelected = currentPresetId == voice.id
+                        Surface(
+                            onClick = {
+                                AshramVoiceAnnouncementManager.setVoicePreset(context, voice.id)
+                                onUpdateVoicePreset?.invoke(voice.id)
+                                Toast.makeText(context, "✅ अब '${voice.nameHindi}' से टोकन उद्घोषणा होगी", Toast.LENGTH_SHORT).show()
+                                showQuickVoicePickerDialog = false
+                            },
+                            color = if (isSelected) Color(0xFFFFF3E0) else Color(0xFFFAFAFA),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.2.dp, if (isSelected) SaffronPrimary else Color(0xFFE0E0E0)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(voice.icon, fontSize = 20.sp)
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = voice.nameHindi,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                                        fontSize = 13.sp,
+                                        color = if (isSelected) MaroonPrimary else Color.Black
+                                    )
+                                    Text(
+                                        text = voice.description,
+                                        fontSize = 10.5.sp,
+                                        color = Color.Gray,
+                                        maxLines = 1
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        AshramVoiceAnnouncementManager.testVoice(context, voice.id)
+                                    },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.height(28.dp)
+                                ) {
+                                    Text("▶️ सुनिए", fontSize = 10.5.sp, color = SaffronPrimary, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showQuickVoicePickerDialog = false }) {
+                    Text(if (isHindi) "बंद करें" else "Close", fontWeight = FontWeight.Bold, color = MaroonPrimary)
                 }
             }
         )

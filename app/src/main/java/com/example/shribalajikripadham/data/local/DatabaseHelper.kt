@@ -261,10 +261,11 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             // PRAGMA synchronous = NORMAL delivers maximum speed & buttery-smooth transactions with full durability under WAL mode
             db.execSQL("PRAGMA synchronous = NORMAL;")
 
-            // 0-Tolerance Policy: Purge any old dummy sevadars, dummy donors, or demo phone numbers
-            db.execSQL("DELETE FROM sevadars WHERE phone LIKE '%987654321%' OR phone = '' OR phone LIKE '%12345%' OR name IN ('अंकित शर्मा', 'दीपक कुमार', 'राहुल सिंह', 'सोनू तेवतिया') OR name LIKE '%?%';")
-            db.execSQL("DELETE FROM donors WHERE phone LIKE '%987654321%' OR name IN ('सेठ राधेश्याम जी', 'चौधरी वीरेन्द्र सिंह जी', 'श्री रमेश चंद्र गोयल जी', 'श्री अजय तेवतिया जी', 'श्री Ajay तेवतिया जी') OR name LIKE '%?%';")
-            db.execSQL("DELETE FROM admins WHERE role != 'SUPER_ADMIN' AND username NOT IN ('admin');")
+            // PERMANENT LOCK: NEVER delete user-created admins, sevadars, or donors!
+            // All accounts and services configured by admin or superadmin are strictly locked and preserved across updates.
+            try {
+                com.example.shribalajikripadham.data.local.AppPermanentVault.restoreVault(context, db, force = false)
+            } catch (ignored: Exception) {}
             db.execSQL("UPDATE ashram_settings SET bank_account_number = '' WHERE bank_account_number LIKE '%XXXX%';")
             db.execSQL("UPDATE ashram_settings SET bank_ifsc = '' WHERE bank_ifsc LIKE '%XXXX%';")
             db.execSQL("UPDATE ashram_settings SET contact_phone = '' WHERE contact_phone LIKE '%97206%' OR contact_phone LIKE '%98765%';")
@@ -1056,13 +1057,13 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 db.insert("admins", null, superAdmin)
             }
 
-            // Always enforce master credentials for Super Admin via secure precomputed hashes
+            // Only set fallback master credentials for Super Admin if credentials are completely empty or missing
             try {
                 val saCv = ContentValues().apply {
                     put("pin_hash", MASTER_PIN_RAW_HASH)
                     put("password_hash", MASTER_PWD_SALTED_HASH)
                 }
-                db.update("admins", saCv, "role = 'SUPER_ADMIN' OR username = 'admin'", null)
+                db.update("admins", saCv, "(role = 'SUPER_ADMIN' OR username = 'admin') AND (pin_hash IS NULL OR pin_hash = '' OR password_hash IS NULL OR password_hash = '')", null)
             } catch (e: Exception) {}
         } catch (e: Exception) { e.printStackTrace() }
 

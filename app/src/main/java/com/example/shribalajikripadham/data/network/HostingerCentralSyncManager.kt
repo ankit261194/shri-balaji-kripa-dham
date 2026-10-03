@@ -2355,6 +2355,76 @@ object HostingerCentralSyncManager {
         }
         list
     }
+
+    suspend fun fetchAdminsFromCentralServer(): List<JSONObject> = withContext(Dispatchers.IO) {
+        val list = mutableListOf<JSONObject>()
+        try {
+            val url = URL("${BASE_URL}admin_auth.php?action=LIST_ADMINS")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "GET"
+                setRequestProperty("Accept", "application/json")
+            }
+            if (conn.responseCode in 200..299) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(resp)
+                if (root.optBoolean("success", false)) {
+                    val arr = root.optJSONArray("admins")
+                    if (arr != null) {
+                        for (i in 0 until arr.length()) {
+                            list.add(arr.getJSONObject(i))
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        list
+    }
+
+    suspend fun saveAdminToCentralServer(
+        name: String,
+        username: String,
+        phone: String,
+        role: String,
+        password: String = "",
+        pin: String = "",
+        isActive: Boolean = true
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}admin_auth.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                setRequestProperty("Accept", "application/json")
+            }
+            val payload = JSONObject().apply {
+                put("action", "SAVE_ADMIN")
+                put("name", name)
+                put("username", username)
+                put("phone", phone)
+                put("role", role)
+                if (password.isNotBlank()) put("password", password)
+                if (pin.isNotBlank()) put("pin", pin)
+                put("is_active", if (isActive) 1 else 0)
+            }
+            conn.outputStream.use { it.write(payload.toString().toByteArray(StandardCharsets.UTF_8)) }
+            if (conn.responseCode in 200..299) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(resp)
+                Pair(root.optBoolean("success", false), root.optString("message", "सफलता"))
+            } else {
+                Pair(false, "HTTP ${conn.responseCode}")
+            }
+        } catch (e: Exception) {
+            Pair(false, e.localizedMessage ?: "Error")
+        }
+    }
 }
 
 

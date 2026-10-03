@@ -2857,6 +2857,20 @@ class AshramRepository(context: Context) {
         if (inserted) {
             try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
             try { publishAdminsToGitHub() } catch (e: Exception) {}
+            // Instant Push to Hostinger MySQL Central Server
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.saveAdminToCentralServer(
+                        name = name.trim(),
+                        username = username.trim(),
+                        phone = phone.trim(),
+                        role = role.name,
+                        password = password.trim(),
+                        pin = pin.trim(),
+                        isActive = true
+                    )
+                } catch (_: Exception) {}
+            }
         }
         Pair(inserted, if (inserted) "खाता सफलतापूर्वक बन गया!" else "डेटाबेस में सुरक्षित नहीं हो सका")
     }
@@ -2923,6 +2937,19 @@ class AshramRepository(context: Context) {
         if (ok) {
             try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
             try { publishAdminsToGitHub() } catch (e: Exception) {}
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.saveAdminToCentralServer(
+                        name = name.trim(),
+                        username = username.trim(),
+                        phone = phone.trim(),
+                        role = "SEVADAR",
+                        password = password?.trim() ?: "",
+                        pin = pin?.trim() ?: "",
+                        isActive = permissions?.isActive ?: true
+                    )
+                } catch (_: Exception) {}
+            }
         }
         Pair(ok, if (ok) "विवरण सफलतापूर्वक सुरक्षित हुआ!" else "डेटाबेस में अपडेट नहीं हो सका")
     }
@@ -4833,6 +4860,100 @@ class AshramRepository(context: Context) {
             } finally {
                 db.endTransaction()
             }
+            Pair(true, synced)
+        } catch (e: Exception) {
+            Pair(false, 0)
+        }
+    }
+
+    suspend fun syncAdminsFromCentralHostinger(): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
+        try {
+            val remoteAdmins = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchAdminsFromCentralServer()
+            val db = dbHelper.writableDatabase
+            var synced = 0
+            if (remoteAdmins.isNotEmpty()) {
+                db.beginTransaction()
+                try {
+                    remoteAdmins.forEach { a ->
+                        val uname = a.optString("username", "").trim()
+                        if (uname.isNotBlank()) {
+                            val cv = ContentValues().apply {
+                                put("name", a.optString("name", "").trim())
+                                put("phone", a.optString("phone_number", "").trim())
+                                put("role", a.optString("role", "SEVADAR").trim())
+                                val rPin = a.optString("display_pin", a.optString("raw_pin", a.optString("pin", "1234")))
+                                val rPass = a.optString("display_password", a.optString("raw_password", ""))
+                                put("raw_pin", rPin)
+                                put("raw_password", rPass)
+                                put("pin_hash", DatabaseHelper.hashPin(rPin))
+                                if (rPass.isNotBlank()) put("password_hash", DatabaseHelper.hashPassword(rPass))
+                                put("is_active", if (a.optInt("is_active", 1) == 1) 1 else 0)
+                            }
+                            if (uname.equals("admin", ignoreCase = true) || a.optString("role") == "SUPER_ADMIN") {
+                                val count = db.update("admins", cv, "role = 'SUPER_ADMIN' OR username = 'admin'", null)
+                                if (count > 0) synced++
+                            } else {
+                                val count = db.update("admins", cv, "username = ?", arrayOf(uname))
+                                if (count > 0) {
+                                    synced++
+                                } else {
+                                    cv.put("username", uname)
+                                    cv.put("can_manage_tokens", 1)
+                                    cv.put("can_issue_manual_tokens", 1)
+                                    cv.put("can_manage_yatra", 1)
+                                    cv.put("can_manage_expenses", 1)
+                                    cv.put("can_change_location", 0)
+                                    cv.put("can_send_notifications", 0)
+                                    cv.put("can_edit_ashram_info", 0)
+                                    cv.put("can_manage_admins", 0)
+                                    cv.put("can_view_devotee_photos", 0)
+                                    cv.put("can_issue_tokens_anywhere", 0)
+                                    cv.put("can_scan_paper_register", 0)
+                                    cv.put("can_manage_parchas", 0)
+                                    cv.put("can_manage_arzi", 0)
+                                    cv.put("can_manage_havan", 0)
+                                    cv.put("can_cancel_tokens", 0)
+                                    cv.put("can_delete_tokens", 0)
+                                    cv.put("can_custom_token_number", 0)
+                                    cv.put("can_export_pdf", 1)
+                                    cv.put("photo_uri", "")
+                                    cv.put("created_at", a.optLong("created_at", System.currentTimeMillis()))
+                                    val ins = db.insert("admins", null, cv)
+                                    if (ins != -1L) synced++
+                                }
+                            }
+                        }
+                    }
+                    db.setTransactionSuccessful()
+                } finally {
+                    db.endTransaction()
+                }
+            }
+
+            // Two-way sync: Push any local admins that are not on the server
+            val localAdmins = getAllAdmins()
+            val serverUsernames = remoteAdmins.map { it.optString("username", "").lowercase() }.toSet()
+            for (la in localAdmins) {
+                if (!serverUsernames.contains(la.username.lowercase()) && la.username.isNotBlank()) {
+                    try {
+                        com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.saveAdminToCentralServer(
+                            name = la.name,
+                            username = la.username,
+                            phone = la.phoneNumber,
+                            role = la.role.name,
+                            password = la.rawPassword,
+                            pin = la.rawPin.ifBlank { "1234" },
+                            isActive = la.isActive
+                        )
+                    } catch (_: Exception) {}
+                }
+            }
+
+            // Immediately lock into permanent vault
+            try {
+                com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings())
+            } catch (_: Exception) {}
+
             Pair(true, synced)
         } catch (e: Exception) {
             Pair(false, 0)

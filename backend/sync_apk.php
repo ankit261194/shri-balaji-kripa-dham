@@ -73,6 +73,9 @@ if (isset($_GET['upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         fclose($fp);
         if (filesize($tmpFile) > 10000000) {
             rename($tmpFile, $targetFile);
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v125.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v124.apk');
             echo json_encode([
                 "success" => true,
                 "method" => "upload",
@@ -98,6 +101,8 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($isLast && $currentSize > 10000000) {
             rename($tmpFile, $targetFile);
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v125.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v124.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v123.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v122.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v121.apk');

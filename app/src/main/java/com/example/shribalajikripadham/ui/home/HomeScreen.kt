@@ -1750,6 +1750,19 @@ fun HomeScreen(
     val currentInstalledCode = AppUpdateManager.getCurrentVersionCode(context)
     val hasPendingUpdate = settings.latestVersionCode > currentInstalledCode
     if (showUpdatePopup && hasPendingUpdate) {
+        // Validate that any existing downloadedApkFile actually matches the target version
+        if (downloadedApkFile != null && downloadedApkFile!!.exists()) {
+            val pkg = context.packageManager.getPackageArchiveInfo(downloadedApkFile!!.absolutePath, 0)
+            val ver = if (pkg != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                pkg.longVersionCode.toInt()
+            } else {
+                @Suppress("DEPRECATION")
+                pkg?.versionCode ?: 0
+            }
+            if (ver < settings.latestVersionCode) {
+                downloadedApkFile = null
+            }
+        }
         // Pre-check if valid APK matching target version was already downloaded
         if (downloadedApkFile == null || !downloadedApkFile!!.exists()) {
             val cached = AppUpdateManager.findCachedUpdateApk(context, settings.latestVersionCode)
