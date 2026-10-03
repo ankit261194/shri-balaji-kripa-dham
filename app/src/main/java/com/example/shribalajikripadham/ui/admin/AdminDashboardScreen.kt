@@ -3737,6 +3737,8 @@ fun TokenQueueTab(
     var showCustomDateDialog by remember { mutableStateOf(false) }
     var showVoiceSettingsDialog by remember { mutableStateOf(false) }
     var showQuickVoicePickerDialog by remember { mutableStateOf(false) }
+    var showDisciplineDialog by remember { mutableStateOf(false) }
+    var customDisciplineInput by remember { mutableStateOf("") }
     var showDateSelectDialog by remember { mutableStateOf(false) }
     var customDateInput by remember(selectedDarbarDate) { mutableStateOf(selectedDarbarDate) }
 
@@ -4161,6 +4163,111 @@ fun TokenQueueTab(
                                         color = Color.White
                                     )
                                 }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+                    HorizontalDivider(color = Color(0xFFEEEEEE))
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Line 4: Darbar Discipline Warnings Strip (Stern/Angry tone for crowd discipline)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("⚠️", fontSize = 12.sp)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isHindi) "सख्त चेतावनी:" else "Discipline:",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFB71C1C)
+                            )
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Warning 1: बाहर जाके बात करो
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFB71C1C),
+                                modifier = Modifier.clickable {
+                                    AshramVoiceAnnouncementManager.announceDisciplineWarning(
+                                        context = context,
+                                        warning = AshramVoiceAnnouncementManager.DarbarDisciplineType.TALK_OUTSIDE
+                                    )
+                                    Toast.makeText(
+                                        context,
+                                        if (isHindi) "📢 'बाहर जाके बात करो' की सख्त चेतावनी लाउडस्पीकर पर चालू!" else "Announced: Talk Outside warning",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("🤫", fontSize = 10.sp)
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = if (isHindi) "बाहर बात करो" else "Talk Outside",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+
+                            // Warning 2: पीछे होके बैठो
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFD84315),
+                                modifier = Modifier.clickable {
+                                    AshramVoiceAnnouncementManager.announceDisciplineWarning(
+                                        context = context,
+                                        warning = AshramVoiceAnnouncementManager.DarbarDisciplineType.SIT_BACK
+                                    )
+                                    Toast.makeText(
+                                        context,
+                                        if (isHindi) "📢 'पीछे होके बैठो' की सख्त चेतावनी लाउडस्पीकर पर चालू!" else "Announced: Sit Back warning",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("🪑", fontSize = 10.sp)
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = if (isHindi) "पीछे बैठो" else "Sit Back",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+
+                            // More Warnings / Custom Dialog Button
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFFFEBEE),
+                                border = BorderStroke(0.8.dp, Color(0xFFEF5350)),
+                                modifier = Modifier.clickable { showDisciplineDialog = true }
+                            ) {
+                                Text(
+                                    "📢+",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFC62828),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.5.dp)
+                                )
                             }
                         }
                     }
@@ -5665,6 +5772,242 @@ fun TokenQueueTab(
             },
             confirmButton = {
                 TextButton(onClick = { showQuickVoicePickerDialog = false }) {
+                    Text(if (isHindi) "बंद करें" else "Close", fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                }
+            }
+        )
+    }
+
+    // ⚠️ Darbar Discipline Warnings Dialog (Stern/Angry tone for crowd control)
+    if (showDisciplineDialog) {
+        AlertDialog(
+            onDismissRequest = { showDisciplineDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("⚠️", fontSize = 20.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "दरबार अनुशासन उद्घोषणा" else "Darbar Discipline Warnings",
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFB71C1C),
+                        fontSize = 17.sp
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = if (isHindi)
+                            "दरबार में अनुशासन और शांति बनाए रखने के लिए लाउडस्पीकर पर सख्त लहजे में आवाज़ लगाएं:"
+                        else
+                            "Broadcast stern warnings over loudspeaker to maintain order in the hall:",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+
+                    // Warning 1 Card: बाहर जाके बात करो
+                    Surface(
+                        color = Color(0xFFFFEBEE),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.2.dp, Color(0xFFEF5350)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                    Text("🤫", fontSize = 18.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "बाहर जाके बात करो",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.5.sp,
+                                        color = Color(0xFFB71C1C)
+                                    )
+                                }
+                                Button(
+                                    onClick = {
+                                        AshramVoiceAnnouncementManager.announceDisciplineWarning(
+                                            context = context,
+                                            warning = AshramVoiceAnnouncementManager.DarbarDisciplineType.TALK_OUTSIDE
+                                        )
+                                        Toast.makeText(context, "📢 लाउडस्पीकर पर सख्त आवाज़ चालू!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB71C1C)),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.height(30.dp)
+                                ) {
+                                    Text("📢 बुलवाएं", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "“भैया जिसको बात करनी है दरबार से बाहर जाके बात करो!”",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF4A148C)
+                            )
+                        }
+                    }
+
+                    // Warning 2 Card: पीछे होके बैठो
+                    Surface(
+                        color = Color(0xFFFFF3E0),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.2.dp, Color(0xFFFF9800)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                    Text("🪑", fontSize = 18.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "पीछे होके बैठो",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.5.sp,
+                                        color = Color(0xFFE65100)
+                                    )
+                                }
+                                Button(
+                                    onClick = {
+                                        AshramVoiceAnnouncementManager.announceDisciplineWarning(
+                                            context = context,
+                                            warning = AshramVoiceAnnouncementManager.DarbarDisciplineType.SIT_BACK
+                                        )
+                                        Toast.makeText(context, "📢 लाउडस्पीकर पर सख्त आवाज़ चालू!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.height(30.dp)
+                                ) {
+                                    Text("📢 बुलवाएं", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "“तुमसे कितनी बार कह दी कि पीछे होके बैठ जाओ, तुम्हें समझ नहीं आता? पीछे होके बैठो!”",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFFBF360C)
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = Color(0xFFEEEEEE), modifier = Modifier.padding(vertical = 4.dp))
+
+                    // Extra Quick Disciplinary Chips
+                    Text(
+                        text = if (isHindi) "अन्य त्वरित अनुशासन संदेश:" else "Other Quick Discipline Messages:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.DarkGray
+                    )
+
+                    val extraWarnings = listOf(
+                        "📱 कृपया सभी भक्त अपना मोबाइल साइलेंट रखें!",
+                        "🛑 शांति बनाए रखें, दरबार में बातचीत न करें!",
+                        "🚶‍♂️ कोई भी भक्त आगे न बढ़े, अपनी जगह पर बैठें!"
+                    )
+
+                    extraWarnings.forEach { msg ->
+                        Surface(
+                            onClick = {
+                                AshramVoiceAnnouncementManager.speakSternDisciplineText(context, msg)
+                                Toast.makeText(context, "📢 लाउडस्पीकर पर उद्घोषणा चालू!", Toast.LENGTH_SHORT).show()
+                            },
+                            color = Color(0xFFF5F5F5),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(0.8.dp, Color(0xFFE0E0E0)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = msg,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF333333),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("📢", fontSize = 13.sp)
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = Color(0xFFEEEEEE), modifier = Modifier.padding(vertical = 4.dp))
+
+                    // Custom Warning Input
+                    Text(
+                        text = if (isHindi) "या अपनी खुद की सख्त चेतावनी लिख कर बुलवाएं:" else "Or type a custom stern warning:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.DarkGray
+                    )
+
+                    OutlinedTextField(
+                        value = customDisciplineInput,
+                        onValueChange = { customDisciplineInput = it },
+                        placeholder = { Text("जैसे: लाइन में खड़े रहें, आगे न आएं...", fontSize = 12.sp) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 12.5.sp),
+                        maxLines = 2
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                if (customDisciplineInput.isNotBlank()) {
+                                    AshramVoiceAnnouncementManager.speakSternDisciplineText(context, customDisciplineInput)
+                                    Toast.makeText(context, "📢 कस्टम चेतावनी लाउडस्पीकर पर प्रसारित हो रही है!", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            enabled = customDisciplineInput.isNotBlank(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB71C1C)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("📢 कड़क आवाज़ में बुलवाएं", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                AshramVoiceAnnouncementManager.stop()
+                                Toast.makeText(context, "⏹️ आवाज़ रोक दी गई", Toast.LENGTH_SHORT).show()
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+                            border = BorderStroke(1.dp, Color.Red)
+                        ) {
+                            Text("⏹️ रोकें", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDisciplineDialog = false }) {
                     Text(if (isHindi) "बंद करें" else "Close", fontWeight = FontWeight.Bold, color = MaroonPrimary)
                 }
             }

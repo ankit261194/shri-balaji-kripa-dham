@@ -44,7 +44,35 @@ data class VoicePresetInfo(
     val neuralVoiceHint: String = ""
 )
 
+typealias TopDarbarDisciplineType = AshramVoiceAnnouncementManager.DarbarDisciplineType
+
 object AshramVoiceAnnouncementManager {
+    enum class DarbarDisciplineType(
+        val id: String,
+        val titleHindi: String,
+        val textHindi: String,
+        val assetFileNameMale: String,
+        val assetFileNameFemale: String,
+        val icon: String
+    ) {
+        TALK_OUTSIDE(
+            id = "TALK_OUTSIDE",
+            titleHindi = "बाहर जाके बात करो",
+            textHindi = "भैया! जिसको बात करनी है, दरबार से बाहर जाके बात करो!",
+            assetFileNameMale = "audio/discipline/warn_talk_outside_male.mp3",
+            assetFileNameFemale = "audio/discipline/warn_talk_outside_female.mp3",
+            icon = "🤫"
+        ),
+        SIT_BACK(
+            id = "SIT_BACK",
+            titleHindi = "पीछे होके बैठो",
+            textHindi = "तुमसे कितनी बार कह दी कि पीछे होके बैठ जाओ! तुम्हें समझ नहीं आता? पीछे होके बैठो!",
+            assetFileNameMale = "audio/discipline/warn_sit_back_male.mp3",
+            assetFileNameFemale = "audio/discipline/warn_sit_back_female.mp3",
+            icon = "🪑"
+        )
+    }
+
     private const val TAG = "VoiceAnnouncement"
     private const val PREFS_NAME = "sbkd_voice_announcement_prefs"
     private const val KEY_IS_MUTED = "is_tts_muted"
@@ -1297,6 +1325,123 @@ object AshramVoiceAnnouncementManager {
         _standbySecondsRemaining.value = null
     }
 
+    /**
+     * ⚠️ DARBAR DISCIPLINE & CROWD CONTROL WARNINGS (STERN / STRICT TONE):
+     * Plays pre-baked high-fidelity studio MP3s (male/female) or synthesizes on-demand with stern tone.
+     */
+    fun announceDisciplineWarning(
+        context: Context,
+        warning: DarbarDisciplineType,
+        onFinished: (() -> Unit)? = null
+    ) {
+        if (isMuted(context) || !isVoiceServiceActiveToday(context)) {
+            onFinished?.invoke()
+            return
+        }
+
+        boostAudioVolumeForLoudspeaker(context)
+        stopAudioPlayback()
+        standbyCountdownJob?.cancel()
+        _standbySecondsRemaining.value = null
+
+        val activePreset = getSelectedVoicePreset(context)
+        val isFemale = (activePreset == PRESET_ELEVENLABS_FEMALE)
+        val assetPath = if (isFemale) warning.assetFileNameFemale else warning.assetFileNameMale
+
+        _currentAnnouncedText.value = "⚠️ " + warning.textHindi
+        _isAnnouncing.value = true
+
+        if (assetExists(context, assetPath)) {
+            playAudioSegments(context, listOf(AudioSegment.Asset(assetPath))) {
+                _isAnnouncing.value = false
+                onFinished?.invoke()
+            }
+        } else {
+            speakSternDisciplineText(context, warning.textHindi, onFinished)
+        }
+    }
+
+    /**
+     * Synthesizes and announces any custom disciplinary warning with a stern, authoritative tone.
+     */
+    fun speakSternDisciplineText(
+        context: Context,
+        text: String,
+        onFinished: (() -> Unit)? = null
+    ) {
+        val cleanText = text.trim()
+        if (cleanText.isBlank()) {
+            onFinished?.invoke()
+            return
+        }
+
+        if (isMuted(context) || !isVoiceServiceActiveToday(context)) {
+            onFinished?.invoke()
+            return
+        }
+
+        boostAudioVolumeForLoudspeaker(context)
+        stopAudioPlayback()
+        standbyCountdownJob?.cancel()
+        _standbySecondsRemaining.value = null
+
+        _currentAnnouncedText.value = "⚠️ $cleanText"
+        _isAnnouncing.value = true
+
+        val activePreset = getSelectedVoicePreset(context)
+        val isFemale = (activePreset == PRESET_ELEVENLABS_FEMALE)
+        val voiceId = if (isFemale) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
+        val apiKeys = getElevenLabsApiKeyList(context)
+
+        CoroutineScope(Dispatchers.Main).launch {
+            var handled = false
+            if (apiKeys.isNotEmpty()) {
+                val synthesized = ElevenLabsTtsEngine.synthesizeSpeechWithPool(
+                    context = context,
+                    text = cleanText,
+                    apiKeys = apiKeys,
+                    voiceId = voiceId,
+                    stability = 0.38,
+                    similarityBoost = 0.85
+                )
+                if (synthesized != null && synthesized.exists() && synthesized.length() > 500) {
+                    playAudioFile(synthesized) {
+                        _isAnnouncing.value = false
+                        onFinished?.invoke()
+                    }
+                    handled = true
+                }
+            }
+
+            if (!handled) {
+                initIfNeeded(context)
+                tts?.setPitch(0.82f)     // Deeper, firm tone for discipline
+                tts?.setSpeechRate(0.96f) // Crisp, steady pace
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {
+                        _isAnnouncing.value = true
+                    }
+                    override fun onDone(utteranceId: String?) {
+                        _isAnnouncing.value = false
+                        applyVoiceSettings(context, activePreset) // Restore normal preset pitch
+                        CoroutineScope(Dispatchers.Main).launch {
+                            onFinished?.invoke()
+                        }
+                    }
+                    @Deprecated("Deprecated in Java")
+                    override fun onError(utteranceId: String?) {
+                        _isAnnouncing.value = false
+                        applyVoiceSettings(context, activePreset) // Restore normal preset pitch
+                        CoroutineScope(Dispatchers.Main).launch {
+                            onFinished?.invoke()
+                        }
+                    }
+                })
+                speakRaw(cleanText)
+            }
+        }
+    }
+
     fun testVoice(context: Context, presetId: String) {
         boostAudioVolumeForLoudspeaker(context)
         if (presetId == PRESET_CUSTOM_RECORDED) {
@@ -1422,6 +1567,7 @@ object AshramVoiceAnnouncementManager {
         standbyCountdownJob?.cancel()
         _standbySecondsRemaining.value = null
         stopAudioPlayback()
+        _isAnnouncing.value = false
         try {
             tts?.stop()
         } catch (e: Exception) {
