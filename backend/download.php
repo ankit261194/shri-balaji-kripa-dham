@@ -4,6 +4,49 @@
 // Ultra High-Speed Direct Ashram Server APK Delivery Engine (v2.56.28)
 // ==============================================================================
 
+// Ankit EleveX Direct APK Delivery Block
+$appParam = strtolower(trim($_GET['app'] ?? ''));
+if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ankit_elievex') {
+    $targetFile = '';
+    $elevexDir = __DIR__ . '/elevex_gateway/downloads';
+
+    // 1. Look for v5.9.24 Final
+    if (file_exists("$elevexDir/Ankit_EleveX_v5.9.24_Final.apk") && filesize("$elevexDir/Ankit_EleveX_v5.9.24_Final.apk") > 10000000) {
+        $targetFile = "$elevexDir/Ankit_EleveX_v5.9.24_Final.apk";
+    } else if (file_exists("$elevexDir/Ankit_EleveX_Release.apk") && filesize("$elevexDir/Ankit_EleveX_Release.apk") > 10000000) {
+        $targetFile = "$elevexDir/Ankit_EleveX_Release.apk";
+    } else {
+        $files = glob("$elevexDir/Ankit_EleveX*.apk");
+        if (!empty($files)) {
+            natsort($files);
+            $files = array_reverse($files);
+            foreach ($files as $f) {
+                if (filesize($f) > 10000000) {
+                    $targetFile = $f;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!empty($targetFile) && file_exists($targetFile)) {
+        $filesize = filesize($targetFile);
+        $filename = "Ankit_EleveX_v5.9.24_Final.apk";
+
+        while (ob_get_level()) ob_end_clean();
+        header("Content-Type: application/vnd.android.package-archive");
+        header("Content-Disposition: attachment; filename=\"{$filename}\"");
+        header("Accept-Ranges: bytes");
+        header("Cache-Control: public, no-cache, no-store, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
+        header("Expires: 0");
+        header("Content-Length: " . $filesize);
+
+        readfile($targetFile);
+        exit;
+    }
+}
+
 $requestedVer = isset($_GET['v']) ? intval($_GET['v']) : 0;
 $targetFile = '';
 

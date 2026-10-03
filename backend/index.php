@@ -1852,6 +1852,17 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
         <div class="copyright" id="dynamicFooterCopyright">
             <?= htmlspecialchars($footerCopyright) ?>
         </div>
+
+        <!-- Ankit EleveX Direct Latest APK Download Button -->
+        <div style="margin-top: 10px; margin-bottom: 6px; text-align: center;">
+            <a href="download.php?app=elevex" 
+               style="color: rgba(255, 255, 255, 0.7); background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.25); padding: 4px 12px; border-radius: 12px; text-decoration: none; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 5px; font-weight: 600; letter-spacing: 0.3px; transition: all 0.2s ease;" 
+               onmouseover="this.style.color='#FFD54F'; this.style.borderColor='#FFD54F'; this.style.background='rgba(0,0,0,0.6)';"
+               onmouseout="this.style.color='rgba(255, 255, 255, 0.7)'; this.style.borderColor='rgba(255, 255, 255, 0.25)'; this.style.background='rgba(0,0,0,0.35)';"
+               title="अंकित एलेवेक्स (लिफ्ट रामबाण AI) नवीनतम APK डाउनलोड करें">
+                ⚡ Ankit EleveX (APK Download)
+            </a>
+        </div>
     </footer>
 
     <!-- Scripts for Auto-Slide and Dynamic Updates -->
