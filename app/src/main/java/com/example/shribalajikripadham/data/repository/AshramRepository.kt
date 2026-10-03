@@ -2662,6 +2662,8 @@ class AshramRepository(context: Context) {
             role = AdminRole.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("role"))),
             pinHash = cursor.getString(cursor.getColumnIndexOrThrow("pin_hash")),
             passwordHash = cursor.getString(cursor.getColumnIndexOrThrow("password_hash")),
+            rawPin = try { cursor.getString(cursor.getColumnIndexOrThrow("raw_pin")) } catch (e: Exception) { "" } ?: "",
+            rawPassword = try { cursor.getString(cursor.getColumnIndexOrThrow("raw_password")) } catch (e: Exception) { "" } ?: "",
             canManageTokens = cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_tokens")) == 1,
             canIssueManualTokens = cursor.getInt(cursor.getColumnIndexOrThrow("can_issue_manual_tokens")) == 1,
             canManageYatra = cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_yatra")) == 1,
@@ -2827,6 +2829,8 @@ class AshramRepository(context: Context) {
             put("role", role.name)
             put("pin_hash", DatabaseHelper.hashPin(if (pin.isNotEmpty()) pin.trim() else "1234"))
             put("password_hash", DatabaseHelper.hashPassword(password.trim()))
+            put("raw_pin", if (pin.isNotEmpty()) pin.trim() else "1234")
+            put("raw_password", password.trim())
             put("can_manage_tokens", if (canManageTokens) 1 else 0)
             put("can_issue_manual_tokens", if (canIssueManualTokens) 1 else 0)
             put("can_manage_yatra", if (canManageYatra) 1 else 0)
@@ -2884,9 +2888,11 @@ class AshramRepository(context: Context) {
             put("phone", phone.trim())
             if (!password.isNullOrBlank()) {
                 put("password_hash", DatabaseHelper.hashPassword(password.trim()))
+                put("raw_password", password.trim())
             }
             if (!pin.isNullOrBlank()) {
                 put("pin_hash", DatabaseHelper.hashPin(pin.trim()))
+                put("raw_pin", pin.trim())
             }
             if (photoUri != null) {
                 put("photo_uri", photoUri.trim())
@@ -6736,6 +6742,416 @@ class AshramRepository(context: Context) {
             // Local success
             Pair(true, appNo)
         }
+    }
+
+    suspend fun getAdminById(adminId: Long): Admin? = withContext(Dispatchers.IO) {
+        val db = dbHelper.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM admins WHERE id = ? LIMIT 1", arrayOf(adminId.toString()))
+        var admin: Admin? = null
+        if (cursor.moveToFirst()) {
+            admin = parseAdminCursor(cursor)
+        }
+        cursor.close()
+        admin
+    }
+
+    suspend fun updateAdminCredentials(
+        adminId: Long,
+        newPassword: String?,
+        newPin: String?
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        if (newPassword.isNullOrBlank() && newPin.isNullOrBlank()) {
+            return@withContext Pair(false, "नया पासवर्ड अथवा 4-अंकीय पिन दर्ज करें")
+        }
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            if (!newPassword.isNullOrBlank()) {
+                put("password_hash", DatabaseHelper.hashPassword(newPassword.trim()))
+                put("raw_password", newPassword.trim())
+            }
+            if (!newPin.isNullOrBlank()) {
+                put("pin_hash", DatabaseHelper.hashPin(newPin.trim()))
+                put("raw_pin", newPin.trim())
+            }
+        }
+        val count = db.update("admins", cv, "id = ?", arrayOf(adminId.toString()))
+        val ok = count > 0
+        if (ok) {
+            try { com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), getSettings()) } catch (e: Exception) {}
+            try { publishAdminsToGitHub() } catch (e: Exception) {}
+            // Sync with Central Server admin_auth.php
+            try {
+                val adminObj = getAdminById(adminId)
+                if (adminObj != null) {
+                    val url = java.net.URL("https://shribalajikripadham.online/api/admin_auth.php")
+                    val conn = url.openConnection() as java.net.HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                    conn.connectTimeout = 6000
+                    conn.readTimeout = 6000
+                    conn.doOutput = true
+
+                    val payload = JSONObject().apply {
+                        put("action", "CHANGE_PASSWORD")
+                        put("admin_id", adminId.toString())
+                        put("username", adminObj.username)
+                        put("phone", adminObj.phoneNumber)
+                        if (!newPassword.isNullOrBlank()) put("new_password", newPassword.trim())
+                        if (!newPin.isNullOrBlank()) put("new_pin", newPin.trim())
+                    }
+
+                    conn.outputStream.use { os ->
+                        os.write(payload.toString().toByteArray(Charsets.UTF_8))
+                    }
+                    val code = conn.responseCode
+                    conn.disconnect()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        Pair(ok, if (ok) "पासवर्ड/पिन सफलतापूर्वक बदल दिया गया!" else "डेटाबेस में सुरक्षित नहीं हो सका")
+    }
+
+    // --- Devotee & Admin Helpdesk / Query Management System ---
+
+    suspend fun submitAppQuery(
+        name: String,
+        phone: String,
+        city: String = "",
+        role: String = "DEVOTEE",
+        category: String = "OTHER",
+        subject: String = "",
+        message: String = "",
+        deviceId: String = ""
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        if (name.isBlank() || phone.isBlank() || message.isBlank()) {
+            return@withContext Pair(false, "नाम, फोन नंबर और समस्या विवरण दर्ज करना अनिवार्य है")
+        }
+        val now = System.currentTimeMillis()
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("sender_name", name.trim())
+            put("sender_phone", phone.trim())
+            put("sender_city", city.trim())
+            put("sender_role", role.trim())
+            put("category", category.trim())
+            put("subject", subject.trim())
+            put("message", message.trim())
+            put("status", "PENDING")
+            put("admin_reply", "")
+            put("replied_by", "")
+            put("replied_at", 0L)
+            put("created_at", now)
+        }
+        val localId = db.insert("app_queries", null, cv)
+
+        var serverMsg = "आपकी समस्या/सुझाव सुपर एडमिन को सफलतापूर्वक भेज दिया गया है!"
+        var success = localId > 0
+
+        try {
+            val url = java.net.URL("https://shribalajikripadham.online/api/app_queries.php")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.doOutput = true
+
+            val payload = JSONObject().apply {
+                put("action", "SUBMIT")
+                put("sender_name", name.trim())
+                put("sender_phone", phone.trim())
+                put("sender_city", city.trim())
+                put("sender_role", role.trim())
+                put("category", category.trim())
+                put("subject", subject.trim())
+                put("message", message.trim())
+                put("device_id", deviceId)
+            }
+
+            conn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(Charsets.UTF_8))
+            }
+
+            if (conn.responseCode in 200..299) {
+                val respStr = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(respStr)
+                if (json.optBoolean("success", false)) {
+                    val remoteId = json.optLong("query_id", 0L)
+                    if (remoteId > 0L && localId > 0L) {
+                        val upCv = ContentValues().apply { put("remote_id", remoteId) }
+                        db.update("app_queries", upCv, "id = ?", arrayOf(localId.toString()))
+                    }
+                    serverMsg = json.optString("message", serverMsg)
+                    success = true
+                }
+            }
+            conn.disconnect()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        Pair(success, serverMsg)
+    }
+
+    suspend fun getMyQueries(phone: String, deviceId: String = ""): List<AppQuery> = withContext(Dispatchers.IO) {
+        val list = mutableListOf<AppQuery>()
+
+        // 1. Fetch remote updates first
+        try {
+            val cleanPhone = java.net.URLEncoder.encode(phone.trim(), "UTF-8")
+            val cleanDid = java.net.URLEncoder.encode(deviceId.trim(), "UTF-8")
+            val url = java.net.URL("https://shribalajikripadham.online/api/app_queries.php?action=GET_MY&phone=$cleanPhone&device_id=$cleanDid")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+
+            if (conn.responseCode in 200..299) {
+                val respStr = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(respStr)
+                if (json.optBoolean("success", false)) {
+                    val arr = json.optJSONArray("queries")
+                    if (arr != null) {
+                        val db = dbHelper.writableDatabase
+                        for (i in 0 until arr.length()) {
+                            val item = arr.getJSONObject(i)
+                            val rId = item.optLong("id", 0L)
+                            val sName = item.optString("sender_name", "")
+                            val sPhone = item.optString("sender_phone", "")
+                            val sCity = item.optString("sender_city", "")
+                            val sRole = item.optString("sender_role", "DEVOTEE")
+                            val cat = item.optString("category", "OTHER")
+                            val sub = item.optString("subject", "")
+                            val msg = item.optString("message", "")
+                            val st = item.optString("status", "PENDING")
+                            val aReply = item.optString("admin_reply", "")
+                            val rBy = item.optString("replied_by", "")
+                            val rAt = item.optLong("replied_at", 0L)
+                            val cAt = item.optLong("created_at", System.currentTimeMillis() / 1000) * 1000L
+
+                            val c = db.rawQuery("SELECT id FROM app_queries WHERE remote_id = ? OR (sender_phone = ? AND message = ?)", arrayOf(rId.toString(), sPhone, msg))
+                            if (c.moveToFirst()) {
+                                val localId = c.getLong(0)
+                                val cv = ContentValues().apply {
+                                    put("remote_id", rId)
+                                    put("status", st)
+                                    put("admin_reply", aReply)
+                                    put("replied_by", rBy)
+                                    put("replied_at", rAt)
+                                }
+                                db.update("app_queries", cv, "id = ?", arrayOf(localId.toString()))
+                            } else {
+                                val cv = ContentValues().apply {
+                                    put("remote_id", rId)
+                                    put("sender_name", sName)
+                                    put("sender_phone", sPhone)
+                                    put("sender_city", sCity)
+                                    put("sender_role", sRole)
+                                    put("category", cat)
+                                    put("subject", sub)
+                                    put("message", msg)
+                                    put("status", st)
+                                    put("admin_reply", aReply)
+                                    put("replied_by", rBy)
+                                    put("replied_at", rAt)
+                                    put("created_at", cAt)
+                                }
+                                db.insert("app_queries", null, cv)
+                            }
+                            c.close()
+                        }
+                    }
+                }
+            }
+            conn.disconnect()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // 2. Read from local SQLite
+        try {
+            val db = dbHelper.readableDatabase
+            val cursor = db.rawQuery("SELECT * FROM app_queries WHERE sender_phone = ? OR sender_phone LIKE ? ORDER BY id DESC", arrayOf(phone, "%${phone.takeLast(10)}%"))
+            while (cursor.moveToNext()) {
+                list.add(parseAppQueryCursor(cursor))
+            }
+            cursor.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        list
+    }
+
+    suspend fun getAllQueriesForSuperAdmin(): List<AppQuery> = withContext(Dispatchers.IO) {
+        val list = mutableListOf<AppQuery>()
+
+        // 1. Fetch live from central server
+        try {
+            val url = java.net.URL("https://shribalajikripadham.online/api/app_queries.php?action=GET_ALL")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+
+            if (conn.responseCode in 200..299) {
+                val respStr = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(respStr)
+                if (json.optBoolean("success", false)) {
+                    val arr = json.optJSONArray("queries")
+                    if (arr != null) {
+                        for (i in 0 until arr.length()) {
+                            val item = arr.getJSONObject(i)
+                            list.add(AppQuery(
+                                id = item.optLong("id", 0L),
+                                remoteId = item.optLong("id", 0L),
+                                senderName = item.optString("sender_name", ""),
+                                senderPhone = item.optString("sender_phone", ""),
+                                senderCity = item.optString("sender_city", ""),
+                                senderRole = item.optString("sender_role", "DEVOTEE"),
+                                category = item.optString("category", "OTHER"),
+                                subject = item.optString("subject", ""),
+                                message = item.optString("message", ""),
+                                attachmentUrl = item.optString("attachment_url", ""),
+                                status = item.optString("status", "PENDING"),
+                                adminReply = item.optString("admin_reply", ""),
+                                repliedBy = item.optString("replied_by", ""),
+                                repliedAt = item.optLong("replied_at", 0L),
+                                createdAt = item.optLong("created_at", System.currentTimeMillis() / 1000) * 1000L
+                            ))
+                        }
+                        return@withContext list
+                    }
+                }
+            }
+            conn.disconnect()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // Fallback to local SQLite if offline
+        try {
+            val db = dbHelper.readableDatabase
+            val cursor = db.rawQuery("SELECT * FROM app_queries ORDER BY id DESC", null)
+            while (cursor.moveToNext()) {
+                list.add(parseAppQueryCursor(cursor))
+            }
+            cursor.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        list
+    }
+
+    suspend fun replyToAppQuery(
+        queryId: Long,
+        replyMessage: String,
+        repliedBy: String = "सुपर एडमिन (अंकित चौधरी)"
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        if (replyMessage.isBlank()) {
+            return@withContext Pair(false, "उत्तर संदेश दर्ज करें")
+        }
+        val now = System.currentTimeMillis()
+        var ok = false
+        var msg = "उत्तर सफलतापूर्वक दर्ज हो गया!"
+
+        try {
+            val url = java.net.URL("https://shribalajikripadham.online/api/app_queries.php")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.doOutput = true
+
+            val payload = JSONObject().apply {
+                put("action", "REPLY")
+                put("id", queryId)
+                put("reply", replyMessage.trim())
+                put("replied_by", repliedBy.trim())
+                put("status", "REPLIED")
+            }
+
+            conn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(Charsets.UTF_8))
+            }
+
+            if (conn.responseCode in 200..299) {
+                val respStr = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(respStr)
+                if (json.optBoolean("success", false)) {
+                    ok = true
+                    msg = json.optString("message", msg)
+                }
+            }
+            conn.disconnect()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        try {
+            val db = dbHelper.writableDatabase
+            val cv = ContentValues().apply {
+                put("admin_reply", replyMessage.trim())
+                put("replied_by", repliedBy.trim())
+                put("replied_at", now / 1000)
+                put("status", "REPLIED")
+            }
+            db.update("app_queries", cv, "remote_id = ? OR id = ?", arrayOf(queryId.toString(), queryId.toString()))
+            ok = true
+        } catch (e: Exception) {}
+
+        Pair(ok, msg)
+    }
+
+    suspend fun deleteAppQuery(queryId: Long): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = java.net.URL("https://shribalajikripadham.online/api/app_queries.php")
+            val conn = url.openConnection() as java.net.HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+            conn.connectTimeout = 6000
+            conn.readTimeout = 6000
+            conn.doOutput = true
+
+            val payload = JSONObject().apply {
+                put("action", "DELETE")
+                put("id", queryId)
+            }
+            conn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(Charsets.UTF_8))
+            }
+            conn.responseCode
+            conn.disconnect()
+        } catch (e: Exception) {}
+
+        try {
+            val db = dbHelper.writableDatabase
+            db.delete("app_queries", "remote_id = ? OR id = ?", arrayOf(queryId.toString(), queryId.toString())) > 0
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun parseAppQueryCursor(cursor: Cursor): AppQuery {
+        return AppQuery(
+            id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+            remoteId = try { cursor.getLong(cursor.getColumnIndexOrThrow("remote_id")) } catch (e: Exception) { 0L },
+            senderName = cursor.getString(cursor.getColumnIndexOrThrow("sender_name")),
+            senderPhone = cursor.getString(cursor.getColumnIndexOrThrow("sender_phone")),
+            senderCity = try { cursor.getString(cursor.getColumnIndexOrThrow("sender_city")) } catch (e: Exception) { "" } ?: "",
+            senderRole = try { cursor.getString(cursor.getColumnIndexOrThrow("sender_role")) } catch (e: Exception) { "DEVOTEE" } ?: "DEVOTEE",
+            category = cursor.getString(cursor.getColumnIndexOrThrow("category")),
+            subject = try { cursor.getString(cursor.getColumnIndexOrThrow("subject")) } catch (e: Exception) { "" } ?: "",
+            message = cursor.getString(cursor.getColumnIndexOrThrow("message")),
+            attachmentUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("attachment_url")) } catch (e: Exception) { "" } ?: "",
+            status = cursor.getString(cursor.getColumnIndexOrThrow("status")),
+            adminReply = try { cursor.getString(cursor.getColumnIndexOrThrow("admin_reply")) } catch (e: Exception) { "" } ?: "",
+            repliedBy = try { cursor.getString(cursor.getColumnIndexOrThrow("replied_by")) } catch (e: Exception) { "" } ?: "",
+            repliedAt = try { cursor.getLong(cursor.getColumnIndexOrThrow("replied_at")) } catch (e: Exception) { 0L },
+            createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
+        )
     }
 }
 

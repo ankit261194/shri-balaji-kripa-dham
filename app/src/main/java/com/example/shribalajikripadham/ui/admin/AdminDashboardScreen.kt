@@ -43,6 +43,7 @@ import com.example.shribalajikripadham.data.repository.AdminPermissionsUpdate
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.ui.common.SacredAvatar
+import com.example.shribalajikripadham.ui.feedback.DevoteeQueryDialog
 import com.example.shribalajikripadham.ui.home.AppUiLayout
 import com.example.shribalajikripadham.util.*
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -251,6 +252,19 @@ fun AdminDashboardScreen(
     var newSevCanArzi by remember { mutableStateOf(false) }
     var newSevCanHavan by remember { mutableStateOf(false) }
     var createSevErrorMsg by remember { mutableStateOf<String?>(null) }
+
+    // Own Credentials & Reset Credentials States
+    var showChangeOwnCredentialsDialog by remember { mutableStateOf(false) }
+    var ownNewPassword by remember { mutableStateOf("") }
+    var ownNewPin by remember { mutableStateOf("") }
+    var ownCredentialsErrorMsg by remember { mutableStateOf<String?>(null) }
+
+    var sevadarToResetCredentials by remember { mutableStateOf<Admin?>(null) }
+    var resetSevPassword by remember { mutableStateOf("") }
+    var resetSevPin by remember { mutableStateOf("") }
+    var resetCredentialsErrorMsg by remember { mutableStateOf<String?>(null) }
+
+    var showAdminSubmitQueryDialog by remember { mutableStateOf(false) }
 
     // App Customizer
     var customAshramName by remember { mutableStateOf("") }
@@ -1193,6 +1207,7 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "कस्टम दूरियाँ" else "Distances")
                 allowedTabs.add(if (isHindi) "🪪 ID कार्ड स्टूडियो" else "🪪 ID Card Studio")
                 allowedTabs.add(if (isHindi) "ऑटो-अपडेट" else "Updates")
+                allowedTabs.add(if (isHindi) "📩 सहायता व सुझाव" else "Helpdesk & Queries")
             }
 
             val allAdminModules = remember(isHindi) { getAshramAdminModules(isHindi) }
@@ -1278,6 +1293,59 @@ fun AdminDashboardScreen(
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF4A148C)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(6.dp))
+                            // Password / PIN Self-Change Button
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFE8F5E9),
+                                border = BorderStroke(0.8.dp, Color(0xFF81C784)),
+                                modifier = Modifier.clickable {
+                                    ownNewPassword = ""
+                                    ownNewPin = ""
+                                    ownCredentialsErrorMsg = null
+                                    showChangeOwnCredentialsDialog = true
+                                }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("🔐", fontSize = 11.sp)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (isHindi) "पासवर्ड" else "Password",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1B5E20)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(6.dp))
+                            // Helpdesk / Query to Super Admin
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFFFF3E0),
+                                border = BorderStroke(0.8.dp, Color(0xFFFFB74D)),
+                                modifier = Modifier.clickable {
+                                    showAdminSubmitQueryDialog = true
+                                }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("📩", fontSize = 11.sp)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (isHindi) "सुझाव" else "Feedback",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaroonPrimary
                                     )
                                 }
                             }
@@ -1732,10 +1800,16 @@ fun AdminDashboardScreen(
                                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                     }
                                 },
+                                onResetCredentials = { targetAdmin ->
+                                    sevadarToResetCredentials = targetAdmin
+                                    resetSevPassword = targetAdmin.rawPassword
+                                    resetSevPin = targetAdmin.rawPin
+                                    resetCredentialsErrorMsg = null
+                                },
                                 onSendWhatsApp = { targetAdmin ->
                                     sevadarToShareViaWhatsApp = targetAdmin
-                                    customSharePassword = ""
-                                    customSharePin = ""
+                                    customSharePassword = targetAdmin.rawPassword
+                                    customSharePin = targetAdmin.rawPin
                                 },
                                 onOpenEdit = { targetAdmin ->
                                     editingAdmin = targetAdmin
@@ -2363,6 +2437,13 @@ fun AdminDashboardScreen(
                                 isHindi = isHindi,
                                 repository = repository,
                                 settings = settings
+                            )
+                        }
+                        currentTabTitle == "📩 सहायता व सुझाव" || currentTabTitle == "Helpdesk & Queries" -> {
+                            AdminHelpdeskTab(
+                                isHindi = isHindi,
+                                repository = repository,
+                                superAdminName = admin.name
                             )
                         }
                     }
@@ -3369,6 +3450,212 @@ fun AdminDashboardScreen(
                     Text(if (isHindi) "रद्द करें" else "Cancel")
                 }
             }
+        )
+    }
+
+    // --- OWN CREDENTIALS CHANGE DIALOG (Self-Change by Admin / Sevadar) ---
+    if (showChangeOwnCredentialsDialog && loggedInAdmin != null) {
+        val curAdmin = loggedInAdmin!!
+        AlertDialog(
+            onDismissRequest = { showChangeOwnCredentialsDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🔐", fontSize = 22.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "अपना पासवर्ड व सुरक्षा पिन बदलें" else "Change My Password & PIN",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaroonPrimary
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "खाता: ${curAdmin.name} (${curAdmin.username.ifEmpty { curAdmin.phoneNumber }})",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = Color.DarkGray
+                    )
+                    ownCredentialsErrorMsg?.let { err ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                        ) {
+                            Text(err, color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(8.dp))
+                        }
+                    }
+                    OutlinedTextField(
+                        value = ownNewPassword,
+                        onValueChange = { ownNewPassword = it },
+                        label = { Text(if (isHindi) "नया पासवर्ड (New Password)" else "New Password") },
+                        placeholder = { Text("उदा. Shiv@2026") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = ownNewPin,
+                        onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) ownNewPin = it },
+                        label = { Text(if (isHindi) "नया 4-6 अंक सुरक्षा पिन (New PIN)" else "New PIN (4-6 digits)") },
+                        placeholder = { Text("उदा. 1234") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = if (isHindi) "ℹ️ पासवर्ड व पिन बदलने के उपरांत यह आश्रम क्लाउड सर्वर पर भी तुरंत अपडेट हो जाएगा।" else "Will update immediately on Ashram cloud server.",
+                        fontSize = 11.sp,
+                        color = Color.Gray
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (ownNewPassword.isBlank() && ownNewPin.isBlank()) {
+                            ownCredentialsErrorMsg = if (isHindi) "कृपया नया पासवर्ड अथवा पिन अवश्य लिखें" else "Enter new password or PIN"
+                            return@Button
+                        }
+                        if (ownNewPin.isNotBlank() && ownNewPin.length < 4) {
+                            ownCredentialsErrorMsg = if (isHindi) "पिन कम से कम 4 अंकों का होना चाहिए" else "PIN must be at least 4 digits"
+                            return@Button
+                        }
+                        scope.launch {
+                            val (ok, msg) = repository.updateAdminCredentials(curAdmin.id, ownNewPassword, ownNewPin)
+                            if (ok) {
+                                Toast.makeText(context, if (isHindi) "✅ $msg" else "Password & PIN updated successfully!", Toast.LENGTH_SHORT).show()
+                                showChangeOwnCredentialsDialog = false
+                                refreshData()
+                            } else {
+                                ownCredentialsErrorMsg = msg
+                            }
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                ) {
+                    Text(if (isHindi) "सुरक्षित करें" else "Update", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showChangeOwnCredentialsDialog = false }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // --- RESET SEVADAR CREDENTIALS DIALOG (Super Admin View & Reset) ---
+    if (sevadarToResetCredentials != null) {
+        val target = sevadarToResetCredentials!!
+        AlertDialog(
+            onDismissRequest = { sevadarToResetCredentials = null },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🔑", fontSize = 22.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "सेवादार पासवर्ड व पिन प्रबंधन" else "Manage Sevadar Password & PIN",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaroonPrimary
+                    )
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "सेवादार: ${target.name} (${target.phoneNumber})",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = MaroonPrimary
+                    )
+                    Text(
+                        text = "यूजरनेम: ${target.username.ifEmpty { "N/A" }}",
+                        fontSize = 12.sp,
+                        color = Color.DarkGray
+                    )
+                    resetCredentialsErrorMsg?.let { err ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                        ) {
+                            Text(err, color = Color.Red, fontSize = 12.sp, modifier = Modifier.padding(8.dp))
+                        }
+                    }
+                    OutlinedTextField(
+                        value = resetSevPassword,
+                        onValueChange = { resetSevPassword = it },
+                        label = { Text(if (isHindi) "पासवर्ड (Password)" else "Password") },
+                        placeholder = { Text("उदा. 123456") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = resetSevPin,
+                        onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) resetSevPin = it },
+                        label = { Text(if (isHindi) "सुरक्षा पिन (4-6 अंक PIN)" else "Security PIN (4-6 digits)") },
+                        placeholder = { Text("उदा. 1234") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = if (isHindi) "💡 यदि सेवादार पासवर्ड भूल गए हों तो आप यहाँ देख सकते हैं अथवा नया सेट करके व्हाट्सएप पर भेज सकते हैं।" else "View or change password/PIN for sevadar and share via WhatsApp.",
+                        fontSize = 11.sp,
+                        color = Color.Gray
+                    )
+                }
+            },
+            confirmButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            if (resetSevPin.isNotBlank() && resetSevPin.length < 4) {
+                                resetCredentialsErrorMsg = if (isHindi) "पिन कम से कम 4 अंकों का होना चाहिए" else "PIN must be at least 4 digits"
+                                return@Button
+                            }
+                            scope.launch {
+                                val (ok, msg) = repository.updateAdminCredentials(target.id, resetSevPassword, resetSevPin)
+                                if (ok) {
+                                    Toast.makeText(context, if (isHindi) "✅ ${target.name} का पासवर्ड व पिन अपडेट हो गया!" else "Credentials updated!", Toast.LENGTH_SHORT).show()
+                                    sevadarToResetCredentials = null
+                                    refreshData()
+                                } else {
+                                    resetCredentialsErrorMsg = msg
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                    ) {
+                        Text(if (isHindi) "सुरक्षित करें" else "Save", color = Color.White)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { sevadarToResetCredentials = null }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // --- ADMIN SUBMIT QUERY DIALOG (Admin -> Super Admin Helpdesk) ---
+    if (showAdminSubmitQueryDialog && loggedInAdmin != null) {
+        val curAdmin = loggedInAdmin!!
+        DevoteeQueryDialog(
+            isHindi = isHindi,
+            repository = repository,
+            initialName = curAdmin.name,
+            initialPhone = curAdmin.phoneNumber,
+            userRole = if (curAdmin.role == AdminRole.SUPER_ADMIN) "SUPER_ADMIN" else "ADMIN",
+            onDismiss = { showAdminSubmitQueryDialog = false }
         )
     }
 }
@@ -5482,7 +5769,8 @@ fun ManualTokenTab(
     val isSuperAdmin = admin.role == AdminRole.SUPER_ADMIN
     val schedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
     val isTokenOpen = schedule is SundayScheduleState.Open && settings.isDarbarActive
-    val hasAnytimePermission = isSuperAdmin || admin.canIssueTokensAnywhere || settings.allowAdminReservedTokens
+    val canBypassSchedule = isSuperAdmin
+    val hasAnytimePermission = isSuperAdmin
 
     LaunchedEffect(Unit) {
         val loc = GeofenceLocationManager.getLastKnownLocation(context)
@@ -5561,14 +5849,14 @@ fun ManualTokenTab(
                     val sSchedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
                     sSchedule is SundayScheduleState.Open && settings.isDarbarActive
                 }
-                val hasAnytimePermission = isSuperAdmin || admin.canIssueTokensAnywhere || settings.allowAdminReservedTokens
+                val canBypassSchedule = isSuperAdmin
 
-                if (!isTokenOpen && !hasAnytimePermission) {
+                if (!isTokenOpen && !canBypassSchedule) {
                     val venueLabel = if (isTuesday) "मंगलवार (बुलन्दशहर)" else "रविवार (डूँगरा जाट)"
                     errorMessage = if (isHindi)
-                        "⚠️ $venueLabel टोकन सेवा वर्तमान में बंद है। सामान्य एडमिन केवल टोकन सेवा सक्रिय/खुली होने पर ही टोकन बना सकते हैं। सुपर एडमिन द्वारा विशेष अनुमति मिलने पर ही बंद समय में टोकन जारी किए जा सकते हैं।"
+                        "⚠️ $venueLabel टोकन सेवा वर्तमान में बंद है।\n\nटोकन केवल दरबार के दिन (प्रातः 8:30 बजे से) ही बनाए जा सकते हैं। शनिवार को या प्रातः 8:30 बजे से पूर्व किसी भी सामान्य एडमिन अथवा भक्त द्वारा टोकन बनाना पूर्णतः प्रतिबंधित है। केवल सुपर एडमिन ही आवश्यकता पड़ने पर टोकन बना सकते हैं।"
                     else
-                        "⚠️ $venueLabel token service is currently closed. Regular admins can only issue tokens when token service is active and open."
+                        "⚠️ $venueLabel token service is currently closed.\n\nTokens can only be issued on Darbar day from 8:30 AM onwards. Advance booking on Saturday or before 8:30 AM is prohibited. Only Super Admin can issue advance tokens."
                     isIssuing = false
                     return@launch
                 }
@@ -6876,6 +7164,7 @@ fun SevadarManagementTab(
     onToggleScanRegister: (Admin, Boolean) -> Unit,
     onToggleParchas: (Admin, Boolean) -> Unit,
     onToggleHavan: (Admin, Boolean) -> Unit,
+    onResetCredentials: (Admin) -> Unit = {},
     onSendWhatsApp: (Admin) -> Unit,
     onDelete: (Admin) -> Unit
 ) {
@@ -7114,7 +7403,65 @@ fun SevadarManagementTab(
                         }
 
                         Spacer(modifier = Modifier.height(10.dp))
+                        // Super Admin Visibility of Assigned Password & PIN
+                        var showCredentialsEye by remember { mutableStateOf(false) }
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFF1F8E9),
+                            border = BorderStroke(1.dp, Color(0xFFC5E1A5)),
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("🔑", fontSize = 14.sp)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = if (isHindi) "लॉगिन क्रेडेंशियल्स (सुपर एडमिन दृश्य)" else "Login Credentials",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF2E7D32)
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { showCredentialsEye = !showCredentialsEye },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Text(if (showCredentialsEye) "👁️" else "🙈", fontSize = 14.sp)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "सुरक्षा पिन: " + (if (showCredentialsEye) a.rawPin.ifEmpty { "1234" } else "••••"),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.DarkGray
+                                    )
+                                    Text(
+                                        text = "पासवर्ड: " + (if (showCredentialsEye) a.rawPassword.ifEmpty { "अप्रत्यक्ष / डिफ़ॉल्ट" } else "••••••••"),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.DarkGray
+                                    )
+                                }
+                            }
+                        }
+
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                            Button(
+                                onClick = { onResetCredentials(a) },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                            ) {
+                                Text(if (isHindi) "🔑 पासवर्ड/पिन बदलें" else "🔑 Change Password/PIN", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
                             Button(
                                 onClick = { onSendWhatsApp(a) },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))

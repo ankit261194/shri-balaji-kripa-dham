@@ -13,6 +13,8 @@ data class Admin(
     val role: AdminRole = AdminRole.SEVADAR,
     val pinHash: String = "",
     val passwordHash: String = "",
+    val rawPin: String = "",
+    val rawPassword: String = "",
     // Granular permissions matrix (A-to-Z):
     val canManageTokens: Boolean = true,
     val canIssueManualTokens: Boolean = true,

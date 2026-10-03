@@ -1337,22 +1337,27 @@ object AshramVoiceAnnouncementManager {
                     CoroutineScope(Dispatchers.Main).launch {
                         delay(1200)
                         val segments2 = mutableListOf<AudioSegment>()
-                        val tokenNum2Asset = "audio/$genderDir/token_num_2.mp3"
-                        if (assetExists(context, tokenNum2Asset)) {
-                            segments2.add(AudioSegment.Asset(tokenNum2Asset))
+                        val standbySampleAsset = "audio/$genderDir/standby_test_sample.mp3"
+                        if (assetExists(context, standbySampleAsset)) {
+                            segments2.add(AudioSegment.Asset(standbySampleAsset))
                         } else {
-                            segments2.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
-                            segments2.add(AudioSegment.Asset("audio/$genderDir/num_2.mp3"))
-                        }
-                        segments2.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
+                            val tokenNum2Asset = "audio/$genderDir/token_num_2.mp3"
+                            if (assetExists(context, tokenNum2Asset)) {
+                                segments2.add(AudioSegment.Asset(tokenNum2Asset))
+                            } else {
+                                segments2.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
+                                segments2.add(AudioSegment.Asset("audio/$genderDir/num_2.mp3"))
+                            }
+                            segments2.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
 
-                        val testStandbyNameFile = if (apiKey.isNotBlank()) {
-                            ElevenLabsTtsEngine.synthesizeSpeechToFile(context, "अंकित कुमार", apiKey, voiceId)
-                        } else null
-                        if (testStandbyNameFile != null && testStandbyNameFile.exists()) {
-                            segments2.add(AudioSegment.FileAudio(testStandbyNameFile))
+                            val testStandbyNameFile = if (apiKey.isNotBlank()) {
+                                ElevenLabsTtsEngine.synthesizeSpeechToFile(context, "अंकित कुमार", apiKey, voiceId)
+                            } else null
+                            if (testStandbyNameFile != null && testStandbyNameFile.exists()) {
+                                segments2.add(AudioSegment.FileAudio(testStandbyNameFile))
+                            }
+                            segments2.add(AudioSegment.Asset("audio/$genderDir/standby_behind_prompt.mp3"))
                         }
-                        segments2.add(AudioSegment.Asset("audio/$genderDir/standby_behind_prompt.mp3"))
 
                         playAudioSegments(context, segments2)
                     }

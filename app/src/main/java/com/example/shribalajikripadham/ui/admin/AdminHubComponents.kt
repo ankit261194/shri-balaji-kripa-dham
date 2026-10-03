@@ -479,6 +479,20 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "सुपर कंट्रोल" else "Super Control",
                 if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit"
             )
+        ),
+        // 30. Helpdesk & Queries
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "📩 सहायता व सुझाव" else "Helpdesk & Queries",
+            icon = "📩",
+            titleHindi = "सहायता व सुझाव",
+            titleEnglish = "Helpdesk & Queries",
+            categoryHindi = "⚙️ सिस्टम व कंट्रोल",
+            descriptionHindi = "भक्तों व सेवादारों की समस्याएं, कमियां, सुझाव व सुपर एडमिन समाधान",
+            descriptionEnglish = "Devotee and admin issues, complaints, suggestions and replies",
+            relatedTabs = listOf(
+                if (isHindi) "सेवादार खाते" else "Sevadars",
+                if (isHindi) "सुपर कंट्रोल" else "Super Control"
+            )
         )
     )
 }

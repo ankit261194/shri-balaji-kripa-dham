@@ -196,6 +196,37 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 try {
                     db.execSQL("UPDATE ashram_settings SET app_share_url = 'https://shribalajikripadham.online/app' WHERE app_share_url NOT LIKE '%shribalajikripadham.online%' OR app_share_url LIKE '%.org%' OR app_share_url = '' OR app_share_url LIKE '%download.php%';")
                 } catch (ignored: Exception) {}
+
+                // Migrate admins table for visible PIN & Password recovery
+                try {
+                    db.execSQL("ALTER TABLE admins ADD COLUMN raw_pin TEXT NOT NULL DEFAULT '';")
+                } catch (ignored: Exception) {}
+                try {
+                    db.execSQL("ALTER TABLE admins ADD COLUMN raw_password TEXT NOT NULL DEFAULT '';")
+                } catch (ignored: Exception) {}
+
+                // Migrate app_queries table for Devotee & Admin Helpdesk
+                try {
+                    db.execSQL("""
+                        CREATE TABLE IF NOT EXISTS app_queries (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            remote_id INTEGER DEFAULT 0,
+                            sender_name TEXT NOT NULL,
+                            sender_phone TEXT NOT NULL,
+                            sender_city TEXT DEFAULT '',
+                            sender_role TEXT NOT NULL DEFAULT 'DEVOTEE',
+                            category TEXT NOT NULL,
+                            subject TEXT DEFAULT '',
+                            message TEXT NOT NULL,
+                            attachment_url TEXT DEFAULT '',
+                            status TEXT NOT NULL DEFAULT 'PENDING',
+                            admin_reply TEXT DEFAULT '',
+                            replied_by TEXT DEFAULT '',
+                            replied_at INTEGER DEFAULT 0,
+                            created_at INTEGER NOT NULL
+                        );
+                    """.trimIndent())
+                } catch (ignored: Exception) {}
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -362,6 +393,8 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     role TEXT NOT NULL,
                     pin_hash TEXT NOT NULL,
                     password_hash TEXT NOT NULL,
+                    raw_pin TEXT NOT NULL DEFAULT '',
+                    raw_password TEXT NOT NULL DEFAULT '',
                     can_manage_tokens INTEGER NOT NULL,
                     can_issue_manual_tokens INTEGER NOT NULL,
                     can_manage_yatra INTEGER NOT NULL,

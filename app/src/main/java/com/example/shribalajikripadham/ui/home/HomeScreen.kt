@@ -220,6 +220,7 @@ fun HomeScreen(
     var showCreateStatusDialog by remember { mutableStateOf(false) }
     var showSuvicharModal by remember { mutableStateOf(false) }
     var showAartiTimingsModal by remember { mutableStateOf(false) }
+    var showDevoteeHelpdeskDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val res = StatusSyncManager.fetchActiveStatuses()
@@ -995,6 +996,26 @@ fun HomeScreen(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
                     )
 
+                    // Super Admin Helpdesk, Bug Report & Suggestions
+                    NavigationDrawerItem(
+                        icon = { Text("📩", fontSize = 20.sp) },
+                        label = {
+                            Text(
+                                if (isHindi) "सुपर एडमिन को सुझाव / समस्या भेजें" else "Send Query / Feedback to Super Admin",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaroonPrimary
+                            )
+                        },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            showDevoteeHelpdeskDialog = true
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = Color(0xFFFFF3E0)),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                    )
+
                     // Devotee App Share (WhatsApp & Social Media)
                     NavigationDrawerItem(
                         icon = { Text("📲", fontSize = 20.sp) },
@@ -1711,6 +1732,17 @@ fun HomeScreen(
             isHindi = isHindi,
             settings = settings,
             onDismiss = { showAppDownloadShareDialog = false }
+        )
+    }
+
+    if (showDevoteeHelpdeskDialog) {
+        com.example.shribalajikripadham.ui.feedback.DevoteeQueryDialog(
+            isHindi = isHindi,
+            repository = repository,
+            initialPhone = currentUserPhone,
+            initialName = currentUserName,
+            userRole = if (isUserAdmin) "ADMIN" else "DEVOTEE",
+            onDismiss = { showDevoteeHelpdeskDialog = false }
         )
     }
 
