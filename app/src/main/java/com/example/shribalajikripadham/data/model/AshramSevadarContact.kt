@@ -34,8 +34,8 @@ data class AshramSevadarContact(
                 name = json.optString("name", ""),
                 department = json.optString("department", "सामान्य सहायता"),
                 roleTitleHindi = json.optString("roleTitleHindi", "सेवादार"),
-                phoneNumber = json.optString("phoneNumber", "9720691090"),
-                whatsappNumber = json.optString("whatsappNumber", json.optString("phoneNumber", "9720691090")),
+                phoneNumber = json.optString("phoneNumber", "9100100251"),
+                whatsappNumber = json.optString("whatsappNumber", json.optString("phoneNumber", "9100100251")),
                 isAvailable = json.optBoolean("isAvailable", true),
                 photoUri = json.optString("photoUri", ""),
                 description = json.optString("description", "")

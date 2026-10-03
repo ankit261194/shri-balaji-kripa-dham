@@ -1229,129 +1229,126 @@ fun AdminDashboardScreen(
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        shape = RoundedCornerShape(10.dp),
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(8.dp),
                         color = if (isSuper) Color(0xFFFFF9EE) else Color(0xFFF1F8E9),
                         border = BorderStroke(1.dp, if (isSuper) AmberGold else Color(0xFF81C784)),
-                        shadowElevation = 1.dp
+                        shadowElevation = 0.5.dp
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
+                            // Left: Role badge and device count
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f, fill = false)
                             ) {
                                 Text(
-                                    text = if (isSuper) "👑" else "🙏",
-                                    fontSize = 14.sp
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (isSuper) "Super Admin: Ankit Chaudhary" else admin.name,
+                                    text = if (isSuper) "👑 सुपर एडमिन" else "🙏 ${admin.name}",
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 12.5.sp,
+                                    fontSize = 12.sp,
                                     color = MaroonPrimary,
                                     maxLines = 1,
+                                    softWrap = false,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 if (isSuper) {
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "| 📱 $telemetryTotalDevices सक्रिय",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color(0xFF2E7D32)
-                                    )
-                                }
-                            }
-
-                            // Compact Guide PDF Icon-button
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFEDE7F6),
-                                border = BorderStroke(0.8.dp, Color(0xFFB39DDB)),
-                                modifier = Modifier.clickable {
-                                    val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
-                                    if (file != null) {
-                                        com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
-                                            context,
-                                            file,
-                                            if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Color(0xFFE8F5E9)
+                                    ) {
+                                        Text(
+                                            text = "📱 $telemetryTotalDevices",
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF2E7D32),
+                                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
-                                    } else {
-                                        Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
                                     }
                                 }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("📘", fontSize = 11.sp)
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = if (isHindi) "गाइड" else "Guide",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF4A148C)
-                                    )
-                                }
                             }
 
-                            Spacer(modifier = Modifier.width(6.dp))
-                            // Password / PIN Self-Change Button
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFE8F5E9),
-                                border = BorderStroke(0.8.dp, Color(0xFF81C784)),
-                                modifier = Modifier.clickable {
-                                    ownNewPassword = ""
-                                    ownNewPin = ""
-                                    ownCredentialsErrorMsg = null
-                                    showChangeOwnCredentialsDialog = true
-                                }
+                            // Right: Action buttons (गाइड, पासवर्ड, सुझाव)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                // Guide PDF Button
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFEDE7F6),
+                                    border = BorderStroke(0.8.dp, Color(0xFFB39DDB)),
+                                    modifier = Modifier.clickable {
+                                        val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
+                                        if (file != null) {
+                                            com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
+                                                context,
+                                                file,
+                                                if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
+                                            )
+                                        } else {
+                                            Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
                                 ) {
-                                    Text("🔐", fontSize = 11.sp)
-                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = if (isHindi) "पासवर्ड" else "Password",
+                                        text = "📘 गाइड",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1B5E20)
+                                        color = Color(0xFF4A148C),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 }
-                            }
 
-                            Spacer(modifier = Modifier.width(6.dp))
-                            // Helpdesk / Query to Super Admin
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFFFF3E0),
-                                border = BorderStroke(0.8.dp, Color(0xFFFFB74D)),
-                                modifier = Modifier.clickable {
-                                    showAdminSubmitQueryDialog = true
-                                }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                // Password / PIN Self-Change Button
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFE8F5E9),
+                                    border = BorderStroke(0.8.dp, Color(0xFF81C784)),
+                                    modifier = Modifier.clickable {
+                                        ownNewPassword = ""
+                                        ownNewPin = ""
+                                        ownCredentialsErrorMsg = null
+                                        showChangeOwnCredentialsDialog = true
+                                    }
                                 ) {
-                                    Text("📩", fontSize = 11.sp)
-                                    Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = if (isHindi) "सुझाव" else "Feedback",
+                                        text = "🔐 पिन",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaroonPrimary
+                                        color = Color(0xFF1B5E20),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+
+                                // Helpdesk / Query to Super Admin
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFFFF3E0),
+                                    border = BorderStroke(0.8.dp, Color(0xFFFFB74D)),
+                                    modifier = Modifier.clickable {
+                                        showAdminSubmitQueryDialog = true
+                                    }
+                                ) {
+                                    Text(
+                                        text = "✉️ सुझाव",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaroonPrimary,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                        maxLines = 1,
+                                        softWrap = false
                                     )
                                 }
                             }
@@ -2454,7 +2451,10 @@ fun AdminDashboardScreen(
                             AdminHelpdeskTab(
                                 isHindi = isHindi,
                                 repository = repository,
-                                superAdminName = admin.name
+                                superAdminName = admin.name,
+                                currentUserRole = if (admin.role == AdminRole.SUPER_ADMIN) "SUPER_ADMIN" else "SEVADAR",
+                                currentAdminId = admin.id.toString(),
+                                currentAdminPhone = admin.phoneNumber
                             )
                         }
                         currentTabTitle == "📩 सुपरएडमिन को सुझाव / समस्या" || currentTabTitle == "Feedback to Super Admin" -> {

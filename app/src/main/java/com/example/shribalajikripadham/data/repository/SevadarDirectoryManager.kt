@@ -23,64 +23,14 @@ object SevadarDirectoryManager {
     fun getDefaultSevadars(): List<AshramSevadarContact> {
         return listOf(
             AshramSevadarContact(
-                id = "sev_token_1",
-                name = "श्री सुखवीर सिंह जी",
-                department = "टोकन व दर्शन",
-                roleTitleHindi = "मुख्य टोकन सेवादार",
-                phoneNumber = "9720691090",
-                whatsappNumber = "9720691090",
-                isAvailable = true,
-                description = "रविवार टोकन वितरण, कतार नियंत्रण व दर्शन सहायता"
-            ),
-            AshramSevadarContact(
-                id = "sev_arzi_2",
-                name = "श्री रामकुमार जी",
-                department = "अर्जी व डाक विभाग",
-                roleTitleHindi = "अर्जी व्यवस्थापक",
-                phoneNumber = "9720691090",
-                whatsappNumber = "9720691090",
-                isAvailable = true,
-                description = "नारियल व ध्वजा अर्जी, डाक प्रेषण व ट्रैकिंग सहायता"
-            ),
-            AshramSevadarContact(
-                id = "sev_bus_3",
-                name = "श्री धर्मेन्द्र शर्मा जी",
-                department = "बस व यात्रा व्यवस्था",
-                roleTitleHindi = "यात्रा संयोजक",
-                phoneNumber = "9720691090",
-                whatsappNumber = "9720691090",
-                isAvailable = true,
-                description = "आश्रम यात्रा बस सीट बुकिंग, समय सारणी व मार्ग निर्देश"
-            ),
-            AshramSevadarContact(
-                id = "sev_havan_4",
-                name = "श्री महेश शास्त्री जी",
-                department = "हवन व पूजा सेवा",
-                roleTitleHindi = "हवन सेवा प्रभारी",
-                phoneNumber = "9720691090",
-                whatsappNumber = "9720691090",
-                isAvailable = true,
-                description = "रविवार महा-हवन आहुति, यजमान संकल्प व पूजन सामग्री"
-            ),
-            AshramSevadarContact(
-                id = "sev_bhandara_5",
-                name = "श्री विजयपाल जी",
-                department = "भंडारा व आवास",
-                roleTitleHindi = "भंडारा सेवादार",
-                phoneNumber = "9720691090",
-                whatsappNumber = "9720691090",
-                isAvailable = true,
-                description = "प्रसाद भंडारा, दूर-दराज भक्तों हेतु विश्राम व आवास सेवा"
-            ),
-            AshramSevadarContact(
-                id = "sev_general_6",
-                name = "धाम मुख्य हेल्पलाइन",
+                id = "ashram_helpline_main",
+                name = "श्री बालाजी कृपा धाम (आधिकारिक हेल्पलाइन)",
                 department = "सामान्य आश्रम सहायता",
-                roleTitleHindi = "आश्रम कार्यालय",
-                phoneNumber = "9720691090",
-                whatsappNumber = "9720691090",
+                roleTitleHindi = "मुख्य आश्रम सेवादार",
+                phoneNumber = "9100100251",
+                whatsappNumber = "9100100251",
                 isAvailable = true,
-                description = "धाम पता, नियम, मंगलवार/रविवार दरबार समय व संपूर्ण जानकारी"
+                description = "धाम पता, नियम, मंगलवार/रविवार दरबार समय व संपूर्ण आधिकारिक जानकारी"
             )
         )
     }
@@ -97,13 +47,27 @@ object SevadarDirectoryManager {
             val array = JSONArray(rawJson)
             val list = mutableListOf<AshramSevadarContact>()
             for (i in 0 until array.length()) {
-                list.add(AshramSevadarContact.fromJson(array.getJSONObject(i)))
+                val item = AshramSevadarContact.fromJson(array.getJSONObject(i))
+                // CRITICAL PRIVACY & REAL-DATA FILTER:
+                // Purge all legacy dummy/mock sevadars completely:
+                val isMock = item.id.startsWith("sev_") ||
+                        item.phoneNumber == "9720691090" ||
+                        item.name.contains("सुखवीर") ||
+                        item.name.contains("रामकुमार") ||
+                        item.name.contains("धर्मेन्द्र") ||
+                        item.name.contains("महेश शास्त्री") ||
+                        item.name.contains("विजयपाल")
+
+                if (!isMock && item.name.isNotBlank()) {
+                    list.add(item)
+                }
             }
             if (list.isEmpty()) {
                 val defaults = getDefaultSevadars()
                 saveSevadars(context, defaults)
                 defaults
             } else {
+                saveSevadars(context, list)
                 list
             }
         } catch (e: Exception) {
@@ -139,7 +103,10 @@ object SevadarDirectoryManager {
         saveSevadars(context, current)
     }
 
-    // --- IN-APP CHAT MANAGEMENT ---
+    // --- IN-APP CHAT MANAGEMENT (PERMANENT RETENTION & ROLE-BASED PRIVACY) ---
+    /**
+     * Retrieves all chat messages for a specific sevadar. Messages persist permanently like WhatsApp.
+     */
     fun getChatMessages(context: Context, sevadarId: String): List<SevadarChatMessage> {
         val prefs = getChatPrefs(context)
         val raw = prefs.getString("chat_$sevadarId", null) ?: return emptyList()
@@ -155,15 +122,59 @@ object SevadarDirectoryManager {
         }
     }
 
+    /**
+     * Role-based privacy:
+     * - SUPER_ADMIN: Can view ANY sevadar's chat messages.
+     * - SEVADAR / ADMIN: Can ONLY view messages where sevadarId matches their adminId or sevadarPhone matches their phone.
+     *   They are STRICTLY BLOCKED from viewing other sevadars' messages!
+     */
+    fun getChatMessagesForRole(
+        context: Context,
+        currentUserRole: String,
+        currentAdminId: String,
+        currentAdminPhone: String,
+        targetSevadarId: String,
+        targetSevadarPhone: String
+    ): List<SevadarChatMessage> {
+        if (currentUserRole.equals("SUPER_ADMIN", ignoreCase = true)) {
+            return getChatMessages(context, targetSevadarId)
+        }
+
+        val isOwnSevadar = (currentAdminId.isNotBlank() && targetSevadarId.equals(currentAdminId, ignoreCase = true)) ||
+                (currentAdminPhone.isNotBlank() && targetSevadarPhone.isNotBlank() &&
+                        currentAdminPhone.replace(Regex("[^0-9]"), "").endsWith(targetSevadarPhone.replace(Regex("[^0-9]"), "").takeLast(10)))
+
+        return if (isOwnSevadar) {
+            getChatMessages(context, targetSevadarId)
+        } else {
+            // Strictly forbidden to see another sevadar's chat messages!
+            emptyList()
+        }
+    }
+
+    /**
+     * Super Admin helper to inspect all active conversations across all registered sevadars.
+     */
+    fun getAllChatsForSuperAdmin(context: Context): Map<String, List<SevadarChatMessage>> {
+        val sevadars = getAllSevadars(context)
+        val result = mutableMapOf<String, List<SevadarChatMessage>>()
+        sevadars.forEach { sev ->
+            val msgs = getChatMessages(context, sev.id)
+            if (msgs.isNotEmpty()) {
+                result[sev.id] = msgs
+            }
+        }
+        return result
+    }
+
+    /**
+     * Sends and permanently saves a chat message like WhatsApp. Never overwritten or deleted.
+     */
     fun sendChatMessage(context: Context, message: SevadarChatMessage) {
         val current = getChatMessages(context, message.sevadarId).toMutableList()
         current.add(message)
         val arr = JSONArray()
         current.forEach { arr.put(it.toJson()) }
         getChatPrefs(context).edit().putString("chat_${message.sevadarId}", arr.toString()).apply()
-    }
-
-    fun clearChat(context: Context, sevadarId: String) {
-        getChatPrefs(context).edit().remove("chat_$sevadarId").apply()
     }
 }

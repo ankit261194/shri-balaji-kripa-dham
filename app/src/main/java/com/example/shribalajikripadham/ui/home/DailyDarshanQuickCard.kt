@@ -135,6 +135,36 @@ object DailyDarshanHelper {
         return "$day $month $year"
     }
 
+    fun getTodayDefaultDarshanDrawable(): Int {
+        val cal = Calendar.getInstance()
+        val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
+        return when (dayOfWeek) {
+            Calendar.TUESDAY -> R.drawable.img_mehandipur_balaji
+            Calendar.SATURDAY -> R.drawable.img_hanuman_veer
+            Calendar.SUNDAY -> R.drawable.img_balaji_darshan
+            Calendar.MONDAY -> R.drawable.img_panchmukhi_hanuman
+            Calendar.WEDNESDAY -> R.drawable.img_ram_darbar
+            Calendar.THURSDAY -> R.drawable.img_mehandipur_balaji
+            Calendar.FRIDAY -> R.drawable.img_hanuman_veer
+            else -> R.drawable.img_balaji_darshan
+        }
+    }
+
+    fun getTodayDefaultDarshanTitle(): String {
+        val cal = Calendar.getInstance()
+        val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
+        return when (dayOfWeek) {
+            Calendar.TUESDAY -> "श्री मेहंदीपुर बालाजी महाराज मंगलवार विशेष दिव्य श्रृंगार दर्शन"
+            Calendar.SATURDAY -> "श्री संकटमोचन वीर बजरंगी शनिवार पावन अलौकिक दर्शन"
+            Calendar.SUNDAY -> "श्री बालाजी कृपा धाम रविवार महा-दरबार दिव्य दर्शन"
+            Calendar.MONDAY -> "श्री पंचमुखी हनुमान जी महाराज पावन दिव्य दर्शन"
+            Calendar.WEDNESDAY -> "प्रभु श्री राम दरबार एवं वीर हनुमान पावन दर्शन"
+            Calendar.THURSDAY -> "श्री मेहंदीपुर बालाजी महाराज दिव्य अलौकिक दर्शन"
+            Calendar.FRIDAY -> "वीर बजरंगी महाराज पावन संध्या अलौकिक श्रृंगार दर्शन"
+            else -> "श्री बालाजी महाराज दैनिक दिव्य अलौकिक श्रृंगार दर्शन"
+        }
+    }
+
     suspend fun updateDailyDarshan(
         title: String,
         photoUrl: String,
@@ -177,31 +207,36 @@ object DailyDarshanHelper {
     }
 
     suspend fun fetchTodayDarshan(): DailyDarshanData = withContext(Dispatchers.IO) {
+        val todayTag = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
         val fallback = DailyDarshanData(
             dateHindi = getTodayHindiDate(),
-            title = "श्री बालाजी महाराज दैनिक दिव्य अलौकिक श्रृंगार दर्शन",
-            photoUrl = "https://shribalajikripadham.online/media/balaji_darshan_today.jpg",
+            title = getTodayDefaultDarshanTitle(),
+            photoUrl = "https://shribalajikripadham.online/media/balaji_darshan_today.jpg?d=$todayTag",
             quote = getTodayGuruVichar(),
             viewsCount = 1280
         )
 
         try {
-            val url = URL("https://shribalajikripadham.online/api/daily_darshan.php")
+            val url = URL("https://shribalajikripadham.online/api/daily_darshan.php?d=$todayTag")
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 connectTimeout = 4000
                 readTimeout = 4000
+                useCaches = false
                 requestMethod = "GET"
                 setRequestProperty("User-Agent", "ShriBalajiKripaDham-Android")
+                setRequestProperty("Cache-Control", "no-cache")
             }
 
             if (conn.responseCode == 200) {
                 val response = conn.inputStream.bufferedReader().use { it.readText() }
                 val json = JSONObject(response)
                 if (json.optBoolean("success", false)) {
+                    val rawPhoto = json.optString("photo_url", fallback.photoUrl)
+                    val cacheBustedPhoto = if (rawPhoto.contains("?")) rawPhoto else "$rawPhoto?d=$todayTag"
                     DailyDarshanData(
                         dateHindi = json.optString("date_hindi", fallback.dateHindi),
                         title = json.optString("title", fallback.title),
-                        photoUrl = json.optString("photo_url", fallback.photoUrl),
+                        photoUrl = cacheBustedPhoto,
                         quote = json.optString("blessings_quote", fallback.quote),
                         viewsCount = json.optInt("views_count", fallback.viewsCount)
                     )
@@ -220,7 +255,7 @@ object DailyDarshanHelper {
         try {
             var imageUri: Uri? = null
             val finalBitmap = bitmap ?: try {
-                BitmapFactory.decodeResource(context.resources, R.drawable.img_balaji_darshan)
+                BitmapFactory.decodeResource(context.resources, getTodayDefaultDarshanDrawable())
             } catch (e: Exception) {
                 null
             }
@@ -330,12 +365,15 @@ fun DailyDarshanQuickCard(
         val fetched = DailyDarshanHelper.fetchTodayDarshan()
         darshanData = fetched
 
-        // Try downloading remote bitmap
+        // Try downloading remote bitmap with cache-busting
         withContext(Dispatchers.IO) {
             try {
-                val conn = URL(fetched.photoUrl).openConnection() as HttpURLConnection
+                val cleanUrl = if (fetched.photoUrl.contains("?")) fetched.photoUrl else "${fetched.photoUrl}?d=${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())}"
+                val conn = URL(cleanUrl).openConnection() as HttpURLConnection
                 conn.connectTimeout = 5000
                 conn.readTimeout = 5000
+                conn.useCaches = false
+                conn.setRequestProperty("Cache-Control", "no-cache")
                 if (conn.responseCode == 200) {
                     val bmp = BitmapFactory.decodeStream(conn.inputStream)
                     if (bmp != null) {
@@ -431,7 +469,7 @@ fun DailyDarshanQuickCard(
                     )
                 } else {
                     Image(
-                        painter = painterResource(id = R.drawable.img_balaji_darshan),
+                        painter = painterResource(id = DailyDarshanHelper.getTodayDefaultDarshanDrawable()),
                         contentDescription = "श्री बालाजी अलौकिक श्रृंगार दर्शन",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
@@ -651,7 +689,7 @@ fun DailyDarshanZoomDialog(
                     )
                 } else {
                     Image(
-                        painter = painterResource(id = R.drawable.img_balaji_darshan),
+                        painter = painterResource(id = DailyDarshanHelper.getTodayDefaultDarshanDrawable()),
                         contentDescription = "दर्शन",
                         contentScale = ContentScale.Fit,
                         modifier = Modifier

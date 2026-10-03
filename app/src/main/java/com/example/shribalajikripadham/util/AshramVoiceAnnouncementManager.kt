@@ -57,16 +57,16 @@ object AshramVoiceAnnouncementManager {
     ) {
         TALK_OUTSIDE(
             id = "TALK_OUTSIDE",
-            titleHindi = "बाहर जाके बात करो",
-            textHindi = "भैया! जिसको बात करनी है, दरबार से बाहर जाके बात करो!",
+            titleHindi = "बाहर बातचीत करें",
+            textHindi = "कृपया ध्यान दें: दरबार में पूर्ण शांति बनाए रखें। जिनको भी आवश्यक बातचीत करनी है, वे कृपया दरबार परिसर से बाहर जाकर बात करें।",
             assetFileNameMale = "audio/discipline/warn_talk_outside_male.mp3",
             assetFileNameFemale = "audio/discipline/warn_talk_outside_female.mp3",
             icon = "🤫"
         ),
         SIT_BACK(
             id = "SIT_BACK",
-            titleHindi = "पीछे होके बैठो",
-            textHindi = "तुमसे कितनी बार कह दी कि पीछे होके बैठ जाओ! तुम्हें समझ नहीं आता? पीछे होके बैठो!",
+            titleHindi = "पीछे व्यवस्थित बैठें",
+            textHindi = "कृपया ध्यान दें: सभी भक्तगण मर्यादा का पालन करते हुए पीछे व्यवस्थित होकर बैठें ताकि सभी को सुगमता से दर्शन प्राप्त हो सकें।",
             assetFileNameMale = "audio/discipline/warn_sit_back_male.mp3",
             assetFileNameFemale = "audio/discipline/warn_sit_back_female.mp3",
             icon = "🪑"

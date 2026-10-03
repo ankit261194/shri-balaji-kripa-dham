@@ -120,6 +120,9 @@ $defaultQuote = $guruQuotes[$quoteIndex];
 
 try {
     $pdo = getDB();
+    if (!$pdo) {
+        throw new RuntimeException("Database connection unavailable");
+    }
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS daily_darshan (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -146,17 +149,21 @@ try {
         $stmt = $pdo->prepare("INSERT INTO daily_darshan (darshan_date, title, photo_url, blessings_quote, views_count, created_at, updated_at)
             VALUES (:date, :title, :photo, :quote, 1, :now, :now)
             ON DUPLICATE KEY UPDATE
-            title = VALUES(title),
-            photo_url = VALUES(photo_url),
-            blessings_quote = VALUES(blessings_quote),
-            updated_at = VALUES(updated_at)");
+            title = :title2,
+            photo_url = :photo2,
+            blessings_quote = :quote2,
+            updated_at = :now2");
 
         $stmt->execute([
             ':date' => $todayDate,
             ':title' => $title,
             ':photo' => $photoUrl,
             ':quote' => $quote,
-            ':now' => $now
+            ':now' => $now,
+            ':title2' => $title,
+            ':photo2' => $photoUrl,
+            ':quote2' => $quote,
+            ':now2' => $now
         ]);
 
         echo json_encode([
@@ -224,7 +231,7 @@ try {
         exit;
     }
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     echo json_encode([
         "success" => true,
         "darshan_date" => $todayDate,
@@ -234,7 +241,8 @@ try {
         "blessings_quote" => $defaultQuote,
         "views_count" => 250,
         "temple" => "श्री बालाजी कृपा धाम (डूँगरा जाट)",
-        "fallback" => true
+        "fallback" => true,
+        "error_detail" => $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
