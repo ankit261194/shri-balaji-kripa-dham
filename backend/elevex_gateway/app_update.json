@@ -1,12 +1,12 @@
 {
-  "latest_version": "5.9.25",
-  "version_code": 615,
+  "latest_version": "5.9.26",
+  "version_code": 616,
   "force_update": false,
-  "title_en": "ANKIT ELEVEX ULTIMATE v5.9.25 MNC Production Update!",
-  "title_hi": "अंकित एलेवेक्स अल्टीमेट v5.9.25 MNC प्रोडक्शन अपडेट उपलब्ध!",
-  "release_notes_en": "• Full MNC Cloud Integration: Real MySQL VIP UTR Verification & Status Sync.\n• Gemini AI Dynamic Chat Engine: Live technical fault diagnostic integration.\n• Real Spare Parts Partner Network & instant quotation inquiries.\n• High-Speed Resilient Cloud APK Download via download.php?app=elevex.\n• Enhanced Industrial Compliance & Multimeter safety warnings.\n• SHA-256 Verified Release Build.",
-  "release_notes_hi": "• पूर्ण MNC क्लाउड इंटीग्रेशन: रियल MySQL VIP UTR वेरिफिकेशन व स्टेटस सिंक।\n• जेमिनी AI डायनामिक चैट इंजन: लाइव टेक्निकल फॉल्ट डायग्नोस्टिक एकीकरण।\n• रियल स्पेयर पार्ट्स पार्टनर नेटवर्क व त्वरित कोटेशन पूछताछ।\n• download.php?app=elevex के माध्यम से हाई-स्पीड क्लाउड APK डाउनलोड।\n• संवर्धित औद्योगिक सुरक्षा अनुपालन व मल्टीमीटर सुरक्षा दिशानिर्देश।\n• SHA-256 सत्यापित प्रोडक्शन रिलीज बिल्ड।",
+  "title_en": "ANKIT ELEVEX ULTIMATE v5.9.26 (24x7 MNC Customer Support CRM)",
+  "title_hi": "अंकित एलेवेक्स v5.9.26 (24x7 MNC कस्टमर सपोर्ट CRM लाइव)",
+  "release_notes_en": "• 24x7 MNC Customer Support & Human CRM Desk with real MySQL backend.\n• Direct Ticket routing to Lead Systems Engineer Ankit Chaudhary (<15m SLA).\n• Live Support Chat with real-time polling & CSAT star feedback.\n• Super Admin Management Tower for live ticket resolution.\n• Production performance and stability enhancements.",
+  "release_notes_hi": "• 24x7 MNC कस्टमर सपोर्ट व ह्यूमन CRM डेस्क (रियल MySQL बैकएंड)।\n• लीड इंजीनियर अंकित चौधरी को सीधे टिकट असाइनमेंट (<15 मिनट SLA)।\n• लाइव सपोर्ट चैट, ऑटो-रिफ्रेशिंग व 1-5 स्टार CSAT रेटिंग।\n• सुपर एडमिन कंट्रोल टॉवर से टिकट मॉनिटरिंग व समाधान।\n• ऐप गति व स्थिरता में सुधार।",
   "apk_download_url": "https://shribalajikripadham.online/download.php?app=elevex",
-  "file_size": "38.5 MB",
-  "sha256": "5C95F34F6F1BB5894F92841971E78A93194A5BDF6963A7A5184C705641A65EA5"
+  "file_size": "38.6 MB",
+  "sha256": "519DB0DDAF31A2399BE722FDBD018F42CAC6D7754EEF6E590E14EB915B919DF8"
 }
