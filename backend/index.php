@@ -1828,15 +1828,20 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
             <?= htmlspecialchars($footerCopyright) ?>
         </div>
 
-        <!-- Ankit EleveX Direct Latest APK Download Button -->
+        <!-- Ankit EleveX Direct Latest APK Download Button (100% Dynamic from Manifest) -->
+        <?php
+            $elevexManifest = @json_decode(@file_get_contents(__DIR__ . '/elevex_gateway/app_update.json'), true);
+            $elevexVer = !empty($elevexManifest['latest_version']) ? trim($elevexManifest['latest_version']) : '5.9.26';
+            $elevexSize = !empty($elevexManifest['file_size']) ? trim($elevexManifest['file_size']) : '38.6 MB';
+        ?>
         <div style="margin-top: 10px; margin-bottom: 6px; text-align: center;">
             <a href="download.php?app=elevex" 
-               download="Ankit_EleveX_v5.9.25_Final.apk"
+               download="Ankit_EleveX_v<?= htmlspecialchars($elevexVer) ?>_Final.apk"
                style="color: #FFD54F; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 213, 79, 0.4); padding: 5px 14px; border-radius: 14px; text-decoration: none; font-size: 0.74rem; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; letter-spacing: 0.3px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.3);" 
                onmouseover="this.style.color='#FFFFFF'; this.style.borderColor='#FFD54F'; this.style.background='rgba(255, 179, 0, 0.25)';"
                onmouseout="this.style.color='#FFD54F'; this.style.borderColor='rgba(255, 213, 79, 0.4)'; this.style.background='rgba(0, 0, 0, 0.45)';"
-               title="अंकित एलेवेक्स (लिफ्ट रामबाण AI) v5.9.25 नवीनतम APK (18.6 MB) हाई-स्पीड डाउनलोड करें">
-                ⚡ Ankit EleveX v5.9.25 (Latest APK) <span style="font-size: 0.65rem; opacity: 0.8; font-weight: 500;">[18.6 MB]</span>
+               title="अंकित एलेवेक्स (लिफ्ट रामबाण AI) v<?= htmlspecialchars($elevexVer) ?> नवीनतम APK (<?= htmlspecialchars($elevexSize) ?>) हाई-स्पीड डाउनलोड करें">
+                ⚡ Ankit EleveX v<?= htmlspecialchars($elevexVer) ?> (Latest APK) <span style="font-size: 0.65rem; opacity: 0.8; font-weight: 500;">[<?= htmlspecialchars($elevexSize) ?>]</span>
             </a>
         </div>
     </footer>

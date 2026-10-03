@@ -17,7 +17,16 @@ if (!is_dir($targetDir)) {
     @mkdir($targetDir, 0755, true);
 }
 
-$apkFilename = "Ankit_EleveX_v5.9.25_Final.apk";
+$manifestPath = __DIR__ . '/elevex_gateway/app_update.json';
+$latestVer = '5.9.26';
+if (file_exists($manifestPath)) {
+    $manifest = @json_decode(@file_get_contents($manifestPath), true);
+    if (!empty($manifest['latest_version'])) {
+        $latestVer = trim($manifest['latest_version']);
+    }
+}
+
+$apkFilename = "Ankit_EleveX_v{$latestVer}_Final.apk";
 $targetFile = $targetDir . '/' . $apkFilename;
 $tmpFile = $targetFile . '.tmp';
 
@@ -85,7 +94,7 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // 4. Server-Side Direct Pull from GitHub Releases (Fastest datacenter-to-datacenter)
 if (isset($_GET['pull_github'])) {
-    $githubUrl = "https://github.com/ankit261194/ankits-liftramban/releases/download/v5.9.25/Ankit_EleveX_v5.9.25_Final.apk";
+    $githubUrl = "https://github.com/ankit261194/ankits-liftramban/releases/download/v{$latestVer}/Ankit_EleveX_v{$latestVer}_Final.apk";
     
     $fp = fopen($tmpFile, 'wb');
     if (!$fp) {

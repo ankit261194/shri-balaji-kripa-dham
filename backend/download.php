@@ -7,19 +7,24 @@
 // Ankit EleveX Direct APK Delivery Block
 $appParam = strtolower(trim($_GET['app'] ?? ''));
 if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ankit_elievex') {
-    $targetFile = '';
     $elevexDir = __DIR__ . '/elevex_gateway/downloads';
+    $manifestPath = __DIR__ . '/elevex_gateway/app_update.json';
+    
+    $latestVer = '5.9.26';
+    if (file_exists($manifestPath)) {
+        $manifest = @json_decode(@file_get_contents($manifestPath), true);
+        if (!empty($manifest['latest_version'])) {
+            $latestVer = trim($manifest['latest_version']);
+        }
+    }
 
-    // 1. Look for v5.9.26 Final
-    if (file_exists("$elevexDir/Ankit_EleveX_v5.9.26_Final.apk") && filesize("$elevexDir/Ankit_EleveX_v5.9.26_Final.apk") > 10000000) {
-        $targetFile = "$elevexDir/Ankit_EleveX_v5.9.26_Final.apk";
-    } else if (file_exists("$elevexDir/Ankit_EleveX_v5.9.25_Final.apk") && filesize("$elevexDir/Ankit_EleveX_v5.9.25_Final.apk") > 10000000) {
-        $targetFile = "$elevexDir/Ankit_EleveX_v5.9.25_Final.apk";
-    } else if (file_exists("$elevexDir/Ankit_EleveX_v5.9.24_Final.apk") && filesize("$elevexDir/Ankit_EleveX_v5.9.24_Final.apk") > 10000000) {
-        $targetFile = "$elevexDir/Ankit_EleveX_v5.9.24_Final.apk";
-    } else if (file_exists("$elevexDir/Ankit_EleveX_Release.apk") && filesize("$elevexDir/Ankit_EleveX_Release.apk") > 10000000) {
-        $targetFile = "$elevexDir/Ankit_EleveX_Release.apk";
+    $targetFile = '';
+    // 1. Check exact manifest version on local server
+    $exactFile = "$elevexDir/Ankit_EleveX_v{$latestVer}_Final.apk";
+    if (file_exists($exactFile) && filesize($exactFile) > 10000000) {
+        $targetFile = $exactFile;
     } else {
+        // 2. Fallback: Natural sort of all APKs descending (latest version always first)
         $files = glob("$elevexDir/Ankit_EleveX*.apk");
         if (!empty($files)) {
             natsort($files);
@@ -35,7 +40,7 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
 
     if (!empty($targetFile) && file_exists($targetFile)) {
         $filesize = filesize($targetFile);
-        $filename = "Ankit_EleveX_v5.9.26_Final.apk";
+        $filename = basename($targetFile);
 
         while (ob_get_level()) ob_end_clean();
         header("Content-Type: application/vnd.android.package-archive");
@@ -59,8 +64,8 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
         exit;
     }
 
-    // High-Speed GitHub Releases Cloud Mirror Fallback (Always Guaranteed)
-    header("Location: https://github.com/ankit261194/ankits-liftramban/releases/download/v5.9.26/Ankit_EleveX_v5.9.26_Final.apk");
+    // High-Speed GitHub Releases Cloud Mirror Fallback (Always Guaranteed & Dynamic)
+    header("Location: https://github.com/ankit261194/ankits-liftramban/releases/download/v{$latestVer}/Ankit_EleveX_v{$latestVer}_Final.apk");
     exit;
 }
 
