@@ -414,6 +414,18 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     can_delete_tokens INTEGER NOT NULL DEFAULT 0,
                     can_custom_token_number INTEGER NOT NULL DEFAULT 0,
                     can_export_pdf INTEGER NOT NULL DEFAULT 1,
+                    can_manage_voice_settings INTEGER NOT NULL DEFAULT 0,
+                    can_manage_daily_darshan INTEGER NOT NULL DEFAULT 0,
+                    can_manage_live_studio INTEGER NOT NULL DEFAULT 0,
+                    can_manage_aarti_bhajan INTEGER NOT NULL DEFAULT 0,
+                    can_manage_ui_control INTEGER NOT NULL DEFAULT 0,
+                    can_manage_tuesday_darbar INTEGER NOT NULL DEFAULT 0,
+                    can_manage_id_cards INTEGER NOT NULL DEFAULT 0,
+                    can_manage_helpdesk INTEGER NOT NULL DEFAULT 0,
+                    can_view_payment_ledger INTEGER NOT NULL DEFAULT 0,
+                    can_manage_website INTEGER NOT NULL DEFAULT 0,
+                    can_manage_services_toggles INTEGER NOT NULL DEFAULT 0,
+                    can_manage_distances INTEGER NOT NULL DEFAULT 0,
                     photo_uri TEXT NOT NULL DEFAULT '',
                     is_active INTEGER NOT NULL,
                     created_at INTEGER NOT NULL
@@ -932,7 +944,19 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN whatsapp_channel_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0'",
             "ALTER TABLE tokens ADD COLUMN darbar_venue TEXT NOT NULL DEFAULT 'DUNGRA_JAAT'",
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_darbar_number ON tokens (darbar_date, token_number)",
-            "CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date)"
+            "CREATE INDEX IF NOT EXISTS idx_tokens_patient_phone ON tokens (phone_number, darbar_date)",
+            "ALTER TABLE admins ADD COLUMN can_manage_voice_settings INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_daily_darshan INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_live_studio INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_aarti_bhajan INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_ui_control INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_tuesday_darbar INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_id_cards INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_helpdesk INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_view_payment_ledger INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_website INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_services_toggles INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE admins ADD COLUMN can_manage_distances INTEGER NOT NULL DEFAULT 0"
         )
         for (sql in alterStatements) {
             try {
@@ -941,7 +965,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
         }
         autoMigrateSettingsColumns(db)
         try {
-            db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1, can_manage_arzi = 1, can_manage_havan = 1 WHERE role = 'SUPER_ADMIN'")
+            db.execSQL("UPDATE admins SET can_manage_parchas = 1, can_cancel_tokens = 1, can_delete_tokens = 1, can_custom_token_number = 1, can_export_pdf = 1, can_manage_arzi = 1, can_manage_havan = 1, can_manage_voice_settings = 1, can_manage_daily_darshan = 1, can_manage_live_studio = 1, can_manage_aarti_bhajan = 1, can_manage_ui_control = 1, can_manage_tuesday_darbar = 1, can_manage_id_cards = 1, can_manage_helpdesk = 1, can_view_payment_ledger = 1, can_manage_website = 1, can_manage_services_toggles = 1, can_manage_distances = 1 WHERE role = 'SUPER_ADMIN'")
         } catch (ignored: Exception) {}
     }
 
@@ -1050,6 +1074,18 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     put("can_export_pdf", 1)
                     put("can_manage_arzi", 1)
                     put("can_manage_havan", 1)
+                    put("can_manage_voice_settings", 1)
+                    put("can_manage_daily_darshan", 1)
+                    put("can_manage_live_studio", 1)
+                    put("can_manage_aarti_bhajan", 1)
+                    put("can_manage_ui_control", 1)
+                    put("can_manage_tuesday_darbar", 1)
+                    put("can_manage_id_cards", 1)
+                    put("can_manage_helpdesk", 1)
+                    put("can_view_payment_ledger", 1)
+                    put("can_manage_website", 1)
+                    put("can_manage_services_toggles", 1)
+                    put("can_manage_distances", 1)
                     put("photo_uri", "")
                     put("is_active", 1)
                     put("created_at", System.currentTimeMillis())

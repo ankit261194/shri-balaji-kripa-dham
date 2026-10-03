@@ -22,9 +22,9 @@ class GeofenceAndLogicTest {
     fun testGeofenceInsideBoundary() {
         val ashramLat = 28.3972915
         val ashramLon = 78.1460410
-        // A point ~50m away
-        val userLat = 28.4092
-        val userLon = 77.8791
+        // A point ~40m away
+        val userLat = 28.39765
+        val userLon = 78.1460410
 
         val isInside = GeofenceLocationManager.isInsideGeofence(
             userLat, userLon,

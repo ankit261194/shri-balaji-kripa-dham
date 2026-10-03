@@ -24,8 +24,8 @@ class SecurityAndAntiFraudTest {
         val ashramLon = 78.1460410
         val allowedRadius = 200.0 // 200 meters
 
-        // 1. Point 50m away inside Ashram
-        val insideLat = 28.4092
+        // 1. Point 40m away inside Ashram
+        val insideLat = 28.39765
         val insideLon = 78.1460410
         val distInside = GeofenceLocationManager.calculateDistanceMeters(insideLat, insideLon, ashramLat, ashramLon)
         assertTrue("Distance should be within 200m (Actual: $distInside)", distInside <= allowedRadius)

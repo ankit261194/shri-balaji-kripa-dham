@@ -217,10 +217,10 @@ class FaceRecognitionAITest {
     fun testVectorSerializationBlobRoundTrip() {
         val original = FaceEmbeddingEngine.generateSimulatedInvariantVector("serialization_test")
         val blob = FaceEmbeddingEngine.vectorToBlob(original)
-        assertEquals("128 floats * 4 bytes = 512 bytes blob", 512, blob.size)
+        assertEquals("floats * 4 bytes blob", FaceEmbeddingEngine.EMBEDDING_DIM * 4, blob.size)
 
         val restored = FaceEmbeddingEngine.blobToVector(blob)
-        assertEquals("Restored vector length must be 128", 128, restored.size)
+        assertEquals("Restored vector length must match EMBEDDING_DIM", FaceEmbeddingEngine.EMBEDDING_DIM, restored.size)
 
         for (i in original.indices) {
             assertEquals("Restored vector float at index $i must match", original[i], restored[i], 1e-6f)

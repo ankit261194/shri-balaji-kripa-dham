@@ -342,6 +342,38 @@ object FaceEmbeddingEngine {
         return l2Normalize(blended)
     }
 
+    @androidx.annotation.VisibleForTesting
+    fun generateSimulatedInvariantVector(
+        identitySeed: String,
+        hasBeard: Boolean = false,
+        hasGlasses: Boolean = false,
+        hasCap: Boolean = false
+    ): FloatArray {
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        val baseDigest = md.digest("CRANIAL_BONE_STRUCTURE_$identitySeed".toByteArray())
+        val seedLong = ByteBuffer.wrap(baseDigest).long
+
+        val random = java.util.Random(seedLong)
+        val vector = FloatArray(EMBEDDING_DIM)
+        for (i in 0 until EMBEDDING_DIM) {
+            vector[i] = random.nextGaussian().toFloat()
+        }
+
+        var perturbation = 0.0f
+        if (hasBeard) perturbation += 0.016f
+        if (hasGlasses) perturbation += 0.014f
+        if (hasCap) perturbation += 0.010f
+
+        if (perturbation > 0.0f) {
+            val perturbRandom = java.util.Random(seedLong xor 0x5A5A5A5AL)
+            for (i in 0 until EMBEDDING_DIM) {
+                vector[i] += (perturbRandom.nextGaussian().toFloat() * perturbation)
+            }
+        }
+
+        return l2Normalize(vector)
+    }
+
     /**
      * Sub-50ms Vector Matching Engine over Enrolled Profiles:
      *

@@ -242,12 +242,24 @@ fun AdminDashboardScreen(
     var newSevPassword by remember { mutableStateOf("") }
     var newSevPin by remember { mutableStateOf("") }
     var newSevCanTokens by remember { mutableStateOf(true) }
+    var newSevCanVoiceSettings by remember { mutableStateOf(false) }
     var newSevCanManualTokens by remember { mutableStateOf(true) }
     var newSevCanYatra by remember { mutableStateOf(true) }
     var newSevCanExpenses by remember { mutableStateOf(true) }
     var newSevCanLocation by remember { mutableStateOf(false) }
     var newSevCanNotif by remember { mutableStateOf(false) }
     var newSevCanContent by remember { mutableStateOf(false) }
+    var newSevCanDailyDarshan by remember { mutableStateOf(false) }
+    var newSevCanLiveStudio by remember { mutableStateOf(false) }
+    var newSevCanAartiBhajan by remember { mutableStateOf(false) }
+    var newSevCanUiControl by remember { mutableStateOf(false) }
+    var newSevCanTuesdayDarbar by remember { mutableStateOf(false) }
+    var newSevCanIdCards by remember { mutableStateOf(false) }
+    var newSevCanHelpdesk by remember { mutableStateOf(false) }
+    var newSevCanPaymentLedger by remember { mutableStateOf(false) }
+    var newSevCanWebsite by remember { mutableStateOf(false) }
+    var newSevCanServicesToggles by remember { mutableStateOf(false) }
+    var newSevCanDistances by remember { mutableStateOf(false) }
     var newSevCanPhotos by remember { mutableStateOf(false) }
     var newSevCanArzi by remember { mutableStateOf(false) }
     var newSevCanHavan by remember { mutableStateOf(false) }
@@ -353,12 +365,24 @@ fun AdminDashboardScreen(
     var editSevErrorMsg by remember { mutableStateOf<String?>(null) }
     var superAdminAccount by remember { mutableStateOf<Admin?>(null) }
     var editSevCanTokens by remember { mutableStateOf(false) }
+    var editSevCanVoiceSettings by remember { mutableStateOf(false) }
     var editSevCanManualTokens by remember { mutableStateOf(false) }
     var editSevCanYatra by remember { mutableStateOf(false) }
     var editSevCanExpenses by remember { mutableStateOf(false) }
     var editSevCanLocation by remember { mutableStateOf(false) }
     var editSevCanNotif by remember { mutableStateOf(false) }
     var editSevCanContent by remember { mutableStateOf(false) }
+    var editSevCanDailyDarshan by remember { mutableStateOf(false) }
+    var editSevCanLiveStudio by remember { mutableStateOf(false) }
+    var editSevCanAartiBhajan by remember { mutableStateOf(false) }
+    var editSevCanUiControl by remember { mutableStateOf(false) }
+    var editSevCanTuesdayDarbar by remember { mutableStateOf(false) }
+    var editSevCanIdCards by remember { mutableStateOf(false) }
+    var editSevCanHelpdesk by remember { mutableStateOf(false) }
+    var editSevCanPaymentLedger by remember { mutableStateOf(false) }
+    var editSevCanWebsite by remember { mutableStateOf(false) }
+    var editSevCanServicesToggles by remember { mutableStateOf(false) }
+    var editSevCanDistances by remember { mutableStateOf(false) }
     var editSevCanPhotos by remember { mutableStateOf(false) }
     var editSevCanAnywhere by remember { mutableStateOf(false) }
     var newSevCanAnywhere by remember { mutableStateOf(false) }
@@ -1162,55 +1186,91 @@ fun AdminDashboardScreen(
             val admin = loggedInAdmin!!
             val isSuper = admin.role == AdminRole.SUPER_ADMIN
 
-            // Build allowed tabs based on permissions
+            // Build allowed tabs based on granular decoupled permissions
             val allowedTabs = mutableListOf<String>()
-            if (admin.canManageTokens) allowedTabs.add(if (isHindi) "टोकन कतार" else "Tokens")
-            if (admin.canIssueManualTokens) allowedTabs.add(if (isHindi) "मैनुअल टोकन" else "Manual")
-            if (isSuper || admin.canManageTokens) {
+
+            // 1. Token & Darshan Operations
+            if (isSuper || admin.canManageTokens) allowedTabs.add(if (isHindi) "टोकन कतार" else "Tokens")
+            if (isSuper || admin.canIssueManualTokens) allowedTabs.add(if (isHindi) "मैनुअल टोकन" else "Manual")
+            if (isSuper || admin.canManageVoiceSettings) {
                 allowedTabs.add(if (isHindi) "🎙️ टोकन वॉइस व 5-API" else "Voice & 5-API")
             }
-            if (admin.canScanPaperRegister || isSuper) allowedTabs.add(if (isHindi) "रजिस्टर स्कैन" else "Register Scan")
+            if (isSuper || admin.canScanPaperRegister) allowedTabs.add(if (isHindi) "रजिस्टर स्कैन" else "Register Scan")
             if (isSuper || admin.canManageParchas) {
                 allowedTabs.add(if (isHindi) "आश्रम पर्चे" else "Sacred Parchas")
             }
-            if (isSuper) allowedTabs.add(if (isHindi) "सक्रिय फोन" else "Active Devices")
-            if (admin.canChangeLocation || isSuper) allowedTabs.add(if (isHindi) "GPS लोकेशन" else "Location")
-            if (admin.canSendNotifications || isSuper) allowedTabs.add(if (isHindi) "सूचना भेजें" else "Broadcast")
-            if (isSuper || admin.canEditAshramInfo) {
-                allowedTabs.add(if (isHindi) "🌺 दैनिक दर्शन" else "Daily Darshan Studio")
-                allowedTabs.add(if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control")
-                allowedTabs.add(if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager")
-                allowedTabs.add(if (isHindi) "🔴 लाइव स्टूडियो" else "🔴 Live Studio")
+
+            // 2. Darbar, Spiritual & Yatra Operations
+            if (isSuper || admin.canManageTuesdayDarbar) {
+                allowedTabs.add(if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar")
             }
             if (isSuper || (admin.canManageYatra && settings.isBusBookingLive)) {
                 allowedTabs.add(if (isHindi) "बस बुकिंग लेजर" else "Bus Ledger")
             }
-            if (isSuper || settings.canAdminViewPaymentHistory) {
-                allowedTabs.add(if (isHindi) "पेमेंट लेजर" else "Payment Ledger")
-            }
-            if (isSuper || (admin.canManageArzi && settings.canAdminViewArziLedger)) {
+            if (isSuper || admin.canManageArzi || settings.canAdminViewArziLedger) {
                 allowedTabs.add(if (isHindi) "अर्जी लेजर 📦" else "Arzi Ledger 📦")
-            }
-            if (isSuper || (settings.canAdminViewPaymentHistory && admin.canManageExpenses)) {
-                allowedTabs.add(if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊")
             }
             if (isSuper || admin.canManageHavan) {
                 allowedTabs.add(if (isHindi) "🔥 हवन आवेदन" else "🔥 Havan Requests")
             }
-            if (isSuper) {
+            if (isSuper || admin.canManageServicesToggles) {
                 allowedTabs.add(if (isHindi) "सेवाएं ऑन/ऑफ" else "Services")
-                allowedTabs.add(if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar")
+            }
+
+            // 3. Media, Darshan & Live Broadcast Operations (Completely Decoupled!)
+            if (isSuper || admin.canManageDailyDarshan) {
+                allowedTabs.add(if (isHindi) "🌺 दैनिक दर्शन" else "Daily Darshan Studio")
+            }
+            if (isSuper || admin.canManageLiveStudio) {
+                allowedTabs.add(if (isHindi) "🔴 लाइव स्टूडियो" else "🔴 Live Studio")
+            }
+            if (isSuper || admin.canManageAartiBhajan) {
+                allowedTabs.add(if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager")
+            }
+            if (isSuper || admin.canManageUiControl) {
+                allowedTabs.add(if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control")
+            }
+            if (isSuper || admin.canManageWebsite) {
                 allowedTabs.add(if (isHindi) "🌐 वेबसाइट लाइव एडिटर" else "Website Live Editor")
                 allowedTabs.add(if (isHindi) "🌐 वेबसाइट व CMS" else "Website & CMS")
-                allowedTabs.add(if (isHindi) "सुपर कंट्रोल" else "Super Control")
+            }
+
+            // 4. Financial & Ledgers Operations
+            if (isSuper || admin.canViewPaymentLedger || settings.canAdminViewPaymentHistory) {
+                allowedTabs.add(if (isHindi) "पेमेंट लेजर" else "Payment Ledger")
+            }
+            if (isSuper || (admin.canManageExpenses && (admin.canViewPaymentLedger || settings.canAdminViewPaymentHistory))) {
+                allowedTabs.add(if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊")
+            }
+
+            // 5. Helpdesk, ID Badges & Management Operations
+            if (isSuper || admin.canManageHelpdesk) {
+                allowedTabs.add(if (isHindi) "📩 सहायता व सुझाव" else "Helpdesk & Queries")
+            }
+            if (isSuper || admin.canManageIdCards) {
+                allowedTabs.add(if (isHindi) "🪪 ID कार्ड स्टूडियो" else "🪪 ID Card Studio")
+            }
+            if (isSuper || admin.canSendNotifications) {
+                allowedTabs.add(if (isHindi) "सूचना भेजें" else "Broadcast")
+            }
+            if (isSuper || admin.canChangeLocation) {
+                allowedTabs.add(if (isHindi) "GPS लोकेशन" else "Location")
+            }
+            if (isSuper || admin.canManageDistances) {
+                allowedTabs.add(if (isHindi) "कस्टम दूरियाँ" else "Distances")
+            }
+            if (isSuper || admin.canManageAdmins) {
                 allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
+            }
+
+            // 6. Super Admin Root Architecture & Diagnostics
+            if (isSuper) {
+                allowedTabs.add(if (isHindi) "सक्रिय फोन" else "Active Devices")
+                allowedTabs.add(if (isHindi) "सुपर कंट्रोल" else "Super Control")
                 allowedTabs.add(if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️")
                 allowedTabs.add(if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit")
                 allowedTabs.add(if (isHindi) "ऐप कस्टमाइजर" else "Customizer")
-                allowedTabs.add(if (isHindi) "कस्टम दूरियाँ" else "Distances")
-                allowedTabs.add(if (isHindi) "🪪 ID कार्ड स्टूडियो" else "🪪 ID Card Studio")
                 allowedTabs.add(if (isHindi) "ऑटो-अपडेट" else "Updates")
-                allowedTabs.add(if (isHindi) "📩 सहायता व सुझाव" else "Helpdesk & Queries")
             }
 
             // Universal Feedback module for all admins/sevadars to submit issues/suggestions to Super Admin:
@@ -1835,6 +1895,18 @@ fun AdminDashboardScreen(
                                     editSevCanLocation = targetAdmin.canChangeLocation
                                     editSevCanNotif = targetAdmin.canSendNotifications
                                     editSevCanContent = targetAdmin.canEditAshramInfo
+                                    editSevCanVoiceSettings = targetAdmin.canManageVoiceSettings
+                                    editSevCanDailyDarshan = targetAdmin.canManageDailyDarshan
+                                    editSevCanLiveStudio = targetAdmin.canManageLiveStudio
+                                    editSevCanAartiBhajan = targetAdmin.canManageAartiBhajan
+                                    editSevCanUiControl = targetAdmin.canManageUiControl
+                                    editSevCanTuesdayDarbar = targetAdmin.canManageTuesdayDarbar
+                                    editSevCanIdCards = targetAdmin.canManageIdCards
+                                    editSevCanHelpdesk = targetAdmin.canManageHelpdesk
+                                    editSevCanPaymentLedger = targetAdmin.canViewPaymentLedger
+                                    editSevCanWebsite = targetAdmin.canManageWebsite
+                                    editSevCanServicesToggles = targetAdmin.canManageServicesToggles
+                                    editSevCanDistances = targetAdmin.canManageDistances
                                     editSevCanPhotos = targetAdmin.canViewDevoteePhotos
                                     editSevCanAnywhere = targetAdmin.canIssueTokensAnywhere
                                     editSevCanScanRegister = targetAdmin.canScanPaperRegister
@@ -1863,6 +1935,22 @@ fun AdminDashboardScreen(
                                             canManageParchas = targetAdmin.canManageParchas,
                                             canManageArzi = targetAdmin.canManageArzi,
                                             canManageHavan = targetAdmin.canManageHavan,
+                                            canCancelTokens = targetAdmin.canCancelTokens,
+                                            canDeleteTokens = targetAdmin.canDeleteTokens,
+                                            canSetCustomTokenNumber = targetAdmin.canSetCustomTokenNumber,
+                                            canExportPdf = targetAdmin.canExportPdf,
+                                            canManageVoiceSettings = targetAdmin.canManageVoiceSettings,
+                                            canManageDailyDarshan = targetAdmin.canManageDailyDarshan,
+                                            canManageLiveStudio = targetAdmin.canManageLiveStudio,
+                                            canManageAartiBhajan = targetAdmin.canManageAartiBhajan,
+                                            canManageUiControl = targetAdmin.canManageUiControl,
+                                            canManageTuesdayDarbar = targetAdmin.canManageTuesdayDarbar,
+                                            canManageIdCards = targetAdmin.canManageIdCards,
+                                            canManageHelpdesk = targetAdmin.canManageHelpdesk,
+                                            canViewPaymentLedger = targetAdmin.canViewPaymentLedger,
+                                            canManageWebsite = targetAdmin.canManageWebsite,
+                                            canManageServicesToggles = targetAdmin.canManageServicesToggles,
+                                            canManageDistances = targetAdmin.canManageDistances,
                                             isActive = !targetAdmin.isActive
                                         )
                                         try { repository.publishAdminsToGitHub() } catch (e: Exception) {}
@@ -2626,93 +2714,151 @@ fun AdminDashboardScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(if (isHindi) "अनुमतियाँ (Permissions):" else "Granted Permissions:", fontWeight = FontWeight.Bold)
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanTokens, onCheckedChange = { newSevCanTokens = it })
-                        Text(if (isHindi) "टोकन कतार प्रबंधन" else "Manage Token Queue", fontSize = 13.sp)
+                    // --- CATEGORY 1: TOKENS & DARBAR ---
+                    Text(if (isHindi) "🎟️ 1. टोकन, दर्शन व दरबार सेवाएं:" else "🎟️ 1. Tokens & Darbar Services:", fontWeight = FontWeight.Bold, color = MaroonPrimary, fontSize = 13.sp)
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)), shape = RoundedCornerShape(8.dp)) {
+                        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanTokens, onCheckedChange = { newSevCanTokens = it })
+                                Text(if (isHindi) "रविवार टोकन कतार प्रबंधन (कॉलिंग / डिस्पले)" else "Token Queue Management", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanVoiceSettings, onCheckedChange = { newSevCanVoiceSettings = it })
+                                Text(if (isHindi) "🎙️ टोकन वॉइस घोषणा व 5-API क्लाउड सेटिंग" else "🎙️ Token Voice & 5-API Engine", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFD84315))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanAnywhere, onCheckedChange = { newSevCanAnywhere = it })
+                                Text(if (isHindi) "⚡ कहीं से भी व कभी भी टोकन जारी अधिकार (Anywhere)" else "⚡ Issue Tokens Anytime & Anywhere", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaroonAccent)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanManualTokens, onCheckedChange = { newSevCanManualTokens = it })
+                                Text(if (isHindi) "मैनुअल टोकन जारी करना" else "Issue Manual Tokens", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanTuesdayDarbar, onCheckedChange = { newSevCanTuesdayDarbar = it })
+                                Text(if (isHindi) "🚩 मंगलवार दरबार (टोकन, दर्शन व सेटिंग)" else "🚩 Tuesday Darbar Management", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFC2185B))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanCustomTokenNumber, onCheckedChange = { newSevCanCustomTokenNumber = it })
+                                Text(if (isHindi) "👑 विशेष आरक्षित VIP स्लॉट (2..20) व कस्टम नंबर" else "VIP Slots & Custom Token #", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanCancelTokens, onCheckedChange = { newSevCanCancelTokens = it })
+                                Text(if (isHindi) "🚫 टोकन रद्द करने की अनुमति (Cancel Token)" else "Allow Cancel Token", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanDeleteTokens, onCheckedChange = { newSevCanDeleteTokens = it })
+                                Text(if (isHindi) "🗑️ टोकन स्थायी हटाने की अनुमति (Delete Token)" else "Allow Delete Token", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanExportPdf, onCheckedChange = { newSevCanExportPdf = it })
+                                Text(if (isHindi) "📄 आज की टोकन सूची PDF डाउनलोड" else "Export Tokens PDF", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanScanRegister, onCheckedChange = { newSevCanScanRegister = it })
+                                Text(if (isHindi) "📝 रजिस्टर कॉपी स्कैन व टोकन जारी अधिकार" else "Scan Paper Register", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0D47A1))
+                            }
+                        }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanManualTokens, onCheckedChange = { newSevCanManualTokens = it })
-                        Text(if (isHindi) "मैनुअल टोकन जारी करना" else "Issue Manual Tokens", fontSize = 13.sp)
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    // --- CATEGORY 2: ASHRAM & RELIGIOUS SERVICES ---
+                    Text(if (isHindi) "🪔 2. आश्रम व धार्मिक सेवाएं:" else "🪔 2. Ashram & Religious Services:", fontWeight = FontWeight.Bold, color = MaroonPrimary, fontSize = 13.sp)
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)), shape = RoundedCornerShape(8.dp)) {
+                        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanParchas, onCheckedChange = { newSevCanParchas = it })
+                                Text(if (isHindi) "📜 आश्रम पावन पर्चे प्रबंधन" else "Sacred Parchas Management", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanArzi, onCheckedChange = { newSevCanArzi = it })
+                                Text(if (isHindi) "📦 अर्जी डिब्बा वितरण व लेजर" else "Arzi Box Distribution & Ledger", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanHavan, onCheckedChange = { newSevCanHavan = it })
+                                Text(if (isHindi) "🔥 हवन आवेदन प्रबंधन" else "Havan Applications Management", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanYatra, onCheckedChange = { newSevCanYatra = it })
+                                Text(if (isHindi) "🚌 बालाजी यात्रा सीट बुकिंग" else "Manage Yatra Seats", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanExpenses, onCheckedChange = { newSevCanExpenses = it })
+                                Text(if (isHindi) "💰 धाम व यात्रा खर्च (व्यय) जोड़ना" else "Add Ashram & Yatra Expenses", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanIdCards, onCheckedChange = { newSevCanIdCards = it })
+                                Text(if (isHindi) "🪪 सेवादार ID कार्ड स्टूडियो (बनाना व डाउनलोड)" else "Sevadar ID Card Studio", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1565C0))
+                            }
+                        }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanYatra, onCheckedChange = { newSevCanYatra = it })
-                        Text(if (isHindi) "बालाजी यात्रा सीट बुकिंग" else "Manage Yatra Seats", fontSize = 13.sp)
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    // --- CATEGORY 3: MEDIA, LIVE & WEBPAGE ---
+                    Text(if (isHindi) "📹 3. मीडिया, लाइव प्रसारण व वेबसाइट:" else "📹 3. Media, Live & Website:", fontWeight = FontWeight.Bold, color = MaroonPrimary, fontSize = 13.sp)
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE7F6)), shape = RoundedCornerShape(8.dp)) {
+                        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanDailyDarshan, onCheckedChange = { newSevCanDailyDarshan = it })
+                                Text(if (isHindi) "🌺 दैनिक दिव्य दर्शन फोटो अपलोड व प्रबंधन" else "Daily Darshan Photos Management", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF6A1B9A))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanLiveStudio, onCheckedChange = { newSevCanLiveStudio = it })
+                                Text(if (isHindi) "🔴 लाइव प्रसारण स्टूडियो (YouTube / Facebook Live)" else "Live Streaming Studio", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFC62828))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanAartiBhajan, onCheckedChange = { newSevCanAartiBhajan = it })
+                                Text(if (isHindi) "🎵 आरती, भजन व ऑडियो लाइब्रेरी प्रबंधन" else "Aarti, Bhajan & Audio Management", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanWebsite, onCheckedChange = { newSevCanWebsite = it })
+                                Text(if (isHindi) "🌐 वेबसाइट लाइव एडिटर व CMS सामग्री प्रबंधन" else "Website Live Editor & CMS", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF00695C))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanPhotos, onCheckedChange = { newSevCanPhotos = it })
+                                Text(if (isHindi) "🖼️ भक्तों की फोटो देखने की अनुमति" else "Allow Viewing Devotee Photos", fontSize = 13.sp)
+                            }
+                        }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanExpenses, onCheckedChange = { newSevCanExpenses = it })
-                        Text(if (isHindi) "यात्रा खर्च जोड़ना" else "Add Yatra Expenses", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanLocation, onCheckedChange = { newSevCanLocation = it })
-                        Text(if (isHindi) "आश्रम GPS लोकेशन बदलना" else "Change Ashram GPS", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanNotif, onCheckedChange = { newSevCanNotif = it })
-                        Text(if (isHindi) "सूचना प्रसारित करना" else "Send Broadcast Notifications", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanContent, onCheckedChange = { newSevCanContent = it })
-                        Text(if (isHindi) "आश्रम विवरण व उत्सव बदलना" else "Edit Content & Events", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanPhotos, onCheckedChange = { newSevCanPhotos = it })
-                        Text(if (isHindi) "भक्तों की फोटो देखने की अनुमति" else "Allow Viewing Devotee Photos", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanAnywhere, onCheckedChange = { newSevCanAnywhere = it })
-                        Text(
-                            text = if (isHindi) "⚡ किसी भी समय व स्थान से टोकन जारी करने की अनुमति (Anytime & Anywhere)" else "⚡ Allow Issuing Tokens Anytime & Anywhere",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaroonAccent
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanScanRegister, onCheckedChange = { newSevCanScanRegister = it })
-                        Text(
-                            text = if (isHindi) "📝 रजिस्टर कॉपी स्कैन व टोकन जारी अधिकार" else "Scan Paper Register Permission",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0D47A1)
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanParchas, onCheckedChange = { newSevCanParchas = it })
-                        Text(
-                            text = if (isHindi) "📜 आश्रम पर्चे प्रबंधन (Super Admin Delegation)" else "Manage Sacred Parchas (Delegation)",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFE65100)
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanCancelTokens, onCheckedChange = { newSevCanCancelTokens = it })
-                        Text(if (isHindi) "🚫 टोकन रद्द करने की अनुमति (Cancel Token)" else "Allow Cancel Token", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanDeleteTokens, onCheckedChange = { newSevCanDeleteTokens = it })
-                        Text(if (isHindi) "🗑️ टोकन स्थायी हटाने की अनुमति (Delete Token)" else "Allow Delete Token", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanCustomTokenNumber, onCheckedChange = { newSevCanCustomTokenNumber = it })
-                        Text(
-                            text = if (isHindi) "👑 विशेष आरक्षित VIP टोकन (2..20, कोटा: 2) व कस्टम टोकन अधिकार" else "Allow Reserved VIP Slots (2..20, Max 2) & Custom Token #",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaroonPrimary
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanExportPdf, onCheckedChange = { newSevCanExportPdf = it })
-                        Text(if (isHindi) "📄 आज की टोकन सूची PDF डाउनलोड (Export PDF)" else "Allow Export PDF", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanArzi, onCheckedChange = { newSevCanArzi = it })
-                        Text(if (isHindi) "📦 अर्जी डिब्बा वितरण व लेजर प्रबंधन" else "Manage Arzi Distribution & Ledger", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = newSevCanHavan, onCheckedChange = { newSevCanHavan = it })
-                        Text(if (isHindi) "🔥 हवन आवेदन प्रबंधन अधिकार" else "Manage Havan Applications", fontSize = 13.sp)
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    // --- CATEGORY 4: ADMIN & SYSTEM CONTROLS ---
+                    Text(if (isHindi) "🛠️ 4. प्रशासनिक व सिस्टम नियंत्रण:" else "🛠️ 4. Admin & System Controls:", fontWeight = FontWeight.Bold, color = MaroonPrimary, fontSize = 13.sp)
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFFECEFF1)), shape = RoundedCornerShape(8.dp)) {
+                        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanContent, onCheckedChange = { newSevCanContent = it })
+                                Text(if (isHindi) "📝 आश्रम जानकारी व उत्सव कार्यक्रम संपादन" else "Edit Ashram Info & Events", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanNotif, onCheckedChange = { newSevCanNotif = it })
+                                Text(if (isHindi) "📢 सूचना व घोषणाएं (Broadcast Notifications)" else "Broadcast Notifications", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanLocation, onCheckedChange = { newSevCanLocation = it })
+                                Text(if (isHindi) "📍 आश्रम GPS लोकेशन व जियोफेंसिंग बदलना" else "Change Ashram GPS & Geofence", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanHelpdesk, onCheckedChange = { newSevCanHelpdesk = it })
+                                Text(if (isHindi) "📩 सहायता व भक्त प्रश्नोत्तर (Helpdesk)" else "Helpdesk & Inquiries", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF283593))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanPaymentLedger, onCheckedChange = { newSevCanPaymentLedger = it })
+                                Text(if (isHindi) "💳 पेमेंट व दान लेजर (Payment Ledger)" else "Payment & Donation Ledger", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF2E7D32))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanServicesToggles, onCheckedChange = { newSevCanServicesToggles = it })
+                                Text(if (isHindi) "⚙️ सेवाएं चालू/बंद स्विच (Services Toggles)" else "Services On/Off Toggles", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanDistances, onCheckedChange = { newSevCanDistances = it })
+                                Text(if (isHindi) "📏 शहर अनुसार दूरियां (Custom Distances)" else "Manage Custom City Distances", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = newSevCanUiControl, onCheckedChange = { newSevCanUiControl = it })
+                                Text(if (isHindi) "🎛️ ऐप होम स्क्रीन UI बॉक्स कंट्रोल" else "App Home UI Control", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF455A64))
+                            }
+                        }
                     }
                 }
             },
@@ -2735,6 +2881,18 @@ fun AdminDashboardScreen(
                                 if (newSevCanParchas) perms.add("आश्रम पावन पर्चे")
                                 if (newSevCanArzi) perms.add("अर्जी डिब्बा व लेजर")
                                 if (newSevCanHavan) perms.add("हवन आवेदन प्रबंधन")
+                                if (newSevCanVoiceSettings) perms.add("टोकन वॉइस व 5-API")
+                                if (newSevCanTuesdayDarbar) perms.add("मंगलवार दरबार")
+                                if (newSevCanDailyDarshan) perms.add("दैनिक दर्शन")
+                                if (newSevCanLiveStudio) perms.add("लाइव स्टूडियो")
+                                if (newSevCanAartiBhajan) perms.add("आरती व भजन")
+                                if (newSevCanUiControl) perms.add("UI बॉक्स कंट्रोल")
+                                if (newSevCanIdCards) perms.add("ID कार्ड स्टूडियो")
+                                if (newSevCanHelpdesk) perms.add("सहायता व सुझाव")
+                                if (newSevCanPaymentLedger) perms.add("पेमेंट लेजर")
+                                if (newSevCanWebsite) perms.add("वेबसाइट व CMS")
+                                if (newSevCanServicesToggles) perms.add("सेवाएं टॉगल")
+                                if (newSevCanDistances) perms.add("कस्टम दूरियां")
 
                                 val (createdOk, createMsg) = repository.createSevadarAdmin(
                                     name = newSevName,
@@ -2760,6 +2918,18 @@ fun AdminDashboardScreen(
                                     canExportPdf = newSevCanExportPdf,
                                     canManageArzi = newSevCanArzi,
                                     canManageHavan = newSevCanHavan,
+                                    canManageVoiceSettings = newSevCanVoiceSettings,
+                                    canManageDailyDarshan = newSevCanDailyDarshan,
+                                    canManageLiveStudio = newSevCanLiveStudio,
+                                    canManageAartiBhajan = newSevCanAartiBhajan,
+                                    canManageUiControl = newSevCanUiControl,
+                                    canManageTuesdayDarbar = newSevCanTuesdayDarbar,
+                                    canManageIdCards = newSevCanIdCards,
+                                    canManageHelpdesk = newSevCanHelpdesk,
+                                    canViewPaymentLedger = newSevCanPaymentLedger,
+                                    canManageWebsite = newSevCanWebsite,
+                                    canManageServicesToggles = newSevCanServicesToggles,
+                                    canManageDistances = newSevCanDistances,
                                     photoUri = newSevPhotoUri
                                 )
 
@@ -2786,6 +2956,18 @@ fun AdminDashboardScreen(
                                     newSevCanAnywhere = false
                                     newSevCanScanRegister = false
                                     newSevCanParchas = false
+                                    newSevCanVoiceSettings = false
+                                    newSevCanDailyDarshan = false
+                                    newSevCanLiveStudio = false
+                                    newSevCanAartiBhajan = false
+                                    newSevCanUiControl = false
+                                    newSevCanTuesdayDarbar = false
+                                    newSevCanIdCards = false
+                                    newSevCanHelpdesk = false
+                                    newSevCanPaymentLedger = false
+                                    newSevCanWebsite = false
+                                    newSevCanServicesToggles = false
+                                    newSevCanDistances = false
                                     try { repository.publishAdminsToGitHub() } catch (e: Exception) {}
                                     refreshData()
                                 } else {
@@ -3249,93 +3431,151 @@ fun AdminDashboardScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(if (isHindi) "अनुमतियाँ प्रबंधित करें:" else "Manage Permissions:", fontWeight = FontWeight.Bold)
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanTokens, onCheckedChange = { editSevCanTokens = it })
-                        Text(if (isHindi) "टोकन कतार प्रबंधन" else "Manage Token Queue", fontSize = 13.sp)
+                    // --- CATEGORY 1: TOKENS & DARBAR ---
+                    Text(if (isHindi) "🎟️ 1. टोकन, दर्शन व दरबार सेवाएं:" else "🎟️ 1. Tokens & Darbar Services:", fontWeight = FontWeight.Bold, color = MaroonPrimary, fontSize = 13.sp)
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)), shape = RoundedCornerShape(8.dp)) {
+                        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanTokens, onCheckedChange = { editSevCanTokens = it })
+                                Text(if (isHindi) "रविवार टोकन कतार प्रबंधन (कॉलिंग / डिस्पले)" else "Token Queue Management", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanVoiceSettings, onCheckedChange = { editSevCanVoiceSettings = it })
+                                Text(if (isHindi) "🎙️ टोकन वॉइस घोषणा व 5-API क्लाउड सेटिंग" else "🎙️ Token Voice & 5-API Engine", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFD84315))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanAnywhere, onCheckedChange = { editSevCanAnywhere = it })
+                                Text(if (isHindi) "⚡ कहीं से भी व कभी भी टोकन जारी अधिकार (Anywhere)" else "⚡ Issue Tokens Anytime & Anywhere", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaroonAccent)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanManualTokens, onCheckedChange = { editSevCanManualTokens = it })
+                                Text(if (isHindi) "मैनुअल टोकन जारी करना" else "Issue Manual Tokens", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanTuesdayDarbar, onCheckedChange = { editSevCanTuesdayDarbar = it })
+                                Text(if (isHindi) "🚩 मंगलवार दरबार (टोकन, दर्शन व सेटिंग)" else "🚩 Tuesday Darbar Management", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFC2185B))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanCustomTokenNumber, onCheckedChange = { editSevCanCustomTokenNumber = it })
+                                Text(if (isHindi) "👑 विशेष आरक्षित VIP स्लॉट (2..20) व कस्टम नंबर" else "VIP Slots & Custom Token #", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanCancelTokens, onCheckedChange = { editSevCanCancelTokens = it })
+                                Text(if (isHindi) "🚫 टोकन रद्द करने की अनुमति (Cancel Token)" else "Allow Cancel Token", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanDeleteTokens, onCheckedChange = { editSevCanDeleteTokens = it })
+                                Text(if (isHindi) "🗑️ टोकन स्थायी हटाने की अनुमति (Delete Token)" else "Allow Delete Token", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanExportPdf, onCheckedChange = { editSevCanExportPdf = it })
+                                Text(if (isHindi) "📄 आज की टोकन सूची PDF डाउनलोड" else "Export Tokens PDF", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanScanRegister, onCheckedChange = { editSevCanScanRegister = it })
+                                Text(if (isHindi) "📝 रजिस्टर कॉपी स्कैन व टोकन जारी अधिकार" else "Scan Paper Register", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0D47A1))
+                            }
+                        }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanManualTokens, onCheckedChange = { editSevCanManualTokens = it })
-                        Text(if (isHindi) "मैनुअल टोकन जारी करना" else "Issue Manual Tokens", fontSize = 13.sp)
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    // --- CATEGORY 2: ASHRAM & RELIGIOUS SERVICES ---
+                    Text(if (isHindi) "🪔 2. आश्रम व धार्मिक सेवाएं:" else "🪔 2. Ashram & Religious Services:", fontWeight = FontWeight.Bold, color = MaroonPrimary, fontSize = 13.sp)
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9)), shape = RoundedCornerShape(8.dp)) {
+                        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanParchas, onCheckedChange = { editSevCanParchas = it })
+                                Text(if (isHindi) "📜 आश्रम पावन पर्चे प्रबंधन" else "Sacred Parchas Management", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE65100))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanArzi, onCheckedChange = { editSevCanArzi = it })
+                                Text(if (isHindi) "📦 अर्जी डिब्बा वितरण व लेजर" else "Arzi Box Distribution & Ledger", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanHavan, onCheckedChange = { editSevCanHavan = it })
+                                Text(if (isHindi) "🔥 हवन आवेदन प्रबंधन" else "Havan Applications Management", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanYatra, onCheckedChange = { editSevCanYatra = it })
+                                Text(if (isHindi) "🚌 बालाजी यात्रा सीट बुकिंग" else "Manage Yatra Seats", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanExpenses, onCheckedChange = { editSevCanExpenses = it })
+                                Text(if (isHindi) "💰 धाम व यात्रा खर्च (व्यय) जोड़ना" else "Add Ashram & Yatra Expenses", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanIdCards, onCheckedChange = { editSevCanIdCards = it })
+                                Text(if (isHindi) "🪪 सेवादार ID कार्ड स्टूडियो (बनाना व डाउनलोड)" else "Sevadar ID Card Studio", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1565C0))
+                            }
+                        }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanYatra, onCheckedChange = { editSevCanYatra = it })
-                        Text(if (isHindi) "बालाजी यात्रा सीट बुकिंग" else "Manage Yatra Seats", fontSize = 13.sp)
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    // --- CATEGORY 3: MEDIA, LIVE & WEBPAGE ---
+                    Text(if (isHindi) "📹 3. मीडिया, लाइव प्रसारण व वेबसाइट:" else "📹 3. Media, Live & Website:", fontWeight = FontWeight.Bold, color = MaroonPrimary, fontSize = 13.sp)
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFFEDE7F6)), shape = RoundedCornerShape(8.dp)) {
+                        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanDailyDarshan, onCheckedChange = { editSevCanDailyDarshan = it })
+                                Text(if (isHindi) "🌺 दैनिक दिव्य दर्शन फोटो अपलोड व प्रबंधन" else "Daily Darshan Photos Management", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF6A1B9A))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanLiveStudio, onCheckedChange = { editSevCanLiveStudio = it })
+                                Text(if (isHindi) "🔴 लाइव प्रसारण स्टूडियो (YouTube / Facebook Live)" else "Live Streaming Studio", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFC62828))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanAartiBhajan, onCheckedChange = { editSevCanAartiBhajan = it })
+                                Text(if (isHindi) "🎵 आरती, भजन व ऑडियो लाइब्रेरी प्रबंधन" else "Aarti, Bhajan & Audio Management", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanWebsite, onCheckedChange = { editSevCanWebsite = it })
+                                Text(if (isHindi) "🌐 वेबसाइट लाइव एडिटर व CMS सामग्री प्रबंधन" else "Website Live Editor & CMS", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF00695C))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanPhotos, onCheckedChange = { editSevCanPhotos = it })
+                                Text(if (isHindi) "🖼️ भक्तों की फोटो देखने की अनुमति" else "Allow Viewing Devotee Photos", fontSize = 13.sp)
+                            }
+                        }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanExpenses, onCheckedChange = { editSevCanExpenses = it })
-                        Text(if (isHindi) "यात्रा खर्च जोड़ना" else "Add Yatra Expenses", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanLocation, onCheckedChange = { editSevCanLocation = it })
-                        Text(if (isHindi) "आश्रम GPS लोकेशन बदलना" else "Change Ashram GPS", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanNotif, onCheckedChange = { editSevCanNotif = it })
-                        Text(if (isHindi) "सूचना प्रसारित करना" else "Send Broadcast Notifications", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanContent, onCheckedChange = { editSevCanContent = it })
-                        Text(if (isHindi) "आश्रम विवरण व उत्सव बदलना" else "Edit Content & Events", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanPhotos, onCheckedChange = { editSevCanPhotos = it })
-                        Text(if (isHindi) "भक्तों की फोटो देखने की अनुमति" else "Allow Viewing Devotee Photos", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanAnywhere, onCheckedChange = { editSevCanAnywhere = it })
-                        Text(
-                            text = if (isHindi) "⚡ किसी भी समय व स्थान से टोकन जारी करने की अनुमति (Anytime & Anywhere)" else "⚡ Allow Issuing Tokens Anytime & Anywhere",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaroonAccent
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanScanRegister, onCheckedChange = { editSevCanScanRegister = it })
-                        Text(
-                            text = if (isHindi) "📝 रजिस्टर कॉपी स्कैन व टोकन जारी अधिकार" else "Scan Paper Register Permission",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0D47A1)
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanParchas, onCheckedChange = { editSevCanParchas = it })
-                        Text(
-                            text = if (isHindi) "📜 आश्रम पर्चे प्रबंधन (Super Admin Delegation)" else "Manage Sacred Parchas (Delegation)",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFE65100)
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanCancelTokens, onCheckedChange = { editSevCanCancelTokens = it })
-                        Text(if (isHindi) "🚫 टोकन रद्द करने की अनुमति (Cancel Token)" else "Allow Cancel Token", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanDeleteTokens, onCheckedChange = { editSevCanDeleteTokens = it })
-                        Text(if (isHindi) "🗑️ टोकन स्थायी हटाने की अनुमति (Delete Token)" else "Allow Delete Token", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanCustomTokenNumber, onCheckedChange = { editSevCanCustomTokenNumber = it })
-                        Text(
-                            text = if (isHindi) "👑 विशेष आरक्षित VIP टोकन (2..20, कोटा: 2) व कस्टम टोकन अधिकार" else "Allow Reserved VIP Slots (2..20, Max 2) & Custom Token #",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaroonPrimary
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanExportPdf, onCheckedChange = { editSevCanExportPdf = it })
-                        Text(if (isHindi) "📄 आज की टोकन सूची PDF डाउनलोड (Export PDF)" else "Allow Export PDF", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanArzi, onCheckedChange = { editSevCanArzi = it })
-                        Text(if (isHindi) "📦 अर्जी डिब्बा वितरण व लेजर प्रबंधन" else "Manage Arzi Distribution & Ledger", fontSize = 13.sp)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = editSevCanHavan, onCheckedChange = { editSevCanHavan = it })
-                        Text(if (isHindi) "🔥 हवन आवेदन प्रबंधन अधिकार" else "Manage Havan Applications", fontSize = 13.sp)
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    // --- CATEGORY 4: ADMIN & SYSTEM CONTROLS ---
+                    Text(if (isHindi) "🛠️ 4. प्रशासनिक व सिस्टम नियंत्रण:" else "🛠️ 4. Admin & System Controls:", fontWeight = FontWeight.Bold, color = MaroonPrimary, fontSize = 13.sp)
+                    Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFFECEFF1)), shape = RoundedCornerShape(8.dp)) {
+                        Column(modifier = Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanContent, onCheckedChange = { editSevCanContent = it })
+                                Text(if (isHindi) "📝 आश्रम जानकारी व उत्सव कार्यक्रम संपादन" else "Edit Ashram Info & Events", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanNotif, onCheckedChange = { editSevCanNotif = it })
+                                Text(if (isHindi) "📢 सूचना व घोषणाएं (Broadcast Notifications)" else "Broadcast Notifications", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanLocation, onCheckedChange = { editSevCanLocation = it })
+                                Text(if (isHindi) "📍 आश्रम GPS लोकेशन व जियोफेंसिंग बदलना" else "Change Ashram GPS & Geofence", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanHelpdesk, onCheckedChange = { editSevCanHelpdesk = it })
+                                Text(if (isHindi) "📩 सहायता व भक्त प्रश्नोत्तर (Helpdesk)" else "Helpdesk & Inquiries", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF283593))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanPaymentLedger, onCheckedChange = { editSevCanPaymentLedger = it })
+                                Text(if (isHindi) "💳 पेमेंट व दान लेजर (Payment Ledger)" else "Payment & Donation Ledger", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF2E7D32))
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanServicesToggles, onCheckedChange = { editSevCanServicesToggles = it })
+                                Text(if (isHindi) "⚙️ सेवाएं चालू/बंद स्विच (Services Toggles)" else "Services On/Off Toggles", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanDistances, onCheckedChange = { editSevCanDistances = it })
+                                Text(if (isHindi) "📏 शहर अनुसार दूरियां (Custom Distances)" else "Manage Custom City Distances", fontSize = 13.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = editSevCanUiControl, onCheckedChange = { editSevCanUiControl = it })
+                                Text(if (isHindi) "🎛️ ऐप होम स्क्रीन UI बॉक्स कंट्रोल" else "App Home UI Control", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF455A64))
+                            }
+                        }
                     }
                 }
             },
@@ -3369,6 +3609,18 @@ fun AdminDashboardScreen(
                                     canExportPdf = editSevCanExportPdf,
                                     canManageArzi = editSevCanArzi,
                                     canManageHavan = editSevCanHavan,
+                                    canManageVoiceSettings = editSevCanVoiceSettings,
+                                    canManageDailyDarshan = editSevCanDailyDarshan,
+                                    canManageLiveStudio = editSevCanLiveStudio,
+                                    canManageAartiBhajan = editSevCanAartiBhajan,
+                                    canManageUiControl = editSevCanUiControl,
+                                    canManageTuesdayDarbar = editSevCanTuesdayDarbar,
+                                    canManageIdCards = editSevCanIdCards,
+                                    canManageHelpdesk = editSevCanHelpdesk,
+                                    canViewPaymentLedger = editSevCanPaymentLedger,
+                                    canManageWebsite = editSevCanWebsite,
+                                    canManageServicesToggles = editSevCanServicesToggles,
+                                    canManageDistances = editSevCanDistances,
                                     isActive = target.isActive
                                 )
                             )
@@ -7732,7 +7984,19 @@ fun SevadarManagementTab(
                     Text(
                         text = "अनुमतियाँ: " + listOfNotNull(
                             if (a.canManageTokens) "टोकन" else null,
+                            if (a.canManageVoiceSettings) "टोकन वॉइस" else null,
                             if (a.canIssueManualTokens) "मैनुअल टोकन" else null,
+                            if (a.canManageTuesdayDarbar) "मंगलवार दरबार" else null,
+                            if (a.canManageDailyDarshan) "दैनिक दर्शन" else null,
+                            if (a.canManageLiveStudio) "लाइव स्टूडियो" else null,
+                            if (a.canManageAartiBhajan) "आरती/भजन" else null,
+                            if (a.canManageIdCards) "ID कार्ड" else null,
+                            if (a.canManageHelpdesk) "सहायता" else null,
+                            if (a.canViewPaymentLedger) "लेजर" else null,
+                            if (a.canManageWebsite) "वेबसाइट" else null,
+                            if (a.canManageServicesToggles) "सेवाएं" else null,
+                            if (a.canManageDistances) "दूरियां" else null,
+                            if (a.canManageUiControl) "UI कंट्रोल" else null,
                             if (a.canManageYatra) "यात्रा" else null,
                             if (a.canManageExpenses) "खर्च" else null,
                             if (a.canChangeLocation) "GPS" else null,

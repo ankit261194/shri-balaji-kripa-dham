@@ -43,6 +43,19 @@ data class AdminPermissionsUpdate(
     val canDeleteTokens: Boolean = false,
     val canSetCustomTokenNumber: Boolean = false,
     val canExportPdf: Boolean = true,
+    // Granular decoupled service permissions:
+    val canManageVoiceSettings: Boolean = false,
+    val canManageDailyDarshan: Boolean = false,
+    val canManageLiveStudio: Boolean = false,
+    val canManageAartiBhajan: Boolean = false,
+    val canManageUiControl: Boolean = false,
+    val canManageTuesdayDarbar: Boolean = false,
+    val canManageIdCards: Boolean = false,
+    val canManageHelpdesk: Boolean = false,
+    val canViewPaymentLedger: Boolean = false,
+    val canManageWebsite: Boolean = false,
+    val canManageServicesToggles: Boolean = false,
+    val canManageDistances: Boolean = false,
     val isActive: Boolean = true
 )
 
@@ -2682,6 +2695,18 @@ class AshramRepository(context: Context) {
             canDeleteTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_delete_tokens")) == 1 } catch (e: Exception) { false },
             canSetCustomTokenNumber = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_custom_token_number")) == 1 } catch (e: Exception) { false },
             canExportPdf = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_export_pdf")) == 1 } catch (e: Exception) { true },
+            canManageVoiceSettings = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_voice_settings")) == 1 } catch (e: Exception) { false },
+            canManageDailyDarshan = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_daily_darshan")) == 1 } catch (e: Exception) { false },
+            canManageLiveStudio = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_live_studio")) == 1 } catch (e: Exception) { false },
+            canManageAartiBhajan = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_aarti_bhajan")) == 1 } catch (e: Exception) { false },
+            canManageUiControl = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_ui_control")) == 1 } catch (e: Exception) { false },
+            canManageTuesdayDarbar = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_tuesday_darbar")) == 1 } catch (e: Exception) { false },
+            canManageIdCards = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_id_cards")) == 1 } catch (e: Exception) { false },
+            canManageHelpdesk = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_helpdesk")) == 1 } catch (e: Exception) { false },
+            canViewPaymentLedger = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_view_payment_ledger")) == 1 } catch (e: Exception) { false },
+            canManageWebsite = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_website")) == 1 } catch (e: Exception) { false },
+            canManageServicesToggles = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_services_toggles")) == 1 } catch (e: Exception) { false },
+            canManageDistances = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_manage_distances")) == 1 } catch (e: Exception) { false },
             photoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) } catch (e: Exception) { "" } ?: "",
             isActive = cursor.getInt(cursor.getColumnIndexOrThrow("is_active")) == 1,
             createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
@@ -2814,6 +2839,18 @@ class AshramRepository(context: Context) {
         canDeleteTokens: Boolean = false,
         canSetCustomTokenNumber: Boolean = false,
         canExportPdf: Boolean = true,
+        canManageVoiceSettings: Boolean = false,
+        canManageDailyDarshan: Boolean = false,
+        canManageLiveStudio: Boolean = false,
+        canManageAartiBhajan: Boolean = false,
+        canManageUiControl: Boolean = false,
+        canManageTuesdayDarbar: Boolean = false,
+        canManageIdCards: Boolean = false,
+        canManageHelpdesk: Boolean = false,
+        canViewPaymentLedger: Boolean = false,
+        canManageWebsite: Boolean = false,
+        canManageServicesToggles: Boolean = false,
+        canManageDistances: Boolean = false,
         photoUri: String = ""
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val check = validateUniqueCredentials(username, password, pin)
@@ -2849,6 +2886,18 @@ class AshramRepository(context: Context) {
             put("can_delete_tokens", if (canDeleteTokens || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_custom_token_number", if (canSetCustomTokenNumber || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_export_pdf", if (canExportPdf || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_voice_settings", if (canManageVoiceSettings || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_daily_darshan", if (canManageDailyDarshan || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_live_studio", if (canManageLiveStudio || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_aarti_bhajan", if (canManageAartiBhajan || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_ui_control", if (canManageUiControl || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_tuesday_darbar", if (canManageTuesdayDarbar || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_id_cards", if (canManageIdCards || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_helpdesk", if (canManageHelpdesk || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_view_payment_ledger", if (canViewPaymentLedger || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_website", if (canManageWebsite || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_services_toggles", if (canManageServicesToggles || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_distances", if (canManageDistances || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("photo_uri", photoUri.trim())
             put("is_active", 1)
             put("created_at", System.currentTimeMillis())
@@ -2929,6 +2978,18 @@ class AshramRepository(context: Context) {
                 put("can_delete_tokens", if (p.canDeleteTokens) 1 else 0)
                 put("can_custom_token_number", if (p.canSetCustomTokenNumber) 1 else 0)
                 put("can_export_pdf", if (p.canExportPdf) 1 else 0)
+                put("can_manage_voice_settings", if (p.canManageVoiceSettings) 1 else 0)
+                put("can_manage_daily_darshan", if (p.canManageDailyDarshan) 1 else 0)
+                put("can_manage_live_studio", if (p.canManageLiveStudio) 1 else 0)
+                put("can_manage_aarti_bhajan", if (p.canManageAartiBhajan) 1 else 0)
+                put("can_manage_ui_control", if (p.canManageUiControl) 1 else 0)
+                put("can_manage_tuesday_darbar", if (p.canManageTuesdayDarbar) 1 else 0)
+                put("can_manage_id_cards", if (p.canManageIdCards) 1 else 0)
+                put("can_manage_helpdesk", if (p.canManageHelpdesk) 1 else 0)
+                put("can_view_payment_ledger", if (p.canViewPaymentLedger) 1 else 0)
+                put("can_manage_website", if (p.canManageWebsite) 1 else 0)
+                put("can_manage_services_toggles", if (p.canManageServicesToggles) 1 else 0)
+                put("can_manage_distances", if (p.canManageDistances) 1 else 0)
                 put("is_active", if (p.isActive) 1 else 0)
             }
         }
@@ -3004,6 +3065,18 @@ class AshramRepository(context: Context) {
         canDeleteTokens: Boolean = false,
         canSetCustomTokenNumber: Boolean = false,
         canExportPdf: Boolean = true,
+        canManageVoiceSettings: Boolean = false,
+        canManageDailyDarshan: Boolean = false,
+        canManageLiveStudio: Boolean = false,
+        canManageAartiBhajan: Boolean = false,
+        canManageUiControl: Boolean = false,
+        canManageTuesdayDarbar: Boolean = false,
+        canManageIdCards: Boolean = false,
+        canManageHelpdesk: Boolean = false,
+        canViewPaymentLedger: Boolean = false,
+        canManageWebsite: Boolean = false,
+        canManageServicesToggles: Boolean = false,
+        canManageDistances: Boolean = false,
         isActive: Boolean
     ): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
@@ -3025,6 +3098,18 @@ class AshramRepository(context: Context) {
             put("can_delete_tokens", if (canDeleteTokens) 1 else 0)
             put("can_custom_token_number", if (canSetCustomTokenNumber) 1 else 0)
             put("can_export_pdf", if (canExportPdf) 1 else 0)
+            put("can_manage_voice_settings", if (canManageVoiceSettings) 1 else 0)
+            put("can_manage_daily_darshan", if (canManageDailyDarshan) 1 else 0)
+            put("can_manage_live_studio", if (canManageLiveStudio) 1 else 0)
+            put("can_manage_aarti_bhajan", if (canManageAartiBhajan) 1 else 0)
+            put("can_manage_ui_control", if (canManageUiControl) 1 else 0)
+            put("can_manage_tuesday_darbar", if (canManageTuesdayDarbar) 1 else 0)
+            put("can_manage_id_cards", if (canManageIdCards) 1 else 0)
+            put("can_manage_helpdesk", if (canManageHelpdesk) 1 else 0)
+            put("can_view_payment_ledger", if (canViewPaymentLedger) 1 else 0)
+            put("can_manage_website", if (canManageWebsite) 1 else 0)
+            put("can_manage_services_toggles", if (canManageServicesToggles) 1 else 0)
+            put("can_manage_distances", if (canManageDistances) 1 else 0)
             put("is_active", if (isActive) 1 else 0)
         }
         val updated = db.update("admins", cv, "id = ?", arrayOf(adminId.toString())) > 0
@@ -4833,6 +4918,18 @@ class AshramRepository(context: Context) {
                         put("can_manage_arzi", if (a.canManageArzi || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
                         put("can_manage_havan", if (a.canManageHavan || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
                         put("can_export_pdf", if (a.canExportPdf) 1 else 0)
+                        put("can_manage_voice_settings", if (a.canManageVoiceSettings || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_manage_daily_darshan", if (a.canManageDailyDarshan || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_manage_live_studio", if (a.canManageLiveStudio || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_manage_aarti_bhajan", if (a.canManageAartiBhajan || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_manage_ui_control", if (a.canManageUiControl || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_manage_tuesday_darbar", if (a.canManageTuesdayDarbar || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_manage_id_cards", if (a.canManageIdCards || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_manage_helpdesk", if (a.canManageHelpdesk || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_view_payment_ledger", if (a.canViewPaymentLedger || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_manage_website", if (a.canManageWebsite || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_manage_services_toggles", if (a.canManageServicesToggles || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
+                        put("can_manage_distances", if (a.canManageDistances || a.role == AdminRole.SUPER_ADMIN) 1 else 0)
                         put("is_active", if (a.isActive) 1 else 0)
                     }
 
@@ -4916,6 +5013,18 @@ class AshramRepository(context: Context) {
                                     cv.put("can_delete_tokens", 0)
                                     cv.put("can_custom_token_number", 0)
                                     cv.put("can_export_pdf", 1)
+                                    cv.put("can_manage_voice_settings", 0)
+                                    cv.put("can_manage_daily_darshan", 0)
+                                    cv.put("can_manage_live_studio", 0)
+                                    cv.put("can_manage_aarti_bhajan", 0)
+                                    cv.put("can_manage_ui_control", 0)
+                                    cv.put("can_manage_tuesday_darbar", 0)
+                                    cv.put("can_manage_id_cards", 0)
+                                    cv.put("can_manage_helpdesk", 0)
+                                    cv.put("can_view_payment_ledger", 0)
+                                    cv.put("can_manage_website", 0)
+                                    cv.put("can_manage_services_toggles", 0)
+                                    cv.put("can_manage_distances", 0)
                                     cv.put("photo_uri", "")
                                     cv.put("created_at", a.optLong("created_at", System.currentTimeMillis()))
                                     val ins = db.insert("admins", null, cv)

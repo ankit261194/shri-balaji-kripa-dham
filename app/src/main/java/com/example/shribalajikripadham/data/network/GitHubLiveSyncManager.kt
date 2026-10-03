@@ -999,7 +999,20 @@ object GitHubLiveSyncManager {
                         put("can_scan_paper_register", admin.canScanPaperRegister)
                         put("can_manage_parchas", admin.canManageParchas)
                         put("can_manage_arzi", admin.canManageArzi)
+                        put("can_manage_havan", admin.canManageHavan)
                         put("can_export_pdf", admin.canExportPdf)
+                        put("can_manage_voice_settings", admin.canManageVoiceSettings)
+                        put("can_manage_daily_darshan", admin.canManageDailyDarshan)
+                        put("can_manage_live_studio", admin.canManageLiveStudio)
+                        put("can_manage_aarti_bhajan", admin.canManageAartiBhajan)
+                        put("can_manage_ui_control", admin.canManageUiControl)
+                        put("can_manage_tuesday_darbar", admin.canManageTuesdayDarbar)
+                        put("can_manage_id_cards", admin.canManageIdCards)
+                        put("can_manage_helpdesk", admin.canManageHelpdesk)
+                        put("can_view_payment_ledger", admin.canViewPaymentLedger)
+                        put("can_manage_website", admin.canManageWebsite)
+                        put("can_manage_services_toggles", admin.canManageServicesToggles)
+                        put("can_manage_distances", admin.canManageDistances)
                     }
                     put("permissions", perms)
                 }
@@ -1097,7 +1110,20 @@ object GitHubLiveSyncManager {
                     val canPaper = perms.optBoolean("can_scan_paper_register", false)
                     val canParchas = perms.optBoolean("can_manage_parchas", false)
                     val canArzi = perms.optBoolean("can_manage_arzi", false)
+                    val canHavan = perms.optBoolean("can_manage_havan", false)
                     val canExport = perms.optBoolean("can_export_pdf", true)
+                    val canVoice = perms.optBoolean("can_manage_voice_settings", false)
+                    val canDailyDarshan = perms.optBoolean("can_manage_daily_darshan", false)
+                    val canLive = perms.optBoolean("can_manage_live_studio", false)
+                    val canAarti = perms.optBoolean("can_manage_aarti_bhajan", false)
+                    val canUi = perms.optBoolean("can_manage_ui_control", false)
+                    val canTuesday = perms.optBoolean("can_manage_tuesday_darbar", false)
+                    val canIdCards = perms.optBoolean("can_manage_id_cards", false)
+                    val canHelpdesk = perms.optBoolean("can_manage_helpdesk", false)
+                    val canPayment = perms.optBoolean("can_view_payment_ledger", false)
+                    val canWebsite = perms.optBoolean("can_manage_website", false)
+                    val canServices = perms.optBoolean("can_manage_services_toggles", false)
+                    val canDistances = perms.optBoolean("can_manage_distances", false)
 
                     list.add(
                         Admin(
@@ -1124,7 +1150,20 @@ object GitHubLiveSyncManager {
                             canScanPaperRegister = canPaper,
                             canManageParchas = canParchas,
                             canManageArzi = canArzi,
+                            canManageHavan = canHavan,
                             canExportPdf = canExport,
+                            canManageVoiceSettings = canVoice,
+                            canManageDailyDarshan = canDailyDarshan,
+                            canManageLiveStudio = canLive,
+                            canManageAartiBhajan = canAarti,
+                            canManageUiControl = canUi,
+                            canManageTuesdayDarbar = canTuesday,
+                            canManageIdCards = canIdCards,
+                            canManageHelpdesk = canHelpdesk,
+                            canViewPaymentLedger = canPayment,
+                            canManageWebsite = canWebsite,
+                            canManageServicesToggles = canServices,
+                            canManageDistances = canDistances,
                             photoUri = photoUri,
                             isActive = isActive
                         )
