@@ -51,7 +51,9 @@ $filesToSync = [
     "api/get_security_logs.php",
     "havan_admin.php",
     "media/balaji_darshan_today.jpg",
-    "sync_apk.php"
+    "sync_apk.php",
+    "elevex_gateway/app_update.json",
+    "elevex_gateway/submit_utr.php"
 ];
 
 // Clean up orphaned legacy files
