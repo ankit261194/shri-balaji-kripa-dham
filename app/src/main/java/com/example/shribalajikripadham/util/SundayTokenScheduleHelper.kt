@@ -143,12 +143,14 @@ object SundayTokenScheduleHelper {
             val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
             val formatted = sdf.format(Date(settings.scheduledTokenOpenTimestamp))
             if (remaining <= COUNTDOWN_WINDOW_MILLIS) {
+                val clock = formatCountdown(remaining)
+                val clockHindi = formatCountdownHindi(remaining)
                 return SundayScheduleState.CountdownActive(
                     openTimestamp = settings.scheduledTokenOpenTimestamp,
                     remainingMillis = remaining,
                     formattedTarget = formatted,
-                    messageHindi = "टोकन पंजीकरण निर्धारित समय ($formatted) पर स्वतः खुलेगा।",
-                    messageEnglish = "Token registration will open automatically at $formatted."
+                    messageHindi = "टोकन पंजीकरण निर्धारित समय ($formatted) पर स्वतः खुलेगा। शेष समय: $clockHindi [ $clock ]।",
+                    messageEnglish = "Token registration will open automatically at $formatted. Remaining: $clock."
                 )
             }
             return SundayScheduleState.CustomScheduled(
@@ -168,7 +170,7 @@ object SundayTokenScheduleHelper {
         val minute = cal.get(Calendar.MINUTE)
         val currentMinutes = hour * 60 + minute
 
-        val startMinutes = SUNDAY_START_HOUR * 60 + SUNDAY_START_MINUTE // 8:00 AM (480)
+        val startMinutes = SUNDAY_START_HOUR * 60 + SUNDAY_START_MINUTE // 8:30 AM (510)
         val endMinutes = SUNDAY_END_HOUR * 60 + SUNDAY_END_MINUTE       // 17:00 (1020)
 
         val nextSun = getNextSundayDate(cal)
@@ -183,12 +185,14 @@ object SundayTokenScheduleHelper {
             } else if (currentMinutes < startMinutes) {
                 // Sunday morning before 8:30 AM (Within 12-hour countdown!)
                 val remainingMillis = (nextSunStartMillis - nowMillis).coerceAtLeast(0L)
+                val clock = formatCountdown(remainingMillis)
+                val clockHindi = formatCountdownHindi(remainingMillis)
                 return SundayScheduleState.CountdownActive(
                     openTimestamp = nextSunStartMillis,
                     remainingMillis = remainingMillis,
                     formattedTarget = "आज रविवार प्रातः 8:30 बजे",
-                    messageHindi = "आज रविवार का टोकन पंजीकरण प्रातः 8:30 बजे से स्वतः प्रारंभ होगा।",
-                    messageEnglish = "Today's Sunday token registration will start automatically at 8:30 AM."
+                    messageHindi = "आज रविवार का टोकन पंजीकरण प्रातः 8:30 बजे से स्वतः प्रारंभ होगा। शेष समय: $clockHindi [ $clock ]।",
+                    messageEnglish = "Today's Sunday token registration will start automatically at 8:30 AM. Remaining: $clock."
                 )
             } else {
                 // Sunday after 5:00 PM
@@ -203,12 +207,14 @@ object SundayTokenScheduleHelper {
             val timeUntilNextSundayStart = nextSunStartMillis - nowMillis
             if (timeUntilNextSundayStart in 1..COUNTDOWN_WINDOW_MILLIS) {
                 // Within 12 hours of Sunday 8:30 AM (Saturday 8:30 PM onwards!)
+                val clock = formatCountdown(timeUntilNextSundayStart)
+                val clockHindi = formatCountdownHindi(timeUntilNextSundayStart)
                 return SundayScheduleState.CountdownActive(
                     openTimestamp = nextSunStartMillis,
                     remainingMillis = timeUntilNextSundayStart,
                     formattedTarget = "कल रविवार प्रातः 8:30 बजे",
-                    messageHindi = "रविवार टोकन पंजीकरण 12 घंटे पूर्व उल्टी गिनती जारी है। कल प्रातः 8:30 बजे टोकन स्वतः खुल जाएंगे।",
-                    messageEnglish = "Sunday token countdown active. Tokens will open automatically tomorrow at 8:30 AM."
+                    messageHindi = "रविवार टोकन पंजीकरण 12 घंटे पूर्व उल्टी गिनती जारी है। शेष समय: $clockHindi [ $clock ]। कल प्रातः 8:30 बजे टोकन स्वतः खुल जाएंगे।",
+                    messageEnglish = "Sunday token countdown active. Remaining: $clock. Tokens will open automatically tomorrow at 8:30 AM."
                 )
             } else {
                 return SundayScheduleState.NonSunday(

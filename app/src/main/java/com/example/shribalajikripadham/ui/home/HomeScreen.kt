@@ -1261,8 +1261,8 @@ fun HomeScreen(
 
 
                         // 🌟 GRAND LIVE TOKEN STATUS ANNOUNCEMENT BANNER
-                        val scheduleState = remember(settings) {
-                            SundayTokenScheduleHelper.evaluateSchedule(settings)
+                        val scheduleState = remember(settings, currentTimeMs) {
+                            SundayTokenScheduleHelper.evaluateSchedule(settings, currentTimeMs)
                         }
                         val isTokenOpen = scheduleState is SundayScheduleState.Open
 
@@ -1270,6 +1270,7 @@ fun HomeScreen(
                             colors = CardDefaults.cardColors(
                                 containerColor = when (scheduleState) {
                                     is SundayScheduleState.Open -> Color(0xFFE8F5E9)
+                                    is SundayScheduleState.CountdownActive -> Color(0xFFFFF8E1)
                                     else -> currentTheme.surfaceLight
                                 }
                             ),
@@ -1278,6 +1279,7 @@ fun HomeScreen(
                                 currentTheme.cardBorderWidth,
                                 when (scheduleState) {
                                     is SundayScheduleState.Open -> Color(0xFF2E7D32)
+                                    is SundayScheduleState.CountdownActive -> Color(0xFFFF8F00)
                                     else -> currentTheme.cardBorderColor
                                 }
                             ),
@@ -1285,7 +1287,7 @@ fun HomeScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = sectionSpacing)
-                                .clickable { onNavigateToFaceToken() }
+                                .clickable { onNavigateToToken() }
                         ) {
                             Row(
                                 modifier = Modifier
@@ -1300,6 +1302,7 @@ fun HomeScreen(
                                         .background(
                                             when (scheduleState) {
                                                 is SundayScheduleState.Open -> Color(0xFF2E7D32)
+                                                is SundayScheduleState.CountdownActive -> Color(0xFFFF8F00)
                                                 else -> currentTheme.primaryColor.copy(alpha = 0.12f)
                                             }
                                         ),
@@ -1308,6 +1311,7 @@ fun HomeScreen(
                                     Text(
                                         text = when (scheduleState) {
                                             is SundayScheduleState.Open -> "🎟️"
+                                            is SundayScheduleState.CountdownActive -> "⏳"
                                             is SundayScheduleState.SundayBeforeStart -> "⏳"
                                             is SundayScheduleState.SundayClosedEvening -> "🔴"
                                             is SundayScheduleState.NonSunday -> "📅"
@@ -1321,6 +1325,10 @@ fun HomeScreen(
                                     Text(
                                         text = when (scheduleState) {
                                             is SundayScheduleState.Open -> if (isHindi) "🟢 रविवार टोकन वितरण चालू है!" else "🟢 Sunday Token Generation OPEN!"
+                                            is SundayScheduleState.CountdownActive -> {
+                                                val clock = SundayTokenScheduleHelper.formatCountdown(scheduleState.remainingMillis)
+                                                if (isHindi) "⏳ रविवार टोकन उल्टी गिनती: $clock" else "⏳ Sunday Token Countdown: $clock"
+                                            }
                                             is SundayScheduleState.SundayBeforeStart -> if (isHindi) "⏳ टोकन आज सुबह 8:30 बजे खुलेंगे" else "⏳ Opens Today at 8:30 AM"
                                             is SundayScheduleState.SundayClosedEvening -> if (isHindi) "🔴 आज के टोकन पूरे हो गए हैं" else "🔴 Today's Tokens Closed"
                                             is SundayScheduleState.NonSunday -> if (isHindi) "📅 रविवार टोकन वितरण सूचना" else "📅 Sunday Token Schedule"
@@ -1331,6 +1339,7 @@ fun HomeScreen(
                                         fontSize = if (isCompact) 13.sp else 15.sp,
                                         color = when (scheduleState) {
                                             is SundayScheduleState.Open -> Color(0xFF1B5E20)
+                                            is SundayScheduleState.CountdownActive -> Color(0xFFE65100)
                                             else -> currentTheme.primaryColor
                                         }
                                     )
@@ -1338,6 +1347,10 @@ fun HomeScreen(
                                     Text(
                                         text = when (scheduleState) {
                                             is SundayScheduleState.Open -> if (isHindi) "👉 अभी टोकन प्राप्त करें (टैप करें ➔)" else "👉 Tap here to get token now ➔"
+                                            is SundayScheduleState.CountdownActive -> {
+                                                val clockHindi = SundayTokenScheduleHelper.formatCountdownHindi(scheduleState.remainingMillis)
+                                                if (isHindi) "${scheduleState.formattedTarget} स्वतः खुलेगा (शेष: $clockHindi)" else "Opens at ${scheduleState.formattedTarget} (Remaining: $clockHindi)"
+                                            }
                                             is SundayScheduleState.SundayBeforeStart -> if (isHindi) "सुबह 8:30 बजे आश्रम लोकेशन पर टोकन प्राप्त करें" else "Available from 8:30 AM at Ashram"
                                             is SundayScheduleState.SundayClosedEvening -> if (isHindi) "अब टोकन आगामी रविवार, ${scheduleState.nextSundayDateStr} को 8:30 AM से मिलेंगे" else "Next tokens on Sunday, ${scheduleState.nextSundayDateStr} 8:30 AM"
                                             is SundayScheduleState.NonSunday -> if (isHindi) "आगामी रविवार, ${scheduleState.nextSundayDateStr} को 8:30 AM से मिलेंगे" else "Next tokens on Sunday, ${scheduleState.nextSundayDateStr} 8:30 AM"
@@ -1349,16 +1362,18 @@ fun HomeScreen(
                                         lineHeight = if (isCompact) 14.sp else 18.sp,
                                         color = when (scheduleState) {
                                             is SundayScheduleState.Open -> Color(0xFF1B5E20)
+                                            is SundayScheduleState.CountdownActive -> Color(0xFFBF360C)
                                             else -> if (currentTheme.isDark) Color(0xFFD1D7DB) else Color(0xFF3B4A54)
                                         }
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Button(
-                                    onClick = { onNavigateToFaceToken() },
+                                    onClick = { onNavigateToToken() },
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = when (scheduleState) {
                                             is SundayScheduleState.Open -> Color(0xFF2E7D32)
+                                            is SundayScheduleState.CountdownActive -> Color(0xFFE65100)
                                             else -> currentTheme.primaryColor
                                         }
                                     ),
@@ -1366,7 +1381,11 @@ fun HomeScreen(
                                     contentPadding = PaddingValues(horizontal = if (isCompact) 8.dp else 10.dp, vertical = if (isCompact) 4.dp else 6.dp)
                                 ) {
                                     Text(
-                                        text = if (isTokenOpen) (if (isHindi) "टोकन लें ➔" else "Get Token ➔") else (if (isHindi) "विवरण ➔" else "Details ➔"),
+                                        text = when (scheduleState) {
+                                            is SundayScheduleState.Open -> if (isHindi) "टोकन लें ➔" else "Get Token ➔"
+                                            is SundayScheduleState.CountdownActive -> if (isHindi) "काउंटडाउन ➔" else "Countdown ➔"
+                                            else -> if (isHindi) "विवरण ➔" else "Details ➔"
+                                        },
                                         fontSize = if (isCompact) 10.5.sp else 12.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
@@ -1427,6 +1446,7 @@ fun HomeScreen(
                         if (activeLayout == AppUiLayout.CLASSIC_DARBAR) {
                             val classicDarbarSectionIds = listOf(
                                 UiSectionConfig.ID_EMERGENCY_NOTICE,
+                                UiSectionConfig.ID_TOKEN_COUNTDOWN,
                                 UiSectionConfig.ID_FREE_TREATMENT_BOX
                             )
                             for (secId in classicDarbarSectionIds) {
@@ -1453,6 +1473,31 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.height(sectionSpacing))
                             }
                         } else {
+                            // If countdown is active, ensure it is prominently shown above other custom layouts as well
+                            if (scheduleState is SundayScheduleState.CountdownActive) {
+                                RenderClassicSection(
+                                    sectionId = UiSectionConfig.ID_TOKEN_COUNTDOWN,
+                                    settings = settings,
+                                    isHindi = isHindi,
+                                    currentTheme = currentTheme,
+                                    activeSevadars = activeSevadars,
+                                    sevadarProfiles = sevadarProfiles,
+                                    dynamicEvents = dynamicEvents,
+                                    onNavigateToToken = onNavigateToToken,
+                                    onNavigateToFaceToken = onNavigateToFaceToken,
+                                    onNavigateToTuesdayToken = onNavigateToTuesdayToken,
+                                    onNavigateToYatra = onNavigateToYatra,
+                                    onNavigateToInfo = onNavigateToInfo,
+                                    onNavigateToAdmin = onNavigateToAdmin,
+                                    onNavigateToParchas = onNavigateToParchas,
+                                    onNavigateToLiveDarbar = onNavigateToLiveDarbar,
+                                    onNavigateToDharamshala = onNavigateToDharamshala,
+                                    context = context,
+                                    isCompact = isCompact
+                                )
+                                Spacer(modifier = Modifier.height(sectionSpacing))
+                            }
+
                             // Render chosen alternative layout
                             when (activeLayout) {
                                 AppUiLayout.MODERN_CARDS -> ModernCardsLayout(settings, isHindi, currentTheme, activeSevadars, dynamicEvents, onNavigateToToken, onNavigateToFaceToken, onNavigateToYatra, onNavigateToInfo, onNavigateToAdmin, onNavigateToParchas, onNavigateToYatraExpenses, onThemeChanged)
@@ -3622,9 +3667,9 @@ fun RenderClassicSection(
                                 )
                                 Text(
                                     text = if (isHindi)
-                                        "टोकन हर रविवार 8:00 AM से 5:00 PM तक दिए जाते हैं। दरबार से 12 घंटे पहले शनिवार रात 8:00 बजे से लाइव काउंटडाउन शुरू होगा।"
+                                        "टोकन हर रविवार 8:30 AM से 5:00 PM तक दिए जाते हैं। दरबार से 12 घंटे पहले शनिवार रात 8:30 बजे से लाइव काउंटडाउन शुरू होगा।"
                                     else
-                                        "Tokens are issued Sundays 8:00 AM - 5:00 PM. 12h countdown starts Saturday 8:00 PM.",
+                                        "Tokens are issued Sundays 8:30 AM - 5:00 PM. 12h countdown starts Saturday 8:30 PM.",
                                     fontSize = 11.sp,
                                     color = if (currentTheme.isDark) Color(0xFF8696A0) else Color(0xFF667781)
                                 )

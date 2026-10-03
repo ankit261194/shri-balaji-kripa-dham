@@ -123,12 +123,14 @@ object TuesdayTokenScheduleHelper {
             val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
             val formatted = sdf.format(Date(settings.tuesdayScheduledOpenTimestamp))
             if (remaining <= COUNTDOWN_WINDOW_MILLIS) {
+                val clock = formatCountdown(remaining)
+                val clockHindi = formatCountdownHindi(remaining)
                 return TuesdayScheduleState.CountdownActive(
                     openTimestamp = settings.tuesdayScheduledOpenTimestamp,
                     remainingMillis = remaining,
                     formattedTarget = formatted,
-                    messageHindi = "मंगलवार टोकन पंजीकरण निर्धारित समय ($formatted) पर स्वतः खुलेगा।",
-                    messageEnglish = "Tuesday token registration will open automatically at $formatted."
+                    messageHindi = "मंगलवार टोकन पंजीकरण निर्धारित समय ($formatted) पर स्वतः खुलेगा। शेष समय: $clockHindi [ $clock ]।",
+                    messageEnglish = "Tuesday token registration will open automatically at $formatted. Remaining: $clock."
                 )
             }
             return TuesdayScheduleState.CustomScheduled(
@@ -163,12 +165,14 @@ object TuesdayTokenScheduleHelper {
             } else if (currentMinutes < startMinutes) {
                 // Tuesday morning before 8:00 AM (Within countdown!)
                 val remainingMillis = (nextTuesStartMillis - nowMillis).coerceAtLeast(0L)
+                val clock = formatCountdown(remainingMillis)
+                val clockHindi = formatCountdownHindi(remainingMillis)
                 return TuesdayScheduleState.CountdownActive(
                     openTimestamp = nextTuesStartMillis,
                     remainingMillis = remainingMillis,
                     formattedTarget = "आज मंगलवार प्रातः 8:00 बजे",
-                    messageHindi = "आज मंगलवार बुलन्दशहर दरबार टोकन पंजीकरण प्रातः 8:00 बजे से स्वतः प्रारंभ होगा।",
-                    messageEnglish = "Today's Tuesday Bulandshahr token registration will start automatically at 8:00 AM."
+                    messageHindi = "आज मंगलवार बुलन्दशहर दरबार टोकन पंजीकरण प्रातः 8:00 बजे से स्वतः प्रारंभ होगा। शेष समय: $clockHindi [ $clock ]।",
+                    messageEnglish = "Today's Tuesday Bulandshahr token registration will start automatically at 8:00 AM. Remaining: $clock."
                 )
             } else {
                 // Tuesday after 5:00 PM
@@ -182,12 +186,14 @@ object TuesdayTokenScheduleHelper {
             // Other days: Monday 8:00 PM onwards is within 12 hours countdown!
             val timeUntilNextTuesdayStart = nextTuesStartMillis - nowMillis
             if (timeUntilNextTuesdayStart in 1..COUNTDOWN_WINDOW_MILLIS) {
+                val clock = formatCountdown(timeUntilNextTuesdayStart)
+                val clockHindi = formatCountdownHindi(timeUntilNextTuesdayStart)
                 return TuesdayScheduleState.CountdownActive(
                     openTimestamp = nextTuesStartMillis,
                     remainingMillis = timeUntilNextTuesdayStart,
                     formattedTarget = "कल मंगलवार प्रातः 8:00 बजे",
-                    messageHindi = "मंगलवार टोकन पंजीकरण 12 घंटे पूर्व उल्टी गिनती जारी है। कल प्रातः 8:00 बजे टोकन स्वतः खुल जाएंगे।",
-                    messageEnglish = "Tuesday token countdown active. Tokens will open automatically tomorrow at 8:00 AM."
+                    messageHindi = "मंगलवार टोकन पंजीकरण 12 घंटे पूर्व उल्टी गिनती जारी है। शेष समय: $clockHindi [ $clock ]। कल प्रातः 8:00 बजे टोकन स्वतः खुल जाएंगे।",
+                    messageEnglish = "Tuesday token countdown active. Remaining: $clock. Tokens will open automatically tomorrow at 8:00 AM."
                 )
             } else {
                 return TuesdayScheduleState.NonTuesday(

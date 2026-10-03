@@ -165,6 +165,14 @@ fun FaceTokenRegistrationScreen(
         }
     }
 
+    var scheduleTickerMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(1000L)
+            scheduleTickerMs = System.currentTimeMillis()
+        }
+    }
+
     val isTuesdayVenue = darbarVenue.equals("BULANDSHAHR", ignoreCase = true)
     val targetLat = if (isTuesdayVenue) {
         if (settings.tuesdayLatitude != 0.0) settings.tuesdayLatitude else 28.4069
@@ -183,7 +191,7 @@ fun FaceTokenRegistrationScreen(
 
     fun evaluateDarbarSchedule(): ScheduleEvaluationResult {
         if (isTuesdayVenue) {
-            val tState = TuesdayTokenScheduleHelper.evaluateSchedule(settings)
+            val tState = TuesdayTokenScheduleHelper.evaluateSchedule(settings, scheduleTickerMs)
             return when (tState) {
                 is TuesdayScheduleState.Open -> ScheduleEvaluationResult(isOpen = true)
                 is TuesdayScheduleState.CountdownActive -> ScheduleEvaluationResult(
@@ -238,7 +246,7 @@ fun FaceTokenRegistrationScreen(
                 )
             }
         } else {
-            val sState = SundayTokenScheduleHelper.evaluateSchedule(settings)
+            val sState = SundayTokenScheduleHelper.evaluateSchedule(settings, scheduleTickerMs)
             return when (sState) {
                 is SundayScheduleState.Open -> ScheduleEvaluationResult(isOpen = true)
                 is SundayScheduleState.CountdownActive -> ScheduleEvaluationResult(
@@ -721,7 +729,7 @@ fun FaceTokenRegistrationScreen(
             // MAIN STATE MACHINE UI
             when (scanState) {
                 FaceScanState.SCANNING -> {
-                    val darbarSchedule = remember(settings, darbarVenue) {
+                    val darbarSchedule = remember(settings, darbarVenue, scheduleTickerMs) {
                         evaluateDarbarSchedule()
                     }
 

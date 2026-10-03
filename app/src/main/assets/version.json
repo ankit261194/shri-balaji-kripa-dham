@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 114,
-  "version_code": 114,
-  "latest_version_name": "2.56.39",
-  "version_name": "2.56.39",
-  "update_notes_hindi": "v2.56.39 (Build 114): 🎙️ ElevenLabs 5-Key Pool (50,000 मुफ़्त अक्षर) + <= 50 क्रेडिट रहने पर स्वतः अगली Key पर अग्रिम स्विच + 5 लाइव क्रेडिट मीटर!",
-  "update_notes_english": "v2.56.39 (Build 114): 🎙️ ElevenLabs 5-Key Pool (50,000 Free Chars) + Proactive early switch at <= 50 credits + 5 Live Quota Meters!",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=114",
+  "latest_version_code": 128,
+  "version_code": 128,
+  "latest_version_name": "2.56.53",
+  "version_name": "2.56.53",
+  "update_notes_hindi": "v2.56.53 (Build 128): ⏳ लाइव रविवार टोकन 12-घंटे डिजिटल काउंटडाउन पूर्णतः चालू! होम स्क्रीन, टोकन पेज व फेस टोकन स्क्रीन पर सेकंड-दर-सेकंड लाइव उल्टी गिनती चालू।",
+  "update_notes_english": "v2.56.53 (Build 128): ⏳ Live Sunday Token 12-Hour Digital Countdown fully activated! Live second-by-second countdown clock on Home Screen, Token Page & Face Registration Screen.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=128",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

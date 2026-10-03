@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 122,
-  "version_code": 122,
-  "latest_version_name": "2.56.47",
-  "version_name": "2.56.47",
-  "update_notes_hindi": "v2.56.47 (Build 122): 🎙️ 11-कुंजी ElevenLabs स्टूडियो वॉइस पूल (असीमित टोकन), केंद्रीय भक्त ऑटो-फिल, 404 API फिक्स, और OneSignal पुश नोटिफिकेशन!",
-  "update_notes_english": "v2.56.47 (Build 122): 🎙️ 11-key ElevenLabs studio voice pool (unlimited tokens), central cloud devotee auto-fill, 404 API fix, and OneSignal push notifications!",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=122",
+  "latest_version_code": 128,
+  "version_code": 128,
+  "latest_version_name": "2.56.53",
+  "version_name": "2.56.53",
+  "update_notes_hindi": "v2.56.53 (Build 128): ⏳ लाइव रविवार टोकन 12-घंटे डिजिटल काउंटडाउन पूर्णतः चालू! होम स्क्रीन, टोकन पेज व फेस टोकन स्क्रीन पर सेकंड-दर-सेकंड लाइव उल्टी गिनती चालू।",
+  "update_notes_english": "v2.56.53 (Build 128): ⏳ Live Sunday Token 12-Hour Digital Countdown fully activated! Live second-by-second countdown clock on Home Screen, Token Page & Face Registration Screen.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=128",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }
