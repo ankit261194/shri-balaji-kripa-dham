@@ -1041,12 +1041,10 @@ class AshramRepository(context: Context) {
             open
         }
 
-        if (isAdminDesk && !isSuperAdmin) {
-            // Regular Admin: Can ONLY generate when token is open, UNLESS Super Admin granted them anytime permission
-            val hasAnytimePermission = bypassGeofence || settings.allowAdminReservedTokens
-            if (!isScheduleOpen && !hasAnytimePermission) {
-                throw IllegalStateException("⚠️ टोकन पंजीकरण वर्तमान में बंद है। सामान्य एडमिन केवल टोकन खुला होने पर ही टोकन जारी कर सकते हैं। बंद समय में टोकन जारी करने हेतु सुपर एडमिन की अनुमति आवश्यक है।")
-            }
+        if (!isSuperAdmin && !isScheduleOpen) {
+            val venueMsg = if (isTuesdayDarbar) "मंगलवार बुलन्दशहर दरबार" else "रविवार दरबार"
+            val timeMsg = if (isTuesdayDarbar) "मंगलवार प्रातः 8:00 बजे से सायं 5:00 बजे तक" else "रविवार प्रातः 8:30 बजे से सायं 5:00 बजे तक"
+            throw IllegalStateException("⚠️ $venueMsg टोकन सेवा वर्तमान में बंद है।\n\nटोकन केवल दरबार के दिन ($timeMsg) ही बनाए जा सकते हैं। किसी भी सामान्य एडमिन अथवा भक्त द्वारा पहले से (शनिवार या समय से पहले) टोकन बनाना पूर्णतः प्रतिबंधित है। केवल सुपर एडमिन ही विशेष परिस्थिति में टोकन बना सकते हैं।")
         }
 
         // 1. LOCATION & GEOFENCE CHECKS (Enforced for devotees and non-exempt admins)
@@ -1212,7 +1210,7 @@ class AshramRepository(context: Context) {
                 destinationAddress = safeDest,
                 darbarDate = targetDarbarDate,
                 customTokenNumber = customTokenNumber,
-                canIssueAnytime = shouldBypassGeofence || (isAdminDesk && (bypassGeofence || settings.allowAdminReservedTokens)),
+                canIssueAnytime = isSuperAdmin,
                 darbarVenue = darbarVenue,
                 isMockLocation = isMockLocation,
                 locationAccuracy = locationAccuracy,

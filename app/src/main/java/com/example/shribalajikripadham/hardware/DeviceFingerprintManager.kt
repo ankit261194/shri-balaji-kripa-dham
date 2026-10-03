@@ -31,7 +31,7 @@ object DeviceFingerprintManager {
             return persistentId
         }
 
-        // 2. Hardware-level immutable attributes
+        // 2. Hardware-level immutable attributes (Zero-variation across Clear Data, Rotation & Reinstall)
         val androidId = try {
             Settings.Secure.getString(
                 context.contentResolver,
@@ -50,18 +50,14 @@ object DeviceFingerprintManager {
         val manufacturer = Build.MANUFACTURER ?: ""
         val product = Build.PRODUCT ?: ""
         val cpuCores = Runtime.getRuntime().availableProcessors()
-        
-        val displayMetrics = try {
-            val dm = context.resources.displayMetrics
-            "${dm.widthPixels}x${dm.heightPixels}@${dm.densityDpi}"
-        } catch (e: Exception) {
-            "default_dm"
-        }
 
         val drmHardwareId = getWidevineDrmId()
 
-        // Assemble immutable hardware fingerprint composite
+        // Assemble immutable hardware fingerprint composite (Purely silicon & SoC hardware attributes)
         val rawComposite = buildString {
+            if (drmHardwareId.isNotBlank()) {
+                append("WIDEVINE_DRM:").append(drmHardwareId).append(";")
+            }
             append("SECURE_ANDROID_ID:").append(androidId).append(";")
             append("HW:").append(hardware).append(";")
             append("BOARD:").append(board).append(";")
@@ -72,10 +68,6 @@ object DeviceFingerprintManager {
             append("PRODUCT:").append(product).append(";")
             append("BOOTLOADER:").append(bootloader).append(";")
             append("CPU:").append(cpuCores).append(";")
-            append("DISPLAY:").append(displayMetrics).append(";")
-            if (drmHardwareId.isNotBlank()) {
-                append("WIDEVINE_DRM:").append(drmHardwareId).append(";")
-            }
             append("ASHRAM_SALT:SBKD_HARDWARE_LOCK_2026")
         }
 

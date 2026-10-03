@@ -23,7 +23,7 @@ data class LocationSecurityResult(
 
 object GeofenceLocationManager {
 
-    const val MAX_ALLOWED_ACCURACY_METERS = 60.0f
+    const val MAX_ALLOWED_ACCURACY_METERS = 40.0f
     const val OUTSTATION_MIN_DISTANCE_METERS = 30000.0 // 30 km
     const val LOCAL_ASHRAM_MAX_DISTANCE_METERS = 200.0 // 200 meters
 
@@ -454,7 +454,7 @@ object GeofenceLocationManager {
         onLocationResult: (Location?) -> Unit
     ) {
         val last = getLastKnownLocation(context)
-        if (last != null && (System.currentTimeMillis() - last.time) < 60_000L) {
+        if (last != null && (System.currentTimeMillis() - last.time) < 30_000L && last.hasAccuracy() && last.accuracy <= MAX_ALLOWED_ACCURACY_METERS) {
             onLocationResult(last)
         }
 

@@ -86,9 +86,11 @@ object AshramVoiceAnnouncementManager {
     private const val KEY_AUTO_NEXT_DELAY = "tts_auto_next_delay_seconds"
     private const val KEY_PRIMARY_TEMPLATE = "tts_primary_template"
     private const val KEY_STANDBY_TEMPLATE = "tts_standby_template"
+    private const val KEY_VOICE_KEY_SELECTION_MODE = "voice_key_selection_mode"
+    private const val KEY_VOICE_MANUAL_SLOT = "voice_manual_slot"
 
     const val DEFAULT_PRIMARY_TEMPLATE = "टोकन नंबर {tokenNumber}, श्री {devoteeName} जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
-    const val DEFAULT_STANDBY_TEMPLATE = "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, अगला नंबर आपका है, कृपया {currentDevoteeName} जी के पीछे आकर बैठें, और सब पीछे जाके बैठ जाओ।"
+    const val DEFAULT_STANDBY_TEMPLATE = "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, इसके बाद आपका नंबर है। कृपया आप {currentDevoteeName} जी के पीछे जाके बैठ जाएं, और बाकी सारे लोग पीछे जाके आराम से बैठ जाएं, जब तुम्हारा नंबर आएगा तो तुम्हें सूचित किया जाएगा।"
 
     const val PRESET_ELEVENLABS_MALE = "ELEVENLABS_MALE"
     const val PRESET_ELEVENLABS_FEMALE = "ELEVENLABS_FEMALE"
@@ -267,7 +269,38 @@ object AshramVoiceAnnouncementManager {
         prefs.edit().putString(KEY_GOOGLE_TTS_API_KEY, key.trim()).apply()
     }
 
+    fun isVoiceKeyManualMode(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_VOICE_KEY_SELECTION_MODE, "AUTO") == "MANUAL"
+    }
+
+    fun setVoiceKeyManualMode(context: Context, isManual: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_VOICE_KEY_SELECTION_MODE, if (isManual) "MANUAL" else "AUTO").apply()
+    }
+
+    fun getVoiceManualSlot(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getInt(KEY_VOICE_MANUAL_SLOT, 1)
+    }
+
+    fun setVoiceManualSlot(context: Context, slot: Int) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putInt(KEY_VOICE_MANUAL_SLOT, slot.coerceIn(1, 11)).apply()
+    }
+
     fun getElevenLabsApiKeyList(context: Context): List<String> {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val isManual = prefs.getString(KEY_VOICE_KEY_SELECTION_MODE, "AUTO") == "MANUAL"
+        val manualSlot = prefs.getInt(KEY_VOICE_MANUAL_SLOT, 1)
+
+        if (isManual) {
+            val key = getElevenLabsApiKey(context, manualSlot)
+            if (key.isNotBlank()) {
+                return listOf(key)
+            }
+        }
+
         val list = mutableListOf<String>()
         for (slot in 1..11) {
             val key = getElevenLabsApiKey(context, slot)
@@ -1329,7 +1362,7 @@ object AshramVoiceAnnouncementManager {
         }
 
         val testPrimary = "टोकन नंबर एक, श्री रमेश कुमार जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
-        val testStandby = "टोकन नंबर दो, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें, और सब पीछे जाके बैठ जाओ।"
+        val testStandby = "टोकन नंबर दो, श्री अंकित कुमार जी, इसके बाद आपका नंबर है। कृपया आप राकेश कुमार जी के पीछे जाके बैठ जाएं, और बाकी सारे लोग पीछे जाके आराम से बैठ जाएं, जब तुम्हारा नंबर आएगा तो तुम्हें सूचित किया जाएगा।"
 
         speakDevotionalText(context, testPrimary) {
             CoroutineScope(Dispatchers.Main).launch {

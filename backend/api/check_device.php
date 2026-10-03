@@ -62,7 +62,7 @@ try {
 
     // 1. Check by Device ID (Resistant to App Data Clear, Reinstall, and Date Offset)
     if (!empty($deviceId)) {
-        $stmt = $pdo->prepare("SELECT * FROM tokens WHERE device_id = :dev AND (darbar_date = :req_date OR darbar_date = :sun_date OR darbar_date = :tue_date OR darbar_date >= CURDATE() OR created_at >= :cutoff) AND status != 'CANCELLED' ORDER BY id DESC LIMIT 1");
+        $stmt = $pdo->prepare("SELECT * FROM tokens WHERE device_id = :dev AND (darbar_date = :req_date OR darbar_date = :sun_date OR darbar_date = :tue_date OR darbar_date >= CURDATE() OR server_timestamp >= NOW() - INTERVAL 48 HOUR OR created_at >= :cutoff) AND status != 'CANCELLED' ORDER BY id DESC LIMIT 1");
         $stmt->execute([
             ':dev' => $deviceId,
             ':req_date' => $darbarDate,
@@ -78,7 +78,7 @@ try {
         $cleanPhone = preg_replace('/[^0-9]/', '', $phoneNumber);
         if (strlen($cleanPhone) >= 10) {
             $last10 = substr($cleanPhone, -10);
-            $stmt = $pdo->prepare("SELECT * FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND (darbar_date = :req_date OR darbar_date = :sun_date OR darbar_date = :tue_date OR darbar_date >= CURDATE() OR created_at >= :cutoff) AND status != 'CANCELLED' ORDER BY id DESC LIMIT 1");
+            $stmt = $pdo->prepare("SELECT * FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND (darbar_date = :req_date OR darbar_date = :sun_date OR darbar_date = :tue_date OR darbar_date >= CURDATE() OR server_timestamp >= NOW() - INTERVAL 48 HOUR OR created_at >= :cutoff) AND status != 'CANCELLED' ORDER BY id DESC LIMIT 1");
             $stmt->execute([
                 ':phone' => $last10,
                 ':req_date' => $darbarDate,

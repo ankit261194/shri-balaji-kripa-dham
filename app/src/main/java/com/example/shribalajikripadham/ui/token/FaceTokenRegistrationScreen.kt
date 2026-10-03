@@ -1873,20 +1873,32 @@ fun FaceTokenRegistrationScreen(
                                                 deviceLng = userLongitude
                                             ).distanceKm
 
-                                            if (settings.isGeofenceEnforced && cityDistKm > 0f && cityDistKm < targetOutstationKm && distanceMeters > targetRadius) {
-                                                val outKm = targetOutstationKm.toInt()
-                                                val radM = if (targetRadius >= 1000.0) "${String.format(Locale.US, "%.1f", targetRadius / 1000.0)} किमी" else "${targetRadius.toInt()} मीटर"
-                                                val cDist = String.format(Locale.US, "%.1f", cityDistKm)
-                                                val venueTitle = if (isTuesdayVenue) "बुलन्दशहर दरबार" else "आश्रम"
-                                                locationAlertTitle = if (isHindi) "📍 स्थानीय भक्त नियम" else "📍 Local Devotee Policy"
-                                                locationAlertMessage = if (isHindi)
-                                                    "⚠️ आपके चयनित शहर/गाँव ($fallbackCity - $cDist किमी) की दूरी $outKm किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल $venueTitle परिसर ($radM के भीतर) में उपस्थित होकर ही मान्य है। कृपया $venueTitle पहुँचकर ही टोकन जनरेट करें।"
-                                                else
-                                                    "Your village/city ($cDist km) is within $outKm km radius. Local devotees can only register within $radM of $venueTitle."
-                                                showLocationAlertDialog = true
-                                                errorMessage = locationAlertMessage
-                                                isSubmitting = false
-                                                return@launch
+                                            if (settings.isGeofenceEnforced) {
+                                                if (userLatitude == 0.0 || userLongitude == 0.0 || distanceMeters < 0.0) {
+                                                    val venueTitle = if (isTuesdayVenue) "बुलन्दशहर दरबार" else "आश्रम"
+                                                    errorMessage = if (isHindi) "⚠️ वैध जीपीएस लोकेशन अनिवार्य है! कृपया फोन का GPS चालू करें और 'GPS रिफ्रेश' करें।" else "Valid GPS location required."
+                                                    isSubmitting = false
+                                                    return@launch
+                                                }
+                                                val currentGpsM = GeofenceLocationManager.calculateDistanceMeters(userLatitude, userLongitude, targetLat, targetLng)
+                                                val currentGpsKm = (currentGpsM / 1000.0).toFloat()
+                                                val isAtVenue = currentGpsM <= targetRadius
+                                                val isOutstation = currentGpsKm >= targetOutstationKm && settings.isOutstationAdvanceAllowed
+                                                if (!isAtVenue && !isOutstation) {
+                                                    val venueTitle = if (isTuesdayVenue) "बुलन्दशहर दरबार" else "आश्रम"
+                                                    val outKm = targetOutstationKm.toInt()
+                                                    val radM = if (targetRadius >= 1000.0) "${String.format(Locale.US, "%.1f", targetRadius / 1000.0)} किमी" else "${targetRadius.toInt()} मीटर"
+                                                    val cDist = String.format(Locale.US, "%.1f", currentGpsKm)
+                                                    locationAlertTitle = if (isHindi) "📍 स्थानीय भक्त नियम" else "📍 Local Devotee Policy"
+                                                    locationAlertMessage = if (isHindi)
+                                                        "⚠️ आपकी वास्तविक जीपीएस दूरी ($cDist किमी) $outKm किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल $venueTitle परिसर ($radM के भीतर) में उपस्थित होकर ही मान्य है। कृपया $venueTitle पहुँचकर ही टोकन जनरेट करें।"
+                                                    else
+                                                        "Your distance ($cDist km) is within $outKm km radius. Local devotees can only register within $radM of $venueTitle."
+                                                    showLocationAlertDialog = true
+                                                    errorMessage = locationAlertMessage
+                                                    isSubmitting = false
+                                                    return@launch
+                                                }
                                             }
 
                                             if (manualName.isBlank() || manualPhone.isBlank()) {

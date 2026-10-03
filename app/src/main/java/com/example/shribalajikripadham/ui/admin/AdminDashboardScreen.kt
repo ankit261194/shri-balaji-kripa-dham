@@ -9636,6 +9636,8 @@ fun SuperControlTab(
     var elevenLabsApiKey9Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 9)) }
     var elevenLabsApiKey10Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 10)) }
     var elevenLabsApiKey11Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 11)) }
+    var isVoiceKeyManualModeChecked by remember { mutableStateOf(AshramVoiceAnnouncementManager.isVoiceKeyManualMode(context)) }
+    var voiceManualSlotInput by remember { mutableStateOf(AshramVoiceAnnouncementManager.getVoiceManualSlot(context)) }
 
     val elevenLabsBalances by AshramVoiceAnnouncementManager.elevenLabsKeyBalances.collectAsState()
     val isRefreshingBalances by AshramVoiceAnnouncementManager.isRefreshingBalances.collectAsState()
@@ -10562,12 +10564,80 @@ fun SuperControlTab(
                                             color = MaroonPrimary
                                         )
                                         Text(
-                                            text = "ऑटो-स्विचिंग: किसी भी की में <= 50 क्रेडिट रहने पर अगली की पर स्वतः स्विच!",
+                                            text = "ऑटो-स्विचिंग या अपनी पसंद का सक्रिय स्लॉट स्वयं चुनें!",
                                             fontSize = 10.sp,
                                             color = Color.DarkGray
                                         )
                                     }
                                 }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Key Selection Mode: Auto vs Manual
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                FilterChip(
+                                    selected = !isVoiceKeyManualModeChecked,
+                                    onClick = { isVoiceKeyManualModeChecked = false },
+                                    label = { Text("🔄 ऑटो-स्विच मोड", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFF2E7D32),
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                                FilterChip(
+                                    selected = isVoiceKeyManualModeChecked,
+                                    onClick = { isVoiceKeyManualModeChecked = true },
+                                    label = { Text("🎯 मैनुअल चयन मोड", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaroonPrimary,
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                            }
+
+                            if (isVoiceKeyManualModeChecked) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "🎯 अपनी पसंद का सक्रिय स्लॉट चुनें (सभी उद्घोषणाएं इसी स्लॉट से होंगी):",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaroonPrimary
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    (1..11).forEach { slotNum ->
+                                        val isSlotChosen = (voiceManualSlotInput == slotNum)
+                                        FilterChip(
+                                            selected = isSlotChosen,
+                                            onClick = { voiceManualSlotInput = slotNum },
+                                            label = { Text("स्लॉट $slotNum", fontSize = 11.sp) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = SaffronPrimary,
+                                                selectedLabelColor = Color.White
+                                            )
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "✓ सक्रिय की: स्लॉट $voiceManualSlotInput चुनी हुई है",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1B5E20)
+                                )
+                            } else {
+                                Text(
+                                    text = "✓ ऑटो-स्विच मोड सक्रिय: कोटा समाप्त होने पर अगली की पर स्वतः स्विच होगा",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF2E7D32)
+                                )
                             }
 
                             Spacer(modifier = Modifier.height(10.dp))
@@ -10969,6 +11039,8 @@ fun SuperControlTab(
                                 AshramVoiceAnnouncementManager.setAutoNextDelaySeconds(context, autoNextDelayInput)
                                 AshramVoiceAnnouncementManager.setPrimaryTemplate(context, primaryTemplateInput)
                                 AshramVoiceAnnouncementManager.setStandbyTemplate(context, standbyTemplateInput)
+                                AshramVoiceAnnouncementManager.setVoiceKeyManualMode(context, isVoiceKeyManualModeChecked)
+                                AshramVoiceAnnouncementManager.setVoiceManualSlot(context, voiceManualSlotInput)
                                 AshramVoiceAnnouncementManager.refreshAllKeyBalances(context)
                                 withContext(Dispatchers.Main) {
                                     voiceSuccessMsg = if (isHindi) "✓ टोकन आवाज़, 11-Key पूल व शेड्यूलर सेटिंग्स सुरक्षित हुईं!" else "Voice pool (11 Keys), schedule & crowd control settings saved!"

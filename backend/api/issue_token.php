@@ -154,20 +154,21 @@ if (!$isAdmin && $isRootedSubmitted) {
     exit;
 }
 
-// 0C. Accuracy Verification (Must be within 60m)
+// 0C. Accuracy Verification (Must be within 40m)
 $accuracy = floatval($input['location_accuracy'] ?? $input['accuracy'] ?? 10.0);
-if (!$isAdmin && $accuracy > 60.0 && (!isset($settings['is_geofence_enforced']) || (int)$settings['is_geofence_enforced'] === 1)) {
-    logSecurityViolation($pdo, 'SECURITY_BLOCKED_ACCURACY', 'कमजोर जीपीएस सिग्नल (' . round($accuracy) . 'm > 60m)', 'Device ID: '.$deviceId.', Accuracy: '.round($accuracy).'m', $patientName, $phoneNumber, $deviceId, $darbarDate);
+if (!$isSuperAdmin && $accuracy > 40.0 && (!isset($settings['is_geofence_enforced']) || (int)$settings['is_geofence_enforced'] === 1)) {
+    logSecurityViolation($pdo, 'SECURITY_BLOCKED_ACCURACY', 'कमजोर जीपीएस सिग्नल (' . round($accuracy) . 'm > 40m)', 'Device ID: '.$deviceId.', Accuracy: '.round($accuracy).'m', $patientName, $phoneNumber, $deviceId, $darbarDate);
     http_response_code(403);
     echo json_encode([
         "success" => false,
-        "error" => "⚠️ कमजोर GPS सिग्नल (" . round($accuracy) . "m)। कृपया खुले आसमान के नीचे आकर सही लोकेशन प्राप्त करें (सटीकता 60 मीटर से कम होनी चाहिए)।"
+        "error" => "⚠️ कमजोर GPS सिग्नल (" . round($accuracy) . "m)। कृपया खुले आसमान के नीचे आकर सही लोकेशन प्राप्त करें (सटीकता 40 मीटर से कम होनी चाहिए)।"
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// 1. Hardware-Level Device Locking (1 Phone = 1 Token per Darbar Date per Venue)
-if (!$isAdmin) {
+// 1. Hardware-Level Device Locking (1 Phone = 1 Token per Darbar Date / 48 Hours)
+// Non-SuperAdmin requests (devotees, sevadars, and regular admins) are strictly locked to 1 Phone = 1 Token
+if (!$isSuperAdmin) {
     if (empty($deviceId)) {
         http_response_code(400);
         echo json_encode([
@@ -178,7 +179,7 @@ if (!$isAdmin) {
     }
 
     $recentCutoff = (time() - 48 * 3600) * 1000;
-    $devCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE device_id = :dev AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date >= CURDATE() OR created_at >= :cutoff) AND status != 'CANCELLED' LIMIT 1");
+    $devCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE device_id = :dev AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date >= CURDATE() OR server_timestamp >= NOW() - INTERVAL 48 HOUR OR created_at >= :cutoff) AND status != 'CANCELLED' LIMIT 1");
     $devCheck->execute([':dev' => $deviceId, ':date' => $darbarDate, ':active_date' => $activeDarbarDate, ':cutoff' => $recentCutoff]);
     $existingDev = $devCheck->fetch(PDO::FETCH_ASSOC);
     if ($existingDev) {
@@ -187,19 +188,19 @@ if (!$isAdmin) {
         $venueLabel = $isTuesdayVenue ? "मंगलवार बुलन्दशहर दरबार" : "रविवार दरबार";
         echo json_encode([
             "success" => false,
-            "error" => "⚠️ डिवाइस सुरक्षा नियम (1 फोन = 1 टोकन):\n\nइस मोबाइल फोन से आज का टोकन (#" . $existingDev['token_number'] . " - " . $existingDev['patient_name'] . ") पहले ही पंजीकृत हो चुका है।\n\nनियम: एक फोन से प्रत्येक $venueLabel केवल एक ही टोकन प्राप्त किया जा सकता है। ऐप का डेटा रीसेट (Clear Data) या दोबारा इंस्टॉल करने पर भी दूसरा टोकन नहीं मिल सकता।"
+            "error" => "⚠️ डिवाइस सुरक्षा नियम (1 फोन = 1 टोकन):\n\nइस मोबाइल फोन से टोकन (#" . $existingDev['token_number'] . " - " . $existingDev['patient_name'] . ") पहले ही पंजीकृत हो चुका है।\n\nनियम: एक फोन से प्रत्येक $venueLabel केवल एक ही टोकन प्राप्त किया जा सकता है। ऐप का डेटा रीसेट (Clear Data) या दोबारा इंस्टॉल करने पर भी दूसरा टोकन नहीं मिल सकता।"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 }
 
-// 2. Phone Number Locking (1 Mobile Number = 1 Token per Darbar Date per Venue)
-if (!$isAdmin && !empty($phoneNumber)) {
+// 2. Phone Number Locking (1 Mobile Number = 1 Token per Darbar Date / 48 Hours)
+if (!$isSuperAdmin && !empty($phoneNumber)) {
     $cleanPhone = preg_replace('/[^0-9]/', '', $phoneNumber);
     if (strlen($cleanPhone) >= 10) {
         $cleanPhone10 = substr($cleanPhone, -10);
         $recentCutoff = (time() - 48 * 3600) * 1000;
-        $phoneCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date >= CURDATE() OR created_at >= :cutoff) AND status != 'CANCELLED' LIMIT 1");
+        $phoneCheck = $pdo->prepare("SELECT token_number, patient_name FROM tokens WHERE RIGHT(phone_number, 10) = :phone AND (darbar_date = :date OR darbar_date = :active_date OR darbar_date >= CURDATE() OR server_timestamp >= NOW() - INTERVAL 48 HOUR OR created_at >= :cutoff) AND status != 'CANCELLED' LIMIT 1");
         $phoneCheck->execute([':phone' => $cleanPhone10, ':date' => $darbarDate, ':active_date' => $activeDarbarDate, ':cutoff' => $recentCutoff]);
         $existingPhone = $phoneCheck->fetch(PDO::FETCH_ASSOC);
         if ($existingPhone) {
@@ -208,7 +209,7 @@ if (!$isAdmin && !empty($phoneNumber)) {
             $venueLabel = $isTuesdayVenue ? "मंगलवार बुलन्दशहर दरबार" : "रविवार दरबार";
             echo json_encode([
                 "success" => false,
-                "error" => "⚠️ मोबाइल नंबर सुरक्षा नियम:\n\nइस नंबर (" . $phoneNumber . ") से आज का टोकन (#" . $existingPhone['token_number'] . " - " . $existingPhone['patient_name'] . ") पहले ही पंजीकृत है। एक $venueLabel में एक नंबर से केवल 1 टोकन मान्य है।"
+                "error" => "⚠️ मोबाइल नंबर सुरक्षा नियम:\n\nइस नंबर (" . $phoneNumber . ") से टोकन (#" . $existingPhone['token_number'] . " - " . $existingPhone['patient_name'] . ") पहले ही पंजीकृत है। एक $venueLabel में एक नंबर से केवल 1 टोकन मान्य है।"
             ], JSON_UNESCAPED_UNICODE);
             exit;
         }
@@ -216,7 +217,7 @@ if (!$isAdmin && !empty($phoneNumber)) {
 }
 
 // 3. Central Geofence & Dual-Distance Policy Enforcement (Strict 30 KM Rule)
-if (!$isAdmin) {
+if (!$isSuperAdmin) {
     $isGeofenceEnforced = !isset($settings['is_geofence_enforced']) || (int)$settings['is_geofence_enforced'] === 1;
 
     if ($isGeofenceEnforced) {
@@ -238,7 +239,6 @@ if (!$isAdmin) {
             $outstationMinKm = floatval(!empty($settings['tuesday_outstation_min_distance_km']) ? $settings['tuesday_outstation_min_distance_km'] : 30.0);
             $venueNameForNotice = "बुलन्दशहर दरबार";
         } else {
-            // Self-healing coordinate resolution: check ashram_latitude, then latitude, fallback to 28.3972915
             $rawLat = !empty($settings['ashram_latitude']) ? $settings['ashram_latitude'] : (!empty($settings['latitude']) ? $settings['latitude'] : 28.3972915);
             $rawLon = !empty($settings['ashram_longitude']) ? $settings['ashram_longitude'] : (!empty($settings['longitude']) ? $settings['longitude'] : 78.1460410);
             $ashLat = floatval($rawLat);
@@ -259,10 +259,8 @@ if (!$isAdmin) {
         $gpsDistanceKm = $gpsDistanceMeters / 1000.0;
 
         // 3A. Exact Centroid Pin-Drop Check (Fake GPS Injection Protection)
-        // Mock GPS apps search "Shri Balaji Kripa Dham" and drop coordinates on the exact centroid down to 6 decimals.
-        // Real GPS always has minor physical jitter (at least 5-15 meters off the exact mathematical marker).
         $isExactCentroid = (abs($lat - $ashLat) < 0.000005 && abs($long - $ashLon) < 0.000005);
-        if (!$isAdmin && $isExactCentroid) {
+        if ($isExactCentroid) {
             logSecurityViolation($pdo, 'SECURITY_BLOCKED_CENTROID_SPOOF', 'सेंट्रॉइड पिन-ड्रॉप फ़ेक जीपीएस पकड़ा गया', 'Coords exactly matched ashram centroid: ' . $lat . ',' . $long, $patientName, $phoneNumber, $deviceId, $darbarDate);
             http_response_code(403);
             echo json_encode([
@@ -273,17 +271,16 @@ if (!$isAdmin) {
         }
 
         $isPhysicallyAtAshram = ($gpsDistanceMeters <= $allowedRadiusM);
-        $isGpsOutstation = ($gpsDistanceKm > $outstationMinKm);
-        $isRoadOutstation = ($distanceKm >= $outstationMinKm);
+        $isGpsOutstation = ($gpsDistanceKm >= $outstationMinKm);
 
-        // SACRED RULE:
-        // If devotee is NOT physically at Ashram (< allowedRadiusM):
+        // SACRED ZERO-TRUST GEOFENCE RULE:
+        // If devotee is NOT physically within Ashram premises (<= allowedRadiusM):
         // 1. Advance outstation tokens MUST be enabled ($isOutstationAllowed).
-        // 2. Real GPS distance MUST be greater than outstationMinKm (e.g. > 30 km).
-        // 3. Devotees <= 30 km CANNOT generate tokens from outside the Ashram premises!
-        // 4. Any devotee whose GPS distance is <= 30 km OR whose road distance is < 30 km is BLOCKED!
+        // 2. Real GPS distance MUST be >= outstationMinKm (e.g. >= 30 km).
+        // 3. Local devotees (< 30 km) CANNOT generate tokens from home/outside Ashram premises!
+        // 4. Server strictly relies on server-side Haversine distance, ignoring any client claims!
         if (!$isPhysicallyAtAshram) {
-            if (!$isOutstationAllowed || !$isGpsOutstation || ($distanceKm > 0 && !$isRoadOutstation)) {
+            if (!$isOutstationAllowed || !$isGpsOutstation) {
                 $distStr = number_format($gpsDistanceKm, 1);
                 $radDesc = ($allowedRadiusM >= 1000) ? number_format($allowedRadiusM / 1000, 1) . " किमी" : round($allowedRadiusM) . " मीटर";
                 logSecurityViolation($pdo, 'SECURITY_BLOCKED_GEOFENCE', 'लोकल दायरे (30 KM) में बिना आश्रम परिसर (' . $radDesc . ') आए टोकन प्रयास', 'Actual distance: ' . $distStr . ' km, Lat: ' . $lat . ', Lng: ' . $long, $patientName, $phoneNumber, $deviceId, $darbarDate);
@@ -328,69 +325,44 @@ if (!$isAdmin) {
     }
 }
 
-// 4. Gating: Tuesday Bulandshahr vs Sunday Dungra Jaat Schedule & Timing
-if ($isTuesdayVenue) {
-    $isTuesdayDarbarEnabled = !empty($settings['is_tuesday_darbar_enabled']);
-    $tuesdayServiceMode = $settings['tuesday_token_service_mode'] ?? 'AUTO_TUESDAY';
-    $isTuesdayOpen = ($tuesdayServiceMode === 'FORCE_OPEN');
-    if ($tuesdayServiceMode === 'AUTO_TUESDAY') {
-        $dayOfWeek = date('w'); // 2 is Tuesday
+// 4. Strict Day & Timing Enforcement (ONLY SUPER_ADMIN Can Bypass Advance Schedule)
+// Devotees, Sevadars, and Regular Admins can ONLY create tokens on Darbar Day during open hours
+if (!$isSuperAdmin) {
+    if ($isTuesdayVenue) {
+        $isTuesdayDarbarEnabled = !empty($settings['is_tuesday_darbar_enabled']);
+        $tuesdayServiceMode = $settings['tuesday_token_service_mode'] ?? 'AUTO_TUESDAY';
+        $dayOfWeek = intval(date('w')); // 2 is Tuesday
         $hour = intval(date('G'));
-        $isTuesdayOpen = ($dayOfWeek == 2 && $hour >= 8 && $hour < 17);
-    }
+        $minute = intval(date('i'));
+        $currentMinutes = $hour * 60 + $minute;
+        $startMinutes = 8 * 60;      // 8:00 AM (480 min)
+        $endMinutes = 17 * 60;       // 5:00 PM (1020 min)
+        $isTuesdayOpen = ($tuesdayServiceMode === 'FORCE_OPEN') || 
+            ($tuesdayServiceMode === 'AUTO_TUESDAY' && $dayOfWeek === 2 && $currentMinutes >= $startMinutes && $currentMinutes < $endMinutes);
 
-    if ($isAdmin && !$isSuperAdmin) {
-        $hasAnytimePermission = $canAdminAnytime || $allowAdminReservedTokens;
-        if ((!$isTuesdayDarbarEnabled || $tuesdayServiceMode === 'FORCE_CLOSED' || !$isTuesdayOpen) && !$hasAnytimePermission) {
-            http_response_code(403);
-            echo json_encode([
-                "success" => false,
-                "error" => "⚠️ मंगलवार बुलन्दशहर टोकन सेवा वर्तमान में बंद है। सामान्य एडमिन केवल टोकन सेवा खुली होने पर ही टोकन बना सकते हैं।"
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-    }
-
-    if (!$isAdmin) {
         if (!$isTuesdayDarbarEnabled || $tuesdayServiceMode === 'FORCE_CLOSED' || !$isTuesdayOpen) {
             http_response_code(403);
             echo json_encode([
                 "success" => false,
-                "error" => "⚠️ मंगलवार बुलन्दशहर दरबार टोकन सेवा वर्तमान में विश्राम पर है। कृपया मंगलवार प्रातः 8:00 बजे प्रयास करें।"
+                "error" => "⚠️ मंगलवार बुलन्दशहर दरबार टोकन सेवा वर्तमान में विश्राम पर है।\n\nटोकन केवल मंगलवार प्रातः 8:00 बजे से सायं 5:00 बजे तक ही बनाए जा सकते हैं। किसी भी सामान्य एडमिन अथवा भक्त द्वारा पहले टोकन बनाना प्रतिबंधित है।"
             ], JSON_UNESCAPED_UNICODE);
             exit;
         }
-    }
-} else {
-    // Sunday gating: 8:30 AM to 5:00 PM (17:00) IST
-    $tokenServiceMode = $settings['token_service_mode'] ?? 'AUTO_SUNDAY';
-    $isSundayOpen = ($tokenServiceMode === 'FORCE_OPEN');
-    if ($tokenServiceMode === 'AUTO_SUNDAY') {
+    } else {
+        // Sunday Dungra Jaat gating: STRICTLY Sunday 8:30 AM to 5:00 PM IST
+        $tokenServiceMode = $settings['token_service_mode'] ?? 'AUTO_SUNDAY';
         $dayOfWeek = intval(date('w')); // 0 is Sunday
         $hour = intval(date('G'));      // 0-23
         $minute = intval(date('i'));    // 0-59
         $currentMinutes = $hour * 60 + $minute;
         $startMinutes = 8 * 60 + 30;    // 8:30 AM (510 minutes)
         $endMinutes = 17 * 60;          // 5:00 PM (1020 minutes)
-        $isSundayOpen = ($dayOfWeek === 0 && $currentMinutes >= $startMinutes && $currentMinutes < $endMinutes);
-    }
+        $isSundayOpen = ($tokenServiceMode === 'FORCE_OPEN') || 
+            ($tokenServiceMode === 'AUTO_SUNDAY' && $dayOfWeek === 0 && $currentMinutes >= $startMinutes && $currentMinutes < $endMinutes);
 
-    if ($isAdmin && !$isSuperAdmin) {
-        $hasAnytimePermission = $canAdminAnytime || $allowAdminReservedTokens;
-        if ((!$isTokenServiceEnabled || !$isDarbarActive || $tokenServiceMode === 'FORCE_CLOSED' || !$isSundayOpen) && !$hasAnytimePermission) {
-            http_response_code(403);
-            echo json_encode([
-                "success" => false,
-                "error" => "⚠️ रविवार टोकन सेवा वर्तमान में बंद है। सामान्य एडमिन केवल टोकन सेवा खुली होने पर (रविवार प्रातः 8:30 से सायं 5:00) ही टोकन बना सकते हैं। बंद समय में टोकन बनाने हेतु सुपर एडमिन की अनुमति आवश्यक है।"
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-    }
-
-    if (!$isAdmin) {
         if (!$isTokenServiceEnabled || !$isDarbarActive || $tokenServiceMode === 'FORCE_CLOSED' || !$isSundayOpen) {
             http_response_code(403);
-            $msg = "⚠️ रविवार दरबार टोकन सेवा वर्तमान में विश्राम पर है। टोकन प्रत्येक रविवार प्रातः 8:30 बजे से सायं 5:00 बजे तक ही प्राप्त किए जा सकते हैं।";
+            $msg = "⚠️ रविवार दरबार टोकन सेवा वर्तमान में विश्राम पर है।\n\nटोकन केवल रविवार प्रातः 8:30 बजे से सायं 5:00 बजे तक ही बनाए जा सकते हैं। किसी भी सामान्य एडमिन अथवा भक्त द्वारा पहले से (शनिवार या समय से पहले) टोकन बनाना पूर्णतः प्रतिबंधित है।";
             if ($tokenServiceMode === 'FORCE_CLOSED' || !$isTokenServiceEnabled || !$isDarbarActive) {
                 $msg = "⚠️ रविवार टोकन सेवा वर्तमान में व्यवस्थापक द्वारा विश्राम/स्थगित की गई है। कृपया सेवा पुनः प्रारंभ होने की प्रतीक्षा करें।";
             }
