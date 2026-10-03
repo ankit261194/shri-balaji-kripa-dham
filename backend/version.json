@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 121,
-  "version_code": 121,
-  "latest_version_name": "2.56.46",
-  "version_name": "2.56.46",
-  "update_notes_hindi": "v2.56.46 (Build 121): 🎙️ 11-कुंजी ElevenLabs स्टूडियो वॉइस पूल, केंद्रीय भक्त ऑटो-फिल, 200m सेंट्रॉइड पिन-ड्रॉप सुरक्षा, और रविवार टोकन शनिवार विजिबिलिटी!",
-  "update_notes_english": "v2.56.46 (Build 121): 🎙️ 11-key ElevenLabs studio voice pool, central cloud devotee auto-fill, 200m centroid pin-drop protection, and Sunday token Saturday visibility!",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=121",
+  "latest_version_code": 122,
+  "version_code": 122,
+  "latest_version_name": "2.56.47",
+  "version_name": "2.56.47",
+  "update_notes_hindi": "v2.56.47 (Build 122): 🎙️ 11-कुंजी ElevenLabs स्टूडियो वॉइस पूल (असीमित टोकन), केंद्रीय भक्त ऑटो-फिल, 404 API फिक्स, और OneSignal पुश नोटिफिकेशन!",
+  "update_notes_english": "v2.56.47 (Build 122): 🎙️ 11-key ElevenLabs studio voice pool (unlimited tokens), central cloud devotee auto-fill, 404 API fix, and OneSignal push notifications!",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=122",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

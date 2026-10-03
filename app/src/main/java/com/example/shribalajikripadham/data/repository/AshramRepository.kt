@@ -5308,7 +5308,19 @@ class AshramRepository(context: Context) {
             db.insert("devotee_face_profiles", null, cv)
         }
 
-        // Background Cloud Upload to Google Sheets Universal Devotee Registry
+        // 1. Primary Cloud Upload to Hostinger MySQL Central Devotee & Biometric Registry
+        try {
+            com.example.shribalajikripadham.data.network.CentralFaceSyncManager.uploadFaceProfile(
+                context = appContext,
+                name = safeName,
+                phone = cleanPhone,
+                city = safeCity,
+                faceVector = vector,
+                photoUri = photoUri
+            )
+        } catch (e: Exception) {}
+
+        // 2. Secondary Cloud Mirror to Google Sheets Universal Devotee Registry
         try {
             val profile = DevoteeFaceProfile(
                 id = resultId,
@@ -5329,7 +5341,18 @@ class AshramRepository(context: Context) {
     }
 
     suspend fun syncDevoteesFromCloud(): Pair<Int, String> = withContext(Dispatchers.IO) {
-        com.example.shribalajikripadham.data.network.CentralDevoteeSyncManager.syncAllDevoteesFromCloud(appContext, dbHelper)
+        // 1. Primary Sync from Hostinger Central MySQL
+        val hostingerCount = try {
+            com.example.shribalajikripadham.data.network.CentralFaceSyncManager.fetchAndSyncFaceProfiles(appContext)
+        } catch (e: Exception) { 0 }
+
+        // 2. Secondary Sync from Google Sheets
+        val sheetResult = try {
+            com.example.shribalajikripadham.data.network.CentralDevoteeSyncManager.syncAllDevoteesFromCloud(appContext, dbHelper)
+        } catch (e: Exception) { Pair(0, e.localizedMessage ?: "") }
+
+        val total = hostingerCount + sheetResult.first
+        Pair(total, "✓ केंद्रीय होस्टिंगर MySQL ($hostingerCount) व गूगल शीट (${sheetResult.first}) से कुल $total प्रोफाइल सिंक हुए!")
     }
 
     suspend fun getActiveDevicesTelemetry(): Triple<Int, Int, List<com.example.shribalajikripadham.data.model.DevicePresence>> {

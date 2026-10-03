@@ -53,6 +53,22 @@ $filesToSync = [
     "api/get_face_profiles.php",
     "api/sync_face_profile.php",
     "api/upload_photo.php",
+    "api/get_sacred_tracks.php",
+    "api/save_sacred_track.php",
+    "api/delete_sacred_track.php",
+    "api/upload_audio.php",
+    "api/get_expenses.php",
+    "api/save_expense.php",
+    "api/delete_expense.php",
+    "api/get_payments.php",
+    "api/save_payment.php",
+    "api/get_parchas.php",
+    "api/save_parcha.php",
+    "api/panchang_today.php",
+    "api/register_fcm_token.php",
+    "api/send_fcm.php",
+    "api/stream_audio.php",
+    "api/drive_autosync.php",
     "havan_admin.php",
     "media/balaji_darshan_today.jpg",
     "sync_apk.php",
@@ -128,6 +144,15 @@ try {
             $pdo->exec("UPDATE ashram_settings SET upi_id = '' WHERE upi_id = 'shribalajikripadham@upi'");
             $pdo->exec("UPDATE ashram_settings SET whatsapp_channel_url = 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0' WHERE whatsapp_channel_url = '' OR whatsapp_channel_url LIKE '%/invite%' OR whatsapp_channel_url IS NULL");
             $pdo->exec("UPDATE ashram_settings SET is_tuesday_darbar_enabled = 0 WHERE id = 1 AND is_tuesday_darbar_enabled IS NULL");
+
+            $verJsonRaw = @file_get_contents($baseDir . '/version.json');
+            if ($verJsonRaw) {
+                $verData = json_decode($verJsonRaw, true);
+                if (!empty($verData['apk_url'])) {
+                    $stmtAppUrl = $pdo->prepare("UPDATE ashram_settings SET app_download_url = :url WHERE id = 1");
+                    $stmtAppUrl->execute([':url' => $verData['apk_url']]);
+                }
+            }
         }
     }
 } catch (Throwable $e) {}

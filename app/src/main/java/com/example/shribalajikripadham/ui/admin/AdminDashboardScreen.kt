@@ -9630,6 +9630,12 @@ fun SuperControlTab(
     var elevenLabsApiKey3Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 3)) }
     var elevenLabsApiKey4Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 4)) }
     var elevenLabsApiKey5Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 5)) }
+    var elevenLabsApiKey6Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 6)) }
+    var elevenLabsApiKey7Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 7)) }
+    var elevenLabsApiKey8Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 8)) }
+    var elevenLabsApiKey9Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 9)) }
+    var elevenLabsApiKey10Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 10)) }
+    var elevenLabsApiKey11Input by remember { mutableStateOf(AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, 11)) }
 
     val elevenLabsBalances by AshramVoiceAnnouncementManager.elevenLabsKeyBalances.collectAsState()
     val isRefreshingBalances by AshramVoiceAnnouncementManager.isRefreshingBalances.collectAsState()
@@ -10624,6 +10630,78 @@ fun SuperControlTab(
                                 singleLine = true,
                                 shape = RoundedCornerShape(8.dp)
                             )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Key Slot 6
+                            OutlinedTextField(
+                                value = elevenLabsApiKey6Input,
+                                onValueChange = { elevenLabsApiKey6Input = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("स्लॉट 6 (ऑटो-स्विच बैकअप 5)") },
+                                placeholder = { Text("sk_... (वैकल्पिक)") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Key Slot 7
+                            OutlinedTextField(
+                                value = elevenLabsApiKey7Input,
+                                onValueChange = { elevenLabsApiKey7Input = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("स्लॉट 7 (ऑटो-स्विच बैकअप 6)") },
+                                placeholder = { Text("sk_... (वैकल्पिक)") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Key Slot 8
+                            OutlinedTextField(
+                                value = elevenLabsApiKey8Input,
+                                onValueChange = { elevenLabsApiKey8Input = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("स्लॉट 8 (ऑटो-स्विच बैकअप 7)") },
+                                placeholder = { Text("sk_... (वैकल्पिक)") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Key Slot 9
+                            OutlinedTextField(
+                                value = elevenLabsApiKey9Input,
+                                onValueChange = { elevenLabsApiKey9Input = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("स्लॉट 9 (ऑटो-स्विच बैकअप 8)") },
+                                placeholder = { Text("sk_... (वैकल्पिक)") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Key Slot 10
+                            OutlinedTextField(
+                                value = elevenLabsApiKey10Input,
+                                onValueChange = { elevenLabsApiKey10Input = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("स्लॉट 10 (ऑटो-स्विच बैकअप 9)") },
+                                placeholder = { Text("sk_... (वैकल्पिक)") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Key Slot 11
+                            OutlinedTextField(
+                                value = elevenLabsApiKey11Input,
+                                onValueChange = { elevenLabsApiKey11Input = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("स्लॉट 11 (ऑटो-स्विच बैकअप 10)") },
+                                placeholder = { Text("sk_... (वैकल्पिक)") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp)
+                            )
 
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
@@ -10880,6 +10958,12 @@ fun SuperControlTab(
                                 AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey3Input, 3)
                                 AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey4Input, 4)
                                 AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey5Input, 5)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey6Input, 6)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey7Input, 7)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey8Input, 8)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey9Input, 9)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey10Input, 10)
+                                AshramVoiceAnnouncementManager.setElevenLabsApiKey(context, elevenLabsApiKey11Input, 11)
                                 AshramVoiceAnnouncementManager.setGoogleTtsApiKey(context, googleTtsApiKeyInput)
                                 AshramVoiceAnnouncementManager.setAutoNextEnabled(context, isAutoNextEnabledChecked)
                                 AshramVoiceAnnouncementManager.setAutoNextDelaySeconds(context, autoNextDelayInput)
@@ -10887,7 +10971,7 @@ fun SuperControlTab(
                                 AshramVoiceAnnouncementManager.setStandbyTemplate(context, standbyTemplateInput)
                                 AshramVoiceAnnouncementManager.refreshAllKeyBalances(context)
                                 withContext(Dispatchers.Main) {
-                                    voiceSuccessMsg = if (isHindi) "✓ टोकन आवाज़, 5-Key पूल व शेड्यूलर सेटिंग्स सुरक्षित हुईं!" else "Voice pool, schedule & crowd control settings saved!"
+                                    voiceSuccessMsg = if (isHindi) "✓ टोकन आवाज़, 11-Key पूल व शेड्यूलर सेटिंग्स सुरक्षित हुईं!" else "Voice pool (11 Keys), schedule & crowd control settings saved!"
                                     Toast.makeText(context, if (isHindi) "✓ सेटिंग्स सुरक्षित हुईं!" else "Settings saved!", Toast.LENGTH_SHORT).show()
                                     onRefreshData()
                                 }
@@ -10897,7 +10981,7 @@ fun SuperControlTab(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth().height(46.dp)
                     ) {
-                        Text(if (isHindi) "💾 टोकन आवाज़, 5-Key पूल व शेड्यूलर सुरक्षित करें" else "💾 Save Voice & Queue Settings", fontWeight = FontWeight.Bold)
+                        Text(if (isHindi) "💾 टोकन आवाज़, 11-Key पूल व शेड्यूलर सुरक्षित करें" else "💾 Save Voice & Queue Settings", fontWeight = FontWeight.Bold)
                     }
                 }
             }

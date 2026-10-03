@@ -993,9 +993,9 @@ object AshramVoiceAnnouncementManager {
 
         // 🌟 ELEVENLABS AUDIO STITCHING ARCHITECTURE:
         // Zero-credit, ultra-realistic human voice combining pre-baked audio clips (1 to 150)
-        // with dynamic devotee name synthesis from ElevenLabs (only ~10-15 chars per new name, cached forever).
-        // Uses Multi-Key Failover Pool (Keys 1 to 5) automatically!
-        if ((activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) && tokenNumber in 1..150) {
+        // with dynamic devotee name & high token synthesis from ElevenLabs (cached forever).
+        // Uses Multi-Key Failover Pool (Keys 1 to 11) automatically!
+        if (activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) {
             val genderDir = if (activePreset == PRESET_ELEVENLABS_FEMALE) "female" else "male"
             val voiceId = if (activePreset == PRESET_ELEVENLABS_FEMALE) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
             val apiKeys = getElevenLabsApiKeyList(context)
@@ -1008,8 +1008,29 @@ object AshramVoiceAnnouncementManager {
                 if (assetExists(context, tokenNumAsset)) {
                     segments.add(AudioSegment.Asset(tokenNumAsset))
                 } else {
-                    segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
-                    segments.add(AudioSegment.Asset("audio/$genderDir/num_$tokenNumber.mp3"))
+                    // For tokens beyond pre-baked asset (or > 150), synthesize "टोकन नंबर [संख्या]" using ElevenLabs pool & cache!
+                    val tokenIntroText = "टोकन नंबर $tokenSpoken"
+                    val tokenNumFile = if (apiKeys.isNotEmpty()) {
+                        ElevenLabsTtsEngine.synthesizeSpeechWithPool(
+                            context = context,
+                            text = tokenIntroText,
+                            apiKeys = apiKeys,
+                            voiceId = voiceId
+                        )
+                    } else {
+                        val cached = ElevenLabsTtsEngine.getCachedAudioFile(context, tokenIntroText, voiceId)
+                        if (cached.exists() && cached.length() > 500) cached else null
+                    }
+
+                    if (tokenNumFile != null && tokenNumFile.exists()) {
+                        segments.add(AudioSegment.FileAudio(tokenNumFile))
+                    } else {
+                        segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
+                        val numAsset = "audio/$genderDir/num_$tokenNumber.mp3"
+                        if (assetExists(context, numAsset)) {
+                            segments.add(AudioSegment.Asset(numAsset))
+                        }
+                    }
                 }
 
                 if (cleanName.isNotBlank()) {
@@ -1116,10 +1137,17 @@ object AshramVoiceAnnouncementManager {
         val cleanCurrentName = currentDevoteeName.trim()
 
         val activePreset = getSelectedVoicePreset(context)
-        if ((activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) && nextTokenNumber in 1..150) {
+        if (activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) {
             val genderDir = if (activePreset == PRESET_ELEVENLABS_FEMALE) "female" else "male"
             val voiceId = if (activePreset == PRESET_ELEVENLABS_FEMALE) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
             val apiKeys = getElevenLabsApiKeyList(context)
+
+            val nextHindiWords = numberToHindiWords(nextTokenNumber)
+            val nextTokenSpoken = if (nextHindiWords.isNotBlank() && nextHindiWords != nextTokenNumber.toString()) {
+                nextHindiWords
+            } else {
+                nextTokenNumber.toString()
+            }
 
             CoroutineScope(Dispatchers.Main).launch {
                 val segments = mutableListOf<AudioSegment>()
@@ -1129,8 +1157,29 @@ object AshramVoiceAnnouncementManager {
                 if (assetExists(context, tokenNumAsset)) {
                     segments.add(AudioSegment.Asset(tokenNumAsset))
                 } else {
-                    segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
-                    segments.add(AudioSegment.Asset("audio/$genderDir/num_$nextTokenNumber.mp3"))
+                    // Dynamic synthesis for tokens beyond pre-baked assets (or > 150)
+                    val tokenIntroText = "टोकन नंबर $nextTokenSpoken"
+                    val tokenNumFile = if (apiKeys.isNotEmpty()) {
+                        ElevenLabsTtsEngine.synthesizeSpeechWithPool(
+                            context = context,
+                            text = tokenIntroText,
+                            apiKeys = apiKeys,
+                            voiceId = voiceId
+                        )
+                    } else {
+                        val cached = ElevenLabsTtsEngine.getCachedAudioFile(context, tokenIntroText, voiceId)
+                        if (cached.exists() && cached.length() > 500) cached else null
+                    }
+
+                    if (tokenNumFile != null && tokenNumFile.exists()) {
+                        segments.add(AudioSegment.FileAudio(tokenNumFile))
+                    } else {
+                        segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
+                        val numAsset = "audio/$genderDir/num_$nextTokenNumber.mp3"
+                        if (assetExists(context, numAsset)) {
+                            segments.add(AudioSegment.Asset(numAsset))
+                        }
+                    }
                 }
 
                 if (cleanNextName.isNotBlank()) {

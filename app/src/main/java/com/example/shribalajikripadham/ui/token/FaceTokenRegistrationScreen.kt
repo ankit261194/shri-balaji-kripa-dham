@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,6 +30,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -121,6 +123,47 @@ fun FaceTokenRegistrationScreen(
     var enrollFaceForFuture by remember { mutableStateOf(true) }
     var isLocationAutoFetched by remember { mutableStateOf(false) }
     var isResolvingLocationName by remember { mutableStateOf(false) }
+    var manualAutoFillBanner by remember { mutableStateOf<String?>(null) }
+
+    // Auto-search devotee in manual entry mode when 10-digit phone number is entered
+    LaunchedEffect(manualPhone) {
+        val clean = manualPhone.trim().replace("+91", "").replace(" ", "").replace("-", "")
+        if (clean.length == 10) {
+            val devotee = repository.searchDevoteeByPhone(clean)
+            if (devotee != null) {
+                if (manualName.isBlank()) manualName = devotee.patientName
+                if (devotee.city.isNotBlank()) manualCity = devotee.city
+                if (capturedPhotoUri.isBlank() && devotee.photoUri.isNotBlank()) capturedPhotoUri = devotee.photoUri
+                manualAutoFillBanner = if (isHindi)
+                    "✅ पूर्व पंजीकृत भक्त: ${devotee.patientName} (${devotee.city}) का विवरण स्वतः भर दिया गया है!"
+                else
+                    "✅ Devotee Record Found: ${devotee.patientName} (${devotee.city}) auto-filled!"
+            } else {
+                manualAutoFillBanner = null
+            }
+        } else {
+            manualAutoFillBanner = null
+        }
+    }
+
+    // Auto-search name suggestions if typing manualName
+    LaunchedEffect(manualName) {
+        val q = manualName.trim()
+        if (q.length >= 3 && manualPhone.isBlank()) {
+            val matches = repository.searchDevoteesByName(q, limit = 1)
+            if (matches.isNotEmpty()) {
+                val firstMatch = matches.first()
+                if (manualPhone.isBlank() && firstMatch.phoneNumber.isNotBlank()) {
+                    manualPhone = firstMatch.phoneNumber
+                    if (firstMatch.city.isNotBlank()) manualCity = firstMatch.city
+                    manualAutoFillBanner = if (isHindi)
+                        "✅ भक्त मैच: ${firstMatch.patientName} (${firstMatch.city}) का विवरण लोड हुआ!"
+                    else
+                        "✅ Devotee Matched: ${firstMatch.patientName} auto-filled!"
+                }
+            }
+        }
+    }
 
     val isTuesdayVenue = darbarVenue.equals("BULANDSHAHR", ignoreCase = true)
     val targetLat = if (isTuesdayVenue) {
@@ -1624,11 +1667,28 @@ fun FaceTokenRegistrationScreen(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
+                            if (manualAutoFillBanner != null) {
+                                Surface(
+                                    color = Color(0xFFE8F5E9),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                                ) {
+                                    Text(
+                                        text = manualAutoFillBanner!!,
+                                        color = Color(0xFF2E7D32),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                    )
+                                }
+                            }
+
                             OutlinedTextField(
                                 value = manualPhone,
-                                onValueChange = { manualPhone = it },
+                                onValueChange = { if (it.length <= 10) manualPhone = it },
                                 label = { Text(if (isHindi) "मोबाइल नंबर *" else "Mobile Number *", fontWeight = FontWeight.SemiBold) },
                                 textStyle = androidx.compose.ui.text.TextStyle(color = Color(0xFF111111), fontSize = 15.sp, fontWeight = FontWeight.Medium),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = sacredOutlinedTextFieldColors(

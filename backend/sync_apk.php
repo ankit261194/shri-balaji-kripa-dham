@@ -29,20 +29,29 @@ if (isset($_GET['sync_docu'])) {
 
 // Sync version.json hook
 if (isset($_GET['sync_version'])) {
+    $raw = '';
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $raw = file_get_contents('php://input');
-        if (!empty($raw)) {
-            @file_put_contents(__DIR__ . '/version.json', $raw);
-            echo json_encode(["success" => true, "version_synced" => true, "bytes" => strlen($raw)]);
-            exit;
-        }
     }
-    $sha = $_GET['sha'] ?? 'main';
-    $url = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/{$sha}/backend/version.json?t=" . time();
-    $verContent = @file_get_contents($url);
-    if ($verContent) {
-        @file_put_contents(__DIR__ . '/version.json', $verContent);
-        echo json_encode(["success" => true, "version_synced" => true, "bytes" => strlen($verContent), "sha" => $sha]);
+    if (empty($raw)) {
+        $sha = $_GET['sha'] ?? 'main';
+        $url = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/{$sha}/backend/version.json?t=" . time();
+        $raw = @file_get_contents($url);
+    }
+    if (!empty($raw)) {
+        @file_put_contents(__DIR__ . '/version.json', $raw);
+        $vData = json_decode($raw, true);
+        if ($vData && !empty($vData['apk_url'])) {
+            try {
+                if (file_exists(__DIR__ . '/config/db.php')) require_once __DIR__ . '/config/db.php';
+                $pdo = function_exists('getDB') ? getDB() : null;
+                if ($pdo) {
+                    $st = $pdo->prepare("UPDATE ashram_settings SET app_download_url = :u WHERE id = 1");
+                    $st->execute([':u' => $vData['apk_url']]);
+                }
+            } catch (Throwable $t) {}
+        }
+        echo json_encode(["success" => true, "version_synced" => true, "bytes" => strlen($raw)]);
         exit;
     }
 }
@@ -89,6 +98,7 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($isLast && $currentSize > 10000000) {
             rename($tmpFile, $targetFile);
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v121.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v120.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v119.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v118.apk');

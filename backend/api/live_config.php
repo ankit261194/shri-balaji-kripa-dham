@@ -700,7 +700,14 @@ try {
         "tuesday_current_serving_token" => isset($row['tuesday_current_serving_token']) ? intval($row['tuesday_current_serving_token']) : $fb['tuesday_current_serving_token'],
         "tuesday_running_token_number" => isset($row['tuesday_running_token_number']) ? intval($row['tuesday_running_token_number']) : (isset($row['tuesday_current_serving_token']) ? intval($row['tuesday_current_serving_token']) : $fb['tuesday_running_token_number']),
         "tuesday_token_notice" => $row['tuesday_token_notice'] ?? $fb['tuesday_token_notice'],
-        "app_download_url" => !empty($row['app_download_url']) ? $row['app_download_url'] : $fb['app_download_url'],
+        "app_download_url" => (function() use ($row, $fb) {
+            $vPath = __DIR__ . '/../version.json';
+            if (file_exists($vPath)) {
+                $vj = @json_decode(file_get_contents($vPath), true);
+                if (!empty($vj['apk_url'])) return $vj['apk_url'];
+            }
+            return !empty($row['app_download_url']) ? $row['app_download_url'] : $fb['app_download_url'];
+        })(),
         "app_share_url" => !empty($row['app_share_url']) ? $row['app_share_url'] : $fb['app_share_url'],
         "is_bus_booking_live" => isset($row['is_bus_booking_live']) ? boolval($row['is_bus_booking_live']) : $fb['is_bus_booking_live'],
         "is_dharamshala_live" => isset($row['is_dharamshala_live']) ? boolval($row['is_dharamshala_live']) : $fb['is_dharamshala_live'],
