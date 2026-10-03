@@ -38,11 +38,22 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
         while (ob_get_level()) ob_end_clean();
         header("Content-Type: application/vnd.android.package-archive");
         header("Content-Disposition: attachment; filename=\"{$filename}\"");
+        header("Content-Length: {$filesize}");
         header("Accept-Ranges: bytes");
         header("Cache-Control: public, no-cache, no-store, must-revalidate, max-age=0");
         header("Pragma: no-cache");
         header("Expires: 0");
-        readfile($targetFile);
+
+        $handle = fopen($targetFile, "rb");
+        if ($handle) {
+            while (!feof($handle)) {
+                echo fread($handle, 1048576); // 1 MB chunk
+                flush();
+            }
+            fclose($handle);
+        } else {
+            readfile($targetFile);
+        }
         exit;
     }
 

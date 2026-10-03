@@ -56,6 +56,7 @@ $filesToSync = [
     "havan_admin.php",
     "media/balaji_darshan_today.jpg",
     "sync_apk.php",
+    "sync_elevex_apk.php",
     "elevex_gateway/app_update.json",
     "elevex_gateway/submit_utr.php"
 ];

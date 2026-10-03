@@ -1832,11 +1832,12 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
         <!-- Ankit EleveX Direct Latest APK Download Button -->
         <div style="margin-top: 10px; margin-bottom: 6px; text-align: center;">
             <a href="download.php?app=elevex" 
-               style="color: rgba(255, 255, 255, 0.7); background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.25); padding: 4px 12px; border-radius: 12px; text-decoration: none; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 5px; font-weight: 600; letter-spacing: 0.3px; transition: all 0.2s ease;" 
-               onmouseover="this.style.color='#FFD54F'; this.style.borderColor='#FFD54F'; this.style.background='rgba(0,0,0,0.6)';"
-               onmouseout="this.style.color='rgba(255, 255, 255, 0.7)'; this.style.borderColor='rgba(255, 255, 255, 0.25)'; this.style.background='rgba(0,0,0,0.35)';"
-               title="अंकित एलेवेक्स (लिफ्ट रामबाण AI) नवीनतम APK डाउनलोड करें">
-                ⚡ Ankit EleveX
+               download="Ankit_EleveX_v5.9.25_Final.apk"
+               style="color: #FFD54F; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 213, 79, 0.4); padding: 5px 14px; border-radius: 14px; text-decoration: none; font-size: 0.74rem; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; letter-spacing: 0.3px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.3);" 
+               onmouseover="this.style.color='#FFFFFF'; this.style.borderColor='#FFD54F'; this.style.background='rgba(255, 179, 0, 0.25)';"
+               onmouseout="this.style.color='#FFD54F'; this.style.borderColor='rgba(255, 213, 79, 0.4)'; this.style.background='rgba(0, 0, 0, 0.45)';"
+               title="अंकित एलेवेक्स (लिफ्ट रामबाण AI) v5.9.25 नवीनतम APK (18.6 MB) हाई-स्पीड डाउनलोड करें">
+                ⚡ Ankit EleveX v5.9.25 (Latest APK) <span style="font-size: 0.65rem; opacity: 0.8; font-weight: 500;">[18.6 MB]</span>
             </a>
         </div>
     </footer>
