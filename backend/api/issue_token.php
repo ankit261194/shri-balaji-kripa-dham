@@ -258,6 +258,20 @@ if (!$isAdmin) {
         $gpsDistanceMeters = $r * $c;
         $gpsDistanceKm = $gpsDistanceMeters / 1000.0;
 
+        // 3A. Exact Centroid Pin-Drop Check (Fake GPS Injection Protection)
+        // Mock GPS apps search "Shri Balaji Kripa Dham" and drop coordinates on the exact centroid down to 6 decimals.
+        // Real GPS always has minor physical jitter (at least 5-15 meters off the exact mathematical marker).
+        $isExactCentroid = (abs($lat - $ashLat) < 0.000005 && abs($long - $ashLon) < 0.000005);
+        if (!$isAdmin && $isExactCentroid) {
+            logSecurityViolation($pdo, 'SECURITY_BLOCKED_CENTROID_SPOOF', 'सेंट्रॉइड पिन-ड्रॉप फ़ेक जीपीएस पकड़ा गया', 'Coords exactly matched ashram centroid: ' . $lat . ',' . $long, $patientName, $phoneNumber, $deviceId, $darbarDate);
+            http_response_code(403);
+            echo json_encode([
+                "success" => false,
+                "error" => "⚠️ सुरक्षा चेतावनी: नकली लोकेशन / मैप पिन इंजेक्शन पकड़ा गया है। कृपया वास्तविक फोन जीपीएस चालू करें।"
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
         $isPhysicallyAtAshram = ($gpsDistanceMeters <= $allowedRadiusM);
         $isGpsOutstation = ($gpsDistanceKm > $outstationMinKm);
         $isRoadOutstation = ($distanceKm >= $outstationMinKm);

@@ -1761,6 +1761,15 @@ fun TokenRegistrationScreen(
                                         if (settings.isGeofenceEnforced) {
                                             val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
                                             val ashLon = if (settings.longitude != 0.0) settings.longitude else 78.1460410
+                                            val isCentroidSpoof = (kotlin.math.abs(finalLat - ashLat) < 0.000005 && kotlin.math.abs(finalLon - ashLon) < 0.000005)
+                                            if (isCentroidSpoof) {
+                                                errorMessage = if (isHindi)
+                                                    "⚠️ सुरक्षा चेतावनी: नकली लोकेशन / मैप पिन इंजेक्शन पकड़ा गया है। कृपया वास्तविक फोन जीपीएस चालू करें।"
+                                                else
+                                                    "Security Warning: Mock location / map pin injection detected. Please use real GPS."
+                                                isSubmitting = false
+                                                return@launch
+                                            }
                                             val currentGpsMeters = GeofenceLocationManager.calculateDistanceMeters(finalLat, finalLon, ashLat, ashLon)
                                             val outstationM = settings.outstationMinDistanceKm * 1000.0
                                             val isAtAshram = currentGpsMeters <= settings.allowedRadiusMeters

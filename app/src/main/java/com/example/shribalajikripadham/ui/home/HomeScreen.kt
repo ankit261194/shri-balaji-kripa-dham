@@ -257,6 +257,30 @@ fun HomeScreen(
             android.util.Log.e("HomeScreenInit", "Safe fallback on initial data load", e)
         }
 
+        // 🛡️ ANTI-CLEAR DATA & TOKEN RECOVERY: Restore existing active token if app was cleared/reinstalled
+        scope.launch {
+            try {
+                val myTokPrefs = context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
+                val curToken = myTokPrefs.getInt("my_token_number", 0)
+                if (curToken == 0) {
+                    val s = repository.getSettings()
+                    val targetDate = if (s.darbarDate.isNotBlank()) s.darbarDate else com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
+                    val devId = com.example.shribalajikripadham.hardware.DeviceFingerprintManager.getDeviceId(context)
+                    val existingToken = repository.checkDeviceRegisteredToday(devId, targetDate)
+                    if (existingToken != null && existingToken.tokenNumber > 0) {
+                        myTokPrefs.edit()
+                            .putInt("my_token_number", existingToken.tokenNumber)
+                            .putString("my_token_date", existingToken.darbarDate)
+                            .putString("devotee_name", existingToken.patientName)
+                            .apply()
+                        android.util.Log.i("HomeScreen", "Successfully recovered devotee token #${existingToken.tokenNumber} for ${existingToken.darbarDate}")
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("HomeScreen", "Error recovering devotee token: ${e.message}")
+            }
+        }
+
         // 🔄 Real-time Background Sync from GitHub Live Config (Instant, non-blocking)
         scope.launch {
             try {
@@ -1358,7 +1382,7 @@ fun HomeScreen(
                         val devoteeMyToken = remember(settings.runningTokenNumber) { myTokPrefs.getInt("my_token_number", 0) }
                         val devoteeMyTokenDate = remember(settings.runningTokenNumber) { myTokPrefs.getString("my_token_date", "") ?: "" }
                         val todayDateStr = remember { com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString() }
-                        val isMyTokenToday = devoteeMyToken > 0 && (devoteeMyTokenDate == todayDateStr || devoteeMyTokenDate.isBlank())
+                        val isMyTokenToday = devoteeMyToken > 0 && (devoteeMyTokenDate == todayDateStr || devoteeMyTokenDate == settings.darbarDate || devoteeMyTokenDate.isBlank())
 
                         // 🎯 ALWAYS render live token status so devotees are never left in the dark about which token is running
                         val queueEta = remember(devoteeMyToken, settings.runningTokenNumber, isMyTokenToday) {

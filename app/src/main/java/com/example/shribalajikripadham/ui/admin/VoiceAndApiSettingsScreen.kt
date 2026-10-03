@@ -501,8 +501,8 @@ fun VoiceAndApiSettingsScreen(
                         }
                     }
 
-                    // Display all 5 slots
-                    for (slot in 1..5) {
+                    // Display all 11 slots
+                    for (slot in 1..11) {
                         val keyInfo = keyBalances.find { it.slotNumber == slot }
                         val currentKey = AshramVoiceAnnouncementManager.getElevenLabsApiKey(context, slot)
                         val maskedKey = if (currentKey.length > 12) {

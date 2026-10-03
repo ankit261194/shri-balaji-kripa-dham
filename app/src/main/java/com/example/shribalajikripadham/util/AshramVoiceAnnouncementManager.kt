@@ -56,12 +56,24 @@ object AshramVoiceAnnouncementManager {
     private const val KEY_ELEVENLABS_API_KEY_3 = "elevenlabs_studio_tts_api_key_3"
     private const val KEY_ELEVENLABS_API_KEY_4 = "elevenlabs_studio_tts_api_key_4"
     private const val KEY_ELEVENLABS_API_KEY_5 = "elevenlabs_studio_tts_api_key_5"
+    private const val KEY_ELEVENLABS_API_KEY_6 = "elevenlabs_studio_tts_api_key_6"
+    private const val KEY_ELEVENLABS_API_KEY_7 = "elevenlabs_studio_tts_api_key_7"
+    private const val KEY_ELEVENLABS_API_KEY_8 = "elevenlabs_studio_tts_api_key_8"
+    private const val KEY_ELEVENLABS_API_KEY_9 = "elevenlabs_studio_tts_api_key_9"
+    private const val KEY_ELEVENLABS_API_KEY_10 = "elevenlabs_studio_tts_api_key_10"
+    private const val KEY_ELEVENLABS_API_KEY_11 = "elevenlabs_studio_tts_api_key_11"
 
     const val DEFAULT_ELEVENLABS_API_KEY_1 = "sk_13bf5df7b1cf804ee9b3b03590b2f64d90463109bddffbfe"
     const val DEFAULT_ELEVENLABS_API_KEY_2 = "sk_61cb841ba07dec2d666c7b8d9cc516655565ba6bdb7b806d"
     const val DEFAULT_ELEVENLABS_API_KEY_3 = "sk_a5c124d02a3c357ae95bfac2afb7947a2c8448504aff9dc6"
     const val DEFAULT_ELEVENLABS_API_KEY_4 = "sk_fd84cbff22e602f6a663c34b2e2427fddb9cc2d14f349031"
     const val DEFAULT_ELEVENLABS_API_KEY_5 = "sk_6468884e17cc4dbeba98e4ec00a94297d7e70b524d645017"
+    const val DEFAULT_ELEVENLABS_API_KEY_6 = "sk_d3636bbea293787f3ca937b115a4461aa34f86546879a762"
+    const val DEFAULT_ELEVENLABS_API_KEY_7 = "sk_882062ab3f14c8aa28291937c82a20b6c064a63c37d8d6eb"
+    const val DEFAULT_ELEVENLABS_API_KEY_8 = "sk_26cd0d47e5169a3735452d9d97ed44554282d68400980f87"
+    const val DEFAULT_ELEVENLABS_API_KEY_9 = "sk_4b2b220fc9db07f3361bdb062b970f931af485b281c94cb5"
+    const val DEFAULT_ELEVENLABS_API_KEY_10 = "sk_a864c493d39f6227a02fbcb05e16a44b982560981290d6a0"
+    const val DEFAULT_ELEVENLABS_API_KEY_11 = "sk_5434fbed62951af7525c89680509487d9598971b4ad1ccc7"
     const val DEFAULT_ELEVENLABS_API_KEY = DEFAULT_ELEVENLABS_API_KEY_1
 
     // Master Kill-Switch & Smart Scheduler Keys
@@ -257,7 +269,7 @@ object AshramVoiceAnnouncementManager {
 
     fun getElevenLabsApiKeyList(context: Context): List<String> {
         val list = mutableListOf<String>()
-        for (slot in 1..5) {
+        for (slot in 1..11) {
             val key = getElevenLabsApiKey(context, slot)
             if (key.isNotBlank()) list.add(key)
         }
@@ -292,6 +304,30 @@ object AshramVoiceAnnouncementManager {
                 val k = prefs.getString(KEY_ELEVENLABS_API_KEY_5, null)?.trim()
                 if (!k.isNullOrBlank()) k else DEFAULT_ELEVENLABS_API_KEY_5
             }
+            6 -> {
+                val k = prefs.getString(KEY_ELEVENLABS_API_KEY_6, null)?.trim()
+                if (!k.isNullOrBlank()) k else DEFAULT_ELEVENLABS_API_KEY_6
+            }
+            7 -> {
+                val k = prefs.getString(KEY_ELEVENLABS_API_KEY_7, null)?.trim()
+                if (!k.isNullOrBlank()) k else DEFAULT_ELEVENLABS_API_KEY_7
+            }
+            8 -> {
+                val k = prefs.getString(KEY_ELEVENLABS_API_KEY_8, null)?.trim()
+                if (!k.isNullOrBlank()) k else DEFAULT_ELEVENLABS_API_KEY_8
+            }
+            9 -> {
+                val k = prefs.getString(KEY_ELEVENLABS_API_KEY_9, null)?.trim()
+                if (!k.isNullOrBlank()) k else DEFAULT_ELEVENLABS_API_KEY_9
+            }
+            10 -> {
+                val k = prefs.getString(KEY_ELEVENLABS_API_KEY_10, null)?.trim()
+                if (!k.isNullOrBlank()) k else DEFAULT_ELEVENLABS_API_KEY_10
+            }
+            11 -> {
+                val k = prefs.getString(KEY_ELEVENLABS_API_KEY_11, null)?.trim()
+                if (!k.isNullOrBlank()) k else DEFAULT_ELEVENLABS_API_KEY_11
+            }
             else -> ""
         }
     }
@@ -307,6 +343,12 @@ object AshramVoiceAnnouncementManager {
             3 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_3, clean).apply()
             4 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_4, clean).apply()
             5 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_5, clean).apply()
+            6 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_6, clean).apply()
+            7 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_7, clean).apply()
+            8 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_8, clean).apply()
+            9 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_9, clean).apply()
+            10 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_10, clean).apply()
+            11 -> prefs.edit().putString(KEY_ELEVENLABS_API_KEY_11, clean).apply()
         }
     }
 
@@ -314,7 +356,7 @@ object AshramVoiceAnnouncementManager {
         CoroutineScope(Dispatchers.IO).launch {
             _isRefreshingBalances.value = true
             val results = mutableListOf<ElevenLabsKeyInfo>()
-            for (slot in 1..5) {
+            for (slot in 1..11) {
                 val key = getElevenLabsApiKey(context, slot)
                 if (key.isNotBlank()) {
                     val info = ElevenLabsTtsEngine.fetchKeyBalance(key, slot)

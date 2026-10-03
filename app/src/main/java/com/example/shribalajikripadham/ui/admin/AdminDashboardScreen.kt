@@ -450,6 +450,9 @@ fun AdminDashboardScreen(
 
             todayTokens = repository.getAllTokensToday()
             allSundayDates = repository.getAllTokenDates()
+            if (s.darbarDate.isNotBlank() && (selectedQueueDate == DatabaseHelper.getTodayDateString() || selectedQueueDate.isBlank())) {
+                selectedQueueDate = s.darbarDate
+            }
             queueTokensForSelectedDate = repository.getAllTokensForDate(selectedQueueDate)
             adminsList = repository.getAllAdmins()
             superAdminAccount = repository.getSuperAdmin()
@@ -1330,7 +1333,7 @@ fun AdminDashboardScreen(
                             TokenQueueTab(
                                 isHindi = isHindi,
                                 settings = settings,
-                                todayTokens = if (selectedQueueDate == DatabaseHelper.getTodayDateString()) todayTokens else queueTokensForSelectedDate,
+                                todayTokens = if (queueTokensForSelectedDate.isNotEmpty()) queueTokensForSelectedDate else (if (selectedQueueDate == DatabaseHelper.getTodayDateString()) todayTokens else queueTokensForSelectedDate),
                                 canViewPhotos = admin.canViewDevoteePhotos || isSuper,
                                 canCancelTokens = admin.canCancelTokens || isSuper,
                                 canDeleteTokens = admin.canDeleteTokens || isSuper,

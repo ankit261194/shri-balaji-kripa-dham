@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 120,
-  "version_code": 120,
-  "latest_version_name": "2.56.45",
-  "version_name": "2.56.45",
-  "update_notes_hindi": "v2.56.45 (Build 120): 🛡️ अभेद्य सुरक्षा कवच: 30 किमी लोकल दायरा नियम, फ़ेक जीपीएस (Mock Location) पूर्णतः अवरुद्ध, और ऐप डेटा साफ़ (Clear Data) डुप्लीकेट टोकन बाईपास 100% सील!",
-  "update_notes_english": "v2.56.45 (Build 120): 🛡️ Fortified Security: 30 KM Local Rule strict enforcement, Mock Location / Fake GPS blocked, and Clear Data duplicate token bypass 100% sealed!",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=120",
+  "latest_version_code": 121,
+  "version_code": 121,
+  "latest_version_name": "2.56.46",
+  "version_name": "2.56.46",
+  "update_notes_hindi": "v2.56.46 (Build 121): 🎙️ 11-कुंजी ElevenLabs स्टूडियो वॉइस पूल, केंद्रीय भक्त ऑटो-फिल, 200m सेंट्रॉइड पिन-ड्रॉप सुरक्षा, और रविवार टोकन शनिवार विजिबिलिटी!",
+  "update_notes_english": "v2.56.46 (Build 121): 🎙️ 11-key ElevenLabs studio voice pool, central cloud devotee auto-fill, 200m centroid pin-drop protection, and Sunday token Saturday visibility!",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=121",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

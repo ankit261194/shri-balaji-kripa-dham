@@ -1341,6 +1341,15 @@ fun FaceTokenRegistrationScreen(
                                                 if (settings.isGeofenceEnforced) {
                                                     val ashLat = if (targetLat != 0.0) targetLat else 28.3972915
                                                     val ashLon = if (targetLng != 0.0) targetLng else 78.1460410
+                                                    val isCentroidSpoof = (kotlin.math.abs(finalLat - ashLat) < 0.000005 && kotlin.math.abs(finalLon - ashLon) < 0.000005)
+                                                    if (isCentroidSpoof) {
+                                                        errorMessage = if (isHindi)
+                                                            "⚠️ सुरक्षा चेतावनी: नकली लोकेशन / मैप पिन इंजेक्शन पकड़ा गया है। कृपया वास्तविक फोन जीपीएस चालू करें।"
+                                                        else
+                                                            "Security Warning: Mock location / map pin injection detected. Please use real GPS."
+                                                        isSubmitting = false
+                                                        return@launch
+                                                    }
                                                     val currentGpsMeters = GeofenceLocationManager.calculateDistanceMeters(finalLat, finalLon, ashLat, ashLon)
                                                     val outstationM = targetOutstationKm * 1000.0
                                                     val isAtAshram = currentGpsMeters <= targetRadius
@@ -1915,6 +1924,20 @@ fun FaceTokenRegistrationScreen(
                                                 errorMessage = if (isHindi) "⚠️ वैध जीपीएस लोकेशन नहीं मिली। कृपया GPS चालू करें और पुनः प्रयास करें।" else "Valid GPS location required."
                                                 isSubmitting = false
                                                 return@launch
+                                            }
+
+                                            if (settings.isGeofenceEnforced) {
+                                                val ashLat = if (targetLat != 0.0) targetLat else 28.3972915
+                                                val ashLon = if (targetLng != 0.0) targetLng else 78.1460410
+                                                val isCentroidSpoof = (kotlin.math.abs(finalLat - ashLat) < 0.000005 && kotlin.math.abs(finalLon - ashLon) < 0.000005)
+                                                if (isCentroidSpoof) {
+                                                    errorMessage = if (isHindi)
+                                                        "⚠️ सुरक्षा चेतावनी: नकली लोकेशन / मैप पिन इंजेक्शन पकड़ा गया है। कृपया वास्तविक फोन जीपीएस चालू करें।"
+                                                    else
+                                                        "Security Warning: Mock location / map pin injection detected. Please use real GPS."
+                                                    isSubmitting = false
+                                                    return@launch
+                                                }
                                             }
 
                                             val gpsDistanceM = GeofenceLocationManager.calculateDistanceMeters(

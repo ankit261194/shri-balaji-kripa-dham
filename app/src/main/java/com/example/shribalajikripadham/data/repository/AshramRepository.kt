@@ -1063,6 +1063,9 @@ class AshramRepository(context: Context) {
                 if (latitude == 0.0 && longitude == 0.0) {
                     throw SecurityException("कृपया GPS चालू करें और $targetVenueLabel परिसर में उपस्थित रहें।")
                 }
+                if (kotlin.math.abs(latitude - targetLat) < 0.000005 && kotlin.math.abs(longitude - targetLng) < 0.000005) {
+                    throw SecurityException("⚠️ सुरक्षा चेतावनी: नकली लोकेशन / मैप पिन इंजेक्शन पकड़ा गया है। कृपया वास्तविक फोन जीपीएस चालू करें।")
+                }
                 val distance = GeofenceLocationManager.calculateDistanceMeters(
                     latitude, longitude,
                     targetLat, targetLng
@@ -4972,6 +4975,73 @@ class AshramRepository(context: Context) {
         }
     }
 
+    /**
+     * 🌐 Central Devotee Cloud Directory Fetcher (Hostinger central sync)
+     * Powers instant auto-fill by name, phone, or village even on completely fresh installs or after Clear Data!
+     */
+    suspend fun fetchDevoteesFromCloud(query: String, limit: Int = 6): List<DevoteeDirectoryEntry> = withContext(Dispatchers.IO) {
+        val q = query.trim()
+        if (q.length < 2) return@withContext emptyList()
+        val list = mutableListOf<DevoteeDirectoryEntry>()
+        try {
+            val encodedQ = java.net.URLEncoder.encode(q, "UTF-8")
+            val url = java.net.URL("https://shribalajikripadham.online/api/search_devotee.php?query=$encodedQ&limit=$limit")
+            val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 3000
+                readTimeout = 4000
+                setRequestProperty("User-Agent", "ShriBalajiKripaDham-App/1.0")
+            }
+            if (conn.responseCode == java.net.HttpURLConnection.HTTP_OK) {
+                val jsonStr = conn.inputStream.bufferedReader().use { it.readText() }
+                val root = org.json.JSONObject(jsonStr)
+                if (root.optBoolean("success", false)) {
+                    val arr = root.optJSONArray("devotees")
+                    if (arr != null) {
+                        for (i in 0 until arr.length()) {
+                            val obj = arr.getJSONObject(i)
+                            val name = obj.optString("patient_name", "").trim()
+                            val phone = obj.optString("phone_number", "").trim()
+                            val city = obj.optString("city", "डूँगरा जाट (स्थानीय)").trim()
+                            val photo = obj.optString("photo_url", "").trim()
+                            val visits = obj.optInt("visit_count", 1)
+                            val lastVisit = obj.optString("last_visit_date", "")
+                            if (name.isNotBlank() || phone.isNotBlank()) {
+                                val entry = DevoteeDirectoryEntry(
+                                    id = 0,
+                                    devoteeId = phone,
+                                    patientName = name,
+                                    phoneNumber = phone,
+                                    city = city,
+                                    photoUri = photo,
+                                    visitCount = visits,
+                                    lastVisitDate = lastVisit,
+                                    sourceModule = "CLOUD"
+                                )
+                                list.add(entry)
+                                // Cache locally in devotee_directory for instant offline search
+                                try {
+                                    upsertDevoteeDirectory(
+                                        name = name,
+                                        phone = phone,
+                                        city = city,
+                                        photoUri = photo,
+                                        lastVisitDate = lastVisit.ifBlank { DatabaseHelper.getTodayDateString() },
+                                        sourceModule = "CLOUD"
+                                    )
+                                } catch (e: Exception) {}
+                            }
+                        }
+                    }
+                }
+            }
+            conn.disconnect()
+        } catch (e: Exception) {
+            android.util.Log.w("AshramRepository", "Cloud devotee search exception: ${e.message}")
+        }
+        list
+    }
+
     suspend fun searchDevoteeDirectory(query: String, limit: Int = 6): List<DevoteeDirectoryEntry> = withContext(Dispatchers.IO) {
         val q = query.trim()
         if (q.length < 2) return@withContext emptyList()
@@ -5012,6 +5082,18 @@ class AshramRepository(context: Context) {
         } catch (e: Exception) {
             android.util.Log.e("AshramRepository", "Error searching devotee directory: ${e.message}")
         }
+
+        // If local SQLite has fewer results, enrich from Hostinger Cloud directory:
+        if (results.size < limit) {
+            val needed = limit - results.size
+            val cloudList = fetchDevoteesFromCloud(q, needed)
+            for (c in cloudList) {
+                if (results.none { it.phoneNumber == c.phoneNumber }) {
+                    results.add(c)
+                }
+            }
+        }
+
         results
     }
 
@@ -5068,6 +5150,27 @@ class AshramRepository(context: Context) {
             )
         }
         cursor.close()
+
+        // 3. Fallback to Cloud search (Seamless recovery on fresh install/Clear Data!)
+        if (profile == null) {
+            val cloudMatches = fetchDevoteesFromCloud(cleanPhone, 1)
+            val cloud = cloudMatches.firstOrNull()
+            if (cloud != null) {
+                profile = DevoteeFaceProfile(
+                    id = 0,
+                    patientName = cloud.patientName,
+                    phoneNumber = cloud.phoneNumber,
+                    city = cloud.city.ifBlank { "डूँगरा जाट (स्थानीय)" },
+                    faceVector = FloatArray(0),
+                    photoUri = cloud.photoUri,
+                    visitCount = cloud.visitCount,
+                    lastConfidence = 1.0f,
+                    lastVerifiedAt = System.currentTimeMillis(),
+                    createdAt = System.currentTimeMillis()
+                )
+            }
+        }
+
         profile
     }
 
@@ -5102,32 +5205,61 @@ class AshramRepository(context: Context) {
             dirCursor.close()
         } catch (e: Exception) {}
 
-        if (list.isNotEmpty()) return@withContext list
-
         // 2. Fallback to devotee_face_profiles
-        val cursor = db.rawQuery(
-            "SELECT * FROM devotee_face_profiles WHERE patient_name LIKE ? ORDER BY last_verified_at DESC LIMIT ?",
-            arrayOf("%$trimmed%", limit.toString())
-        )
-        while (cursor.moveToNext()) {
-            val blob = cursor.getBlob(cursor.getColumnIndexOrThrow("face_vector"))
-            val vector = FaceEmbeddingEngine.blobToVector(blob)
-            list.add(
-                DevoteeFaceProfile(
-                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
-                    patientName = cursor.getString(cursor.getColumnIndexOrThrow("patient_name")),
-                    phoneNumber = cursor.getString(cursor.getColumnIndexOrThrow("phone_number")),
-                    city = try { cursor.getString(cursor.getColumnIndexOrThrow("city")) } catch (e: Exception) { "डूँगरा जाट (स्थानीय)" },
-                    faceVector = vector,
-                    photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) ?: "",
-                    visitCount = cursor.getInt(cursor.getColumnIndexOrThrow("visit_count")),
-                    lastConfidence = cursor.getFloat(cursor.getColumnIndexOrThrow("last_confidence")),
-                    lastVerifiedAt = cursor.getLong(cursor.getColumnIndexOrThrow("last_verified_at")),
-                    createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
-                )
+        if (list.size < limit) {
+            val cursor = db.rawQuery(
+                "SELECT * FROM devotee_face_profiles WHERE patient_name LIKE ? ORDER BY last_verified_at DESC LIMIT ?",
+                arrayOf("%$trimmed%", limit.toString())
             )
+            while (cursor.moveToNext()) {
+                val blob = cursor.getBlob(cursor.getColumnIndexOrThrow("face_vector"))
+                val vector = FaceEmbeddingEngine.blobToVector(blob)
+                val pName = cursor.getString(cursor.getColumnIndexOrThrow("patient_name"))
+                val pPhone = cursor.getString(cursor.getColumnIndexOrThrow("phone_number"))
+                if (list.none { it.phoneNumber == pPhone }) {
+                    list.add(
+                        DevoteeFaceProfile(
+                            id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                            patientName = pName,
+                            phoneNumber = pPhone,
+                            city = try { cursor.getString(cursor.getColumnIndexOrThrow("city")) } catch (e: Exception) { "डूँगरा जाट (स्थानीय)" },
+                            faceVector = vector,
+                            photoUri = cursor.getString(cursor.getColumnIndexOrThrow("photo_uri")) ?: "",
+                            visitCount = cursor.getInt(cursor.getColumnIndexOrThrow("visit_count")),
+                            lastConfidence = cursor.getFloat(cursor.getColumnIndexOrThrow("last_confidence")),
+                            lastVerifiedAt = cursor.getLong(cursor.getColumnIndexOrThrow("last_verified_at")),
+                            createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at"))
+                        )
+                    )
+                }
+            }
+            cursor.close()
         }
-        cursor.close()
+
+        // 3. Fallback to Cloud search (Seamless recovery on fresh install/Clear Data!)
+        if (list.size < limit) {
+            val needed = limit - list.size
+            val cloudList = fetchDevoteesFromCloud(trimmed, needed)
+            for (c in cloudList) {
+                if (list.none { it.phoneNumber == c.phoneNumber || (it.patientName.equals(c.patientName, ignoreCase = true) && it.city == c.city) }) {
+                    list.add(
+                        DevoteeFaceProfile(
+                            id = 0,
+                            patientName = c.patientName,
+                            phoneNumber = c.phoneNumber,
+                            city = c.city.ifBlank { "डूँगरा जाट (स्थानीय)" },
+                            faceVector = FloatArray(0),
+                            photoUri = c.photoUri,
+                            visitCount = c.visitCount,
+                            lastConfidence = 1.0f,
+                            lastVerifiedAt = System.currentTimeMillis(),
+                            createdAt = System.currentTimeMillis()
+                        )
+                    )
+                }
+            }
+        }
+
         list
     }
 
