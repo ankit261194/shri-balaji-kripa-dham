@@ -360,6 +360,11 @@ if (!$isSuperAdmin) {
         $isSundayOpen = ($tokenServiceMode === 'FORCE_OPEN') || 
             ($tokenServiceMode === 'AUTO_SUNDAY' && $dayOfWeek === 0 && $currentMinutes >= $startMinutes && $currentMinutes < $endMinutes);
 
+        // Fail-safe: In AUTO_SUNDAY mode on Sunday during darbar hours, Darbar is active by schedule
+        if ($isSundayOpen && $tokenServiceMode === 'AUTO_SUNDAY') {
+            $isDarbarActive = true;
+        }
+
         if (!$isTokenServiceEnabled || !$isDarbarActive || $tokenServiceMode === 'FORCE_CLOSED' || !$isSundayOpen) {
             http_response_code(403);
             $msg = "⚠️ रविवार दरबार टोकन सेवा वर्तमान में विश्राम पर है।\n\nटोकन केवल रविवार प्रातः 8:30 बजे से सायं 5:00 बजे तक ही बनाए जा सकते हैं। किसी भी सामान्य एडमिन अथवा भक्त द्वारा पहले से (शनिवार या समय से पहले) टोकन बनाना पूर्णतः प्रतिबंधित है।";

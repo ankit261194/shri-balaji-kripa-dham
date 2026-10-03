@@ -1022,7 +1022,7 @@ class AshramRepository(context: Context) {
             open
         } else {
             val sched = com.example.shribalajikripadham.util.SundayTokenScheduleHelper.evaluateSchedule(settings)
-            val open = (sched is com.example.shribalajikripadham.util.SundayScheduleState.Open) && settings.isDarbarActive
+            val open = (sched is com.example.shribalajikripadham.util.SundayScheduleState.Open) && (settings.isDarbarActive || settings.tokenServiceMode.equals("AUTO_SUNDAY", ignoreCase = true))
             if (isDevoteeRequest && !open) {
                 when (sched) {
                     is com.example.shribalajikripadham.util.SundayScheduleState.CountdownActive -> throw IllegalStateException(sched.messageHindi)
@@ -1032,7 +1032,7 @@ class AshramRepository(context: Context) {
                     is com.example.shribalajikripadham.util.SundayScheduleState.ServiceDisabled -> throw IllegalStateException(sched.messageHindi)
                     is com.example.shribalajikripadham.util.SundayScheduleState.CustomScheduled -> throw IllegalStateException(sched.messageHindi)
                     else -> {
-                        if (!settings.isDarbarActive) {
+                        if (!settings.isDarbarActive && !settings.tokenServiceMode.equals("AUTO_SUNDAY", ignoreCase = true)) {
                             throw IllegalStateException("दरबार वर्तमान में विश्राम पर है। टोकन पंजीकरण बंद है।")
                         }
                     }

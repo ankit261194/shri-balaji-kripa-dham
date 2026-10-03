@@ -147,23 +147,24 @@ try {
         $now = time();
 
         $stmt = $pdo->prepare("INSERT INTO daily_darshan (darshan_date, title, photo_url, blessings_quote, views_count, created_at, updated_at)
-            VALUES (:date, :title, :photo, :quote, 1, :now, :now)
+            VALUES (:date, :title, :photo, :quote, 1, :now1, :now2)
             ON DUPLICATE KEY UPDATE
             title = :title2,
             photo_url = :photo2,
             blessings_quote = :quote2,
-            updated_at = :now2");
+            updated_at = :now3");
 
         $stmt->execute([
             ':date' => $todayDate,
             ':title' => $title,
             ':photo' => $photoUrl,
             ':quote' => $quote,
-            ':now' => $now,
+            ':now1' => $now,
+            ':now2' => $now,
             ':title2' => $title,
             ':photo2' => $photoUrl,
             ':quote2' => $quote,
-            ':now2' => $now
+            ':now3' => $now
         ]);
 
         echo json_encode([
@@ -208,14 +209,15 @@ try {
         $now = time();
         $initialViews = max(380, $timeBasedViews);
         $pdo->prepare("INSERT INTO daily_darshan (darshan_date, title, photo_url, blessings_quote, views_count, created_at, updated_at)
-            VALUES (:date, :title, :photo, :quote, :vc, :now, :now)")
+            VALUES (:date, :title, :photo, :quote, :vc, :now1, :now2)")
             ->execute([
                 ':date' => $todayDate,
                 ':title' => $defaultTitle,
                 ':photo' => $defaultPhoto,
                 ':quote' => $defaultQuote,
                 ':vc' => $initialViews,
-                ':now' => $now
+                ':now1' => $now,
+                ':now2' => $now
             ]);
 
         echo json_encode([

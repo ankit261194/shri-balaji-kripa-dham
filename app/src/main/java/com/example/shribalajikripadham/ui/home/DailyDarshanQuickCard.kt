@@ -365,21 +365,31 @@ fun DailyDarshanQuickCard(
         val fetched = DailyDarshanHelper.fetchTodayDarshan()
         darshanData = fetched
 
-        // Try downloading remote bitmap with cache-busting
+        // Try downloading remote bitmap if custom photo uploaded by admin (not default fallback)
         withContext(Dispatchers.IO) {
             try {
-                val cleanUrl = if (fetched.photoUrl.contains("?")) fetched.photoUrl else "${fetched.photoUrl}?d=${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())}"
-                val conn = URL(cleanUrl).openConnection() as HttpURLConnection
-                conn.connectTimeout = 5000
-                conn.readTimeout = 5000
-                conn.useCaches = false
-                conn.setRequestProperty("Cache-Control", "no-cache")
-                if (conn.responseCode == 200) {
-                    val bmp = BitmapFactory.decodeStream(conn.inputStream)
-                    if (bmp != null) {
-                        withContext(Dispatchers.Main) {
-                            remoteBitmap = bmp
+                val isCustomUpload = fetched.photoUrl.isNotBlank() &&
+                        !fetched.photoUrl.endsWith("balaji_darshan_today.jpg") &&
+                        !fetched.photoUrl.endsWith("default.jpg")
+
+                if (isCustomUpload) {
+                    val cleanUrl = if (fetched.photoUrl.contains("?")) fetched.photoUrl else "${fetched.photoUrl}?d=${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())}"
+                    val conn = URL(cleanUrl).openConnection() as HttpURLConnection
+                    conn.connectTimeout = 5000
+                    conn.readTimeout = 5000
+                    conn.useCaches = false
+                    conn.setRequestProperty("Cache-Control", "no-cache")
+                    if (conn.responseCode == 200) {
+                        val bmp = BitmapFactory.decodeStream(conn.inputStream)
+                        if (bmp != null) {
+                            withContext(Dispatchers.Main) {
+                                remoteBitmap = bmp
+                            }
                         }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        remoteBitmap = null
                     }
                 }
             } catch (ignored: Exception) {}

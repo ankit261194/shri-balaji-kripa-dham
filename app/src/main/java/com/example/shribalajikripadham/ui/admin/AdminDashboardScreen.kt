@@ -6258,7 +6258,7 @@ fun ManualTokenTab(
 
     val isSuperAdmin = admin.role == AdminRole.SUPER_ADMIN
     val schedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
-    val isTokenOpen = schedule is SundayScheduleState.Open && settings.isDarbarActive
+    val isTokenOpen = schedule is SundayScheduleState.Open && (settings.isDarbarActive || settings.tokenServiceMode.equals("AUTO_SUNDAY", ignoreCase = true))
     val canBypassSchedule = isSuperAdmin
     val hasAnytimePermission = isSuperAdmin
 
@@ -6337,7 +6337,7 @@ fun ManualTokenTab(
                     tSchedule is com.example.shribalajikripadham.util.TuesdayScheduleState.Open && settings.isTuesdayDarbarEnabled
                 } else {
                     val sSchedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
-                    sSchedule is SundayScheduleState.Open && settings.isDarbarActive
+                    sSchedule is SundayScheduleState.Open && (settings.isDarbarActive || settings.tokenServiceMode.equals("AUTO_SUNDAY", ignoreCase = true))
                 }
                 val canBypassSchedule = isSuperAdmin
 

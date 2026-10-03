@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 110,
-  "version_code": 110,
-  "latest_version_name": "2.56.35",
-  "version_name": "2.56.35",
-  "update_notes_hindi": "v2.56.35 (Build 110): 🔔 पावन मंदिर घंटी व Google Neural2 AI हिंदी उद्घोषणा: अगला भक्त अग्रिम कतार अलर्ट, भीड़ नियंत्रण व 20s ऑटो-टाइमिंग।",
-  "update_notes_english": "v2.56.35 (Build 110): 🔔 Sacred Temple Bell & Google Neural2 AI Hindi Voice: Two-stage token calling, crowd control discipline & 20s auto-timing.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=110",
+  "latest_version_code": 130,
+  "version_code": 130,
+  "latest_version_name": "2.56.55",
+  "version_name": "2.56.55",
+  "update_notes_hindi": "v2.56.55 (Build 130): 🚩 रविवार दिव्य दरबार टोकन प्रणाली 100% सुदृढ़ व सत्यापित, 🛡️ जिओफेंस व ऑटो-शेड्यूल सुरक्षा कवच, 🎙️ वॉइस अनाउंसर व रियल-टाइम एडमिन सिंक शत-प्रतिशत सक्रिय।",
+  "update_notes_english": "v2.56.55 (Build 130): 🚩 Sunday Divine Darbar Token System 100% Verified, 🛡️ Bulletproof Geofence & Auto-Schedule Fail-Safes, 🎙️ Real-time Admin Sync & Voice Announcements.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=130",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }
