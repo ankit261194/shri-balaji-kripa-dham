@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 125,
-  "version_code": 125,
-  "latest_version_name": "2.56.50",
-  "version_name": "2.56.50",
-  "update_notes_hindi": "v2.56.50 (Build 125): 🔒 सेवादार व व्यवस्थापक खाते और सभी सेवाएं हमेशा के लिए सुरक्षित व लॉक, कतार में त्वरित उद्घोषक स्वर चयन बटन, और अपडेट लूप का स्थायी समाधान!",
-  "update_notes_english": "v2.56.50 (Build 125): 🔒 Permanent lock for Sevadar/Admin accounts & configured services, Quick Announcer Voice selection button in Token Queue, and permanent fix for update loop!",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=125",
+  "latest_version_code": 126,
+  "version_code": 126,
+  "latest_version_name": "2.56.51",
+  "version_name": "2.56.51",
+  "update_notes_hindi": "v2.56.51 (Build 126): ⚠️ दरबार अनुशासन उद्घोषणा बटन जोड़े गए (सख्त/कड़क लहजे में लाउडस्पीकर चेतावनी: 'बाहर जाके बात करो' और 'पीछे होके बैठो')!",
+  "update_notes_english": "v2.56.51 (Build 126): ⚠️ Added Darbar Discipline on-demand voice warning buttons (Stern/Strict loudspeaker warnings: 'Talk outside' & 'Sit back')!",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=126",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }
