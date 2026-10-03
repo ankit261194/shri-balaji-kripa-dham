@@ -18,11 +18,26 @@ if (!is_dir($targetDir)) {
 }
 
 $manifestPath = __DIR__ . '/elevex_gateway/app_update.json';
-$latestVer = '5.9.26';
+$latestVer = '5.9.27';
 if (file_exists($manifestPath)) {
     $manifest = @json_decode(@file_get_contents($manifestPath), true);
     if (!empty($manifest['latest_version'])) {
         $latestVer = trim($manifest['latest_version']);
+    }
+}
+
+if (!empty($_GET['version'])) {
+    $latestVer = trim($_GET['version']);
+}
+
+// 0. Sync Manifest from GitHub
+if (isset($_GET['sync_manifest'])) {
+    $rawUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/backend/elevex_gateway/app_update.json";
+    $json = @file_get_contents($rawUrl);
+    if ($json && json_decode($json)) {
+        @file_put_contents($manifestPath, $json);
+        echo json_encode(["success" => true, "manifest" => json_decode($json, true)]);
+        exit;
     }
 }
 
