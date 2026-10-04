@@ -1,6 +1,6 @@
 {
-  "updated_at": "2026-10-04T04:16:30Z",
-  "updated_by": "Super Admin",
+  "updated_at": "2026-10-04T04:52:01Z",
+  "updated_by": "अंकित चौधरी",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
   "ashram_details": {
@@ -25,14 +25,14 @@
     "notice_english": "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।"
   },
   "location_config": {
-    "latitude": 28.3972915,
-    "longitude": 78.146041,
+    "latitude": 28.408628333333333,
+    "longitude": 77.88089166666667,
     "allowed_radius_meters": 200,
     "is_geofence_enforced": true,
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1791087390697
+    "updated_at": 1791089521011
   },
   "services_config": {
     "is_token_service_enabled": true,
