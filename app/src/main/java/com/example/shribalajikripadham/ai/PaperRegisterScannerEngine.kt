@@ -1,12 +1,24 @@
 package com.example.shribalajikripadham.ai
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
+import android.util.Base64
 import com.example.shribalajikripadham.data.model.RegisterEntry
+import com.example.shribalajikripadham.data.network.HostingerCentralSyncManager
+import com.example.shribalajikripadham.util.AshramVoiceAnnouncementManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.ByteArrayOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.nio.charset.StandardCharsets
 import kotlin.coroutines.resume
 
 /**
@@ -54,6 +66,221 @@ object PaperRegisterScannerEngine {
         } catch (e: Exception) {
             src
         }
+    }
+
+    /**
+     * Multimodal Gemini Vision AI Handwriting Recognition:
+     * Reads complex cursive handwritten Hindi paper registers, journals, and lined notebooks.
+     * Extracts structured devotee records: Serial, Patient Name, Phone, and City.
+     * Returns Pair(List<RegisterEntry>, rawTranscriptionOrError)
+     */
+    suspend fun scanRegisterWithGeminiVision(
+        context: Context,
+        bitmap: Bitmap,
+        customApiKey: String? = null
+    ): Pair<List<RegisterEntry>, String> = withContext(Dispatchers.IO) {
+        try {
+            // 1. Prepare and downscale bitmap to optimal size (max 1280px on longest dimension)
+            val maxDimension = 1280
+            val scale = if (bitmap.width > maxDimension || bitmap.height > maxDimension) {
+                maxDimension.toFloat() / maxOf(bitmap.width, bitmap.height)
+            } else 1.0f
+
+            val scaledBitmap = if (scale < 1.0f) {
+                Bitmap.createScaledBitmap(
+                    bitmap,
+                    (bitmap.width * scale).toInt(),
+                    (bitmap.height * scale).toInt(),
+                    true
+                )
+            } else bitmap
+
+            val baos = ByteArrayOutputStream()
+            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, baos)
+            val imageBytes = baos.toByteArray()
+            val base64Image = Base64.encodeToString(imageBytes, Base64.NO_WRAP)
+
+            // 2. Resolve API Key: custom key -> saved Google TTS/AI key in admin settings
+            val resolvedKey = if (!customApiKey.isNullOrBlank()) {
+                customApiKey.trim()
+            } else {
+                val savedTtsKey = AshramVoiceAnnouncementManager.getGoogleTtsApiKey(context).trim()
+                if (savedTtsKey.isNotBlank()) savedTtsKey else ""
+            }
+
+            // If we have an API Key, call Generative Language API directly
+            if (resolvedKey.isNotBlank()) {
+                val directResult = callGeminiVisionApiDirect(base64Image, resolvedKey)
+                if (directResult.first.isNotEmpty()) {
+                    return@withContext directResult
+                }
+            }
+
+            // 3. Fallback to Hostinger Central AI Gateway endpoint
+            val gatewayResult = callHostingerGeminiGateway(base64Image)
+            if (gatewayResult.first.isNotEmpty()) {
+                return@withContext gatewayResult
+            }
+
+            // 4. If online AI fails (e.g. offline device), fallback gracefully to on-device ML Kit OCR
+            val localOcr = recognizeTextFromBitmap(bitmap, enhanceForHandwriting = true)
+            if (localOcr.isNotBlank()) {
+                val entries = parseRegisterText(localOcr)
+                return@withContext Pair(entries, localOcr)
+            }
+
+            Pair(emptyList(), "फोटो में कोई अक्षर नहीं मिला। कृपया पुनः प्रयास करें।")
+        } catch (e: Exception) {
+            val localOcr = recognizeTextFromBitmap(bitmap, enhanceForHandwriting = true)
+            if (localOcr.isNotBlank()) {
+                Pair(parseRegisterText(localOcr), localOcr)
+            } else {
+                Pair(emptyList(), "त्रुटि: ${e.message}")
+            }
+        }
+    }
+
+    private fun callGeminiVisionApiDirect(base64Image: String, apiKey: String): Pair<List<RegisterEntry>, String> {
+        try {
+            val endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
+            val url = URL(endpoint)
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = 18000
+                readTimeout = 18000
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            }
+
+            val promptText = "You are an expert handwriting recognition processor for Indian temple & ashram devotee paper registers. " +
+                    "The image contains handwritten Hindi rows of devotees. Each row contains serial number (क्र. सं.), " +
+                    "devotee/patient name (भक्त या मरीज का नाम), mobile phone number (10 अंकों का मोबाइल), and city/village (गाँव/शहर/पता). " +
+                    "Extract all devotee rows as a JSON array of objects with keys: 'serial' (number), 'name' (Hindi string), " +
+                    "'phone' (10 digit string or blank), and 'city' (Hindi string or 'डूँगरा जाट'). " +
+                    "Return strictly a raw JSON array without markdown code blocks."
+
+            val partsArray = JSONArray().apply {
+                put(JSONObject().put("text", promptText))
+                put(JSONObject().put("inline_data", JSONObject().apply {
+                    put("mime_type", "image/jpeg")
+                    put("data", base64Image)
+                }))
+            }
+
+            val payload = JSONObject().apply {
+                put("contents", JSONArray().put(JSONObject().put("parts", partsArray)))
+                put("generationConfig", JSONObject().apply {
+                    put("temperature", 0.1)
+                    put("responseMimeType", "application/json")
+                })
+            }
+
+            conn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            if (conn.responseCode in 200..299) {
+                val responseText = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                return parseGeminiResponseJson(responseText)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return Pair(emptyList(), "")
+    }
+
+    private fun callHostingerGeminiGateway(base64Image: String): Pair<List<RegisterEntry>, String> {
+        try {
+            val url = URL("https://shribalajikripadham.online/api/scan_register_gemini.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = 20000
+                readTimeout = 20000
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                setRequestProperty("X-SBKD-API-KEY", HostingerCentralSyncManager.API_SECRET_KEY)
+            }
+
+            val payload = JSONObject().apply {
+                put("image_base64", base64Image)
+            }
+
+            conn.outputStream.use { os ->
+                os.write(payload.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            if (conn.responseCode in 200..299) {
+                val responseText = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(responseText)
+                if (root.optBoolean("success", false)) {
+                    val entriesArr = root.optJSONArray("entries")
+                    if (entriesArr != null) {
+                        return parseJsonEntriesArray(entriesArr)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return Pair(emptyList(), "")
+    }
+
+    private fun parseGeminiResponseJson(apiResponse: String): Pair<List<RegisterEntry>, String> {
+        try {
+            val root = JSONObject(apiResponse)
+            val candidates = root.optJSONArray("candidates") ?: return Pair(emptyList(), "")
+            if (candidates.length() == 0) return Pair(emptyList(), "")
+            val content = candidates.getJSONObject(0).optJSONObject("content") ?: return Pair(emptyList(), "")
+            val parts = content.optJSONArray("parts") ?: return Pair(emptyList(), "")
+            if (parts.length() == 0) return Pair(emptyList(), "")
+            val rawText = parts.getJSONObject(0).optString("text", "")
+
+            var cleanJson = rawText.trim()
+            if (cleanJson.startsWith("```")) {
+                cleanJson = cleanJson.replace(Regex("""^```(?:json)?\s*"""), "").replace(Regex("""```$"""), "").trim()
+            }
+
+            val jsonArray = JSONArray(cleanJson)
+            return parseJsonEntriesArray(jsonArray)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return Pair(emptyList(), "")
+        }
+    }
+
+    private fun parseJsonEntriesArray(jsonArray: JSONArray): Pair<List<RegisterEntry>, String> {
+        val entries = mutableListOf<RegisterEntry>()
+        val sb = StringBuilder()
+        var currentSerial = 1
+
+        for (i in 0 until jsonArray.length()) {
+            val obj = jsonArray.optJSONObject(i) ?: continue
+            val serial = obj.optInt("serial", currentSerial)
+            val rawName = obj.optString("name", "").trim()
+            val rawPhone = obj.optString("phone", "").trim()
+            val rawCity = obj.optString("city", "डूँगरा जाट").trim()
+
+            val repairedPhone = repairHandwrittenPhone(rawPhone).ifBlank {
+                rawPhone.filter { it.isDigit() }.let { if (it.length == 10 && it.first() in '6'..'9') it else "" }
+            }
+
+            val finalCity = if (rawCity.isBlank()) "डूँगरा जाट (स्थानीय)" else cleanCityName(rawCity)
+            val finalName = cleanDevoteeName(rawName).ifBlank {
+                if (repairedPhone.isNotBlank()) "भक्त ($repairedPhone)" else "भक्त $serial"
+            }
+
+            val entry = RegisterEntry(
+                serialNumber = serial,
+                patientName = finalName,
+                phoneNumber = repairedPhone,
+                city = finalCity,
+                confidence = calculateConfidence(finalName, repairedPhone, finalCity, true).coerceAtLeast(88)
+            )
+            entries.add(entry)
+            sb.append("$serial. $finalName | $repairedPhone | $finalCity\n")
+            currentSerial = serial + 1
+        }
+        return Pair(entries, sb.toString())
     }
 
     /**

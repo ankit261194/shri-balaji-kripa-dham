@@ -212,7 +212,7 @@ fun AdminDashboardScreen(
     var settings by remember { mutableStateOf(AshramSettings()) }
     var todayTokens by remember { mutableStateOf<List<Token>>(emptyList()) }
     var allSundayDates by remember { mutableStateOf<List<String>>(emptyList()) }
-    var selectedQueueDate by rememberSaveable { mutableStateOf(DatabaseHelper.getTodayDateString()) }
+    var selectedQueueDate by remember { mutableStateOf(DatabaseHelper.getTodayDateString()) }
     var queueTokensForSelectedDate by remember { mutableStateOf<List<Token>>(emptyList()) }
     var adminsList by remember { mutableStateOf<List<Admin>>(emptyList()) }
     var eventsList by remember { mutableStateOf<List<AshramEvent>>(emptyList()) }
@@ -1265,6 +1265,7 @@ fun AdminDashboardScreen(
 
             // 6. Super Admin Root Architecture & Diagnostics
             if (isSuper) {
+                allowedTabs.add(if (isHindi) "⚡ एंटीग्रेविटी स्टूडियो" else "⚡ Antigravity Studio")
                 allowedTabs.add(if (isHindi) "सक्रिय फोन" else "Active Devices")
                 allowedTabs.add(if (isHindi) "सुपर कंट्रोल" else "Super Control")
                 allowedTabs.add(if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️")
@@ -2331,6 +2332,19 @@ fun AdminDashboardScreen(
                                     scope.launch {
                                         repository.deleteCustomCityDistance(id)
                                         refreshData()
+                                    }
+                                }
+                            )
+                        }
+                        currentTabTitle == "⚡ एंटीग्रेविटी स्टूडियो" || currentTabTitle == "⚡ Antigravity Studio" -> {
+                            AntigravityStudioTab(
+                                isHindi = isHindi,
+                                repository = repository,
+                                settings = settings,
+                                onQueueDateReset = { freshDate ->
+                                    selectedQueueDate = freshDate
+                                    scope.launch {
+                                        queueTokensForSelectedDate = repository.getAllTokensForDate(freshDate)
                                     }
                                 }
                             )

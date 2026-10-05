@@ -202,7 +202,12 @@ object GitHubLiveSyncManager {
 
             if (conn.responseCode in 200..299) {
                 val jsonText = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-                LiveUiConfigDto.fromJson(jsonText)
+                val cfg = LiveUiConfigDto.fromJson(jsonText)
+                if (cfg != null) {
+                    com.example.shribalajikripadham.hardware.GeofenceLocationManager.isMockCheckGloballyEnabled = cfg.locationConfig.isMockCheckEnforced
+                    com.example.shribalajikripadham.hardware.GeofenceLocationManager.isGeofenceGloballyBypassed = cfg.locationConfig.emergencyAllowAllTokens
+                }
+                cfg
             } else {
                 null
             }

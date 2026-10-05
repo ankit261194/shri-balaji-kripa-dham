@@ -23,15 +23,14 @@ if (file_exists($manifestPath)) {
 
 // Fallback dynamic manifest
 echo json_encode([
-    "latest_version" => "5.9.32",
-    "version_code" => 622,
+    "latest_version" => "5.9.33",
+    "version_code" => 623,
     "force_update" => true,
-    "title_en" => "ANKIT ELEVEX ULTIMATE v5.9.31 Available!",
-    "title_hi" => "अंकित एलेवेक्स अल्टीमेट v5.9.31 नया अपडेट उपलब्ध!",
-    "release_notes_en" => "• SuperAdmin Master Password Login: Dedicated tab on Login Screen with Aa@910010025123343 access.\n• Unregistered Number Verification: Strict registration check on Forgot PIN / OTP before SMS.\n• Self-Service 4-Digit MPIN Reset: Instant password/MPIN recovery for registered technicians and users.\n• IS 14665 Statutory Safety Audit Engine: 18-point inspection with real numeric readings and QR verification.\n• Zero AI branding: 100% authentic elevator engineering core.",
-    "release_notes_hi" => "• सुपर एडमिन मास्टर पासवर्ड लॉगिन: लॉगिन स्क्रीन पर समर्पित टैब (Aa@910010025123343 द्वारा सीधा प्रवेश)।\n• अपंजीकृत नंबर सत्यापन: पिन भूल गए / OTP पर पहले रजिस्ट्रेशन की अनिवार्य जांच।\n• 4-अंकीय नया MPIN रीसेट: पंजीकृत यूज़र्स के लिए सीधा पासवर्ड/पिन रीसेट व ऑटो-लॉगिन।\n• IS 14665 वैधानिक सुरक्षा ऑडिट: 18-पॉइंट निरीक्षण, वास्तविक भौतिक रीडिंग व सत्यापन QR कोड।\n• शून्य AI/जेमिनी ब्रांडिंग: 100% प्रामाणिक इंडस्ट्रियल लिफ्ट इंजीनियरिंग कोर।",
+    "title_en" => "ANKIT ELEVEX ULTIMATE v5.9.33 Available!",
+    "title_hi" => "अंकित एलेवेक्स अल्टीमेट v5.9.33 नया अपडेट उपलब्ध!",
+    "release_notes_en" => "• IS 14665 Statutory AMC Operations Chain: Enterprise protocol with Site Breakdown Ticket, Authorized AMC Roster Dispatch, Lockout/Tagout (LOTO) 415V safety, and Machine Room Logbook Sign-off.\n• Interactive Monarch NICE3000+/1000+ Keypad: Authentic 5-digit LED digital display with F0-FP parameter navigation, live edit/save, and deep fault sub-code inspection.\n• Otis SV-Tool Handheld Simulator: Full 16-key keypad with real M-1-1 inputs, M-1-2 event logs, and M-2-1 memory clearing.\n• Schindler SMLCD & KONE LOPCB UI: Diagnostic menus 10-50, latched trip wiping, and dual 7-segment drive fault memory.\n• 110V Safety Loop Multi-Controller Selector: Pinpoint terminal maps for Monarch, STEP, Otis, Schindler, and KONE with live Fluke-style virtual multimeter probe.\n• Statutory Machine Room Logbook Generator: Real electrical & mechanical test readings (Earth Ω, Megger MΩ, brake gap mm, leveling accuracy).",
+    "release_notes_hi" => "• IS 14665 वैधानिक AMC व एंटरप्राइज ऑपरेशनल चेन: अनौपचारिक राडार के स्थान पर वैधानिक साइट ब्रेकडाउन टिकट, ऑथराइज्ड AMC रोस्टर डिस्पैच, 415V LOTO सुरक्षा व मशीन रूम लॉगबुक साइन-ऑफ।\n• इंटरैक्टिव Monarch NICE3000+/1000+ LED कीपैड: प्रामाणिक 5-डिजिट डिस्प्ले, F0-FP पैरामीटर्स नैविगेशन, लाइव एडिट/सेव व डीप फॉल्ट सब-कोड इंस्पेक्टर।\n• Otis SV-Tool हैंडहेल्ड सिम्युलेटर: 16-की कीपैड, वास्तविक M-1-1 इनपुट्स, M-1-2 इवेंट लॉग्स व मेमोरी वाइप।\n• Schindler SMLCD व KONE LOPCB UI: डायग्नोस्टिक मेनू 10-50, लैच्ड ट्रिप क्लियरिंग व डुअल 7-सेगमेंट ड्राइव फॉल्ट मेमोरी।\n• 110V सेफ्टी लूप मल्टी-कंट्रोलर सेलेक्टर: Monarch, STEP, Otis, Schindler व KONE के सटीक टर्मिनल पिनआउट्स व फ्लूक-स्टाइल लाइव वर्चुअल मल्टीमीटर प्रोब।\n• IS 14665 वैधानिक मशीन रूम लॉगबुक: अर्थिंग Ω, मेगर MΩ, ब्रेक एयर गैप mm, व लेवलिंग एक्यूरेसी की वास्तविक टेस्ट रीडिंग्स।",
     "apk_download_url" => "https://shribalajikripadham.online/download.php?app=elevex",
-    "file_size" => "38.8 MB",
-    "sha256" => "88D6E0BAA43993DDCD0398AF1910798699365DC49D2FDA3C8330D72B25DD3D5C"
+    "file_size" => "38.9 MB"
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 exit;

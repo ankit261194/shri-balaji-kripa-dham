@@ -255,7 +255,12 @@ object DailyDarshanHelper {
         try {
             var imageUri: Uri? = null
             val finalBitmap = bitmap ?: try {
-                BitmapFactory.decodeResource(context.resources, getTodayDefaultDarshanDrawable())
+                val cachedFile = File(context.filesDir, "daily_darshan_consecrated.jpg")
+                if (cachedFile.exists() && cachedFile.length() > 0) {
+                    BitmapFactory.decodeFile(cachedFile.absolutePath)
+                } else {
+                    BitmapFactory.decodeResource(context.resources, getTodayDefaultDarshanDrawable())
+                }
             } catch (e: Exception) {
                 null
             }
@@ -362,34 +367,55 @@ fun DailyDarshanQuickCard(
     var showZoomDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        // Step 1: Immediately load from persistent cache if available (zero screen wait time)
+        withContext(Dispatchers.IO) {
+            try {
+                val cachedFile = File(context.filesDir, "daily_darshan_consecrated.jpg")
+                if (cachedFile.exists() && cachedFile.length() > 0) {
+                    val cachedBmp = BitmapFactory.decodeFile(cachedFile.absolutePath)
+                    if (cachedBmp != null) {
+                        withContext(Dispatchers.Main) {
+                            remoteBitmap = cachedBmp
+                        }
+                    }
+                }
+            } catch (ignored: Exception) {}
+        }
+
+        // Step 2: Fetch today's darshan metadata from server
         val fetched = DailyDarshanHelper.fetchTodayDarshan()
         darshanData = fetched
 
-        // Try downloading remote bitmap if custom photo uploaded by admin (not default fallback)
+        // Step 3: Download consecrated image for any valid web URL (including balaji_darshan_today.jpg)
         withContext(Dispatchers.IO) {
             try {
-                val isCustomUpload = fetched.photoUrl.isNotBlank() &&
-                        !fetched.photoUrl.endsWith("balaji_darshan_today.jpg") &&
-                        !fetched.photoUrl.endsWith("default.jpg")
-
-                if (isCustomUpload) {
-                    val cleanUrl = if (fetched.photoUrl.contains("?")) fetched.photoUrl else "${fetched.photoUrl}?d=${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())}"
+                if (fetched.photoUrl.isNotBlank() && (fetched.photoUrl.startsWith("http://") || fetched.photoUrl.startsWith("https://"))) {
+                    val cleanUrl = if (fetched.photoUrl.contains("?")) {
+                        "${fetched.photoUrl}&cb=${System.currentTimeMillis() / 60000}"
+                    } else {
+                        "${fetched.photoUrl}?cb=${System.currentTimeMillis() / 60000}"
+                    }
                     val conn = URL(cleanUrl).openConnection() as HttpURLConnection
-                    conn.connectTimeout = 5000
-                    conn.readTimeout = 5000
+                    conn.connectTimeout = 10000
+                    conn.readTimeout = 10000
                     conn.useCaches = false
+                    conn.setRequestProperty("User-Agent", "ShriBalajiKripaDham-Android")
                     conn.setRequestProperty("Cache-Control", "no-cache")
-                    if (conn.responseCode == 200) {
+                    if (conn.responseCode in 200..299) {
                         val bmp = BitmapFactory.decodeStream(conn.inputStream)
                         if (bmp != null) {
+                            try {
+                                val cacheFile = File(context.filesDir, "daily_darshan_consecrated.jpg")
+                                FileOutputStream(cacheFile).use { fos ->
+                                    bmp.compress(Bitmap.CompressFormat.JPEG, 92, fos)
+                                    fos.flush()
+                                }
+                            } catch (ignored: Exception) {}
+
                             withContext(Dispatchers.Main) {
                                 remoteBitmap = bmp
                             }
                         }
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        remoteBitmap = null
                     }
                 }
             } catch (ignored: Exception) {}

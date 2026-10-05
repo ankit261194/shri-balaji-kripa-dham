@@ -390,6 +390,21 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit"
             )
         ),
+        // 23.5. Antigravity Mobile Studio (Master Root AI Control)
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "⚡ एंटीग्रेविटी स्टूडियो" else "⚡ Antigravity Studio",
+            icon = "⚡",
+            titleHindi = "⚡ एंटीग्रेविटी मोबाइल स्टूडियो",
+            titleEnglish = "Antigravity Mobile Studio",
+            categoryHindi = "⚙️ सिस्टम व कंट्रोल",
+            descriptionHindi = "रूट मास्टर AI कंट्रोल, 1-टैप टोकन बाईपास, फ़ेक GPS किल-स्विच व लाइव रिमोट सिंक",
+            descriptionEnglish = "Root master AI console, 1-tap token bypass & zero-update live remote sync",
+            relatedTabs = listOf(
+                if (isHindi) "सुपर कंट्रोल" else "Super Control",
+                if (isHindi) "GPS लोकेशन" else "Location",
+                if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit"
+            )
+        ),
         // 24. Triple Cloud Sync
         AdminHubModuleItem(
             tabTitle = if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️",

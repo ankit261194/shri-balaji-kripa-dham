@@ -81,6 +81,7 @@ $filesToSync = [
     "api/login.php",
     "api/register.php",
     "api/gemini_diagnose.php",
+    "api/scan_register_gemini.php",
     "api/elevex_diagnose.php",
     "api/sync_leads.php",
     "api/send_otp.php",

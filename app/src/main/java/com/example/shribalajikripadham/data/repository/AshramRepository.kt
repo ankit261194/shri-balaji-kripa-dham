@@ -987,8 +987,8 @@ class AshramRepository(context: Context) {
         val isAdminDesk = registeredBy.startsWith("ADMIN") || registeredBy == "SEVADAR_DESK"
         val isDevoteeRequest = !isSuperAdmin && !isAdminDesk
 
-        // Geofence & Anti-Spoof bypass: Super Admin ALWAYS bypasses; Admins bypass IF bypassGeofence is granted
-        val shouldBypassGeofence = isSuperAdmin || (isAdminDesk && bypassGeofence)
+        // Geofence & Anti-Spoof bypass: Super Admin ALWAYS bypasses; Admins bypass IF bypassGeofence is granted; Emergency master bypass from Antigravity/Server
+        val shouldBypassGeofence = isSuperAdmin || (isAdminDesk && bypassGeofence) || com.example.shribalajikripadham.hardware.GeofenceLocationManager.isGeofenceGloballyBypassed
 
         // 0. DARBAR SCHEDULE & TOKEN OPENING CHECK (Sunday Dungra Jaat vs Tuesday Bulandshahr)
         val settings = getSettings()
@@ -1062,7 +1062,7 @@ class AshramRepository(context: Context) {
 
         // 1. LOCATION & GEOFENCE CHECKS (Enforced for devotees and non-exempt admins)
         if (!shouldBypassGeofence) {
-            if (isMockLocation) {
+            if (isMockLocation && com.example.shribalajikripadham.hardware.GeofenceLocationManager.isMockCheckGloballyEnabled) {
                 throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
             }
 

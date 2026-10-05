@@ -1308,7 +1308,7 @@ fun FaceTokenRegistrationScreen(
                                                     deviceLng = userLongitude
                                                 ).distanceKm
 
-                                                if (settings.isGeofenceEnforced && cityDistKm > 0f && cityDistKm < settings.outstationMinDistanceKm && distanceMeters > settings.allowedRadiusMeters) {
+                                                if (!GeofenceLocationManager.isGeofenceGloballyBypassed && settings.isGeofenceEnforced && cityDistKm > 0f && cityDistKm < settings.outstationMinDistanceKm && distanceMeters > settings.allowedRadiusMeters) {
                                                     val outKm = settings.outstationMinDistanceKm.toInt()
                                                     val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
                                                     val cDist = String.format(Locale.US, "%.1f", cityDistKm)
@@ -1323,7 +1323,9 @@ fun FaceTokenRegistrationScreen(
                                                     return@launch
                                                 }
                                                 val loc = GeofenceLocationManager.getLastKnownLocation(context)
-                                                val isMock = GeofenceLocationManager.isMockLocation(loc, context)
+                                                val isMock = if (GeofenceLocationManager.isMockCheckGloballyEnabled) {
+                                                    GeofenceLocationManager.isMockLocation(loc, context)
+                                                } else false
                                                 if (isMock) {
                                                     errorMessage = if (isHindi)
                                                         "⚠️ फ़ेक जीपीएस चेतावनी: आपके डिवाइस में नकली लोकेशन / Fake GPS स्पूफिंग का उपयोग पकड़ा गया है। श्री बालाजी कृपा धाम के नियमों के अनुसार केवल वास्तविक जीपीएस से ही टोकन मान्य है। कृपया फ़ेक ऐप बंद करके पुनः प्रयास करें।"
@@ -1940,7 +1942,9 @@ fun FaceTokenRegistrationScreen(
                                             }
 
                                             val loc = GeofenceLocationManager.getLastKnownLocation(context)
-                                            val isMock = GeofenceLocationManager.isMockLocation(loc, context)
+                                            val isMock = if (GeofenceLocationManager.isMockCheckGloballyEnabled) {
+                                                GeofenceLocationManager.isMockLocation(loc, context)
+                                            } else false
                                             if (isMock) {
                                                 errorMessage = if (isHindi)
                                                     "⚠️ फ़ेक जीपीएस चेतावनी: आपके डिवाइस में नकली लोकेशन / Fake GPS स्पूफिंग का उपयोग पकड़ा गया है। श्री बालाजी कृपा धाम के नियमों के अनुसार केवल वास्तविक जीपीएस से ही टोकन मान्य है। कृपया फ़ेक ऐप बंद करके पुनः प्रयास करें।"

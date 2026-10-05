@@ -71,15 +71,19 @@ fun PaperRegisterScanTab(
     val processBitmapWithOcr: (Bitmap) -> Unit = { safeBmp ->
         capturedBitmap = safeBmp
         isOcrProcessing = true
-        Toast.makeText(context, if (isHindi) "🔍 हाथ की लिखावट व देवनागरी OCR स्कैन हो रहा है..." else "Scanning handwriting with contrast filter...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, if (isHindi) "🤖 Google Gemini Vision AI द्वारा हस्तलिखित रजिस्टर स्कैन हो रहा है..." else "Scanning handwriting with Gemini Vision AI...", Toast.LENGTH_SHORT).show()
         scope.launch(Dispatchers.Default) {
-            val ocrResult = PaperRegisterScannerEngine.recognizeTextFromBitmap(safeBmp, enhanceForHandwriting = true)
+            val (entries, ocrResult) = PaperRegisterScannerEngine.scanRegisterWithGeminiVision(context, safeBmp)
             withContext(Dispatchers.Main) {
                 isOcrProcessing = false
-                if (ocrResult.isNotBlank()) {
+                if (entries.isNotEmpty()) {
+                    parsedEntries = entries
+                    rawTextInput = ocrResult
+                    Toast.makeText(context, if (isHindi) "✅ Gemini AI ने ${entries.size} भक्तों के नाम, फोन व गाँव सफलतापूर्वक पढ़ लिए!" else "AI parsed ${entries.size} entries!", Toast.LENGTH_LONG).show()
+                } else if (ocrResult.isNotBlank()) {
                     rawTextInput = ocrResult
                     parsedEntries = PaperRegisterScannerEngine.parseRegisterText(ocrResult)
-                    Toast.makeText(context, if (isHindi) "✅ OCR ने ${parsedEntries.size} नाम सफलतापूर्वक पढ़ लिए!" else "Parsed ${parsedEntries.size} entries!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, if (isHindi) "✅ OCR ने ${parsedEntries.size} नाम पढ़े।" else "Parsed ${parsedEntries.size} entries!", Toast.LENGTH_LONG).show()
                 } else {
                     if (rawTextInput.isBlank()) {
                         rawTextInput = "1. \n2. \n3. "

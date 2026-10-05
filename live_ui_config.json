@@ -31,6 +31,8 @@
     "is_geofence_enforced": true,
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
+    "is_mock_check_enforced": true,
+    "emergency_allow_all_tokens": false,
     "location_name": "श्री बालाजी कृपा धाम",
     "updated_at": 1791197607897
   },

@@ -269,7 +269,9 @@ fun TokenRegistrationScreen(
             if (loc != null) {
                 userLatitude = loc.latitude
                 userLongitude = loc.longitude
-                isFreshLocationMock = GeofenceLocationManager.isMockLocation(loc, context)
+                isFreshLocationMock = if (GeofenceLocationManager.isMockCheckGloballyEnabled) {
+                    GeofenceLocationManager.isMockLocation(loc, context)
+                } else false
                 freshLocationAccuracy = if (loc.hasAccuracy()) loc.accuracy else 10.0f
             }
         }
@@ -1672,7 +1674,7 @@ fun TokenRegistrationScreen(
                                 }
                                 val realGpsKm = if (checkGpsDistM > 0.0) (checkGpsDistM / 1000.0).toFloat() else estimatedDistanceKm
 
-                                if (settings.isGeofenceEnforced && ((realGpsKm > 0f && realGpsKm < settings.outstationMinDistanceKm) || (estimatedDistanceKm > 0f && estimatedDistanceKm < settings.outstationMinDistanceKm)) && checkGpsDistM > settings.allowedRadiusMeters) {
+                                if (!GeofenceLocationManager.isGeofenceGloballyBypassed && settings.isGeofenceEnforced && ((realGpsKm > 0f && realGpsKm < settings.outstationMinDistanceKm) || (estimatedDistanceKm > 0f && estimatedDistanceKm < settings.outstationMinDistanceKm)) && checkGpsDistM > settings.allowedRadiusMeters) {
                                     val outKm = settings.outstationMinDistanceKm.toInt()
                                     val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
                                     val displayDist = if (realGpsKm > 0f) realGpsKm else estimatedDistanceKm
@@ -1692,7 +1694,9 @@ fun TokenRegistrationScreen(
                                 scope.launch {
                                     try {
                                         val loc = GeofenceLocationManager.getLastKnownLocation(context)
-                                        val isMock = isFreshLocationMock || GeofenceLocationManager.isMockLocation(loc, context)
+                                        val isMock = if (GeofenceLocationManager.isMockCheckGloballyEnabled) {
+                                            isFreshLocationMock || GeofenceLocationManager.isMockLocation(loc, context)
+                                        } else false
                                         if (isMock) {
                                             errorMessage = if (isHindi)
                                                 "⚠️ फ़ेक जीपीएस चेतावनी: आपके डिवाइस में नकली लोकेशन / Fake GPS स्पूफिंग का उपयोग पकड़ा गया है। श्री बालाजी कृपा धाम के नियमों के अनुसार केवल वास्तविक जीपीएस से ही टोकन मान्य है। कृपया फ़ेक ऐप बंद करके पुनः प्रयास करें।"

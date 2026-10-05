@@ -17,6 +17,8 @@ data class LocationConfigDto(
     val isOutstationAdvanceAllowed: Boolean = true,
     val outstationMinDistanceKm: Double = 30.0,
     val locationName: String = "श्री बालाजी कृपा धाम",
+    val isMockCheckEnforced: Boolean = true,
+    val emergencyAllowAllTokens: Boolean = false,
     val updatedAt: Long = System.currentTimeMillis()
 )
 
@@ -153,6 +155,8 @@ data class LiveUiConfigDto(
         locObj.put("is_outstation_advance_allowed", locationConfig.isOutstationAdvanceAllowed)
         locObj.put("outstation_min_distance_km", locationConfig.outstationMinDistanceKm)
         locObj.put("location_name", locationConfig.locationName)
+        locObj.put("is_mock_check_enforced", locationConfig.isMockCheckEnforced)
+        locObj.put("emergency_allow_all_tokens", locationConfig.emergencyAllowAllTokens)
         locObj.put("updated_at", locationConfig.updatedAt)
         root.put("location_config", locObj)
 
@@ -278,6 +282,8 @@ data class LiveUiConfigDto(
                         isOutstationAdvanceAllowed = locObj.optBoolean("is_outstation_advance_allowed", true),
                         outstationMinDistanceKm = locObj.optDouble("outstation_min_distance_km", 30.0),
                         locationName = locObj.optString("location_name", "श्री बालाजी कृपा धाम"),
+                        isMockCheckEnforced = locObj.optBoolean("is_mock_check_enforced", true),
+                        emergencyAllowAllTokens = locObj.optBoolean("emergency_allow_all_tokens", false),
                         updatedAt = locObj.optLong("updated_at", 0L)
                     )
                 } else LocationConfigDto()
