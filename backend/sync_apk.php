@@ -58,6 +58,12 @@ if (isset($_GET['sync_version'])) {
 
 // Reset requested
 if (isset($_GET['reset'])) {
+    $app = strtolower(trim($_GET['app'] ?? ''));
+    if ($app === 'elevex') {
+        $elevexDir = __DIR__ . '/elevex_gateway/downloads';
+        $ver = trim($_GET['ver'] ?? '5.9.32');
+        $tmpFile = $elevexDir . "/Ankit_EleveX_v{$ver}_Final.apk.tmp";
+    }
     if (file_exists($tmpFile)) @unlink($tmpFile);
     echo json_encode(["success" => true, "message" => "Temporary download reset"]);
     exit;
@@ -91,6 +97,16 @@ if (isset($_GET['upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
 if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $chunkIndex = intval($_GET['chunk'] ?? 0);
     $isLast = isset($_GET['last']) && ($_GET['last'] === '1' || $_GET['last'] === 'true');
+    $app = strtolower(trim($_GET['app'] ?? ''));
+    $ver = trim($_GET['ver'] ?? '5.9.32');
+
+    if ($app === 'elevex') {
+        $elevexDir = __DIR__ . '/elevex_gateway/downloads';
+        if (!is_dir($elevexDir)) @mkdir($elevexDir, 0755, true);
+        $targetFile = $elevexDir . "/Ankit_EleveX_v{$ver}_Final.apk";
+        $tmpFile = $targetFile . '.tmp';
+    }
+
     $fp = fopen($tmpFile, $chunkIndex === 0 ? 'wb' : 'ab');
     $input = fopen('php://input', 'rb');
     if ($input && $fp) {
@@ -100,6 +116,18 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $currentSize = file_exists($tmpFile) ? filesize($tmpFile) : 0;
         if ($isLast && $currentSize > 10000000) {
             rename($tmpFile, $targetFile);
+            if ($app === 'elevex') {
+                @copy($targetFile, $elevexDir . '/Ankit_EleveX_latest.apk');
+                echo json_encode([
+                    "success" => true,
+                    "complete" => true,
+                    "app" => "elevex",
+                    "file" => basename($targetFile),
+                    "size" => filesize($targetFile),
+                    "size_mb" => round(filesize($targetFile) / (1024 * 1024), 2) . " MB"
+                ]);
+                exit;
+            }
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v130.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v129.apk');
