@@ -4056,36 +4056,36 @@ fun TokenQueueTab(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(10.dp)) {
-                    // Line 1: Date & Attendance summary & Action Chips (Date, PDF, Cloud Sync)
+                    // Line 1: Selected Date Badge (Left) & Action Chips (Right)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { showDateSelectDialog = true }
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = SaffronPrimary.copy(alpha = 0.12f),
+                            border = BorderStroke(0.8.dp, SaffronPrimary.copy(alpha = 0.6f)),
+                            modifier = Modifier.clickable { showDateSelectDialog = true }
                         ) {
-                            Text("🗓️", fontSize = 13.sp)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = selectedDarbarDate,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.5.sp,
-                                color = MaroonPrimary
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "कुल: $totalCount • दिखाया: $completedCount • शेष: $pendingCount",
-                                fontSize = 11.sp,
-                                color = Color.DarkGray
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("🗓️", fontSize = 12.sp)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = selectedDarbarDate,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = MaroonPrimary
+                                )
+                            }
                         }
 
                         // Compact Action Chips (New Token, Change Date, PDF, Cloud Sync, Wipe)
                         Row(
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -4103,7 +4103,7 @@ fun TokenQueueTab(
                                 }
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("➕", fontSize = 10.sp, color = Color.White)
@@ -4127,7 +4127,7 @@ fun TokenQueueTab(
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaroonPrimary,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                                 )
                             }
 
@@ -4158,7 +4158,7 @@ fun TokenQueueTab(
                                         fontSize = 10.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF4A148C),
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                                     )
                                 }
                             }
@@ -4174,7 +4174,7 @@ fun TokenQueueTab(
                                     fontSize = 10.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF1B5E20),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                                 )
                             }
 
@@ -4188,9 +4188,42 @@ fun TokenQueueTab(
                                     Text(
                                         text = "🗑️",
                                         fontSize = 11.sp,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 3.dp)
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 4.dp)
                                     )
                                 }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Line 2: Dedicated Full-Width Attendance Stats Strip (Never squished)
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Color(0xFFF9F9FB),
+                        border = BorderStroke(0.6.dp, Color(0xFFE0E0E0)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
+                            horizontalArrangement = Arrangement.SpaceAround,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(if (isHindi) "कुल: " else "Total: ", fontSize = 11.5.sp, color = Color.Gray)
+                                Text("$totalCount", fontSize = 12.5.sp, fontWeight = FontWeight.ExtraBold, color = MaroonPrimary)
+                            }
+                            Text("•", fontSize = 10.sp, color = Color.LightGray)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(if (isHindi) "दिखाया: " else "Attended: ", fontSize = 11.5.sp, color = Color.Gray)
+                                Text("$completedCount", fontSize = 12.5.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF2E7D32))
+                            }
+                            Text("•", fontSize = 10.sp, color = Color.LightGray)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(if (isHindi) "शेष: " else "Pending: ", fontSize = 11.5.sp, color = Color.Gray)
+                                Text("$pendingCount", fontSize = 12.5.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFE65100))
                             }
                         }
                     }

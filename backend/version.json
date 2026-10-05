@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 130,
-  "version_code": 130,
-  "latest_version_name": "2.56.55",
-  "version_name": "2.56.55",
-  "update_notes_hindi": "v2.56.55 (Build 130): 👑 सुपर एडमिन हेतु प्रत्येक सेवा व अधिकार पृथक (Decoupled & Granular Permissions) - टोकन वॉइस, दैनिक दर्शन, लाइव स्टूडियो, आरती-भजन, मंगलवार दरबार, ID कार्ड स्टूडियो, लेजर व वेबसाइट का पूर्णतः स्वतंत्र नियंत्रण। बिना किसी सेटिंग या सेवा को प्रभावित किए सुरक्षित अपडेट।",
-  "update_notes_english": "v2.56.55 (Build 130): 👑 Granular Decoupled Admin Permissions - Independent control for Token Voice & 5-API, Daily Darshan, Live Studio, Aarti/Bhajan, Tuesday Darbar, ID Card Studio, Ledger & Website.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=130",
+  "latest_version_code": 131,
+  "version_code": 131,
+  "latest_version_name": "2.56.56",
+  "version_name": "2.56.56",
+  "update_notes_hindi": "v2.56.56 (Build 131): 🎯 टोकन कतार हेडर लेआउट सुधार - उपस्थिति सांख्यिकी (कुल, दिखाया, शेष) और दिनांक/एक्शन बटन हेतु स्वच्छ पंक्ति विभाजन, बिना किसी सिकुड़न के सुंदर व सहज प्रदर्शन।",
+  "update_notes_english": "v2.56.56 (Build 131): 🎯 Token Queue Header UI polish - Dedicated full-width attendance stats strip with clean spacing and responsive action buttons.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=131",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }
