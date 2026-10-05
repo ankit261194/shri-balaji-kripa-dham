@@ -1191,6 +1191,7 @@ fun AdminDashboardScreen(
 
             // 1. Token & Darshan Operations
             if (isSuper || admin.canManageTokens) allowedTabs.add(if (isHindi) "टोकन कतार" else "Tokens")
+            allowedTabs.add(if (isHindi) "👑 गुरुजी स्क्रीन" else "👑 Guruji Screen")
             if (isSuper || admin.canIssueManualTokens) allowedTabs.add(if (isHindi) "मैनुअल टोकन" else "Manual")
             if (isSuper || admin.canManageVoiceSettings) {
                 allowedTabs.add(if (isHindi) "🎙️ टोकन वॉइस व 5-API" else "Voice & 5-API")
@@ -2346,6 +2347,18 @@ fun AdminDashboardScreen(
                                     scope.launch {
                                         queueTokensForSelectedDate = repository.getAllTokensForDate(freshDate)
                                     }
+                                },
+                                onOpenGurujiScreen = {
+                                    activeScreenTitle = if (isHindi) "👑 गुरुजी स्क्रीन" else "👑 Guruji Screen"
+                                }
+                            )
+                        }
+                        currentTabTitle == "👑 गुरुजी स्क्रीन" || currentTabTitle == "👑 Guruji Screen" -> {
+                            GurujiDarbarScreen(
+                                repository = repository,
+                                settings = settings,
+                                onClose = {
+                                    activeScreenTitle = if (isHindi) "टोकन कतार" else "Tokens"
                                 }
                             )
                         }

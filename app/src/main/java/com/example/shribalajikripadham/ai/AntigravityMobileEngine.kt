@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -414,17 +415,85 @@ object AntigravityMobileEngine {
             }
         }
 
-        // Fallback intelligent response in Hindi
+        // 9. Guruji Big Screen / Elderly Mode Trigger
+        if (q.contains("गुरुजी") || q.contains("guruji") || q.contains("बड़ा") || q.contains("हाथ") ||
+            q.contains("स्क्रीन") || q.contains("screen") || q.contains("bujurg") || q.contains("बुजुर्ग") ||
+            q.contains("टोकन बुला") || q.contains("next token") || q.contains("पिछला") || q.contains("दरबार मोड")
+        ) {
+            return@withContext AntigravityAiResponse(
+                messageHindi = "प्रणाम गुरुजी! आपकी आज्ञानुसार बुजुर्ग पूज्य गुरुजी के लिए विशालकाय **'पूज्य गुरुजी दरबार स्क्रीन'** पूरी तरह तैयार है।\n\n" +
+                        "• स्क्रीन पर केवल चल रहा टोकन नंबर व भक्त का नाम बहुत बड़े अक्षरों में दिखता है।\n" +
+                        "• नीचे एक बहुत बड़ा हरा पैड है जिस पर स्क्रीन पर कहीं भी हाथ मारने (टैप करने) से अगला टोकन खुद-ब-खुद माइक पर बोल जाता है और कतार आगे बढ़ती है।\n" +
+                        "• स्क्रीन कभी बंद नहीं होगी।\n\n" +
+                        "👉 आप नीचे दिए गए बटन पर टैप करके इसे तुरंत खोल सकते हैं:",
+                actionExecuted = "OPEN_GURUJI_SCREEN",
+                success = true
+            )
+        }
+
+        // 10. Real Generative AI Integration (Gemini 1.5 Flash via Server Gateway)
+        return@withContext callGeminiAiApi(input, context, repository)
+    }
+
+    /**
+     * 🧠 Google Gemini 1.5 Flash Generative AI Gateway:
+     * Understands complex natural Hindi sentences, queries, suggestions,
+     * and dynamic requests with zero robotic canned replies.
+     */
+    suspend fun callGeminiAiApi(
+        message: String,
+        context: Context,
+        repository: AshramRepository
+    ): AntigravityAiResponse = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("https://shribalajikripadham.online/api/antigravity_ai.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 12000
+                readTimeout = 12000
+                requestMethod = "POST"
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                setRequestProperty("User-Agent", "AntigravityMobileStudio/2.56.57")
+            }
+
+            val todayTokensCount = try { repository.getAllTokensToday().size } catch (e: Exception) { 0 }
+            val settings = try { repository.getSettings() } catch (e: Exception) { AshramSettings() }
+
+            val reqJson = JSONObject().apply {
+                put("message", message)
+                put("context", JSONObject().apply {
+                    put("today_tokens_count", todayTokensCount)
+                    put("running_token_number", settings.runningTokenNumber)
+                    put("is_bypass_active", GeofenceLocationManager.isGeofenceGloballyBypassed)
+                    put("is_mock_check_active", GeofenceLocationManager.isMockCheckGloballyEnabled)
+                })
+            }
+
+            conn.outputStream.use { os ->
+                os.write(reqJson.toString().toByteArray(StandardCharsets.UTF_8))
+            }
+
+            val code = conn.responseCode
+            if (code in 200..299) {
+                val respStr = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val respObj = JSONObject(respStr)
+                if (respObj.optBoolean("success", false)) {
+                    val reply = respObj.optString("reply", "")
+                    val suggestedAction = if (respObj.has("suggested_action") && !respObj.isNull("suggested_action")) {
+                        respObj.optString("suggested_action")
+                    } else null
+                    return@withContext AntigravityAiResponse(
+                        messageHindi = reply,
+                        actionExecuted = suggestedAction,
+                        success = true
+                    )
+                }
+            }
+        } catch (ignored: Exception) {}
+
+        // Fallback if offline
         AntigravityAiResponse(
-            messageHindi = "नमस्ते गुरुजी! मैं एंटीग्रेविटी मोबाइल मास्टर AI हूँ। आप मुझसे सीधे कह सकते हैं:\n\n" +
-                    "• '🚨 सभी के लिए टोकन तुरंत चालू करो' (Emergency Bypass)\n" +
-                    "• '📍 फ़ेक जीपीएस रोक हटाओ' (Disable Mock GPS check)\n" +
-                    "• '🔄 टोकन कतार आज की तारीख पर लाओ' (Reset Queue Date)\n" +
-                    "• '🩺 पूरी ऐप की जाँच करो' (Run Deep Self-Test)\n" +
-                    "• '🌺 आज का दर्शन लाइव बदलो' (Daily Darshan Live Push)\n" +
-                    "• '🚀 डिप्लॉय' (Hostinger Cloud Deploy)\n" +
-                    "• '🔓 अनलॉक 9876543210' (Unban Device/Phone)\n" +
-                    "• 'sql SELECT * FROM tokens LIMIT 5' (Execute SQLite query)",
+            messageHindi = "नमस्ते गुरुजी! मैंने आपका संदेश नोट कर लिया है। आप नीचे दिए गए पैनिक सेंटर, SQL कंसोल या पूज्य गुरुजी स्क्रीन से सीधा नियंत्रण ले सकते हैं।",
             actionExecuted = null,
             success = true
         )

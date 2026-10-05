@@ -405,6 +405,21 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit"
             )
         ),
+        // 23.6. Guruji Darbar Screen (Elderly-Friendly Big Screen)
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "👑 गुरुजी स्क्रीन" else "👑 Guruji Screen",
+            icon = "👑",
+            titleHindi = "पूज्य गुरुजी दरबार स्क्रीन",
+            titleEnglish = "Guruji Big Screen Mode",
+            categoryHindi = "🚩 दरबार व कतार",
+            descriptionHindi = "बुजुर्ग गुरुजी हेतु विशालकाय स्क्रीन — बस स्क्रीन पर हाथ मारने से अगला टोकन माइक पर बोल जाता है",
+            descriptionEnglish = "Elderly-friendly giant screen mode: tap anywhere to announce next token",
+            relatedTabs = listOf(
+                if (isHindi) "कंट्रोल" else "Control",
+                if (isHindi) "⚡ एंटीग्रेविटी स्टूडियो" else "⚡ Antigravity Studio",
+                if (isHindi) "टोकन कतार" else "Tokens Queue"
+            )
+        ),
         // 24. Triple Cloud Sync
         AdminHubModuleItem(
             tabTitle = if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️",

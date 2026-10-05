@@ -43,7 +43,8 @@ data class AntigravityChatMessage(
     val sender: String, // "USER" or "ANTIGRAVITY"
     val text: String,
     val timestamp: String = SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date()),
-    val isAction: Boolean = false
+    val isAction: Boolean = false,
+    val actionType: String? = null
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,7 +53,8 @@ fun AntigravityStudioTab(
     isHindi: Boolean,
     repository: AshramRepository,
     settings: AshramSettings,
-    onQueueDateReset: (String) -> Unit = {}
+    onQueueDateReset: (String) -> Unit = {},
+    onOpenGurujiScreen: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -122,6 +124,9 @@ fun AntigravityStudioTab(
                     currentTodayDate = AntigravityMobileEngine.getTodayFreshDateString()
                     onQueueDateReset(currentTodayDate)
                 }
+                if (res.actionExecuted == "OPEN_GURUJI_SCREEN") {
+                    onOpenGurujiScreen()
+                }
                 if (res.diagnosticReport != null) {
                     diagnosticReport = res.diagnosticReport
                 }
@@ -129,7 +134,8 @@ fun AntigravityStudioTab(
                     AntigravityChatMessage(
                         sender = "ANTIGRAVITY",
                         text = res.messageHindi,
-                        isAction = res.actionExecuted != null
+                        isAction = res.actionExecuted != null,
+                        actionType = res.actionExecuted
                     )
                 )
                 isExecutingAction = false
@@ -321,6 +327,17 @@ fun AntigravityStudioTab(
                                                 color = Color(0xFFF8FAFC),
                                                 lineHeight = 18.sp
                                             )
+                                            if (msg.actionType == "OPEN_GURUJI_SCREEN" || msg.text.contains("पूज्य गुरुजी दरबार स्क्रीन")) {
+                                                Spacer(modifier = Modifier.height(8.dp))
+                                                Button(
+                                                    onClick = onOpenGurujiScreen,
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                                ) {
+                                                    Text("👑 पूज्य गुरुजी दरबार स्क्रीन खोलें", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -336,6 +353,7 @@ fun AntigravityStudioTab(
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        QuickActionChip("👑 गुरुजी स्क्रीन") { onOpenGurujiScreen() }
                         QuickActionChip("🚨 बाईपास ऑन") { runCommand("बाईपास चालू करो") }
                         QuickActionChip("🔒 बाईपास ऑफ") { runCommand("बाईपास बंद करो") }
                         QuickActionChip("📍 फ़ेक GPS बंद") { runCommand("फेक जीपीएस बंद करो") }
@@ -553,6 +571,33 @@ fun AntigravityStudioTab(
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
                                     Text("दर्शन बदलें", fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+
+                    // Control 5: Guruji Big Screen Darbar Mode
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.5.dp, Color(0xFFF59E0B))
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("👑 पूज्य गुरुजी दरबार स्क्रीन (Elderly Mode)", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFFBBF24))
+                                    Text("विशालकाय स्क्रीन — बस स्क्रीन पर हाथ मारने से अगला टोकन माइक पर बोल जाता है।", fontSize = 11.sp, color = Color(0xFF94A3B8))
+                                }
+                                Button(
+                                    onClick = onOpenGurujiScreen,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("स्क्रीन खोलें", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                                 }
                             }
                         }
