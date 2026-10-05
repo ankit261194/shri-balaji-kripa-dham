@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-05T03:46:52Z",
+  "updated_at": "2026-10-05T03:52:32Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -7,16 +7,16 @@
     "ashram_name": "श्री बालाजी कृपा धाम",
     "guruji_name": "परम पूज्य गुरुजी",
     "address": "ग्राम डूंगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उ.प्र.)",
-    "contact_phone": "",
+    "contact_phone": "+91 97206 91090",
     "contact_phone_secondary": "",
-    "whatsapp_number": "",
+    "whatsapp_number": "+91 97206 91090",
     "darbar_timings": "प्रत्येक रविवार प्रातःकाल 8:00 बजे से",
     "free_disclaimer": "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।",
-    "whatsapp_group_url": "https:\/\/chat.whatsapp.com\/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0",
+    "whatsapp_group_url": "https:\/\/chat.whatsapp.com\/invite",
     "youtube_channel_url": "https:\/\/www.youtube.com\/@ShriBalajiKripaDham",
     "facebook_page_url": "https:\/\/www.facebook.com\/ShriBalajiKripaDham",
     "instagram_url": "https:\/\/www.instagram.com\/shribalajikripadham",
-    "app_share_url": "https:\/\/shribalajikripadham.online\/app",
+    "app_share_url": "https:\/\/shribalajikripadham.org\/app",
     "guruji_photo_url": "https:\/\/shribalajikripadham.online\/uploads\/guruji_1789757619_a001cb.jpg"
   },
   "emergency_notice": {
@@ -25,14 +25,14 @@
     "notice_english": "श्री बालाजी कृपा धाम में आपका स्वागत है। आगामी रविवार दिव्य दरबार प्रातः 9:00 बजे से प्रारंभ होगा। 100% निःशुल्क सेवा व इलाज।"
   },
   "location_config": {
-    "latitude": 28.408628333333333,
-    "longitude": 77.88089166666667,
-    "allowed_radius_meters": 500,
+    "latitude": 28.3972915,
+    "longitude": 78.146041,
+    "allowed_radius_meters": 200,
     "is_geofence_enforced": true,
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1791172012996
+    "updated_at": 1791172352735
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -51,12 +51,12 @@
     "is_payment_feature_live": false,
     "can_admin_view_payment_history": false,
     "can_devotee_view_payment_history": false,
-    "ashram_upi_id": "",
+    "ashram_upi_id": "shribalajikripadham@upi",
     "ashram_upi_name": "Shri Balaji Kripa Dham",
     "custom_upi_qr_uri": "",
-    "bus_seat_fare_amount": 0,
+    "bus_seat_fare_amount": 1500,
     "is_arzi_ledger_live": true,
-    "badi_arzi_rate": 150,
+    "badi_arzi_rate": 100,
     "chhoti_arzi_rate": 50,
     "can_admin_view_arzi_ledger": true,
     "can_devotee_view_arzi_ledger": false,
