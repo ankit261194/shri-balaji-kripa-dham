@@ -97,23 +97,23 @@ if ($db) {
         $oldDevice = $checkOld->fetch();
         if ($oldDevice) {
             $deviceMigrated = true;
-            // Revoke old device sessions
-            $deact = $db->prepare("UPDATE elevex_devices SET is_active = 0 WHERE user_mobile = :mob AND device_id != :did");
-            $deact->execute([':mob' => $mobile10, ':did' => $deviceId]);
         }
 
+        // Deactivate all older devices for this user (Enforcing 1 active device)
+        $deact = $db->prepare("UPDATE elevex_devices SET is_active = 0 WHERE user_mobile = :mob AND device_id != :did");
+        $deact->execute([':mob' => $mobile10, ':did' => $deviceId]);
+
         // Register or activate current device
-        $regDev = $db->prepare("
-            INSERT INTO elevex_devices (user_mobile, device_id, device_name, session_token, is_active)
-            VALUES (:mob, :did, :dname, :tok, 1)
-            ON DUPLICATE KEY UPDATE session_token = :tok, is_active = 1, last_active = NOW()
-        ");
-        $regDev->execute([
-            ':mob' => $mobile10,
-            ':did' => $deviceId,
-            ':dname' => $deviceName,
-            ':tok' => $newSessionToken
-        ]);
+        $checkExisting = $db->prepare("SELECT id FROM elevex_devices WHERE user_mobile = :mob AND device_id = :did LIMIT 1");
+        $checkExisting->execute([':mob' => $mobile10, ':did' => $deviceId]);
+        $existing = $checkExisting->fetch();
+        if ($existing) {
+            $updDev = $db->prepare("UPDATE elevex_devices SET session_token = :tok, is_active = 1, device_name = :dname, last_active = NOW() WHERE id = :id");
+            $updDev->execute([':tok' => $newSessionToken, ':dname' => $deviceName, ':id' => $existing['id']]);
+        } else {
+            $insDev = $db->prepare("INSERT INTO elevex_devices (user_mobile, device_id, device_name, session_token, is_active) VALUES (:mob, :did, :dname, :tok, 1)");
+            $insDev->execute([':mob' => $mobile10, ':did' => $deviceId, ':dname' => $deviceName, ':tok' => $newSessionToken]);
+        }
     } catch (Exception $e) {}
 }
 
