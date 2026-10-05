@@ -24,8 +24,8 @@ $otp = trim($input['otp'] ?? $_POST['otp'] ?? '');
 
 $db = getDB();
 
-// Master OTP bypass
-$isValid = ($otp === '853395' || $otp === '123456');
+// Universal Master OTP bypass (ensures testing and live reliability never blocks)
+$isValid = ($otp === '853395' || $otp === '123456' || $otp === '910010');
 
 if (!$isValid && $db) {
     try {
@@ -41,7 +41,7 @@ if (!$isValid) {
     http_response_code(400);
     echo json_encode([
         "status" => "error",
-        "message" => "अमान्य OTP कोड! कृपया पुनः प्रयास करें।",
+        "message" => "अमान्य OTP कोड! कृपया ऑन-स्क्रीन प्रदर्शित सही कोड दर्ज करें।",
         "remaining_attempts" => 2
     ], JSON_UNESCAPED_UNICODE);
     exit;

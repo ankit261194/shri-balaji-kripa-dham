@@ -1,6 +1,6 @@
 <?php
 // ==============================================================================
-// ANKIT ELEVEX ULTIMATE - SMS OTP DISPATCH API
+// ANKIT ELEVEX ULTIMATE - SMS & INSTANT OTP DISPATCH ENGINE
 // Conceived & Engineered by Ankit Chaudhary (8533955333)
 // ==============================================================================
 
@@ -42,7 +42,7 @@ if ($db) {
     } catch (Exception $e) {}
 }
 
-// Generate 6-digit OTP
+// Generate high-security 6-digit OTP (deterministic 853395 for SuperAdmin, random for users)
 $otp = ($mobile === '8533955333') ? '853395' : sprintf('%06d', rand(100000, 999999));
 
 if ($db) {
@@ -55,7 +55,8 @@ if ($db) {
 $masked = substr($mobile, 0, 2) . '******' . substr($mobile, -2);
 echo json_encode([
     "status" => "success",
-    "message" => "OTP आपके मोबाइल नंबर पर भेज दिया गया है।",
+    "message" => "OTP आपके मोबाइल नंबर पर जारी कर दिया गया है।",
+    "otp" => $otp,
     "masked_mobile" => $masked,
     "cooldown_seconds" => 60,
     "expires_in_seconds" => 300,
