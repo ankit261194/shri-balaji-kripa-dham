@@ -1,12 +1,11 @@
 {
-  "latest_version": "5.9.31",
-  "version_code": 621,
+  "latest_version": "5.9.32",
+  "version_code": 622,
   "force_update": true,
-  "title_en": "ANKIT ELEVEX ULTIMATE v5.9.31 Available!",
-  "title_hi": "अंकित एलेवेक्स अल्टीमेट v5.9.31 नया अपडेट उपलब्ध!",
-  "release_notes_en": "• SuperAdmin Master Password Login: Dedicated tab on Login Screen with Aa@910010025123343 access.\n• Unregistered Number Verification: Strict registration check on Forgot PIN / OTP before SMS.\n• Self-Service 4-Digit MPIN Reset: Instant password/MPIN recovery for registered technicians and users.\n• IS 14665 Statutory Safety Audit Engine: 18-point inspection with real numeric readings and QR verification.\n• Zero AI branding: 100% authentic elevator engineering core.",
-  "release_notes_hi": "• सुपर एडमिन मास्टर पासवर्ड लॉगिन: लॉगिन स्क्रीन पर समर्पित टैब (Aa@910010025123343 द्वारा सीधा प्रवेश)।\n• अपंजीकृत नंबर सत्यापन: पिन भूल गए / OTP पर पहले रजिस्ट्रेशन की अनिवार्य जांच।\n• 4-अंकीय नया MPIN रीसेट: पंजीकृत यूज़र्स के लिए सीधा पासवर्ड/पिन रीसेट व ऑटो-लॉगिन।\n• IS 14665 वैधानिक सुरक्षा ऑडिट: 18-पॉइंट निरीक्षण, वास्तविक भौतिक रीडिंग व सत्यापन QR कोड।\n• शून्य AI/जेमिनी ब्रांडिंग: 100% प्रामाणिक इंडस्ट्रियल लिफ्ट इंजीनियरिंग कोर।",
+  "title_en": "ANKIT ELEVEX ULTIMATE v5.9.32 Available!",
+  "title_hi": "अंकित एलेवेक्स अल्टीमेट v5.9.32 नया अपडेट उपलब्ध!",
+  "release_notes_en": "• All Services For All Users: Full unconditional access to all 32+ engineering tools, wiring diagrams, 100+ brands, and diagnostics across Owner, Company, Technician, and Trainee roles.\n• Instant OTP Delivery & 1-Tap Auto-Fill: Fast in-app verification code box guarantees instant login without telecom network drop-off.\n• Interactive 4-Role Operational Chain: Full live pipeline (Owner SOS -> 25km Radar -> Tech Transit -> Site Arrival -> 4-Digit OTP Job Closure).\n• Featured 110V Safety Loop Tracer: Direct 1-tap launcher to safety circuit diagnostic engine.\n• SuperAdmin Direct Gateway: Dedicated login option with master key access (Aa@910010025123343).\n• Registered Number Safeguard: Strict pre-check on forgot password requiring registration first.",
+  "release_notes_hi": "• सभी यूज़र्स के लिए समस्त सेवाएं: 32+ प्रो इंजीनियरिंग लैब्स, 100+ ब्रांड्स, एरर कोड्स व डायग्नोस्टिक्स अब सभी 4 रोल्स (ओनर, कंपनी, तकनीशियन, छात्र) के लिए बिना किसी रोक-टोक उपलब्ध।\n• इंस्टेंट OTP व 1-टैप ऑटो-फिल: स्क्रीन पर तुरंत प्रदर्शित सुरक्षा कोड द्वारा बिना SMS विफलता के 1-सेकंड में लॉगिन।\n• इंटरैक्टिव 4-रोल लाइव ऑपरेशनल चेन: लाइव परीक्षण व 4-चरणीय पाइपलाइन (ओनर SOS -> राडार -> तकनीशियन रवाना -> साइट पहुंचे -> OTP क्लोजिंग)।\n• 110V सेफ्टी लूप सर्किट ट्रेसर: प्रमुख फीचर बैनर द्वारा 1-टैप में संपूर्ण सुरक्षा श्रृंखला जांच।\n• सुपर एडमिन डायरेक्ट गेटवे: समर्पित लॉगिन विकल्प व मास्टर पासवर्ड (Aa@910010025123343)।\n• पंजीकृत नंबर सुरक्षा कवच: पासवर्ड भूलने पर पहले अनिवार्य पंजीकरण जांच।",
   "apk_download_url": "https://shribalajikripadham.online/download.php?app=elevex",
-  "file_size": "38.8 MB",
-  "sha256": "88D6E0BAA43993DDCD0398AF1910798699365DC49D2FDA3C8330D72B25DD3D5C"
+  "file_size": "38.9 MB"
 }

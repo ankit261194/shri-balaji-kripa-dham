@@ -23,8 +23,8 @@ if (file_exists($manifestPath)) {
 
 // Fallback dynamic manifest
 echo json_encode([
-    "latest_version" => "5.9.31",
-    "version_code" => 621,
+    "latest_version" => "5.9.32",
+    "version_code" => 622,
     "force_update" => true,
     "title_en" => "ANKIT ELEVEX ULTIMATE v5.9.31 Available!",
     "title_hi" => "अंकित एलेवेक्स अल्टीमेट v5.9.31 नया अपडेट उपलब्ध!",
