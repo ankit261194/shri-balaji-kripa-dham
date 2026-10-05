@@ -62,8 +62,8 @@ $isValid = ($otp === '853395' || $otp === '123456' || $otp === '910010');
 
 if (!$isValid && $db) {
     try {
-        $stmt = $db->prepare("SELECT id FROM elevex_otps WHERE mobile = :m AND otp = :o AND is_used = 0 AND created_at >= NOW() - INTERVAL 10 MINUTE ORDER BY id DESC LIMIT 1");
-        $stmt->execute([':m' => $mobile10, ':o' => $otp]);
+        $stmt = $db->prepare("SELECT id, created_at FROM elevex_otps WHERE (mobile = :m10 OR mobile = :m) AND otp = :o AND is_used = 0 ORDER BY id DESC LIMIT 1");
+        $stmt->execute([':m10' => $mobile10, ':m' => $mobile, ':o' => $otp]);
         $row = $stmt->fetch();
         if ($row) {
             $isValid = true;
