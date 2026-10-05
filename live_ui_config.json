@@ -32,7 +32,7 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1791197605337
+    "updated_at": 1791197605716
   },
   "services_config": {
     "is_token_service_enabled": true,
