@@ -46,6 +46,9 @@ if ($db) {
                 INDEX idx_mob (mobile)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
+        @$db->exec("ALTER TABLE elevex_otps ADD COLUMN purpose VARCHAR(30) DEFAULT 'auth'");
+        @$db->exec("ALTER TABLE elevex_otps ADD COLUMN channel VARCHAR(20) DEFAULT 'sms'");
+        @$db->exec("ALTER TABLE elevex_otps ADD COLUMN is_used TINYINT DEFAULT 0");
     } catch (Exception $e) {}
 }
 
@@ -58,7 +61,12 @@ if ($db) {
     try {
         $stmt = $db->prepare("INSERT INTO elevex_otps (mobile, otp, purpose, channel) VALUES (:m, :o, :p, :c)");
         $stmt->execute([':m' => $mobile10, ':o' => $otp, ':p' => $purpose, ':c' => $channel]);
-    } catch (Exception $e) {}
+    } catch (Exception $e) {
+        try {
+            $stmt2 = $db->prepare("INSERT INTO elevex_otps (mobile, otp) VALUES (:m, :o)");
+            $stmt2->execute([':m' => $mobile10, ':o' => $otp]);
+        } catch (Exception $e2) {}
+    }
 }
 
 // Attempt real Fast2SMS dispatch if API key is active

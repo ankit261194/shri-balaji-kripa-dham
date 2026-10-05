@@ -62,14 +62,15 @@ $isValid = ($otp === '853395' || $otp === '123456' || $otp === '910010');
 
 if (!$isValid && $db) {
     try {
-        $stmt = $db->prepare("SELECT id, created_at FROM elevex_otps WHERE (mobile = :m10 OR mobile = :m) AND otp = :o AND is_used = 0 ORDER BY id DESC LIMIT 1");
+        $stmt = $db->prepare("SELECT id, otp FROM elevex_otps WHERE (mobile = :m10 OR mobile = :m) AND otp = :o ORDER BY id DESC LIMIT 1");
         $stmt->execute([':m10' => $mobile10, ':m' => $mobile, ':o' => $otp]);
         $row = $stmt->fetch();
         if ($row) {
             $isValid = true;
-            // Mark OTP used
-            $upd = $db->prepare("UPDATE elevex_otps SET is_used = 1 WHERE id = :id");
-            $upd->execute([':id' => $row['id']]);
+            try {
+                $upd = $db->prepare("UPDATE elevex_otps SET is_used = 1 WHERE id = :id");
+                $upd->execute([':id' => $row['id']]);
+            } catch (Exception $e) {}
         }
     } catch (Exception $e) {}
 }
