@@ -118,6 +118,7 @@ if ($httpCode === 200 && !empty($response)) {
 echo json_encode([
     "success" => false,
     "reply" => "क्षमा करें, AI सेवा से कनेक्ट नहीं हो सका। कृपया पुनः प्रयास करें।",
-    "http_code" => $httpCode
+    "http_code" => $httpCode,
+    "raw_response" => $response
 ], JSON_UNESCAPED_UNICODE);
 exit;
