@@ -232,6 +232,7 @@ $targetCols = [
     "ashram_rules_hindi" => "TEXT",
     "aarti_lyrics" => "TEXT",
     "bus_seat_fare_amount" => "INT NOT NULL DEFAULT 0",
+    "ui_sections" => "LONGTEXT DEFAULT NULL",
     "config_version" => "INT NOT NULL DEFAULT 1"
 ];
 
@@ -510,6 +511,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (Throwable $sevEx) {}
     }
 
+    // Synchronize full UI Sections if provided in payload
+    if (isset($input['sections']) && is_array($input['sections'])) {
+        $secJson = json_encode($input['sections'], JSON_UNESCAPED_UNICODE);
+        if (!is_dir($cacheDir)) @mkdir($cacheDir, 0755, true);
+        @file_put_contents($cacheDir . '/ui_sections.json', $secJson);
+        try {
+            $pdo->prepare("UPDATE ashram_settings SET ui_sections = :sec WHERE id = 1")->execute([':sec' => $secJson]);
+        } catch (Throwable $e) {}
+    }
+
     // Invalidate All Caches (live_config_cache.json, site_data_cache.json, etc.) Immediately
     $allCaches = glob(__DIR__ . '/../cache/*');
     if ($allCaches) {
@@ -622,6 +633,19 @@ try {
         $donStmt = $pdo->query("SELECT id, name, city_address, title, photo_url, notes, display_order FROM donors WHERE is_active = 1 ORDER BY display_order ASC, id ASC");
         $donors = $donStmt ? ($donStmt->fetchAll() ?: []) : [];
     } catch (Throwable $e) {}
+
+    $sections = [];
+    if (!empty($row['ui_sections'])) {
+        $pSec = json_decode($row['ui_sections'], true);
+        if (is_array($pSec) && !empty($pSec)) $sections = $pSec;
+    }
+    if (empty($sections) && file_exists($cacheDir . '/ui_sections.json')) {
+        $fSec = @file_get_contents($cacheDir . '/ui_sections.json');
+        if (!empty($fSec)) {
+            $pSec = json_decode($fSec, true);
+            if (is_array($pSec) && !empty($pSec)) $sections = $pSec;
+        }
+    }
 
     $servingNum = isset($row['current_serving_token']) ? intval($row['current_serving_token']) : $fb['current_serving_token'];
     if ($servingNum <= 0) {
@@ -770,7 +794,8 @@ try {
         "config_version" => isset($row['config_version']) ? intval($row['config_version']) : $fb['config_version'],
         "server_time" => time(),
         "sevadars" => $sevadars,
-        "donors" => $donors
+        "donors" => $donors,
+        "sections" => $sections
     ];
 
     $response = array_merge([
