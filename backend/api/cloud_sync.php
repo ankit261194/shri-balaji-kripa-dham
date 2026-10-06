@@ -259,20 +259,17 @@ if ($pdo) {
                 'gurujiPhotoUrl' => 'guruji_photo_url'
             ];
 
+            $processedCols = [];
             foreach ($fieldMap as $srcKey => $targetCol) {
                 if (isset($inSettings[$srcKey]) && isset($colSet[$targetCol])) {
+                    if (isset($processedCols[$targetCol])) continue;
+                    $processedCols[$targetCol] = true;
                     $val = $inSettings[$srcKey];
                     if (is_bool($val)) $val = $val ? 1 : 0;
                     $pName = ":set_" . $targetCol;
                     $updatePairs[] = "`$targetCol` = $pName";
                     $bindings[$pName] = $val;
                 }
-            }
-
-            // Also check running_token_number
-            if (isset($inSettings['running_token_number']) && isset($colSet['running_token_number'])) {
-                $updatePairs[] = "`running_token_number` = :p_rtn";
-                $bindings[':p_rtn'] = intval($inSettings['running_token_number']);
             }
 
             if (!empty($updatePairs)) {
