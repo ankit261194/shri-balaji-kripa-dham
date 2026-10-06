@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 130,
-  "version_code": 130,
-  "latest_version_name": "2.56.55",
-  "version_name": "2.56.55",
-  "update_notes_hindi": "v2.56.55 (Build 130): 🚩 रविवार दिव्य दरबार टोकन प्रणाली 100% सुदृढ़ व सत्यापित, 🛡️ जिओफेंस व ऑटो-शेड्यूल सुरक्षा कवच, 🎙️ वॉइस अनाउंसर व रियल-टाइम एडमिन सिंक शत-प्रतिशत सक्रिय।",
-  "update_notes_english": "v2.56.55 (Build 130): 🚩 Sunday Divine Darbar Token System 100% Verified, 🛡️ Bulletproof Geofence & Auto-Schedule Fail-Safes, 🎙️ Real-time Admin Sync & Voice Announcements.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=130",
+  "latest_version_code": 139,
+  "version_code": 139,
+  "latest_version_name": "2.56.64",
+  "version_name": "2.56.64",
+  "update_notes_hindi": "v2.56.64 (Build 139): ⚡ शुद्धिकरण अपडेट: सभी प्रकार के अनधिकृत/डमी टेस्ट नंबर पूरी तरह हटाए गए। केवल सुपरएडमिन द्वारा दर्ज किया गया वास्तविक नंबर ही मान्य होगा। लाइव आरती व दर्शन सिंक सक्रिय।",
+  "update_notes_english": "v2.56.64 (Build 139): ⚡ Purification Update: Complete removal of placeholder/test numbers. Only authentic Super-Admin configured contacts will be displayed. Live Aarti timings active.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=139",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }
