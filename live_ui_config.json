@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-05T19:40:52Z",
+  "updated_at": "2026-10-06T03:15:02Z",
   "updated_by": "Super Admin",
   "version": 1,
   "active_ui_layout": "CLASSIC_DARBAR",
@@ -32,7 +32,9 @@
     "is_outstation_advance_allowed": true,
     "outstation_min_distance_km": 30,
     "location_name": "श्री बालाजी कृपा धाम",
-    "updated_at": 1791229252423
+    "is_mock_check_enforced": true,
+    "emergency_allow_all_tokens": false,
+    "updated_at": 1791256502380
   },
   "services_config": {
     "is_token_service_enabled": true,
@@ -51,7 +53,7 @@
     "is_payment_feature_live": false,
     "can_admin_view_payment_history": false,
     "can_devotee_view_payment_history": false,
-    "ashram_upi_id": "shribalajikripadham@upi",
+    "ashram_upi_id": "",
     "ashram_upi_name": "Shri Balaji Kripa Dham",
     "custom_upi_qr_uri": "",
     "bus_seat_fare_amount": 0,
