@@ -292,17 +292,7 @@ function runSchemaMigrations($pdo, $targetCols) {
             INDEX idx_donor_active (is_active)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
-        // 0-Tolerance Policy: Purge any placeholder dummy data from production MySQL
-        $pdo->exec("UPDATE ashram_settings SET bank_account_number = '' WHERE bank_account_number LIKE '%XXXX%'");
-        $pdo->exec("UPDATE ashram_settings SET bank_ifsc = '' WHERE bank_ifsc LIKE '%XXXX%'");
-        $pdo->exec("UPDATE ashram_settings SET contact_phone = '' WHERE contact_phone LIKE '%97206%' OR contact_phone LIKE '%98765%'");
-        $pdo->exec("UPDATE ashram_settings SET whatsapp_number = '' WHERE whatsapp_number LIKE '%97206%' OR whatsapp_number LIKE '%98765%'");
-        $pdo->exec("UPDATE ashram_settings SET contact_email = '' WHERE contact_email LIKE '%shribalajikripadham@gmail.com%'");
-        $pdo->exec("UPDATE ashram_settings SET upi_id = '' WHERE upi_id = 'shribalajikripadham@upi'");
-        $pdo->exec("UPDATE ashram_settings SET whatsapp_channel_url = 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0' WHERE whatsapp_channel_url = '' OR whatsapp_channel_url LIKE '%/invite%' OR whatsapp_channel_url IS NULL");
-        $pdo->exec("UPDATE ashram_settings SET whatsapp_group_url = 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0' WHERE whatsapp_group_url = '' OR whatsapp_group_url LIKE '%/invite%' OR whatsapp_group_url IS NULL");
-        $pdo->exec("DELETE FROM sevadars WHERE phone LIKE '%987654321%' OR phone = '' OR name IN ('अंकित शर्मा', 'दीपक कुमार', 'राहुल सिंह', 'सोनू तेवतिया') OR name LIKE '%?%'");
-        $pdo->exec("DELETE FROM donors WHERE phone LIKE '%987654321%' OR name IN ('सेठ राधेश्याम जी', 'चौधरी वीरेन्द्र सिंह जी', 'श्री रमेश चंद्र गोयल जी', 'श्री अजय तेवतिया जी', 'श्री Ajay तेवतिया जी') OR name LIKE '%?%'");
+        // Self-healing migrations complete
     } catch (Throwable $e) {
         error_log("runSchemaMigrations warning: " . $e->getMessage());
     }
@@ -425,11 +415,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'aarti_lyrics' => trim($input['aarti_lyrics'] ?? ($current['aarti_lyrics'] ?? '')),
         'bus_seat_fare_amount' => isset($input['bus_seat_fare_amount']) ? intval($input['bus_seat_fare_amount']) : intval($current['bus_seat_fare_amount'] ?? 0)
     ];
-
-    if (strpos($fields['contact_phone'], '97206') !== false || strpos($fields['contact_phone'], '98765') !== false) $fields['contact_phone'] = '';
-    if (strpos($fields['whatsapp_number'], '97206') !== false || strpos($fields['whatsapp_number'], '98765') !== false) $fields['whatsapp_number'] = '';
-    if (strpos($fields['contact_email'], 'shribalajikripadham@gmail.com') !== false) $fields['contact_email'] = '';
-    if ($fields['upi_id'] === 'shribalajikripadham@upi') $fields['upi_id'] = '';
 
     $updatePairs = [];
     $bindings = [];
@@ -751,9 +736,9 @@ try {
         "guruji_photo_url" => $row['guruji_photo_url'] ?? $fb['guruji_photo_url'],
         "can_admin_issue_reserved_tokens" => isset($row['can_admin_issue_reserved_tokens']) ? boolval($row['can_admin_issue_reserved_tokens']) : $fb['can_admin_issue_reserved_tokens'],
         "allow_admin_reserved_tokens" => isset($row['allow_admin_reserved_tokens']) ? boolval($row['allow_admin_reserved_tokens']) : $fb['allow_admin_reserved_tokens'],
-        "contact_phone" => (!empty($row['contact_phone']) && strpos($row['contact_phone'], '97206') === false && strpos($row['contact_phone'], '98765') === false) ? $row['contact_phone'] : '',
-        "whatsapp_number" => (!empty($row['whatsapp_number']) && strpos($row['whatsapp_number'], '97206') === false && strpos($row['whatsapp_number'], '98765') === false) ? $row['whatsapp_number'] : '',
-        "upi_id" => (!empty($row['upi_id']) && $row['upi_id'] !== 'shribalajikripadham@upi') ? $row['upi_id'] : '',
+        "contact_phone" => $row['contact_phone'] ?? '',
+        "whatsapp_number" => $row['whatsapp_number'] ?? '',
+        "upi_id" => $row['upi_id'] ?? '',
         "upi_name" => !empty($row['upi_name']) ? $row['upi_name'] : $fb['upi_name'],
         "aarti_timings" => $row['aarti_timings'] ?? '',
         "is_darbar_live_now" => isset($row['is_darbar_live_now']) ? boolval($row['is_darbar_live_now']) : $fb['is_darbar_live_now'],
@@ -762,27 +747,27 @@ try {
         "youtube_live_url" => $row['youtube_live_url'] ?? '',
         "facebook_live_url" => $row['facebook_live_url'] ?? '',
         "bus_seat_fare_amount" => isset($row['bus_seat_fare_amount']) ? intval($row['bus_seat_fare_amount']) : $fb['bus_seat_fare_amount'],
-        "top_bar_text" => (!empty($row['top_bar_text']) && strpos($row['top_bar_text'], 'अनूपशहर') === false) ? $row['top_bar_text'] : $fb['top_bar_text'],
-        "guruji_title" => $row['guruji_title'] ?? $fb['guruji_title'],
-        "guruji_bio" => $row['guruji_bio'] ?? $fb['guruji_bio'],
-        "token_rules_notice" => $row['token_rules_notice'] ?? $fb['token_rules_notice'],
+        "top_bar_text" => !empty($row['top_bar_text']) ? $row['top_bar_text'] : $fb['top_bar_text'],
+        "guruji_title" => !empty($row['guruji_title']) ? $row['guruji_title'] : $fb['guruji_title'],
+        "guruji_bio" => !empty($row['guruji_bio']) ? $row['guruji_bio'] : $fb['guruji_bio'],
+        "token_rules_notice" => !empty($row['token_rules_notice']) ? $row['token_rules_notice'] : $fb['token_rules_notice'],
         "aarti_mangala_time" => $row['aarti_mangala_time'] ?? '',
         "aarti_balbhog_time" => $row['aarti_balbhog_time'] ?? '',
         "aarti_sandhya_time" => $row['aarti_sandhya_time'] ?? '',
         "aarti_shayan_time" => $row['aarti_shayan_time'] ?? '',
-        "bank_name" => $row['bank_name'] ?? $fb['bank_name'],
-        "bank_account_holder" => $row['bank_account_holder'] ?? $fb['bank_account_holder'],
+        "bank_name" => !empty($row['bank_name']) ? $row['bank_name'] : $fb['bank_name'],
+        "bank_account_holder" => !empty($row['bank_account_holder']) ? $row['bank_account_holder'] : $fb['bank_account_holder'],
         "bank_account_number" => $row['bank_account_number'] ?? '',
         "bank_ifsc" => $row['bank_ifsc'] ?? '',
-        "bank_branch" => (!empty($row['bank_branch']) && strpos($row['bank_branch'], 'अनूपशहर') === false) ? $row['bank_branch'] : $fb['bank_branch'],
-        "ashram_address" => (!empty($row['ashram_address']) && strpos($row['ashram_address'], 'अनूपशहर') === false) ? $row['ashram_address'] : $fb['ashram_address'],
-        "ashram_directions" => (!empty($row['ashram_directions']) && strpos($row['ashram_directions'], 'बबराला') === false) ? $row['ashram_directions'] : $fb['ashram_directions'],
-        "contact_email" => (!empty($row['contact_email']) && $row['contact_email'] !== 'shribalajikripadham@gmail.com') ? $row['contact_email'] : '',
-        "youtube_url" => $row['youtube_url'] ?? $fb['youtube_url'],
-        "facebook_url" => $row['facebook_url'] ?? $fb['facebook_url'],
+        "bank_branch" => !empty($row['bank_branch']) ? $row['bank_branch'] : $fb['bank_branch'],
+        "ashram_address" => !empty($row['ashram_address']) ? $row['ashram_address'] : $fb['ashram_address'],
+        "ashram_directions" => !empty($row['ashram_directions']) ? $row['ashram_directions'] : $fb['ashram_directions'],
+        "contact_email" => $row['contact_email'] ?? '',
+        "youtube_url" => !empty($row['youtube_url']) ? $row['youtube_url'] : $fb['youtube_url'],
+        "facebook_url" => !empty($row['facebook_url']) ? $row['facebook_url'] : $fb['facebook_url'],
         "instagram_url" => $row['instagram_url'] ?? $fb['instagram_url'],
-        "whatsapp_channel_url" => (!empty($row['whatsapp_channel_url']) && strpos($row['whatsapp_channel_url'], '/invite') === false) ? $row['whatsapp_channel_url'] : $fb['whatsapp_channel_url'],
-        "whatsapp_group_url" => (!empty($row['whatsapp_group_url']) && strpos($row['whatsapp_group_url'], '/invite') === false) ? $row['whatsapp_group_url'] : $fb['whatsapp_group_url'],
+        "whatsapp_channel_url" => !empty($row['whatsapp_channel_url']) ? $row['whatsapp_channel_url'] : $fb['whatsapp_channel_url'],
+        "whatsapp_group_url" => !empty($row['whatsapp_group_url']) ? $row['whatsapp_group_url'] : $fb['whatsapp_group_url'],
         "footer_title" => $row['footer_title'] ?? $fb['footer_title'],
         "footer_dedication" => $row['footer_dedication'] ?? $fb['footer_dedication'],
         "footer_copyright" => $row['footer_copyright'] ?? $fb['footer_copyright'],

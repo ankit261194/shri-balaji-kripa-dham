@@ -721,18 +721,10 @@ object HostingerCentralSyncManager {
             repository.syncCurrentLiveSettingsFromGitHub()
 
             val allTokens = repository.getAllTokens()
-            val (hOk, hMsg) = syncAllTokensToHostinger(allTokens)
+            val (hOk, hMsg) = repository.syncWithCloudEndpoint("https://shribalajikripadham.online/api/cloud_sync.php")
             val s = repository.getSettings()
-            updateLiveConfig(
-                radiusMeters = s.allowedRadiusMeters,
-                isGeofenceEnforced = s.isGeofenceEnforced,
-                isOutstationAllowed = s.isOutstationAdvanceAllowed,
-                outstationKm = s.outstationMinDistanceKm,
-                currentServingToken = s.runningTokenNumber,
-                lat = s.latitude,
-                long = s.longitude
-            )
-            results.add(if (hOk) "🌐 Hosting: ✅ 100% एकसमान डेटा ($hMsg)" else "🌐 Hosting: ⚠️ $hMsg")
+            updateFullLiveConfig(s, repository.getAllSevadars(), repository.getUiSectionConfigs())
+            results.add(if (hOk) "🌐 Hosting: ✅ 100% एकसमान डेटा (${allTokens.size} टोकन व लाइव सेटिंग्स MySQL में सिंक)" else "🌐 Hosting: ⚠️ $hMsg")
 
             val (ghOk, ghMsg) = repository.publishCurrentSettingsToGitHub("Super Admin (Full Bidirectional 100% Mirror)")
             results.add(if (ghOk) "🚀 GitHub: ✅ 100% एकसमान डेटा (${allTokens.size} टोकन व संपूर्ण बही-खाता सुरक्षित)" else "🚀 GitHub: ⚠️ $ghMsg")

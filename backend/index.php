@@ -194,9 +194,9 @@ $isBusLive = !empty($settings['is_bus_booking_live']);
 $isDharamshalaLive = !empty($settings['is_dharamshala_live']);
 $isArziLive = !isset($settings['is_arzi_ledger_live']) || $settings['is_arzi_ledger_live'] == 1;
 
-$contactPhone = (!empty($settings['contact_phone']) && strpos($settings['contact_phone'], '97206') === false && strpos($settings['contact_phone'], '98765') === false) ? trim($settings['contact_phone']) : '';
-$whatsappNumber = (!empty($settings['whatsapp_number']) && strpos($settings['whatsapp_number'], '97206') === false && strpos($settings['whatsapp_number'], '98765') === false) ? trim($settings['whatsapp_number']) : '';
-$upiId = (!empty($settings['upi_id']) && $settings['upi_id'] !== 'shribalajikripadham@upi') ? trim($settings['upi_id']) : '';
+$contactPhone = !empty($settings['contact_phone']) ? trim($settings['contact_phone']) : '';
+$whatsappNumber = !empty($settings['whatsapp_number']) ? trim($settings['whatsapp_number']) : '';
+$upiId = !empty($settings['upi_id']) ? trim($settings['upi_id']) : '';
 $upiName = !empty($settings['upi_name']) ? trim($settings['upi_name']) : $ashramName;
 $badiArziRate = isset($settings['badi_arzi_rate']) ? (float)$settings['badi_arzi_rate'] : 0.0;
 $chhotiArziRate = isset($settings['chhoti_arzi_rate']) ? (float)$settings['chhoti_arzi_rate'] : 0.0;
@@ -208,23 +208,23 @@ $gurujiBio = !empty($settings['guruji_bio']) ? $settings['guruji_bio'] : 'सं
 $tokenRulesNotice = !empty($settings['token_rules_notice']) ? $settings['token_rules_notice'] : 'आश्रम की निष्पक्षता, पारदर्शी कतार, GPS लोकेशन एवं AI बायोमेट्रिक सुरक्षा नियमों के अनुसार टोकन पंजीकरण केवल और केवल आधिकारिक मोबाइल ऐप से ही संभव है। वेबसाइट पर कोई टोकन जनरेशन फॉर्म नहीं है। टोकन प्राप्त करने के लिए कृपया ऊपर दिए गए बटन से मोबाइल ऐप इंस्टॉल करें।';
 $bankName = !empty($settings['bank_name']) ? $settings['bank_name'] : '';
 $bankAccountHolder = !empty($settings['bank_account_holder']) ? $settings['bank_account_holder'] : '';
-$bankAccountNumber = (!empty($settings['bank_account_number']) && strpos($settings['bank_account_number'], 'XXXX') === false) ? $settings['bank_account_number'] : '';
-$bankIfsc = (!empty($settings['bank_ifsc']) && strpos($settings['bank_ifsc'], 'XXXX') === false) ? $settings['bank_ifsc'] : '';
+$bankAccountNumber = !empty($settings['bank_account_number']) ? $settings['bank_account_number'] : '';
+$bankIfsc = !empty($settings['bank_ifsc']) ? $settings['bank_ifsc'] : '';
 $bankBranch = !empty($settings['bank_branch']) ? $settings['bank_branch'] : '';
 $hasBankDetails = (!empty($bankAccountNumber) || !empty($upiId));
-$ashramAddress = (!empty($settings['ashram_address']) && strpos($settings['ashram_address'], 'अनूपशहर') !== false) 
+$ashramAddress = !empty($settings['ashram_address']) 
     ? $settings['ashram_address'] 
     : "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील अनूपशहर,\nजिला बुलन्दशहर, उत्तर प्रदेश - 202394";
-$ashramDirections = (!empty($settings['ashram_directions']) && strpos($settings['ashram_directions'], 'बबराला') === false) 
+$ashramDirections = !empty($settings['ashram_directions']) 
     ? $settings['ashram_directions'] 
     : "🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी) • अनूपशहर (~16 किमी)";
 $ashramHistory = !empty($settings['ashram_history_hindi']) ? $settings['ashram_history_hindi'] : (!empty($settings['ashram_history']) ? $settings['ashram_history'] : 'परम पूज्य गुरुजी तेजवीर सिंह जी को श्री बालाजी महाराज व श्री भैरव बाबा का साक्षात आशीर्वाद प्राप्त है। पिछले कई वर्षों से ग्राम डूँगरा जाट धाम पर लाखों पीड़ित भक्तों को नई जिंदगी, मानसिक शांति व शारीरिक व्याधियों से मुक्ति मिली है।');
-$contactEmail = (!empty($settings['contact_email']) && $settings['contact_email'] !== 'shribalajikripadham@gmail.com') ? trim($settings['contact_email']) : '';
+$contactEmail = !empty($settings['contact_email']) ? trim($settings['contact_email']) : '';
 $youtubeUrl = !empty($settings['youtube_channel_url']) ? $settings['youtube_channel_url'] : (!empty($settings['youtube_url']) ? $settings['youtube_url'] : 'https://www.youtube.com/@ShriBalajiKripaDham');
 $facebookUrl = !empty($settings['facebook_page_url']) ? $settings['facebook_page_url'] : (!empty($settings['facebook_url']) ? $settings['facebook_url'] : 'https://www.facebook.com/ShriBalajiKripaDham');
 $instagramUrl = !empty($settings['instagram_url']) ? $settings['instagram_url'] : 'https://www.instagram.com/shribalajikripadham';
 $youtubeLiveUrl = !empty($settings['youtube_live_url']) ? $settings['youtube_live_url'] : '';
-$whatsappChannelUrl = (!empty($settings['whatsapp_channel_url']) && strpos($settings['whatsapp_channel_url'], '/invite') === false) ? $settings['whatsapp_channel_url'] : 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0';
+$whatsappChannelUrl = !empty($settings['whatsapp_channel_url']) ? $settings['whatsapp_channel_url'] : 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0';
 $footerTitle = !empty($settings['footer_title']) ? $settings['footer_title'] : 'श्री बालाजी कृपा धाम';
 $footerDedication = !empty($settings['footer_dedication']) ? $settings['footer_dedication'] : 'सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।';
 $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_copyright'] : '© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।';

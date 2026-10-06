@@ -2448,7 +2448,8 @@ fun AdminDashboardScreen(
                                 onTriggerCloudSync = { onResult ->
                                     scope.launch {
                                         val s = repository.getSettings()
-                                        val (success, msg) = repository.syncWithCloudEndpoint(s.cloudSyncUrl)
+                                        val targetUrl = s.cloudSyncUrl.ifBlank { "https://shribalajikripadham.online/api/cloud_sync.php" }
+                                        val (success, msg) = repository.syncWithCloudEndpoint(targetUrl)
                                         onResult(success, msg)
                                         if (success) refreshData()
                                     }
@@ -10797,8 +10798,8 @@ fun SuperControlTab(
     var isEnforcedChecked by remember(settings.isUiLayoutEnforced) { mutableStateOf(settings.isUiLayoutEnforced) }
     var layoutSuccessMsg by remember { mutableStateOf<String?>(null) }
 
-    var cloudUrlInput by remember(settings.cloudSyncUrl) { mutableStateOf(settings.cloudSyncUrl) }
-    var isCloudEnabledChecked by remember(settings.isCloudSyncEnabled) { mutableStateOf(settings.isCloudSyncEnabled) }
+    var cloudUrlInput by remember(settings.cloudSyncUrl) { mutableStateOf(settings.cloudSyncUrl.ifBlank { "https://shribalajikripadham.online/api/cloud_sync.php" }) }
+    var isCloudEnabledChecked by remember(settings.isCloudSyncEnabled) { mutableStateOf(if (settings.cloudSyncUrl.isBlank()) true else settings.isCloudSyncEnabled) }
     var cloudSyncStatusMsg by remember { mutableStateOf<String?>(null) }
     var isCloudSyncing by remember { mutableStateOf(false) }
 
@@ -12747,11 +12748,8 @@ fun SuperControlTab(
 
                         Button(
                             onClick = {
-                                if (cloudUrlInput.isBlank()) {
-                                    cloudSyncStatusMsg = if (isHindi) "कृपया पहले क्लाउड सर्वर URL दर्ज करें!" else "Please enter Cloud Server URL first!"
-                                    Toast.makeText(context, cloudSyncStatusMsg, Toast.LENGTH_SHORT).show()
-                                    return@Button
-                                }
+                                val targetUrl = cloudUrlInput.ifBlank { "https://shribalajikripadham.online/api/cloud_sync.php" }
+                                cloudUrlInput = targetUrl
                                 isCloudSyncing = true
                                 cloudSyncStatusMsg = if (isHindi) "क्लाउड से सिंक हो रहा है..." else "Syncing with cloud..."
                                 onTriggerCloudSync { success, msg ->
