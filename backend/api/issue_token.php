@@ -169,11 +169,11 @@ if (!$isSuperAdmin && $accuracy > 40.0 && (!isset($settings['is_geofence_enforce
 // 1. Hardware-Level Device Locking (1 Phone = 1 Token per Darbar Date / 48 Hours)
 // Non-SuperAdmin requests (devotees, sevadars, and regular admins) are strictly locked to 1 Phone = 1 Token
 if (!$isSuperAdmin) {
-    if (empty($deviceId)) {
+    if (empty($deviceId) || strlen($deviceId) < 32) {
         http_response_code(400);
         echo json_encode([
             "success" => false,
-            "error" => "⚠️ डिवाइस सुरक्षा त्रुटि: डिवाइस हार्डवेयर आईडी प्राप्त नहीं हो सकी। कृपया ऐप पुनः प्रारंभ करें।"
+            "error" => "⚠️ डिवाइस सुरक्षा त्रुटि: डिवाइस हार्डवेयर आईडी अमान्य अथवा अनुपलब्ध है। कृपया ऐप पुनः प्रारंभ करें।"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
