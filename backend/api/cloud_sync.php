@@ -131,68 +131,132 @@ if ($pdo) {
             // Mapping for settings fields that might have different keys in app JSON
             $fieldMap = [
                 'ashram_name' => 'ashram_name',
+                'ashramName' => 'ashram_name',
                 'guruji_name' => 'guruji_name',
+                'gurujiName' => 'guruji_name',
                 'address' => 'ashram_address',
                 'ashram_address' => 'ashram_address',
+                'ashramAddress' => 'ashram_address',
                 'contact_phone' => 'contact_phone',
+                'contactPhone' => 'contact_phone',
                 'whatsapp_number' => 'whatsapp_number',
+                'whatsappNumber' => 'whatsapp_number',
                 'darbar_timings' => 'darbar_timings',
-                'latitude' => 'latitude',
-                'longitude' => 'longitude',
+                'darbarTimings' => 'darbar_timings',
+                'latitude' => 'ashram_latitude',
+                'ashram_latitude' => 'ashram_latitude',
+                'longitude' => 'ashram_longitude',
+                'ashram_longitude' => 'ashram_longitude',
                 'allowed_radius_meters' => 'allowed_radius_meters',
+                'allowedRadiusMeters' => 'allowed_radius_meters',
                 'is_geofence_enforced' => 'is_geofence_enforced',
+                'isGeofenceEnforced' => 'is_geofence_enforced',
                 'is_outstation_advance_allowed' => 'is_outstation_advance_allowed',
+                'isOutstationAdvanceAllowed' => 'is_outstation_advance_allowed',
                 'outstation_min_distance_km' => 'outstation_min_distance_km',
+                'outstationMinDistanceKm' => 'outstation_min_distance_km',
                 'running_token_number' => 'current_serving_token',
+                'runningTokenNumber' => 'current_serving_token',
                 'current_serving_token' => 'current_serving_token',
+                'currentServingToken' => 'current_serving_token',
                 'is_darbar_active' => 'is_darbar_active',
+                'isDarbarActive' => 'is_darbar_active',
                 'darbar_date' => 'darbar_date',
+                'darbarDate' => 'darbar_date',
                 'max_daily_tokens' => 'daily_token_limit',
+                'maxDailyTokens' => 'daily_token_limit',
                 'daily_token_limit' => 'daily_token_limit',
+                'dailyTokenLimit' => 'daily_token_limit',
+                'total_tokens_today' => 'daily_token_limit',
+                'totalTokensToday' => 'daily_token_limit',
                 'top_bar_text' => 'top_bar_text',
+                'topBarText' => 'top_bar_text',
                 'guruji_title' => 'guruji_title',
+                'gurujiTitle' => 'guruji_title',
                 'guruji_bio' => 'guruji_bio',
+                'gurujiBio' => 'guruji_bio',
                 'token_rules_notice' => 'token_rules_notice',
+                'tokenRulesNotice' => 'token_rules_notice',
                 'bank_name' => 'bank_name',
+                'bankName' => 'bank_name',
                 'bank_account_holder' => 'bank_account_holder',
+                'bankAccountHolder' => 'bank_account_holder',
                 'bank_account_number' => 'bank_account_number',
+                'bankAccountNumber' => 'bank_account_number',
                 'bank_ifsc' => 'bank_ifsc',
+                'bankIfsc' => 'bank_ifsc',
                 'bank_branch' => 'bank_branch',
+                'bankBranch' => 'bank_branch',
                 'ashram_directions' => 'ashram_directions',
+                'ashramDirections' => 'ashram_directions',
                 'contact_email' => 'contact_email',
+                'contactEmail' => 'contact_email',
                 'youtube_url' => 'youtube_url',
+                'youtubeUrl' => 'youtube_url',
                 'facebook_url' => 'facebook_url',
+                'facebookUrl' => 'facebook_url',
                 'instagram_url' => 'instagram_url',
+                'instagramUrl' => 'instagram_url',
                 'whatsapp_channel_url' => 'whatsapp_channel_url',
+                'whatsappChannelUrl' => 'whatsapp_channel_url',
                 'whatsapp_group_url' => 'whatsapp_group_url',
+                'whatsappGroupUrl' => 'whatsapp_group_url',
                 'footer_title' => 'footer_title',
+                'footerTitle' => 'footer_title',
                 'footer_dedication' => 'footer_dedication',
+                'footerDedication' => 'footer_dedication',
                 'footer_copyright' => 'footer_copyright',
+                'footerCopyright' => 'footer_copyright',
                 'ashram_parichay_hindi' => 'ashram_parichay_hindi',
+                'ashramParichayHindi' => 'ashram_parichay_hindi',
                 'ashram_history_hindi' => 'ashram_history_hindi',
+                'ashramHistoryHindi' => 'ashram_history_hindi',
                 'ashram_rules_hindi' => 'ashram_rules_hindi',
+                'ashramRulesHindi' => 'ashram_rules_hindi',
                 'aarti_timings' => 'aarti_timings',
+                'aartiTimings' => 'aarti_timings',
                 'aarti_lyrics' => 'aarti_lyrics',
+                'aartiLyrics' => 'aarti_lyrics',
                 'is_darbar_live_now' => 'is_darbar_live_now',
+                'isDarbarLiveNow' => 'is_darbar_live_now',
                 'live_stream_title' => 'live_stream_title',
+                'liveStreamTitle' => 'live_stream_title',
                 'live_stream_url' => 'live_stream_url',
+                'liveStreamUrl' => 'live_stream_url',
                 'youtube_live_url' => 'youtube_live_url',
+                'youtubeLiveUrl' => 'youtube_live_url',
                 'facebook_live_url' => 'facebook_live_url',
+                'facebookLiveUrl' => 'facebook_live_url',
                 'bus_seat_fare_amount' => 'bus_seat_fare_amount',
+                'busSeatFareAmount' => 'bus_seat_fare_amount',
                 'is_bus_booking_live' => 'is_bus_booking_live',
+                'isBusBookingLive' => 'is_bus_booking_live',
                 'is_dharamshala_live' => 'is_dharamshala_live',
+                'isDharamshalaLive' => 'is_dharamshala_live',
                 'is_live_counter_visible' => 'is_live_counter_visible',
+                'isLiveCounterVisible' => 'is_live_counter_visible',
                 'is_payment_feature_live' => 'is_payment_feature_live',
+                'isPaymentFeatureLive' => 'is_payment_feature_live',
                 'is_arzi_ledger_live' => 'is_arzi_ledger_live',
+                'isArziLedgerLive' => 'is_arzi_ledger_live',
                 'badi_arzi_rate' => 'badi_arzi_rate',
+                'badiArziRate' => 'badi_arzi_rate',
                 'chhoti_arzi_rate' => 'chhoti_arzi_rate',
+                'chhotiArziRate' => 'chhoti_arzi_rate',
                 'can_admin_issue_reserved_tokens' => 'can_admin_issue_reserved_tokens',
+                'canAdminIssueReservedTokens' => 'can_admin_issue_reserved_tokens',
                 'allow_admin_reserved_tokens' => 'allow_admin_reserved_tokens',
+                'allowAdminReservedTokens' => 'allow_admin_reserved_tokens',
                 'token_service_mode' => 'token_service_mode',
+                'tokenServiceMode' => 'token_service_mode',
                 'is_token_service_enabled' => 'is_token_service_enabled',
+                'isTokenServiceEnabled' => 'is_token_service_enabled',
                 'upi_id' => 'upi_id',
+                'upiId' => 'upi_id',
                 'upi_name' => 'upi_name',
-                'guruji_photo_url' => 'guruji_photo_url'
+                'upiName' => 'upi_name',
+                'guruji_photo_url' => 'guruji_photo_url',
+                'gurujiPhotoUrl' => 'guruji_photo_url'
             ];
 
             foreach ($fieldMap as $srcKey => $targetCol) {
@@ -255,25 +319,25 @@ if ($pdo) {
             )");
 
             foreach ($inTokens as $t) {
-                $tNum = intval($t['token_number'] ?? 0);
-                $dDate = trim($t['darbar_date'] ?? date('Y-m-d'));
+                $tNum = intval($t['token_number'] ?? ($t['tokenNumber'] ?? ($t['token'] ?? 0)));
+                $dDate = trim($t['darbar_date'] ?? ($t['darbarDate'] ?? ($t['date'] ?? date('Y-m-d'))));
                 if ($tNum <= 0) continue;
 
-                $pName = trim($t['patient_name'] ?? ($t['devotee_name'] ?? 'भक्त'));
-                $phone = trim($t['phone_number'] ?? '');
-                $city = trim($t['city'] ?? ($t['district_city'] ?? 'डूँगरा जाट (स्थानीय)'));
-                $orig = trim($t['origin_address'] ?? '');
-                $dest = trim($t['destination_address'] ?? 'श्री बालाजी कृपा धाम, डूँगरा जाट');
-                $dist = floatval($t['distance_km'] ?? 0.0);
+                $pName = trim($t['patient_name'] ?? ($t['patientName'] ?? ($t['name'] ?? ($t['devotee_name'] ?? ($t['devoteeName'] ?? 'भक्त')))));
+                $phone = trim($t['phone_number'] ?? ($t['phoneNumber'] ?? ($t['phone'] ?? '')));
+                $city = trim($t['city'] ?? ($t['district_city'] ?? ($t['districtCity'] ?? 'डूँगरा जाट (स्थानीय)')));
+                $orig = trim($t['origin_address'] ?? ($t['originAddress'] ?? ''));
+                $dest = trim($t['destination_address'] ?? ($t['destinationAddress'] ?? 'श्री बालाजी कृपा धाम, डूँगरा जाट'));
+                $dist = floatval($t['distance_km'] ?? ($t['distanceKm'] ?? 0.0));
                 $status = trim($t['status'] ?? 'WAITING');
-                $regBy = trim($t['registered_by'] ?? ($t['entry_source'] ?? 'CLOUD_SYNC'));
-                $photo = trim($t['photo_url'] ?? ($t['photo_uri'] ?? ''));
-                $darshan = (!empty($t['is_darshan_completed']) || strtoupper($status) === 'COMPLETED') ? 1 : 0;
-                $devId = trim($t['device_id'] ?? 'CLOUD_SYNC');
+                $regBy = trim($t['registered_by'] ?? ($t['registeredBy'] ?? ($t['entry_source'] ?? 'CLOUD_SYNC')));
+                $photo = trim($t['photo_url'] ?? ($t['photoUrl'] ?? ($t['photo_uri'] ?? ($t['photoUri'] ?? ''))));
+                $darshan = (!empty($t['is_darshan_completed']) || !empty($t['isDarshanCompleted']) || strtoupper($status) === 'COMPLETED') ? 1 : 0;
+                $devId = trim($t['device_id'] ?? ($t['deviceId'] ?? 'CLOUD_SYNC'));
                 $lat = floatval($t['latitude'] ?? 28.3972915);
                 $lng = floatval($t['longitude'] ?? 78.1460410);
-                $created = intval($t['created_at'] ?? (time() * 1000));
-                $venue = trim($t['darbar_venue'] ?? 'DUNGRA_JAAT');
+                $created = intval($t['created_at'] ?? ($t['createdAt'] ?? (time() * 1000)));
+                $venue = trim($t['darbar_venue'] ?? ($t['darbarVenue'] ?? 'DUNGRA_JAAT'));
 
                 $checkStmt->execute([':dd' => $dDate, ':tn' => $tNum]);
                 $existingId = $checkStmt->fetchColumn();
@@ -340,6 +404,7 @@ if ($pdo) {
         }
 
     } catch (Throwable $e) {
+        $dbError = $e->getMessage();
         error_log("cloud_sync MySQL execution notice: " . $e->getMessage());
     }
 }
@@ -350,6 +415,7 @@ echo json_encode([
     'tokens_synced' => $tokensSynced,
     'settings_updated' => $settingsUpdated,
     'sevadars_synced' => $sevadarsSynced,
+    'db_error' => $dbError ?? null,
     'timestamp' => time(),
     'bytes_received' => strlen($payload)
 ], JSON_UNESCAPED_UNICODE);
