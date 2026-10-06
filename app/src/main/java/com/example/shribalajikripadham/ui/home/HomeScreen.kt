@@ -928,7 +928,7 @@ fun HomeScreen(
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
-                            val phone = settings.contactPhone.replace("+91 97206 91090", "").trim()
+                            val phone = settings.contactPhone.trim()
                             if (phone.isNotEmpty()) {
                                 try {
                                     val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")).apply {

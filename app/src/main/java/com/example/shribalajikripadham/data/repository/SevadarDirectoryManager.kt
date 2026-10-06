@@ -49,14 +49,7 @@ object SevadarDirectoryManager {
             for (i in 0 until array.length()) {
                 val item = AshramSevadarContact.fromJson(array.getJSONObject(i))
                 // CRITICAL PRIVACY & REAL-DATA FILTER:
-                // Purge all legacy dummy/mock sevadars completely:
-                val isMock = item.id.startsWith("sev_") ||
-                        item.phoneNumber == "9720691090" ||
-                        item.name.contains("सुखवीर") ||
-                        item.name.contains("रामकुमार") ||
-                        item.name.contains("धर्मेन्द्र") ||
-                        item.name.contains("महेश शास्त्री") ||
-                        item.name.contains("विजयपाल")
+                val isMock = item.id.startsWith("mock_")
 
                 if (!isMock && item.name.isNotBlank()) {
                     list.add(item)

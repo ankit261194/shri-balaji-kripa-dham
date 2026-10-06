@@ -1638,8 +1638,8 @@ fun MahabaliHeroLayout(
             badgeText = "${activeSevadars.size} " + if (isHindi) "सेवादार" else "Sevadars",
             primaryColor = Color(0xFF1565C0)
         ) {
-            val cleanPhone = settings.contactPhone.replace("+91 97206 91090", "").trim()
-            val cleanWa = settings.whatsappNumber.replace("+91 97206 91090", "").trim()
+            val cleanPhone = settings.contactPhone.trim()
+            val cleanWa = settings.whatsappNumber.trim()
             if (cleanPhone.isNotEmpty()) {
                 AccordionOptionRow(
                     icon = "📞",
@@ -1848,8 +1848,8 @@ fun BhaktiAccordionLayout(
             icon = "👥",
             primaryColor = Color(0xFF1565C0)
         ) {
-            val cleanPhone2 = settings.contactPhone.replace("+91 97206 91090", "").trim()
-            val cleanWa2 = settings.whatsappNumber.replace("+91 97206 91090", "").trim()
+            val cleanPhone2 = settings.contactPhone.trim()
+            val cleanWa2 = settings.whatsappNumber.trim()
             if (cleanPhone2.isNotEmpty()) {
                 AccordionOptionRow(
                     icon = "📞",
@@ -2270,8 +2270,8 @@ fun GoldenLotusLayout(
             icon = "👥",
             primaryColor = Color(0xFF1565C0)
         ) {
-            val cleanPhone3 = settings.contactPhone.replace("+91 97206 91090", "").trim()
-            val cleanWa3 = settings.whatsappNumber.replace("+91 97206 91090", "").trim()
+            val cleanPhone3 = settings.contactPhone.trim()
+            val cleanWa3 = settings.whatsappNumber.trim()
             if (cleanPhone3.isNotEmpty()) {
                 AccordionOptionRow(
                     icon = "📞",
@@ -2471,8 +2471,8 @@ fun SiddhaPeethPortalLayout(
                 primaryColor = Color(0xFF1565C0),
                 isInitiallyExpanded = selectedCategory == 4
             ) {
-                val cleanPhone4 = settings.contactPhone.replace("+91 97206 91090", "").trim()
-                val cleanWa4 = settings.whatsappNumber.replace("+91 97206 91090", "").trim()
+                val cleanPhone4 = settings.contactPhone.trim()
+                val cleanWa4 = settings.whatsappNumber.trim()
                 if (cleanPhone4.isNotEmpty()) {
                     AccordionOptionRow(
                         icon = "📞",

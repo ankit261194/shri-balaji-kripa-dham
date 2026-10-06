@@ -55,13 +55,13 @@ fun WebsiteLiveEditorTab(
     var badiArziRate by remember { mutableStateOf(settings.badiArziRate.toString()) }
     var chhotiArziRate by remember { mutableStateOf(settings.chhotiArziRate.toString()) }
 
-    // ZERO DUMMY DATA: No fake +91 97206 91090
-    var contactPhone by remember { mutableStateOf(settings.contactPhone.replace("+91 97206 91090", "").trim()) }
-    var whatsappNumber by remember { mutableStateOf(settings.whatsappNumber.replace("+91 97206 91090", "").trim()) }
-    var contactEmail by remember { mutableStateOf(if (settings.websiteContactEmail == "shribalajikripadham@gmail.com") "" else settings.websiteContactEmail.trim()) }
+    // ZERO DUMMY DATA: Real Ashram Contact Details
+    var contactPhone by remember { mutableStateOf(settings.contactPhone.trim()) }
+    var whatsappNumber by remember { mutableStateOf(settings.whatsappNumber.trim()) }
+    var contactEmail by remember { mutableStateOf(settings.websiteContactEmail.trim()) }
 
     // Bank & UPI
-    var upiId by remember { mutableStateOf(if (settings.ashramUpiId == "shribalajikripadham@upi") "" else settings.ashramUpiId.trim()) }
+    var upiId by remember { mutableStateOf(settings.ashramUpiId.trim()) }
     var upiName by remember { mutableStateOf(settings.ashramUpiName.ifBlank { "श्री बालाजी कृपा धाम" }) }
     var bankName by remember { mutableStateOf(settings.websiteBankName) }
     var bankAccountHolder by remember { mutableStateOf(settings.websiteAccountHolder) }
@@ -92,12 +92,12 @@ fun WebsiteLiveEditorTab(
             if (liveJson != null && liveJson.optBoolean("success", true)) {
                 val cfg = if (liveJson.has("data")) liveJson.getJSONObject("data") else liveJson
 
-                val sContact = cfg.optString("contact_phone", "").replace("+91 97206 91090", "").trim()
+                val sContact = cfg.optString("contact_phone", "").trim()
                 contactPhone = sContact
-                val sWa = cfg.optString("whatsapp_number", "").replace("+91 97206 91090", "").trim()
+                val sWa = cfg.optString("whatsapp_number", "").trim()
                 whatsappNumber = sWa
 
-                val sEmail = cfg.optString("contact_email", "").replace("shribalajikripadham@gmail.com", "").trim()
+                val sEmail = cfg.optString("contact_email", "").trim()
                 contactEmail = sEmail
 
                 val sAshramName = cfg.optString("ashram_name", "")
@@ -129,8 +129,8 @@ fun WebsiteLiveEditorTab(
                 if (cfg.has("badi_arzi_rate")) badiArziRate = cfg.optDouble("badi_arzi_rate", 0.0).toString()
                 if (cfg.has("chhoti_arzi_rate")) chhotiArziRate = cfg.optDouble("chhoti_arzi_rate", 0.0).toString()
 
-                val sUpi = cfg.optString("upi_id", "")
-                upiId = if (sUpi == "shribalajikripadham@upi") "" else sUpi
+                val sUpi = cfg.optString("upi_id", "").trim()
+                upiId = sUpi
 
                 val sUpiName = cfg.optString("upi_name", "")
                 if (sUpiName.isNotBlank()) upiName = sUpiName

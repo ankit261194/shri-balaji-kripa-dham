@@ -268,7 +268,6 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             } catch (ignored: Exception) {}
             db.execSQL("UPDATE ashram_settings SET bank_account_number = '' WHERE bank_account_number LIKE '%XXXX%';")
             db.execSQL("UPDATE ashram_settings SET bank_ifsc = '' WHERE bank_ifsc LIKE '%XXXX%';")
-            db.execSQL("UPDATE ashram_settings SET contact_phone = '' WHERE contact_phone LIKE '%97206%' OR contact_phone LIKE '%98765%';")
             // Auto-heal app share URL: rewrite any old/invalid domain to official shribalajikripadham.online/app
             db.execSQL("UPDATE ashram_settings SET app_share_url = 'https://shribalajikripadham.online/app' WHERE app_share_url NOT LIKE '%shribalajikripadham.online%' OR app_share_url LIKE '%.org%' OR app_share_url = '' OR app_share_url LIKE '%download.php%';")
         } catch (e: Exception) {
