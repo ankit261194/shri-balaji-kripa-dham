@@ -865,7 +865,9 @@ fun TokenRegistrationScreen(
                                 onClick = {
                                     try {
                                         context.startActivity(android.content.Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                                    } catch (e: Exception) {}
+                                    } catch (e: Exception) {
+                                        android.widget.Toast.makeText(context, if (isHindi) "कृपया फोन सेटिंग्स से लोकेशन चालू करें" else "Please enable Location in Phone Settings", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),

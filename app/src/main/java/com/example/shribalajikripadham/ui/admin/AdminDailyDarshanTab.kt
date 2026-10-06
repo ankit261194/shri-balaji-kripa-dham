@@ -598,14 +598,14 @@ fun AdminDailyDarshanTab(
         // WhatsApp share test button
         OutlinedButton(
             onClick = {
-                val dummyData = DailyDarshanData(
+                val previewData = DailyDarshanData(
                     dateHindi = todayDateHindi,
                     title = darshanTitle,
                     photoUrl = photoUrl,
                     quote = guruVicharText,
                     viewsCount = viewsCount
                 )
-                DailyDarshanHelper.shareDarshanOnWhatsApp(context, dummyData, previewBitmap)
+                DailyDarshanHelper.shareDarshanOnWhatsApp(context, previewData, previewBitmap)
             },
             modifier = Modifier
                 .fillMaxWidth()

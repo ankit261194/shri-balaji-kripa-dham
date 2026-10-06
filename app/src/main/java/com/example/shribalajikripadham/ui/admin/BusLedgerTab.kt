@@ -479,7 +479,7 @@ fun BusLedgerTab(
                                 seat = seat,
                                 onPrintTicket = {
                                     scope.launch(Dispatchers.IO) {
-                                        val dummyPay = PaymentRecord(
+                                        val seatPaymentRecord = PaymentRecord(
                                             devoteeName = seat.passengerName,
                                             devoteePhone = seat.phoneNumber,
                                             paymentApp = if (seat.paymentMode.contains("CASH", ignoreCase = true)) "Cash" else "UPI QR",
@@ -487,7 +487,7 @@ fun BusLedgerTab(
                                             amount = seat.fareAmount.toDouble(),
                                             seatNumbers = seat.seatLabel
                                         )
-                                        val pdf = BusTicketPdfGenerator.generateA4BusTicket(context, listOf(seat), dummyPay)
+                                        val pdf = BusTicketPdfGenerator.generateA4BusTicket(context, listOf(seat), seatPaymentRecord)
                                         withContext(Dispatchers.Main) {
                                             if (pdf != null) {
                                                 BusTicketPdfGenerator.viewOrSharePdf(context, pdf, "बस टिकट - सीट ${seat.seatLabel}")
@@ -821,7 +821,7 @@ fun BusLedgerTab(
                         Button(
                             onClick = {
                                 scope.launch(Dispatchers.IO) {
-                                    val dummyPay = PaymentRecord(
+                                    val seatPaymentRecord = PaymentRecord(
                                         devoteeName = s.passengerName,
                                         devoteePhone = s.phoneNumber,
                                         paymentApp = if (s.paymentMode.contains("CASH", ignoreCase = true)) "Cash" else "UPI QR",
@@ -829,7 +829,7 @@ fun BusLedgerTab(
                                         amount = s.fareAmount.toDouble(),
                                         seatNumbers = s.seatLabel
                                     )
-                                    val pdf = BusTicketPdfGenerator.generateA4BusTicket(context, listOf(s), dummyPay)
+                                    val pdf = BusTicketPdfGenerator.generateA4BusTicket(context, listOf(s), seatPaymentRecord)
                                     withContext(Dispatchers.Main) {
                                         if (pdf != null) {
                                             BusTicketPdfGenerator.viewOrSharePdf(context, pdf, "बस टिकट - सीट ${s.seatLabel}")
