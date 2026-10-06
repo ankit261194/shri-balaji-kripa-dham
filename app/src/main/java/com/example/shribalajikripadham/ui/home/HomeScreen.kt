@@ -414,6 +414,16 @@ fun HomeScreen(
                         val tokenMode = if (liveCfg.has("token_service_mode")) liveCfg.optString("token_service_mode", settings.tokenServiceMode) else settings.tokenServiceMode
                         val appDownloadUrl = if (liveCfg.has("app_download_url")) liveCfg.optString("app_download_url", settings.apkDownloadUrl) else settings.apkDownloadUrl
                         val appShareUrl = if (liveCfg.has("app_share_url")) liveCfg.optString("app_share_url", settings.appShareUrl) else settings.appShareUrl
+                        val liveContactPhone = liveCfg.optString("contact_phone", liveCfg.optString("phone", settings.contactPhone)).trim().ifBlank { settings.contactPhone.ifBlank { "+91 97206 91090" } }
+                        val liveWhatsapp = liveCfg.optString("whatsapp_number", liveCfg.optString("whatsapp", settings.whatsappNumber)).trim().ifBlank { settings.whatsappNumber.ifBlank { "+91 97206 91090" } }
+                        val liveUpi = liveCfg.optString("upi_id", liveCfg.optString("bank_upi_id", settings.ashramUpiId)).trim()
+                        val liveEmail = liveCfg.optString("contact_email", settings.websiteContactEmail).trim()
+                        val liveAddress = liveCfg.optString("ashram_address", settings.websiteAshramAddress).trim()
+                        val liveDirections = liveCfg.optString("ashram_directions", settings.websiteAshramDirections).trim()
+                        val liveAartiMangala = liveCfg.optString("aarti_mangala_time", settings.websiteAartiMangala).trim()
+                        val liveAartiBalbhog = liveCfg.optString("aarti_balbhog_time", settings.websiteAartiBalbhog).trim()
+                        val liveAartiSandhya = liveCfg.optString("aarti_sandhya_time", settings.websiteAartiSandhya).trim()
+                        val liveAartiShayan = liveCfg.optString("aarti_shayan_time", settings.websiteAartiShayan).trim()
 
                         // ⚡ PRO Smart Token Calling Engine (Vibration + Chime + Voice + Heads-up Notification)
                         if (currentServing != settings.runningTokenNumber && currentServing > 0) {
@@ -443,7 +453,17 @@ fun HomeScreen(
                             liveStreamUrl != settings.liveStreamUrl ||
                             tokenMode != settings.tokenServiceMode ||
                             (appDownloadUrl.isNotBlank() && appDownloadUrl != settings.apkDownloadUrl) ||
-                            (appShareUrl.isNotBlank() && appShareUrl != settings.appShareUrl)
+                            (appShareUrl.isNotBlank() && appShareUrl != settings.appShareUrl) ||
+                            (liveContactPhone.isNotBlank() && liveContactPhone != settings.contactPhone) ||
+                            (liveWhatsapp.isNotBlank() && liveWhatsapp != settings.whatsappNumber) ||
+                            (liveUpi.isNotBlank() && liveUpi != settings.ashramUpiId) ||
+                            (liveEmail.isNotBlank() && liveEmail != settings.websiteContactEmail) ||
+                            (liveAddress.isNotBlank() && liveAddress != settings.websiteAshramAddress) ||
+                            (liveDirections.isNotBlank() && liveDirections != settings.websiteAshramDirections) ||
+                            (liveAartiMangala.isNotBlank() && liveAartiMangala != settings.websiteAartiMangala) ||
+                            (liveAartiBalbhog.isNotBlank() && liveAartiBalbhog != settings.websiteAartiBalbhog) ||
+                            (liveAartiSandhya.isNotBlank() && liveAartiSandhya != settings.websiteAartiSandhya) ||
+                            (liveAartiShayan.isNotBlank() && liveAartiShayan != settings.websiteAartiShayan)
                         ) {
                             settings = settings.copy(
                                 runningTokenNumber = currentServing,
@@ -461,7 +481,17 @@ fun HomeScreen(
                                 liveStreamUrl = liveStreamUrl,
                                 tokenServiceMode = tokenMode,
                                 apkDownloadUrl = if (appDownloadUrl.isNotBlank()) appDownloadUrl else settings.apkDownloadUrl,
-                                appShareUrl = if (appShareUrl.isNotBlank()) appShareUrl else settings.appShareUrl
+                                appShareUrl = if (appShareUrl.isNotBlank()) appShareUrl else settings.appShareUrl,
+                                contactPhone = if (liveContactPhone.isNotBlank()) liveContactPhone else settings.contactPhone,
+                                whatsappNumber = if (liveWhatsapp.isNotBlank()) liveWhatsapp else settings.whatsappNumber,
+                                ashramUpiId = if (liveUpi.isNotBlank()) liveUpi else settings.ashramUpiId,
+                                websiteContactEmail = if (liveEmail.isNotBlank()) liveEmail else settings.websiteContactEmail,
+                                websiteAshramAddress = if (liveAddress.isNotBlank()) liveAddress else settings.websiteAshramAddress,
+                                websiteAshramDirections = if (liveDirections.isNotBlank()) liveDirections else settings.websiteAshramDirections,
+                                websiteAartiMangala = if (liveAartiMangala.isNotBlank()) liveAartiMangala else settings.websiteAartiMangala,
+                                websiteAartiBalbhog = if (liveAartiBalbhog.isNotBlank()) liveAartiBalbhog else settings.websiteAartiBalbhog,
+                                websiteAartiSandhya = if (liveAartiSandhya.isNotBlank()) liveAartiSandhya else settings.websiteAartiSandhya,
+                                websiteAartiShayan = if (liveAartiShayan.isNotBlank()) liveAartiShayan else settings.websiteAartiShayan
                             )
                             repository.updateSettings(settings)
                         }

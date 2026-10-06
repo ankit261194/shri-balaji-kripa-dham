@@ -1686,6 +1686,34 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
             </div>
         </div>
 
+        <!-- Aarti & Darshan Timings Card (100% Dynamic CMS from App) -->
+        <div class="info-box" style="border: 2px solid #FF8F00; background: #FFFDF7;">
+            <h4>🪔 पावन आरती एवं दर्शन समय-सारणी</h4>
+            <div class="timing-row">
+                <span>मंगला आरती</span>
+                <span class="time" id="dynamicAartiMangala"><?= !empty($settings['aarti_mangala_time']) ? htmlspecialchars($settings['aarti_mangala_time']) : 'प्रातः 05:30 बजे' ?></span>
+            </div>
+            <?php if (!empty($settings['aarti_balbhog_time'])): ?>
+            <div class="timing-row" id="rowAartiBalbhog">
+                <span>बालभोग आरती</span>
+                <span class="time" id="dynamicAartiBalbhog"><?= htmlspecialchars($settings['aarti_balbhog_time']) ?></span>
+            </div>
+            <?php else: ?>
+            <div class="timing-row" id="rowAartiBalbhog" style="display: none;">
+                <span>बालभोग आरती</span>
+                <span class="time" id="dynamicAartiBalbhog"></span>
+            </div>
+            <?php endif; ?>
+            <div class="timing-row">
+                <span>संध्या आरती</span>
+                <span class="time" id="dynamicAartiSandhya"><?= !empty($settings['aarti_sandhya_time']) ? htmlspecialchars($settings['aarti_sandhya_time']) : 'सायं 06:30 बजे' ?></span>
+            </div>
+            <div class="timing-row">
+                <span>शयन आरती</span>
+                <span class="time" id="dynamicAartiShayan"><?= !empty($settings['aarti_shayan_time']) ? htmlspecialchars($settings['aarti_shayan_time']) : 'रात्रि 09:00 बजे' ?></span>
+            </div>
+        </div>
+
         <!-- Seva, Donation & Bank Details Card (App Controlled) -->
         <div class="info-box" style="border: 2px solid var(--gold); background: #FFFDF7;">
             <h4>🏦 सेवा, दान एवं सहयोग विवरण</h4>
@@ -2129,6 +2157,26 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                         if (cfg.ashram_directions) {
                             const el = document.getElementById('dynamicAshramDirections');
                             if (el) el.innerText = cfg.ashram_directions;
+                        }
+
+                        // 15. Dynamic Aarti Timings (100% Dynamic CMS from App)
+                        if (cfg.aarti_mangala_time) {
+                            const el = document.getElementById('dynamicAartiMangala');
+                            if (el) el.innerText = cfg.aarti_mangala_time;
+                        }
+                        if (cfg.aarti_balbhog_time && cfg.aarti_balbhog_time.trim() !== '') {
+                            const el = document.getElementById('dynamicAartiBalbhog');
+                            const row = document.getElementById('rowAartiBalbhog');
+                            if (el) el.innerText = cfg.aarti_balbhog_time;
+                            if (row) row.style.display = 'flex';
+                        }
+                        if (cfg.aarti_sandhya_time) {
+                            const el = document.getElementById('dynamicAartiSandhya');
+                            if (el) el.innerText = cfg.aarti_sandhya_time;
+                        }
+                        if (cfg.aarti_shayan_time) {
+                            const el = document.getElementById('dynamicAartiShayan');
+                            if (el) el.innerText = cfg.aarti_shayan_time;
                         }
                     }
                 })

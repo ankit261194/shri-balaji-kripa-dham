@@ -270,6 +270,10 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             db.execSQL("UPDATE ashram_settings SET bank_ifsc = '' WHERE bank_ifsc LIKE '%XXXX%';")
             // Auto-heal app share URL: rewrite any old/invalid domain to official shribalajikripadham.online/app
             db.execSQL("UPDATE ashram_settings SET app_share_url = 'https://shribalajikripadham.online/app' WHERE app_share_url NOT LIKE '%shribalajikripadham.online%' OR app_share_url LIKE '%.org%' OR app_share_url = '' OR app_share_url LIKE '%download.php%';")
+            // Auto-heal official contact details: guarantee permanent genuine contact phone & whatsapp
+            db.execSQL("UPDATE ashram_settings SET contact_phone = '+91 97206 91090' WHERE contact_phone IS NULL OR contact_phone = '';")
+            db.execSQL("UPDATE ashram_settings SET whatsapp_number = '+91 97206 91090' WHERE whatsapp_number IS NULL OR whatsapp_number = '';")
+            db.execSQL("UPDATE ashram_settings SET ashram_upi_id = 'shribalajikripadham@upi' WHERE ashram_upi_id IS NULL OR ashram_upi_id = '';")
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -1003,7 +1007,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("darbar_date", today)
                         put("darbar_timings", "प्रत्येक रविवार प्रातःकाल 8:30 बजे से सायं 5:00 बजे तक")
                         put("free_disclaimer", "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।")
-                        put("contact_phone", "")
+                        put("contact_phone", "+91 97206 91090")
                         put("emergency_notice", "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।")
                         put("is_token_service_enabled", 1)
                         put("token_service_mode", "AUTO_SUNDAY")
@@ -1021,7 +1025,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("apk_download_url", "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk")
                         put("is_force_update", 0)
                         put("whatsapp_group_url", "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0")
-                        put("whatsapp_number", "")
+                        put("whatsapp_number", "+91 97206 91090")
                         put("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham")
                         put("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham")
                         put("instagram_url", "https://www.instagram.com/shribalajikripadham")

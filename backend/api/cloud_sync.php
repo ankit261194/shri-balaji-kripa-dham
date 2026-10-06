@@ -263,8 +263,11 @@ if ($pdo) {
             foreach ($fieldMap as $srcKey => $targetCol) {
                 if (isset($inSettings[$srcKey]) && isset($colSet[$targetCol])) {
                     if (isset($processedCols[$targetCol])) continue;
-                    $processedCols[$targetCol] = true;
                     $val = $inSettings[$srcKey];
+                    if (in_array($targetCol, ['contact_phone', 'whatsapp_number', 'upi_id']) && (empty($val) || trim(strval($val)) === '')) {
+                        continue; // NEVER overwrite valid contact details with empty string!
+                    }
+                    $processedCols[$targetCol] = true;
                     if (is_bool($val)) $val = $val ? 1 : 0;
                     $pName = ":set_" . $targetCol;
                     $updatePairs[] = "`$targetCol` = $pName";
