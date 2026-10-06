@@ -54,13 +54,52 @@ if (move_uploaded_file($file['tmp_name'], $targetPath)) {
     $host = $_SERVER['HTTP_HOST'];
     $photoUrl = "{$protocol}://{$host}/uploads/{$filename}";
 
-    // If it's Darshan photo, mirror to media/balaji_darshan_today.jpg
+    // If it's Darshan photo, mirror to media/balaji_darshan_today.jpg AND immediately update daily_darshan MySQL table
     if ($isDarshan) {
         $mediaDir = __DIR__ . '/../media/';
         if (!is_dir($mediaDir)) {
             @mkdir($mediaDir, 0755, true);
         }
         @copy($targetPath, $mediaDir . 'balaji_darshan_today.jpg');
+
+        try {
+            if (file_exists(__DIR__ . '/../config/db.php')) {
+                require_once __DIR__ . '/../config/db.php';
+            }
+            if (function_exists('getDB')) {
+                $pdo = getDB();
+                if ($pdo) {
+                    $todayDate = date("Y-m-d");
+                    $now = time();
+                    $stmt = $pdo->prepare("INSERT INTO daily_darshan (darshan_date, title, photo_url, blessings_quote, views_count, created_at, updated_at)
+                        VALUES (:date, 'श्री बालाजी महाराज दैनिक दिव्य अलौकिक श्रृंगार दर्शन', :photo, '', 1, :now1, :now2)
+                        ON DUPLICATE KEY UPDATE photo_url = :photo2, updated_at = :now3");
+                    $stmt->execute([
+                        ':date' => $todayDate,
+                        ':photo' => $photoUrl,
+                        ':now1' => $now,
+                        ':now2' => $now,
+                        ':photo2' => $photoUrl,
+                        ':now3' => $now
+                    ]);
+                }
+            }
+        } catch (Throwable $e) {
+            error_log("Failed to update daily_darshan in DB: " . $e->getMessage());
+        }
+    }
+
+    // Authorized direct copy to /media/ for system sacred assets
+    $saveToMedia = trim($_POST['save_to_media'] ?? '');
+    if (!empty($saveToMedia) && preg_match('/^[a-zA-Z0-9_\-]+\.(jpg|jpeg|png|webp)$/i', $saveToMedia)) {
+        $apiKey = $_SERVER['HTTP_X_SBKD_API_KEY'] ?? $_SERVER['X_SBKD_API_KEY'] ?? $_POST['api_key'] ?? '';
+        if ($apiKey === 'SBKD_SECURE_TOKEN_9100100251233433_V243') {
+            $mediaDir = __DIR__ . '/../media/';
+            if (!is_dir($mediaDir)) {
+                @mkdir($mediaDir, 0755, true);
+            }
+            @copy($targetPath, $mediaDir . $saveToMedia);
+        }
     }
 
     // If it's Guruji photo, also mirror to canonical uploads/guruji_profile.jpg

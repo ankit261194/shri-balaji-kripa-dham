@@ -206,12 +206,28 @@ object DailyDarshanHelper {
         }
     }
 
+    fun getTodayDefaultDarshanPhotoUrl(): String {
+        val cal = Calendar.getInstance()
+        val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
+        return when (dayOfWeek) {
+            Calendar.TUESDAY -> "https://shribalajikripadham.online/media/img_mehandipur_balaji.jpg"
+            Calendar.SATURDAY -> "https://shribalajikripadham.online/media/img_hanuman_veer.jpg"
+            Calendar.SUNDAY -> "https://shribalajikripadham.online/media/img_balaji_darshan.jpg"
+            Calendar.MONDAY -> "https://shribalajikripadham.online/media/img_panchmukhi_hanuman.jpg"
+            Calendar.WEDNESDAY -> "https://shribalajikripadham.online/media/img_ram_darbar.jpg"
+            Calendar.THURSDAY -> "https://shribalajikripadham.online/media/img_mehandipur_balaji.jpg"
+            Calendar.FRIDAY -> "https://shribalajikripadham.online/media/img_hanuman_veer.jpg"
+            else -> "https://shribalajikripadham.online/media/img_balaji_darshan.jpg"
+        }
+    }
+
     suspend fun fetchTodayDarshan(): DailyDarshanData = withContext(Dispatchers.IO) {
         val todayTag = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
+        val defaultPhoto = getTodayDefaultDarshanPhotoUrl()
         val fallback = DailyDarshanData(
             dateHindi = getTodayHindiDate(),
             title = getTodayDefaultDarshanTitle(),
-            photoUrl = "https://shribalajikripadham.online/media/balaji_darshan_today.jpg?d=$todayTag",
+            photoUrl = "$defaultPhoto?d=$todayTag",
             quote = getTodayGuruVichar(),
             viewsCount = 1280
         )
@@ -367,13 +383,13 @@ fun DailyDarshanQuickCard(
     var showZoomDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        val todayDate = DailyDarshanHelper.getTodayHindiDate()
         // Step 1: Load from persistent cache ONLY if it belongs to today's date
         withContext(Dispatchers.IO) {
             try {
                 val cachedFile = File(context.filesDir, "daily_darshan_consecrated.jpg")
                 val prefs = context.getSharedPreferences("daily_darshan_cache_prefs", Context.MODE_PRIVATE)
                 val cachedDate = prefs.getString("cached_date", "")
-                val todayDate = DailyDarshanHelper.getTodayHindiDate()
                 if (cachedFile.exists() && cachedFile.length() > 0 && cachedDate == todayDate) {
                     val cachedBmp = BitmapFactory.decodeFile(cachedFile.absolutePath)
                     if (cachedBmp != null) {
@@ -381,6 +397,10 @@ fun DailyDarshanQuickCard(
                             remoteBitmap = cachedBmp
                         }
                     }
+                } else if (cachedFile.exists() && cachedDate != todayDate) {
+                    // Date rotated! Invalidate previous day's cached image
+                    cachedFile.delete()
+                    prefs.edit().clear().apply()
                 }
             } catch (ignored: Exception) {}
         }
@@ -389,10 +409,14 @@ fun DailyDarshanQuickCard(
         val fetched = DailyDarshanHelper.fetchTodayDarshan()
         darshanData = fetched
 
-        // Step 3: Download consecrated image for any valid web URL with instant timestamp cache-busting
+        // Step 3: Check if cached photo differs from fetched photo or if no cache exists
         withContext(Dispatchers.IO) {
             try {
-                if (fetched.photoUrl.isNotBlank() && (fetched.photoUrl.startsWith("http://") || fetched.photoUrl.startsWith("https://"))) {
+                val prefs = context.getSharedPreferences("daily_darshan_cache_prefs", Context.MODE_PRIVATE)
+                val cachedUrl = prefs.getString("cached_url", "")
+                val needsDownload = (remoteBitmap == null) || (cachedUrl != fetched.photoUrl)
+
+                if (needsDownload && fetched.photoUrl.isNotBlank() && (fetched.photoUrl.startsWith("http://") || fetched.photoUrl.startsWith("https://"))) {
                     val cleanUrl = if (fetched.photoUrl.contains("?")) {
                         "${fetched.photoUrl}&cb=${System.currentTimeMillis()}"
                     } else {
@@ -414,7 +438,6 @@ fun DailyDarshanQuickCard(
                                     bmp.compress(Bitmap.CompressFormat.JPEG, 92, fos)
                                     fos.flush()
                                 }
-                                val prefs = context.getSharedPreferences("daily_darshan_cache_prefs", Context.MODE_PRIVATE)
                                 prefs.edit().putString("cached_date", fetched.dateHindi).putString("cached_url", fetched.photoUrl).apply()
                             } catch (ignored: Exception) {}
 

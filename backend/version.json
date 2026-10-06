@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 139,
-  "version_code": 139,
-  "latest_version_name": "2.56.64",
-  "version_name": "2.56.64",
-  "update_notes_hindi": "v2.56.64 (Build 139): ⚡ शुद्धिकरण अपडेट: सभी प्रकार के अनधिकृत/डमी टेस्ट नंबर पूरी तरह हटाए गए। केवल सुपरएडमिन द्वारा दर्ज किया गया वास्तविक नंबर ही मान्य होगा। लाइव आरती व दर्शन सिंक सक्रिय।",
-  "update_notes_english": "v2.56.64 (Build 139): ⚡ Purification Update: Complete removal of placeholder/test numbers. Only authentic Super-Admin configured contacts will be displayed. Live Aarti timings active.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=139",
+  "latest_version_code": 140,
+  "version_code": 140,
+  "latest_version_name": "2.56.65",
+  "version_name": "2.56.65",
+  "update_notes_hindi": "v2.56.65 (Build 140): 🌺 दैनिक अलौकिक दर्शन व लाइव फोटो अपडेट: सातों दिन के अनुसार प्रतिदिन नए पावन दिव्य दर्शन व अलौकिक श्रृंगार फोटो का स्वतः चक्र (Rotation) सक्रिय। सुपर एडमिन द्वारा फोटो बदलते ही ऐप व वेबसाइट पर तुरंत 1-क्लिक लाइव पब्लिश व कैश बस्टिंग।",
+  "update_notes_english": "v2.56.65 (Build 140): 🌺 Daily Consecrated Darshan & Live Photo Sync: 7-day automatic sacred darshan photo rotation active. Instant live publishing and cache busting across app and website whenever Super Admin updates photos.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=140",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

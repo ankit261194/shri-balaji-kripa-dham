@@ -230,8 +230,51 @@ $footerDedication = !empty($settings['footer_dedication']) ? $settings['footer_d
 $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_copyright'] : '© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।';
 
 // Consecrated Daily Darshan & Guru Vichar (App & Web Live Synced)
-$darshanPhoto = !empty($darshan['photo_url']) ? $darshan['photo_url'] : 'media/balaji_darshan_today.jpg';
-$darshanTitle = !empty($darshan['title']) ? $darshan['title'] : 'श्री बालाजी महाराज दैनिक दिव्य अलौकिक श्रृंगार दर्शन';
+$dayOfWeek = intval(date('w'));
+$dailyDarshanSchedule = [
+    0 => [
+        "title" => "श्री बालाजी कृपा धाम रविवार महा-दरबार दिव्य दर्शन",
+        "photo" => "media/img_balaji_darshan.jpg"
+    ],
+    1 => [
+        "title" => "श्री पंचमुखी हनुमान जी महाराज पावन दिव्य दर्शन",
+        "photo" => "media/img_panchmukhi_hanuman.jpg"
+    ],
+    2 => [
+        "title" => "श्री मेहंदीपुर बालाजी महाराज मंगलवार विशेष दिव्य श्रृंगार दर्शन",
+        "photo" => "media/img_mehandipur_balaji.jpg"
+    ],
+    3 => [
+        "title" => "प्रभु श्री राम दरबार एवं वीर हनुमान पावन दर्शन",
+        "photo" => "media/img_ram_darbar.jpg"
+    ],
+    4 => [
+        "title" => "श्री मेहंदीपुर बालाजी महाराज दिव्य अलौकिक दर्शन",
+        "photo" => "media/img_mehandipur_balaji.jpg"
+    ],
+    5 => [
+        "title" => "वीर बजरंगी महाराज पावन संध्या अलौकिक श्रृंगार दर्शन",
+        "photo" => "media/img_hanuman_veer.jpg"
+    ],
+    6 => [
+        "title" => "श्री संकटमोचन वीर बजरंगी शनिवार पावन अलौकिक दर्शन",
+        "photo" => "media/img_hanuman_veer.jpg"
+    ]
+];
+$todaySchedule = $dailyDarshanSchedule[$dayOfWeek] ?? $dailyDarshanSchedule[0];
+
+$rawPhoto = !empty($darshan['photo_url']) ? $darshan['photo_url'] : $todaySchedule['photo'];
+if (strpos($rawPhoto, 'balaji_darshan_today.jpg') !== false && strpos($rawPhoto, '/uploads/') === false) {
+    $rawPhoto = $todaySchedule['photo'];
+}
+$darshanPhoto = $rawPhoto;
+
+$rawTitle = !empty($darshan['title']) ? $darshan['title'] : $todaySchedule['title'];
+if (strpos($rawTitle, 'श्री बालाजी महाराज दैनिक दिव्य अलौकिक श्रृंगार दर्शन') !== false) {
+    $rawTitle = $todaySchedule['title'];
+}
+$darshanTitle = $rawTitle;
+
 $darshanQuote = !empty($darshan['blessings_quote']) ? $darshan['blessings_quote'] : 'जब जीवन में हर तरफ से रास्ते बंद दिखने लगें, मन अशांत हो और अपने भी साथ छोड़ दें, तब घबराकर कभी अधर्म का रास्ता मत चुनना। संकट की घड़ी भक्त के धैर्य की परीक्षा होती है। पूज्य गुरुदेव समझाते हैं कि अपनी विपत्ति का बोझ अपने सिर पर मत ढोओ, उसे पूर्ण विश्वास के साथ श्री बालाजी महाराज के चरणों में समर्पित कर दो। बालाजी महाराज स्वयं ढाल बनकर तुम्हारे सारे कष्ट हर लेंगे।';
 
 $currentHour = intval(date('G'));
@@ -2178,6 +2221,24 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                             const el = document.getElementById('dynamicAartiShayan');
                             if (el) el.innerText = cfg.aarti_shayan_time;
                         }
+
+                        // 16. Dynamic Daily Darshan Live Sync
+                        fetch('api/daily_darshan.php?t=' + new Date().getTime())
+                            .then(r => r.json())
+                            .then(dData => {
+                                if (dData && dData.photo_url) {
+                                    const dImg = document.getElementById('dailyDarshanImg');
+                                    if (dImg && dImg.src !== dData.photo_url) {
+                                        dImg.src = dData.photo_url;
+                                    }
+                                    const dTitle = document.getElementById('dailyDarshanTitle');
+                                    if (dTitle && dData.title) dTitle.innerText = dData.title;
+                                    const dQuote = document.getElementById('dailyDarshanQuote');
+                                    if (dQuote && dData.blessings_quote) dQuote.innerText = dData.blessings_quote;
+                                    const dViews = document.getElementById('darshanViewsDisplay');
+                                    if (dViews && dData.views_count) dViews.innerText = (dData.views_count) + '+';
+                                }
+                            }).catch(() => {});
                     }
                 })
                 .catch(err => {

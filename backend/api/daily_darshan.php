@@ -47,8 +47,45 @@ function getHindiMonth($m) {
 }
 
 $todayHindiDate = date("d") . " " . getHindiMonth(intval(date("m"))) . " " . date("Y");
-$defaultPhoto = "https://shribalajikripadham.online/media/balaji_darshan_today.jpg";
-$defaultTitle = "श्री बालाजी महाराज दैनिक दिव्य अलौकिक श्रृंगार दर्शन";
+
+// 🌺 Sacred Day-of-Week Darshan Schedule (Every day has a distinct sacred photo and divine title)
+$dayOfWeek = intval(date('w')); // 0 = Sunday, 1 = Monday, 2 = Tuesday, 3 = Wednesday, 4 = Thursday, 5 = Friday, 6 = Saturday
+
+$dailyDarshanSchedule = [
+    0 => [
+        "title" => "श्री बालाजी कृपा धाम रविवार महा-दरबार दिव्य दर्शन",
+        "photo" => "https://shribalajikripadham.online/media/img_balaji_darshan.jpg"
+    ],
+    1 => [
+        "title" => "श्री पंचमुखी हनुमान जी महाराज पावन दिव्य दर्शन",
+        "photo" => "https://shribalajikripadham.online/media/img_panchmukhi_hanuman.jpg"
+    ],
+    2 => [
+        "title" => "श्री मेहंदीपुर बालाजी महाराज मंगलवार विशेष दिव्य श्रृंगार दर्शन",
+        "photo" => "https://shribalajikripadham.online/media/img_mehandipur_balaji.jpg"
+    ],
+    3 => [
+        "title" => "प्रभु श्री राम दरबार एवं वीर हनुमान पावन दर्शन",
+        "photo" => "https://shribalajikripadham.online/media/img_ram_darbar.jpg"
+    ],
+    4 => [
+        "title" => "श्री मेहंदीपुर बालाजी महाराज दिव्य अलौकिक दर्शन",
+        "photo" => "https://shribalajikripadham.online/media/img_mehandipur_balaji.jpg"
+    ],
+    5 => [
+        "title" => "वीर बजरंगी महाराज पावन संध्या अलौकिक श्रृंगार दर्शन",
+        "photo" => "https://shribalajikripadham.online/media/img_hanuman_veer.jpg"
+    ],
+    6 => [
+        "title" => "श्री संकटमोचन वीर बजरंगी शनिवार पावन अलौकिक दर्शन",
+        "photo" => "https://shribalajikripadham.online/media/img_hanuman_veer.jpg"
+    ]
+];
+
+$todaySchedule = $dailyDarshanSchedule[$dayOfWeek] ?? $dailyDarshanSchedule[0];
+$defaultTitle = $todaySchedule["title"];
+$defaultPhoto = $todaySchedule["photo"];
+
 
 // 🌺 60+ Deep, Mature, Contemplative Guru Vichar (Rotating by Day of Year)
 $guruQuotes = [
@@ -194,12 +231,27 @@ try {
         $pdo->prepare("UPDATE daily_darshan SET views_count = :vc WHERE id = :id")->execute([':vc' => $views, ':id' => $row['id']]);
         $activeQuote = !empty($row['blessings_quote']) ? $row['blessings_quote'] : $defaultQuote;
 
+        $activePhoto = !empty($row['photo_url']) ? $row['photo_url'] : $defaultPhoto;
+        $activeTitle = !empty($row['title']) ? $row['title'] : $defaultTitle;
+
+        // Auto-upgrade legacy static default photo to today's sacred rotating darshan
+        if (strpos($activePhoto, 'balaji_darshan_today.jpg') !== false && strpos($activePhoto, '/uploads/') === false) {
+            $activePhoto = $defaultPhoto;
+            $activeTitle = $defaultTitle;
+            $pdo->prepare("UPDATE daily_darshan SET photo_url = :photo, title = :title WHERE id = :id")
+                ->execute([':photo' => $activePhoto, ':title' => $activeTitle, ':id' => $row['id']]);
+        }
+
+        $cacheBustParam = "d=" . date('Ymd') . "&v=" . intval($row['updated_at'] ?? time());
+        $finalPhotoUrl = (strpos($activePhoto, '?') !== false) ? "{$activePhoto}&{$cacheBustParam}" : "{$activePhoto}?{$cacheBustParam}";
+
         echo json_encode([
             "success" => true,
             "darshan_date" => $row['darshan_date'],
             "date_hindi" => $todayHindiDate,
-            "title" => $row['title'],
-            "photo_url" => $row['photo_url'],
+            "title" => $activeTitle,
+            "photo_url" => $finalPhotoUrl,
+            "raw_photo_url" => $activePhoto,
             "blessings_quote" => $activeQuote,
             "views_count" => $views,
             "temple" => "श्री बालाजी कृपा धाम (डूँगरा जाट)"
@@ -220,12 +272,16 @@ try {
                 ':now2' => $now
             ]);
 
+        $cacheBustParam = "d=" . date('Ymd') . "&v=" . $now;
+        $finalPhotoUrl = (strpos($defaultPhoto, '?') !== false) ? "{$defaultPhoto}&{$cacheBustParam}" : "{$defaultPhoto}?{$cacheBustParam}";
+
         echo json_encode([
             "success" => true,
             "darshan_date" => $todayDate,
             "date_hindi" => $todayHindiDate,
             "title" => $defaultTitle,
-            "photo_url" => $defaultPhoto,
+            "photo_url" => $finalPhotoUrl,
+            "raw_photo_url" => $defaultPhoto,
             "blessings_quote" => $defaultQuote,
             "views_count" => $initialViews,
             "temple" => "श्री बालाजी कृपा धाम (डूँगरा जाट)"

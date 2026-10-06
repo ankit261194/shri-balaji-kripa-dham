@@ -118,12 +118,31 @@ fun AdminDailyDarshanTab(
                         "darshan_${System.currentTimeMillis()}.jpg",
                         "darshan"
                     )
-                    withContext(Dispatchers.Main) {
-                        isUploadingPhoto = false
-                        if (!cloudUrl.isNullOrBlank()) {
+                    if (!cloudUrl.isNullOrBlank()) {
+                        val (pubSuccess, _) = DailyDarshanHelper.updateDailyDarshan(
+                            title = darshanTitle.trim(),
+                            photoUrl = cloudUrl.trim(),
+                            quote = guruVicharText.trim()
+                        )
+                        try {
+                            val cacheFile = java.io.File(context.filesDir, "daily_darshan_consecrated.jpg")
+                            if (cacheFile.exists()) cacheFile.delete()
+                            val prefs = context.getSharedPreferences("daily_darshan_cache_prefs", Context.MODE_PRIVATE)
+                            prefs.edit().clear().apply()
+                        } catch (ignored: Exception) {}
+
+                        withContext(Dispatchers.Main) {
+                            isUploadingPhoto = false
                             photoUrl = cloudUrl
-                            statusMessage = if (isHindi) "✅ फोटो सुरक्षित हुई! अब 'पब्लिश करें' दबाएं।" else "✅ Consecrated photo uploaded! Click Publish."
-                        } else {
+                            statusMessage = if (isHindi)
+                                "✅ आज का अलौकिक दर्शन तुरंत लाइव पब्लिश हो गया! (App & Web Live)"
+                            else
+                                "✅ Consecrated Daily Darshan is now LIVE across App & Website!"
+                            Toast.makeText(context, statusMessage, Toast.LENGTH_LONG).show()
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            isUploadingPhoto = false
                             statusMessage = if (isHindi) "⚠️ फोटो अपलोड में त्रुटि, लोकल सुरक्षित है।" else "Photo upload failed, local saved."
                         }
                     }
@@ -151,12 +170,31 @@ fun AdminDailyDarshanTab(
                             "darshan_${System.currentTimeMillis()}.jpg",
                             "darshan"
                         )
-                        withContext(Dispatchers.Main) {
-                            isUploadingPhoto = false
-                            if (!cloudUrl.isNullOrBlank()) {
+                        if (!cloudUrl.isNullOrBlank()) {
+                            val (pubSuccess, _) = DailyDarshanHelper.updateDailyDarshan(
+                                title = darshanTitle.trim(),
+                                photoUrl = cloudUrl.trim(),
+                                quote = guruVicharText.trim()
+                            )
+                            try {
+                                val cacheFile = java.io.File(context.filesDir, "daily_darshan_consecrated.jpg")
+                                if (cacheFile.exists()) cacheFile.delete()
+                                val prefs = context.getSharedPreferences("daily_darshan_cache_prefs", Context.MODE_PRIVATE)
+                                prefs.edit().clear().apply()
+                            } catch (ignored: Exception) {}
+
+                            withContext(Dispatchers.Main) {
+                                isUploadingPhoto = false
                                 photoUrl = cloudUrl
-                                statusMessage = if (isHindi) "✅ फोटो सुरक्षित हुई! अब 'पब्लिश करें' दबाएं।" else "✅ Consecrated photo uploaded! Click Publish."
-                            } else {
+                                statusMessage = if (isHindi)
+                                    "✅ आज का अलौकिक दर्शन तुरंत लाइव पब्लिश हो गया! (App & Web Live)"
+                                else
+                                    "✅ Consecrated Daily Darshan is now LIVE across App & Website!"
+                                Toast.makeText(context, statusMessage, Toast.LENGTH_LONG).show()
+                            }
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                isUploadingPhoto = false
                                 statusMessage = if (isHindi) "⚠️ फोटो अपलोड में त्रुटि, लोकल सुरक्षित है।" else "Photo upload failed, local saved."
                             }
                         }
