@@ -1058,7 +1058,11 @@ object HostingerCentralSyncManager {
                 put("upi_id", settings.ashramUpiId.trim())
                 put("bank_upi_id", settings.ashramUpiId.trim())
                 put("upi_name", settings.ashramUpiName.trim())
-                put("aarti_timings", settings.aartiTimings.trim())
+                put("aarti_mangala_time", settings.websiteAartiMangala)
+                put("aarti_balbhog_time", settings.websiteAartiBalbhog)
+                put("aarti_sandhya_time", settings.websiteAartiSandhya)
+                put("aarti_shayan_time", settings.websiteAartiShayan)
+                put("aarti_timings", "${settings.websiteAartiMangala} | ${settings.websiteAartiSandhya}")
 
                 // Full Website CMS Fields (100% Dynamic from App)
                 put("top_bar_text", settings.websiteTopBarText)
