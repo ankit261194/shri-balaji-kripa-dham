@@ -1007,7 +1007,8 @@ object HostingerCentralSyncManager {
 
     suspend fun updateFullLiveConfig(
         settings: AshramSettings,
-        sevadars: List<com.example.shribalajikripadham.data.model.SevadarProfile>? = null
+        sevadars: List<com.example.shribalajikripadham.data.model.SevadarProfile>? = null,
+        sections: List<com.example.shribalajikripadham.data.model.UiSectionConfig>? = null
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val url = URL("${BASE_URL}live_config.php?api_key=$API_SECRET_KEY")
@@ -1021,7 +1022,7 @@ object HostingerCentralSyncManager {
             conn.requestMethod = "POST"
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.9")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.59")
 
             val json = JSONObject().apply {
                 put("api_key", API_SECRET_KEY)
@@ -1121,6 +1122,27 @@ object HostingerCentralSyncManager {
                     }
                     put("sevadars", sArr)
                 }
+
+                if (sections != null) {
+                    val secArr = JSONArray()
+                    sections.forEach { itm ->
+                        val obj = JSONObject().apply {
+                            put("section_id", itm.sectionId)
+                            put("title_hindi", itm.titleHindi)
+                            put("title_english", itm.titleEnglish)
+                            put("icon", itm.icon)
+                            put("is_visible", itm.isVisible)
+                            put("order_index", itm.orderIndex)
+                            put("custom_subtitle_hindi", itm.customSubtitleHindi)
+                            put("custom_subtitle_english", itm.customSubtitleEnglish)
+                            put("custom_content_hindi", itm.customContentHindi)
+                            put("custom_content_english", itm.customContentEnglish)
+                            put("target_audience", itm.targetAudience)
+                        }
+                        secArr.put(obj)
+                    }
+                    put("sections", secArr)
+                }
             }
 
             conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
@@ -1143,6 +1165,64 @@ object HostingerCentralSyncManager {
             Pair(false, cleanErr)
         } catch (e: Exception) {
             Pair(false, "लाइव सेटिंग्स सिंक त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    suspend fun updateUiSections(
+        context: Context,
+        sections: List<com.example.shribalajikripadham.data.model.UiSectionConfig>
+    ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}live_config.php?api_key=$API_SECRET_KEY")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
+            conn.connectTimeout = 15000
+            conn.readTimeout = 15000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.59")
+
+            val secArray = JSONArray()
+            sections.forEach { itm ->
+                val obj = JSONObject().apply {
+                    put("section_id", itm.sectionId)
+                    put("title_hindi", itm.titleHindi)
+                    put("title_english", itm.titleEnglish)
+                    put("icon", itm.icon)
+                    put("is_visible", itm.isVisible)
+                    put("order_index", itm.orderIndex)
+                    put("custom_subtitle_hindi", itm.customSubtitleHindi)
+                    put("custom_subtitle_english", itm.customSubtitleEnglish)
+                    put("custom_content_hindi", itm.customContentHindi)
+                    put("custom_content_english", itm.customContentEnglish)
+                    put("target_audience", itm.targetAudience)
+                }
+                secArray.put(obj)
+            }
+
+            val json = JSONObject().apply {
+                put("api_key", API_SECRET_KEY)
+                put("sections", secArray)
+            }
+
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            if (code == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val resObj = JSONObject(resp)
+                return@withContext Pair(true, resObj.optString("message", "होम स्क्रीन लेआउट लाइव सर्वर पर अपडेट हो गया!"))
+            }
+            val errBody = try {
+                conn.errorStream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() } ?: ""
+            } catch (e: Exception) { "" }
+            Pair(false, "सर्वर त्रुटि HTTP $code: $errBody")
+        } catch (e: Exception) {
+            Pair(false, "लेआउट सिंक त्रुटि: ${e.localizedMessage}")
         }
     }
 

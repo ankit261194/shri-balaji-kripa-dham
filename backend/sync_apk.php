@@ -129,6 +129,10 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v134.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v133.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v132.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v131.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v130.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v129.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v128.apk');

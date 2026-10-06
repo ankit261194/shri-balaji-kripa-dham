@@ -38,6 +38,7 @@ import com.example.shribalajikripadham.data.local.DatabaseHelper
 import com.example.shribalajikripadham.ai.FaceEmbeddingEngine
 import com.example.shribalajikripadham.data.model.*
 import com.example.shribalajikripadham.data.network.GitHubLiveSyncManager
+import com.example.shribalajikripadham.data.network.HostingerCentralSyncManager
 import com.example.shribalajikripadham.data.repository.AshramRepository
 import com.example.shribalajikripadham.data.repository.AdminPermissionsUpdate
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
@@ -2486,22 +2487,39 @@ fun AdminDashboardScreen(
                                 onSaveSections = { updatedList ->
                                     scope.launch {
                                         repository.saveUiSectionConfigs(updatedList)
+                                        val (hOk, hMsg) = HostingerCentralSyncManager.updateUiSections(context, updatedList)
                                         try { repository.publishLiveConfigToGitHub(updatedList, admin.name) } catch (e: Exception) {}
                                         refreshData()
-                                        Toast.makeText(context, if (isHindi) "✓ UI लेआउट क्रम सुरक्षित व सभी भक्तों के फोन पर लाइव अपडेट हो गया!" else "UI layout updated & published live to all devotees!", Toast.LENGTH_SHORT).show()
+                                        if (hOk) {
+                                            Toast.makeText(context, if (isHindi) "✓ UI लेआउट क्रम सुरक्षित व सभी भक्तों के फोन पर लाइव अपडेट हो गया!" else "UI layout updated & published live to all devotees!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, if (isHindi) "⚠️ लोकल सुरक्षित, लेकिन सर्वर सिंक विफल: $hMsg" else "Local saved, server sync failed: $hMsg", Toast.LENGTH_LONG).show()
+                                        }
                                     }
                                 },
                                 onResetToDefault = {
                                     scope.launch {
                                         repository.resetUiSectionConfigsToDefault()
+                                        val defaults = UiSectionConfig.defaultSections()
+                                        val (hOk, hMsg) = HostingerCentralSyncManager.updateUiSections(context, defaults)
                                         refreshData()
-                                        Toast.makeText(context, if (isHindi) "डिफ़ॉल्ट UI क्रम रीसेट कर दिया गया!" else "Reset to default UI layout!", Toast.LENGTH_SHORT).show()
+                                        if (hOk) {
+                                            Toast.makeText(context, if (isHindi) "डिफ़ॉल्ट UI क्रम रीसेट कर सर्वर पर लाइव कर दिया गया!" else "Reset to default UI layout on server!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, if (isHindi) "डिफ़ॉल्ट रीसेट, सर्वर सिंक विफल: $hMsg" else "Reset local, server sync failed: $hMsg", Toast.LENGTH_LONG).show()
+                                        }
                                     }
                                 },
                                 onPublishToGitHub = { updatedList ->
-                                    val res = repository.publishLiveConfigToGitHub(updatedList, admin.name)
+                                    repository.saveUiSectionConfigs(updatedList)
+                                    val (hOk, hMsg) = HostingerCentralSyncManager.updateUiSections(context, updatedList)
+                                    val gitRes = repository.publishLiveConfigToGitHub(updatedList, admin.name)
                                     refreshData()
-                                    res
+                                    if (hOk) {
+                                        Pair(true, "✅ होम स्क्रीन लेआउट सभी भक्तों के फोन पर 100% लाइव पब्लिश हो गया!")
+                                    } else {
+                                        gitRes
+                                    }
                                 }
                             )
                         }

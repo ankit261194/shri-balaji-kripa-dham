@@ -551,6 +551,12 @@ fun AdminDailyDarshanTab(
 
                         isPublishing = false
                         if (success) {
+                            try {
+                                val cacheFile = java.io.File(context.filesDir, "daily_darshan_consecrated.jpg")
+                                if (cacheFile.exists()) cacheFile.delete()
+                                val prefs = context.getSharedPreferences("daily_darshan_cache_prefs", Context.MODE_PRIVATE)
+                                prefs.edit().clear().apply()
+                            } catch (ignored: Exception) {}
                             statusMessage = if (isHindi)
                                 "✅ आज का अलौकिक दर्शन ऐप एवं वेबसाइट पर तुरंत लाइव पब्लिश हो गया है!"
                             else

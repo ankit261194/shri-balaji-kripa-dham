@@ -367,11 +367,14 @@ fun DailyDarshanQuickCard(
     var showZoomDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        // Step 1: Immediately load from persistent cache if available (zero screen wait time)
+        // Step 1: Load from persistent cache ONLY if it belongs to today's date
         withContext(Dispatchers.IO) {
             try {
                 val cachedFile = File(context.filesDir, "daily_darshan_consecrated.jpg")
-                if (cachedFile.exists() && cachedFile.length() > 0) {
+                val prefs = context.getSharedPreferences("daily_darshan_cache_prefs", Context.MODE_PRIVATE)
+                val cachedDate = prefs.getString("cached_date", "")
+                val todayDate = DailyDarshanHelper.getTodayHindiDate()
+                if (cachedFile.exists() && cachedFile.length() > 0 && cachedDate == todayDate) {
                     val cachedBmp = BitmapFactory.decodeFile(cachedFile.absolutePath)
                     if (cachedBmp != null) {
                         withContext(Dispatchers.Main) {
@@ -386,21 +389,22 @@ fun DailyDarshanQuickCard(
         val fetched = DailyDarshanHelper.fetchTodayDarshan()
         darshanData = fetched
 
-        // Step 3: Download consecrated image for any valid web URL (including balaji_darshan_today.jpg)
+        // Step 3: Download consecrated image for any valid web URL with instant timestamp cache-busting
         withContext(Dispatchers.IO) {
             try {
                 if (fetched.photoUrl.isNotBlank() && (fetched.photoUrl.startsWith("http://") || fetched.photoUrl.startsWith("https://"))) {
                     val cleanUrl = if (fetched.photoUrl.contains("?")) {
-                        "${fetched.photoUrl}&cb=${System.currentTimeMillis() / 60000}"
+                        "${fetched.photoUrl}&cb=${System.currentTimeMillis()}"
                     } else {
-                        "${fetched.photoUrl}?cb=${System.currentTimeMillis() / 60000}"
+                        "${fetched.photoUrl}?cb=${System.currentTimeMillis()}"
                     }
                     val conn = URL(cleanUrl).openConnection() as HttpURLConnection
                     conn.connectTimeout = 10000
                     conn.readTimeout = 10000
                     conn.useCaches = false
                     conn.setRequestProperty("User-Agent", "ShriBalajiKripaDham-Android")
-                    conn.setRequestProperty("Cache-Control", "no-cache")
+                    conn.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                    conn.setRequestProperty("Pragma", "no-cache")
                     if (conn.responseCode in 200..299) {
                         val bmp = BitmapFactory.decodeStream(conn.inputStream)
                         if (bmp != null) {
@@ -410,6 +414,8 @@ fun DailyDarshanQuickCard(
                                     bmp.compress(Bitmap.CompressFormat.JPEG, 92, fos)
                                     fos.flush()
                                 }
+                                val prefs = context.getSharedPreferences("daily_darshan_cache_prefs", Context.MODE_PRIVATE)
+                                prefs.edit().putString("cached_date", fetched.dateHindi).putString("cached_url", fetched.photoUrl).apply()
                             } catch (ignored: Exception) {}
 
                             withContext(Dispatchers.Main) {

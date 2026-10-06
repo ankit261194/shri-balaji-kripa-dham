@@ -238,7 +238,7 @@ class AshramRepository(context: Context) {
             com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), fresh)
             kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh, getAllSevadars())
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh, getAllSevadars(), getUiSectionConfigs())
                 } catch (e: Exception) {}
                 try {
                     publishCurrentSettingsToGitHub()
@@ -4276,7 +4276,7 @@ class AshramRepository(context: Context) {
     suspend fun saveUiSectionConfigs(configs: List<UiSectionConfig>): Boolean = withContext(Dispatchers.IO) {
         val db = dbHelper.writableDatabase
         db.beginTransaction()
-        try {
+        val ok = try {
             configs.forEachIndexed { index, item ->
                 val cv = ContentValues().apply {
                     put("section_id", item.sectionId)
@@ -4300,6 +4300,15 @@ class AshramRepository(context: Context) {
         } finally {
             db.endTransaction()
         }
+
+        if (ok) {
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateUiSections(appContext, configs)
+                } catch (e: Exception) {}
+            }
+        }
+        ok
     }
 
     suspend fun resetUiSectionConfigsToDefault(): Boolean = withContext(Dispatchers.IO) {
@@ -4395,6 +4404,14 @@ class AshramRepository(context: Context) {
                 }
                 if (cfg.has("upi_name")) {
                     cv.put("ashram_upi_name", cfg.optString("upi_name", ""))
+                }
+
+                if (cfg.has("sections")) {
+                    val secArr = cfg.optJSONArray("sections")
+                    if (secArr != null && secArr.length() > 0) {
+                        val parsedSections = UiSectionConfig.fromJson(secArr.toString())
+                        saveUiSectionConfigs(parsedSections)
+                    }
                 }
 
                 if (cv.size() > 0) {
@@ -4547,7 +4564,8 @@ class AshramRepository(context: Context) {
 
             Pair(true, remoteConfig)
         } else {
-            Pair(false, null)
+            val localSections = getUiSectionConfigs()
+            Pair(true, com.example.shribalajikripadham.data.model.LiveUiConfigDto(sections = localSections))
         }
     }
 
@@ -6776,7 +6794,7 @@ class AshramRepository(context: Context) {
     suspend fun publishEverythingToWebsiteAndCloud(adminName: String): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
             val s = getSettings()
-            val (hOk, hMsg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(s, getAllSevadars())
+            val (hOk, hMsg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(s, getAllSevadars(), getUiSectionConfigs())
 
             // Background GitHub commit so if GitHub throws 409 Conflict or rate limit, it NEVER fails the Super Admin action!
             kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {

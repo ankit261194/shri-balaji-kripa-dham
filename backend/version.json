@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 133,
-  "version_code": 133,
-  "latest_version_name": "2.56.58",
-  "version_name": "2.56.58",
-  "update_notes_hindi": "v2.56.58 (Build 133): 👑 पूज्य गुरुजी दरबार बिग स्क्रीन मोड (बुजुर्ग गुरुजी हेतु विशालकाय स्क्रीन - स्क्रीन पर कहीं भी हाथ मारने से अगला टोकन माइक पर बोल जाता है), 🧠 एंटीग्रेविटी में असली Gemini AI गेटवे (जीरो रटा-रटाया जवाब)।",
-  "update_notes_english": "v2.56.58 (Build 133): 👑 Guruji Big Screen Darbar Mode (Elderly tap-anywhere screen for instant next token voice announcement) & 🧠 Real Gemini Generative AI Gateway.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=133",
+  "latest_version_code": 134,
+  "version_code": 134,
+  "latest_version_name": "2.56.59",
+  "version_name": "2.56.59",
+  "update_notes_hindi": "v2.56.59 (Build 134): 🛡️ परमानेंट सिलिकॉन हार्डवेयर-लॉक्ड टोकन सुरक्षा (Clear Data / री-इंस्टॉल पर भी टोकन सुरक्षित व क्लोनिंग 100% ब्लॉक), 🎛️ असली रियल-टाइम UI बॉक्स लाइव कंट्रोल (एडमिन के स्विच करते ही भक्तों के फोन पर तुरंत लाइव), 🌺 दैनिक दर्शन जीरो-कैश रीयल-टाइम अपडेट।",
+  "update_notes_english": "v2.56.59 (Build 134): 🛡️ Immutable Hardware-Locked Token Security (Anti-Clear Data & Anti-Clone), 🎛️ Real-Time Dynamic UI Box Control, 🌺 Zero-Cache Daily Darshan instant synchronization.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=134",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }
