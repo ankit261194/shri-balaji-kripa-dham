@@ -318,7 +318,7 @@ fun AdminDashboardScreen(
     var svcPaymentFeatureLive by remember { mutableStateOf(false) }
     var svcCanAdminViewPayments by remember { mutableStateOf(false) }
     var svcCanDevoteeViewPayments by remember { mutableStateOf(false) }
-    var svcUpiId by remember { mutableStateOf("shribalajikripadham@upi") }
+    var svcUpiId by remember { mutableStateOf("") }
     var svcUpiName by remember { mutableStateOf("Shri Balaji Kripa Dham") }
     var svcUpiQrUri by remember { mutableStateOf("") }
     var svcArziLedgerLive by remember { mutableStateOf(false) }
@@ -8364,7 +8364,7 @@ fun PublicServiceMatrixTab(
     onCanAdminViewPaymentsChange: (Boolean) -> Unit = {},
     canDevoteeViewPayments: Boolean = false,
     onCanDevoteeViewPaymentsChange: (Boolean) -> Unit = {},
-    upiId: String = "shribalajikripadham@upi",
+    upiId: String = "",
     onUpiIdChange: (String) -> Unit = {},
     upiName: String = "Shri Balaji Kripa Dham",
     onUpiNameChange: (String) -> Unit = {},
@@ -9001,7 +9001,7 @@ fun PublicServiceMatrixTab(
                     value = upiId,
                     onValueChange = onUpiIdChange,
                     label = { Text(if (isHindi) "आश्रम की आधिकारिक UPI ID" else "Ashram Official UPI ID") },
-                    placeholder = { Text("उदा. shribalajikripadham@upi") },
+                    placeholder = { Text("उदा. ashram@upi") },
                     modifier = Modifier.fillMaxWidth()
                 )
 

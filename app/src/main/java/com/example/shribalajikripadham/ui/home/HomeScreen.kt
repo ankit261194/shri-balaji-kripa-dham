@@ -414,8 +414,8 @@ fun HomeScreen(
                         val tokenMode = if (liveCfg.has("token_service_mode")) liveCfg.optString("token_service_mode", settings.tokenServiceMode) else settings.tokenServiceMode
                         val appDownloadUrl = if (liveCfg.has("app_download_url")) liveCfg.optString("app_download_url", settings.apkDownloadUrl) else settings.apkDownloadUrl
                         val appShareUrl = if (liveCfg.has("app_share_url")) liveCfg.optString("app_share_url", settings.appShareUrl) else settings.appShareUrl
-                        val liveContactPhone = liveCfg.optString("contact_phone", liveCfg.optString("phone", settings.contactPhone)).trim().ifBlank { settings.contactPhone.ifBlank { "+91 97206 91090" } }
-                        val liveWhatsapp = liveCfg.optString("whatsapp_number", liveCfg.optString("whatsapp", settings.whatsappNumber)).trim().ifBlank { settings.whatsappNumber.ifBlank { "+91 97206 91090" } }
+                        val liveContactPhone = liveCfg.optString("contact_phone", liveCfg.optString("phone", settings.contactPhone)).trim()
+                        val liveWhatsapp = liveCfg.optString("whatsapp_number", liveCfg.optString("whatsapp", settings.whatsappNumber)).trim()
                         val liveUpi = liveCfg.optString("upi_id", liveCfg.optString("bank_upi_id", settings.ashramUpiId)).trim()
                         val liveEmail = liveCfg.optString("contact_email", settings.websiteContactEmail).trim()
                         val liveAddress = liveCfg.optString("ashram_address", settings.websiteAshramAddress).trim()

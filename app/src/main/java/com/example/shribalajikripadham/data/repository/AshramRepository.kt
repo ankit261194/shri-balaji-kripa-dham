@@ -123,7 +123,7 @@ class AshramRepository(context: Context) {
             isPaymentFeatureLive = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_payment_feature_live")) == 1 } catch (e: Exception) { false },
             canAdminViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_admin_view_payment_history")) == 1 } catch (e: Exception) { false },
             canDevoteeViewPaymentHistory = try { cursor.getInt(cursor.getColumnIndexOrThrow("can_devotee_view_payment_history")) == 1 } catch (e: Exception) { false },
-            ashramUpiId = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_id")) } catch (e: Exception) { "shribalajikripadham@upi" } ?: "shribalajikripadham@upi",
+            ashramUpiId = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_id")) ?: "" } catch (e: Exception) { "" },
             ashramUpiName = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_upi_name")) } catch (e: Exception) { "Shri Balaji Kripa Dham" } ?: "Shri Balaji Kripa Dham",
             customUpiQrUri = try { cursor.getString(cursor.getColumnIndexOrThrow("custom_upi_qr_uri")) } catch (e: Exception) { "" } ?: "",
             busSeatFareAmount = try { cursor.getInt(cursor.getColumnIndexOrThrow("bus_seat_fare_amount")) } catch (e: Exception) { 0 },

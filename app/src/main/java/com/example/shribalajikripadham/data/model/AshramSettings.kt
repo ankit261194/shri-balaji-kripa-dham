@@ -13,7 +13,7 @@ data class AshramSettings(
     val darbarDate: String = "",
     val darbarTimings: String = "प्रत्येक रविवार प्रातःकाल 8:30 बजे से सायं 5:00 बजे तक",
     val freeDisclaimer: String = "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।",
-    val contactPhone: String = "+91 97206 91090",
+    val contactPhone: String = "",
     val emergencyNoticeText: String = "",
     // Public service visibility toggles for devotees
     val isTokenServiceEnabled: Boolean = true,
@@ -36,7 +36,7 @@ data class AshramSettings(
     val isForceUpdate: Boolean = false,
     // Social Media Links & App Sharing
     val whatsappGroupUrl: String = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0",
-    val whatsappNumber: String = "+91 97206 91090",
+    val whatsappNumber: String = "",
     val youtubeChannelUrl: String = "https://www.youtube.com/@ShriBalajiKripaDham",
     val facebookPageUrl: String = "https://www.facebook.com/ShriBalajiKripaDham",
     val instagramUrl: String = "https://www.instagram.com/shribalajikripadham",
@@ -77,7 +77,7 @@ data class AshramSettings(
     val isPaymentFeatureLive: Boolean = false,
     val canAdminViewPaymentHistory: Boolean = false,
     val canDevoteeViewPaymentHistory: Boolean = false,
-    val ashramUpiId: String = "shribalajikripadham@upi",
+    val ashramUpiId: String = "",
     val ashramUpiName: String = "Shri Balaji Kripa Dham",
     val customUpiQrUri: String = "",
     val busSeatFareAmount: Int = 0,

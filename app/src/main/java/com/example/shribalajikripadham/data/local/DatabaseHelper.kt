@@ -123,7 +123,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     "is_payment_feature_live" to "INTEGER NOT NULL DEFAULT 0",
                     "can_admin_view_payment_history" to "INTEGER NOT NULL DEFAULT 0",
                     "can_devotee_view_payment_history" to "INTEGER NOT NULL DEFAULT 0",
-                    "ashram_upi_id" to "TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
+                    "ashram_upi_id" to "TEXT NOT NULL DEFAULT ''",
                     "ashram_upi_name" to "TEXT NOT NULL DEFAULT 'Shri Balaji Kripa Dham'",
                     "custom_upi_qr_uri" to "TEXT NOT NULL DEFAULT ''",
                     "bus_seat_fare_amount" to "INTEGER NOT NULL DEFAULT 0",
@@ -159,7 +159,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     "bank_account_number" to "TEXT NOT NULL DEFAULT ''",
                     "bank_ifsc" to "TEXT NOT NULL DEFAULT ''",
                     "bank_branch" to "TEXT NOT NULL DEFAULT 'अनूपशहर, बुलन्दशहर'",
-                    "bank_upi_id" to "TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
+                    "bank_upi_id" to "TEXT NOT NULL DEFAULT ''",
                     "ashram_address" to "TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश - 202394'",
                     "ashram_directions" to "TEXT NOT NULL DEFAULT '🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: अनूपशहर (~16 किमी) • जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी)'",
                     "contact_email" to "TEXT NOT NULL DEFAULT ''",
@@ -270,10 +270,10 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             db.execSQL("UPDATE ashram_settings SET bank_ifsc = '' WHERE bank_ifsc LIKE '%XXXX%';")
             // Auto-heal app share URL: rewrite any old/invalid domain to official shribalajikripadham.online/app
             db.execSQL("UPDATE ashram_settings SET app_share_url = 'https://shribalajikripadham.online/app' WHERE app_share_url NOT LIKE '%shribalajikripadham.online%' OR app_share_url LIKE '%.org%' OR app_share_url = '' OR app_share_url LIKE '%download.php%';")
-            // Auto-heal official contact details: guarantee permanent genuine contact phone & whatsapp
-            db.execSQL("UPDATE ashram_settings SET contact_phone = '+91 97206 91090' WHERE contact_phone IS NULL OR contact_phone = '';")
-            db.execSQL("UPDATE ashram_settings SET whatsapp_number = '+91 97206 91090' WHERE whatsapp_number IS NULL OR whatsapp_number = '';")
-            db.execSQL("UPDATE ashram_settings SET ashram_upi_id = 'shribalajikripadham@upi' WHERE ashram_upi_id IS NULL OR ashram_upi_id = '';")
+            // Purge any unauthorized or dummy contact numbers and placeholder upi
+            db.execSQL("UPDATE ashram_settings SET contact_phone = '' WHERE contact_phone LIKE '%97206%';")
+            db.execSQL("UPDATE ashram_settings SET whatsapp_number = '' WHERE whatsapp_number LIKE '%97206%';")
+            db.execSQL("UPDATE ashram_settings SET ashram_upi_id = '' WHERE ashram_upi_id = 'shribalajikripadham@upi';")
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -883,7 +883,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN is_payment_feature_live INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN can_admin_view_payment_history INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN can_devotee_view_payment_history INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE ashram_settings ADD COLUMN ashram_upi_id TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
+            "ALTER TABLE ashram_settings ADD COLUMN ashram_upi_id TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN ashram_upi_name TEXT NOT NULL DEFAULT 'Shri Balaji Kripa Dham'",
             "ALTER TABLE ashram_settings ADD COLUMN bus_seat_fare_amount INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE ashram_settings ADD COLUMN is_arzi_ledger_live INTEGER NOT NULL DEFAULT 1",
@@ -925,7 +925,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE ashram_settings ADD COLUMN bank_account_number TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN bank_ifsc TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN bank_branch TEXT NOT NULL DEFAULT 'अनूपशहर, बुलन्दशहर'",
-            "ALTER TABLE ashram_settings ADD COLUMN bank_upi_id TEXT NOT NULL DEFAULT 'shribalajikripadham@upi'",
+            "ALTER TABLE ashram_settings ADD COLUMN bank_upi_id TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE ashram_settings ADD COLUMN ashram_address TEXT NOT NULL DEFAULT 'श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश - 202394'",
             "ALTER TABLE ashram_settings ADD COLUMN ashram_directions TEXT NOT NULL DEFAULT '🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: अनूपशहर (~16 किमी) • जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी)'",
             "ALTER TABLE ashram_settings ADD COLUMN footer_copyright TEXT NOT NULL DEFAULT '© 2026 श्री बालाजी कृपा धाम। सर्वाधिकार सुरक्षित।'",
@@ -1007,7 +1007,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("darbar_date", today)
                         put("darbar_timings", "प्रत्येक रविवार प्रातःकाल 8:30 बजे से सायं 5:00 बजे तक")
                         put("free_disclaimer", "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।")
-                        put("contact_phone", "+91 97206 91090")
+                        put("contact_phone", "")
                         put("emergency_notice", "जय श्री बालाजी! रविवार दरबार टोकन पंजीकरण आश्रम सीमा में ही मान्य है।")
                         put("is_token_service_enabled", 1)
                         put("token_service_mode", "AUTO_SUNDAY")
@@ -1025,7 +1025,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                         put("apk_download_url", "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk")
                         put("is_force_update", 0)
                         put("whatsapp_group_url", "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0")
-                        put("whatsapp_number", "+91 97206 91090")
+                        put("whatsapp_number", "")
                         put("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham")
                         put("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham")
                         put("instagram_url", "https://www.instagram.com/shribalajikripadham")
