@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 140,
-  "version_code": 140,
-  "latest_version_name": "2.56.65",
-  "version_name": "2.56.65",
-  "update_notes_hindi": "v2.56.65 (Build 140): 🌺 दैनिक अलौकिक दर्शन व लाइव फोटो अपडेट: सातों दिन के अनुसार प्रतिदिन नए पावन दिव्य दर्शन व अलौकिक श्रृंगार फोटो का स्वतः चक्र (Rotation) सक्रिय। सुपर एडमिन द्वारा फोटो बदलते ही ऐप व वेबसाइट पर तुरंत 1-क्लिक लाइव पब्लिश व कैश बस्टिंग।",
-  "update_notes_english": "v2.56.65 (Build 140): 🌺 Daily Consecrated Darshan & Live Photo Sync: 7-day automatic sacred darshan photo rotation active. Instant live publishing and cache busting across app and website whenever Super Admin updates photos.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=140",
+  "latest_version_code": 141,
+  "version_code": 141,
+  "latest_version_name": "2.56.66",
+  "version_name": "2.56.66",
+  "update_notes_hindi": "v2.56.66 (Build 141): 🛡️ अखंड रियल-टाइम सिंक व डेटा सुरक्षा: फेस रिकॉग्निशन बैकएंड सिंक फिक्स, रियल-टाइम लाइव टोकन SSE स्ट्रीम (live_token_stream.php), ऑटोमैटिक क्लाउड डेटाबेस बैकअप (auto_backup.php) एवं दैनिक दर्शन 1-टच इंस्टेंट रीफ्रेश बटन।",
+  "update_notes_english": "v2.56.66 (Build 141): 🛡️ Real-Time Live Sync & Cloud Data Protection: Devotee Face Biometric sync bug fixed, Real-Time Server-Sent Events (SSE) Live Token Stream, Automated Cloud MySQL Backup Engine with rolling snapshots, and 1-Touch Instant Darshan Refresh button.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=141",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

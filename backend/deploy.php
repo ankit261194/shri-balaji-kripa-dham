@@ -97,7 +97,9 @@ $filesToSync = [
     "api/send_push.php",
     "api/submit_utr.php",
     "api/support_crm.php",
-    "api/app_queries.php"
+    "api/app_queries.php",
+    "api/live_token_stream.php",
+    "api/auto_backup.php"
 ];
 
 // Support selective fast deployment of single or specific files via ?file=api/app_queries.php

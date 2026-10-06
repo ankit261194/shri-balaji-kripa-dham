@@ -381,6 +381,7 @@ fun DailyDarshanQuickCard(
 
     var remoteBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var showZoomDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         val todayDate = DailyDarshanHelper.getTodayHindiDate()
@@ -498,19 +499,75 @@ fun DailyDarshanQuickCard(
                     }
                 }
 
-                // Devotee count tag
-                Surface(
-                    color = currentTheme.primaryColor.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(0.8.dp, currentTheme.primaryColor.copy(alpha = 0.3f))
-                ) {
-                    Text(
-                        text = "👁️ ${darshanData.viewsCount}+ भक्त",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = currentTheme.primaryColor,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                // Devotee count tag & Refresh button
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        color = currentTheme.primaryColor.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(0.8.dp, currentTheme.primaryColor.copy(alpha = 0.3f))
+                    ) {
+                        Text(
+                            text = "👁️ ${darshanData.viewsCount} दर्शन",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = currentTheme.primaryColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        color = currentTheme.primaryColor.copy(alpha = 0.12f),
+                        shape = CircleShape,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clickable {
+                                scope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        try {
+                                            val cachedFile = File(context.filesDir, "daily_darshan_consecrated.jpg")
+                                            if (cachedFile.exists()) cachedFile.delete()
+                                            val prefs = context.getSharedPreferences("daily_darshan_cache_prefs", Context.MODE_PRIVATE)
+                                            prefs.edit().clear().apply()
+                                        } catch (e: Exception) {}
+                                    }
+                                    val fetched = DailyDarshanHelper.fetchTodayDarshan()
+                                    darshanData = fetched
+                                    withContext(Dispatchers.IO) {
+                                        try {
+                                            val cleanUrl = if (fetched.photoUrl.contains("?")) {
+                                                "${fetched.photoUrl}&cb=${System.currentTimeMillis()}"
+                                            } else {
+                                                "${fetched.photoUrl}?cb=${System.currentTimeMillis()}"
+                                            }
+                                            val conn = URL(cleanUrl).openConnection() as HttpURLConnection
+                                            conn.connectTimeout = 8000
+                                            conn.readTimeout = 8000
+                                            conn.useCaches = false
+                                            conn.setRequestProperty("User-Agent", "ShriBalajiKripaDham-Android")
+                                            conn.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                                            if (conn.responseCode in 200..299) {
+                                                val bmp = BitmapFactory.decodeStream(conn.inputStream)
+                                                if (bmp != null) {
+                                                    val cacheFile = File(context.filesDir, "daily_darshan_consecrated.jpg")
+                                                    FileOutputStream(cacheFile).use { fos ->
+                                                        bmp.compress(Bitmap.CompressFormat.JPEG, 92, fos)
+                                                        fos.flush()
+                                                    }
+                                                    withContext(Dispatchers.Main) {
+                                                        remoteBitmap = bmp
+                                                    }
+                                                }
+                                            }
+                                        } catch (e: Exception) {}
+                                    }
+                                    Toast.makeText(context, if (isHindi) "नवीनतम दिव्य दर्शन लोड हो गया!" else "Latest darshan photo refreshed!", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("🔄", fontSize = 12.sp)
+                        }
+                    }
                 }
             }
 

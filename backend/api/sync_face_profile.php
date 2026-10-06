@@ -60,7 +60,7 @@ try {
     $stmt = $pdo->prepare("
         INSERT INTO devotee_face_profiles 
         (patient_name, phone_number, city, face_vector_b64, photo_url, visit_count, registered_by, device_id, last_verified_at, created_at)
-        VALUES (:name, :phone, :city, :vector, :photo, 1, :registered_by, :device_id, :now, :now)
+        VALUES (:name, :phone, :city, :vector, :photo, 1, :registered_by, :device_id, :last_verified_at, :created_at)
         ON DUPLICATE KEY UPDATE
             patient_name = VALUES(patient_name),
             city = IF(VALUES(city) != '', VALUES(city), city),
@@ -79,7 +79,8 @@ try {
         ':photo' => $photoUrl,
         ':registered_by' => $registeredBy,
         ':device_id' => $deviceId,
-        ':now' => $now
+        ':last_verified_at' => $now,
+        ':created_at' => $now
     ]);
 
     echo json_encode([
