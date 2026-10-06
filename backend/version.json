@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 136,
-  "version_code": 136,
-  "latest_version_name": "2.56.61",
-  "version_name": "2.56.61",
-  "update_notes_hindi": "v2.56.61 (Build 136): ⚡ 100% असली व लाइव क्लाउड सिंक (Zero-Dikhawa Central Sync): आश्रम पता, फोन नंबर व सेटिंग्स अब बिना किसी रुकावट के सीधे Hostinger MySQL में लाइव अपडेट होते हैं। क्लाउड सिंक से समस्त टोकन, सेवादार व सेटिंग्स 1-क्लिक में लाइव सर्वर पर सुरक्षित।",
-  "update_notes_english": "v2.56.61 (Build 136): ⚡ 100% Genuine Live Cloud Sync: Ashram address, phone numbers, and settings update directly to Hostinger MySQL with zero filter drops. 1-click full database sync for tokens, sevadars, and settings.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=136",
+  "latest_version_code": 137,
+  "version_code": 137,
+  "latest_version_name": "2.56.62",
+  "version_name": "2.56.62",
+  "update_notes_hindi": "v2.56.62 (Build 137): ⚡ 100% असली व परमानेंट आश्रम संपर्क डेटा: फोन नंबर (+91 97206 91090), व्हाट्सएप, बैंक व UPI अब ऐप और सर्वर दोनों पर सुरक्षित रहेंगे। ऐप में किसी भी प्रकार की ऑटो-वाइपिंग या डेटा मिटाने की कोड को पूरी तरह समाप्त कर दिया गया है।",
+  "update_notes_english": "v2.56.62 (Build 137): ⚡ 100% Genuine Permanent Ashram Contact: Real phone, WhatsApp, and UPI preserved across app and server with zero auto-wiping code.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=137",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

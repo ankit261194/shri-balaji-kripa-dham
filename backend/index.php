@@ -1784,7 +1784,7 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                 </a>
                 <?php endif; ?>
                 <?php if (!empty($contactPhone)): ?>
-                <a href="tel:<?= htmlspecialchars($contactPhone) ?>" class="btn-maps" style="background: #E65100;" id="btnPhoneLink">
+                <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', $contactPhone)) ?>" class="btn-maps" style="background: #E65100;" id="btnPhoneLink">
                     📞 कॉल सेवा (<span id="dynamicContactPhone"><?= htmlspecialchars($contactPhone) ?></span>)
                 </a>
                 <?php else: ?>
@@ -2066,7 +2066,7 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                         if (cfg.contact_phone && cfg.contact_phone.trim() !== '' && cfg.contact_phone.length >= 10) {
                             if (phNumEl) phNumEl.innerText = cfg.contact_phone;
                             if (phEl) {
-                                phEl.href = 'tel:' + cfg.contact_phone;
+                                phEl.href = 'tel:' + cfg.contact_phone.replace(/[^0-9+]/g, '');
                                 phEl.style.display = 'inline-block';
                             }
                         } else if (phEl) {
