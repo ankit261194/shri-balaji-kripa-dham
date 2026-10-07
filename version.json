@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 144,
-  "version_code": 144,
-  "latest_version_name": "2.59.00",
-  "version_name": "2.59.00",
-  "update_notes_hindi": "v2.59.00 (Build 144): 👑 सुपर एडमिन व सेवादार पोर्टल प्रो-रीडिजाइन: सेवादार लॉगिन करते ही सीधा उनकी लाइव चैट इनबॉक्स पर पहुंचेगा (पूर्ण गोपनीयता, कोई अन्य सेवादार की चैट नहीं देख सकता), सुपर एडमिन कॉम्पैक्ट 1-लाइन स्टेटस बार जिससे 95% स्क्रीन खाली रहेगी, तथा हवन अनुष्ठान खर्च (₹14,000) व नियम सुपर एडमिन द्वारा डायनामिक संपादन योग्य।",
-  "update_notes_english": "v2.59.00 (Build 144): 👑 Super Admin & Sevadar Portal Pro Redesign: Sevadar logs in directly to live chat inbox with 100% privacy (zero visibility into other sevadars), compact 1-line Super Admin status header freeing 95% screen real estate, and dynamic editable Havan cost (₹14,000) & rules CMS.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=144",
+  "latest_version_code": 148,
+  "version_code": 148,
+  "latest_version_name": "2.63.00",
+  "version_name": "2.63.00",
+  "update_notes_hindi": "v2.63.00 (Build 148): 🪔 संपूर्ण पावन आरती व चालीसा ग्रंथ संग्रह (100% पूर्ण प्रामाणिक पद, कोई आधा पाठ नहीं)। 👑 सुपर एडमिन में मंगलवार दरबार मास्टर स्विच (ON/OFF), हवन खर्च (₹14,000) व नियम सम्पादक, तथा संपूर्ण सेवादार चैट निगरानी। 🚩 भव्य स्वर्णिम होम हेडर (विशाल स्पेस, नाम कभी कटेगा नहीं)।",
+  "update_notes_english": "v2.63.00 (Build 148): 🪔 100% Complete authentic devotional Aartis & Chalisas (Zero truncated verses). 👑 Super Admin Tuesday Darbar master switch (ON/OFF), Havan cost (₹14,000) & rules CMS editor, and master Sevadar chat monitor. 🚩 Grand golden header with maximum space & zero clipping.",
+  "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
-  "is_force_update": false
+  "is_force_update": true
 }

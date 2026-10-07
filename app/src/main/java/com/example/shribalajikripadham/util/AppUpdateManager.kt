@@ -466,7 +466,7 @@ object AppUpdateManager {
 
             // 1. Direct Static High-Speed Ashram Server endpoints (Zero PHP overhead, byte-for-byte verified)
             candidateUrls.add("https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk")
-            candidateUrls.add("https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-v147.apk")
+            candidateUrls.add("https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-v148.apk")
 
             // 2. Dynamic release APK URL from version.json if distinct
             if (finalUrl.isNotBlank() && !candidateUrls.contains(finalUrl.trim())) {
@@ -613,9 +613,9 @@ object AppUpdateManager {
                         packageArchive.versionCode
                     }
                     val currentVersionCode = getCurrentVersionCode(context)
-                    if (downloadedVersionCode <= currentVersionCode) {
+                    if (downloadedVersionCode < currentVersionCode) {
                         targetFile.delete()
-                        throw Exception("डाउनलोड किया गया APK वर्ज़न (Build #$downloadedVersionCode) वर्तमान वर्ज़न (Build #$currentVersionCode) से नया नहीं है, अगले सर्वर से प्रयास किया जा रहा है...")
+                        throw Exception("डाउनलोड किया गया APK वर्ज़न (Build #$downloadedVersionCode) वर्तमान वर्ज़न (Build #$currentVersionCode) से पुराना है!")
                     }
 
                     withContext(Dispatchers.Main) {

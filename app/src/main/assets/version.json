@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 130,
-  "version_code": 130,
-  "latest_version_name": "2.56.55",
-  "version_name": "2.56.55",
-  "update_notes_hindi": "v2.56.55 (Build 130): 🚩 रविवार दिव्य दरबार टोकन प्रणाली 100% सुदृढ़ व सत्यापित, 🛡️ जिओफेंस व ऑटो-शेड्यूल सुरक्षा कवच, 🎙️ वॉइस अनाउंसर व रियल-टाइम एडमिन सिंक शत-प्रतिशत सक्रिय।",
-  "update_notes_english": "v2.56.55 (Build 130): 🚩 Sunday Divine Darbar Token System 100% Verified, 🛡️ Bulletproof Geofence & Auto-Schedule Fail-Safes, 🎙️ Real-time Admin Sync & Voice Announcements.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=130",
+  "latest_version_code": 148,
+  "version_code": 148,
+  "latest_version_name": "2.63.00",
+  "version_name": "2.63.00",
+  "update_notes_hindi": "v2.63.00 (Build 148): 🪔 संपूर्ण पावन आरती व चालीसा ग्रंथ संग्रह (100% पूर्ण प्रामाणिक पद, कोई आधा पाठ नहीं)। 👑 सुपर एडमिन में मंगलवार दरबार मास्टर स्विच (ON/OFF), हवन खर्च (₹14,000) व नियम सम्पादक, तथा संपूर्ण सेवादार चैट निगरानी। 🚩 भव्य स्वर्णिम होम हेडर (विशाल स्पेस, नाम कभी कटेगा नहीं)।",
+  "update_notes_english": "v2.63.00 (Build 148): 🪔 100% Complete authentic devotional Aartis & Chalisas (Zero truncated verses). 👑 Super Admin Tuesday Darbar master switch (ON/OFF), Havan cost (₹14,000) & rules CMS editor, and master Sevadar chat monitor. 🚩 Grand golden header with maximum space & zero clipping.",
+  "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
 }

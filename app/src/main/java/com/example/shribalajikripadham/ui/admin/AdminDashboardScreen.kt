@@ -99,6 +99,9 @@ fun AdminDashboardScreen(
     var adminHubSearchQuery by rememberSaveable { mutableStateOf("") }
     var adminHubSelectedCategory by rememberSaveable { mutableStateOf("सभी") }
     var isAdminHubGridView by rememberSaveable { mutableStateOf(true) }
+    var showHavanCostDialog by remember { mutableStateOf(false) }
+    var havanCostInput by remember { mutableStateOf("14000") }
+    var havanRulesInput by remember { mutableStateOf("") }
 
     // Intercept back button when admin is logged in: returns to Hub menu first, then exit dialog
     BackHandler(enabled = loggedInAdmin != null) {
@@ -675,6 +678,77 @@ fun AdminDashboardScreen(
             dismissButton = {
                 OutlinedButton(onClick = { showLogoutExitDialog = false }) {
                     Text(if (isHindi) "रहें (रद्द करें)" else "Stay / Cancel")
+                }
+            }
+        )
+    }
+
+    // Super Admin Havan Cost (₹14,000) & Rules Editor Dialog
+    if (showHavanCostDialog) {
+        AlertDialog(
+            onDismissRequest = { showHavanCostDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🔥", fontSize = 22.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isHindi) "हवन अनुमानित खर्च व नियम सम्पादक" else "Edit Havan Cost & Rules",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = MaroonPrimary
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = if (isHindi) "यहाँ निर्धारित किया गया खर्च व नियम तुरंत सभी भक्तों के हवन आवेदन फॉर्म पर लाइव हो जाएगा।" else "Cost set here will immediately be live on devotee havan application forms.",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+
+                    OutlinedTextField(
+                        value = havanCostInput,
+                        onValueChange = { havanCostInput = it.filter { ch -> ch.isDigit() } },
+                        label = { Text("अनुमानित खर्च (₹)", fontSize = 12.sp) },
+                        leadingIcon = { Text("₹", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = havanRulesInput,
+                        onValueChange = { havanRulesInput = it },
+                        label = { Text("हवन नियम व वाहन किराया निर्देश", fontSize = 12.sp) },
+                        placeholder = { Text("उदा: हवन अनुष्ठान खर्च लगभग ₹14,000...") },
+                        minLines = 3,
+                        maxLines = 5,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val cost = havanCostInput.toIntOrNull() ?: 14000
+                        scope.launch {
+                            val ok = repository.updateHavanSettings(cost, havanRulesInput.trim())
+                            settings = repository.getSettings()
+                            showHavanCostDialog = false
+                            Toast.makeText(context, if (ok) "✅ हवन सेटिंग्स सुरक्षित व सिंक हो गई!" else "त्रुटि: सेटिंग्स सेव नहीं हो सकी", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("💾 सुरक्षित करें (Save & Sync)", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showHavanCostDialog = false }) {
+                    Text("रद्द करें (Cancel)", color = Color.Gray)
                 }
             }
         )
@@ -1416,6 +1490,206 @@ fun AdminDashboardScreen(
                                     }
                                 }
                             }
+                        }
+
+                        if (isSuper) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDF5)),
+                                border = BorderStroke(1.5.dp, AmberGold),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("👑", fontSize = 20.sp)
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = if (isHindi) "मुख्य व्यवस्थापक त्वरित नियंत्रण (Super Control)" else "Super Admin Quick Controls",
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = 14.sp,
+                                                color = MaroonPrimary
+                                            )
+                                        }
+                                        Surface(
+                                            color = AmberGold.copy(alpha = 0.2f),
+                                            shape = RoundedCornerShape(6.dp)
+                                        ) {
+                                            Text(
+                                                text = "अंकित चौधरी",
+                                                fontSize = 10.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaroonPrimary,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    // 1. TUESDAY DARBAR MASTER SWITCH
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = if (settings.isTuesdayDarbarEnabled) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
+                                        border = BorderStroke(1.dp, if (settings.isTuesdayDarbarEnabled) Color(0xFF4CAF50) else Color(0xFFFF9800)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(
+                                                        text = if (settings.isTuesdayDarbarEnabled) "🚩 मंगलवार दरबार सेवा: चालू" else "⏸️ मंगलवार दरबार सेवा: बंद",
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 13.sp,
+                                                        color = if (settings.isTuesdayDarbarEnabled) Color(0xFF1B5E20) else Color(0xFFBF360C)
+                                                    )
+                                                }
+                                                Text(
+                                                    text = if (settings.isTuesdayDarbarEnabled) "भक्त मंगलवार टोकन ले सकते हैं" else "दरबार बंद है (1-क्लिक से चालू करें)",
+                                                    fontSize = 10.8.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                            }
+
+                                            Switch(
+                                                checked = settings.isTuesdayDarbarEnabled,
+                                                onCheckedChange = { isChecked ->
+                                                    scope.launch {
+                                                        repository.updateTuesdayDarbarSettings(
+                                                            isEnabled = isChecked,
+                                                            name = settings.tuesdayDarbarName,
+                                                            address = settings.tuesdayDarbarAddress,
+                                                            latitude = settings.tuesdayLatitude,
+                                                            longitude = settings.tuesdayLongitude,
+                                                            allowedRadiusMeters = settings.tuesdayAllowedRadiusMeters,
+                                                            outstationMinDistanceKm = settings.tuesdayOutstationMinDistanceKm,
+                                                            timings = settings.tuesdayDarbarTimings,
+                                                            tokenServiceMode = settings.tuesdayTokenServiceMode,
+                                                            tokenNotice = settings.tuesdayTokenNotice
+                                                        )
+                                                        settings = repository.getSettings()
+                                                        Toast.makeText(context, if (isChecked) "🚩 मंगलवार दरबार चालू कर दिया गया" else "⏸️ मंगलवार दरबार बंद कर दिया गया", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                },
+                                                colors = SwitchDefaults.colors(
+                                                    checkedThumbColor = Color.White,
+                                                    checkedTrackColor = Color(0xFF2E7D32),
+                                                    uncheckedThumbColor = Color.White,
+                                                    uncheckedTrackColor = Color.Gray
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // 2. HAWAN COST (₹14,000) & RULES QUICK EDIT
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFFFFEBEE),
+                                        border = BorderStroke(1.dp, Color(0xFFEF9A9A)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "🔥 हवन अनुमानित खर्च: ₹${settings.havanEstimatedCost}",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp,
+                                                    color = Color(0xFFB71C1C)
+                                                )
+                                                Text(
+                                                    text = "भक्तों के आवेदन फॉर्म में यही शुल्क दिखेगा",
+                                                    fontSize = 10.8.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                            }
+
+                                            Button(
+                                                onClick = {
+                                                    havanCostInput = settings.havanEstimatedCost.toString()
+                                                    havanRulesInput = settings.havanRulesNotice
+                                                    showHavanCostDialog = true
+                                                },
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
+                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                                modifier = Modifier.height(34.dp)
+                                            ) {
+                                                Text("बदलें ✏️", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // 3. MASTER ALL CHATS ACCESS FOR SUPER ADMIN
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFFEDE7F6),
+                                        border = BorderStroke(1.dp, Color(0xFFB39DDB)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "💬 सम्पूर्ण सेवादार चैट निगरानी",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp,
+                                                    color = Color(0xFF4A148C)
+                                                )
+                                                Text(
+                                                    text = "सभी भक्तों के प्रश्न व सेवादार उत्तर मॉनिटर करें",
+                                                    fontSize = 10.8.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                            }
+
+                                            Button(
+                                                onClick = {
+                                                    val idx = allowedTabs.indexOfFirst { it.contains("चैट") || it.contains("Helpdesk") || it.contains("पूछताछ") }
+                                                    if (idx >= 0) {
+                                                        selectedTab = idx
+                                                        activeScreenTitle = allowedTabs[idx]
+                                                    }
+                                                },
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A148C)),
+                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                                modifier = Modifier.height(34.dp)
+                                            ) {
+                                                Text("देखें ➔", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
                         }
 
                         // UNIFIED ADMIN CONTROL HUB: LIST & GRID VIEW OF ALL MODULES
