@@ -296,34 +296,6 @@ fun DataVaultScreen(
                 }
             }
 
-            // 4. New Hosting Migration Guide
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                border = BorderStroke(1.dp, Color(0xFFFFCA28)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "💡 नई होस्टिंग पर शिफ्ट कैसे करें?",
-                            fontWeight = FontWeight.Bold,
-                            color = SaffronPrimary,
-                            fontSize = 15.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "1. नई होस्टिंग में shribalajikripadham.online डोमेन जोड़ें।\n" +
-                               "2. नई होस्टिंग के public_html फोल्डर में install.php अपलोड करें।\n" +
-                               "3. ब्राउज़र में shribalajikripadham.online/install.php खोलें (सारा कोड व टेबल्स 1 सेकंड में बन जाएंगे)।\n" +
-                               "4. अपना बैकअप अपलोड कर दें — सारे भक्तों के मोबाइल ऐप बिना किसी अपडेट के तुरंत चालू हो जाएंगे!",
-                        color = Color(0xFF37474F),
-                        fontSize = 12.sp,
-                        lineHeight = 18.sp
-                    )
-                }
-            }
         }
     }
 }

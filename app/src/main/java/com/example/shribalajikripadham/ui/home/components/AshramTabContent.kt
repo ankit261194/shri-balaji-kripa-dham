@@ -29,7 +29,7 @@ fun AshramTabContent(
     isHindi: Boolean,
     settings: AshramSettings,
     currentTheme: SacredTheme,
-    onNavigateToTravelGuide: () -> Unit,
+    onNavigateToTravelGuide: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -155,11 +155,19 @@ fun AshramTabContent(
                     }
 
                     OutlinedButton(
-                        onClick = onNavigateToTravelGuide,
+                        onClick = {
+                            val addr = settings.address.ifBlank { "Shri Balaji Kripa Dham Dungra Jat Bulandshahr" }
+                            val mapUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=" + Uri.encode(addr))
+                            try {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, mapUri))
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "मानचित्र खोलने में असमर्थ", Toast.LENGTH_SHORT).show()
+                            }
+                        },
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1.3f)
                     ) {
-                        Text(if (isHindi) "🗺️ मार्ग गाइड ➔" else "🗺️ Route ➔", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(if (isHindi) "📍 गूगल मैप्स ➔" else "📍 Directions ➔", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }

@@ -173,21 +173,7 @@ fun HomeTopBar(
                         }
                     )
 
-                    DropdownMenuItem(
-                        text = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("📖", fontSize = 16.sp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(if (isHindi) "आश्रम गाइड (PDF)" else "Ashram Guide (PDF)", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                            }
-                        },
-                        onClick = {
-                            showMoreMenu = false
-                            onOpenManualPdf()
-                        }
-                    )
 
-                    HorizontalDivider()
 
                     DropdownMenuItem(
                         text = {

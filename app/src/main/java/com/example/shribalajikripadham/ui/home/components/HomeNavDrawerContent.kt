@@ -119,8 +119,7 @@ fun HomeNavDrawerContent(
                 DrawerMenuItem("📜", "डिजिटल पावन पर्चा", "Digital Parchas", onNavigateToParchas),
                 DrawerMenuItem("👥", "सेवादार संपर्क व लाइव चैट", "Sevadar Helpdesk", onOpenSevadarHelpdesk),
                 DrawerMenuItem("🔥", "हवन कराने हेतु आवेदन", "Sacred Havan", onNavigateToHavan),
-                DrawerMenuItem("🗺️", "आश्रम मार्ग गाइड", "Travel Guide", onNavigateToTravelGuide),
-                DrawerMenuItem("📖", "ऐप संपूर्ण मार्गदर्शिका (PDF)", "User Manual (PDF)", onOpenManualPdf),
+
                 DrawerMenuItem("🔄", "ऐप अपडेट जांचें (Live)", "Check Updates", onCheckUpdate),
                 DrawerMenuItem("📲", "ऐप शेयर करें (भक्तों को भेजें)", "Share App", onShareApp),
                 DrawerMenuItem("🔐", "प्रबंधक / सेवादार लॉगिन", "Sevadar Portal", onNavigateToAdmin)

@@ -1231,7 +1231,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 var needsUpdate = true
                 if (existing.moveToFirst()) {
                     val existingLyrics = existing.getString(1) ?: ""
-                    if (existingLyrics.length >= track.lyricsHindi.length) {
+                    if (existingLyrics == track.lyricsHindi) {
                         needsUpdate = false
                     }
                 }

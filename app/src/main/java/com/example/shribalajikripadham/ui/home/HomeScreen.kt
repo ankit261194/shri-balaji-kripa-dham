@@ -18,6 +18,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shribalajikripadham.data.model.AshramSettings
+import com.example.shribalajikripadham.data.model.Token
+import com.example.shribalajikripadham.ui.token.PremiumRoyalTokenCard
+import com.example.shribalajikripadham.hardware.DeviceFingerprintManager
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import com.example.shribalajikripadham.data.repository.AshramRepository
 import com.example.shribalajikripadham.data.sacred.SacredTrack
 import com.example.shribalajikripadham.theme.MaroonPrimary
@@ -65,6 +70,7 @@ fun HomeScreen(
     val scrollState = rememberScrollState()
 
     var settings by remember { mutableStateOf(AshramSettings()) }
+    var myActiveToken by remember { mutableStateOf<Token?>(null) }
     var selectedTab by remember { mutableStateOf(ProHomeTab.DARSHAN) }
     var viewingLyricsTrack by remember { mutableStateOf<SacredTrack?>(null) }
     var showSevadarHelpdesk by remember { mutableStateOf(false) }
@@ -99,6 +105,28 @@ fun HomeScreen(
         while (isActive) {
             currentTimeMs = System.currentTimeMillis()
             delay(1000L)
+        }
+    }
+
+    // Devotee Personal Token Auto-Recovery & Active Tracker
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            try {
+                val devId = com.example.shribalajikripadham.hardware.DeviceFingerprintManager.getDeviceId(context)
+                val targetDate = if (settings.darbarDate.isNotBlank()) settings.darbarDate else com.example.shribalajikripadham.data.local.DatabaseHelper.getTodayDateString()
+                var tok = repository.checkDeviceRegisteredToday(devId, targetDate)
+                if (tok == null) {
+                    val savedPhone = try {
+                        context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE).getString("my_phone_number", "") ?: ""
+                    } catch (_: Exception) { "" }
+                    tok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(devId, targetDate, savedPhone)
+                }
+                if (tok == null) {
+                    tok = com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(devId, targetDate)
+                }
+                myActiveToken = tok
+            } catch (e: Exception) {}
+            delay(5_000L)
         }
     }
 
@@ -194,17 +222,7 @@ fun HomeScreen(
                         context.startActivity(android.content.Intent.createChooser(intent, "ऐप शेयर करें"))
                     }
                 },
-                onOpenManualPdf = {
-                    scope.launch {
-                        drawerState.close()
-                        val file = AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
-                        if (file != null) {
-                            AshramManualPdfGenerator.openOrSharePdf(context, file, "श्री बालाजी कृपा धाम मार्गदर्शिका")
-                        } else {
-                            Toast.makeText(context, "PDF तैयार करने में असमर्थ", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
+                onOpenManualPdf = {}
             )
         }
     ) {
@@ -222,14 +240,7 @@ fun HomeScreen(
                             } catch (e: Exception) {}
                         }
                     },
-                    onOpenManualPdf = {
-                        val file = AshramManualPdfGenerator.generateDevoteeGuidePdf(context)
-                        if (file != null) {
-                            AshramManualPdfGenerator.openOrSharePdf(context, file, "श्री बालाजी कृपा धाम मार्गदर्शिका")
-                        } else {
-                            Toast.makeText(context, "PDF तैयार करने में असमर्थ", Toast.LENGTH_SHORT).show()
-                        }
-                    },
+                    onOpenManualPdf = {},
                     onOpenSevadarChat = { showSevadarHelpdesk = true },
                     onToggleLanguage = onToggleLanguage,
                     onOpenAdmin = onNavigateToAdmin
@@ -266,6 +277,76 @@ fun HomeScreen(
                                 currentTheme = currentTheme
                             )
 
+                            // 1b. Devotee's Active Personal Token Card (Hero Prominence)
+                            myActiveToken?.let { tok ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onNavigateToToken() },
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF9E6)),
+                                    border = BorderStroke(1.5.dp, Color(0xFFD4AF37)),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(14.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = MaroonPrimary,
+                                                modifier = Modifier.size(46.dp)
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Text(
+                                                        text = "#${tok.tokenNumber}",
+                                                        color = Color(0xFFFFD700),
+                                                        fontSize = 18.sp,
+                                                        fontWeight = FontWeight.Black
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Column {
+                                                Text(
+                                                    text = "🚩 आपका सक्रिय टोकन: #${tok.tokenNumber}",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp,
+                                                    color = MaroonPrimary
+                                                )
+                                                Text(
+                                                    text = "${tok.patientName} • दिनांक: ${tok.darbarDate}",
+                                                    fontSize = 11.sp,
+                                                    color = Color.DarkGray
+                                                )
+                                                Text(
+                                                    text = if (settings.runningTokenNumber > 0) "वर्तमान में सेवारत: #${settings.runningTokenNumber}" else "कतार में प्रतीक्षारत",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = if (settings.runningTokenNumber == tok.tokenNumber) Color(0xFF2E7D32) else Color(0xFFE65100)
+                                                )
+                                            }
+                                        }
+                                        Surface(
+                                            color = MaroonPrimary,
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(
+                                                text = "रसीद देखें ➔",
+                                                color = Color.White,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
                             // 2. Real-Time Darbar & Token Status Card
                             LiveDarbarStatusCard(
                                 isHindi = isHindi,
@@ -301,29 +382,52 @@ fun HomeScreen(
                                 onNavigateToAarti = { selectedTab = ProHomeTab.BHAKTI },
                                 onNavigateToGranth = onNavigateToSacredGranth,
                                 onNavigateToPanchang = onNavigateToPanchang,
-                                onNavigateToTravelGuide = onNavigateToTravelGuide,
+                                onNavigateToHavan = onNavigateToHavanApplication,
                                 onOpenSevadarHelpdesk = { showSevadarHelpdesk = true }
                             )
                         }
 
                         ProHomeTab.TOKEN -> {
-                            SundayTokenActionCard(
-                                isHindi = isHindi,
-                                currentTheme = currentTheme,
-                                isTuesdayEnabled = settings.isTuesdayDarbarEnabled,
-                                onNavigateToToken = onNavigateToToken,
-                                onNavigateToFaceToken = onNavigateToFaceToken,
-                                onNavigateToTuesdayToken = onNavigateToTuesdayToken
-                            )
+                            if (myActiveToken != null) {
+                                PremiumRoyalTokenCard(
+                                    token = myActiveToken!!,
+                                    settings = settings,
+                                    isHindi = isHindi,
+                                    onBackToHome = { selectedTab = ProHomeTab.DARSHAN }
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                OutlinedButton(
+                                    onClick = onNavigateToToken,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.2.dp, MaroonPrimary)
+                                ) {
+                                    Text(
+                                        text = if (isHindi) "➕ अन्य परिजन हेतु नया टोकन बनाएं" else "➕ Issue Another Token for Family",
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaroonPrimary,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            } else {
+                                SundayTokenActionCard(
+                                    isHindi = isHindi,
+                                    currentTheme = currentTheme,
+                                    isTuesdayEnabled = settings.isTuesdayDarbarEnabled,
+                                    onNavigateToToken = onNavigateToToken,
+                                    onNavigateToFaceToken = onNavigateToFaceToken,
+                                    onNavigateToTuesdayToken = onNavigateToTuesdayToken
+                                )
 
-                            LiveDarbarStatusCard(
-                                isHindi = isHindi,
-                                settings = settings,
-                                scheduleState = scheduleState,
-                                currentTheme = currentTheme,
-                                onNavigateToLiveDarbar = onNavigateToLiveDarbar,
-                                onNavigateToToken = onNavigateToToken
-                            )
+                                LiveDarbarStatusCard(
+                                    isHindi = isHindi,
+                                    settings = settings,
+                                    scheduleState = scheduleState,
+                                    currentTheme = currentTheme,
+                                    onNavigateToLiveDarbar = onNavigateToLiveDarbar,
+                                    onNavigateToToken = onNavigateToToken
+                                )
+                            }
                         }
 
                         ProHomeTab.BHAKTI -> {

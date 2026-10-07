@@ -1550,28 +1550,14 @@ fun TokenRegistrationScreen(
                                 val currentSchedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
                                 when (currentSchedule) {
                                     is SundayScheduleState.CountdownActive -> {
-                                        scheduleAlertTitle = if (isHindi) "⏳ टोकन उल्टी गिनती जारी है" else "⏳ Countdown Active"
-                                        scheduleAlertMessage = if (isHindi)
-                                            "रविवार टोकन पंजीकरण में शेष समय: ${SundayTokenScheduleHelper.formatCountdownHindi(currentSchedule.remainingMillis)} [ ${SundayTokenScheduleHelper.formatCountdown(currentSchedule.remainingMillis)} ]।\n\nटोकन ${currentSchedule.formattedTarget} स्वतः खुल जाएंगे। कृपया उस समय पुनः प्रयास करें।"
-                                        else
-                                            "Tokens open in: ${SundayTokenScheduleHelper.formatCountdown(currentSchedule.remainingMillis)} (Will open automatically at ${currentSchedule.formattedTarget})."
-                                        showScheduleAlertDialog = true
-                                        errorMessage = scheduleAlertMessage
-                                        return@Button
+                                        // Open for immediate advance booking during countdown!
                                     }
                                     is SundayScheduleState.NonSunday -> {
-                                        scheduleAlertTitle = if (isHindi) "📅 टोकन केवल रविवार को मिलते हैं" else "📅 Tokens Only On Sunday"
-                                        scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
-                                        showScheduleAlertDialog = true
-                                        errorMessage = scheduleAlertMessage
-                                        return@Button
+                                        // Devotees can register Advance Tokens for the upcoming Sunday!
+                                        // Will automatically issue for currentSchedule.nextSundayDateStr
                                     }
                                     is SundayScheduleState.SundayBeforeStart -> {
-                                        scheduleAlertTitle = if (isHindi) "⏳ टोकन सुबह 8:00 बजे से मिलेंगे" else "⏳ Opens at 8:00 AM"
-                                        scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
-                                        showScheduleAlertDialog = true
-                                        errorMessage = scheduleAlertMessage
-                                        return@Button
+                                        // Open for registration on Sunday morning
                                     }
                                     is SundayScheduleState.SundayClosedEvening -> {
                                         scheduleAlertTitle = if (isHindi) "🔴 आज के टोकन पूरे हो गए हैं" else "🔴 Today's Tokens Closed"
@@ -1603,10 +1589,7 @@ fun TokenRegistrationScreen(
                                     errorMessage = if (isHindi) "टोकन पंजीकरण हेतु लोकेशन (GPS) चालू होना आवश्यक है। कृपया GPS ऑन करें।" else "GPS location is required for token registration. Please turn on GPS."
                                     return@Button
                                 }
-                                if (capturedBitmap == null && capturedPhotoUri.isNullOrBlank()) {
-                                    errorMessage = if (isHindi) "कृपया टोकन हेतु भक्त की फोटो खींचें या नीचे गैलरी से चुनें।" else "Please take or pick devotee photo."
-                                    return@Button
-                                }
+                                // Devotee photo is optional - proceeds smoothly with or without selfie
 
                                 // 2. Check Ashram Location & Dual-Distance Geofence Policy
                                 if (settings.isGeofenceEnforced) {

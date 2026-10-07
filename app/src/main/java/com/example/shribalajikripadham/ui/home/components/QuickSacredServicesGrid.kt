@@ -37,7 +37,7 @@ fun QuickSacredServicesGrid(
     onNavigateToAarti: () -> Unit,
     onNavigateToGranth: () -> Unit,
     onNavigateToPanchang: () -> Unit,
-    onNavigateToTravelGuide: () -> Unit,
+    onNavigateToHavan: () -> Unit,
     onOpenSevadarHelpdesk: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -70,13 +70,13 @@ fun QuickSacredServicesGrid(
             onClick = onNavigateToPanchang
         ),
         SacredServiceItem(
-            id = "guide",
-            icon = "🗺️",
-            titleHindi = "आश्रम मार्ग गाइड",
-            titleEnglish = "Travel Guide",
-            subtitleHindi = "डूँगरा जाट कैसे पहुँचें",
-            subtitleEnglish = "Route & Directions",
-            onClick = onNavigateToTravelGuide
+            id = "havan",
+            icon = "🔥",
+            titleHindi = "यज्ञ व पावन हवन",
+            titleEnglish = "Sacred Havan",
+            subtitleHindi = "हवन कराने हेतु आवेदन",
+            subtitleEnglish = "Havan Application",
+            onClick = onNavigateToHavan
         )
     )
 

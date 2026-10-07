@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -836,20 +837,6 @@ fun AdminDashboardScreen(
                                 Text("🏠", fontSize = 18.sp)
                             }
                         }
-                        IconButton(onClick = {
-                            val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
-                            if (file != null) {
-                                com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
-                                    context,
-                                    file,
-                                    if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
-                                )
-                            } else {
-                                Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
-                            }
-                        }) {
-                            Text("📖", fontSize = 18.sp)
-                        }
                         TextButton(onClick = {
                             showLogoutExitDialog = true
                         }) {
@@ -1283,7 +1270,9 @@ fun AdminDashboardScreen(
             if (isSuper || admin.canManageTuesdayDarbar) {
                 allowedTabs.add(if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar")
             }
-// (Bus Ledger removed)
+            if (isSuper || admin.canManageExpenses || settings.isBusBookingLive) {
+                allowedTabs.add(if (isHindi) "बस बुकिंग लेजर" else "Bus Ledger")
+            }
             if (isSuper || admin.canManageArzi || settings.canAdminViewArziLedger) {
                 allowedTabs.add(if (isHindi) "अर्जी लेजर 📦" else "Arzi Ledger 📦")
             }
@@ -1304,7 +1293,9 @@ fun AdminDashboardScreen(
             if (isSuper || admin.canManageAartiBhajan) {
                 allowedTabs.add(if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager")
             }
-// (UI Box & Website CMS removed)
+            if (isSuper || admin.canManageWebsite) {
+                allowedTabs.add(if (isHindi) "🌐 वेबसाइट लाइव एडिटर" else "Website Live Editor")
+            }
 
             // 4. Financial & Ledgers Operations
             if (isSuper || admin.canViewPaymentLedger || settings.canAdminViewPaymentHistory) {
@@ -1409,34 +1400,6 @@ fun AdminDashboardScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(5.dp)
                                 ) {
-                                    // Guide PDF Button
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = Color(0xFFEDE7F6),
-                                        border = BorderStroke(0.8.dp, Color(0xFFB39DDB)),
-                                        modifier = Modifier.clickable {
-                                            val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
-                                            if (file != null) {
-                                                com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
-                                                    context,
-                                                    file,
-                                                    if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
-                                                )
-                                            } else {
-                                                Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                    ) {
-                                        Text(
-                                            text = "📘 गाइड",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF4A148C),
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                            maxLines = 1,
-                                            softWrap = false
-                                        )
-                                    }
 
                                     // Password / PIN Self-Change Button
                                     Surface(
@@ -1488,249 +1451,201 @@ fun AdminDashboardScreen(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 4.dp, vertical = 6.dp),
-                                shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDF5)),
-                                border = BorderStroke(1.5.dp, AmberGold),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+                                border = BorderStroke(1.2.dp, Color(0xFFD4AF37)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                             ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                                ) {
+                                    // Row 1: Executive Deck Header & Status LED
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text("👑", fontSize = 20.sp)
-                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("👑", fontSize = 14.sp)
+                                            Spacer(modifier = Modifier.width(5.dp))
                                             Text(
-                                                text = if (isHindi) "मुख्य व्यवस्थापक त्वरित नियंत्रण (Super Control)" else "Super Admin Quick Controls",
+                                                text = if (isHindi) "कार्यकारी नियंत्रण डेक" else "Executive Command Deck",
                                                 fontWeight = FontWeight.ExtraBold,
-                                                fontSize = 14.sp,
-                                                color = MaroonPrimary
+                                                fontSize = 12.sp,
+                                                color = Color(0xFFFFD700)
                                             )
                                         }
-                                        Surface(
-                                            color = AmberGold.copy(alpha = 0.2f),
-                                            shape = RoundedCornerShape(6.dp)
-                                        ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(7.dp)
+                                                    .clip(CircleShape)
+                                                    .background(if (settings.isTuesdayDarbarEnabled) Color(0xFF4CAF50) else Color(0xFFFF9800))
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = if (settings.isTuesdayDarbarEnabled) "मंगलवार: चालू" else "मंगलवार: बंद",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (settings.isTuesdayDarbarEnabled) Color(0xFF81C784) else Color(0xFFFFB74D)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
                                             Text(
                                                 text = "अंकित चौधरी",
-                                                fontSize = 10.5.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaroonPrimary,
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = Color(0xFF94A3B8)
                                             )
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
 
-                                    // 1. TUESDAY DARBAR MASTER SWITCH
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = if (settings.isTuesdayDarbarEnabled) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
-                                        border = BorderStroke(1.dp, if (settings.isTuesdayDarbarEnabled) Color(0xFF4CAF50) else Color(0xFFFF9800)),
-                                        modifier = Modifier.fillMaxWidth()
+                                    // Row 2: High-Density Quick Controls in Horizontal Scroll
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .horizontalScroll(rememberScrollState()),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        // 1. Tuesday Toggle Pill
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = if (settings.isTuesdayDarbarEnabled) Color(0xFF1E3A2F) else Color(0xFF33202A),
+                                            border = BorderStroke(1.dp, if (settings.isTuesdayDarbarEnabled) Color(0xFF2E7D32) else Color(0xFF8E24AA)),
+                                            modifier = Modifier.height(34.dp)
                                         ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Text(
-                                                        text = if (settings.isTuesdayDarbarEnabled) "🚩 मंगलवार दरबार सेवा: चालू" else "⏸️ मंगलवार दरबार सेवा: बंद",
-                                                        fontWeight = FontWeight.Bold,
-                                                        fontSize = 13.sp,
-                                                        color = if (settings.isTuesdayDarbarEnabled) Color(0xFF1B5E20) else Color(0xFFBF360C)
-                                                    )
-                                                }
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                            ) {
                                                 Text(
-                                                    text = if (settings.isTuesdayDarbarEnabled) "भक्त मंगलवार टोकन ले सकते हैं" else "दरबार बंद है (1-क्लिक से चालू करें)",
-                                                    fontSize = 10.8.sp,
-                                                    color = Color.DarkGray
-                                                )
-                                            }
-
-                                            Switch(
-                                                checked = settings.isTuesdayDarbarEnabled,
-                                                onCheckedChange = { isChecked ->
-                                                    scope.launch {
-                                                        repository.updateTuesdayDarbarSettings(
-                                                            isEnabled = isChecked,
-                                                            name = settings.tuesdayDarbarName,
-                                                            address = settings.tuesdayDarbarAddress,
-                                                            latitude = settings.tuesdayLatitude,
-                                                            longitude = settings.tuesdayLongitude,
-                                                            allowedRadiusMeters = settings.tuesdayAllowedRadiusMeters,
-                                                            outstationMinDistanceKm = settings.tuesdayOutstationMinDistanceKm,
-                                                            timings = settings.tuesdayDarbarTimings,
-                                                            tokenServiceMode = settings.tuesdayTokenServiceMode,
-                                                            tokenNotice = settings.tuesdayTokenNotice
-                                                        )
-                                                        settings = repository.getSettings()
-                                                        Toast.makeText(context, if (isChecked) "🚩 मंगलवार दरबार चालू कर दिया गया" else "⏸️ मंगलवार दरबार बंद कर दिया गया", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                },
-                                                colors = SwitchDefaults.colors(
-                                                    checkedThumbColor = Color.White,
-                                                    checkedTrackColor = Color(0xFF2E7D32),
-                                                    uncheckedThumbColor = Color.White,
-                                                    uncheckedTrackColor = Color.Gray
-                                                )
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    // 2. HAWAN COST (₹14,000) & RULES QUICK EDIT
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = Color(0xFFFFEBEE),
-                                        border = BorderStroke(1.dp, Color(0xFFEF9A9A)),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = "🔥 हवन अनुमानित खर्च: ₹${settings.havanEstimatedCost}",
+                                                    text = "🚩 मंगलवार",
+                                                    fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.sp,
-                                                    color = Color(0xFFB71C1C)
+                                                    color = Color.White
                                                 )
-                                                Text(
-                                                    text = "भक्तों के आवेदन फॉर्म में यही शुल्क दिखेगा",
-                                                    fontSize = 10.8.sp,
-                                                    color = Color.DarkGray
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Switch(
+                                                    checked = settings.isTuesdayDarbarEnabled,
+                                                    onCheckedChange = { isChecked ->
+                                                        scope.launch {
+                                                            repository.updateTuesdayDarbarSettings(
+                                                                isEnabled = isChecked,
+                                                                name = settings.tuesdayDarbarName,
+                                                                address = settings.tuesdayDarbarAddress,
+                                                                latitude = settings.tuesdayLatitude,
+                                                                longitude = settings.tuesdayLongitude,
+                                                                allowedRadiusMeters = settings.tuesdayAllowedRadiusMeters,
+                                                                outstationMinDistanceKm = settings.tuesdayOutstationMinDistanceKm,
+                                                                timings = settings.tuesdayDarbarTimings,
+                                                                tokenServiceMode = settings.tuesdayTokenServiceMode,
+                                                                tokenNotice = settings.tuesdayTokenNotice
+                                                            )
+                                                            settings = repository.getSettings()
+                                                            Toast.makeText(context, if (isChecked) "🚩 मंगलवार दरबार चालू" else "⏸️ मंगलवार दरबार बंद", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    },
+                                                    modifier = Modifier.scale(0.68f),
+                                                    colors = SwitchDefaults.colors(
+                                                        checkedThumbColor = Color.White,
+                                                        checkedTrackColor = Color(0xFF2E7D32),
+                                                        uncheckedThumbColor = Color.White,
+                                                        uncheckedTrackColor = Color.Gray
+                                                    )
                                                 )
                                             }
+                                        }
 
-                                            Button(
-                                                onClick = {
+                                        // 2. Hawan Cost Chip
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFF2D1822),
+                                            border = BorderStroke(1.dp, Color(0xFFEF5350)),
+                                            modifier = Modifier
+                                                .height(34.dp)
+                                                .clickable {
                                                     havanCostInput = settings.havanEstimatedCost.toString()
                                                     havanRulesInput = settings.havanRulesNotice
                                                     showHavanCostDialog = true
-                                                },
-                                                shape = RoundedCornerShape(8.dp),
-                                                colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                                modifier = Modifier.height(34.dp)
+                                                }
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 10.dp)
                                             ) {
-                                                Text("बदलें ✏️", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                                Text(
+                                                    text = "🔥 हवन: ₹${settings.havanEstimatedCost} ✏️",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFFFFCDD2)
+                                                )
                                             }
                                         }
-                                    }
 
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    // 3. MASTER ALL CHATS ACCESS FOR SUPER ADMIN
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = Color(0xFFEDE7F6),
-                                        border = BorderStroke(1.dp, Color(0xFFB39DDB)),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
+                                        // 3. Sevadar Chat Monitor Chip
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFF201A38),
+                                            border = BorderStroke(1.dp, Color(0xFF7E57C2)),
                                             modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = "💬 सम्पूर्ण सेवादार चैट निगरानी",
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.sp,
-                                                    color = Color(0xFF4A148C)
-                                                )
-                                                Text(
-                                                    text = "सभी भक्तों के प्रश्न व सेवादार उत्तर मॉनिटर करें",
-                                                    fontSize = 10.8.sp,
-                                                    color = Color.DarkGray
-                                                )
-                                            }
-
-                                            Button(
-                                                onClick = {
+                                                .height(34.dp)
+                                                .clickable {
                                                     val idx = allowedTabs.indexOfFirst { it.contains("चैट") || it.contains("Helpdesk") || it.contains("पूछताछ") }
                                                     if (idx >= 0) {
                                                         selectedTab = idx
                                                         activeScreenTitle = allowedTabs[idx]
                                                     }
-                                                },
-                                                shape = RoundedCornerShape(8.dp),
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A148C)),
-                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                                modifier = Modifier.height(34.dp)
+                                                }
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 10.dp)
                                             ) {
-                                                Text("देखें ➔", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                                Text(
+                                                    text = "💬 सेवादार चैट",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFFD1C4E9)
+                                                )
                                             }
                                         }
-                                    }
-                                    Spacer(modifier = Modifier.height(8.dp))
 
-                                    // 4. INSTANT EMERGENCY NOTICE BROADCAST
-                                    Surface(
-                                        shape = RoundedCornerShape(10.dp),
-                                        color = Color(0xFFFFF8E1),
-                                        border = BorderStroke(1.dp, Color(0xFFFFD54F)),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Row(
+                                        // 4. Instant Notice Broadcast Chip
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFF332014),
+                                            border = BorderStroke(1.dp, Color(0xFFFFA726)),
                                             modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 10.dp, vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = "📢 तात्कालिक सूचना उद्घोषणा",
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.sp,
-                                                    color = Color(0xFFE65100)
-                                                )
-                                                Text(
-                                                    text = if (settings.emergencyNoticeText.isNotBlank()) "सक्रिय: ${settings.emergencyNoticeText.take(28)}..." else "सभी भक्तों को तुरंत पुश सूचना भेजें",
-                                                    fontSize = 10.8.sp,
-                                                    color = Color.DarkGray,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                            }
-
-                                            Button(
-                                                onClick = {
+                                                .height(34.dp)
+                                                .clickable {
                                                     val idx = allowedTabs.indexOfFirst { it.contains("सूचना") || it.contains("Broadcast") }
                                                     if (idx >= 0) {
                                                         selectedTab = idx
                                                         activeScreenTitle = allowedTabs[idx]
                                                     }
-                                                },
-                                                shape = RoundedCornerShape(8.dp),
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
-                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                                modifier = Modifier.height(34.dp)
+                                                }
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 10.dp)
                                             ) {
-                                                Text("भेजें 🚀", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                                Text(
+                                                    text = "📢 सूचना ➔",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFFFFE0B2)
+                                                )
                                             }
                                         }
                                     }
                                 }
                             }
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                         }
 
                         // UNIFIED ADMIN CONTROL HUB: LIST & GRID VIEW OF ALL MODULES
@@ -1795,33 +1710,6 @@ fun AdminDashboardScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(5.dp)
                                     ) {
-                                        Surface(
-                                            shape = RoundedCornerShape(6.dp),
-                                            color = Color(0xFFEDE7F6),
-                                            border = BorderStroke(0.8.dp, Color(0xFFB39DDB)),
-                                            modifier = Modifier.clickable {
-                                                val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
-                                                if (file != null) {
-                                                    com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
-                                                        context,
-                                                        file,
-                                                        if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
-                                                    )
-                                                } else {
-                                                    Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
-                                                }
-                                            }
-                                        ) {
-                                            Text(
-                                                text = "📘 गाइड",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF4A148C),
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                                maxLines = 1,
-                                                softWrap = false
-                                            )
-                                        }
 
                                         Surface(
                                             shape = RoundedCornerShape(6.dp),
@@ -9368,7 +9256,69 @@ fun PublicServiceMatrixTab(
             }
         }
 
-        // (Section 2 Bus & Section 2.5 Dharamshala removed)
+        // SECTION 2: ASHRAM BUS SERVICE MASTER ON/OFF CONTROL (SUPER ADMIN DIRECT CONTROL)
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, if (isBusBookingLive) Color(0xFF1976D2) else Color(0xFFBBDEFB))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Text("🚌", fontSize = 22.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = if (isHindi) "आश्रम बस सेवा मास्टर ऑन/ऑफ (सुपर एडमिन नियंत्रण)" else "Ashram Bus Service Master Control",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = MaroonPrimary
+                            )
+                            Text(
+                                text = if (isHindi) "बस बुकिंग, सीट चयन व लेजर का मास्टर स्विच (डेटा सुरक्षित रहता है)" else "Bus booking, seats & ledger master switch (data preserved)",
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                    Switch(checked = isBusBookingLive, onCheckedChange = onBusBookingLiveChange)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    color = if (isBusBookingLive) Color(0xFFE3F2FD) else Color(0xFFEEEEEE),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (isBusBookingLive)
+                            (if (isHindi) "🟢 सक्रिय: भक्तों के लिए बस बुकिंग व सीट चयन लाइव है। पिछला संपूर्ण लेजर व हिसाब सुरक्षित है।" else "🟢 LIVE: Bus booking & seat reservation are visible to devotees. Complete ledger is active.")
+                        else
+                            (if (isHindi) "🔒 निष्क्रीय (Hidden): बस बुकिंग सेवा भक्तों से छिपी हुई है। संपूर्ण लेजर, यात्री सूची व हिसाब सुरक्षित है और आवश्यकता पड़ने पर कभी भी चालू किया जा सकता है।" else "🔒 HIDDEN: Bus booking is hidden from devotees. Complete ledger and passenger records are preserved."),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isBusBookingLive) Color(0xFF0D47A1) else Color.DarkGray,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+
+                if (isBusBookingLive) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = busFareAmount,
+                        onValueChange = onBusFareAmountChange,
+                        label = { Text(if (isHindi) "बस किराया प्रति सीट (₹)" else "Bus Fare Per Seat (₹)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+
         // SECTION 3: ASHRAM UPI QR CODE & PAYMENT GATEWAY CONTROL (SUPER ADMIN DIRECT CONTROL)
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.White),

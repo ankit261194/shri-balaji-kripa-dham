@@ -678,39 +678,5 @@ fun GoogleSheetLedgerTab(
                 }
             }
         }
-
-        // 📝 6. Instructions Guide
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFDE7)),
-            border = BorderStroke(1.2.dp, AmberGold)
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = if (isHindi) "💡 Google Sheet बही-खाता सेटअप निर्देश" else "💡 Setup Guide",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFBF360C)
-                )
-                Text(
-                    text = if (isHindi)
-                        "1. अपने Google Drive में एक नई Google Sheet बनाएं।\n" +
-                        "2. ऊपर मेन्यू में 'Extensions' -> 'Apps Script' खोलें।\n" +
-                        "3. google_sheets_apps_script.js का कोड वहाँ पेस्ट करें।\n" +
-                        "4. 'Deploy' -> 'New deployment' -> Type में 'Web app' चुनें (Access: Anyone)।\n" +
-                        "5. मिला हुआ URL ऊपर डालकर 'URL सेव करें' दबाएं।"
-                    else
-                        "1. Create a Google Sheet in Google Drive.\n" +
-                        "2. Open Extensions -> Apps Script.\n" +
-                        "3. Paste google_sheets_apps_script.js code.\n" +
-                        "4. Deploy as Web app (Access: Anyone).\n" +
-                        "5. Paste URL above and click Save URL.",
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp,
-                    color = Color(0xFF3E2723)
-                )
-            }
-        }
     }
 }

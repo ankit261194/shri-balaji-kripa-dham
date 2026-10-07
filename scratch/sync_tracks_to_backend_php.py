@@ -1,149 +1,274 @@
-import re, json, sys
-sys.stdout.reconfigure(encoding='utf-8')
+# Update migrate_tracks.php
+import json
 
-with open('app/src/main/java/com/example/shribalajikripadham/data/sacred/SacredTracksData.kt', 'r', encoding='utf-8') as f:
-    kt_code = f.read()
-
-# Extract tracks
-raw_tracks = kt_code.split('SacredTrack(')[1:]
-tracks = []
-for tr in raw_tracks:
-    key, title_h, title_e, sub_h, dur, audio, disp, yt = "", "", "", "", "", "", 0, ""
-    lyrics = ""
-    for line in tr.split('\n'):
-        line_s = line.strip()
-        if line_s.startswith('trackKey = "'):
-            key = line_s.split('"')[1]
-        elif line_s.startswith('titleHindi = "'):
-            title_h = line_s.split('"')[1]
-        elif line_s.startswith('titleEnglish = "'):
-            title_e = line_s.split('"')[1]
-        elif line_s.startswith('subtitleHindi = "'):
-            sub_h = line_s.split('"')[1]
-        elif line_s.startswith('durationText = "'):
-            dur = line_s.split('"')[1]
-        elif line_s.startswith('audioUrl = "'):
-            audio = line_s.split('"')[1]
-        elif line_s.startswith('displayOrder = '):
-            disp = int(line_s.split('=')[1].replace(',', '').strip())
-        elif line_s.startswith('youtubeSearchQuery = "'):
-            yt = line_s.split('"')[1]
-    if 'lyricsHindi = """' in tr:
-        part = tr.split('lyricsHindi = """')[1]
-        lyrics = part.split('""".trimIndent()')[0]
-    if key:
-        tracks.append({
-            'track_key': key,
-            'title_hindi': title_h,
-            'title_english': title_e,
-            'subtitle_hindi': sub_h,
-            'duration_text': dur,
-            'audio_url': audio,
-            'display_order': disp,
-            'youtube_search_query': yt,
-            'lyrics_hindi': lyrics
-        })
-
-print(f"Extracted {len(tracks)} tracks from SacredTracksData.kt")
-
-# Generate PHP
-php_lines = [
-    "<?php",
-    "// Script to migrate and update ashram_tracks with 100% complete, authentic, sacred lyrics",
-    "if (file_exists(__DIR__ . '/../config/db.php')) {",
-    "    require_once __DIR__ . '/../config/db.php';",
-    "} else {",
-    "    if (!defined('DB_HOST')) define('DB_HOST', 'localhost');",
-    "    if (!defined('DB_NAME')) define('DB_NAME', 'u237101617_balaji');",
-    "    if (!defined('DB_USER')) define('DB_USER', 'u237101617_ankitantim0');",
-    "    if (!defined('DB_PASS')) define('DB_PASS', 'Aa@8006518960');",
-    "    function getDB() {",
-    "        $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';",
-    "        return new PDO($dsn, DB_USER, DB_PASS, [",
-    "            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,",
-    "            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC",
-    "        ]);",
-    "    }",
-    "}",
-    "",
-    "header('Content-Type: application/json; charset=utf-8');",
-    "",
-    "try {",
-    "    $pdo = getDB();",
-    "    // Ensure table exists",
-    "    $pdo->exec(\"CREATE TABLE IF NOT EXISTS ashram_tracks (",
-    "        id INT AUTO_INCREMENT PRIMARY KEY,",
-    "        track_key VARCHAR(64) UNIQUE NOT NULL,",
-    "        title_hindi VARCHAR(128) NOT NULL,",
-    "        title_english VARCHAR(128) DEFAULT '',",
-    "        subtitle_hindi VARCHAR(255) DEFAULT '',",
-    "        duration_text VARCHAR(32) DEFAULT '5:00',",
-    "        audio_url TEXT NOT NULL,",
-    "        lyrics_hindi MEDIUMTEXT NOT NULL,",
-    "        is_published TINYINT(1) DEFAULT 1,",
-    "        display_order INT DEFAULT 0,",
-    "        youtube_search_query VARCHAR(255) DEFAULT '',",
-    "        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,",
-    "        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
-    "    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\");",
-    "",
-    "    $tracks = ["
+tracks_json = [
+    {
+        "track_key": "hanuman_chalisa",
+        "title_hindi": "श्री हनुमान चालीसा",
+        "title_english": "Shri Hanuman Chalisa",
+        "subtitle_hindi": "दोहा एवं ४० चौपाइयाँ • संकट मोचन",
+        "duration_text": "9:45",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373303_b758f0.mp3",
+        "display_order": 1,
+        "is_published": 1,
+        "youtube_search_query": "Shri Hanuman Chalisa Hariharan Gulshan Kumar",
+        "lyrics_hindi": "॥ दोहा ॥\nश्रीगुरु चरन सरोज रज निज मनु मुकुरु सुधारि।\nबरनऊं रघुबर बिमल जसु जो दायकु फल चारि॥\nबुद्धिहीन तनु जानिके सुमिरौं पवन-कुमार।\nबल बुद्धि बिद्या देहु मोहिं हरहु कलेस बिकार॥\n\n॥ चौपाई ॥\nजय हनुमान ज्ञान गुन सागर।\nजय कपीस तिहुं लोक उजागर॥\nरामदूत अतुलित बल धामा।\nअंजनि-पुत्र पवनसुत नामा॥\n\nमहाबीर बिक्रम बजरंगी।\nकुमति निवार सुमति के संगी॥\nकंचन बरन बिराज सुबेसा।\nकानन कुंडल कुंचित केसा॥\n\nहाथ बज्र औ ध्वजा बिराजै।\nकांधे मूंज जनेऊ साजै॥\nसंकर सुवन केसरीनंदन।\nतेज प्रताप महा जग बन्दन॥\n\nबिद्यावान गुनी अति चातुर।\nराम काज करिबे को आतुर॥\nप्रभु चरित्र सुनिबे को रसिया।\nराम लखन सीता मन बसिया॥\n\nसूक्ष्म रूप धरि सियहिं दिखावा।\nबिकट रूप धरि लंक जरावा॥\nभीम रूप धरि असुर संहारे।\nरामचंद्र के काज संवारे॥\n\nलाय संजीवन लखन जियाये।\nश्रीरघुबीर हरषि उर लाये॥\nरघुपति कीन्ही बहुत बड़ाई।\nतुम मम प्रिय भरतहि सम भाई॥\n\nसहस बदन तुम्हरो जस गावैं।\nअस कहि श्रीपति कंठ लगावैं॥\nसनकादिक ब्रह्मादि मुनीसा।\nनारद सारद सहित अहीसा॥\n\nजम कुबेर दिगपाल जहां ते।\nकबि कोबिद कहि सके कहां ते॥\nतुम उपकार सुग्रीवहिं कीन्हा।\nराम मिलाय राज पद दीन्हा॥\n\nतुम्हरो मंत्र बिभीषन माना।\nलंकेस्वर भए सब जग जाना॥\nजुग सहस्र जोजन पर भानू।\nलील्यो ताहि मधुर फल जानू॥\n\nप्रभु मुद्रिका मेलि मुख माहीं।\nजलधि लांघि गये अचरज नाहीं॥\nदुर्गम काज जगत के जेते।\nसुगम अनुग्रह तुम्हरे तेते॥\n\nराम दुआरे तुम रखवारे।\nहोत न आज्ञा बिनु पैसारे॥\nसब सुख लहै तुम्हारी सरना।\nतुम रक्षक काहू को डर ना॥\n\nआपन तेज सम्हारो आपै।\nतीनों लोक हांक तें कांपै॥\nभूत पिसाच निकट नहिं आवै।\nमहाबीर जब नाम सुनावै॥\n\nनासै रोग हरै सब पीरा।\nजपत निरंतर हनुमत बीरा॥\nसंकट तें हनुमान छुड़ावै।\nमन क्रम बचन ध्यान जो लावै॥\n\nसब पर राम तपस्वी राजा।\nतिन के काज सकल तुम साजा॥\nऔर मनोरथ जो कोई लावै।\nसोइ अमित जीवन फल पावै॥\n\nचारों जुग परताप तुम्हारा।\nहै परसिद्ध जगत उजियारा॥\nसाधु-संत के तुम रखवारे।\nअसुर निकंदन राम दुलारे॥\n\nअष्ट सिद्धि नौ निधि के दाता।\nअस बर दीन जानकी माता॥\nराम रसायन तुम्हरे पासा।\nसदा रहो रघुपति के दासा॥\n\nतुम्हरे भजन राम को भावै।\nजनम-जनम के दुख बिसरावै॥\nअंतकाल रघुबर पुर जाई।\nजहां जन्म हरि-भक्त कहाई॥\n\nऔर देवता चित्त न धरई।\nहनुमत सेइ सर्ब सुख करई॥\nसंकट कटै मिटै सब पीरा।\nजो सुमिरै हनुमत बलबीरा॥\n\nजै जै जै हनुमान गोसाईं।\nकृपा करहु गुरुदेव की नाईं॥\nजो सत बार पाठ कर कोई।\nछूटहि बंदि महा सुख होई॥\n\nजो यह पढ़ै हनुमान चालीसा।\nहोय सिद्धि साखी गौरीसा॥\nतुलसीदास सदा हरि चेरा।\nकीजै नाथ हृदय मंह डेरा॥\n\n॥ दोहा ॥\nपवनतनय संकट हरन मंगल मूरति रूप।\nराम लखन सीता सहित हृदय बसहु सुर भूप॥"
+    },
+    {
+        "track_key": "hanuman_aarti",
+        "title_hindi": "आरती कीजै हनुमान लला की",
+        "title_english": "Aarti Kije Hanuman Lala Ki",
+        "subtitle_hindi": "श्री बालाजी महाराज की मुख्य नित्य आरती",
+        "duration_text": "4:40",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373304_1fc6aa.mp3",
+        "display_order": 2,
+        "is_published": 1,
+        "youtube_search_query": "Aarti Kije Hanuman Lala Ki Hariharan",
+        "lyrics_hindi": "आरती कीजै हनुमान लला की।\nदुष्ट दलन रघुनाथ कला की॥ (ध्रुवपद)\n\nजाके बल से गिरिवर कांपे।\nरोग दोष जाके निकट न झांके॥\nअंजनि पुत्र महा बलदाई।\nसंतन के प्रभु सदा सहाई॥\nआरती कीजै हनुमान लला की...\n\nदे बीड़ा रघुनाथ पठाए।\nलंका जारि सिया सुधि लाए॥\nलंका सो कोट समुद्र सी खाई।\nजात पवनसुत बार न लाई॥\nआरती कीजै हनुमान लला की...\n\nलंका जारि असुर संहारे।\nसियारामजी के काज संवारे॥\nलक्ष्मण मूर्छित पड़े सकारे।\nआनि संजीवन प्रान उबारे॥\nआरती कीजै हनुमान लला की...\n\nपैठि पाताल तोरि जम-कारे।\nअहिरावण की भुजा उखारे॥\nबाएं भुजा असुर दल मारे।\nदहिने भुजा संतजन तारे॥\nआरती कीजै हनुमान लला की...\n\nसुर नर मुनि जन आरती उतारें।\nजय जय जय हनुमान उचारें॥\nकंचन थार कपूर लौ छाई।\nआरती करत अंजना माई॥\nआरती कीजै हनुमान लला की...\n\nजो हनुमानजी की आरती गावै।\nबसि बैकुंठ परम पद पावै॥\nलंक विध्वंस किए रघुराई।\nतुलसीदास स्वामी कीर्ति गाई॥\nआरती कीजै हनुमान लला की।\nदुष्ट दलन रघुनाथ कला की॥"
+    },
+    {
+        "track_key": "balaji_aarti",
+        "title_hindi": "श्री बालाजी महाराज की आरती",
+        "title_english": "Shri Balaji Maharaj Aarti",
+        "subtitle_hindi": "ॐ जय हनुमत वीरा, संकट मोचन रणधीरा",
+        "duration_text": "5:15",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373307_1a7f1b.mp3",
+        "display_order": 3,
+        "is_published": 1,
+        "youtube_search_query": "Shri Balaji Maharaj Ki Aarti",
+        "lyrics_hindi": "ॐ जय हनुमत वीरा, स्वामी जय हनुमत वीरा।\nसंकट मोचन स्वामी, तुम हो रणधीरा॥ ॐ जय हनुमत वीरा... (ध्रुवपद)\n\nपवन पुत्र अंजनी सुत, महिमा अति भारी।\nदुःख दरिद्र मिटाओ, संकट सब हारी॥ ॐ जय हनुमत वीरा...\n\nबाल समय में तुमने, रवि को भक्ष लियो।\nदेवन स्तुति कीन्ही, तुरतहिं छोड़ दियो॥ ॐ जय हनुमत वीरा...\n\nकपि सुग्रीव राम संग, मैत्री करवाई।\nअभिमानी बलि मेटयो, कीर्ति रही छाई॥ ॐ जय हनुमत वीरा...\n\nजारि लंक को ले सिय की, सुधि वानर हर्षाये।\nकारज कठिन सुधारे, रघुवर मन भाये॥ ॐ जय हनुमत वीरा...\n\nशक्ति लगी लक्ष्मण को, भारी सोच भयो।\nलाय संजीवन बूटी, दुःख सब दूर कियो॥ ॐ जय हनुमत वीरा...\n\nरामहि ले अहिरावण, जब पाताल गयो।\nताहि मारि प्रभु लाये, जय जयकार भयो॥ ॐ जय हनुमत वीरा...\n\nराजत मेहंदीपुर में, दर्शन सुखकारी।\nडूँगरा जाट धाम विराजे, महिमा अति न्यारी॥ ॐ जय हनुमत वीरा...\n\nमंगल और शनिश्चर, मेला है जारी।\nअर्जी सुन लो दयालु, बालाजी अवतारी॥ ॐ जय हनुमत वीरा...\n\nश्री बालाजी की आरती, जो कोई नर गावे।\nकहत इन्द्र हर्षित मन, वांछित फल पावे॥\nॐ जय हनुमत वीरा, स्वामी जय हनुमत वीरा।\nसंकट मोचन स्वामी, तुम हो रणधीरा॥"
+    },
+    {
+        "track_key": "sankat_mochan",
+        "title_hindi": "संकट मोचन हनुमानाष्टक",
+        "title_english": "Sankat Mochan Hanumanashtak",
+        "subtitle_hindi": "बाल समय रबि भक्षि लियो तब...",
+        "duration_text": "5:55",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373304_b22622.mp3",
+        "display_order": 4,
+        "is_published": 1,
+        "youtube_search_query": "Sankat Mochan Hanumanashtak Hariharan",
+        "lyrics_hindi": "बाल समय रबि भक्षि लियो तब,\nतीनहुं लोक भयो अंधियारों।\nताहि सों त्रास भयो जग को,\nयह संकट काहु सों जात न टारो।\nदेवन आनि करी बिनती तब,\nछाड़ि दियो रबि कष्ट निवारो।\nको नहिं जानत है जग में कपि,\nसंकटमोचन नाम तिहारो॥ १ ॥\n\nबालि की त्रास कपीस बसै गिरि,\nजात महाप्रभु पंथ निहारो।\nचौंकि महामुनि साप दियो तब,\nचाहिए कौन बिचार बिचारो।\nकै द्विज रूप लिवाय महाप्रभु,\nसो तुम दास के सोक निवारो।\nको नहिं जानत है जग में कपि,\nसंकटमोचन नाम तिहारो॥ २ ॥\n\nअंगद के संग लेन गए सिय,\nखोज कपीस यह बैन उचारो।\nजीवत ना बचिहौ हम सो जु,\nबिना सुधि लाये इहां पगु धारो।\nहेरी थके तट सिंधु सबे तब,\nलाए सिया-सुधि प्रान उबारो।\nको नहिं जानत है जग में कपि,\nसंकटमोचन नाम तिहारो॥ ३ ॥\n\nरावन त्रास दई सिय को सब,\nराक्षसि सों कहि सोक निवारो।\nताहि समय हनुमान महाप्रभु,\nजाय महा रजनीचर मारो।\nचाहत सीय असोक सों आगि सु,\nदै प्रभु मुद्रिका सोक निवारो।\nको नहिं जानत है जग में कपि,\nसंकटमोचन नाम तिहारो॥ ४ ॥\n\nबान लग्यो उर लछिमन के तब,\nप्रान तजे सुत रावन मारो।\nलै गृह बैद्य सुषेन समेत,\nतबै गिरि द्रोण सु बीर उपारो।\nआनि संजीवन हाथ दई तब,\nलछिमन के तुम प्रान उबारो।\nको नहिं जानत है जग में कपि,\nसंकटमोचन नाम तिहारो॥ ५ ॥\n\nरावन जुद्ध अजान कियो तब,\nनाग कि फांस सबै सिर डारो।\nश्रीरघुनाथ समेत सबै दल,\nमोह भयो यह संकट भारो।\nआनि खगेस तबै हनुमान जु,\nबंधन काटि सुत्रास निवारो।\nको नहिं जानत है जग में कपि,\nसंकटमोचन नाम तिहारो॥ ६ ॥\n\nबंधु समेत जबै अहिरावन,\nलै रघुनाथ पतार सिधारो।\nदेबिहिं पूजि भली बिधि सों बलि,\nदेउ सबै मिलि मंत्र बिचारो।\nजाय सहाय भयो तब ही,\nअहिरावन सैन्य समेत संहारो।\nको नहिं जानत है जग में कपि,\nसंकटमोचन नाम तिहारो॥ ७ ॥\n\nकाज किये बड़ देवन के तुम,\nबीर महाप्रभु देखि बिचारो।\nकौन सो संकट मोर गरीब को,\nजो तुमसों नहिं जात है टारो।\nबेगि हरो हनुमान महाप्रभु,\nजो कछु संकट होय हमारो।\nको नहिं जानत है जग में कपि,\nसंकटमोचन नाम तिहारो॥ ८ ॥\n\n॥ दोहा ॥\nलाल देह लाली लसे, अरु धरि लाल लंगूर।\nबज्र देह दानव दलन, जय जय जय कपि सूर॥"
+    },
+    {
+        "track_key": "bajrang_baan",
+        "title_hindi": "श्री बजरंग बाण",
+        "title_english": "Shri Bajrang Baan",
+        "subtitle_hindi": "निश्चय प्रेम प्रतीति ते, बिनय करैं सनमान...",
+        "duration_text": "7:12",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373305_f87240.mp3",
+        "display_order": 5,
+        "is_published": 1,
+        "youtube_search_query": "Shri Bajrang Baan Hariharan",
+        "lyrics_hindi": "॥ दोहा ॥\nनिश्चय प्रेम प्रतीति ते, बिनय करैं सनमान।\nतेहि के कारज सकल शुभ, सिद्ध करैं हनुमान॥\n\n॥ चौपाई ॥\nजय हनुमंत संत हितकारी।\nसुनि लीजै प्रभु अरज हमारी॥\nजन के काज बिलंब न कीजै।\nआतुर दौरि महा सुख दीजै॥\n\nजैसे कूदि सिंधु महिपारा।\nसुरसा बदन पैठि बिस्तारा॥\nआगे जाय लंकिनी रोका।\nमारेहु लात गई सुर लोका॥\n\nजाय बिभीषन को सुख दीन्हा।\nसीता निरखि परमपद लीन्हा॥\nबाग उजारि अछय कुमारा।\nकपि संहारि लंक पर जारा॥\n\nलाह समान लंक जरि गई।\nजय जय धुनि सुरपुर नभ भई॥\nअब बिलंब केहि कारन स्वामी।\nकृपा करहु उर अंतरयामी॥\n\nजय जय लखन प्रान के दाता।\nआतुर होइ दुख हरहु निपाता॥\nजै गिरिधर जै जै सुखदाई।\nसेवा कियो सुग्रीव कन्हाई॥\n\nॐ हनु हनु हनु हनुमंत हठीले।\nबैरिहि मारु बज्र की कीले॥\nगदा बज्र लै बैरिहि मारो।\nमहाराज प्रभु दास उबारो॥\n\nॐ ह्रीं ह्रीं ह्रीं हनुमंत कपीसा।\nॐ हुं हुं हुं हनु अरि उर सीसा॥\nसत्य होहु हरि सपथ पायके।\nराम दूत धरु मारु धायके॥\n\nजय जय जय हनुमंत अगाधा।\nदुख पावत जन केहि अपराधा॥\nपूजा जप तप नेम अचारा।\nनहिं जानत कछु दास तुम्हारा॥\n\nबन उपबन मग गिरि गृह माहीं।\nतुम्हरे बल हम डरपत नाहीं॥\nजनकसुता हरि दास कहावो।\nताकी सपथ बिलंब न लावो॥\n\nजै जै जै धुनि होत अकासा।\nसुमिरत होत दुसह दुख नासा॥\nचरन पकरि कर जोरि मनावौं।\nयहि औसर अब केहि गोहरावौं॥\n\nउठु उठु चलु तोहि राम दुहाई।\nपांय परौं कर जोरि मनाई॥\nॐ चं चं चं चं चपल चलंता।\nॐ हनु हनु हनु हनु हनुमंता॥\n\nॐ हं हं हांक देत कपि चंचल।\nॐ सं सं सहमि पराने खल-दल॥\nअपने जन को तुरत उबारो।\nसुमिरत होय आनंद हमारो॥\n\nयह बजरंग बाण जेहि मारै।\nताहि कहो फिरि कवन उबारै॥\nपाठ करै बजरंग बाण की।\nहनुमत रक्षा करै प्रान की॥\n\nयह बजरंग बाण जो जापै।\nतासों भूत-प्रेत सब कांपै॥\nधूप देय अरु जपै हमेशा।\nताके तन नहिं रहै कलेसा॥\n\n॥ दोहा ॥\nउर प्रतीति दृढ़, सरन ह्वै, पाठ करै धरि ध्यान।\nबाधा सब हर, करैं सब काम सफल हनुमान॥"
+    },
+    {
+        "track_key": "bhairav_aarti",
+        "title_hindi": "श्री भैरव जी की आरती (सुनो जी भैरव लाडले)",
+        "title_english": "Shri Bhairav Ladle Aarti",
+        "subtitle_hindi": "सुनो जी भैरव लाडले, कर जोड़ कर विनती करूँ",
+        "duration_text": "4:45",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373307_b8cfc4.mp3",
+        "display_order": 6,
+        "is_published": 1,
+        "youtube_search_query": "Shri Bhairav Dev Aarti",
+        "lyrics_hindi": "सुनो जी भैरव लाडले, कर जोड़ कर विनती करूँ।\nकृपा तुम्हारी चाहिए, मैं ध्यान तुम्हारा ही धरूँ॥ (ध्रुवपद)\n\nमैं चरण छूता आपके, अर्जी मेरी सुन लीजिए।\nमैं हूँ मति का मंद, मेरी कुछ मदद तो कीजिए॥\nमहिमा तुम्हारी बहुत, कुछ थोड़ी सी मैं वर्णन करूँ।\nसुनो जी भैरव लाडले, कर जोड़ कर विनती करूँ॥\n\nकरते सवारी श्वान की, चारों दिशा में राज्य है।\nजितने भूत और प्रेत, सबके आप ही सरताज हैं॥\nहथियार है जो आपके, उनका क्या वर्णन करूँ।\nसुनो जी भैरव लाडले, कर जोड़ कर विनती करूँ॥\n\nमाताजी के सामने तुम, नृत्य भी करते हो सदा।\nगा-गा के गुण-अनुवाद से, उनको रिझाते हो सदा॥\nएक सांकली है आपकी, तारीफ़ उसकी क्या करूँ।\nसुनो जी भैरव लाडले, कर जोड़ कर विनती करूँ॥\n\nबहुत सी महिमा तुम्हारी, मेहंदीपुर सरनाम है।\nआते जगत के यात्री, बजरंग का स्थान है॥\nश्री प्रेतराज सरकार के, मैं शीश चरणों में धरूँ।\nसुनो जी भैरव लाडले, कर जोड़ कर विनती करूँ॥\n\nडूँगरा जाट के धाम में, बाबा तिहारी शान है।\nसंकट कटे सब भक्त के, मिलता अभय वरदान है॥\nदुखियों के संकट दूर कर, चरणों में तेरे आ गिरूँ।\nसुनो जी भैरव लाडले, कर जोड़ कर विनती करूँ॥\n\nनिशदिन तुम्हारे खेल से, माताजी खुश होती रहें।\nसर पर तुम्हारे हाथ रखकर, आशीर्वाद देती रहें॥\nकर जोड़ कर विनती करूँ, और शीश चरणों में धरूँ।\nसुनो जी भैरव लाडले, कर जोड़ कर विनती करूँ॥"
+    },
+    {
+        "track_key": "pretraj_chalisa",
+        "title_hindi": "श्री प्रेतराज सरकार की आरती व चालीसा",
+        "title_english": "Shri Pretraj Sarkar Aarti & Chalisa",
+        "subtitle_hindi": "संकट भंजन • दुष्ट दलन • संपूर्ण पाठ",
+        "duration_text": "6:30",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373308_2b4b4b.mp3",
+        "display_order": 7,
+        "is_published": 1,
+        "youtube_search_query": "Shri Pretraj Sarkar Chalisa",
+        "lyrics_hindi": "॥ श्री प्रेतराज सरकार की नित्य आरती ॥\nॐ जय प्रेतराज कृपाला, प्रभु जय प्रेतराज कृपाला।\nदुष्ट दलन पावन भगवाना, संकट हरन दयाला॥ ॐ जय प्रेतराज कृपाला...\n\nअसुर निकंदन तेज प्रतापी, भक्तन के प्रतिपाला।\nश्री बालाजी संग विराजे, महिमा अति विशाला॥ ॐ जय प्रेतराज कृपाला...\n\nभूत पिशाच यक्ष बेताला, कांपत थर-थर काया।\nतुम्हरे भजन से भागत संकट, छिन में दूर मोह-माया॥ ॐ जय प्रेतराज कृपाला...\n\nचौकी पर प्रभु रूप सुहावे, हाथ खडग सोहे।\nदुखियों के दुख दूर करत हो, त्रिभुवन जन मोहे॥ ॐ जय प्रेतराज कृपाला...\n\nदंड प्रचंड तुम्हारो स्वामी, दुष्टन को संहारे।\nजो जन शरण तुम्हारी आए, तिनके काज संवारे॥ ॐ जय प्रेतराज कृपाला...\n\nकंचन थाल कपूर सुहाई, आरती करत पुकारी।\nजय प्रेतराज देव दयाला, विपदा हरो हमारी॥ ॐ जय प्रेतराज कृपाला...\n\nआरती जो कोई नर-नारी गावे, मनवांछित फल पावे।\nकहत दास प्रभु शरण तिहारी, यम का भय न सतावे॥ ॐ जय प्रेतराज कृपाला...\n\n॥ श्री प्रेतराज सरकार चालीसा ॥\n॥ दोहा ॥\nसुमिरि चरण प्रेतराज के, धरम धुरंधर धीर।\nहरहु सकल भव आपदा, मेटहु जन की पीर॥\n\n॥ चौपाई ॥\nजय जय जय प्रेतराज बलिवाना। दुष्ट दलन पावन भगवाना॥\nतुम सुग्रीव राम के दासा। पूरन करहु भक्त अभिलाषा॥\nश्री बालाजी के संग विराजे। चौकी पर प्रभु रूप सुहाजे॥\nभूत पिशाच डाकिनी भागी। तुम्हरी शरण जो प्राणी लागी॥\nरोग दोष सब पल में टारो। कृपा दृष्टि कर भक्त उबारो॥\nजो जन ध्यान धरे मन लाई। ताके संकट देहु मिटाई॥\nजय प्रेतराज देव दयाला। सदा करहु भक्तन प्रतिपाला॥\nअसुर निकंदन परम प्रतापी। कांपत थर-थर अधमी पापी॥\nभैरव संग तुम्हारी जोड़ी। महिमा कही न जाय निहोरी॥\nहाथ में सोटा खड्ग विराजे। दुष्ट दलन रण डंका बाजे॥\nजो जन अर्जी धाम लगावे। प्रेतराज ताके कष्ट नशावे॥\nपरम पुनीत धाम कल्याणा। डूँगरा जाट महिमा जग जाना॥\nगुरुदेव तेजवीर की बानी। संकट कटे सुखी हो प्राणी॥\nजो यह चालीसा नित ध्यावै। सर्व सुखों का भोग लगावै॥\nपुत्र पौत्र धन धान्य बढ़ावै। अन्त काल प्रभु पद को पावै॥\n\n॥ दोहा ॥\nप्रेतराज सरकार की, जो नित आरती गाय।\nसकल कलेश बिकार मिटें, परमानन्द समायं॥"
+    },
+    {
+        "track_key": "guru_vandana",
+        "title_hindi": "श्री गुरुदेव जी की आरती",
+        "title_english": "Shri Gurudev Ji Ki Aarti",
+        "subtitle_hindi": "जय गुरुदेव दयानिधि, दीनन हितकारी",
+        "duration_text": "5:10",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373309_c31a75.mp3",
+        "display_order": 8,
+        "is_published": 1,
+        "youtube_search_query": "Guru Vandana Shloka Anuradha Paudwal",
+        "lyrics_hindi": "जय गुरुदेव दयानिधि, दीनन हितकारी।\nस्वामी भक्तन हितकारी।\nजय जय मोह विनाशक, भव बंधन हारी॥\nॐ जय जय जय गुरुदेव हरे॥ (ध्रुवपद)\n\nब्रह्मा विष्णु सदा शिव, गुरु मूरति धारी।\nवेद पुराण बखानत, गुरु महिमा भारी॥\nॐ जय जय जय गुरुदेव हरे॥\n\nजप तप तीरथ संयम, दान बिबिध दीजै।\nगुरु बिन ज्ञान न होवे, कोटि जतन कीजै॥\nॐ जय जय जय गुरुदेव हरे॥\n\nमाया मोह नदी जल, जीव बहे सारे।\nनाम जहाज बिठा कर, गुरु पल में तारे॥\nॐ जय जय जय गुरुदेव हरे॥\n\nकाम क्रोध मद मत्सर, चोर बड़े भारे।\nज्ञान खड्ग दे कर में, गुरु सब संहारे॥\nॐ जय जय जय गुरुदेव हरे॥\n\nनाना पंथ जगत में, निज निज गुण गावे।\nसबका सार बताकर, गुरु मारग लावे॥\nॐ जय जय जय गुरुदेव हरे॥\n\nपाँच चोर के कारण, नाम को बाण दियो।\nप्रेम भक्ति से सादा, भव जल पार कियो॥\nॐ जय जय जय गुरुदेव हरे॥\n\nगुरु चरणामृत निर्मल, सब पातक हारी।\nबचन सुनत तम नाशे, सब संशय हारी॥\nॐ जय जय जय गुरुदेव हरे॥\n\nतन मन धन सब अर्पण, गुरु चरणन कीजै।\nब्रह्मानंद परम पद, मोक्ष गति लीजै॥\nॐ जय जय जय गुरुदेव हरे॥\n\nश्री सतगुरुदेव की आरती, जो कोई नर गावै।\nभव सागर से तरकर, परम गति पावै॥\nॐ जय जय जय गुरुदेव हरे॥"
+    },
+    {
+        "track_key": "ram_stuti",
+        "title_hindi": "श्री रामचन्द्र कृपालु भजु मन",
+        "title_english": "Shri Ram Stuti",
+        "subtitle_hindi": "हरण भवभय दारुणं • गोस्वामी तुलसीदास कृत",
+        "duration_text": "5:10",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373306_76412f.mp3",
+        "display_order": 9,
+        "is_published": 1,
+        "youtube_search_query": "Shri Ram Chandra Kripalu Bhajman Nitin Mukesh",
+        "lyrics_hindi": "श्रीरामचन्द्र कृपालु भजु मन हरण भवभय दारुणं।\nनवकंज लोचन, कंज मुख, कर कंज, पद कंजारुणं॥ १ ॥\n\nकंदर्प अगणित अमित छबि, नवनील नीरद सुन्दरं।\nपट पीत मानहु तड़ित रुचि शुचि नौमि जनक सुतावरं॥ २ ॥\n\nभजु दीनबन्धु दिनेश दानव दैत्य वंश निकन्दनं।\nरघुनन्द आनन्दकन्द कोशलचन्द दशरथ नन्दनं॥ ३ ॥\n\nसिर मुकुट कुण्डल तिलक चारु उदारु अङ्ग विभूषणं।\nआजानुभुज शर चाप धर, संग्राम-जित-खरदूषणं॥ ४ ॥\n\nइति वदति तुलसीदास शंकर शेष मुनि मन रंजनं।\nमम हृदय कंज निवास कुरु, कामादि खल दल गंजनं॥ ५ ॥\n\nमनु जाहिं राचेउ मिलिहि सो बरु सहज सुंदर सांवरो।\nकरुना निधान सुजान सीलु सनेहु जानत रावरो॥\n\nएहि भांति गौरि असीस सुनि सिय सहित हियं हरषीं अली।\nतुलसी भवानिहि पूजि पुनि पुनि मुदित मन मंदिर चली॥\n\n॥ सोरठा ॥\nजानी गौरी अनुकूल सिय हिय हरषु न जाइ कहि।\nमंजुल मंगल मूल बाम अंग फरकन लगे॥"
+    },
+    {
+        "track_key": "ganesh_aarti",
+        "title_hindi": "जय गणेश जय गणेश देवा",
+        "title_english": "Jai Ganesh Deva",
+        "subtitle_hindi": "माता जाकी पार्वती पिता महादेवा",
+        "duration_text": "4:20",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373310_682644.mp3",
+        "display_order": 10,
+        "is_published": 1,
+        "youtube_search_query": "Jai Ganesh Deva Anuradha Paudwal",
+        "lyrics_hindi": "जय गणेश, जय गणेश, जय गणेश देवा।\nमाता जाकी पार्वती, पिता महादेवा॥ (ध्रुवपद)\n\nएक दन्त, दयावन्त, चार भुजाधारी।\nमाथे पर तिलक सोहे, मूसे की सवारी॥\nपान चढ़े, फूल चढ़े, और चढ़े मेवा।\nलड्डुअन का भोग लगे, सन्त करें सेवा॥ जय गणेश देवा...\n\nअन्धे को आंख देत, कोढ़िन को काया।\nबांझन को पुत्र देत, निर्धन को माया॥\nदीनन की लाज राखो, शम्भु-सुत वारी।\nकामना को पूर्ण करो, जग बलिहारी॥ जय गणेश देवा...\n\n'सूर' श्याम शरण आए, सफल कीजे सेवा।\nमाता जाकी पार्वती, पिता महादेवा॥\nजय गणेश, जय गणेश, जय गणेश देवा।\nमाता जाकी पार्वती, पिता महादेवा॥"
+    },
+    {
+        "track_key": "durga_aarti",
+        "title_hindi": "जय अम्बे गौरी (दुर्गा आरती)",
+        "title_english": "Jai Ambe Gauri",
+        "subtitle_hindi": "मैया जय श्यामा गौरी",
+        "duration_text": "5:30",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373310_b59376.mp3",
+        "display_order": 11,
+        "is_published": 1,
+        "youtube_search_query": "Jai Ambe Gauri Anuradha Paudwal",
+        "lyrics_hindi": "जय अम्बे गौरी, मैया जय श्यामा गौरी।\nतुमको निशिदिन ध्यावत, हरि ब्रह्मा शिवरी॥ जय अम्बे गौरी... (ध्रुवपद)\n\nमांग सिन्दूर विराजत, टीको मृगमद को।\nउज्ज्वल से दोउ नैना, चन्द्रवदन नीको॥ जय अम्बे गौरी...\n\nकनक समान कलेवर, रक्ताम्बर राजै।\nरक्तपुष्प गल माला, कण्ठन पर साजै॥ जय अम्बे गौरी...\n\nकेहरि वाहन राजत, खड्ग खप्पर धारी।\nसुर-नर-मुनिजन सेवत, तिनके दुखहारी॥ जय अम्बे गौरी...\n\nकानन कुण्डल शोभित, नासाग्रे मोती।\nकोटिक चन्द्र दिवाकर, सम राजत ज्योति॥ जय अम्बे गौरी...\n\nशुम्भ निशुम्भ बिडारे, महिषासुर घाती।\nधूम्र विलोचन नैना, निशिदिन मदमाती॥ जय अम्बे गौरी...\n\nचण्ड-मुण्ड संहारे, शोणित बीज हरे।\nमधु-कैटभ दोउ मारे, सुर भयहीन करे॥ जय अम्बे गौरी...\n\nचौंसठ योगिनी गावत, नृत्य करत भैरों।\nबाजत ताल मृदंगा, अरु बाजत डमरू॥ जय अम्बे गौरी...\n\nतुम ही जग की माता, तुम ही हो भर्ता।\nभक्तन की दुःख हरता, सुख सम्पति कर्ता॥ जय अम्बे गौरी...\n\nभुजा चार अति शोभित, वरमुद्रा धारी।\nमनवांछित फल पावत, सेवत नर नारी॥ जय अम्बे गौरी...\n\nकंचन थाल विराजत, अगर कपूर बाती।\nश्री मालकेतु में राजत, कोटि रतन ज्योति॥ जय अम्बे गौरी...\n\nश्री अम्बे जी की आरती, जो कोई नर गावै।\nकहत शिवानन्द स्वामी, सुख-सम्पति पावै॥\nजय अम्बे गौरी, मैया जय श्यामा गौरी।\nतुमको निशिदिन ध्यावत, हरि ब्रह्मा शिवरी॥"
+    },
+    {
+        "track_key": "shiv_aarti",
+        "title_hindi": "ॐ जय शिव ओंकारा",
+        "title_english": "Om Jai Shiv Omkara",
+        "subtitle_hindi": "ब्रह्मा विष्णु सदाशिव अर्द्धांगी धारा",
+        "duration_text": "4:50",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373311_1182ec.mp3",
+        "display_order": 12,
+        "is_published": 1,
+        "youtube_search_query": "Om Jai Shiv Omkara Anuradha Paudwal",
+        "lyrics_hindi": "ॐ जय शिव ओंकारा, स्वामी जय शिव ओंकारा।\nब्रह्मा, विष्णु, सदाशिव, अर्द्धांगी धारा॥ ॐ जय शिव ओंकारा... (ध्रुवपद)\n\nएकानन चतुरानन पंचानन राजे।\nहंसासन गरुड़ासन वृषवाहन साजे॥ ॐ जय शिव ओंकारा...\n\nदो भुज चारु चतुर्भुज दशभुज अति सोहे।\nत्रिगुण रूप निरखते त्रिभुवन जन मोहे॥ ॐ जय शिव ओंकारा...\n\nअक्षमाला वनमाला मुण्डमाला धारी।\nत्रिपुरारी कंसारी कर माला धारी॥ ॐ जय शिव ओंकारा...\n\nश्वेताम्बर पीताम्बर बाघम्बर अंगे।\nसनकादिक गरुड़ादिक भूतादिक संगे॥ ॐ जय शिव ओंकारा...\n\nकर के मध्य कमण्डलु चक्र त्रिशूल धर्ता।\nजगकर्ता जगभर्ता जगसंहारकर्ता॥ ॐ जय शिव ओंकारा...\n\nब्रह्मा विष्णु सदाशिव जानत अविवेका।\nप्रणवाक्षर के मध्ये ये तीनों एका॥ ॐ जय शिव ओंकारा...\n\nकाशी में विश्वनाथ विराजत नन्दी ब्रह्मचारी।\nनित उठ दर्शन पावत महिमा अति भारी॥ ॐ जय शिव ओंकारा...\n\nत्रिगुणस्वामी जी की आरती जो कोई नर गावे।\nकहत शिवानन्द स्वामी मनवांछित फल पावे॥\nॐ जय शिव ओंकारा, स्वामी जय शिव ओंकारा।\nब्रह्मा, विष्णु, सदाशिव, अर्द्धांगी धारा॥"
+    },
+    {
+        "track_key": "ramayan_aarti",
+        "title_hindi": "आरती श्री रामायण जी की",
+        "title_english": "Aarti Shri Ramayan Ji Ki",
+        "subtitle_hindi": "कीरति कलित ललित सिय-पी की",
+        "duration_text": "5:00",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373306_76412f.mp3",
+        "display_order": 13,
+        "is_published": 1,
+        "youtube_search_query": "Aarti Shri Ramayan Ji Ki",
+        "lyrics_hindi": "आरती श्री रामायण जी की।\nकीरति कलित ललित सिय-पी की॥ (ध्रुवपद)\n\nगावत ब्रह्मादिक मुनि नारद।\nबालमीक बिग्यान बिसारद॥\nसुक सनकादि सेष अरु सारद।\nबरनि पवनसुत कीरति नीकी॥ आरती श्री रामायण जी की...\n\nगावत बेद पुरान अष्टदस।\nछओ सास्त्र सब ग्रंथन को रस॥\nमुनि जन धन संतन को सरबस।\nसार अंस संमत सब ही की॥ आरती श्री रामायण जी की...\n\nगावत संतत संभु भवानी।\nअरु घटसंभव मुनि बिग्यानी॥\nब्यास आदि कबिबर्ज बखानी।\nकागभुसुंडि गरुड़ के ही की॥ आरती श्री रामायण जी की...\n\nकलिमल हरनि बिषय रस फीकी।\nसुभग सिंगार मुक्ति जुबती की॥\nदलन रोग भव मूरि अमी की।\nतात मात सब बिधि तुलसी की॥\nआरती श्री रामायण जी की।\nकीरति कलित ललित सिय-पी की॥"
+    },
+    {
+        "track_key": "jagdish_aarti",
+        "title_hindi": "ॐ जय जगदीश हरे",
+        "title_english": "Om Jai Jagdish Hare",
+        "subtitle_hindi": "भक्त जनों के संकट क्षण में दूर करे",
+        "duration_text": "5:20",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373307_1a7f1b.mp3",
+        "display_order": 14,
+        "is_published": 1,
+        "youtube_search_query": "Om Jai Jagdish Hare Anuradha Paudwal",
+        "lyrics_hindi": "ॐ जय जगदीश हरे, स्वामी जय जगदीश हरे।\nभक्त जनों के संकट, दास जनों के संकट, क्षण में दूर करे॥ ॐ जय जगदीश हरे... (ध्रुवपद)\n\nजो ध्यावै फल पावै, दुख बिनसे मन का।\nसुख सम्पति घर आवै, कष्ट मिटे तन का॥ ॐ जय जगदीश हरे...\n\nमात पिता तुम मेरे, शरण गहूं किसकी।\nतुम बिन और न दूजा, आस करूं जिसकी॥ ॐ जय जगदीश हरे...\n\nतुम पूरण परमात्मा, तुम अन्तर्यामी।\nपारब्रह्म परमेश्वर, तुम सब के स्वामी॥ ॐ जय जगदीश हरे...\n\nतुम करुणा के सागर, तुम पालनकर्ता।\nमैं मूरख खल कामी, कृपा करो भर्ता॥ ॐ जय जगदीश हरे...\n\nतुम हो एक अगोचर, सब के प्राणपति।\nकिस विधि मिलूं दयामय, तुमको मैं कुमति॥ ॐ जय जगदीश हरे...\n\nदीनबन्धु दुखहर्ता, तुम ठाकुर मेरे।\nअपने हाथ उठाओ, द्वार पड़ा तेरे॥ ॐ जय जगदीश हरे...\n\nविषय विकार मिटाओ, पाप हरो देवा।\nश्रद्धा भक्ति बढ़ाओ, सन्तन की सेवा॥ ॐ जय जगदीश हरे...\n\nतन मन धन सब कुछ है तेरा, स्वामी सब कुछ है तेरा।\nतेरा तुझको अर्पण, क्या लागे मेरा॥ ॐ जय जगदीश हरे...\n\nश्याम सुंदर जी की आरती, जो कोई नर गावे।\nकहत शिवानन्द स्वामी, मनवांछित फल पावे॥\nॐ जय जगदीश हरे, स्वामी जय जगदीश हरे।\nभक्त जनों के संकट, क्षण में दूर करे॥"
+    },
+    {
+        "track_key": "laxmi_aarti",
+        "title_hindi": "ॐ जय लक्ष्मी माता",
+        "title_english": "Om Jai Lakshmi Mata",
+        "subtitle_hindi": "महालक्ष्मी जी की पावन आरती",
+        "duration_text": "5:10",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373310_b59376.mp3",
+        "display_order": 15,
+        "is_published": 1,
+        "youtube_search_query": "Om Jai Lakshmi Mata Anuradha Paudwal",
+        "lyrics_hindi": "ॐ जय लक्ष्मी माता, मैया जय लक्ष्मी माता।\nतुमको निशदिन सेवत, हर विष्णु विधाता॥ ॐ जय लक्ष्मी माता... (ध्रुवपद)\n\nउमा, रमा, ब्रह्माणी, तुम ही जग-माता।\nसूर्य-चन्द्रमा ध्यावत, नारद ऋषि गाता॥ ॐ जय लक्ष्मी माता...\n\nदुर्गा रूप निरंजनी, सुख सम्पत्ति दाता।\nजो कोई तुमको ध्यावत, ऋद्धि-सिद्धि धन पाता॥ ॐ जय लक्ष्मी माता...\n\nतुम पाताल-निवासिनि, तुम ही शुभदाता।\nकर्म-प्रभाव-प्रकाशिनी, भवनिधि की त्राता॥ ॐ जय लक्ष्मी माता...\n\nजिस घर में तुम रहतीं, सब सद्गुण आता।\nसब संभव हो जाता, मन नहीं घबराता॥ ॐ जय लक्ष्मी माता...\n\nतुम बिन यज्ञ न होते, वस्त्र न कोई पाता।\nखान-पान का वैभव, सब तुमसे आता॥ ॐ जय लक्ष्मी माता...\n\nशुभ-गुण मंदिर सुंदर, क्षीरोदधि-जाता।\nरत्न चतुर्दश तुम बिन, कोई नहीं पाता॥ ॐ जय लक्ष्मी माता...\n\nमहालक्ष्मीजी की आरती, जो कोई नर गावे।\nउर आनन्द समावे, पाप उतर जावे॥\nॐ जय लक्ष्मी माता, मैया जय लक्ष्मी माता।\nतुमको निशदिन सेवत, हर विष्णु विधाता॥"
+    },
+    {
+        "track_key": "kunj_bihari_aarti",
+        "title_hindi": "आरती कुंजबिहारी की",
+        "title_english": "Aarti Kunj Bihari Ki",
+        "subtitle_hindi": "श्री गिरिधर कृष्ण मुरारी की",
+        "duration_text": "4:45",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373306_76412f.mp3",
+        "display_order": 16,
+        "is_published": 1,
+        "youtube_search_query": "Aarti Kunj Bihari Ki Hariharan",
+        "lyrics_hindi": "आरती कुंजबिहारी की, श्री गिरिधर कृष्ण मुरारी की॥ (ध्रुवपद)\nगले में बैजंती माला, बजावै मुरली मधुर बाला।\nश्रवण में कुण्डल झलकाला, मुकुट पर चन्द्रिका भाला।\nछबि बलिहारी की, श्री गिरिधर कृष्ण मुरारी की॥\nआरती कुंजबिहारी की...\n\nकनकमय कंकन अति सोहैं, कमर में करधनी मन मोहैं।\nमुरलिका अधर सुधारस पीवैं, नैन लखि गोपीजन जीवैं।\nनवल बनवारी की, श्री गिरिधर कृष्ण मुरारी की॥\nआरती कुंजबिहारी की...\n\nगगन सम अंग कान्ति कारी, राधिका रमन श्याम सुखकारी।\nधरा पर पग धरि धरि नाचे, भक्तजन देखि देखि राचे।\nमदन छवि न्यारी की, श्री गिरिधर कृष्ण मुरारी की॥\nआरती कुंजबिहारी की...\n\nजहाँ से प्रगट भई गंगा, कलुष कलि हारिणि श्री गंगा।\nस्मरन ते होत मोह भंगा, बसी शिव सीस जटा के संगा।\nचरन छवि प्यारी की, श्री गिरिधर कृष्ण मुरारी की॥\nआरती कुंजबिहारी की...\n\nचमकती उज्ज्वल निर्मल जोती, प्रगट भई प्रेम पुंज मोती।\nललित त्रिभंग रूप धारी, शरण आए भक्त जन तारी।\nकहत दास बलिहारी की, श्री गिरिधर कृष्ण मुरारी की॥\nआरती कुंजबिहारी की, श्री गिरिधर कृष्ण मुरारी की॥"
+    },
+    {
+        "track_key": "khatu_shyam_aarti",
+        "title_hindi": "ॐ जय श्री श्यामा हरे",
+        "title_english": "Om Jai Shri Shyama Hare",
+        "subtitle_hindi": "खाटू श्याम जी की पावन आरती",
+        "duration_text": "5:00",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373307_1a7f1b.mp3",
+        "display_order": 17,
+        "is_published": 1,
+        "youtube_search_query": "Om Jai Shri Shyama Hare Aarti",
+        "lyrics_hindi": "ॐ जय श्री श्यामा हरे, बाबा जय श्री श्यामा हरे।\nखाटू धाम विराजत, अनुपम रूप धरे॥ ॐ जय श्री श्यामा हरे... (ध्रुवपद)\n\nरतन जड़ित सिंहासन, अद्भुत छवि सोहे।\nमोदक भोग लगत हैं, सुर-मुनि मन मोहे॥ ॐ जय श्री श्यामा हरे...\n\nगले वैजयंती माला, शीश मुकुट साजे।\nकानन कुंडल झलकत, नूपुर पग बाजे॥ ॐ जय श्री श्यामा हरे...\n\nतीन बाण के धारी, शीश के दानी।\nकलयुग में अवतारी, महिमा जग जानी॥ ॐ जय श्री श्यामा हरे...\n\nहारे के सहारे, लखदातार कहाए।\nजो जन शरण तिहारी, संकट मिट जाए॥ ॐ जय श्री श्यामा हरे...\n\nआरती जो कोई गावे, प्रेम सहित ध्यावे।\nकहत श्याम जन सेवक, मनवांछित फल पावे॥\nॐ जय श्री श्यामा हरे, बाबा जय श्री श्यामा हरे।\nखाटू धाम विराजत, अनुपम रूप धरे॥"
+    },
+    {
+        "track_key": "satyanarayan_aarti",
+        "title_hindi": "जय लक्ष्मी रमणा",
+        "title_english": "Jai Lakshmi Ramana",
+        "subtitle_hindi": "श्री सत्यनारायण जी की पावन आरती",
+        "duration_text": "4:30",
+        "audio_url": "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373307_1a7f1b.mp3",
+        "display_order": 18,
+        "is_published": 1,
+        "youtube_search_query": "Jai Lakshmi Ramana Anuradha Paudwal",
+        "lyrics_hindi": "जय लक्ष्मी रमणा, स्वामी जय लक्ष्मी रमणा।\nसत्यनारायण स्वामी, जन पातक हरणा॥ ॐ जय लक्ष्मी रमणा... (ध्रुवपद)\n\nरत्न जड़ित सिंहासन, अद्भुत छबि राजै।\nनारद करत निराजन, घण्टा धुनि बाजै॥ ॐ जय लक्ष्मी रमणा...\n\nप्रकट भये कलि कारण, द्विज को दरश दियो।\nबूढ़ो ब्राह्मण बनके, कंचन महल कियो॥ ॐ जय लक्ष्मी रमणा...\n\nदुर्बल भील कठौता, जिन पर कृपा करी।\nलीन्यो भक्ति भाव बस, सम्पति अमित भरी॥ ॐ जय लक्ष्मी रमणा...\n\nसत्यनारायण जी की आरती, जो कोई नर गावै।\nकहत शिवानन्द स्वामी, मनवांछित फल पावै॥\nजय लक्ष्मी रमणा, स्वामी जय लक्ष्मी रमणा।\nसत्यनारायण स्वामी, जन पातक हरणा॥"
+    }
 ]
 
-for t in tracks:
-    escaped_lyrics = json.dumps(t['lyrics_hindi'], ensure_ascii=False)
-    php_lines.append("        [")
-    php_lines.append(f"            'track_key' => '{t['track_key']}',")
-    php_lines.append(f"            'title_hindi' => '{t['title_hindi']}',")
-    php_lines.append(f"            'title_english' => '{t['title_english']}',")
-    php_lines.append(f"            'subtitle_hindi' => '{t['subtitle_hindi']}',")
-    php_lines.append(f"            'duration_text' => '{t['duration_text']}',")
-    php_lines.append(f"            'audio_url' => '{t['audio_url']}',")
-    php_lines.append(f"            'display_order' => {t['display_order']},")
-    php_lines.append(f"            'youtube_search_query' => '{t['youtube_search_query']}',")
-    php_lines.append(f"            'lyrics_hindi' => {escaped_lyrics}")
-    php_lines.append("        ],")
+php_code = """<?php
+// Shri Balaji Kripa Dham - 18 Sacred Tracks Complete Authentic Database Migration
+header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/../config/db.php';
 
-php_lines.extend([
-    "    ];",
-    "",
-    "    $stmt = $pdo->prepare(\"INSERT INTO ashram_tracks (track_key, title_hindi, title_english, subtitle_hindi, duration_text, audio_url, lyrics_hindi, is_published, display_order, youtube_search_query) ",
-    "        VALUES (:track_key, :title_hindi, :title_english, :subtitle_hindi, :duration_text, :audio_url, :lyrics_hindi, 1, :display_order, :youtube_search_query)",
-    "        ON DUPLICATE KEY UPDATE ",
-    "        title_hindi = VALUES(title_hindi),",
-    "        title_english = VALUES(title_english),",
-    "        subtitle_hindi = VALUES(subtitle_hindi),",
-    "        duration_text = VALUES(duration_text),",
-    "        audio_url = VALUES(audio_url),",
-    "        lyrics_hindi = VALUES(lyrics_hindi),",
-    "        is_published = 1,",
-    "        display_order = VALUES(display_order),",
-    "        youtube_search_query = VALUES(youtube_search_query);",
-    "    \");",
-    "",
-    "    $count = 0;",
-    "    foreach ($tracks as $t) {",
-    "        $stmt->execute([",
-    "            ':track_key' => $t['track_key'],",
-    "            ':title_hindi' => $t['title_hindi'],",
-    "            ':title_english' => $t['title_english'],",
-    "            ':subtitle_hindi' => $t['subtitle_hindi'],",
-    "            ':duration_text' => $t['duration_text'],",
-    "            ':audio_url' => $t['audio_url'],",
-    "            ':lyrics_hindi' => $t['lyrics_hindi'],",
-    "            ':display_order' => $t['display_order'],",
-    "            ':youtube_search_query' => $t['youtube_search_query']",
-    "        ]);",
-    "        $count++;",
-    "    }",
-    "    echo json_encode(['success' => true, 'updated' => $count, 'message' => 'All 18 sacred tracks successfully updated with unabridged lyrics']);",
-    "} catch (Exception $e) {",
-    "    http_response_code(500);",
-    "    echo json_encode(['success' => false, 'error' => $e->getMessage()]);",
-    "}"
-])
+try {
+    $pdo = getDB();
+    if (!$pdo) throw new Exception("Database connection failed");
 
-with open('backend/api/migrate_tracks.php', 'w', encoding='utf-8') as f:
-    f.write('\n'.join(php_lines))
+    $defaultTracks = """ . var_export($tracks_json, true) . """;
 
-print("backend/api/migrate_tracks.php written successfully!")
+    $count = 0;
+    foreach ($defaultTracks as $t) {
+        $st = $pdo->prepare("INSERT INTO sacred_tracks 
+            (track_key, title_hindi, title_english, subtitle_hindi, duration_text, audio_url, lyrics_hindi, is_published, display_order, youtube_search_query) 
+            VALUES (:tk, :th, :te, :sh, :dt, :au, :lh, :ip, :do, :yq)
+            ON DUPLICATE KEY UPDATE 
+                title_hindi = VALUES(title_hindi),
+                title_english = VALUES(title_english),
+                subtitle_hindi = VALUES(subtitle_hindi),
+                duration_text = VALUES(duration_text),
+                audio_url = VALUES(audio_url),
+                lyrics_hindi = VALUES(lyrics_hindi),
+                is_published = VALUES(is_published),
+                display_order = VALUES(display_order),
+                youtube_search_query = VALUES(youtube_search_query)");
+
+        $st->execute([
+            ':tk' => $t['track_key'],
+            ':th' => $t['title_hindi'],
+            ':te' => $t['title_english'],
+            ':sh' => $t['subtitle_hindi'],
+            ':dt' => $t['duration_text'],
+            ':au' => $t['audio_url'],
+            ':lh' => $t['lyrics_hindi'],
+            ':ip' => $t['is_published'],
+            ':do' => $t['display_order'],
+            ':yq' => $t['youtube_search_query']
+        ]);
+        $count++;
+    }
+
+    echo json_encode(["success" => true, "migrated" => $count, "message" => "18 Sacred Tracks authentic migration complete."]);
+} catch (Throwable $e) {
+    echo json_encode(["success" => false, "error" => $e->getMessage()]);
+}
+"""
+
+with open(r"backend\api\migrate_tracks.php", "w", encoding="utf-8") as pf:
+    pf.write(php_code)
+
+print("backend/api/migrate_tracks.php updated with 18 authentic tracks!")

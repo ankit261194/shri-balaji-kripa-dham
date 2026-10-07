@@ -229,8 +229,7 @@ fun MainNavigation(
 
             AppScreen.ASHRAM_INFO -> AshramInfoScreen(
                 isHindi = isHindi,
-                onBack = { navigateBack() },
-                onNavigateToTravelGuide = { navigateTo(AppScreen.TRAVEL_GUIDE) }
+                onBack = { navigateBack() }
             )
 
             AppScreen.TRAVEL_GUIDE -> com.example.shribalajikripadham.ui.info.AshramTravelGuideScreen(

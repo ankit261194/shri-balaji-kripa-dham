@@ -314,6 +314,19 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "सुपर कंट्रोल" else "Super Control"
             )
         ),
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "बस बुकिंग लेजर" else "Bus Ledger",
+            icon = "🚌",
+            titleHindi = "बस बुकिंग लेजर",
+            titleEnglish = "Bus Ledger",
+            categoryHindi = "📊 लेजर व खाते",
+            descriptionHindi = "आश्रम बस सेवा सीटें, यात्री विवरण व भाड़ा हिसाब-किताब",
+            descriptionEnglish = "Ashram bus booking, seats & passenger ledger",
+            relatedTabs = listOf(
+                if (isHindi) "पेमेंट लेजर" else "Payment Ledger",
+                if (isHindi) "सेवाएं ऑन/ऑफ" else "Services"
+            )
+        ),
 
         // ==========================================
         // 6. ⚙️ सिस्टम व कंट्रोल (System & Root Controls)
@@ -324,12 +337,25 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
             titleHindi = "सेवाएं ऑन/ऑफ",
             titleEnglish = "Services Matrix",
             categoryHindi = "⚙️ सिस्टम व कंट्रोल",
-            descriptionHindi = "टोकन मोड, मंगलवार दरबार, जियो-फेंसिंग व अर्जी दरों का मास्टर ऑन/ऑफ",
+            descriptionHindi = "टोकन मोड, मंगलवार दरबार, बस सेवा, जियो-फेंसिंग व अर्जी दरों का मास्टर ऑन/ऑफ",
             descriptionEnglish = "Master switches for public booking services & features",
             relatedTabs = listOf(
                 if (isHindi) "सुपर कंट्रोल" else "Super Control",
                 if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar",
                 if (isHindi) "टोकन कतार" else "Tokens"
+            )
+        ),
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "🌐 वेबसाइट लाइव एडिटर" else "Website Live Editor",
+            icon = "🌐",
+            titleHindi = "वेबसाइट लाइव एडिटर",
+            titleEnglish = "Website Live Editor",
+            categoryHindi = "⚙️ सिस्टम व कंट्रोल",
+            descriptionHindi = "आश्रम वेबसाइट बैनर, हेडलाइंस, लाइव दर्शन लिंक व परिचय बदलें",
+            descriptionEnglish = "Update website banner, headlines, live links & details directly from app",
+            relatedTabs = listOf(
+                if (isHindi) "सेवाएं ऑन/ऑफ" else "Services",
+                if (isHindi) "सूचना भेजें" else "Broadcast"
             )
         ),
         AdminHubModuleItem(

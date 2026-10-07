@@ -145,17 +145,6 @@ fun LiveDarbarAndBhajanScreen(
         return "%02d:%02d".format(min, sec)
     }
 
-    fun openTrackInYouTube(track: SacredTrack) {
-        val query = track.youtubeSearchQuery
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=${Uri.encode(query)}")).apply {
-            setPackage("com.google.android.youtube")
-        }
-        try {
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=${Uri.encode(query)}")))
-        }
-    }
 
     val infiniteTransition = rememberInfiniteTransition(label = "LivePulse")
     val pulseScale by infiniteTransition.animateFloat(
@@ -665,18 +654,9 @@ fun LiveDarbarAndBhajanScreen(
                                         border = BorderStroke(1.dp, Color(0xFFFFD54F)),
                                         shape = RoundedCornerShape(20.dp),
                                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                                     ) {
-                                        Text("📖 सम्पूर्ण पाठ पढ़ें", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                    Spacer(Modifier.width(10.dp))
-                                    Button(
-                                        onClick = { openTrackInYouTube(activeTrack) },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC0000)),
-                                        shape = RoundedCornerShape(20.dp),
-                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
-                                    ) {
-                                        Text("▶ यूट्यूब पर सुनें", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Text("📖 सम्पूर्ण पाठ पढ़ें", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
 
@@ -983,10 +963,6 @@ fun LiveDarbarAndBhajanScreen(
                                         IconButton(onClick = { showLyricsDialog = track }) {
                                             Text("📖", fontSize = 18.sp)
                                         }
-
-                                        IconButton(onClick = { openTrackInYouTube(track) }) {
-                                            Text("▶", fontSize = 16.sp, color = Color(0xFFCC0000))
-                                        }
                                     }
                                 }
                             }
@@ -1044,14 +1020,6 @@ fun LiveDarbarAndBhajanScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = SaffronPrimary)
                     ) {
                         Text("🪔 पाठ वाचन", color = Color.White, fontSize = 12.sp)
-                    }
-                    Spacer(Modifier.width(6.dp))
-                    OutlinedButton(
-                        onClick = {
-                            openTrackInYouTube(track)
-                        }
-                    ) {
-                        Text("▶", color = Color(0xFFCC0000))
                     }
                 }
             }
