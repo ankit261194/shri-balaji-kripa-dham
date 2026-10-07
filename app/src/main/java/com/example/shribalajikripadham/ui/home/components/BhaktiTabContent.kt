@@ -33,9 +33,26 @@ fun BhaktiTabContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val repository = remember { com.example.shribalajikripadham.data.repository.AshramRepository(context) }
+    var tracksList by remember { mutableStateOf<List<SacredTrack>>(SACRED_TRACKS) }
     val currentTrackIdx by BhajanAudioService.currentTrackIndex.collectAsState()
     val isAudioPlaying by BhajanAudioService.isPlaying.collectAsState()
     val isAudioBuffering by BhajanAudioService.isBuffering.collectAsState()
+
+    LaunchedEffect(Unit) {
+        val localTracks = repository.getSacredTracks(publishedOnly = true)
+        if (localTracks.isNotEmpty()) {
+            tracksList = localTracks
+        }
+        try {
+            val (ok, remoteList) = repository.syncSacredTracksFromHostinger(admin = false)
+            if (ok && remoteList.isNotEmpty()) {
+                tracksList = remoteList
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         // Top Banner for Sacred Granth
@@ -93,7 +110,7 @@ fun BhaktiTabContent(
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = if (isHindi) "पावन नित्य आरती व भजन (15 पाठ)" else "Daily Aartis & Bhajans (15 Tracks)",
+            text = if (isHindi) "पावन नित्य आरती व भजन (${tracksList.size} पाठ)" else "Daily Aartis & Bhajans (${tracksList.size} Tracks)",
             fontWeight = FontWeight.Bold,
             fontSize = 15.sp,
             color = currentTheme.primaryColor,
@@ -102,7 +119,7 @@ fun BhaktiTabContent(
 
         // Track list
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SACRED_TRACKS.forEachIndexed { index, track ->
+            tracksList.forEachIndexed { index, track ->
                 val isThisTrackActive = currentTrackIdx == index
                 val isPlayingNow = isThisTrackActive && isAudioPlaying
 

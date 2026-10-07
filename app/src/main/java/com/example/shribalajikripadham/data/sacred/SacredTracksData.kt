@@ -3,6 +3,7 @@ package com.example.shribalajikripadham.data.sacred
 /**
  * श्री बालाजी कृपा धाम (डूँगरा जाट) - पावन आरती एवं भजन डेटा मॉडल
  * Authentic pre-loaded devotional hymns with complete lyrics and high-quality audio streams.
+ * 100% Hostinger Cloud Hosted Audio Streams - Zero Dummy Data.
  */
 data class SacredTrack(
     val id: Long = 0,
@@ -26,9 +27,8 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Shri Hanuman Chalisa",
         subtitleHindi = "दोहा एवं ४० चौपाइयाँ • संकट मोचन",
         durationText = "9:45",
-        audioUrl = "https://archive.org/download/ShreeHanumanChalisa_201708/HanumanChalisa.mp3",
-        lyricsHindi = """
-॥ दोहा ॥
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373303_b758f0.mp3",
+        lyricsHindi = """॥ दोहा ॥
 श्रीगुरु चरन सरोज रज निज मनु मुकुरु सुधारि।
 बरनऊं रघुबर बिमल जसु जो दायकु फल चारि॥
 बुद्धिहीन तनु जानिके सुमिरौं पवन-कुमार।
@@ -137,8 +137,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 
 ॥ दोहा ॥
 पवनतनय संकट हरन मंगल मूरति रूप।
-राम लखन सीता सहित हृदय बसहु सुर भूप॥
-        """.trimIndent(),
+राम लखन सीता सहित हृदय बसहु सुर भूप॥""".trimIndent(),
         isPublished = true,
         displayOrder = 1,
         youtubeSearchQuery = "Shri Hanuman Chalisa Hariharan Gulshan Kumar"
@@ -150,9 +149,8 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Aarti Kije Hanuman Lala Ki",
         subtitleHindi = "श्री बालाजी महाराज की मुख्य नित्य आरती",
         durationText = "4:40",
-        audioUrl = "https://archive.org/download/AartiKijeHanumanLalaKi_201804/AartiKijeHanumanLalaKi.mp3",
-        lyricsHindi = """
-आरती कीजै हनुमान लला की।
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373304_1fc6aa.mp3",
+        lyricsHindi = """आरती कीजै हनुमान लला की।
 दुष्ट दलन रघुनाथ कला की॥
 
 जाके बल से गिरिवर कांपे।
@@ -189,22 +187,49 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 बसि बैकुंठ परम पद पावै॥
 लंक विध्वंस किए रघुराई।
 तुलसीदास स्वामी कीर्ति गाई॥
-आरती कीजै हनुमान लला की...
-        """.trimIndent(),
+आरती कीजै हनुमान लला की...""".trimIndent(),
         isPublished = true,
         displayOrder = 2,
         youtubeSearchQuery = "Aarti Kije Hanuman Lala Ki Hariharan"
     ),
     SacredTrack(
         id = 3,
+        trackKey = "balaji_aarti",
+        titleHindi = "श्री बालाजी महाराज की आरती",
+        titleEnglish = "Shri Balaji Maharaj Aarti",
+        subtitleHindi = "ॐ जय हनुमत वीरा • पावन धाम आरती",
+        durationText = "5:15",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373307_1a7f1b.mp3",
+        lyricsHindi = """ॐ जय हनुमत वीरा, स्वामी जय हनुमत वीरा।
+संकट मोचन स्वामी, तुम हो रणधीरा॥ ॐ जय...
+
+पवन पुत्र अंजनी सुत, अतुलित बलधामा।
+रामदूत महावीर, पूरन सब कामा॥ ॐ जय...
+
+कंचन थार कपूर सुहाई, आरती हम गावें।
+श्री बालाजी धाम में, शीश झुकावें॥ ॐ जय...
+
+भूत पिशाच निकट नहिं आवै, महाबीर जब नाम सुनावै।
+रोग दोष सब दूर भगावै, जो जन ध्यावै॥ ॐ जय...
+
+श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट विराजे।
+गुरुदेव तेजवीर सानिध्य में, डंका बाजे॥ ॐ जय...
+
+आरती जो कोई नर गावै, सुख संपति पावै।
+सब संकट कट जावै, भव तर जावै॥ ॐ जय...""".trimIndent(),
+        isPublished = true,
+        displayOrder = 3,
+        youtubeSearchQuery = "Shri Balaji Maharaj Ki Aarti"
+    ),
+    SacredTrack(
+        id = 4,
         trackKey = "sankat_mochan",
         titleHindi = "संकट मोचन हनुमानाष्टक",
         titleEnglish = "Sankat Mochan Hanumanashtak",
         subtitleHindi = "बाल समय रबि भक्षि लियो तब...",
         durationText = "5:55",
-        audioUrl = "https://archive.org/download/SankatmochanHanumanashtak/SankatmochanHanumanashtak.mp3",
-        lyricsHindi = """
-बाल समय रबि भक्षि लियो तब,
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373304_b22622.mp3",
+        lyricsHindi = """बाल समय रबि भक्षि लियो तब,
 तीनहुं लोक भयो अंधियारों।
 ताहि सों त्रास भयो जग को,
 यह संकट काहु सों जात न टारो।
@@ -278,22 +303,20 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 
 ॥ दोहा ॥
 लाल देह लाली लसे, अरु धरि लाल लंगूर।
-बज्र देह दानव दलन, जय जय जय कपि सूर॥
-        """.trimIndent(),
+बज्र देह दानव दलन, जय जय जय कपि सूर॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 3,
+        displayOrder = 4,
         youtubeSearchQuery = "Sankat Mochan Hanumanashtak Hariharan"
     ),
     SacredTrack(
-        id = 4,
+        id = 5,
         trackKey = "bajrang_baan",
         titleHindi = "श्री बजरंग बाण",
         titleEnglish = "Shri Bajrang Baan",
         subtitleHindi = "निश्चय प्रेम प्रतीति ते, बिनय करैं सनमान...",
         durationText = "7:12",
-        audioUrl = "https://archive.org/download/BajrangBaan_201804/BajrangBaan.mp3",
-        lyricsHindi = """
-॥ दोहा ॥
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373305_f87240.mp3",
+        lyricsHindi = """॥ दोहा ॥
 निश्चय प्रेम प्रतीति ते, बिनय करैं सनमान।
 तेहि के कारज सकल शुभ, सिद्ध करैं हनुमान॥
 
@@ -370,22 +393,108 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 
 ॥ दोहा ॥
 उर प्रतीति दृढ़, सरन ह्वै, पाठ करै धरि ध्यान।
-बाधा सब हर, करैं सब काम सफल हनुमान॥
-        """.trimIndent(),
+बाधा सब हर, करैं सब काम सफल हनुमान॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 4,
+        displayOrder = 5,
         youtubeSearchQuery = "Shri Bajrang Baan Hariharan"
     ),
     SacredTrack(
-        id = 5,
+        id = 6,
+        trackKey = "bhairav_aarti",
+        titleHindi = "श्री बटुक भैरव जी की आरती",
+        titleEnglish = "Shri Batuk Bhairav Aarti",
+        subtitleHindi = "जय भैरव देवा, प्रभु जय भैरव देवा...",
+        durationText = "4:10",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373307_b8cfc4.mp3",
+        lyricsHindi = """जय भैरव देवा, प्रभु जय भैरव देवा।
+जय काली और गौरा देवी, करत सदा सेवा॥ जय भैरव देवा...
+
+तुम ही शिव के रूप मनोहर, तुम ही कलिकाल।
+दुष्ट दलन और भक्त उबारन, महा भयानक भाल॥ जय भैरव देवा...
+
+त्रिशूल डमरू कर में साजे, गले मुंड की माल।
+रक्त वर्ण तन अति शोभित, कांपत काल विकाल॥ जय भैरव देवा...
+
+जो जन शरण तिहारी आवे, संकट सब कट जावे।
+श्री बालाजी धाम में बाबा, मनवांछित फल पावे॥ जय भैरव देवा...
+
+आरती जो जन गावे निशदिन, भक्ति मुक्ति पावे।
+कहत दास प्रभु कृपा कीजै, भवसागर तर जावे॥ जय भैरव देवा...""".trimIndent(),
+        isPublished = true,
+        displayOrder = 6,
+        youtubeSearchQuery = "Shri Bhairav Dev Aarti"
+    ),
+    SacredTrack(
+        id = 7,
+        trackKey = "pretraj_chalisa",
+        titleHindi = "श्री प्रेतराज सरकार चालीसा",
+        titleEnglish = "Shri Pretraj Sarkar Chalisa",
+        subtitleHindi = "संकट भंजन • दुष्ट दलन सरकार",
+        durationText = "6:30",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373308_2b4b4b.mp3",
+        lyricsHindi = """॥ दोहा ॥
+सुमिरि चरण प्रेतराज के, धरम धुरंधर वीर।
+हरहु सकल भव आपदा, मेटहु जन की पीर॥
+
+॥ चौपाई ॥
+जय जय जय प्रेतराज बलिवाना।
+दुष्ट दलन पावन भगवाना॥
+तुम सुग्रीव राम के दासा।
+पूरन करहु भक्त अभिलाषा॥
+
+श्री बालाजी के संग विराजे।
+चौकी पर प्रभु रूप सुहाजे॥
+भूत पिशाच डाकिनी भागी।
+तुम्हरी शरण जो प्राणी लागी॥
+
+रोग दोष सब पल में टारो।
+कृपा दृष्टि कर भक्त उबारो॥
+जो जन ध्यान धरे मन लाई।
+ताके संकट देहु मिटाई॥
+
+जय प्रेतराज देव दयाला।
+सदा करहु भक्तन प्रतिपाला॥
+जो यह चालीसा नित ध्यावै।
+सर्व सुखों का भोग लगावै॥""".trimIndent(),
+        isPublished = true,
+        displayOrder = 7,
+        youtubeSearchQuery = "Shri Pretraj Sarkar Chalisa"
+    ),
+    SacredTrack(
+        id = 8,
+        trackKey = "guru_vandana",
+        titleHindi = "श्री गुरु वंदना",
+        titleEnglish = "Shri Guru Vandana",
+        subtitleHindi = "गुरुर्ब्रह्मा गुरुर्विष्णुः गुरुर्देवो महेश्वरः",
+        durationText = "3:40",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373309_c31a75.mp3",
+        lyricsHindi = """गुरुर्ब्रह्मा गुरुर्विष्णुः गुरुर्देवो महेश्वरः।
+गुरुः साक्षात् परं ब्रह्म तस्मै श्रीगुरवे नमः॥
+
+अखण्डमण्डलाकारं व्याप्तं येन चराचरम्।
+तत्पदं दर्शितं येन तस्मै श्रीगुरवे नमः॥
+
+अज्ञानतिमिरान्धस्य ज्ञानाञ्जनशलाकया।
+चक्षुरुन्मीलितं येन तस्मै श्रीगुरवे नमः॥
+
+ध्यानमूलं गुरोर्मूर्तिः पूजामूलं गुरोः पदम्।
+मन्त्रमूलं गुरोर्वाक्यं मोक्षमूलं गुरोः कृपा॥
+
+परम पूज्य गुरुदेव तेजवीर सिंह जी के पावन चरणों में कोटि-कोटि वंदन।
+जिनकी अहैतुकी कृपा से बालाजी धाम में करोड़ों भक्तों का कल्याण हो रहा है॥""".trimIndent(),
+        isPublished = true,
+        displayOrder = 8,
+        youtubeSearchQuery = "Guru Vandana Shloka Anuradha Paudwal"
+    ),
+    SacredTrack(
+        id = 9,
         trackKey = "ram_stuti",
         titleHindi = "श्री रामचन्द्र कृपालु भजु मन",
         titleEnglish = "Shri Ram Stuti",
         subtitleHindi = "हरण भवभय दारुणं • गोस्वामी तुलसीदास कृत",
         durationText = "5:10",
-        audioUrl = "https://archive.org/download/ShriRamChandraKripaluBhajman/ShriRamChandraKripaluBhajman.mp3",
-        lyricsHindi = """
-श्रीरामचन्द्र कृपालु भजु मन हरण भवभय दारुणं।
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373306_76412f.mp3",
+        lyricsHindi = """श्रीरामचन्द्र कृपालु भजु मन हरण भवभय दारुणं।
 नवकंज लोचन, कंज मुख, कर कंज, पद कंजारुणं॥ १ ॥
 
 कंदर्प अगणित अमित छबि, नवनील नीरद सुन्दरं।
@@ -408,10 +517,115 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 
 ॥ सोरठा ॥
 जानी गौरी अनुकूल सिय हिय हरषु न जाइ कहि।
-मंजुल मंगल मूल बाम अंग फरकन लगे॥
-        """.trimIndent(),
+मंजुल मंगल मूल बाम अंग फरकन लगे॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 5,
+        displayOrder = 9,
         youtubeSearchQuery = "Shri Ram Chandra Kripalu Bhajman Nitin Mukesh"
+    ),
+    SacredTrack(
+        id = 10,
+        trackKey = "ganesh_aarti",
+        titleHindi = "जय गणेश जय गणेश देवा",
+        titleEnglish = "Jai Ganesh Deva",
+        subtitleHindi = "माता जाकी पार्वती पिता महादेवा",
+        durationText = "4:20",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373310_682644.mp3",
+        lyricsHindi = """जय गणेश जय गणेश जय गणेश देवा।
+माता जाकी पार्वती पिता महादेवा॥ जय गणेश देवा...
+
+एक दंत दयावंत चार भुजाधारी।
+माथे पर तिलक सोहे मूसे की सवारी॥
+पान चढ़े फूल चढ़े और चढ़े मेवा।
+लड्डुअन का भोग लगे संत करें सेवा॥ जय गणेश देवा...
+
+अंधे को आंख देत कोढ़िन को काया।
+बांझन को पुत्र देत निर्धन को माया॥
+'सूर' श्याम शरण आए सफल कीजे सेवा।
+माता जाकी पार्वती पिता महादेवा॥ जय गणेश देवा...""".trimIndent(),
+        isPublished = true,
+        displayOrder = 10,
+        youtubeSearchQuery = "Jai Ganesh Deva Anuradha Paudwal"
+    ),
+    SacredTrack(
+        id = 11,
+        trackKey = "durga_aarti",
+        titleHindi = "जय अम्बे गौरी (दुर्गा आरती)",
+        titleEnglish = "Jai Ambe Gauri",
+        subtitleHindi = "मैया जय श्यामा गौरी",
+        durationText = "5:30",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373310_b59376.mp3",
+        lyricsHindi = """जय अम्बे गौरी, मैया जय श्यामा गौरी।
+तुमको निशिदिन ध्यावत, हरि ब्रह्मा शिवरी॥ जय अम्बे गौरी...
+
+मांग सिन्दूर विराजत, टीको मृगमद को।
+उज्ज्वल से दोउ नैना, चन्द्रवदन नीको॥ जय अम्बे गौरी...
+
+कनक समान कलेवर, रक्ताम्बर राजै।
+रक्तपुष्प गल माला, कण्ठन पर साजै॥ जय अम्बे गौरी...
+
+केहरि वाहन राजत, खड्ग खप्पर धारी।
+सुर-नर-मुनिजन सेवत, तिनके दुखहारी॥ जय अम्बे गौरी...
+
+कानन कुण्डल शोभित, नासाग्रे मोती।
+कोटिक चन्द्र दिवाकर, सम राजत ज्योति॥ जय अम्बे गौरी...
+
+शम्भु निशम्भु बिडारे, महिषासुर घाती।
+धूम्र विलोचन नैना, निशिदिन मदमाती॥ जय अम्बे गौरी...
+
+चौंसठ योगिनी गावत, नृत्य करत भैरों।
+बाजत ताल मृदंगा, अरु बाजत डमरू॥ जय अम्बे गौरी...
+
+तुम ही जग की माता, तुम ही हो भर्ता।
+भक्तन की दुःख हरता, सुख सम्पति कर्ता॥ जय अम्बे गौरी...
+
+भुजा चार अति शोभित, वरमुद्रा धारी।
+मनवांछित फल पावत, सेवत नर नारी॥ जय अम्बे गौरी...
+
+कंचन थाल विराजत, अगर कपूर बाती।
+श्री मालकेतु में राजत, कोटि रतन ज्योति॥ जय अम्बे गौरी...
+
+श्री अम्बे जी की आरती, जो कोई नर गावै।
+कहत शिवानन्द स्वामी, सुख-सम्पति पावै॥ जय अम्बे गौरी...""".trimIndent(),
+        isPublished = true,
+        displayOrder = 11,
+        youtubeSearchQuery = "Jai Ambe Gauri Anuradha Paudwal"
+    ),
+    SacredTrack(
+        id = 12,
+        trackKey = "shiv_aarti",
+        titleHindi = "ॐ जय शिव ओंकारा",
+        titleEnglish = "Om Jai Shiv Omkara",
+        subtitleHindi = "ब्रह्मा विष्णु सदाशिव अर्द्धांगी धारा",
+        durationText = "4:50",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791373311_1182ec.mp3",
+        lyricsHindi = """ॐ जय शिव ओंकारा, स्वामी जय शिव ओंकारा।
+ब्रह्मा, विष्णु, सदाशिव, अर्द्धांगी धारा॥ ॐ जय शिव ओंकारा...
+
+एकानन चतुरानन पंचानन राजे।
+हंसासन गरुड़ासन वृषवाहन साजे॥ ॐ जय शिव ओंकारा...
+
+दो भुज चारु चतुर्भुज दशभुज अति सोहे।
+त्रिगुण रूप निरखते त्रिभुवन जन मोहे॥ ॐ जय शिव ओंकारा...
+
+अक्षमाला वनमाला मुण्डमाला धारी।
+त्रिपुरारी कंसारी कर माला धारी॥ ॐ जय शिव ओंकारा...
+
+श्वेताम्बर पीताम्बर बाघम्बर अंगे।
+सनकादिक गरुड़ादिक भूतादिक संगे॥ ॐ जय शिव ओंकारा...
+
+कर के मध्य कमण्डलु चक्र त्रिशूल धर्ता।
+जगकर्ता जगभर्ता जगसंहारकर्ता॥ ॐ जय शिव ओंकारा...
+
+ब्रह्मा विष्णु सदाशिव जानत अविवेका।
+प्रणवाक्षर के मध्ये ये तीनों एका॥ ॐ जय शिव ओंकारा...
+
+काशी में विश्वनाथ विराजत नन्दी ब्रह्मचारी।
+नित उठ दर्शन पावत महिमा अति भारी॥ ॐ जय शिव ओंकारा...
+
+त्रिगुणस्वामी जी की आरती जो कोई नर गावे।
+कहत शिवानन्द स्वामी मनवांछित फल पावे॥ ॐ जय शिव ओंकारा...""".trimIndent(),
+        isPublished = true,
+        displayOrder = 12,
+        youtubeSearchQuery = "Om Jai Shiv Omkara Anuradha Paudwal"
     )
 )

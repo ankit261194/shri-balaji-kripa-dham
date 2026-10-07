@@ -11,9 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,16 +74,32 @@ fun HomeTopBar(
             Column(modifier = Modifier.padding(start = 4.dp)) {
                 Text(
                     text = if (isHindi) "श्री बालाजी कृपा धाम" else "Shri Balaji Kripa Dham",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    style = TextStyle(
+                        brush = Brush.horizontalGradient(
+                            listOf(
+                                Color(0xFFFFF9C4),
+                                Color(0xFFFFD54F),
+                                Color(0xFFFFA000),
+                                Color(0xFFFFD54F),
+                                Color(0xFFFFF9C4)
+                            )
+                        ),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 0.3.sp,
+                        shadow = Shadow(
+                            color = Color(0x66000000),
+                            offset = Offset(1f, 2f),
+                            blurRadius = 3f
+                        )
+                    ),
                     maxLines = 1
                 )
                 Text(
-                    text = if (isHindi) "डूँगरा जाट, बुलन्दशहर (उ.प्र.)" else "Dungra Jaat, Bulandshahr (U.P.)",
-                    fontSize = 10.5.sp,
-                    color = Color.White.copy(alpha = 0.82f),
-                    fontWeight = FontWeight.Medium,
+                    text = if (isHindi) "🚩 डूँगरा जाट, बुलन्दशहर (उ.प्र.)" else "🚩 Dungra Jaat, Bulandshahr (U.P.)",
+                    fontSize = 10.8.sp,
+                    color = Color(0xFFFFE082),
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 1
                 )
             }

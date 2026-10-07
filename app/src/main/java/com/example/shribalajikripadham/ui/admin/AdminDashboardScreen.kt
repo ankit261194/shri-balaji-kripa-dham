@@ -2292,7 +2292,31 @@ fun AdminDashboardScreen(
                                 canDevoteeViewYatraDiary = svcCanDevoteeViewYatraDiary,
                                 onCanDevoteeViewYatraDiaryChange = { svcCanDevoteeViewYatraDiary = it },
                                 isTuesdayDarbarEnabled = svcTuesdayDarbarEnabled,
-                                onTuesdayDarbarEnabledChange = { svcTuesdayDarbarEnabled = it },
+                                onTuesdayDarbarEnabledChange = { newStatus ->
+                                    svcTuesdayDarbarEnabled = newStatus
+                                    scope.launch {
+                                        try {
+                                            val fresh = repository.getSettings()
+                                            val updated = fresh.copy(isTuesdayDarbarEnabled = newStatus)
+                                            settings = updated
+                                            repository.updateSettings(updated)
+                                            repository.persistCurrentSettingsToAllLayers()
+                                            withContext(Dispatchers.IO) {
+                                                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(updated)
+                                            }
+                                            val msg = if (isHindi) {
+                                                if (newStatus) "🟢 1-टच: मंगलवार दरबार सक्रिय हुआ! वेबसाइट व ऐप पर लाइव सिंक।"
+                                                else "🔴 1-टच: मंगलवार दरबार बंद किया गया! वेबसाइट व ऐप पर पूर्णतः गुप्त।"
+                                            } else {
+                                                if (newStatus) "🟢 Tuesday Darbar enabled & synced live!"
+                                                else "🔴 Tuesday Darbar disabled & synced live!"
+                                            }
+                                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, "त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
                                 onOpenTuesdayDarbarTab = {
                                     val title = if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar"
                                     val idx = allowedTabs.indexOf(title)

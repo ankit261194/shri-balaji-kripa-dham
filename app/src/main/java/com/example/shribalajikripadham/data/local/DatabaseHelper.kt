@@ -1205,6 +1205,32 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                 com.example.shribalajikripadham.util.GoogleDriveSyncHelper.restoreFromBackupJson(context, null, db)
             }
         } catch (ignored: Exception) {}
+
+        // 9. Seed Sacred Tracks (12 Authentic Bhajans & Aartis with Hostinger Cloud Audio)
+        try {
+            val trackCursor = db.rawQuery("SELECT COUNT(*) FROM ashram_tracks", null)
+            var trackCount = 0
+            if (trackCursor.moveToFirst()) trackCount = trackCursor.getInt(0)
+            trackCursor.close()
+
+            if (trackCount == 0) {
+                com.example.shribalajikripadham.data.sacred.SACRED_TRACKS.forEach { track ->
+                    val cv = ContentValues().apply {
+                        put("track_key", track.trackKey)
+                        put("title_hindi", track.titleHindi)
+                        put("title_english", track.titleEnglish)
+                        put("subtitle_hindi", track.subtitleHindi)
+                        put("duration_text", track.durationText)
+                        put("audio_url", track.audioUrl)
+                        put("lyrics_hindi", track.lyricsHindi)
+                        put("is_published", if (track.isPublished) 1 else 0)
+                        put("display_order", track.displayOrder)
+                        put("youtube_search_query", track.youtubeSearchQuery)
+                    }
+                    db.insertWithOnConflict("ashram_tracks", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                }
+            }
+        } catch (e: Exception) { e.printStackTrace() }
     }
 
     // =========================================================================

@@ -618,6 +618,72 @@ fun FaceTokenRegistrationScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // 🚩 TUESDAY DARBAR MASTER SWITCH CHECK:
+            // When isTuesdayDarbarEnabled == false, ZERO mock dates, ZERO tokens, ZERO camera, ZERO forms!
+            if (isTuesdayVenue && !settings.isTuesdayDarbarEnabled) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(20.dp),
+                    border = BorderStroke(1.5.dp, GoldLight),
+                    elevation = CardDefaults.cardElevation(4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("🚩", fontSize = 52.sp)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = if (isHindi) "मंगलवार दरबार (बुलन्दशहर)" else "Tuesday Darbar (Bulandshahr)",
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 20.sp,
+                            color = MaroonAccent,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            color = Color(0xFFFFF8E1),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFFD54F))
+                        ) {
+                            Text(
+                                text = if (isHindi) "✨ मंगलवार दरबार शीघ्र प्रारंभ होगा ✨" else "✨ Tuesday Darbar Starting Soon ✨",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.5.sp,
+                                color = Color(0xFFB71C1C),
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = if (isHindi)
+                                "परम पूज्य गुरुदेव जी के पावन सानिध्य में मंगलवार बुलन्दशहर दरबार एवं टोकन व्यवस्था शीघ्र प्रारंभ की जाएगी। नवीनतम आधिकारिक सूचना हेतु आश्रम सूचना पटल देखें।"
+                            else
+                                "Tuesday Bulandshahr Darbar and token registration will commence soon under Pujya Guruji's blessings. Please check ashram notice board for live updates.",
+                            fontSize = 13.5.sp,
+                            lineHeight = 22.sp,
+                            color = TextSecondaryDark,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Button(
+                            onClick = onBack,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaroonAccent),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(0.85f)
+                        ) {
+                            Text(
+                                text = if (isHindi) "⬅ मुख्य पृष्ठ पर लौटें" else "⬅ Return to Home",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
+                return@Scaffold
+            }
+
             // Check if device already registered today
             if (existingToken != null && scanState != FaceScanState.TOKEN_GENERATED) {
                 Card(
@@ -726,45 +792,59 @@ fun FaceTokenRegistrationScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            val darbarSchedule = remember(settings, darbarVenue, scheduleTickerMs) {
+                evaluateDarbarSchedule()
+            }
+
+            // If Darbar is NOT open, and token is not yet generated, render ONLY the divine schedule notice & return!
+            // Zero forms, zero camera, zero mock dates, zero dummy data!
+            if (!darbarSchedule.isOpen && scanState != FaceScanState.TOKEN_GENERATED) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = darbarSchedule.bannerBg),
+                    shape = RoundedCornerShape(18.dp),
+                    border = BorderStroke(2.dp, darbarSchedule.borderCol),
+                    elevation = CardDefaults.cardElevation(4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(22.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(darbarSchedule.icon, fontSize = 44.sp)
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = darbarSchedule.title,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp,
+                            color = if (darbarSchedule.isSevere) Color(0xFFB71C1C) else Color(0xFF8B0000),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = darbarSchedule.message,
+                            fontSize = 14.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF111111),
+                            lineHeight = 22.sp,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                        Button(
+                            onClick = onBack,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaroonAccent),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(0.85f)
+                        ) {
+                            Text(if (isHindi) "⬅ मुख्य पृष्ठ पर लौटें" else "⬅ Return to Home", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+                }
+                return@Scaffold
+            }
+
             // MAIN STATE MACHINE UI
             when (scanState) {
                 FaceScanState.SCANNING -> {
-                    val darbarSchedule = remember(settings, darbarVenue, scheduleTickerMs) {
-                        evaluateDarbarSchedule()
-                    }
-
-                    if (!darbarSchedule.isOpen) {
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = darbarSchedule.bannerBg),
-                            shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(2.dp, darbarSchedule.borderCol),
-                            elevation = CardDefaults.cardElevation(4.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(darbarSchedule.icon, fontSize = 28.sp)
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = darbarSchedule.title,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 16.sp,
-                                        color = if (darbarSchedule.isSevere) Color(0xFFB71C1C) else Color(0xFF8B0000)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = darbarSchedule.message,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF111111),
-                                    lineHeight = 22.sp
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(14.dp))
-                    }
-
                     // Viewfinder & Oval Reticle
                     Card(
                         colors = CardDefaults.cardColors(containerColor = Color.White),

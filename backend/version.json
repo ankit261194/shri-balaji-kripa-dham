@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 145,
-  "version_code": 145,
-  "latest_version_name": "2.60.00",
-  "version_name": "2.60.00",
-  "update_notes_hindi": "v2.60.00 (Build 145): 📞 सेवादार रियल इन-ऐप वॉइस कॉल (VoIP Calling): भक्त व सेवादार के बीच सीधा ऐप के अंदर वॉइस कॉल—बिना किसी टेलीकॉम डायलर या सिम कार्ड के। लाइव रिंगिंग, कनेक्टेड टाइमर, माइक म्यूट, लाउडस्पीकर, व इनकमिंग कॉल अलर्ट। साथ ही लाइव चैट व अपडेट इंजन में सुधार।",
-  "update_notes_english": "v2.60.00 (Build 145): 📞 Sevadar Real In-App Voice Calling (VoIP Calling): Direct in-app audio calling between devotees and sevadars with zero cellular dialer bypass. Live ringing, connected duration timer, mic mute, speakerphone, incoming call alert, and chat synchronization.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=145",
+  "latest_version_code": 146,
+  "version_code": 146,
+  "latest_version_name": "2.61.00",
+  "version_name": "2.61.00",
+  "update_notes_hindi": "v2.61.00 (Build 146): 🚩 मंगलवार दरबार पूर्ण शुद्धिकरण (1-टच लाइव सिंक व शून्य डमी डेटा)। जब दरबार बंद हो तो शून्य फर्जी फॉर्म व पावन 'शीघ्र प्रारंभ होगा' संदेश। 🎵 पावन 12 आरती व भजन होस्टिंगर क्लाउड सर्वर पर लाइव होस्टेड (शून्य डमी/थर्ड-पार्टी लिंक)। ✨ दिव्य स्वर्णिम होम टॉप बार (Golden Divine Radiant Typography)।",
+  "update_notes_english": "v2.61.00 (Build 146): 🚩 Tuesday Darbar full purification with 1-touch Super Admin live MySQL toggle and zero dummy forms/dates. 🎵 12 sacred devotional tracks 100% hosted on Hostinger cloud server with authentic lyrics. ✨ Golden divine radiant top bar typography and shine.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=146",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

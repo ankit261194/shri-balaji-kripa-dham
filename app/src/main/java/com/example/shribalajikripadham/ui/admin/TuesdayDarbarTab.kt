@@ -134,7 +134,30 @@ fun TuesdayDarbarTab(
                 }
                 Switch(
                     checked = isEnabled,
-                    onCheckedChange = { isEnabled = it },
+                    onCheckedChange = { newVal ->
+                        isEnabled = newVal
+                        scope.launch {
+                            try {
+                                val updated = settings.copy(isTuesdayDarbarEnabled = newVal)
+                                repository.updateSettings(updated)
+                                repository.persistCurrentSettingsToAllLayers()
+                                withContext(Dispatchers.IO) {
+                                    HostingerCentralSyncManager.updateFullLiveConfig(updated)
+                                }
+                                onSettingsUpdated(updated)
+                                val msg = if (isHindi) {
+                                    if (newVal) "🟢 1-टच: मंगलवार दरबार सक्रिय (ON) हुआ! वेबसाइट व ऐप पर लाइव सिंक।"
+                                    else "🔴 1-टच: मंगलवार दरबार बंद (OFF) हुआ! वेबसाइट व ऐप पर पूर्णतः गुप्त।"
+                                } else {
+                                    if (newVal) "🟢 Tuesday Darbar enabled & synced live!"
+                                    else "🔴 Tuesday Darbar disabled & synced live!"
+                                }
+                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
                         checkedTrackColor = Color(0xFF2E7D32),
