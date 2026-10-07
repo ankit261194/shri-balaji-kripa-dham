@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 141,
-  "version_code": 141,
-  "latest_version_name": "2.56.66",
-  "version_name": "2.56.66",
-  "update_notes_hindi": "v2.56.66 (Build 141): 🛡️ अखंड रियल-टाइम सिंक व डेटा सुरक्षा: फेस रिकॉग्निशन बैकएंड सिंक फिक्स, रियल-टाइम लाइव टोकन SSE स्ट्रीम (live_token_stream.php), ऑटोमैटिक क्लाउड डेटाबेस बैकअप (auto_backup.php) एवं दैनिक दर्शन 1-टच इंस्टेंट रीफ्रेश बटन।",
-  "update_notes_english": "v2.56.66 (Build 141): 🛡️ Real-Time Live Sync & Cloud Data Protection: Devotee Face Biometric sync bug fixed, Real-Time Server-Sent Events (SSE) Live Token Stream, Automated Cloud MySQL Backup Engine with rolling snapshots, and 1-Touch Instant Darshan Refresh button.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=141",
+  "latest_version_code": 142,
+  "version_code": 142,
+  "latest_version_name": "2.57.00",
+  "version_name": "2.57.00",
+  "update_notes_hindi": "v2.57.00 (Build 142): 🚩 भव्य प्रो-टियर सात्विक इंटरफ़ेस रीडिज़ाइन: 6,600+ लाइनों के जंजाल को हटाकर अत्यंत तेज़, शांत, सात्विक व मॉड्युलर UI, अलौकिक नित्य दर्शन हीरो कार्ड, लाइव टोकन स्टेटस व 4 आवश्यक पावन सेवाएं।",
+  "update_notes_english": "v2.57.00 (Build 142): 🚩 Grand Pro-Tier Sacred UI Redesign: Modularized 6,600+ line monolith into high-performance clean components, Consecrated Daily Darshan Hero Card, Live Darbar Queue Card & Core Sacred Services.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=142",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
-  "is_force_update": true
+  "is_force_update": false
 }
