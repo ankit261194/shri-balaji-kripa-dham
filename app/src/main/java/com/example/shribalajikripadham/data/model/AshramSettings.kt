@@ -116,7 +116,7 @@ data class AshramSettings(
     val websiteBankIfsc: String = "",
     val websiteBankBranch: String = "अनूपशहर, बुलन्दशहर",
     val websiteAshramAddress: String = "श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश - 202394",
-    val websiteAshramDirections: String = "🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: अनूपशहर (~16 किमी) • जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी)",
+    val websiteAshramDirections: String = "",
     val websiteContactEmail: String = "",
     val websiteInstagramUrl: String = "https://www.instagram.com/shribalajikripadham",
     val websiteWhatsappChannelUrl: String = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0",

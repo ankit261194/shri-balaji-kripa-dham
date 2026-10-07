@@ -566,7 +566,7 @@ object AppPermanentVault {
                 put("bank_ifsc", prefs.getString("bank_ifsc", ""))
                 put("bank_branch", prefs.getString("bank_branch", "अनूपशहर, बुलन्दशहर"))
                 put("ashram_address", prefs.getString("ashram_address", "श्री बालाजी कृपा धाम, ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर, उत्तर प्रदेश - 202394"))
-                put("ashram_directions", prefs.getString("ashram_directions", "🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: अनूपशहर (~16 किमी) • जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी)"))
+                put("ashram_directions", prefs.getString("ashram_directions", ""))
                 put("contact_email", prefs.getString("contact_email", "shribalajikripadham@gmail.com"))
                 put("instagram_url", prefs.getString("instagram_url", "https://www.instagram.com/shribalajikripadham"))
                 put("whatsapp_channel_url", prefs.getString("whatsapp_channel_url", "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0"))

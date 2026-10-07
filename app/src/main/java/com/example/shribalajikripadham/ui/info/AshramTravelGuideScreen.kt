@@ -80,7 +80,7 @@ fun AshramTravelGuideScreen(
                             color = Color.White
                         )
                         Text(
-                            text = if (isHindi) "सटीक मार्ग, रेलवे स्टेशन व शहर गाइड" else "Smart Route & Station Guide",
+                            text = if (isHindi) "सटीक मार्ग, प्रमुख शहर व नेविगेशन गाइड" else "Smart Route & City Guide",
                             fontSize = 11.5.sp,
                             color = Color.White.copy(alpha = 0.85f)
                         )
@@ -209,80 +209,7 @@ fun AshramTravelGuideScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 2. NEAREST RAILWAY STATION CARD (STRICTLY ONLY BULANDSHAHR)
-            Card(
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                shape = RoundedCornerShape(18.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                border = BorderStroke(1.5.dp, Color(0xFF0288D1)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFE1F5FE)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("🚆", fontSize = 22.sp)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = if (isHindi) "नजदीकी रेलवे स्टेशन (एकमात्र स्टेशन)" else "Nearest Railway Station (Only Station)",
-                                fontSize = 14.5.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF0277BD)
-                            )
-                            Text(
-                                text = if (isHindi) "बुलन्दशहर रेलवे स्टेशन (BSC)" else "Bulandshahr Railway Station (BSC)",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaroonAccent
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Surface(
-                        color = Color(0xFFF1F8E9),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text(
-                                text = if (isHindi)
-                                    "⚠️ महत्वपूर्ण सूचना: आश्रम का निकटतम एकमात्र रेलवे स्टेशन 'बुलन्दशहर' है (दूरी लगभग 28-30 किमी)। इसके अलावा कोई अन्य निकटवर्ती स्टेशन नहीं है।"
-                                else
-                                    "⚠️ Important Notice: The ONLY nearest railway station to the Ashram is 'Bulandshahr' (~28-30 km).",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF2E7D32),
-                                lineHeight = 17.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = if (isHindi)
-                            "• ट्रेन द्वारा आने वाले भक्त दिल्ली, हापुड़, गाजियाबाद या मेरठ मार्ग से 'बुलन्दशहर रेलवे स्टेशन' पर उतरें।\n• बुलन्दशहर रेलवे स्टेशन या बस स्टैंड से जहांगीराबाद के लिए नियमित बसें व ऑटो/टैक्सी 24 घंटे उपलब्ध रहती हैं।\n• जहांगीराबाद पहुँचकर वहाँ से सीधे ग्राम डूँगरा जाट आश्रम के लिए लोकल सवारी तुरंत मिल जाती है।"
-                        else
-                            "• Devotees traveling by train should deboard at Bulandshahr Railway Station (BSC).\n• Frequent buses and taxis connect Bulandshahr to Jahangirabad, from where local e-rickshaws reach Dungra Jaat Ashram directly.",
-                        fontSize = 12.5.sp,
-                        color = TextPrimaryDark,
-                        lineHeight = 18.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 3. NEARBY CITIES & HUBS (STRICTLY ONLY JAHANGIRABAD, BULANDSHAHR, ANOOPSHAHR)
+            // 2. NEARBY CITIES & HUBS (JAHANGIRABAD, BULANDSHAHR, ANOOPSHAHR)
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 shape = RoundedCornerShape(18.dp),
@@ -339,13 +266,13 @@ fun AshramTravelGuideScreen(
                     CityRouteCard(
                         number = "2",
                         cityName = if (isHindi) "बुलन्दशहर (Bulandshahr)" else "Bulandshahr",
-                        tag = if (isHindi) "जिला मुख्यालय व रेलवे स्टेशन (~30 किमी)" else "District HQ & Railway Station (~30 km)",
+                        tag = if (isHindi) "जिला मुख्यालय (~30 किमी)" else "District HQ (~30 km)",
                         tagColor = Color(0xFF0277BD),
                         tagBg = Color(0xFFE1F5FE),
                         description = if (isHindi)
-                            "• जिला मुख्यालय एवं एकमात्र रेलवे स्टेशन।\n• दिल्ली, नोएडा, गाजियाबाद, मेरठ से आने वाली सभी बसें व ट्रेनें बुलन्दशहर आती हैं।\n• बुलन्दशहर (भूड़ चौराहा / बस स्टैंड) से जहांगीराबाद की बस/टैक्सी लें। जहांगीराबाद से लोकल सवारी सीधे आश्रम पहुँचा देती है।"
+                            "• जिला मुख्यालय केंद्र।\n• दिल्ली, नोएडा, गाजियाबाद, मेरठ से आने वाली बसें बुलन्दशहर आती हैं।\n• बुलन्दशहर (भूड़ चौराहा / बस स्टैंड) से जहांगीराबाद की बस/टैक्सी लें। जहांगीराबाद से लोकल सवारी सीधे आश्रम पहुँचा देती है।"
                         else
-                            "• District headquarters and only railway hub (~30 km).\n• Buses from Delhi, Noida, Ghaziabad, Meerut arrive here. Take bus to Jahangirabad, then local ride to Dungra Jaat Ashram."
+                            "• District headquarters (~30 km).\n• Buses from Delhi, Noida, Ghaziabad, Meerut arrive here. Take bus to Jahangirabad, then local ride to Dungra Jaat Ashram."
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))

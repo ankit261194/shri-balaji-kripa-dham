@@ -200,27 +200,22 @@ fun AshramInfoScreen(
                         lineHeight = 20.sp
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Surface(
-                        color = Color(0xFFF1F8E9),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text(
-                                text = if (isHindi) "🚆 नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर (BSC) (~30 किमी)" else "🚆 Nearest Railway Station: Bulandshahr Only (BSC) (~30 km)",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0277BD)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = if (isHindi) "🏙️ निकटवर्ती प्रमुख 3 शहर: जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी) • अनूपशहर (~16 किमी)" else "🏙️ Nearby Cities: Jahangirabad (~10 km) • Bulandshahr (~30 km) • Anoopshahr (~16 km)",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF2E7D32)
-                            )
+                    val directionsText = settings?.websiteAshramDirections?.trim().orEmpty()
+                    if (directionsText.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            color = Color(0xFFF1F8E9),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = directionsText,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF2E7D32)
+                                )
+                            }
                         }
                     }
 
