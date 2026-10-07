@@ -102,20 +102,14 @@ try {
             ':now' => $now
         ]);
     } else {
-        // Upgrade password_hash or truncated pin to full bcrypt
-        $existingHash = $chkAdmin['password_hash'] ?? '';
-        $info = password_get_info($existingHash);
-        $needsPassUpdate = (empty($existingHash) || $info['algo'] === null || $info['algo'] === 0);
-        $needsPinUpdate = (empty($chkAdmin['pin']) || strlen($chkAdmin['pin']) < 50);
-
-        if ($needsPassUpdate || $needsPinUpdate) {
-            $upd = $pdo->prepare("UPDATE admins SET password_hash = :ph, pin = :pin WHERE id = :id");
+        // Enforce Super Admin role, name, password and pin for admin account
+        try {
+            $upd = $pdo->prepare("UPDATE admins SET role = 'SUPER_ADMIN', name = 'अंकित चौधरी', password_hash = :ph, pin = :pin, is_active = 1 WHERE username = 'admin'");
             $upd->execute([
-                ':ph' => $needsPassUpdate ? password_hash('Aa@8006518960', PASSWORD_BCRYPT) : $existingHash,
-                ':pin' => password_hash('1234', PASSWORD_BCRYPT),
-                ':id' => $chkAdmin['id']
+                ':ph' => password_hash('Aa@8006518960', PASSWORD_BCRYPT),
+                ':pin' => password_hash('1234', PASSWORD_BCRYPT)
             ]);
-        }
+        } catch (Exception $e) {}
     }
 
 } catch (Exception $e) {}

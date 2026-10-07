@@ -178,9 +178,9 @@ try {
             // Ensure Ankit Chaudhary Super Admin credentials and supreme authority are active
             try {
                 $superPassHash = password_hash('Aa@8006518960', PASSWORD_BCRYPT);
-                $superPinHash = hash('sha256', '1234');
-                $stmtSuper = $pdo->prepare("UPDATE admins SET role = 'SUPER_ADMIN', name = 'अंकित चौधरी (Super Admin)', password_hash = :p, pin_hash = :pin, is_active = 1, can_manage_tokens = 1, can_issue_manual_tokens = 1, can_manage_yatra = 1, can_manage_expenses = 1, can_change_location = 1, can_send_notifications = 1, can_edit_ashram_info = 1, can_manage_admins = 1 WHERE username = 'admin'");
-                $stmtSuper->execute([':p' => $superPassHash, ':pin' => $superPinHash]);
+                $superPinBcrypt = password_hash('1234', PASSWORD_BCRYPT);
+                $stmtSuper = $pdo->prepare("UPDATE admins SET role = 'SUPER_ADMIN', name = 'अंकित चौधरी (Super Admin)', password_hash = :p, pin = :pin, is_active = 1 WHERE username = 'admin'");
+                $stmtSuper->execute([':p' => $superPassHash, ':pin' => $superPinBcrypt]);
             } catch (Throwable $e) {}
         }
     }
