@@ -428,9 +428,9 @@ if ($action === 'CHANGE_PASSWORD' || $action === 'RESET_PASSWORD') {
 // 5. LIST ALL ADMINS (Requires Authorized Access - Zero Public Leak)
 // -----------------------------------------------------------------------------
 if ($action === 'LIST_ADMINS') {
-    // Authenticate: caller must have valid admin token or valid API key
+    // Authenticate: caller must have valid admin token or valid API key (Public access blocked)
     $auth = getAuthenticatedAdmin($pdo);
-    if (!$auth && !verifyApiAuth(true)) {
+    if (!$auth && !verifyApiAuth(false)) {
         http_response_code(401);
         echo json_encode(["success" => false, "error" => "अनधिकृत अनुरोध! केवल अधिकृत व्यवस्थापक ही सूची देख सकते हैं।"], JSON_UNESCAPED_UNICODE);
         exit;
