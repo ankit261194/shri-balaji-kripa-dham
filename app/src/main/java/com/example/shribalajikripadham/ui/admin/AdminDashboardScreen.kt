@@ -440,6 +440,8 @@ fun AdminDashboardScreen(
             customSundayTokenBannerTitle = s.sundayTokenBannerTitle
             customSundayTokenBannerText = s.sundayTokenBannerText
             customSundayTokenCustomNotice = s.sundayTokenCustomNotice
+            havanCostInput = s.havanEstimatedCost.toString()
+            havanRulesInput = s.havanRulesNotice
 
             try {
                 val telemetry = repository.getActiveDevicesTelemetry()
@@ -1281,9 +1283,7 @@ fun AdminDashboardScreen(
             if (isSuper || admin.canManageTuesdayDarbar) {
                 allowedTabs.add(if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar")
             }
-            if (isSuper || (admin.canManageYatra && settings.isBusBookingLive)) {
-                allowedTabs.add(if (isHindi) "बस बुकिंग लेजर" else "Bus Ledger")
-            }
+// (Bus Ledger removed)
             if (isSuper || admin.canManageArzi || settings.canAdminViewArziLedger) {
                 allowedTabs.add(if (isHindi) "अर्जी लेजर 📦" else "Arzi Ledger 📦")
             }
@@ -1304,13 +1304,7 @@ fun AdminDashboardScreen(
             if (isSuper || admin.canManageAartiBhajan) {
                 allowedTabs.add(if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager")
             }
-            if (isSuper || admin.canManageUiControl) {
-                allowedTabs.add(if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control")
-            }
-            if (isSuper || admin.canManageWebsite) {
-                allowedTabs.add(if (isHindi) "🌐 वेबसाइट लाइव एडिटर" else "Website Live Editor")
-                allowedTabs.add(if (isHindi) "🌐 वेबसाइट व CMS" else "Website & CMS")
-            }
+// (UI Box & Website CMS removed)
 
             // 4. Financial & Ledgers Operations
             if (isSuper || admin.canViewPaymentLedger || settings.canAdminViewPaymentHistory) {
@@ -1333,9 +1327,7 @@ fun AdminDashboardScreen(
             if (isSuper || admin.canChangeLocation) {
                 allowedTabs.add(if (isHindi) "GPS लोकेशन" else "Location")
             }
-            if (isSuper || admin.canManageDistances) {
-                allowedTabs.add(if (isHindi) "कस्टम दूरियाँ" else "Distances")
-            }
+// (City Distances removed)
             if (isSuper || admin.canManageAdmins) {
                 allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
             }
@@ -1347,7 +1339,7 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "सुपर कंट्रोल" else "Super Control")
                 allowedTabs.add(if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️")
                 allowedTabs.add(if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit")
-                allowedTabs.add(if (isHindi) "ऐप कस्टमाइजर" else "Customizer")
+                // (Customizer removed)
                 allowedTabs.add(if (isHindi) "ऑटो-अपडेट" else "Updates")
             }
 
@@ -1684,6 +1676,55 @@ fun AdminDashboardScreen(
                                                 modifier = Modifier.height(34.dp)
                                             ) {
                                                 Text("देखें ➔", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    // 4. INSTANT EMERGENCY NOTICE BROADCAST
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFFFFF8E1),
+                                        border = BorderStroke(1.dp, Color(0xFFFFD54F)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "📢 तात्कालिक सूचना उद्घोषणा",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 13.sp,
+                                                    color = Color(0xFFE65100)
+                                                )
+                                                Text(
+                                                    text = if (settings.emergencyNoticeText.isNotBlank()) "सक्रिय: ${settings.emergencyNoticeText.take(28)}..." else "सभी भक्तों को तुरंत पुश सूचना भेजें",
+                                                    fontSize = 10.8.sp,
+                                                    color = Color.DarkGray,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
+                                                )
+                                            }
+
+                                            Button(
+                                                onClick = {
+                                                    val idx = allowedTabs.indexOfFirst { it.contains("सूचना") || it.contains("Broadcast") }
+                                                    if (idx >= 0) {
+                                                        selectedTab = idx
+                                                        activeScreenTitle = allowedTabs[idx]
+                                                    }
+                                                },
+                                                shape = RoundedCornerShape(8.dp),
+                                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE65100)),
+                                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                                modifier = Modifier.height(34.dp)
+                                            ) {
+                                                Text("भेजें 🚀", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                             }
                                         }
                                     }
@@ -9327,134 +9368,7 @@ fun PublicServiceMatrixTab(
             }
         }
 
-        // SECTION 2: 60-SEATER LUXURY BUS CONTROL (SUPER ADMIN DIRECT CONTROL)
-        Card(
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, if (isBusBookingLive) Color(0xFF4CAF50) else Color(0xFFFFB74D))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        Text("🚌", fontSize = 22.sp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = if (isHindi) "60-सीटर डीलक्स बस बुकिंग (सुपर एडमिन नियंत्रण)" else "60-Seater Deluxe Bus Booking",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = MaroonPrimary
-                            )
-                            Text(
-                                text = if (isHindi) "12 पंक्तियाँ × 5 सीटें (3×2 कॉन्फ़िगरेशन)" else "12 Rows × 5 Seats (3x2 Configuration)",
-                                fontSize = 11.sp,
-                                color = Color.Gray
-                            )
-                        }
-                    }
-                    Switch(checked = isBusBookingLive, onCheckedChange = onBusBookingLiveChange)
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    color = if (isBusBookingLive) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = if (isBusBookingLive)
-                            (if (isHindi) "🟢 लाइव: आम भक्तों के ऐप में बस सीट बुकिंग व A4 टिकट सुविधा खुली है।" else "🟢 LIVE: Devotees can view 60-seat layout and book seats.")
-                        else
-                            (if (isHindi) "🔒 गुप्त/छिपा हुआ (Hidden): यह विकल्प भक्तों से पूरी तरह छिपा हुआ है। सुपर एडमिन जब चाहें इसे लाइव कर सकते हैं।" else "🔒 HIDDEN: Bus booking is hidden from devotee screens."),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isBusBookingLive) Color(0xFF2E7D32) else Color(0xFFE65100),
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = busFareAmount,
-                    onValueChange = onBusFareAmountChange,
-                    label = { Text(if (isHindi) "प्रति सीट किराया (₹)" else "Seat Fare Amount (₹)") },
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-
-        // SECTION 2.5: DHARAMSHALA & ROOM RESERVATION MASTER CONTROL (SUPER ADMIN DIRECT CONTROL)
-        Card(
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, if (isDharamshalaLive) Color(0xFF4CAF50) else Color(0xFFFFB74D))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        Text("🏨", fontSize = 22.sp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = if (isHindi) "धर्मशाला व कमरा आरक्षण सेवा (सुपर एडमिन)" else "Dharamshala & Room Booking",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = MaroonPrimary
-                            )
-                            Text(
-                                text = if (isHindi) "शून्य डमी डेटा • 100% ऑन/ऑफ व कमरा नियंत्रण" else "Zero Dummy Data • Master On/Off & Room Controls",
-                                fontSize = 11.sp,
-                                color = Color.Gray
-                            )
-                        }
-                    }
-                    Switch(checked = isDharamshalaLive, onCheckedChange = onDharamshalaLiveChange)
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    color = if (isDharamshalaLive) Color(0xFFE8F5E9) else Color(0xFFFFF3E0),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = if (isDharamshalaLive)
-                            (if (isHindi) "🟢 लाइव: ऐप व वेबसाइट पर धर्मशाला व कमरा आरक्षण सेवा सक्रिय है।" else "🟢 LIVE: Dharamshala room booking is active across App & Website.")
-                        else
-                            (if (isHindi) "🔒 बंद/अक्रिय (OFF): धर्मशाला सेवा पूर्णतः बंद है। ऐप व वेबसाइट से कमरा आरक्षण बंद है।" else "🔒 HIDDEN: Dharamshala service is hidden and disabled for devotees."),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isDharamshalaLive) Color(0xFF2E7D32) else Color(0xFFE65100),
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-                OutlinedButton(
-                    onClick = { showRoomManagementDialog = true },
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    border = BorderStroke(1.dp, MaroonPrimary)
-                ) {
-                    Text(
-                        text = if (isHindi) "🛠️ कमरा सूची व डेटा प्रबंधन (Room Management & Zero Dummy Data)" else "🛠️ Room Management & Zero Dummy Data",
-                        color = MaroonPrimary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.5.sp
-                    )
-                }
-            }
-        }
-
+        // (Section 2 Bus & Section 2.5 Dharamshala removed)
         // SECTION 3: ASHRAM UPI QR CODE & PAYMENT GATEWAY CONTROL (SUPER ADMIN DIRECT CONTROL)
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -9822,7 +9736,7 @@ fun PublicServiceMatrixTab(
                 ServiceSwitchRow("🏷️ रविवार दरबार टोकन पंजीकरण (Sunday Token Generation)", isToken, onTokenChange)
                 ServiceSwitchRow("🔢 लाइव टोकन काउंटर ट्रैकर (Live Darbar Queue Counter)", isLiveCounter, onLiveCounterChange)
                 ServiceSwitchRow("🎪 वार्षिक उत्सव व कार्यक्रम (Annual Festivals & Events)", isEvents, onEventsChange)
-                ServiceSwitchRow("⏰ आरती व दरबार समय सारणी (Aarti & Darbar Timings Card)", isAartiTimings, onAartiTimingsChange)
+                // Aarti Timings switch removed
                 ServiceSwitchRow("👑 गुरुजी परिचय व आश्रम इतिहास (Guruji Bio & Ashram Info)", isGurujiInfo, onGurujiInfoChange)
                 ServiceSwitchRow("📢 आपातकालीन सूचना पट्टी (Emergency Announcement Banner)", isEmergencyNotice, onEmergencyNoticeChange)
 
@@ -9843,44 +9757,7 @@ fun PublicServiceMatrixTab(
                     }
                 }
 
-                // SECTION 5: YATRA EXPENSE DIARY PRIVACY (SUPER ADMIN ONLY BY DEFAULT)
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = if (canDevoteeViewYatraDiary) Color(0xFFE8F5E9) else Color(0xFFFFF8E1)),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, if (canDevoteeViewYatraDiary) Color(0xFF81C784) else Color(0xFFFFD54F)),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Text("📔", fontSize = 20.sp)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(
-                                        text = if (isHindi) "यात्रा खर्च डायरी (Yatra Khata Diary) गोपनीयता" else "Yatra Expense Diary Privacy",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp,
-                                        color = MaroonPrimary
-                                    )
-                                    Text(
-                                        text = if (canDevoteeViewYatraDiary)
-                                            (if (isHindi) "🔓 खुला: भक्त व सेवादार भी यात्रा खर्च डायरी देख सकते हैं।" else "🔓 PUBLIC: Devotees can view expenses.")
-                                        else
-                                            (if (isHindi) "🔒 केवल सुपर एडमिन (अनुशंसित): भक्तों से पूर्णतः छिपा हुआ।" else "🔒 PRIVATE: Super Admin exclusive privilege."),
-                                        fontSize = 12.sp,
-                                        color = Color(0xFF212121)
-                                    )
-                                }
-                            }
-                            Switch(checked = canDevoteeViewYatraDiary, onCheckedChange = onCanDevoteeViewYatraDiaryChange)
-                        }
-                    }
-                }
-
+                // (Section 5 Yatra Diary removed)
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = {
@@ -9899,343 +9776,7 @@ fun PublicServiceMatrixTab(
         }
     }
 
-    if (showRoomManagementDialog) {
-        var dialogRooms by remember { mutableStateOf<List<com.example.shribalajikripadham.ui.dharamshala.DharamshalaRoom>>(emptyList()) }
-        var isLoadingRooms by remember { mutableStateOf(false) }
-        var roomActionMsg by remember { mutableStateOf<String?>(null) }
-        var showAddRoomDialog by remember { mutableStateOf(false) }
-        var showClearConfirmDialog by remember { mutableStateOf(false) }
-
-        var addRoomNumber by remember { mutableStateOf("") }
-        var addTitleHindi by remember { mutableStateOf("") }
-        var addRoomType by remember { mutableStateOf("NON_AC") }
-        var addFloor by remember { mutableStateOf("Ground") }
-        var addCapacity by remember { mutableStateOf("4") }
-        var addDailyRate by remember { mutableStateOf("250") }
-
-        fun loadRooms() {
-            matrixScope.launch {
-                isLoadingRooms = true
-                roomActionMsg = null
-                try {
-                    val fetched = withContext(Dispatchers.IO) {
-                        val list = mutableListOf<com.example.shribalajikripadham.ui.dharamshala.DharamshalaRoom>()
-                        val url = java.net.URL("https://shribalajikripadham.online/api/dharamshala.php?action=list_rooms")
-                        val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
-                            connectTimeout = 8000
-                            readTimeout = 8000
-                        }
-                        if (conn.responseCode in 200..299) {
-                            val resp = conn.inputStream.bufferedReader().use { it.readText() }
-                            val json = org.json.JSONObject(resp)
-                            val arr = json.optJSONArray("rooms") ?: org.json.JSONArray()
-                            for (i in 0 until arr.length()) {
-                                val item = arr.getJSONObject(i)
-                                list.add(
-                                    com.example.shribalajikripadham.ui.dharamshala.DharamshalaRoom(
-                                        id = item.optInt("id"),
-                                        roomNumber = item.optString("room_number"),
-                                        roomType = item.optString("room_type", "NON_AC"),
-                                        titleHindi = item.optString("title_hindi"),
-                                        floor = item.optString("floor", "Ground"),
-                                        capacity = item.optInt("capacity", 4),
-                                        dailySevaRate = item.optDouble("daily_seva_rate", 250.0),
-                                        status = item.optString("status", "AVAILABLE")
-                                    )
-                                )
-                            }
-                        }
-                        list
-                    }
-                    dialogRooms = fetched
-                } catch (e: Exception) {
-                    roomActionMsg = "डेटा लोड त्रुटि: ${e.localizedMessage}"
-                } finally {
-                    isLoadingRooms = false
-                }
-            }
-        }
-
-        LaunchedEffect(Unit) {
-            loadRooms()
-        }
-
-        AlertDialog(
-            onDismissRequest = { showRoomManagementDialog = false },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🏨", fontSize = 22.sp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = if (isHindi) "धर्मशाला कमरा प्रबंधन" else "Room Management",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = MaroonPrimary
-                        )
-                        Text(
-                            text = if (isHindi) "शून्य डमी डेटा • पंजीकृत कमरे (${dialogRooms.size})" else "Registered Rooms (${dialogRooms.size})",
-                            fontSize = 11.sp,
-                            color = Color.Gray
-                        )
-                    }
-                }
-            },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 450.dp)
-                ) {
-                    if (roomActionMsg != null) {
-                        Surface(
-                            color = Color(0xFFE8F5E9),
-                            shape = RoundedCornerShape(6.dp),
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                        ) {
-                            Text(
-                                text = roomActionMsg ?: "",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFF1B5E20),
-                                modifier = Modifier.padding(6.dp)
-                            )
-                        }
-                    }
-
-                    // Action Buttons Row: Add Room + Wipe All Data
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = { showAddRoomDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(vertical = 6.dp)
-                        ) {
-                            Text(if (isHindi) "➕ नया कमरा जोड़ें" else "➕ Add Room", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        Button(
-                            onClick = { showClearConfirmDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(vertical = 6.dp)
-                        ) {
-                            Text(if (isHindi) "🗑️ डमी डेटा साफ़ करें" else "🗑️ Wipe Rooms", fontSize = 11.5.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    if (isLoadingRooms) {
-                        Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = MaroonPrimary, modifier = Modifier.size(28.dp))
-                        }
-                    } else if (dialogRooms.isEmpty()) {
-                        Surface(
-                            color = Color(0xFFFAFAFA),
-                            shape = RoundedCornerShape(8.dp),
-                            border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("✅ शून्य डमी डेटा", fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32), fontSize = 13.sp)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = if (isHindi) "सर्वर पर कोई भी फेक/डमी कमरा मौजूद नहीं है। आवश्यकतानुसार 'नया कमरा जोड़ें' बटन से असली कमरा जोड़ें।" else "Zero fake dummy rooms exist on server.",
-                                    fontSize = 11.sp,
-                                    color = Color.Gray,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
-                            }
-                        }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            items(dialogRooms) { room ->
-                                Surface(
-                                    color = Color.White,
-                                    shape = RoundedCornerShape(8.dp),
-                                    border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                Text("कमरा #${room.roomNumber}", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaroonPrimary)
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text("[${room.roomType}]", fontSize = 10.sp, color = Color.Gray)
-                                            }
-                                            Text("${room.titleHindi} • क्षमता: ${room.capacity} • ₹${room.dailySevaRate.toInt()}/दिन", fontSize = 11.sp, color = Color.DarkGray)
-                                        }
-
-                                        IconButton(
-                                            onClick = {
-                                                matrixScope.launch {
-                                                    isLoadingRooms = true
-                                                    val (ok, msg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.deleteDharamshalaRoom(room.id)
-                                                    isLoadingRooms = false
-                                                    roomActionMsg = if (ok) "कमरा #${room.roomNumber} हटा दिया गया" else "हटाने में त्रुटि: $msg"
-                                                    loadRooms()
-                                                }
-                                            },
-                                            modifier = Modifier.size(32.dp)
-                                        ) {
-                                            Text("🗑️", fontSize = 14.sp)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showRoomManagementDialog = false }) {
-                    Text(if (isHindi) "पूर्ण (Close)" else "Close", fontWeight = FontWeight.Bold, color = MaroonPrimary)
-                }
-            }
-        )
-
-        // Clear All Rooms Confirmation Dialog
-        if (showClearConfirmDialog) {
-            AlertDialog(
-                onDismissRequest = { showClearConfirmDialog = false },
-                title = { Text("⚠️ सभी कमरों का डेटा साफ़ करें?", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFFC62828)) },
-                text = {
-                    Text(
-                        text = "क्या आप वास्तव में सभी कमरों का डेटा सर्वर से मिटाना चाहते हैं? इससे सभी फेक व डमी कमरे हमेशा के लिए हट जाएंगे और शून्य डमी डेटा सुनिश्चित होगा।",
-                        fontSize = 12.sp,
-                        color = Color.DarkGray
-                    )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showClearConfirmDialog = false
-                            matrixScope.launch {
-                                isLoadingRooms = true
-                                val (ok, msg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.clearAllDharamshalaRooms()
-                                isLoadingRooms = false
-                                roomActionMsg = if (ok) "✅ सभी कमरे साफ़ हो गए (0 डमी डेटा)!" else "त्रुटि: $msg"
-                                loadRooms()
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828))
-                    ) {
-                        Text("हाँ, सब साफ़ करें", fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showClearConfirmDialog = false }) {
-                        Text("रद्द करें")
-                    }
-                }
-            )
-        }
-
-        // Add Room Sub-Dialog
-        if (showAddRoomDialog) {
-            AlertDialog(
-                onDismissRequest = { showAddRoomDialog = false },
-                title = { Text("➕ नया कमरा जोड़ें", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaroonPrimary) },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = addRoomNumber,
-                            onValueChange = { addRoomNumber = it },
-                            label = { Text("कमरा संख्या (Room No.)") },
-                            placeholder = { Text("उदा. 101, 102") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = addTitleHindi,
-                            onValueChange = { addTitleHindi = it },
-                            label = { Text("कमरा नाम / विवरण (हिन्दी)") },
-                            placeholder = { Text("उदा. श्री बालाजी कक्ष") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = addRoomType,
-                            onValueChange = { addRoomType = it },
-                            label = { Text("कमरा प्रकार (NON_AC / AC / HALL_BED)") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = addFloor,
-                            onValueChange = { addFloor = it },
-                            label = { Text("मंजिल (Floor)") },
-                            placeholder = { Text("उदा. भूतल (Ground), प्रथम (1st)") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = addCapacity,
-                            onValueChange = { addCapacity = it },
-                            label = { Text("क्षमता / बिस्तर (Capacity)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = addDailyRate,
-                            onValueChange = { addDailyRate = it },
-                            label = { Text("दैनिक सेवा शुल्क ₹ (Daily Rate)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (addRoomNumber.isBlank()) {
-                                Toast.makeText(context, "कमरा संख्या अनिवार्य है!", Toast.LENGTH_SHORT).show()
-                            } else {
-                                showAddRoomDialog = false
-                                matrixScope.launch {
-                                    isLoadingRooms = true
-                                    val (ok, msg) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.addDharamshalaRoom(
-                                        roomNumber = addRoomNumber.trim(),
-                                        roomType = addRoomType.trim().ifBlank { "NON_AC" },
-                                        titleHindi = addTitleHindi.trim().ifBlank { "कक्ष #${addRoomNumber.trim()}" },
-                                        floor = addFloor.trim().ifBlank { "Ground" },
-                                        capacity = addCapacity.toIntOrNull() ?: 4,
-                                        dailyRate = addDailyRate.toDoubleOrNull() ?: 250.0
-                                    )
-                                    isLoadingRooms = false
-                                    roomActionMsg = if (ok) "✅ कमरा #${addRoomNumber.trim()} जोड़ा गया!" else "त्रुटि: $msg"
-                                    addRoomNumber = ""
-                                    addTitleHindi = ""
-                                    loadRooms()
-                                }
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
-                    ) {
-                        Text("सुरक्षित करें", fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showAddRoomDialog = false }) {
-                        Text("रद्द करें")
-                    }
-                }
-            )
-        }
-    }
-
+    // (showRoomManagementDialog removed)
     if (showSaveConfirmationDialog) {
         AlertDialog(
             onDismissRequest = { showSaveConfirmationDialog = false },

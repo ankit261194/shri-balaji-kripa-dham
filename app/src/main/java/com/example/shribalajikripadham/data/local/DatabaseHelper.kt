@@ -1212,28 +1212,35 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             }
         } catch (ignored: Exception) {}
 
-        // 9. Seed Sacred Tracks (12 Authentic Bhajans & Aartis with Hostinger Cloud Audio)
+        // 9. Seed & Refresh Sacred Tracks (18 Authentic Bhajans & Aartis with 100% Unabridged Lyrics)
         try {
-            val trackCursor = db.rawQuery("SELECT COUNT(*) FROM ashram_tracks", null)
-            var trackCount = 0
-            if (trackCursor.moveToFirst()) trackCount = trackCursor.getInt(0)
-            trackCursor.close()
-
-            if (trackCount == 0) {
-                com.example.shribalajikripadham.data.sacred.SACRED_TRACKS.forEach { track ->
-                    val cv = ContentValues().apply {
-                        put("track_key", track.trackKey)
-                        put("title_hindi", track.titleHindi)
-                        put("title_english", track.titleEnglish)
-                        put("subtitle_hindi", track.subtitleHindi)
-                        put("duration_text", track.durationText)
-                        put("audio_url", track.audioUrl)
-                        put("lyrics_hindi", track.lyricsHindi)
-                        put("is_published", if (track.isPublished) 1 else 0)
-                        put("display_order", track.displayOrder)
-                        put("youtube_search_query", track.youtubeSearchQuery)
+            com.example.shribalajikripadham.data.sacred.SACRED_TRACKS.forEach { track ->
+                val cv = ContentValues().apply {
+                    put("track_key", track.trackKey)
+                    put("title_hindi", track.titleHindi)
+                    put("title_english", track.titleEnglish)
+                    put("subtitle_hindi", track.subtitleHindi)
+                    put("duration_text", track.durationText)
+                    put("audio_url", track.audioUrl)
+                    put("lyrics_hindi", track.lyricsHindi)
+                    put("is_published", if (track.isPublished) 1 else 0)
+                    put("display_order", track.displayOrder)
+                    put("youtube_search_query", track.youtubeSearchQuery)
+                }
+                val existing = db.rawQuery("SELECT id, lyrics_hindi FROM ashram_tracks WHERE track_key = ?", arrayOf(track.trackKey))
+                var needsUpdate = true
+                if (existing.moveToFirst()) {
+                    val existingLyrics = existing.getString(1) ?: ""
+                    if (existingLyrics.length >= track.lyricsHindi.length) {
+                        needsUpdate = false
                     }
-                    db.insertWithOnConflict("ashram_tracks", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                }
+                existing.close()
+                if (needsUpdate) {
+                    val rows = db.update("ashram_tracks", cv, "track_key = ?", arrayOf(track.trackKey))
+                    if (rows == 0) {
+                        db.insertWithOnConflict("ashram_tracks", null, cv, SQLiteDatabase.CONFLICT_REPLACE)
+                    }
                 }
             }
         } catch (e: Exception) { e.printStackTrace() }

@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 148,
-  "version_code": 148,
-  "latest_version_name": "2.63.00",
-  "version_name": "2.63.00",
-  "update_notes_hindi": "v2.63.00 (Build 148): 🪔 संपूर्ण पावन आरती व चालीसा ग्रंथ संग्रह (100% पूर्ण प्रामाणिक पद, कोई आधा पाठ नहीं)। 👑 सुपर एडमिन में मंगलवार दरबार मास्टर स्विच (ON/OFF), हवन खर्च (₹14,000) व नियम सम्पादक, तथा संपूर्ण सेवादार चैट निगरानी। 🚩 भव्य स्वर्णिम होम हेडर (विशाल स्पेस, नाम कभी कटेगा नहीं)।",
-  "update_notes_english": "v2.63.00 (Build 148): 🪔 100% Complete authentic devotional Aartis & Chalisas (Zero truncated verses). 👑 Super Admin Tuesday Darbar master switch (ON/OFF), Havan cost (₹14,000) & rules CMS editor, and master Sevadar chat monitor. 🚩 Grand golden header with maximum space & zero clipping.",
+  "latest_version_code": 149,
+  "version_code": 149,
+  "latest_version_name": "2.64.00",
+  "version_name": "2.64.00",
+  "update_notes_hindi": "v2.64.00 (Build 149): 🪔 संपूर्ण 18 पावन आरती व चालीसा ग्रंथ संग्रह (100% पूर्ण प्रामाणिक पद, कोई आधा पाठ नहीं)। 👑 प्रो-लेवल सुपर एडमिन कमांड डेक: मंगलवार दरबार मास्टर स्विच (ON/OFF), हवन खर्च (₹14,000) व नियम सम्पादक, सेवादार चैट निगरानी, त्वरित पुश प्रसारण, और अनुपयोगी कंट्रोल्स का पूर्ण निष्कासन।",
+  "update_notes_english": "v2.64.00 (Build 149): 🪔 Complete 18 Unabridged Sacred Aartis & Chalisas (100% authentic verses, zero truncated lyrics). 👑 Pro-Level Super Admin Command Deck: Tuesday Darbar Master Switch, Hawan Cost (₹14,000) & Rules CMS, Sevadar Chat Oversight, Instant Push Dispatch, and complete purge of dead controls.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true

@@ -23,13 +23,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.shribalajikripadham.theme.AmberGold
 import com.example.shribalajikripadham.theme.MaroonPrimary
 import com.example.shribalajikripadham.theme.SaffronPrimary
 
 /**
- * Model representing any Admin module or task in the Unified Control Hub.
- * Can scale from 29 items to 28,000 items with instant search, category filtering,
- * and dual Grid / List views.
+ * Pro-Tier Model representing authentic Admin modules in Shri Balaji Kripa Dham.
+ * Zero dead features. Instant search, category filtering, and dual Grid / List views.
  */
 data class AdminHubModuleItem(
     val tabTitle: String,
@@ -44,7 +44,9 @@ data class AdminHubModuleItem(
 
 fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
     return listOf(
-        // 1. Token Queue
+        // ==========================================
+        // 1. 🎫 टोकन व दर्शन (Tokens & Darbar)
+        // ==========================================
         AdminHubModuleItem(
             tabTitle = if (isHindi) "टोकन कतार" else "Tokens",
             icon = "🎫",
@@ -57,10 +59,9 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "मैनुअल टोकन" else "Manual",
                 if (isHindi) "🎙️ टोकन वॉइस व 5-API" else "Voice & 5-API",
                 if (isHindi) "रजिस्टर स्कैन" else "Register Scan",
-                if (isHindi) "आश्रम पर्चे" else "Sacred Parchas"
+                if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar"
             )
         ),
-        // 2. Manual Token
         AdminHubModuleItem(
             tabTitle = if (isHindi) "मैनुअल टोकन" else "Manual",
             icon = "✍️",
@@ -75,7 +76,6 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "🎙️ टोकन वॉइस व 5-API" else "Voice & 5-API"
             )
         ),
-        // 3. Voice & 5-API
         AdminHubModuleItem(
             tabTitle = if (isHindi) "🎙️ टोकन वॉइस व 5-API" else "Voice & 5-API",
             icon = "🎙️",
@@ -90,7 +90,6 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "सूचना भेजें" else "Broadcast"
             )
         ),
-        // 4. Paper Register Scan
         AdminHubModuleItem(
             tabTitle = if (isHindi) "रजिस्टर स्कैन" else "Register Scan",
             icon = "📷",
@@ -105,13 +104,58 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "आश्रम पर्चे" else "Sacred Parchas"
             )
         ),
-        // 5. Sacred Parchas
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar",
+            icon = "🚩",
+            titleHindi = "मंगलवार दरबार",
+            titleEnglish = "Tuesday Darbar",
+            categoryHindi = "🎫 टोकन व दर्शन",
+            descriptionHindi = "मंगलवार विशेष दरबार 1-क्लिक मास्टर चालू/बंद व समय व्यवस्था",
+            descriptionEnglish = "Tuesday special darbar schedule, master toggle and settings",
+            relatedTabs = listOf(
+                if (isHindi) "टोकन कतार" else "Tokens",
+                if (isHindi) "सेवाएं ऑन/ऑफ" else "Services",
+                if (isHindi) "सुपर कंट्रोल" else "Super Control"
+            )
+        ),
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "👑 गुरुजी स्क्रीन" else "👑 Guruji Screen",
+            icon = "👑",
+            titleHindi = "पूज्य गुरुजी दरबार स्क्रीन",
+            titleEnglish = "Guruji Big Screen Mode",
+            categoryHindi = "🎫 टोकन व दर्शन",
+            descriptionHindi = "बुजुर्ग गुरुजी हेतु विशालकाय स्क्रीन — एक टच पर अगला टोकन उद्घोषणा",
+            descriptionEnglish = "Elderly-friendly giant screen mode: tap anywhere to announce next token",
+            relatedTabs = listOf(
+                if (isHindi) "टोकन कतार" else "Tokens Queue",
+                if (isHindi) "⚡ एंटीग्रेविटी स्टूडियो" else "⚡ Antigravity Studio",
+                if (isHindi) "सुपर कंट्रोल" else "Super Control"
+            )
+        ),
+
+        // ==========================================
+        // 2. 🔥 हवन, अर्जी व पर्चे (Havan, Arzi & Parchas)
+        // ==========================================
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "🔥 हवन आवेदन" else "🔥 Havan Requests",
+            icon = "🔥",
+            titleHindi = "हवन आवेदन व सेटिंग्स",
+            titleEnglish = "Havan Requests & Settings",
+            categoryHindi = "🔥 हवन, अर्जी व पर्चे",
+            descriptionHindi = "महा-हवन बुकिंग, ₹14,000 सेवा राशि, यजमान संकल्प व नियम",
+            descriptionEnglish = "Sacred havan bookings, devotee sankalp and priest assignments",
+            relatedTabs = listOf(
+                if (isHindi) "पेमेंट लेजर" else "Payment Ledger",
+                if (isHindi) "आश्रम पर्चे" else "Sacred Parchas",
+                if (isHindi) "सेवाएं ऑन/ऑफ" else "Services"
+            )
+        ),
         AdminHubModuleItem(
             tabTitle = if (isHindi) "आश्रम पर्चे" else "Sacred Parchas",
             icon = "📜",
             titleHindi = "आश्रम पर्चे",
             titleEnglish = "Sacred Parchas",
-            categoryHindi = "🎫 टोकन व दर्शन",
+            categoryHindi = "🔥 हवन, अर्जी व पर्चे",
             descriptionHindi = "भक्तों के दिव्य पर्चे, समाधान व आध्यात्मिक इतिहास",
             descriptionEnglish = "Divine parchas, spiritual remedies & historical records",
             relatedTabs = listOf(
@@ -120,22 +164,128 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "🔥 हवन आवेदन" else "🔥 Havan Requests"
             )
         ),
-        // 6. Tuesday Darbar
         AdminHubModuleItem(
-            tabTitle = if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar",
-            icon = "🚩",
-            titleHindi = "मंगलवार दरबार",
-            titleEnglish = "Tuesday Darbar",
-            categoryHindi = "🎫 टोकन व दर्शन",
-            descriptionHindi = "मंगलवार विशेष दरबार सेटिंग्स, समय व व्यवस्था",
-            descriptionEnglish = "Tuesday special darbar schedule, limits and settings",
+            tabTitle = if (isHindi) "अर्जी लेजर 📦" else "Arzi Ledger 📦",
+            icon = "📦",
+            titleHindi = "अर्जी लेजर 📦",
+            titleEnglish = "Arzi Ledger",
+            categoryHindi = "🔥 हवन, अर्जी व पर्चे",
+            descriptionHindi = "नारियल व ध्वजा अर्जी आवेदन, डाक व ट्रैकिंग",
+            descriptionEnglish = "Online coconut & flag arzi applications, dispatch and postal tracking",
             relatedTabs = listOf(
-                if (isHindi) "टोकन कतार" else "Tokens",
-                if (isHindi) "सेवाएं ऑन/ऑफ" else "Services",
+                if (isHindi) "पेमेंट लेजर" else "Payment Ledger",
+                if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊",
+                if (isHindi) "आश्रम पर्चे" else "Sacred Parchas"
+            )
+        ),
+
+        // ==========================================
+        // 3. 💬 सेवादार व सहायता (Staff & Helpdesk)
+        // ==========================================
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "सेवादार खाते" else "Sevadars",
+            icon = "👥",
+            titleHindi = "सेवादार खाते",
+            titleEnglish = "Sevadar Management",
+            categoryHindi = "💬 सेवादार व सहायता",
+            descriptionHindi = "व्यवस्थापक व सेवादारों के अधिकार, फोटो व पिन प्रबंधन",
+            descriptionEnglish = "Sevadar staff permissions, profile photos and security PINs",
+            relatedTabs = listOf(
+                if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit",
+                if (isHindi) "🪪 ID कार्ड स्टूडियो" else "🪪 ID Card Studio",
                 if (isHindi) "सुपर कंट्रोल" else "Super Control"
             )
         ),
-        // 7. Payment Ledger
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "🪪 ID कार्ड स्टूडियो" else "🪪 ID Card Studio",
+            icon = "🪪",
+            titleHindi = "ID कार्ड स्टूडियो",
+            titleEnglish = "ID Card Studio",
+            categoryHindi = "💬 सेवादार व सहायता",
+            descriptionHindi = "सेवादारों के अधिकृत डिजिटल पहचान पत्र बनाएं व प्रिंट करें",
+            descriptionEnglish = "Generate, preview and export official Sevadar ID badges",
+            relatedTabs = listOf(
+                if (isHindi) "सेवादार खाते" else "Sevadars",
+                if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit",
+                if (isHindi) "सुपर कंट्रोल" else "Super Control"
+            )
+        ),
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "📩 सहायता व सुझाव" else "Helpdesk & Queries",
+            icon = "📩",
+            titleHindi = "सहायता व सुझाव",
+            titleEnglish = "Helpdesk & Queries",
+            categoryHindi = "💬 सेवादार व सहायता",
+            descriptionHindi = "भक्तों व सेवादारों की समस्याएं, कमियां, सुझाव व समाधान",
+            descriptionEnglish = "Devotee and admin issues, complaints, suggestions and replies",
+            relatedTabs = listOf(
+                if (isHindi) "सेवादार खाते" else "Sevadars",
+                if (isHindi) "सुपर कंट्रोल" else "Super Control"
+            )
+        ),
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "📩 सुपरएडमिन को सुझाव / समस्या" else "Feedback to Super Admin",
+            icon = "📝",
+            titleHindi = "सुपरएडमिन को सुझाव / समस्या",
+            titleEnglish = "Feedback to Super Admin",
+            categoryHindi = "💬 सेवादार व सहायता",
+            descriptionHindi = "आश्रम व्यवस्था, कमियों या नए सुझावों की रिपोर्ट सीधे सुपर एडमिन को भेजें",
+            descriptionEnglish = "Send complaints, bugs and improvement suggestions directly to Super Admin",
+            relatedTabs = listOf(
+                if (isHindi) "टोकन कतार" else "Tokens",
+                if (isHindi) "सेवादार खाते" else "Sevadars"
+            )
+        ),
+
+        // ==========================================
+        // 4. 🌺 दर्शन व मीडिया (Darshan & Media)
+        // ==========================================
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "🌺 दैनिक दर्शन" else "Daily Darshan Studio",
+            icon = "🌺",
+            titleHindi = "दैनिक दर्शन स्टूडियो",
+            titleEnglish = "Daily Darshan Studio",
+            categoryHindi = "🌺 दर्शन व मीडिया",
+            descriptionHindi = "आज के दिव्य श्रृंगार फोटो अपलोड करें (Hostinger लाइव सिंक)",
+            descriptionEnglish = "Daily sacred deity shringar photos, statuses & gallery",
+            relatedTabs = listOf(
+                if (isHindi) "🔴 लाइव स्टूडियो" else "🔴 Live Studio",
+                if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager",
+                if (isHindi) "सूचना भेजें" else "Broadcast"
+            )
+        ),
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager",
+            icon = "🎵",
+            titleHindi = "आरती व भजन प्रबंधन",
+            titleEnglish = "Audio & Aarti Manager",
+            categoryHindi = "🌺 दर्शन व मीडिया",
+            descriptionHindi = "14 पावन आरतियां, चालीसा पाठ व MP3 ऑडियो लाइब्रेरी प्रबंधन",
+            descriptionEnglish = "Sacred aartis, Hanuman Chalisa, and bhajan audio library",
+            relatedTabs = listOf(
+                if (isHindi) "🌺 दैनिक दर्शन" else "Daily Darshan Studio",
+                if (isHindi) "🔴 लाइव स्टूडियो" else "🔴 Live Studio",
+                if (isHindi) "सुपर कंट्रोल" else "Super Control"
+            )
+        ),
+        AdminHubModuleItem(
+            tabTitle = if (isHindi) "🔴 लाइव स्टूडियो" else "🔴 Live Studio",
+            icon = "🔴",
+            titleHindi = "लाइव स्टूडियो",
+            titleEnglish = "Live Broadcast Studio",
+            categoryHindi = "🌺 दर्शन व मीडिया",
+            descriptionHindi = "YouTube / Facebook लाइव आरती व दरबार प्रसारण लिंक",
+            descriptionEnglish = "YouTube & Facebook live darbar broadcasting streams",
+            relatedTabs = listOf(
+                if (isHindi) "🌺 दैनिक दर्शन" else "Daily Darshan Studio",
+                if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager",
+                if (isHindi) "सूचना भेजें" else "Broadcast"
+            )
+        ),
+
+        // ==========================================
+        // 5. 📊 लेजर व खाते (Ledgers & Finance)
+        // ==========================================
         AdminHubModuleItem(
             tabTitle = if (isHindi) "पेमेंट लेजर" else "Payment Ledger",
             icon = "💳",
@@ -147,40 +297,9 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
             relatedTabs = listOf(
                 if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊",
                 if (isHindi) "अर्जी लेजर 📦" else "Arzi Ledger 📦",
-                if (isHindi) "बस बुकिंग लेजर" else "Bus Ledger"
-            )
-        ),
-        // 8. Arzi Ledger
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "अर्जी लेजर 📦" else "Arzi Ledger 📦",
-            icon = "📦",
-            titleHindi = "अर्जी लेजर 📦",
-            titleEnglish = "Arzi Ledger",
-            categoryHindi = "📊 लेजर व खाते",
-            descriptionHindi = "नारियल व ध्वजा अर्जी आवेदन, डाक व ट्रैकिंग",
-            descriptionEnglish = "Online coconut & flag arzi applications, dispatch and postal tracking",
-            relatedTabs = listOf(
-                if (isHindi) "पेमेंट लेजर" else "Payment Ledger",
-                if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊",
-                if (isHindi) "आश्रम पर्चे" else "Sacred Parchas"
-            )
-        ),
-        // 9. Bus Ledger
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "बस बुकिंग लेजर" else "Bus Ledger",
-            icon = "🚌",
-            titleHindi = "बस बुकिंग लेजर",
-            titleEnglish = "Bus Booking Ledger",
-            categoryHindi = "📊 लेजर व खाते",
-            descriptionHindi = "आश्रम यात्रा बस सीटें, यात्री सूची व किराया प्रबंधन",
-            descriptionEnglish = "Yatra bus passenger manifest, seat allocations & tickets",
-            relatedTabs = listOf(
-                if (isHindi) "पेमेंट लेजर" else "Payment Ledger",
-                if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊",
                 if (isHindi) "सेवाएं ऑन/ऑफ" else "Services"
             )
         ),
-        // 10. Master Ledger
         AdminHubModuleItem(
             tabTitle = if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊",
             icon = "📊",
@@ -192,85 +311,27 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
             relatedTabs = listOf(
                 if (isHindi) "पेमेंट लेजर" else "Payment Ledger",
                 if (isHindi) "अर्जी लेजर 📦" else "Arzi Ledger 📦",
-                if (isHindi) "बस बुकिंग लेजर" else "Bus Ledger"
+                if (isHindi) "सुपर कंट्रोल" else "Super Control"
             )
         ),
-        // 11. Havan Requests
+
+        // ==========================================
+        // 6. ⚙️ सिस्टम व कंट्रोल (System & Root Controls)
+        // ==========================================
         AdminHubModuleItem(
-            tabTitle = if (isHindi) "🔥 हवन आवेदन" else "🔥 Havan Requests",
-            icon = "🔥",
-            titleHindi = "हवन आवेदन",
-            titleEnglish = "Havan Requests",
-            categoryHindi = "⚡ आश्रम सेवाएं",
-            descriptionHindi = "महा-हवन बुकिंग, आहुति संकल्प व यजमान सूची",
-            descriptionEnglish = "Sacred havan bookings, devotee sankalp and priest assignments",
+            tabTitle = if (isHindi) "सेवाएं ऑन/ऑफ" else "Services",
+            icon = "⚡",
+            titleHindi = "सेवाएं ऑन/ऑफ",
+            titleEnglish = "Services Matrix",
+            categoryHindi = "⚙️ सिस्टम व कंट्रोल",
+            descriptionHindi = "टोकन मोड, मंगलवार दरबार, जियो-फेंसिंग व अर्जी दरों का मास्टर ऑन/ऑफ",
+            descriptionEnglish = "Master switches for public booking services & features",
             relatedTabs = listOf(
-                if (isHindi) "पेमेंट लेजर" else "Payment Ledger",
-                if (isHindi) "आश्रम पर्चे" else "Sacred Parchas",
-                if (isHindi) "सेवाएं ऑन/ऑफ" else "Services"
+                if (isHindi) "सुपर कंट्रोल" else "Super Control",
+                if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar",
+                if (isHindi) "टोकन कतार" else "Tokens"
             )
         ),
-        // 12. Daily Darshan Studio
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "🌺 दैनिक दर्शन" else "Daily Darshan Studio",
-            icon = "🌺",
-            titleHindi = "दैनिक दर्शन स्टूडियो",
-            titleEnglish = "Daily Darshan Studio",
-            categoryHindi = "🌺 मीडिया व दर्शन",
-            descriptionHindi = "आज के दिव्य श्रृंगार फोटो, स्टेटस व दर्शन गैलरी अपलोड",
-            descriptionEnglish = "Daily sacred deity shringar photos, statuses & gallery",
-            relatedTabs = listOf(
-                if (isHindi) "🔴 लाइव स्टूडियो" else "🔴 Live Studio",
-                if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager",
-                if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control"
-            )
-        ),
-        // 13. Live Studio
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "🔴 लाइव स्टूडियो" else "🔴 Live Studio",
-            icon = "🔴",
-            titleHindi = "लाइव स्टूडियो",
-            titleEnglish = "Live Broadcast Studio",
-            categoryHindi = "🌺 मीडिया व दर्शन",
-            descriptionHindi = "YouTube / Facebook लाइव आरती व दरबार प्रसारण लिंक",
-            descriptionEnglish = "YouTube & Facebook live darbar broadcasting streams",
-            relatedTabs = listOf(
-                if (isHindi) "🌺 दैनिक दर्शन" else "Daily Darshan Studio",
-                if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager",
-                if (isHindi) "सूचना भेजें" else "Broadcast"
-            )
-        ),
-        // 14. Audio & Aarti Manager
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "🎵 आरती व भजन प्रबंधन" else "Audio & Aarti Manager",
-            icon = "🎵",
-            titleHindi = "आरती व भजन प्रबंधन",
-            titleEnglish = "Audio & Aarti Manager",
-            categoryHindi = "🌺 मीडिया व दर्शन",
-            descriptionHindi = "हनुमान चालीसा, दैनिक आरती व भजनों की ऑडियो लाइब्रेरी",
-            descriptionEnglish = "Sacred aartis, Hanuman Chalisa, and bhajan audio library",
-            relatedTabs = listOf(
-                if (isHindi) "🌺 दैनिक दर्शन" else "Daily Darshan Studio",
-                if (isHindi) "🔴 लाइव स्टूडियो" else "🔴 Live Studio",
-                if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control"
-            )
-        ),
-        // 15. UI Control
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control",
-            icon = "🎛️",
-            titleHindi = "UI बॉक्स कंट्रोल",
-            titleEnglish = "UI Layout Control",
-            categoryHindi = "🌺 मीडिया व दर्शन",
-            descriptionHindi = "होम स्क्रीन के बैनर, कार्ड व विज़ुअल टाइल्स ऑन/ऑफ",
-            descriptionEnglish = "Home screen card visibility, banners and visual layout",
-            relatedTabs = listOf(
-                if (isHindi) "ऐप कस्टमाइजर" else "Customizer",
-                if (isHindi) "सेवाएं ऑन/ऑफ" else "Services",
-                if (isHindi) "🌐 वेबसाइट व CMS" else "Website & CMS"
-            )
-        ),
-        // 16. Broadcast Notifications
         AdminHubModuleItem(
             tabTitle = if (isHindi) "सूचना भेजें" else "Broadcast",
             icon = "📢",
@@ -285,7 +346,6 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "सुपर कंट्रोल" else "Super Control"
             )
         ),
-        // 17. Active Devices
         AdminHubModuleItem(
             tabTitle = if (isHindi) "सक्रिय फोन" else "Active Devices",
             icon = "📱",
@@ -300,82 +360,20 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "GPS लोकेशन" else "Location"
             )
         ),
-        // 18. GPS Location
         AdminHubModuleItem(
             tabTitle = if (isHindi) "GPS लोकेशन" else "Location",
             icon = "📍",
             titleHindi = "GPS लोकेशन",
             titleEnglish = "Ashram GPS Location",
             categoryHindi = "⚙️ सिस्टम व कंट्रोल",
-            descriptionHindi = "आश्रम का सही अक्षांश-देशांतर व जियो-फेंसिंग दायरा",
+            descriptionHindi = "आश्रम का सही अक्षांश-देशांतर व 200m जियो-फेंसिंग दायरा",
             descriptionEnglish = "Ashram coordinates, geofence radius and proximity check",
             relatedTabs = listOf(
-                if (isHindi) "कस्टम दूरियाँ" else "Distances",
                 if (isHindi) "सुपर कंट्रोल" else "Super Control",
-                if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit"
-            )
-        ),
-        // 19. Custom Distances
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "कस्टम दूरियाँ" else "Distances",
-            icon = "📏",
-            titleHindi = "कस्टम दूरियाँ",
-            titleEnglish = "City Distances",
-            categoryHindi = "⚙️ सिस्टम व कंट्रोल",
-            descriptionHindi = "प्रमुख शहरों से आश्रम की दूरी व यात्रा मार्ग निर्देश",
-            descriptionEnglish = "Distance rules, travel directions and kilometer thresholds",
-            relatedTabs = listOf(
-                if (isHindi) "GPS लोकेशन" else "Location",
-                if (isHindi) "बस बुकिंग लेजर" else "Bus Ledger",
-                if (isHindi) "🌐 वेबसाइट व CMS" else "Website & CMS"
-            )
-        ),
-        // 20. Services On/Off
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "सेवाएं ऑन/ऑफ" else "Services",
-            icon = "⚡",
-            titleHindi = "सेवाएं ऑन/ऑफ",
-            titleEnglish = "Services Matrix",
-            categoryHindi = "⚡ आश्रम सेवाएं",
-            descriptionHindi = "टोकन, अर्जी, बस व हवन सेवाओं को एक क्लिक में चालू/बंद करें",
-            descriptionEnglish = "Master switches for public booking services & features",
-            relatedTabs = listOf(
-                if (isHindi) "सुपर कंट्रोल" else "Super Control",
-                if (isHindi) "🚩 मंगलवार दरबार" else "Tuesday Darbar",
-                if (isHindi) "टोकन कतार" else "Tokens"
-            )
-        ),
-        // 21. Sevadar Accounts
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "सेवादार खाते" else "Sevadars",
-            icon = "👥",
-            titleHindi = "सेवादार खाते",
-            titleEnglish = "Sevadar Management",
-            categoryHindi = "⚙️ सिस्टम व कंट्रोल",
-            descriptionHindi = "व्यवस्थापक व सेवादारों के अधिकार, फोटो व पिन प्रबंधन",
-            descriptionEnglish = "Sevadar staff permissions, profile photos and security PINs",
-            relatedTabs = listOf(
                 if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit",
-                if (isHindi) "🪪 ID कार्ड स्टूडियो" else "🪪 ID Card Studio",
-                if (isHindi) "सुपर कंट्रोल" else "Super Control"
+                if (isHindi) "सेवाएं ऑन/ऑफ" else "Services"
             )
         ),
-        // 22. ID Card Studio
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "🪪 ID कार्ड स्टूडियो" else "🪪 ID Card Studio",
-            icon = "🪪",
-            titleHindi = "ID कार्ड स्टूडियो",
-            titleEnglish = "ID Card Studio",
-            categoryHindi = "⚙️ सिस्टम व कंट्रोल",
-            descriptionHindi = "सेवादारों के अधिकृत डिजिटल पहचान पत्र बनाएं व प्रिंट करें",
-            descriptionEnglish = "Generate, preview and export official Sevadar ID badges",
-            relatedTabs = listOf(
-                if (isHindi) "सेवादार खाते" else "Sevadars",
-                if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit",
-                if (isHindi) "सुपर कंट्रोल" else "Super Control"
-            )
-        ),
-        // 23. Super Control
         AdminHubModuleItem(
             tabTitle = if (isHindi) "सुपर कंट्रोल" else "Super Control",
             icon = "👑",
@@ -390,14 +388,13 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit"
             )
         ),
-        // 23.5. Antigravity Mobile Studio (Master Root AI Control)
         AdminHubModuleItem(
             tabTitle = if (isHindi) "⚡ एंटीग्रेविटी स्टूडियो" else "⚡ Antigravity Studio",
             icon = "⚡",
             titleHindi = "⚡ एंटीग्रेविटी मोबाइल स्टूडियो",
             titleEnglish = "Antigravity Mobile Studio",
             categoryHindi = "⚙️ सिस्टम व कंट्रोल",
-            descriptionHindi = "रूट मास्टर AI कंट्रोल, 1-टैप टोकन बाईपास, फ़ेक GPS किल-स्विच व लाइव रिमोट सिंक",
+            descriptionHindi = "रूट मास्टर AI कंट्रोल, 1-टैप टोकन बाईपास, फ़ेक GPS किल-स्विच व लाइव सिंक",
             descriptionEnglish = "Root master AI console, 1-tap token bypass & zero-update live remote sync",
             relatedTabs = listOf(
                 if (isHindi) "सुपर कंट्रोल" else "Super Control",
@@ -405,22 +402,6 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit"
             )
         ),
-        // 23.6. Guruji Darbar Screen (Elderly-Friendly Big Screen)
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "👑 गुरुजी स्क्रीन" else "👑 Guruji Screen",
-            icon = "👑",
-            titleHindi = "पूज्य गुरुजी दरबार स्क्रीन",
-            titleEnglish = "Guruji Big Screen Mode",
-            categoryHindi = "🚩 दरबार व कतार",
-            descriptionHindi = "बुजुर्ग गुरुजी हेतु विशालकाय स्क्रीन — बस स्क्रीन पर हाथ मारने से अगला टोकन माइक पर बोल जाता है",
-            descriptionEnglish = "Elderly-friendly giant screen mode: tap anywhere to announce next token",
-            relatedTabs = listOf(
-                if (isHindi) "कंट्रोल" else "Control",
-                if (isHindi) "⚡ एंटीग्रेविटी स्टूडियो" else "⚡ Antigravity Studio",
-                if (isHindi) "टोकन कतार" else "Tokens Queue"
-            )
-        ),
-        // 24. Triple Cloud Sync
         AdminHubModuleItem(
             tabTitle = if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️",
             icon = "☁️",
@@ -435,7 +416,6 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "ऑटो-अपडेट" else "Updates"
             )
         ),
-        // 25. Security & Audit
         AdminHubModuleItem(
             tabTitle = if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit",
             icon = "🛡️",
@@ -450,52 +430,20 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "त्रिमूर्ति क्लाउड सिंक ☁️" else "Triple Cloud Sync ☁️"
             )
         ),
-        // 26. Website Live Editor
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "🌐 वेबसाइट लाइव एडिटर" else "Website Live Editor",
-            icon = "🌐",
-            titleHindi = "वेबसाइट लाइव एडिटर",
-            titleEnglish = "Website Live Editor",
-            categoryHindi = "🌺 मीडिया व दर्शन",
-            descriptionHindi = "ऑनलाइन वेबसाइट के टेक्स्ट, फोटो व सूचनाएं तुरंत अपडेट करें",
-            descriptionEnglish = "Instantly edit live website content, headlines and notices",
-            relatedTabs = listOf(
-                if (isHindi) "🌐 वेबसाइट व CMS" else "Website & CMS",
-                if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control",
-                if (isHindi) "🌺 दैनिक दर्शन" else "Daily Darshan Studio"
-            )
-        ),
-        // 27. Website & CMS
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "🌐 वेबसाइट व CMS" else "Website & CMS",
-            icon = "💻",
-            titleHindi = "वेबसाइट व CMS",
-            titleEnglish = "Website & CMS",
-            categoryHindi = "🌺 मीडिया व दर्शन",
-            descriptionHindi = "आश्रम वेब पोर्टल का व्यापक सामग्री व पेज प्रबंधन",
-            descriptionEnglish = "Full CMS article and portal configuration",
-            relatedTabs = listOf(
-                if (isHindi) "🌐 वेबसाइट लाइव एडिटर" else "Website Live Editor",
-                if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control",
-                if (isHindi) "🌺 दैनिक दर्शन" else "Daily Darshan Studio"
-            )
-        ),
-        // 28. App Customizer
         AdminHubModuleItem(
             tabTitle = if (isHindi) "ऐप कस्टमाइजर" else "Customizer",
             icon = "🎨",
             titleHindi = "ऐप कस्टमाइजर",
             titleEnglish = "App Customizer",
             categoryHindi = "⚙️ सिस्टम व कंट्रोल",
-            descriptionHindi = "रंग, थीम, फोंट व धार्मिक विज़ुअल स्टाइलिंग",
+            descriptionHindi = "आश्रम नाम, पता, संपर्क नंबर, व्हाट्सएप चैनल व सोशल लिंक्स",
             descriptionEnglish = "Color palette, sacred themes, and visual aesthetics",
             relatedTabs = listOf(
-                if (isHindi) "UI बॉक्स कंट्रोल" else "UI Control",
                 if (isHindi) "सुपर कंट्रोल" else "Super Control",
-                if (isHindi) "🌐 वेबसाइट व CMS" else "Website & CMS"
+                if (isHindi) "सेवाएं ऑन/ऑफ" else "Services",
+                if (isHindi) "ऑटो-अपडेट" else "Updates"
             )
         ),
-        // 29. Auto Updates
         AdminHubModuleItem(
             tabTitle = if (isHindi) "ऑटो-अपडेट" else "Updates",
             icon = "🚀",
@@ -509,41 +457,13 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
                 if (isHindi) "सुपर कंट्रोल" else "Super Control",
                 if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit"
             )
-        ),
-        // 30. Helpdesk & Queries
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "📩 सहायता व सुझाव" else "Helpdesk & Queries",
-            icon = "📩",
-            titleHindi = "सहायता व सुझाव",
-            titleEnglish = "Helpdesk & Queries",
-            categoryHindi = "⚙️ सिस्टम व कंट्रोल",
-            descriptionHindi = "भक्तों व सेवादारों की समस्याएं, कमियां, सुझाव व सुपर एडमिन समाधान",
-            descriptionEnglish = "Devotee and admin issues, complaints, suggestions and replies",
-            relatedTabs = listOf(
-                if (isHindi) "सेवादार खाते" else "Sevadars",
-                if (isHindi) "सुपर कंट्रोल" else "Super Control"
-            )
-        ),
-        // 31. Feedback to Super Admin (For Sevadars & Admins)
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "📩 सुपरएडमिन को सुझाव / समस्या" else "Feedback to Super Admin",
-            icon = "📩",
-            titleHindi = "सुपरएडमिन को सुझाव / समस्या",
-            titleEnglish = "Feedback to Super Admin",
-            categoryHindi = "⚙️ सिस्टम व कंट्रोल",
-            descriptionHindi = "आश्रम व्यवस्था, कमियों या नए सुझावों की रिपोर्ट सीधे सुपर एडमिन को भेजें",
-            descriptionEnglish = "Send complaints, bugs and improvement suggestions directly to Super Admin",
-            relatedTabs = listOf(
-                if (isHindi) "टोकन कतार" else "Tokens",
-                if (isHindi) "अर्जी लेजर 📦" else "Arzi Ledger 📦"
-            )
         )
     )
 }
 
 /**
  * Dedicated Sub-Header shown at the top of each individual screen/window.
- * Ultra-compact 32dp sleek strip: preserves back button, title, quick shortcuts & menu button
+ * Ultra-compact 34dp sleek strip: preserves back button, title, quick shortcuts & menu button
  * without wasting vertical screen space!
  */
 @Composable
@@ -564,7 +484,8 @@ fun AdminDedicatedModuleHeader(
             .padding(horizontal = 8.dp, vertical = 2.dp),
         shape = RoundedCornerShape(8.dp),
         color = Color.White,
-        border = BorderStroke(0.7.dp, Color(0xFFE2E8F0))
+        border = BorderStroke(0.8.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 1.dp
     ) {
         Row(
             modifier = Modifier
@@ -661,8 +582,8 @@ fun AdminDedicatedModuleHeader(
 }
 
 /**
- * Main Admin Control Hub showing ALL options in responsive List & Grid View,
- * with search bar and category filters.
+ * Main Admin Control Hub showing ALL authentic options in responsive List & Grid View,
+ * with search bar and 6 focused operational category filters.
  */
 @Composable
 fun AdminHubDashboardView(
@@ -677,16 +598,19 @@ fun AdminHubDashboardView(
     onSelectModule: (AdminHubModuleItem) -> Unit
 ) {
     val categories = listOf(
-        "सभी",
-        "🎫 टोकन व दर्शन",
-        "📊 लेजर व खाते",
-        "🌺 मीडिया व दर्शन",
-        "⚡ आश्रम सेवाएं",
-        "⚙️ सिस्टम व कंट्रोल"
+        if (isHindi) "सभी" else "All",
+        if (isHindi) "🎫 टोकन व दर्शन" else "🎫 Tokens & Darbar",
+        if (isHindi) "🔥 हवन, अर्जी व पर्चे" else "🔥 Havan & Parchas",
+        if (isHindi) "💬 सेवादार व सहायता" else "💬 Staff & Helpdesk",
+        if (isHindi) "🌺 दर्शन व मीडिया" else "🌺 Darshan & Media",
+        if (isHindi) "📊 लेजर व खाते" else "📊 Ledgers & Accounts",
+        if (isHindi) "⚙️ सिस्टम व कंट्रोल" else "⚙️ System & Control"
     )
 
+    val allCatLabel = if (isHindi) "सभी" else "All"
+
     val filtered = modules.filter { m ->
-        (selectedCategory == "सभी" || m.categoryHindi == selectedCategory) &&
+        (selectedCategory == allCatLabel || selectedCategory == "सभी" || m.categoryHindi == selectedCategory) &&
         (searchQuery.isBlank() ||
          m.titleHindi.contains(searchQuery, ignoreCase = true) ||
          m.titleEnglish.contains(searchQuery, ignoreCase = true) ||
@@ -698,7 +622,7 @@ fun AdminHubDashboardView(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 10.dp),
+            .padding(horizontal = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // --- SEARCH BAR & VIEW SWITCHER ---
@@ -716,9 +640,9 @@ fun AdminHubDashboardView(
                     placeholder = {
                         Text(
                             text = if (isHindi)
-                                "काम खोजें (उदा: टोकन, लेजर, आरती, पर्चे, हवन)..."
+                                "कार्य खोजें (उदा: टोकन, हवन, दर्शन, सेवादार, लेजर)..."
                             else
-                                "Search any task (tokens, ledger, audio, havan)...",
+                                "Search any task (tokens, havan, darshan, sevadars)...",
                             fontSize = 12.5.sp
                         )
                     },
@@ -735,7 +659,7 @@ fun AdminHubDashboardView(
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
+                        .height(48.dp),
                     shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaroonPrimary,
@@ -752,9 +676,9 @@ fun AdminHubDashboardView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     categories.forEach { cat ->
-                        val isSelected = selectedCategory == cat
+                        val isSelected = selectedCategory == cat || (selectedCategory == "सभी" && cat == allCatLabel)
                         Surface(
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(12.dp),
                             color = if (isSelected) MaroonPrimary else Color(0xFFF1F5F9),
                             border = BorderStroke(
                                 1.dp,
@@ -765,8 +689,8 @@ fun AdminHubDashboardView(
                             Text(
                                 text = cat,
                                 fontSize = 11.5.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) Color.White else Color.Black,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color.White else Color(0xFF334155),
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                             )
                         }
@@ -781,11 +705,11 @@ fun AdminHubDashboardView(
                 ) {
                     Text(
                         text = if (isHindi)
-                            "कुल ${filtered.size} कार्य उपलब्ध (क्लिक करें और अलग विंडो खोलें)"
+                            "कुल ${filtered.size} सक्रिय कार्य उपलब्ध"
                         else
-                            "${filtered.size} tasks available (tap to open dedicated window)",
+                            "${filtered.size} active tasks available",
                         fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.SemiBold,
                         color = Color.DarkGray
                     )
 
@@ -906,7 +830,7 @@ fun AdminHubDashboardView(
                                     border = BorderStroke(0.6.dp, Color(0xFFFFE082))
                                 ) {
                                     Text(
-                                        text = item.categoryHindi.takeLast(6),
+                                        text = item.categoryHindi.split(" ").lastOrNull() ?: item.categoryHindi,
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFFB78103),

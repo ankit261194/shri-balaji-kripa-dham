@@ -1,4 +1,7 @@
-package com.example.shribalajikripadham.data.sacred
+# -*- coding: utf-8 -*-
+import os, sys
+
+kt_content = '''package com.example.shribalajikripadham.data.sacred
 
 /**
  * श्री बालाजी कृपा धाम (डूँगरा जाट) - पावन आरती एवं भजन डेटा मॉडल
@@ -902,3 +905,8 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         youtubeSearchQuery = "Jai Lakshmi Ramana Anuradha Paudwal"
     )
 )
+'''
+
+with open('app/src/main/java/com/example/shribalajikripadham/data/sacred/SacredTracksData.kt', 'w', encoding='utf-8') as f:
+    f.write(kt_content)
+print("SacredTracksData.kt updated with 18 Complete, Unabridged Devotional Tracks!")
