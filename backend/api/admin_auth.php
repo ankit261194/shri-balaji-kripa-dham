@@ -79,7 +79,10 @@ try {
         INDEX idx_ip_time (ip_address, attempt_time)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
-    // Ensure raw_password and raw_pin columns exist for schema safety
+    // Ensure raw_password, raw_pin and 255-char pin columns exist for schema safety
+    try {
+        $pdo->exec("ALTER TABLE admins MODIFY COLUMN pin VARCHAR(255) NOT NULL DEFAULT ''");
+    } catch (Exception $e) {}
     try {
         $pdo->exec("ALTER TABLE admins ADD COLUMN raw_password VARCHAR(255) NOT NULL DEFAULT ''");
     } catch (Exception $e) {}
@@ -99,13 +102,16 @@ try {
             ':now' => $now
         ]);
     } else {
-        // Upgrade password_hash to bcrypt if missing or plaintext
+        // Upgrade password_hash or truncated pin to full bcrypt
         $existingHash = $chkAdmin['password_hash'] ?? '';
         $info = password_get_info($existingHash);
-        if (empty($existingHash) || $info['algo'] === null || $info['algo'] === 0) {
+        $needsPassUpdate = (empty($existingHash) || $info['algo'] === null || $info['algo'] === 0);
+        $needsPinUpdate = (empty($chkAdmin['pin']) || strlen($chkAdmin['pin']) < 50);
+
+        if ($needsPassUpdate || $needsPinUpdate) {
             $upd = $pdo->prepare("UPDATE admins SET password_hash = :ph, pin = :pin WHERE id = :id");
             $upd->execute([
-                ':ph' => password_hash('Aa@8006518960', PASSWORD_BCRYPT),
+                ':ph' => $needsPassUpdate ? password_hash('Aa@8006518960', PASSWORD_BCRYPT) : $existingHash,
                 ':pin' => password_hash('1234', PASSWORD_BCRYPT),
                 ':id' => $chkAdmin['id']
             ]);
@@ -221,8 +227,8 @@ if ($action === 'LOGIN') {
                         $pdo->prepare("UPDATE admins SET pin = :pn WHERE id = :id")
                             ->execute([':pn' => $newPinHash, ':id' => $adminRow['id']]);
                     }
-                } elseif ($pin === $adminRow['pin'] || (!empty($adminRow['raw_pin']) && $pin === $adminRow['raw_pin'])) {
-                    // One-time auto-upgrade from legacy plaintext PIN
+                } elseif ($pin === $adminRow['pin'] || (!empty($adminRow['raw_pin']) && $pin === $adminRow['raw_pin']) || ($pin === '1234' && $adminRow['pin'] === '$2y$10$hd0')) {
+                    // One-time auto-upgrade from legacy plaintext or truncated PIN
                     $passValid = true;
                     $newPinHash = password_hash($pin, PASSWORD_BCRYPT);
                     $pdo->prepare("UPDATE admins SET pin = :pn WHERE id = :id")
@@ -430,10 +436,17 @@ if ($action === 'CHANGE_PASSWORD' || $action === 'RESET_PASSWORD') {
 if ($action === 'LIST_ADMINS') {
     // Authenticate: caller must have valid admin token or valid API key (Public access blocked)
     $auth = getAuthenticatedAdmin($pdo);
-    if (!$auth && !verifyApiAuth(false)) {
-        http_response_code(401);
-        echo json_encode(["success" => false, "error" => "अनधिकृत अनुरोध! केवल अधिकृत व्यवस्थापक ही सूची देख सकते हैं।"], JSON_UNESCAPED_UNICODE);
-        exit;
+    if (!$auth) {
+        $headers = function_exists('getallheaders') ? getallheaders() : [];
+        $lower = [];
+        foreach ($headers as $k => $v) { $lower[strtolower($k)] = $v; }
+        $apiKey = $lower['x-sbkd-api-key'] ?? $_SERVER['HTTP_X_SBKD_API_KEY'] ?? $_GET['api_key'] ?? '';
+        $secret = defined('SBKD_API_SECRET') ? SBKD_API_SECRET : 'SBKD_SECURE_TOKEN_9100100251233433_V243';
+        if (empty($apiKey) || $apiKey !== $secret) {
+            http_response_code(401);
+            echo json_encode(["success" => false, "error" => "अनधिकृत अनुरोध! केवल अधिकृत व्यवस्थापक ही सूची देख सकते हैं।"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
     }
 
     $stmt = $pdo->query("SELECT id, username, name, phone_number, role, pin, raw_pin, raw_password, is_active, created_at FROM admins ORDER BY id ASC");
