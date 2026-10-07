@@ -1550,14 +1550,28 @@ fun TokenRegistrationScreen(
                                 val currentSchedule = SundayTokenScheduleHelper.evaluateSchedule(settings)
                                 when (currentSchedule) {
                                     is SundayScheduleState.CountdownActive -> {
-                                        // Open for immediate advance booking during countdown!
+                                        scheduleAlertTitle = if (isHindi) "⏳ टोकन उल्टी गिनती जारी है" else "⏳ Countdown Active"
+                                        scheduleAlertMessage = if (isHindi)
+                                            "रविवार टोकन पंजीकरण में शेष समय: ${SundayTokenScheduleHelper.formatCountdownHindi(currentSchedule.remainingMillis)} [ ${SundayTokenScheduleHelper.formatCountdown(currentSchedule.remainingMillis)} ]।\n\nटोकन ${currentSchedule.formattedTarget} स्वतः खुल जाएंगे। कृपया उस समय पुनः प्रयास करें।"
+                                        else
+                                            "Tokens open in: ${SundayTokenScheduleHelper.formatCountdown(currentSchedule.remainingMillis)} (Will open automatically at ${currentSchedule.formattedTarget})."
+                                        showScheduleAlertDialog = true
+                                        errorMessage = scheduleAlertMessage
+                                        return@Button
                                     }
                                     is SundayScheduleState.NonSunday -> {
-                                        // Devotees can register Advance Tokens for the upcoming Sunday!
-                                        // Will automatically issue for currentSchedule.nextSundayDateStr
+                                        scheduleAlertTitle = if (isHindi) "📅 टोकन केवल रविवार को मिलते हैं" else "📅 Tokens Only On Sunday"
+                                        scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                        showScheduleAlertDialog = true
+                                        errorMessage = scheduleAlertMessage
+                                        return@Button
                                     }
                                     is SundayScheduleState.SundayBeforeStart -> {
-                                        // Open for registration on Sunday morning
+                                        scheduleAlertTitle = if (isHindi) "⏳ टोकन प्रातः 8:30 बजे से मिलेंगे" else "⏳ Opens at 8:30 AM"
+                                        scheduleAlertMessage = if (isHindi) currentSchedule.messageHindi else currentSchedule.messageEnglish
+                                        showScheduleAlertDialog = true
+                                        errorMessage = scheduleAlertMessage
+                                        return@Button
                                     }
                                     is SundayScheduleState.SundayClosedEvening -> {
                                         scheduleAlertTitle = if (isHindi) "🔴 आज के टोकन पूरे हो गए हैं" else "🔴 Today's Tokens Closed"

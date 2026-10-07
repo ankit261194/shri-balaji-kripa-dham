@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 150,
-  "version_code": 150,
-  "latest_version_name": "2.65.00",
-  "version_name": "2.65.00",
-  "update_notes_hindi": "v2.65.00 (Build 150): 🪔 संपूर्ण 18 पावन आरती व चालीसा ग्रंथ संग्रह। 👑 प्रो-लेवल सुपर एडमिन एक्जीक्यूटिव कमांड डेक (~75dp सुगठित), आश्रम बस सेवा व अर्जी मास्टर कंट्रोल, होम स्क्रीन पर सीधा एक्टिव टोकन कार्ड, अग्रिम रविवार टोकन बुकिंग व वैकल्पिक सेल्फी फोटो।",
-  "update_notes_english": "v2.65.00 (Build 150): 🪔 Complete 18 Sacred Aartis & Chalisas. 👑 Pro-Level Super Admin Executive Command Deck, Ashram Bus & Arzi Master Controls, Direct Devotee Active Token Card on Home, Advance Sunday Token Booking & Optional Selfie Photo.",
+  "latest_version_code": 151,
+  "version_code": 151,
+  "latest_version_name": "2.65.10",
+  "version_name": "2.65.10",
+  "update_notes_hindi": "v2.65.10 (Build 151): 🚩 रविवार टोकन प्रणाली पूर्ण शुद्धिकरण — केवल रविवार प्रातः 8:30 से सायं 5:00 बजे तक, 30 किमी / 200 मीटर जियोफेंस, 1 फोन 1 टोकन नियम व ज़ीरो-बाईपास सुरक्षा।",
+  "update_notes_english": "v2.65.10 (Build 151): Sunday Token System Hardening — Strictly Sunday 8:30 AM to 5:00 PM, 30km / 200m geofence, 1 Phone 1 Token & zero-bypass security.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true

@@ -215,9 +215,7 @@ $hasBankDetails = (!empty($bankAccountNumber) || !empty($upiId));
 $ashramAddress = !empty($settings['ashram_address']) 
     ? $settings['ashram_address'] 
     : "श्री बालाजी कृपा धाम\nग्राम डूँगरा जाट, तहसील अनूपशहर,\nजिला बुलन्दशहर, उत्तर प्रदेश - 202394";
-$ashramDirections = !empty($settings['ashram_directions']) 
-    ? $settings['ashram_directions'] 
-    : "🚆 एकमात्र नजदीकी रेलवे स्टेशन: केवल बुलन्दशहर रेलवे स्टेशन (BSC) (~28-30 किमी)\n🏙️ निकटवर्ती प्रमुख 3 शहर: जहांगीराबाद (~10 किमी) • बुलन्दशहर (~30 किमी) • अनूपशहर (~16 किमी)";
+$ashramDirections = !empty($settings['ashram_directions']) ? trim($settings['ashram_directions']) : '';
 $ashramHistory = !empty($settings['ashram_history_hindi']) ? $settings['ashram_history_hindi'] : (!empty($settings['ashram_history']) ? $settings['ashram_history'] : 'परम पूज्य गुरुजी तेजवीर सिंह जी को श्री बालाजी महाराज व श्री भैरव बाबा का साक्षात आशीर्वाद प्राप्त है। पिछले कई वर्षों से ग्राम डूँगरा जाट धाम पर लाखों पीड़ित भक्तों को नई जिंदगी, मानसिक शांति व शारीरिक व्याधियों से मुक्ति मिली है।');
 $contactEmail = !empty($settings['contact_email']) ? trim($settings['contact_email']) : '';
 $youtubeUrl = !empty($settings['youtube_channel_url']) ? $settings['youtube_channel_url'] : (!empty($settings['youtube_url']) ? $settings['youtube_url'] : 'https://www.youtube.com/@ShriBalajiKripaDham');
@@ -1576,7 +1574,7 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
 
     <!-- Sevadars Carousel Section (App & Web synchronized) -->
     <?php if (!empty($sevadars)): ?>
-    <section class="carousel-section">
+    <section class="carousel-section" id="sevadarsSection">
         <div class="section-title">
             <h3>🙏 समर्पित सेवादल मंडल</h3>
             <p>श्री बालाजी कृपा धाम के कर्मठ एवं निष्ठावान सेवादल बंधु (संपर्क हेतु नंबर पर क्लिक करें)</p>
@@ -1830,9 +1828,11 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
             <p style="font-size: 1rem; margin-bottom: 10px; color: #37474F; line-height: 1.6;" id="dynamicAshramAddress">
                 <?= nl2br(htmlspecialchars($ashramAddress)) ?>
             </p>
+            <?php if (!empty($ashramDirections)): ?>
             <div style="background: #FFF8E1; border-left: 4px solid var(--saffron); padding: 10px 14px; border-radius: 6px; margin-bottom: 14px;">
                 <p style="font-size: 0.93rem; color: #4E342E; margin: 0; white-space: pre-line; line-height: 1.6;" id="dynamicAshramDirections"><?= htmlspecialchars($ashramDirections) ?></p>
             </div>
+            <?php endif; ?>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <a href="https://www.google.com/maps/search/?api=1&query=28.3972915,78.1460410" target="_blank" class="btn-maps">
                     🗺️ गूगल मैप्स पर रास्ता देखें
@@ -2030,20 +2030,24 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                         }
 
                         // 4. Render Dynamic Sevadars if returned
+                        const sevSection = document.getElementById('sevadarsSection');
                         if (Array.isArray(cfg.sevadars) && cfg.sevadars.length > 0) {
+                            if (sevSection) sevSection.style.display = 'block';
                             const sTrack = document.getElementById('sevadarTrack');
-                            sTrack.innerHTML = cfg.sevadars.map(s => `
-                                <div class="sevadar-card">
-                                    <div class="sevadar-photo">
-                                        <img src="${s.photo_url || 'uploads/sevadars/default.jpg'}" alt="${s.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                            if (sTrack) {
+                                sTrack.innerHTML = cfg.sevadars.map(s => `
+                                    <div class="sevadar-card">
+                                        <div class="sevadar-photo">
+                                            <img src="${s.photo_url || 'uploads/sevadars/default.jpg'}" alt="${s.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'%23FF8F00\'><path d=\'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z\'/></svg>'">
+                                        </div>
+                                        <div class="sevadar-name">${s.name}</div>
+                                        <div class="sevadar-role">${s.role || 'सेवादार'}</div>
+                                        ${s.phone ? `<a href="tel:${s.phone}" class="sevadar-phone-btn">📞 ${s.phone}</a>` : ''}
                                     </div>
-                                    <div class="sevadar-name">${s.name}</div>
-                                    <div class="sevadar-role">${s.role || 'सेवादार'}</div>
-                                    <a href="tel:${s.phone}" class="sevadar-phone-btn">
-                                        📞 ${s.phone}
-                                    </a>
-                                </div>
-                            `).join('');
+                                `).join('');
+                            }
+                        } else {
+                            if (sevSection) sevSection.style.display = 'none';
                         }
 
                         // 5. Render Dynamic Donors if returned (STRICT PRIVACY: NO PHONE NUMBERS)
@@ -2200,9 +2204,15 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                             const el = document.getElementById('dynamicAshramHistory');
                             if (el) el.innerText = cfg.ashram_history || cfg.ashram_history_hindi;
                         }
-                        if (cfg.ashram_directions) {
+                        if (cfg.ashram_directions && cfg.ashram_directions.trim()) {
                             const el = document.getElementById('dynamicAshramDirections');
-                            if (el) el.innerText = cfg.ashram_directions;
+                            if (el) {
+                                el.innerText = cfg.ashram_directions;
+                                if (el.parentElement) el.parentElement.style.display = 'block';
+                            }
+                        } else {
+                            const el = document.getElementById('dynamicAshramDirections');
+                            if (el && el.parentElement) el.parentElement.style.display = 'none';
                         }
 
                         // 15. Dynamic Aarti Timings (100% Dynamic CMS from App)
