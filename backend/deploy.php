@@ -78,26 +78,9 @@ $filesToSync = [
     "media/img_hanuman_veer.jpg",
     "media/img_panchmukhi_hanuman.jpg",
     "media/img_ram_darbar.jpg",
-    "sync_elevex_apk.php",
-    "elevex_gateway/config.php",
-    "elevex_gateway/app_update.json",
-    "elevex_gateway/submit_utr.php",
-    "elevex_gateway/support_crm.php",
-    "api/elevex_update.php",
-    "api/login.php",
-    "api/register.php",
-    "api/gemini_diagnose.php",
     "api/scan_register_gemini.php",
     "api/antigravity_ai.php",
-    "api/elevex_diagnose.php",
-    "api/sync_leads.php",
-    "api/send_otp.php",
-    "api/verify_otp.php",
-    "api/device_session.php",
-    "api/upload_image.php",
     "api/send_push.php",
-    "api/submit_utr.php",
-    "api/support_crm.php",
     "api/app_queries.php",
     "api/live_token_stream.php",
     "api/auto_backup.php"
@@ -108,9 +91,17 @@ if (!empty($_GET['file'])) {
     $filesToSync = array_filter(array_map('trim', explode(',', $_GET['file'])));
 }
 
-// Clean up orphaned legacy files
-if (file_exists(__DIR__ . '/api/docu_ai.php')) {
-    @unlink(__DIR__ . '/api/docu_ai.php');
+// Clean up orphaned legacy files and lift/elevator contamination from Ashram API
+$legacyFilesToRemove = [
+    __DIR__ . '/api/docu_ai.php',
+    __DIR__ . '/api/gemini_diagnose.php',
+    __DIR__ . '/api/elevex_diagnose.php',
+    __DIR__ . '/api/elevex_update.php'
+];
+foreach ($legacyFilesToRemove as $lf) {
+    if (file_exists($lf)) {
+        @unlink($lf);
+    }
 }
 
 $baseDir = __DIR__;
