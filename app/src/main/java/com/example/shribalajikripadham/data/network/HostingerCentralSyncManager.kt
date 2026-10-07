@@ -1643,6 +1643,93 @@ object HostingerCentralSyncManager {
         }
     }
 
+    data class DevoteeNotification(
+        val id: Long,
+        val phoneNumber: String,
+        val tokenNumber: Int,
+        val title: String,
+        val message: String,
+        val type: String,
+        val isRead: Boolean,
+        val createdAt: Long
+    )
+
+    /**
+     * Fetch unread devotee notifications from Hostinger central inbox
+     */
+    suspend fun fetchDevoteeNotifications(phoneNumber: String): List<DevoteeNotification> = withContext(Dispatchers.IO) {
+        val list = mutableListOf<DevoteeNotification>()
+        val cleanPhone = phoneNumber.filter { it.isDigit() }.let { if (it.length > 10) it.takeLast(10) else it }
+        if (cleanPhone.isBlank()) return@withContext list
+        try {
+            val url = URL("${BASE_URL}get_devotee_notifications.php?phone=$cleanPhone")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("User-Agent", "ShriBalajiApp/2.56.28")
+                connectTimeout = 5000
+                readTimeout = 5000
+            }
+            if (conn.responseCode in 200..299) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val root = JSONObject(resp)
+                if (root.optBoolean("success", false)) {
+                    val arr = root.optJSONArray("notifications") ?: org.json.JSONArray()
+                    for (i in 0 until arr.length()) {
+                        val item = arr.getJSONObject(i)
+                        list.add(
+                            DevoteeNotification(
+                                id = item.optLong("id", 0L),
+                                phoneNumber = item.optString("phone_number", ""),
+                                tokenNumber = item.optInt("token_number", 0),
+                                title = item.optString("title", ""),
+                                message = item.optString("message", ""),
+                                type = item.optString("type", "TOKEN_CALL"),
+                                isRead = item.optInt("is_read", 0) == 1,
+                                createdAt = item.optLong("created_at", 0L)
+                            )
+                        )
+                    }
+                }
+            }
+            conn.disconnect()
+        } catch (e: Exception) {
+            android.util.Log.e("SyncManager", "fetchDevoteeNotifications error: ${e.message}")
+        }
+        list
+    }
+
+    /**
+     * Mark devotee notification as read on Hostinger
+     */
+    suspend fun markDevoteeNotificationRead(phoneNumber: String, notificationId: Long = 0L): Boolean = withContext(Dispatchers.IO) {
+        val cleanPhone = phoneNumber.filter { it.isDigit() }.let { if (it.length > 10) it.takeLast(10) else it }
+        if (cleanPhone.isBlank()) return@withContext false
+        try {
+            val url = URL("${BASE_URL}get_devotee_notifications.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                setRequestProperty("User-Agent", "ShriBalajiApp/2.56.28")
+                connectTimeout = 5000
+                readTimeout = 5000
+                requestMethod = "POST"
+                doOutput = true
+            }
+            val json = JSONObject().apply {
+                put("action", "MARK_READ")
+                put("phone", cleanPhone)
+                if (notificationId > 0L) put("id", notificationId)
+            }
+            conn.outputStream.use { it.write(json.toString().toByteArray(StandardCharsets.UTF_8)) }
+            val ok = conn.responseCode in 200..299
+            conn.disconnect()
+            ok
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     /**
      * Send FCM Push Notification to Devotee
      */

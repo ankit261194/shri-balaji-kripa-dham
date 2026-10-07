@@ -281,6 +281,43 @@ class AshramBackgroundPushJobService : JobService() {
             } catch (e: Exception) {
                 Log.e(TAG, "Live config push check failed: ${e.message}")
             }
+
+            // 4. Autonomous Devotee Personal Inbox Check (Token Call & Direct Alerts)
+            try {
+                val fcmPrefs = context.getSharedPreferences(
+                    com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.PREFS_FCM,
+                    Context.MODE_PRIVATE
+                )
+                val registeredPhone = fcmPrefs.getString(
+                    com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.KEY_LAST_PHONE,
+                    null
+                )
+                if (!registeredPhone.isNullOrBlank()) {
+                    val notifications = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchDevoteeNotifications(registeredPhone)
+                    val lastSeenNotifId = prefs.getLong("last_seen_inbox_notif_id", 0L)
+                    var maxNotifId = lastSeenNotifId
+
+                    for (notif in notifications) {
+                        if (!notif.isRead && notif.id > lastSeenNotifId) {
+                            NotificationHelper.showSystemNotification(
+                                context = context,
+                                title = notif.title.ifBlank { "🔔 श्री बालाजी कृपा धाम" },
+                                message = notif.message,
+                                notificationId = (notif.id % 100000).toInt()
+                            )
+                            if (notif.id > maxNotifId) {
+                                maxNotifId = notif.id
+                            }
+                        }
+                    }
+
+                    if (maxNotifId > lastSeenNotifId) {
+                        prefs.edit().putLong("last_seen_inbox_notif_id", maxNotifId).apply()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Devotee inbox background check failed: ${e.message}")
+            }
         }
     }
 
