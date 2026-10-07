@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -27,6 +28,8 @@ import com.example.shribalajikripadham.data.repository.SevadarChatRepository
 import com.example.shribalajikripadham.data.repository.SevadarDirectoryManager
 import com.example.shribalajikripadham.theme.MaroonPrimary
 import com.example.shribalajikripadham.theme.SaffronPrimary
+import com.example.shribalajikripadham.ui.feedback.InAppVoiceCallDialog
+import com.example.shribalajikripadham.util.InAppVoiceCallManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -597,6 +600,103 @@ fun AdminInAppChatSection(
         mutableStateOf<AshramSevadarContact?>(if (!isSuperAdmin) visibleSevadars.firstOrNull() else null)
     }
     var chatRefreshTrigger by remember { mutableIntStateOf(0) }
+    var activeAdminVoiceCallSevadar by remember { mutableStateOf<AshramSevadarContact?>(null) }
+    var incomingCallData by remember { mutableStateOf<org.json.JSONObject?>(null) }
+
+    // Live In-App Voice Calling Poll for Sevadar / Super Admin
+    LaunchedEffect(Unit) {
+        while (isActive) {
+            delay(4000L)
+            try {
+                val call = SevadarChatRepository.checkIncomingCall(
+                    context = context,
+                    targetId = currentAdminId.ifBlank { "SUPER_ADMIN" },
+                    role = if (isSuperAdmin) "SUPER_ADMIN" else "SEVADAR",
+                    adminPin = if (isSuperAdmin) "1234" else ""
+                )
+                incomingCallData = call
+            } catch (ignored: Exception) {}
+        }
+    }
+
+    // Incoming Voice Call Banner for Sevadar / Admin
+    if (incomingCallData != null) {
+        val cData = incomingCallData!!
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1B5E20)),
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "🔔 इनकमिंग सेवादार वॉइस कॉल",
+                        color = Color(0xFFFFD54F),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = "${cData.optString("caller_name", "भक्त")} (${cData.optString("caller_phone", "")})",
+                        color = Color.White,
+                        fontSize = 11.sp
+                    )
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Button(
+                        onClick = {
+                            val cId = cData.optString("call_id", "")
+                            InAppVoiceCallManager.answerCall(context, cId, if (isSuperAdmin) "SUPER_ADMIN" else "SEVADAR")
+                            activeAdminVoiceCallSevadar = visibleSevadars.firstOrNull() ?: AshramSevadarContact(
+                                id = "1",
+                                name = superAdminName,
+                                department = "आश्रम सेवादार",
+                                roleTitleHindi = "प्रभारी",
+                                phoneNumber = "9100100251",
+                                whatsappNumber = "9100100251"
+                            )
+                            incomingCallData = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text("📞 उठाएं", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = {
+                            InAppVoiceCallManager.endCall(context, "अस्वीकार")
+                            incomingCallData = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text("काटें ❌", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+
+    if (activeAdminVoiceCallSevadar != null) {
+        InAppVoiceCallDialog(
+            sevadar = activeAdminVoiceCallSevadar!!,
+            callerName = if (isSuperAdmin) "सुपर एडमिन" else activeAdminVoiceCallSevadar!!.name,
+            callerPhone = activeAdminVoiceCallSevadar!!.phoneNumber,
+            callerRole = if (isSuperAdmin) "SUPER_ADMIN" else "SEVADAR",
+            onDismiss = { activeAdminVoiceCallSevadar = null }
+        )
+    }
 
     if (selectedSevadar != null) {
         val targetSev = selectedSevadar!!
@@ -688,17 +788,33 @@ fun AdminInAppChatSection(
                         }
                     }
 
-                    Surface(
-                        color = Color(0xFFE8F5E9),
-                        shape = RoundedCornerShape(6.dp)
-                    ) {
-                        Text(
-                            text = "${messages.size} संदेश",
-                            fontSize = 10.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1B5E20),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF2E7D32),
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clickable {
+                                    activeAdminVoiceCallSevadar = targetSev
+                                }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("📞", fontSize = 14.sp)
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Surface(
+                            color = Color(0xFFE8F5E9),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "${messages.size} संदेश",
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1B5E20),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
             }

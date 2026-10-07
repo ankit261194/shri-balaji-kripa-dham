@@ -1,11 +1,11 @@
 {
-  "latest_version_code": 144,
-  "version_code": 144,
-  "latest_version_name": "2.59.00",
-  "version_name": "2.59.00",
-  "update_notes_hindi": "v2.59.00 (Build 144): 👑 सुपर एडमिन व सेवादार पोर्टल प्रो-रीडिजाइन: सेवादार लॉगिन करते ही सीधा उनकी लाइव चैट इनबॉक्स पर पहुंचेगा (पूर्ण गोपनीयता, कोई अन्य सेवादार की चैट नहीं देख सकता), सुपर एडमिन कॉम्पैक्ट 1-लाइन स्टेटस बार जिससे 95% स्क्रीन खाली रहेगी, तथा हवन अनुष्ठान खर्च (₹14,000) व नियम सुपर एडमिन द्वारा डायनामिक संपादन योग्य।",
-  "update_notes_english": "v2.59.00 (Build 144): 👑 Super Admin & Sevadar Portal Pro Redesign: Sevadar logs in directly to live chat inbox with 100% privacy (zero visibility into other sevadars), compact 1-line Super Admin status header freeing 95% screen real estate, and dynamic editable Havan cost (₹14,000) & rules CMS.",
-  "apk_url": "https://shribalajikripadham.online/download.php?v=144",
+  "latest_version_code": 145,
+  "version_code": 145,
+  "latest_version_name": "2.60.00",
+  "version_name": "2.60.00",
+  "update_notes_hindi": "v2.60.00 (Build 145): 📞 सेवादार रियल इन-ऐप वॉइस कॉल (VoIP Calling): भक्त व सेवादार के बीच सीधा ऐप के अंदर वॉइस कॉल—बिना किसी टेलीकॉम डायलर या सिम कार्ड के। लाइव रिंगिंग, कनेक्टेड टाइमर, माइक म्यूट, लाउडस्पीकर, व इनकमिंग कॉल अलर्ट। साथ ही लाइव चैट व अपडेट इंजन में सुधार।",
+  "update_notes_english": "v2.60.00 (Build 145): 📞 Sevadar Real In-App Voice Calling (VoIP Calling): Direct in-app audio calling between devotees and sevadars with zero cellular dialer bypass. Live ringing, connected duration timer, mic mute, speakerphone, incoming call alert, and chat synchronization.",
+  "apk_url": "https://shribalajikripadham.online/download.php?v=145",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": false
 }

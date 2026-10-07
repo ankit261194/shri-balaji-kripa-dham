@@ -65,6 +65,7 @@ fun SevadarHelpdeskDialog(
     var selectedDepartment by remember { mutableStateOf("सभी") }
     var searchQuery by remember { mutableStateOf("") }
     var activeChatSevadar by remember { mutableStateOf<AshramSevadarContact?>(null) }
+    var activeVoiceCallSevadar by remember { mutableStateOf<AshramSevadarContact?>(null) }
     var isLoadingCloud by remember { mutableStateOf(false) }
 
     // Fetch live cloud sevadar directory on start
@@ -250,6 +251,9 @@ fun SevadarHelpdeskDialog(
                                 },
                                 onOpenChat = {
                                     activeChatSevadar = sevadar
+                                },
+                                onStartVoiceCall = {
+                                    activeVoiceCallSevadar = sevadar
                                 }
                             )
                         }
@@ -267,6 +271,20 @@ fun SevadarHelpdeskDialog(
             onDismiss = { activeChatSevadar = null }
         )
     }
+
+    // Real In-App Voice Call Dialog (Zero-Telecom, Pure Native Calling)
+    if (activeVoiceCallSevadar != null) {
+        val prefs = context.getSharedPreferences("app_user_prefs", Context.MODE_PRIVATE)
+        val userPhone = prefs.getString("user_phone", "")?.takeIf { it.isNotBlank() } ?: "9100100251"
+        val userName = prefs.getString("user_name", "")?.takeIf { it.isNotBlank() } ?: "भक्त"
+        InAppVoiceCallDialog(
+            sevadar = activeVoiceCallSevadar!!,
+            callerName = userName,
+            callerPhone = userPhone,
+            callerRole = "DEVOTEE",
+            onDismiss = { activeVoiceCallSevadar = null }
+        )
+    }
 }
 
 @Composable
@@ -274,7 +292,8 @@ fun SevadarContactCard(
     sevadar: AshramSevadarContact,
     isHindi: Boolean,
     onConnectWhatsApp: () -> Unit,
-    onOpenChat: () -> Unit
+    onOpenChat: () -> Unit,
+    onStartVoiceCall: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -364,12 +383,12 @@ fun SevadarContactCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Two Action Buttons: Direct WhatsApp & In-App Chat/Call
+            // Three Action Buttons: Direct WhatsApp, In-App Chat, & In-App Voice Call
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                // WhatsApp Button
+                // 1. WhatsApp Button
                 Button(
                     onClick = onConnectWhatsApp,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
@@ -377,21 +396,21 @@ fun SevadarContactCard(
                     modifier = Modifier
                         .weight(1f)
                         .height(36.dp),
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("💬", fontSize = 13.sp)
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("💬", fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(2.dp))
                         Text(
-                            text = if (isHindi) "WhatsApp पर जुड़ें" else "Connect WhatsApp",
-                            fontSize = 11.5.sp,
+                            text = "WhatsApp",
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                     }
                 }
 
-                // In-App Chat & Call Button
+                // 2. In-App Chat Button
                 Button(
                     onClick = onOpenChat,
                     colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),
@@ -399,14 +418,36 @@ fun SevadarContactCard(
                     modifier = Modifier
                         .weight(1f)
                         .height(36.dp),
-                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("📱", fontSize = 13.sp)
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("📱", fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(2.dp))
                         Text(
-                            text = if (isHindi) "इन-ऐप चैट व कॉल" else "In-App Chat & Call",
-                            fontSize = 11.5.sp,
+                            text = if (isHindi) "चैट करें" else "Chat",
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                // 3. Real In-App Voice Call Button (Pure Native Calling)
+                Button(
+                    onClick = onStartVoiceCall,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B5E20)),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("📞", fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = if (isHindi) "वॉइस कॉल" else "Call",
+                            fontSize = 10.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -444,6 +485,7 @@ fun SevadarInAppChatDialog(
     var messages by remember { mutableStateOf(SevadarDirectoryManager.getChatMessages(context, sevadar.id)) }
     var inputText by remember { mutableStateOf("") }
     var isSending by remember { mutableStateOf(false) }
+    var showInAppCallDialog by remember { mutableStateOf(false) }
 
     // Voice note recording state
     var isRecordingVoice by remember { mutableStateOf(false) }
@@ -673,19 +715,14 @@ fun SevadarInAppChatDialog(
 
                         // Call & Video Action Buttons
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            // Direct Phone Call
+                            // Real In-App Voice Call (Native VoIP Calling)
                             Surface(
                                 shape = CircleShape,
                                 color = Color(0xFF2E7D32),
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clickable {
-                                        try {
-                                            val dialIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${sevadar.phoneNumber}"))
-                                            context.startActivity(dialIntent)
-                                        } catch (e: Exception) {
-                                            Toast.makeText(context, "कॉल शुरू करने में असमर्थ", Toast.LENGTH_SHORT).show()
-                                        }
+                                        showInAppCallDialog = true
                                     }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -1134,5 +1171,22 @@ fun SevadarInAppChatDialog(
                 }
             }
         }
+    }
+
+    // Real-Time In-App Voice Calling Screen
+    if (showInAppCallDialog) {
+        InAppVoiceCallDialog(
+            sevadar = sevadar,
+            callerName = userName,
+            callerPhone = userPhone,
+            callerRole = "DEVOTEE",
+            onDismiss = {
+                showInAppCallDialog = false
+                scope.launch {
+                    val fresh = SevadarChatRepository.getMessages(context, convId, sevadar.id, userPhone)
+                    messages = fresh
+                }
+            }
+        )
     }
 }

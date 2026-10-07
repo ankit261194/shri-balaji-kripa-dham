@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import com.example.shribalajikripadham.data.model.AshramSevadarContact
 import com.example.shribalajikripadham.data.model.SevadarChatMessage
+import com.example.shribalajikripadham.data.model.SevadarCallSession
 import com.example.shribalajikripadham.data.network.HostingerCentralSyncManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -285,6 +286,276 @@ object SevadarChatRepository {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error listing conversations from server", e)
+        }
+        return@withContext emptyList()
+    }
+
+    /**
+     * Initiates a real in-app voice/video calling session on Hostinger backend.
+     */
+    suspend fun initiateCall(
+        context: Context,
+        sevadarId: String,
+        sevadarName: String,
+        callerName: String,
+        callerPhone: String,
+        callerRole: String = "DEVOTEE",
+        callType: String = "VOICE",
+        conversationId: String = ""
+    ): SevadarCallSession? = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("$BASE_URL?action=initiate_call")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                connectTimeout = 8000
+                readTimeout = 8000
+                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                HostingerCentralSyncManager.applyAuthHeaders(this, "POST", context)
+            }
+
+            val payload = JSONObject().apply {
+                put("sevadar_id", sevadarId)
+                put("sevadar_name", sevadarName)
+                put("caller_name", callerName)
+                put("caller_phone", callerPhone)
+                put("caller_role", callerRole)
+                put("call_type", callType)
+                put("conversation_id", conversationId)
+            }
+
+            conn.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
+
+            if (conn.responseCode == 200) {
+                val respText = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(respText)
+                if (json.optBoolean("success", false)) {
+                    return@withContext SevadarCallSession.fromJson(json)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initiating in-app call", e)
+        }
+        return@withContext null
+    }
+
+    /**
+     * Polls the live call session status and updates heartbeat.
+     */
+    suspend fun pollCallStatus(
+        context: Context,
+        callId: String,
+        role: String = "DEVOTEE"
+    ): JSONObject? = withContext(Dispatchers.IO) {
+        try {
+            val qId = URLEncoder.encode(callId, "UTF-8")
+            val qRole = URLEncoder.encode(role, "UTF-8")
+            val url = URL("$BASE_URL?action=poll_call_status&call_id=$qId&role=$qRole")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 5000
+                readTimeout = 5000
+                HostingerCentralSyncManager.applyAuthHeaders(this, "GET", context)
+            }
+
+            if (conn.responseCode == 200) {
+                val respText = conn.inputStream.bufferedReader().use { it.readText() }
+                return@withContext JSONObject(respText)
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Poll call status failed: ${e.message}")
+        }
+        return@withContext null
+    }
+
+    /**
+     * Answers an incoming call.
+     */
+    suspend fun answerCall(
+        context: Context,
+        callId: String
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("$BASE_URL?action=answer_call")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                connectTimeout = 5000
+                readTimeout = 5000
+                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                HostingerCentralSyncManager.applyAuthHeaders(this, "POST", context)
+            }
+
+            val payload = JSONObject().apply { put("call_id", callId) }
+            conn.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
+            return@withContext (conn.responseCode == 200)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error answering call", e)
+            return@withContext false
+        }
+    }
+
+    /**
+     * Ends the active call and logs final duration.
+     */
+    suspend fun endCall(
+        context: Context,
+        callId: String,
+        durationSeconds: Int = 0,
+        endedBy: String = "DEVOTEE"
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("$BASE_URL?action=end_call")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                connectTimeout = 6000
+                readTimeout = 6000
+                setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                HostingerCentralSyncManager.applyAuthHeaders(this, "POST", context)
+            }
+
+            val payload = JSONObject().apply {
+                put("call_id", callId)
+                put("duration_seconds", durationSeconds)
+                put("ended_by", endedBy)
+            }
+            conn.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
+            return@withContext (conn.responseCode == 200)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error ending call", e)
+            return@withContext false
+        }
+    }
+
+    /**
+     * Checks if there is an active incoming call for the user/sevadar.
+     */
+    suspend fun checkIncomingCall(
+        context: Context,
+        targetId: String,
+        role: String = "SEVADAR",
+        adminPin: String = ""
+    ): JSONObject? = withContext(Dispatchers.IO) {
+        try {
+            val qTarget = URLEncoder.encode(targetId, "UTF-8")
+            val qRole = URLEncoder.encode(role, "UTF-8")
+            val qPin = URLEncoder.encode(adminPin, "UTF-8")
+            val url = URL("$BASE_URL?action=check_incoming_call&target_id=$qTarget&role=$qRole&admin_pin=$qPin")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 4000
+                readTimeout = 4000
+                HostingerCentralSyncManager.applyAuthHeaders(this, "GET", context)
+            }
+
+            if (conn.responseCode == 200) {
+                val respText = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(respText)
+                if (json.optBoolean("has_call", false)) {
+                    return@withContext json.optJSONObject("call")
+                }
+            }
+        } catch (e: Exception) {
+            // normal quiet poll
+        }
+        return@withContext null
+    }
+
+    /**
+     * Uploads audio chunk during active call.
+     */
+    suspend fun sendCallAudioChunk(
+        context: Context,
+        callId: String,
+        audioFile: File,
+        senderRole: String,
+        packetSeq: Int,
+        durationMs: Int
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val boundary = "===CallAudioBoundary" + System.currentTimeMillis() + "==="
+            val url = URL("$BASE_URL?action=send_call_audio_chunk")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                connectTimeout = 5000
+                readTimeout = 5000
+                setRequestProperty("Content-Type", "multipart/form-data; boundary=$boundary")
+                HostingerCentralSyncManager.applyAuthHeaders(this, "POST", context)
+            }
+
+            conn.outputStream.use { os ->
+                val writer = BufferedWriter(OutputStreamWriter(os, "UTF-8"))
+                
+                writer.write("--$boundary\r\n")
+                writer.write("Content-Disposition: form-data; name=\"call_id\"\r\n\r\n")
+                writer.write("$callId\r\n")
+
+                writer.write("--$boundary\r\n")
+                writer.write("Content-Disposition: form-data; name=\"sender_role\"\r\n\r\n")
+                writer.write("$senderRole\r\n")
+
+                writer.write("--$boundary\r\n")
+                writer.write("Content-Disposition: form-data; name=\"packet_seq\"\r\n\r\n")
+                writer.write("$packetSeq\r\n")
+
+                writer.write("--$boundary\r\n")
+                writer.write("Content-Disposition: form-data; name=\"duration_ms\"\r\n\r\n")
+                writer.write("$durationMs\r\n")
+
+                writer.write("--$boundary\r\n")
+                writer.write("Content-Disposition: form-data; name=\"audio\"; filename=\"${audioFile.name}\"\r\n")
+                writer.write("Content-Type: audio/mp4\r\n\r\n")
+                writer.flush()
+
+                FileInputStream(audioFile).use { it.copyTo(os) }
+                os.flush()
+
+                writer.write("\r\n--$boundary--\r\n")
+                writer.flush()
+            }
+
+            return@withContext (conn.responseCode == 200)
+        } catch (e: Exception) {
+            return@withContext false
+        }
+    }
+
+    /**
+     * Fetches new audio chunks from counterpart.
+     */
+    suspend fun getCallAudioChunks(
+        context: Context,
+        callId: String,
+        recipientRole: String,
+        sinceSeq: Int
+    ): List<JSONObject> = withContext(Dispatchers.IO) {
+        try {
+            val qId = URLEncoder.encode(callId, "UTF-8")
+            val qRole = URLEncoder.encode(recipientRole, "UTF-8")
+            val url = URL("$BASE_URL?action=get_call_audio_chunks&call_id=$qId&recipient_role=$qRole&since_seq=$sinceSeq")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 4000
+                readTimeout = 4000
+                HostingerCentralSyncManager.applyAuthHeaders(this, "GET", context)
+            }
+
+            if (conn.responseCode == 200) {
+                val text = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(text)
+                if (json.optBoolean("success", false)) {
+                    val arr = json.optJSONArray("chunks") ?: JSONArray()
+                    val list = mutableListOf<JSONObject>()
+                    for (i in 0 until arr.length()) {
+                        list.add(arr.getJSONObject(i))
+                    }
+                    return@withContext list
+                }
+            }
+        } catch (e: Exception) {
+            // ignore
         }
         return@withContext emptyList()
     }

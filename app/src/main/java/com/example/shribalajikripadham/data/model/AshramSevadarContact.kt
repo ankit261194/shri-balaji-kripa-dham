@@ -165,3 +165,43 @@ data class SevadarChatMessage(
         }
     }
 }
+
+/**
+ * Real-Time In-App Voice Calling Session Model:
+ * Manages full call lifecycle between Devotee and Sevadar / Super Admin.
+ */
+data class SevadarCallSession(
+    val callId: String,
+    val conversationId: String = "",
+    val sevadarId: String = "",
+    val sevadarName: String = "आश्रम सेवादार",
+    val callerId: String = "",
+    val callerName: String = "भक्त",
+    val callerPhone: String = "",
+    val callerRole: String = "DEVOTEE", // DEVOTEE, SEVADAR, ADMIN
+    val callType: String = "VOICE", // VOICE, VIDEO
+    val callStatus: String = "RINGING", // DIALING, RINGING, CONNECTED, ENDED, REJECTED
+    val durationSeconds: Int = 0,
+    val startedAt: Long = System.currentTimeMillis(),
+    val connectedAt: Long = 0L
+) {
+    companion object {
+        fun fromJson(json: org.json.JSONObject): SevadarCallSession {
+            return SevadarCallSession(
+                callId = json.optString("call_id", ""),
+                conversationId = json.optString("conversation_id", ""),
+                sevadarId = json.optString("sevadar_id", ""),
+                sevadarName = json.optString("sevadar_name", "आश्रम सेवादार"),
+                callerId = json.optString("caller_id", ""),
+                callerName = json.optString("caller_name", "भक्त"),
+                callerPhone = json.optString("caller_phone", ""),
+                callerRole = json.optString("caller_role", "DEVOTEE"),
+                callType = json.optString("call_type", "VOICE"),
+                callStatus = json.optString("call_status", "RINGING"),
+                durationSeconds = json.optInt("duration_seconds", 0),
+                startedAt = json.optLong("started_at", System.currentTimeMillis()),
+                connectedAt = json.optLong("connected_at", 0L)
+            )
+        }
+    }
+}
