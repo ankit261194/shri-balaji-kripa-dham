@@ -170,6 +170,9 @@ try {
                     $stmtAppUrl->execute([':url' => $verData['apk_url']]);
                 }
             }
+            if (!empty($_REQUEST['clear_rate_limit'])) {
+                try { $pdo->exec("TRUNCATE TABLE login_attempts"); } catch (Throwable $e) {}
+            }
         }
     }
 } catch (Throwable $e) {}
