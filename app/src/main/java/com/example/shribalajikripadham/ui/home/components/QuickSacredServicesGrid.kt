@@ -38,6 +38,7 @@ fun QuickSacredServicesGrid(
     onNavigateToGranth: () -> Unit,
     onNavigateToPanchang: () -> Unit,
     onNavigateToTravelGuide: () -> Unit,
+    onOpenSevadarHelpdesk: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val services = listOf(
@@ -104,6 +105,75 @@ fun QuickSacredServicesGrid(
                             modifier = Modifier.weight(1f)
                         )
                     }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Sevadar Helpdesk & WhatsApp Banner Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.2.dp, Color(0xFFFFD54F)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onOpenSevadarHelpdesk() }
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFFFFF3E0),
+                        border = BorderStroke(1.dp, Color(0xFFFFB74D)),
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text("👥", fontSize = 22.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            text = if (isHindi) "धाम सेवादार सहायता व लाइव चैट" else "Sevadar Helpdesk & Chat",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = currentTheme.primaryColor
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (isHindi) "टोकन, अर्जी, बस व आवास - WhatsApp या चैट से जुड़ें" else "Token, Arzi, Bus & Stay - Connect via WhatsApp or Chat",
+                            fontSize = 11.sp,
+                            color = Color(0xFF64748B),
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+
+                Surface(
+                    color = Color(0xFF25D366),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.padding(start = 8.dp)
+                ) {
+                    Text(
+                        text = if (isHindi) "चैट शुरू करें 💬" else "Chat 💬",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                    )
                 }
             }
         }

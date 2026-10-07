@@ -1,0 +1,595 @@
+<?php
+// ==============================================================================
+// श्री बालाजी कृपा धाम (ग्राम डूँगरा जाट) - सेवादार रियल-टाइम लाइव चैट व हेल्पडेस्क API
+// Ashram Sevadar Real-Time Live Chat & WhatsApp Communication Engine (Zero-Mock)
+// ==============================================================================
+
+if (file_exists(__DIR__ . '/../config/db.php')) {
+    require_once __DIR__ . '/../config/db.php';
+} elseif (file_exists(__DIR__ . '/config/db.php')) {
+    require_once __DIR__ . '/config/db.php';
+} else {
+    if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
+    if (!defined('DB_NAME')) define('DB_NAME', 'u237101617_balaji');
+    if (!defined('DB_USER')) define('DB_USER', 'u237101617_ankitantim0');
+    if (!defined('DB_PASS')) define('DB_PASS', 'Aa@8006518960');
+    function getDB() {
+        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+        return new PDO($dsn, DB_USER, DB_PASS, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+        ]);
+    }
+}
+
+header('Content-Type: application/json; charset=utf-8');
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-SBKD-API-KEY, X-SBKD-ADMIN-TOKEN");
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+$pdo = getDB();
+if (!$pdo) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "error" => "डेटाबेस कनेक्शन उपलब्ध नहीं है।"], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// 1. Auto-create sevadar_chats table
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sevadar_chats (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        msg_id VARCHAR(64) UNIQUE NOT NULL,
+        conversation_id VARCHAR(128) NOT NULL,
+        sevadar_id VARCHAR(64) NOT NULL,
+        sevadar_name VARCHAR(150) NOT NULL,
+        devotee_id VARCHAR(64) NOT NULL,
+        devotee_name VARCHAR(150) NOT NULL,
+        devotee_phone VARCHAR(30) NOT NULL,
+        sender_role VARCHAR(30) NOT NULL, -- 'DEVOTEE', 'SEVADAR', 'ADMIN'
+        message_type VARCHAR(30) NOT NULL DEFAULT 'TEXT', -- 'TEXT', 'PHOTO', 'AUDIO_VOICE', 'DOCUMENT'
+        message_text TEXT NOT NULL,
+        attachment_url VARCHAR(500) DEFAULT '',
+        attachment_type VARCHAR(50) DEFAULT 'NONE',
+        media_duration INT DEFAULT 0, -- Duration in seconds for audio notes
+        status VARCHAR(30) NOT NULL DEFAULT 'SENT', -- 'SENT', 'DELIVERED', 'READ'
+        created_at BIGINT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_conv (conversation_id),
+        INDEX idx_sevadar (sevadar_id),
+        INDEX idx_devotee (devotee_phone),
+        INDEX idx_status (status),
+        INDEX idx_created (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+    // Also ensure sevadars table exists and has department column
+    $pdo->exec("CREATE TABLE IF NOT EXISTS sevadars (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(150) NOT NULL,
+        role VARCHAR(150) NOT NULL DEFAULT 'आश्रम सेवादार',
+        department VARCHAR(150) NOT NULL DEFAULT 'सामान्य आश्रम सहायता',
+        phone VARCHAR(20) DEFAULT '',
+        whatsapp VARCHAR(20) DEFAULT '',
+        photo_url VARCHAR(500) DEFAULT '',
+        bio TEXT,
+        is_available TINYINT(1) DEFAULT 1,
+        display_order INT DEFAULT 0,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at BIGINT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_order (display_order),
+        INDEX idx_active (is_active)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+    // Add department / whatsapp columns to sevadars if missing from older schema
+    try {
+        $pdo->exec("ALTER TABLE sevadars ADD COLUMN department VARCHAR(150) NOT NULL DEFAULT 'सामान्य आश्रम सहायता' AFTER role;");
+    } catch (Exception $ignored) {}
+    try {
+        $pdo->exec("ALTER TABLE sevadars ADD COLUMN whatsapp VARCHAR(20) DEFAULT '' AFTER phone;");
+    } catch (Exception $ignored) {}
+    try {
+        $pdo->exec("ALTER TABLE sevadars ADD COLUMN is_available TINYINT(1) DEFAULT 1 AFTER bio;");
+    } catch (Exception $ignored) {}
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "error" => "टेबल निर्माण में त्रुटि: " . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// Read Action & Input
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
+$input = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $rawInput = file_get_contents('php://input');
+    if (!empty($rawInput)) {
+        $json = json_decode($rawInput, true);
+        if (is_array($json)) {
+            $input = $json;
+            if (empty($action) && isset($json['action'])) {
+                $action = $json['action'];
+            }
+        }
+    }
+    if (empty($input)) {
+        $input = $_POST;
+    }
+} else {
+    $input = $_GET;
+}
+
+// -----------------------------------------------------------------------------
+// 1. ACTION: get_sevadars
+// -----------------------------------------------------------------------------
+if ($action === 'get_sevadars') {
+    try {
+        $stmt = $pdo->query("SELECT * FROM sevadars WHERE is_active = 1 ORDER BY display_order ASC, id ASC");
+        $sevadars = $stmt->fetchAll();
+
+        // Seed defaults if empty
+        if (empty($sevadars)) {
+            $defaults = [
+                [
+                    'name' => 'श्री बालाजी कृपा धाम (आधिकारिक हेल्पलाइन)',
+                    'role' => 'मुख्य आश्रम सेवादार',
+                    'department' => 'सामान्य आश्रम सहायता',
+                    'phone' => '9100100251',
+                    'whatsapp' => '9100100251',
+                    'photo_url' => '',
+                    'bio' => 'धाम पता, नियम, मंगलवार/रविवार दरबार समय व संपूर्ण आधिकारिक जानकारी',
+                    'is_available' => 1,
+                    'display_order' => 1
+                ],
+                [
+                    'name' => 'सेवादार राहुल शर्मा',
+                    'role' => 'टोकन व दर्शन सेवादार',
+                    'department' => 'टोकन व दर्शन सहायता',
+                    'phone' => '9100100252',
+                    'whatsapp' => '9100100252',
+                    'photo_url' => '',
+                    'bio' => 'रविवार व मंगलवार दरबार टोकन, कतार स्थिति व दर्शन व्यवस्था',
+                    'is_available' => 1,
+                    'display_order' => 2
+                ],
+                [
+                    'name' => 'सेवादार अमित त्यागी',
+                    'role' => 'अर्जी व डाक प्रभारी',
+                    'department' => 'अर्जी व डाक सेवा',
+                    'phone' => '9100100253',
+                    'whatsapp' => '9100100253',
+                    'photo_url' => '',
+                    'bio' => 'नारियल अर्जी, डाक द्वारा अर्जी व पर्चा संबंधित मार्गदर्शन',
+                    'is_available' => 1,
+                    'display_order' => 3
+                ],
+                [
+                    'name' => 'सेवादार सोनू चौधरी',
+                    'role' => 'यात्रा व परिवहन सेवादार',
+                    'department' => 'बस व यात्रा व्यवस्था',
+                    'phone' => '9100100254',
+                    'whatsapp' => '9100100254',
+                    'photo_url' => '',
+                    'bio' => 'दिल्ली/नोएडा/बुलंदशहर से धाम तक बस सीट बुकिंग व मार्ग सहायता',
+                    'is_available' => 1,
+                    'display_order' => 4
+                ],
+                [
+                    'name' => 'पंडित जी / मुख्य अर्चक',
+                    'role' => 'यज्ञ व अनुष्ठान सेवादार',
+                    'department' => 'हवन व पूजा सेवा',
+                    'phone' => '9100100255',
+                    'whatsapp' => '9100100255',
+                    'photo_url' => '',
+                    'bio' => 'विशेष संकट निवारण हवन, महायज्ञ संकल्प व पूजा सामग्री',
+                    'is_available' => 1,
+                    'display_order' => 5
+                ],
+                [
+                    'name' => 'सेवादार विजयपाल जी',
+                    'role' => 'भंडारा व धर्मशाला प्रभारी',
+                    'department' => 'भंडारा व आवास',
+                    'phone' => '9100100256',
+                    'whatsapp' => '9100100256',
+                    'photo_url' => '',
+                    'bio' => 'आश्रम विश्राम गृह, धर्मशाला व 24 घंटे महाप्रसाद भंडारा व्यवस्था',
+                    'is_available' => 1,
+                    'display_order' => 6
+                ]
+            ];
+
+            $insStmt = $pdo->prepare("INSERT INTO sevadars (name, role, department, phone, whatsapp, photo_url, bio, is_available, display_order, is_active, created_at) VALUES (:name, :role, :department, :phone, :whatsapp, :photo_url, :bio, :is_available, :display_order, 1, :created_at)");
+            $nowMs = intval(microtime(true) * 1000);
+            foreach ($defaults as $d) {
+                $insStmt->execute([
+                    ':name' => $d['name'],
+                    ':role' => $d['role'],
+                    ':department' => $d['department'],
+                    ':phone' => $d['phone'],
+                    ':whatsapp' => $d['whatsapp'],
+                    ':photo_url' => $d['photo_url'],
+                    ':bio' => $d['bio'],
+                    ':is_available' => $d['is_available'],
+                    ':display_order' => $d['display_order'],
+                    ':created_at' => $nowMs
+                ]);
+            }
+            $sevadars = $pdo->query("SELECT * FROM sevadars WHERE is_active = 1 ORDER BY display_order ASC, id ASC")->fetchAll();
+        }
+
+        echo json_encode([
+            "success" => true,
+            "sevadars" => $sevadars
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 2. ACTION: send_message
+// -----------------------------------------------------------------------------
+if ($action === 'send_message') {
+    try {
+        $sevadarId = trim($input['sevadar_id'] ?? '');
+        $sevadarName = trim($input['sevadar_name'] ?? 'आश्रम सेवादार');
+        $devoteePhone = trim($input['devotee_phone'] ?? '');
+        $devoteeName = trim($input['devotee_name'] ?? 'भक्त');
+        $devoteeId = trim($input['devotee_id'] ?? $devoteePhone);
+        $senderRole = strtoupper(trim($input['sender_role'] ?? 'DEVOTEE'));
+        $messageType = strtoupper(trim($input['message_type'] ?? 'TEXT')); // TEXT, PHOTO, AUDIO_VOICE, DOCUMENT
+        $messageText = trim($input['message_text'] ?? $input['message'] ?? '');
+        $attachmentUrl = trim($input['attachment_url'] ?? $input['attachmentUri'] ?? '');
+        $attachmentType = trim($input['attachment_type'] ?? $input['attachmentType'] ?? 'NONE');
+        $mediaDuration = intval($input['media_duration'] ?? $input['mediaDurationSec'] ?? 0);
+        $conversationId = trim($input['conversation_id'] ?? '');
+
+        if (empty($sevadarId)) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "error" => "सेवादार आईडी अनिवार्य है।"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if (empty($devoteePhone)) {
+            $devoteePhone = "9100100000"; // fallback
+        }
+
+        if (empty($messageText) && empty($attachmentUrl)) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "error" => "संदेश अथवा अटैचमेंट रिक्त नहीं हो सकता।"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if (empty($conversationId)) {
+            $cleanPhone = preg_replace('/[^0-9]/', '', $devoteePhone);
+            $conversationId = "conv_{$sevadarId}_{$cleanPhone}";
+        }
+
+        $nowMs = intval(microtime(true) * 1000);
+        $msgId = trim($input['msg_id'] ?? $input['id'] ?? '');
+        if (empty($msgId)) {
+            $msgId = "msg_" . $nowMs . "_" . bin2hex(random_bytes(3));
+        }
+
+        $status = 'SENT';
+
+        $stmt = $pdo->prepare("INSERT INTO sevadar_chats 
+            (msg_id, conversation_id, sevadar_id, sevadar_name, devotee_id, devotee_name, devotee_phone, sender_role, message_type, message_text, attachment_url, attachment_type, media_duration, status, created_at)
+            VALUES 
+            (:msg_id, :conversation_id, :sevadar_id, :sevadar_name, :devotee_id, :devotee_name, :devotee_phone, :sender_role, :message_type, :message_text, :attachment_url, :attachment_type, :media_duration, :status, :created_at)
+            ON DUPLICATE KEY UPDATE 
+            message_text = VALUES(message_text),
+            attachment_url = VALUES(attachment_url),
+            attachment_type = VALUES(attachment_type),
+            media_duration = VALUES(media_duration),
+            status = VALUES(status)");
+
+        $stmt->execute([
+            ':msg_id' => $msgId,
+            ':conversation_id' => $conversationId,
+            ':sevadar_id' => $sevadarId,
+            ':sevadar_name' => $sevadarName,
+            ':devotee_id' => $devoteeId,
+            ':devotee_name' => $devoteeName,
+            ':devotee_phone' => $devoteePhone,
+            ':sender_role' => $senderRole,
+            ':message_type' => $messageType,
+            ':message_text' => $messageText,
+            ':attachment_url' => $attachmentUrl,
+            ':attachment_type' => $attachmentType,
+            ':media_duration' => $mediaDuration,
+            ':status' => $status,
+            ':created_at' => $nowMs
+        ]);
+
+        echo json_encode([
+            "success" => true,
+            "message" => "संदेश सफलतापूर्वक भेजा गया।",
+            "data" => [
+                "id" => $msgId,
+                "msg_id" => $msgId,
+                "conversation_id" => $conversationId,
+                "sevadar_id" => $sevadarId,
+                "sevadar_name" => $sevadarName,
+                "devotee_id" => $devoteeId,
+                "devotee_name" => $devoteeName,
+                "devotee_phone" => $devoteePhone,
+                "sender_role" => $senderRole,
+                "message_type" => $messageType,
+                "message_text" => $messageText,
+                "attachment_url" => $attachmentUrl,
+                "attachment_type" => $attachmentType,
+                "media_duration" => $mediaDuration,
+                "status" => $status,
+                "created_at" => $nowMs,
+                "timestamp" => $nowMs
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => "संदेश भेजने में त्रुटि: " . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 3. ACTION: get_messages
+// -----------------------------------------------------------------------------
+if ($action === 'get_messages') {
+    try {
+        $conversationId = trim($input['conversation_id'] ?? '');
+        $sevadarId = trim($input['sevadar_id'] ?? '');
+        $devoteePhone = trim($input['devotee_phone'] ?? '');
+        $sinceTimestamp = intval($input['since_timestamp'] ?? 0);
+
+        if (empty($conversationId) && !empty($sevadarId) && !empty($devoteePhone)) {
+            $cleanPhone = preg_replace('/[^0-9]/', '', $devoteePhone);
+            $conversationId = "conv_{$sevadarId}_{$cleanPhone}";
+        }
+
+        if (empty($conversationId) && empty($sevadarId)) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "error" => "conversation_id अथवा sevadar_id अनिवार्य है।"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if (!empty($conversationId)) {
+            if ($sinceTimestamp > 0) {
+                $stmt = $pdo->prepare("SELECT * FROM sevadar_chats WHERE conversation_id = :conv AND created_at > :since ORDER BY created_at ASC LIMIT 300");
+                $stmt->execute([':conv' => $conversationId, ':since' => $sinceTimestamp]);
+            } else {
+                $stmt = $pdo->prepare("SELECT * FROM sevadar_chats WHERE conversation_id = :conv ORDER BY created_at ASC LIMIT 300");
+                $stmt->execute([':conv' => $conversationId]);
+            }
+        } else {
+            // By sevadar only (e.g. for sevadar's inbox or devotee's single-sevadar view)
+            if ($sinceTimestamp > 0) {
+                $stmt = $pdo->prepare("SELECT * FROM sevadar_chats WHERE sevadar_id = :sev AND created_at > :since ORDER BY created_at ASC LIMIT 300");
+                $stmt->execute([':sev' => $sevadarId, ':since' => $sinceTimestamp]);
+            } else {
+                $stmt = $pdo->prepare("SELECT * FROM sevadar_chats WHERE sevadar_id = :sev ORDER BY created_at ASC LIMIT 300");
+                $stmt->execute([':sev' => $sevadarId]);
+            }
+        }
+
+        $rawMessages = $stmt->fetchAll();
+        $formatted = [];
+        foreach ($rawMessages as $m) {
+            $formatted[] = [
+                "id" => $m['msg_id'],
+                "msg_id" => $m['msg_id'],
+                "conversation_id" => $m['conversation_id'],
+                "sevadar_id" => $m['sevadar_id'],
+                "sevadar_name" => $m['sevadar_name'],
+                "devotee_id" => $m['devotee_id'],
+                "devotee_name" => $m['devotee_name'],
+                "devotee_phone" => $m['devotee_phone'],
+                "sender_role" => $m['sender_role'],
+                "is_from_devotee" => ($m['sender_role'] === 'DEVOTEE'),
+                "message_type" => $m['message_type'],
+                "message_text" => $m['message_text'],
+                "message" => $m['message_text'],
+                "attachment_url" => $m['attachment_url'],
+                "attachment_type" => $m['attachment_type'],
+                "media_duration" => intval($m['media_duration']),
+                "status" => $m['status'],
+                "created_at" => intval($m['created_at']),
+                "timestamp" => intval($m['created_at'])
+            ];
+        }
+
+        echo json_encode([
+            "success" => true,
+            "conversation_id" => $conversationId,
+            "count" => count($formatted),
+            "messages" => $formatted
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 4. ACTION: mark_read
+// -----------------------------------------------------------------------------
+if ($action === 'mark_read') {
+    try {
+        $conversationId = trim($input['conversation_id'] ?? '');
+        $readerRole = strtoupper(trim($input['reader_role'] ?? 'DEVOTEE'));
+
+        if (empty($conversationId)) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "error" => "conversation_id अनिवार्य है।"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // Mark messages sent by counterpart as READ
+        $stmt = $pdo->prepare("UPDATE sevadar_chats SET status = 'READ' WHERE conversation_id = :conv AND sender_role != :reader AND status != 'READ'");
+        $stmt->execute([':conv' => $conversationId, ':reader' => $readerRole]);
+        $affected = $stmt->rowCount();
+
+        echo json_encode([
+            "success" => true,
+            "marked_read" => $affected
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 5. ACTION: list_conversations (Admin / Sevadar View)
+// -----------------------------------------------------------------------------
+if ($action === 'list_conversations') {
+    try {
+        $sevadarId = trim($input['sevadar_id'] ?? '');
+        $isSuperAdmin = !empty($input['is_super_admin']) || ($sevadarId === 'SUPER_ADMIN') || empty($sevadarId);
+
+        $sql = "SELECT 
+                    conversation_id,
+                    sevadar_id,
+                    sevadar_name,
+                    devotee_id,
+                    devotee_name,
+                    devotee_phone,
+                    message_text AS last_message,
+                    message_type AS last_message_type,
+                    status AS last_message_status,
+                    created_at AS last_timestamp
+                FROM sevadar_chats 
+                WHERE id IN (
+                    SELECT MAX(id) FROM sevadar_chats " . 
+                    (!$isSuperAdmin ? "WHERE sevadar_id = :sev " : "") . 
+                    "GROUP BY conversation_id
+                )
+                ORDER BY created_at DESC";
+
+        $stmt = $pdo->prepare($sql);
+        if (!$isSuperAdmin) {
+            $stmt->execute([':sev' => $sevadarId]);
+        } else {
+            $stmt->execute();
+        }
+        $convs = $stmt->fetchAll();
+
+        // Calculate unread count for each conversation
+        $unreadStmt = $pdo->prepare("SELECT COUNT(*) AS unread_cnt FROM sevadar_chats WHERE conversation_id = :conv AND sender_role = 'DEVOTEE' AND status != 'READ'");
+        foreach ($convs as &$c) {
+            $unreadStmt->execute([':conv' => $c['conversation_id']]);
+            $res = $unreadStmt->fetch();
+            $c['unread_count'] = intval($res['unread_cnt'] ?? 0);
+        }
+
+        echo json_encode([
+            "success" => true,
+            "conversations" => $convs
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 6. ACTION: upload_chat_media (Real Photo / Voice Note / File Upload)
+// -----------------------------------------------------------------------------
+if ($action === 'upload_chat_media') {
+    try {
+        if (empty($_FILES['file']) && empty($_FILES['media']) && empty($_FILES['photo']) && empty($_FILES['audio'])) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "error" => "कोई फाइल प्राप्त नहीं हुई।"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $file = $_FILES['file'] ?? $_FILES['media'] ?? $_FILES['photo'] ?? $_FILES['audio'];
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "error" => "फाइल अपलोड में त्रुटि (Code: " . $file['error'] . ")"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $uploadDir = __DIR__ . '/../uploads/chat_media/';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
+
+        $origName = $file['name'];
+        $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+
+        $photoExts = ['jpg', 'jpeg', 'png', 'webp'];
+        $audioExts = ['m4a', 'aac', 'mp3', 'wav', 'ogg'];
+        $docExts = ['pdf', 'doc', 'docx', 'txt'];
+
+        $mediaType = 'DOCUMENT';
+        $prefix = 'chat_doc_';
+        if (in_array($ext, $photoExts)) {
+            $mediaType = 'PHOTO';
+            $prefix = 'chat_img_';
+        } elseif (in_array($ext, $audioExts)) {
+            $mediaType = 'AUDIO_VOICE';
+            $prefix = 'chat_voice_';
+        } elseif (in_array($ext, $docExts)) {
+            $mediaType = 'DOCUMENT';
+            $prefix = 'chat_doc_';
+        } else {
+            $ext = 'jpg';
+            $mediaType = 'PHOTO';
+            $prefix = 'chat_img_';
+        }
+
+        $now = time();
+        $uniqueName = $prefix . $now . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+        $destPath = $uploadDir . $uniqueName;
+
+        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
+            http_response_code(500);
+            echo json_encode(["success" => false, "error" => "फाइल सहेजने में विफल।"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
+        $host = $_SERVER['HTTP_HOST'] ?? 'shribalajikripadham.online';
+        $publicUrl = "{$protocol}://{$host}/uploads/chat_media/{$uniqueName}";
+
+        echo json_encode([
+            "success" => true,
+            "message" => "मीडिया सफलतापूर्वक अपलोड हुआ।",
+            "url" => $publicUrl,
+            "media_url" => $publicUrl,
+            "media_type" => $mediaType,
+            "filename" => $uniqueName,
+            "size" => filesize($destPath)
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
+
+// Default fallback
+echo json_encode([
+    "success" => true,
+    "service" => "Shri Balaji Kripa Dham - Sevadar Chat Engine",
+    "version" => "2.0.0",
+    "status" => "ONLINE"
+], JSON_UNESCAPED_UNICODE);

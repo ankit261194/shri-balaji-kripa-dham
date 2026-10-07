@@ -25,6 +25,7 @@ $filesToSync = [
     "api/daily_darshan.php",
     "api/get_queue.php",
     "api/get_sevadars.php",
+    "api/sevadar_chat.php",
     "api/get_donors.php",
     "api/issue_token.php",
     "api/update_token_status.php",

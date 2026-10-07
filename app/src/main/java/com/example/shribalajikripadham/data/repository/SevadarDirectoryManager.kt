@@ -165,9 +165,23 @@ object SevadarDirectoryManager {
      */
     fun sendChatMessage(context: Context, message: SevadarChatMessage) {
         val current = getChatMessages(context, message.sevadarId).toMutableList()
+        current.removeAll { it.id == message.id }
         current.add(message)
+        saveChatMessagesDirect(context, message.sevadarId, current)
+    }
+
+    fun saveChatMessagesDirect(context: Context, sevadarId: String, messages: List<SevadarChatMessage>) {
         val arr = JSONArray()
-        current.forEach { arr.put(it.toJson()) }
-        getChatPrefs(context).edit().putString("chat_${message.sevadarId}", arr.toString()).apply()
+        messages.forEach { arr.put(it.toJson()) }
+        getChatPrefs(context).edit().putString("chat_$sevadarId", arr.toString()).apply()
+    }
+
+    fun updateChatMessageStatus(context: Context, sevadarId: String, messageId: String, newStatus: String) {
+        val current = getChatMessages(context, sevadarId).toMutableList()
+        val idx = current.indexOfFirst { it.id == messageId }
+        if (idx >= 0) {
+            current[idx] = current[idx].copy(status = newStatus)
+            saveChatMessagesDirect(context, sevadarId, current)
+        }
     }
 }

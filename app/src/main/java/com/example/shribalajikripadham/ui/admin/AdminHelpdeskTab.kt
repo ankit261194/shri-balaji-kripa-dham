@@ -23,9 +23,12 @@ import com.example.shribalajikripadham.data.model.AppQuery
 import com.example.shribalajikripadham.data.model.AshramSevadarContact
 import com.example.shribalajikripadham.data.model.SevadarChatMessage
 import com.example.shribalajikripadham.data.repository.AshramRepository
+import com.example.shribalajikripadham.data.repository.SevadarChatRepository
 import com.example.shribalajikripadham.data.repository.SevadarDirectoryManager
 import com.example.shribalajikripadham.theme.MaroonPrimary
 import com.example.shribalajikripadham.theme.SaffronPrimary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -560,6 +563,7 @@ fun AdminInAppChatSection(
     superAdminName: String
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val isSuperAdmin = currentUserRole.equals("SUPER_ADMIN", ignoreCase = true)
     val allSevadars by remember { mutableStateOf(SevadarDirectoryManager.getAllSevadars(context)) }
 
@@ -594,16 +598,36 @@ fun AdminInAppChatSection(
 
     if (selectedSevadar != null) {
         val targetSev = selectedSevadar!!
-        val messages = remember(targetSev, chatRefreshTrigger) {
-            SevadarDirectoryManager.getChatMessagesForRole(
-                context = context,
-                currentUserRole = currentUserRole,
-                currentAdminId = currentAdminId,
-                currentAdminPhone = currentAdminPhone,
-                targetSevadarId = targetSev.id,
-                targetSevadarPhone = targetSev.phoneNumber
+        var liveMessages by remember(targetSev, chatRefreshTrigger) {
+            mutableStateOf(
+                SevadarDirectoryManager.getChatMessagesForRole(
+                    context = context,
+                    currentUserRole = currentUserRole,
+                    currentAdminId = currentAdminId,
+                    currentAdminPhone = currentAdminPhone,
+                    targetSevadarId = targetSev.id,
+                    targetSevadarPhone = targetSev.phoneNumber
+                )
             )
         }
+
+        LaunchedEffect(targetSev.id, chatRefreshTrigger) {
+            while (isActive) {
+                try {
+                    val cloudMsgs = SevadarChatRepository.getMessages(
+                        context = context,
+                        conversationId = "",
+                        sevadarId = targetSev.id,
+                        devoteePhone = ""
+                    )
+                    if (cloudMsgs.isNotEmpty()) {
+                        liveMessages = cloudMsgs
+                    }
+                } catch (e: Exception) {}
+                delay(3500L)
+            }
+        }
+        val messages = liveMessages
         var newReplyText by remember { mutableStateOf("") }
         val isAllowed = isSuperAdmin || (currentAdminId.isNotBlank() && targetSev.id.equals(currentAdminId, ignoreCase = true)) ||
                 (currentAdminPhone.isNotBlank() && currentAdminPhone.replace(Regex("[^0-9]"), "").endsWith(targetSev.phoneNumber.replace(Regex("[^0-9]"), "").takeLast(10)))
@@ -828,20 +852,26 @@ fun AdminInAppChatSection(
                         Button(
                             onClick = {
                                 if (newReplyText.isNotBlank()) {
+                                    val textToSend = newReplyText.trim()
+                                    newReplyText = ""
                                     val replyMsg = SevadarChatMessage(
-                                        id = "reply_" + System.currentTimeMillis(),
+                                        id = "reply_" + System.currentTimeMillis() + "_" + (100..999).random(),
                                         sevadarId = targetSev.id,
+                                        sevadarName = targetSev.name,
                                         senderName = if (isSuperAdmin) "सुपर एडमिन ($superAdminName)" else superAdminName,
+                                        senderRole = if (isSuperAdmin) "SUPER_ADMIN" else "SEVADAR",
                                         isFromDevotee = false,
-                                        message = newReplyText.trim(),
+                                        message = textToSend,
                                         attachmentUri = null,
                                         attachmentType = "NONE",
+                                        status = "DELIVERED",
                                         timestamp = System.currentTimeMillis()
                                     )
-                                    SevadarDirectoryManager.sendChatMessage(context, replyMsg)
-                                    newReplyText = ""
-                                    chatRefreshTrigger++
-                                    Toast.makeText(context, "संदेश भेजा गया", Toast.LENGTH_SHORT).show()
+                                    scope.launch {
+                                        SevadarChatRepository.sendMessage(context, replyMsg)
+                                        chatRefreshTrigger++
+                                        Toast.makeText(context, "संदेश भेजा गया 🚀", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary),

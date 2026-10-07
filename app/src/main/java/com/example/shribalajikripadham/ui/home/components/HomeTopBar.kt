@@ -32,6 +32,7 @@ fun HomeTopBar(
     onOpenDrawer: () -> Unit,
     onRefresh: () -> Unit,
     onOpenManualPdf: () -> Unit,
+    onOpenSevadarChat: () -> Unit,
     onToggleLanguage: () -> Unit,
     onOpenAdmin: () -> Unit
 ) {
@@ -87,6 +88,11 @@ fun HomeTopBar(
             // Fast Refresh
             IconButton(onClick = onRefresh) {
                 Text("🔄", fontSize = 17.sp)
+            }
+
+            // Sevadar Helpdesk & Chat
+            IconButton(onClick = onOpenSevadarChat) {
+                Text("💬", fontSize = 18.sp)
             }
 
             // PDF Guide

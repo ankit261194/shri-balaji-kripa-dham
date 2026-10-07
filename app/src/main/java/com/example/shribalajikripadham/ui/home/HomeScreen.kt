@@ -60,6 +60,7 @@ fun HomeScreen(
     var settings by remember { mutableStateOf(AshramSettings()) }
     var selectedTab by remember { mutableStateOf(ProHomeTab.DARSHAN) }
     var viewingLyricsTrack by remember { mutableStateOf<SacredTrack?>(null) }
+    var showSevadarHelpdesk by remember { mutableStateOf(false) }
     var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
     // Live Settings & Adaptive Background Sync
@@ -133,6 +134,10 @@ fun HomeScreen(
                     scope.launch { drawerState.close() }
                     onNavigateToTravelGuide()
                 },
+                onOpenSevadarHelpdesk = {
+                    scope.launch { drawerState.close() }
+                    showSevadarHelpdesk = true
+                },
                 onNavigateToAdmin = {
                     scope.launch { drawerState.close() }
                     onNavigateToAdmin()
@@ -202,6 +207,7 @@ fun HomeScreen(
                             Toast.makeText(context, "PDF तैयार करने में असमर्थ", Toast.LENGTH_SHORT).show()
                         }
                     },
+                    onOpenSevadarChat = { showSevadarHelpdesk = true },
                     onToggleLanguage = onToggleLanguage,
                     onOpenAdmin = onNavigateToAdmin
                 )
@@ -265,14 +271,15 @@ fun HomeScreen(
                                 )
                             }
 
-                            // 5. Four Core Sacred Services (2x2 Grid)
+                            // 5. Four Core Sacred Services (2x2 Grid + Sevadar Connect)
                             QuickSacredServicesGrid(
                                 isHindi = isHindi,
                                 currentTheme = currentTheme,
                                 onNavigateToAarti = { selectedTab = ProHomeTab.BHAKTI },
                                 onNavigateToGranth = onNavigateToSacredGranth,
                                 onNavigateToPanchang = onNavigateToPanchang,
-                                onNavigateToTravelGuide = onNavigateToTravelGuide
+                                onNavigateToTravelGuide = onNavigateToTravelGuide,
+                                onOpenSevadarHelpdesk = { showSevadarHelpdesk = true }
                             )
                         }
 
@@ -327,6 +334,14 @@ fun HomeScreen(
             track = track,
             currentTheme = currentTheme,
             onDismiss = { viewingLyricsTrack = null }
+        )
+    }
+
+    // Sevadar Helpdesk & WhatsApp In-App Live Chat Modal Dialog
+    if (showSevadarHelpdesk) {
+        com.example.shribalajikripadham.ui.feedback.SevadarHelpdeskDialog(
+            isHindi = isHindi,
+            onDismiss = { showSevadarHelpdesk = false }
         )
     }
 }
