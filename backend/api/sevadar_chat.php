@@ -87,16 +87,23 @@ try {
         INDEX idx_active (is_active)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
-    // Add department / whatsapp columns to sevadars if missing from older schema
-    try {
-        $pdo->exec("ALTER TABLE sevadars ADD COLUMN department VARCHAR(150) NOT NULL DEFAULT 'सामान्य आश्रम सहायता' AFTER role;");
-    } catch (Exception $ignored) {}
-    try {
-        $pdo->exec("ALTER TABLE sevadars ADD COLUMN whatsapp VARCHAR(20) DEFAULT '' AFTER phone;");
-    } catch (Exception $ignored) {}
-    try {
-        $pdo->exec("ALTER TABLE sevadars ADD COLUMN is_available TINYINT(1) DEFAULT 1 AFTER bio;");
-    } catch (Exception $ignored) {}
+    // Add missing columns to sevadars if missing from older schema
+    $sevadarAlters = [
+        "ALTER TABLE sevadars ADD COLUMN department VARCHAR(150) NOT NULL DEFAULT 'सामान्य आश्रम सहायता'",
+        "ALTER TABLE sevadars ADD COLUMN phone VARCHAR(20) DEFAULT ''",
+        "ALTER TABLE sevadars ADD COLUMN whatsapp VARCHAR(20) DEFAULT ''",
+        "ALTER TABLE sevadars ADD COLUMN photo_url VARCHAR(500) DEFAULT ''",
+        "ALTER TABLE sevadars ADD COLUMN bio TEXT",
+        "ALTER TABLE sevadars ADD COLUMN is_available TINYINT(1) DEFAULT 1",
+        "ALTER TABLE sevadars ADD COLUMN display_order INT DEFAULT 0",
+        "ALTER TABLE sevadars ADD COLUMN is_active TINYINT(1) DEFAULT 1",
+        "ALTER TABLE sevadars ADD COLUMN created_at BIGINT DEFAULT 0"
+    ];
+    foreach ($sevadarAlters as $alterSql) {
+        try {
+            $pdo->exec($alterSql);
+        } catch (Exception $ignored) {}
+    }
 
 } catch (Exception $e) {
     http_response_code(500);
