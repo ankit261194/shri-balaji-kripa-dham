@@ -41,7 +41,7 @@
     "is_yatra_service_enabled": false,
     "is_live_counter_visible": true,
     "is_events_visible": true,
-    "is_aarti_timings_visible": true,
+    "is_aarti_timings_visible": false,
     "is_guruji_info_visible": true,
     "is_emergency_notice_visible": false,
     "scheduled_token_open_timestamp": 0,

@@ -43,12 +43,12 @@ fun QuickSacredServicesGrid(
 ) {
     val services = listOf(
         SacredServiceItem(
-            id = "aarti",
+            id = "bhajan",
             icon = "📿",
-            titleHindi = "नित्य आरती व भजन",
-            titleEnglish = "Aarti & Bhajans",
-            subtitleHindi = "15 पावन पाठ व ऑडियो",
-            subtitleEnglish = "15 Devotional Tracks",
+            titleHindi = "पावन भजन व अमृतवाणी",
+            titleEnglish = "Devotional Bhajans",
+            subtitleHindi = "श्री बालाजी भजन व स्तुति (ऑडियो)",
+            subtitleEnglish = "Devotional Audio Tracks",
             onClick = onNavigateToAarti
         ),
         SacredServiceItem(

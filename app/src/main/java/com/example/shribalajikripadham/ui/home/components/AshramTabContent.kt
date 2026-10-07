@@ -82,7 +82,7 @@ fun AshramTabContent(
             }
         }
 
-        // 2. Darbar & Aarti Timings Card
+        // 2. Darbar Timings Card
         Card(
             colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
             shape = RoundedCornerShape(14.dp),
@@ -92,7 +92,7 @@ fun AshramTabContent(
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Text(
-                    text = if (isHindi) "⏰ पावन आरती व दरबार समय" else "⏰ Sacred Timings",
+                    text = if (isHindi) "⏰ पावन दरबार समय" else "⏰ Sacred Darbar Timings",
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.5.sp,
                     color = currentTheme.primaryColor
@@ -100,9 +100,18 @@ fun AshramTabContent(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                TimingRow("मंगलवार दरबार (बुलन्दशहर)", "प्रातः 9:00 बजे से दोपहर 2:00 बजे तक")
-                TimingRow("रविवार दरबार (डूँगरा जाट)", "प्रातः 8:00 बजे से प्रभु इच्छा तक")
-                TimingRow("संध्या आरती", "सायं 7:00 बजे प्रतिदिन")
+                TimingRow(
+                    label = if (isHindi) "रविवार दरबार (डूँगरा जाट)" else "Sunday Darbar (Dungra Jaat)",
+                    time = settings.darbarTimings.ifBlank { if (isHindi) "प्रातः 8:00 बजे से प्रभु इच्छा तक" else "8:00 AM onwards" }
+                )
+
+                // मंगलवार दरबार केवल तभी दिखेगा जब सुपर एडमिन ने मास्टर स्विच चालू किया हो
+                if (settings.isTuesdayDarbarEnabled) {
+                    TimingRow(
+                        label = if (isHindi) "मंगलवार दरबार (बुलन्दशहर)" else "Tuesday Darbar (Bulandshahr)",
+                        time = settings.tuesdayDarbarTimings.ifBlank { if (isHindi) "प्रातः 9:00 बजे से दोपहर 2:00 बजे तक" else "9:00 AM - 2:00 PM" }
+                    )
+                }
             }
         }
 

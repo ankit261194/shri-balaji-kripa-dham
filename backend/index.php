@@ -1509,8 +1509,9 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                 </div>
             </div>
 
-            <!-- Tuesday Darbar Token Banner (Bulandshahr) -->
-            <div class="live-token-banner tuesday-banner" id="tuesdayDarbarSection" style="margin-bottom: 0; background: linear-gradient(135deg, #1A237E, #303F9F); border-color: #FFD54F; box-shadow: 0 10px 30px rgba(26, 35, 126, 0.4); <?= $isTuesdayDarbarEnabled ? 'display: flex;' : 'display: none;' ?>">
+            <!-- Tuesday Darbar Token Banner (Bulandshahr - Controlled by Super Admin Master Button) -->
+            <?php if (!empty($settings['is_tuesday_darbar_enabled'])): ?>
+            <div class="live-token-banner tuesday-banner" id="tuesdayDarbarSection" style="margin-bottom: 0; background: linear-gradient(135deg, #1A237E, #303F9F); border-color: #FFD54F; box-shadow: 0 10px 30px rgba(26, 35, 126, 0.4);">
                 <div class="live-token-title">
                     <span style="font-size: 2.2rem;">🚩</span>
                     <div>
@@ -1529,6 +1530,7 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                     </span>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
 
         <!-- Big Download Call To Action -->
@@ -1729,33 +1731,34 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
             </div>
         </div>
 
-        <!-- Aarti & Darshan Timings Card (100% Dynamic CMS from App) -->
+        <!-- Aarti & Darshan Timings Card (Only if enabled and configured by Admin) -->
+        <?php if (!empty($settings['is_aarti_timings_visible']) && !empty($settings['aarti_mangala_time'])): ?>
         <div class="info-box" style="border: 2px solid #FF8F00; background: #FFFDF7;">
-            <h4>🪔 पावन आरती एवं दर्शन समय-सारणी</h4>
+            <h4>🪔 पावन आरती समय</h4>
             <div class="timing-row">
                 <span>मंगला आरती</span>
-                <span class="time" id="dynamicAartiMangala"><?= !empty($settings['aarti_mangala_time']) ? htmlspecialchars($settings['aarti_mangala_time']) : 'प्रातः 05:30 बजे' ?></span>
+                <span class="time" id="dynamicAartiMangala"><?= htmlspecialchars($settings['aarti_mangala_time']) ?></span>
             </div>
             <?php if (!empty($settings['aarti_balbhog_time'])): ?>
             <div class="timing-row" id="rowAartiBalbhog">
                 <span>बालभोग आरती</span>
                 <span class="time" id="dynamicAartiBalbhog"><?= htmlspecialchars($settings['aarti_balbhog_time']) ?></span>
             </div>
-            <?php else: ?>
-            <div class="timing-row" id="rowAartiBalbhog" style="display: none;">
-                <span>बालभोग आरती</span>
-                <span class="time" id="dynamicAartiBalbhog"></span>
-            </div>
             <?php endif; ?>
+            <?php if (!empty($settings['aarti_sandhya_time'])): ?>
             <div class="timing-row">
                 <span>संध्या आरती</span>
-                <span class="time" id="dynamicAartiSandhya"><?= !empty($settings['aarti_sandhya_time']) ? htmlspecialchars($settings['aarti_sandhya_time']) : 'सायं 06:30 बजे' ?></span>
+                <span class="time" id="dynamicAartiSandhya"><?= htmlspecialchars($settings['aarti_sandhya_time']) ?></span>
             </div>
+            <?php endif; ?>
+            <?php if (!empty($settings['aarti_shayan_time'])): ?>
             <div class="timing-row">
                 <span>शयन आरती</span>
-                <span class="time" id="dynamicAartiShayan"><?= !empty($settings['aarti_shayan_time']) ? htmlspecialchars($settings['aarti_shayan_time']) : 'रात्रि 09:00 बजे' ?></span>
+                <span class="time" id="dynamicAartiShayan"><?= htmlspecialchars($settings['aarti_shayan_time']) ?></span>
             </div>
+            <?php endif; ?>
         </div>
+        <?php endif; ?>
 
         <!-- Seva, Donation & Bank Details Card (App Controlled) -->
         <div class="info-box" style="border: 2px solid var(--gold); background: #FFFDF7;">
