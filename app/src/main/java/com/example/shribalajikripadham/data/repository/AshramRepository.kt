@@ -2667,6 +2667,38 @@ class AshramRepository(context: Context) {
             admin = parseAdminCursor(cursor)
         }
         cursor.close()
+
+        // If local check failed, check Hostinger central server API directly
+        if (admin == null) {
+            try {
+                val (serverOk, _) = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.loginAdminOnServer(appContext, "admin", trimmedPass)
+                if (serverOk) {
+                    val wDb = dbHelper.writableDatabase
+                    val cv = android.content.ContentValues().apply {
+                        put("name", "Ankit Chaudhary (Super Admin)")
+                        put("username", "admin")
+                        put("role", AdminRole.SUPER_ADMIN.name)
+                        put("password_hash", passHash)
+                        put("is_active", 1)
+                        put("can_manage_tokens", 1)
+                        put("can_issue_manual_tokens", 1)
+                        put("can_manage_yatra", 1)
+                        put("can_manage_expenses", 1)
+                        put("can_change_location", 1)
+                        put("can_send_notifications", 1)
+                        put("can_edit_ashram_info", 1)
+                        put("can_manage_admins", 1)
+                    }
+                    val updatedRows = wDb.update("admins", cv, "role = 'SUPER_ADMIN' OR username = 'admin'", null)
+                    if (updatedRows == 0) {
+                        wDb.insert("admins", null, cv)
+                    }
+                    admin = getSuperAdmin()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
         admin
     }
 

@@ -76,14 +76,12 @@ fun HomeScreen(
 
     // Proactive In-App Update Prompt on App Launch
     LaunchedEffect(Unit) {
-        delay(1200L)
+        delay(800L)
         try {
             val currentCode = AppUpdateManager.getCurrentVersionCode(context)
             val onlineInfo = AppUpdateManager.fetchLatestUpdateFromOnline()
             if (onlineInfo != null && onlineInfo.versionCode > currentCode) {
-                if (!AppUpdateManager.isUpdateSnoozed(context, onlineInfo.versionCode)) {
-                    updateAvailableInfo = onlineInfo
-                }
+                updateAvailableInfo = onlineInfo
             }
         } catch (_: Exception) {}
     }
@@ -174,9 +172,9 @@ fun HomeScreen(
                         val currentCode = AppUpdateManager.getCurrentVersionCode(context)
                         val onlineInfo = AppUpdateManager.fetchLatestUpdateFromOnline()
                         if (onlineInfo != null && onlineInfo.versionCode > currentCode) {
-                            AppUpdateManager.downloadAndInstallUpdate(context, onlineInfo.apkUrl)
+                            updateAvailableInfo = onlineInfo
                         } else {
-                            Toast.makeText(context, if (isHindi) "✅ आपका ऐप नवीनतम वर्जन पर है!" else "App is up to date!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, if (isHindi) "✅ आपका ऐप नवीनतम वर्जन पर है (Build #$currentCode)!" else "App is up to date (Build #$currentCode)!", Toast.LENGTH_LONG).show()
                         }
                     }
                 },

@@ -179,6 +179,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+
+        // Auto-resume pending APK install if user just granted Unknown Sources permission
+        val pendingApk = com.example.shribalajikripadham.util.AppUpdateManager.pendingInstallApk
+        if (pendingApk != null && pendingApk.exists() && com.example.shribalajikripadham.util.AppUpdateManager.hasInstallPermission(this)) {
+            com.example.shribalajikripadham.util.AppUpdateManager.pendingInstallApk = null
+            com.example.shribalajikripadham.util.AppUpdateManager.triggerApkInstall(this, pendingApk)
+        }
+
         // Silent Force-Refresh on Resume: Trigger live config & token status sync instantly
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
             try {

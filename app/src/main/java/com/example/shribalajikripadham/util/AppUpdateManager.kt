@@ -317,6 +317,8 @@ object AppUpdateManager {
         }
     }
 
+    var pendingInstallApk: File? = null
+
     /**
      * Directly triggers the Android Package Installer for the given APK file.
      */
@@ -348,6 +350,7 @@ object AppUpdateManager {
             }
 
             if (!hasInstallPermission(context)) {
+                pendingInstallApk = file
                 requestInstallPermission(context)
                 Toast.makeText(
                     context,
@@ -443,8 +446,10 @@ object AppUpdateManager {
             return@withContext
         }
 
-        // Choose cacheDir/updates folder (guaranteed FileProvider compatibility across all Android 7-15)
-        val updateDir = File(context.cacheDir, "updates").apply { mkdirs() }
+        // Choose external files dir (guaranteed PackageInstaller readability across all Android versions)
+        val extDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+        val updateDir = extDir ?: File(context.cacheDir, "updates")
+        updateDir.mkdirs()
         val targetFile = File(updateDir, "ShriBalajiKripaDham_update.apk")
 
         try {
@@ -459,16 +464,19 @@ object AppUpdateManager {
 
             val candidateUrls = mutableListOf<String>()
 
-            // 1. Prioritize dynamic release APK URL from version.json if distinct
+            // 1. Direct Static High-Speed Ashram Server endpoints (Zero PHP overhead, byte-for-byte verified)
+            candidateUrls.add("https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk")
+            candidateUrls.add("https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-v147.apk")
+
+            // 2. Dynamic release APK URL from version.json if distinct
             if (finalUrl.isNotBlank() && !candidateUrls.contains(finalUrl.trim())) {
                 candidateUrls.add(finalUrl.trim())
             }
 
-            // 2. Direct High-Speed Ashram Server endpoints (Bypasses CDN cache issues)
+            // 3. Fallback PHP dynamic download endpoints
             val ashramEndpoints = listOf(
                 "https://shribalajikripadham.online/download.php?dl=1",
-                "https://shribalajikripadham.online/download.php",
-                "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk"
+                "https://shribalajikripadham.online/download.php"
             )
             for (af in ashramEndpoints) {
                 if (!candidateUrls.contains(af)) {
@@ -476,7 +484,7 @@ object AppUpdateManager {
                 }
             }
 
-            // 3. GitHub Release official fallback asset
+            // 4. GitHub Release official fallback asset
             val gitHubUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk"
             if (!candidateUrls.contains(gitHubUrl)) {
                 candidateUrls.add(gitHubUrl)
@@ -706,50 +714,50 @@ object AppUpdateManager {
         val finalUrl = if (downloadUrl.isNotBlank()) downloadUrl.trim() else DEFAULT_APK_URL
 
         try {
-            val uri = Uri.parse(finalUrl)
-            if (finalUrl.endsWith(".apk", ignoreCase = true)) {
-                val request = DownloadManager.Request(uri).apply {
-                    setTitle("Shri Balaji Kripa Dham Update")
-                    setDescription("Downloading latest version...")
-                    setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "ShriBalajiKripaDham_update.apk")
-                    setAllowedOverMetered(true)
-                    setAllowedOverRoaming(true)
-                }
+            // Prefer direct static APK URL if passing a dynamic script URL
+            val downloadEndpoint = if (finalUrl.contains("shribalajikripadham.online") && !finalUrl.endsWith(".apk", ignoreCase = true)) {
+                "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk"
+            } else {
+                finalUrl
+            }
+            val uri = Uri.parse(downloadEndpoint)
+            val request = DownloadManager.Request(uri).apply {
+                setTitle("Shri Balaji Kripa Dham Update")
+                setDescription("डाउनलोड हो रहा है (Downloading latest version)...")
+                setMimeType("application/vnd.android.package-archive")
+                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "ShriBalajiKripaDham_update.apk")
+                setAllowedOverMetered(true)
+                setAllowedOverRoaming(true)
+            }
 
-                val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                val downloadId = downloadManager.enqueue(request)
+            val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val downloadId = downloadManager.enqueue(request)
 
-                val onComplete = object : BroadcastReceiver() {
-                    override fun onReceive(ctxt: Context, intent: Intent) {
-                        val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                        if (id == downloadId) {
-                            val downloadedFile = File(
-                                context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
-                                "ShriBalajiKripaDham_update.apk"
-                            )
-                            if (downloadedFile.exists()) {
-                                triggerApkInstall(context, downloadedFile)
-                            }
-                            try {
-                                context.unregisterReceiver(this)
-                            } catch (_: Exception) {}
+            val onComplete = object : BroadcastReceiver() {
+                override fun onReceive(ctxt: Context, intent: Intent) {
+                    val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                    if (id == downloadId) {
+                        val downloadedFile = File(
+                            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                            "ShriBalajiKripaDham_update.apk"
+                        )
+                        if (downloadedFile.exists()) {
+                            triggerApkInstall(context, downloadedFile)
                         }
+                        try {
+                            context.unregisterReceiver(this)
+                        } catch (_: Exception) {}
                     }
                 }
-                val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    context.registerReceiver(onComplete, filter, Context.RECEIVER_EXPORTED)
-                } else {
-                    context.registerReceiver(onComplete, filter)
-                }
-                Toast.makeText(context, "डाउनलोड प्रारंभ हो गया है... (Download started)", Toast.LENGTH_SHORT).show()
-            } else {
-                val browserIntent = Intent(Intent.ACTION_VIEW, uri).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                context.startActivity(browserIntent)
             }
+            val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(onComplete, filter, Context.RECEIVER_EXPORTED)
+            } else {
+                context.registerReceiver(onComplete, filter)
+            }
+            Toast.makeText(context, "डाउनलोड प्रारंभ हो गया है... (Download started)", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(finalUrl)).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK
