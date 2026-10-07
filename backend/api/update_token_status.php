@@ -154,32 +154,11 @@ try {
                     ':now' => $now
                 ]);
 
-                // Dispatch OneSignal push notification alert to devotee
-                if (file_exists(__DIR__ . '/onesignal_service.php')) {
-                    require_once __DIR__ . '/onesignal_service.php';
-                    if (function_exists('sendOneSignalTokenAlert')) {
-                        @sendOneSignalTokenAlert($cleanPhone, $tokenNumber, $devotee['patient_name'] ?? '');
-                    }
-                }
-
-                // Dispatch FCM to device tokens
-                $fcmStmt = $pdo->prepare("SELECT fcm_token FROM fcm_device_tokens WHERE phone_number = :phone");
-                $fcmStmt->execute([':phone' => $cleanPhone]);
-                $fcmTokens = $fcmStmt->fetchAll(PDO::FETCH_COLUMN);
-
-                if (!empty($fcmTokens)) {
-                    if (file_exists(__DIR__ . '/send_fcm.php')) {
-                        require_once __DIR__ . '/send_fcm.php';
-                        if (function_exists('sendFcmV1')) {
-                            foreach ($fcmTokens as $fToken) {
-                                @sendFcmV1($fToken, $title, $body, [
-                                    'type' => 'TOKEN_CALL',
-                                    'token_number' => strval($tokenNumber),
-                                    'patient_name' => $devotee['patient_name'],
-                                    'status' => 'SERVING'
-                                ]);
-                            }
-                        }
+                // Multi-channel Push Notification Dispatch (OneSignal + FCM HTTP v1 + In-App DB)
+                if (file_exists(__DIR__ . '/send_fcm.php')) {
+                    require_once __DIR__ . '/send_fcm.php';
+                    if (function_exists('dispatchDevoteeNotification')) {
+                        @dispatchDevoteeNotification($cleanPhone, $tokenNumber, $devotee['patient_name'] ?? '', $title, $body, 'TOKEN_CALL');
                     }
                 }
             }

@@ -85,8 +85,8 @@ Options -Indexes
     Header set Expires "0"
 </FilesMatch>
 
-# Protect sensitive storage directories
-<FilesMatch "\.(jsonl|sql|log|lock)$">
+# Protect sensitive storage directories and service account credentials
+<FilesMatch "(firebase_service_account\.json|service_account|\.jsonl|\.sql|\.log|\.lock)$">
     Order allow,deny
     Deny from all
 </FilesMatch>
