@@ -380,7 +380,9 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     tuesday_current_serving_token INTEGER NOT NULL DEFAULT 0,
                     tuesday_running_token_number INTEGER NOT NULL DEFAULT 1,
                     tuesday_token_notice TEXT NOT NULL DEFAULT 'बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।',
-                    whatsapp_channel_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0'
+                    whatsapp_channel_url TEXT NOT NULL DEFAULT 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0',
+                    havan_estimated_cost INTEGER NOT NULL DEFAULT 14000,
+                    havan_rules_notice TEXT NOT NULL DEFAULT 'हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।'
                 )
             """.trimIndent())
             autoMigrateSettingsColumns(db)
@@ -959,7 +961,9 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             "ALTER TABLE admins ADD COLUMN can_view_payment_ledger INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE admins ADD COLUMN can_manage_website INTEGER NOT NULL DEFAULT 0",
             "ALTER TABLE admins ADD COLUMN can_manage_services_toggles INTEGER NOT NULL DEFAULT 0",
-            "ALTER TABLE admins ADD COLUMN can_manage_distances INTEGER NOT NULL DEFAULT 0"
+            "ALTER TABLE admins ADD COLUMN can_manage_distances INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE ashram_settings ADD COLUMN havan_estimated_cost INTEGER NOT NULL DEFAULT 14000",
+            "ALTER TABLE ashram_settings ADD COLUMN havan_rules_notice TEXT NOT NULL DEFAULT 'हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।'"
         )
         for (sql in alterStatements) {
             try {

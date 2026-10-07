@@ -202,12 +202,29 @@ if ($action === 'SUBMIT' || $action === 'SUBMIT_APPLICATION' || ($_SERVER['REQUE
         exit;
     }
 
-    // MANDATORY ACKNOWLEDGEMENT CHECK: Cost ₹14,000 + Devotee must pay travel fare
+    // Fetch dynamic estimated cost from settings
+    $dynamicCost = 14000;
+    $dynamicRules = "हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।";
+    try {
+        $cStmt = $pdo->query("SELECT havan_estimated_cost, havan_rules_notice FROM ashram_settings WHERE id = 1 LIMIT 1");
+        $cRow = $cStmt ? $cStmt->fetch(PDO::FETCH_ASSOC) : null;
+        if ($cRow) {
+            if (isset($cRow['havan_estimated_cost']) && intval($cRow['havan_estimated_cost']) > 0) {
+                $dynamicCost = intval($cRow['havan_estimated_cost']);
+            }
+            if (!empty($cRow['havan_rules_notice'])) {
+                $dynamicRules = $cRow['havan_rules_notice'];
+            }
+        }
+    } catch (Throwable $e) {}
+
+    // MANDATORY ACKNOWLEDGEMENT CHECK: Cost + Devotee must pay travel fare
     if ($costAck !== 1 || $travelFareAck !== 1) {
+        $formattedCost = number_format($dynamicCost);
         http_response_code(400);
         echo json_encode([
             "success" => false, 
-            "error" => "हवन आवेदन के लिए यह स्वीकार करना अनिवार्य है कि:\n1. हवन का अनुमानित खर्च लगभग ₹14,000 होगा।\n2. गाड़ी का आने-जाने का सम्पूर्ण किराया भगत को स्वयं देना होगा।"
+            "error" => "हवन आवेदन के लिए यह स्वीकार करना अनिवार्य है कि:\n1. हवन का अनुमानित खर्च लगभग ₹{$formattedCost} होगा।\n2. गाड़ी का आने-जाने का सम्पूर्ण किराया भगत को स्वयं देना होगा।"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -255,7 +272,7 @@ if ($action === 'SUBMIT' || $action === 'SUBMIT_APPLICATION' || ($_SERVER['REQUE
         :app_no, :name, :phone, :wa, :pref_date,
         :addr, :vc, :dist, :state, :pin,
         :gotra, :fam_cnt, :purpose, :prob,
-        14000, 1, 1, 'PENDING',
+        :est_cost, 1, 1, 'PENDING',
         :now, :ip, :device
     )");
 
@@ -274,6 +291,7 @@ if ($action === 'SUBMIT' || $action === 'SUBMIT_APPLICATION' || ($_SERVER['REQUE
         ':fam_cnt' => $familyMembers > 0 ? $familyMembers : 1,
         ':purpose' => $havanPurpose,
         ':prob' => $problemDetails,
+        ':est_cost' => $dynamicCost,
         ':now' => $now,
         ':ip' => $clientIp,
         ':device' => $deviceInfo
@@ -290,9 +308,35 @@ if ($action === 'SUBMIT' || $action === 'SUBMIT_APPLICATION' || ($_SERVER['REQUE
         "application_no" => $appNo,
         "devotee_name" => $devoteeName,
         "preferred_date" => $preferredDate,
-        "estimated_cost" => 14000,
+        "estimated_cost" => $dynamicCost,
         "travel_fare_note" => "गाड़ी का आने-जाने का किराया यजमान द्वारा देय है।",
         "message" => "जय श्री बालाजी! आपका पावन हवन आवेदन सफलतापूर्वक दर्ज हो गया है। आवेदन क्रमांक: {$appNo}। पूज्य गुरुजी के मार्गदर्शन में आश्रम सेवा दल शीघ्र ही आपसे फोन/व्हाट्सएप पर संपर्क करेगा।"
+    ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// PUBLIC: GET HAVAN CONFIG (Dynamic Cost & Rules)
+// -----------------------------------------------------------------------------
+if ($action === 'GET_CONFIG' || $action === 'GET_HAVAN_CONFIG') {
+    $cost = 14000;
+    $rules = "हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।";
+    try {
+        $cStmt = $pdo->query("SELECT havan_estimated_cost, havan_rules_notice FROM ashram_settings WHERE id = 1 LIMIT 1");
+        $cRow = $cStmt ? $cStmt->fetch(PDO::FETCH_ASSOC) : null;
+        if ($cRow) {
+            if (isset($cRow['havan_estimated_cost']) && intval($cRow['havan_estimated_cost']) > 0) {
+                $cost = intval($cRow['havan_estimated_cost']);
+            }
+            if (!empty($cRow['havan_rules_notice'])) {
+                $rules = $cRow['havan_rules_notice'];
+            }
+        }
+    } catch (Throwable $e) {}
+    echo json_encode([
+        "success" => true,
+        "havan_estimated_cost" => $cost,
+        "havan_rules_notice" => $rules
     ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }
@@ -369,6 +413,51 @@ if (!$adminUser) {
         "error" => "इस सेवा हेतु एडमिन प्रमाणीकरण अनिवार्य है (मान्य PIN अथवा एडमिन टोकन प्रदान करें)।"
     ], JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+// -----------------------------------------------------------------------------
+// SAVE HAVAN CONFIG (Super Admin & Havan Admin CMS Action)
+// -----------------------------------------------------------------------------
+if ($action === 'SAVE_CONFIG' || $action === 'SAVE_HAVAN_CONFIG') {
+    if (empty($adminUser['is_super']) && empty($adminUser['can_manage_havan'])) {
+        http_response_code(403);
+        echo json_encode(["success" => false, "error" => "यह अधिकार केवल सुपर एडमिन अथवा अधिकृत व्यवस्थापक को है।"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $cost = intval($input['havan_estimated_cost'] ?? $input['cost'] ?? 14000);
+    $rules = trim($input['havan_rules_notice'] ?? $input['rules'] ?? '');
+
+    try {
+        try {
+            $pdo->exec("ALTER TABLE ashram_settings ADD COLUMN havan_estimated_cost INT NOT NULL DEFAULT 14000");
+        } catch (Throwable $t) {}
+        try {
+            $pdo->exec("ALTER TABLE ashram_settings ADD COLUMN havan_rules_notice TEXT");
+        } catch (Throwable $t) {}
+
+        $uStmt = $pdo->prepare("UPDATE ashram_settings SET havan_estimated_cost = :c, havan_rules_notice = :r, config_version = COALESCE(config_version, 1) + 1 WHERE id = 1");
+        $uStmt->execute([':c' => $cost, ':r' => $rules]);
+
+        // Invalidate cache
+        $cacheDir = __DIR__ . '/../cache';
+        $allCaches = glob($cacheDir . '/*');
+        if ($allCaches) {
+            @array_map('unlink', $allCaches);
+        }
+
+        echo json_encode([
+            "success" => true,
+            "message" => "हवन सेटिंग्स (अनुमानित खर्च ₹" . number_format($cost) . " व नियम) सफलतापूर्वक अपडेट व लाइव प्रसारित हुईं!",
+            "havan_estimated_cost" => $cost,
+            "havan_rules_notice" => $rules
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        exit;
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => "सेटिंग्स सुरक्षित करने में त्रुटि: " . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 }
 
 // -----------------------------------------------------------------------------

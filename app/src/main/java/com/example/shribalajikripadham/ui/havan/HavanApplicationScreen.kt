@@ -25,6 +25,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.shribalajikripadham.data.model.AshramSettings
 import com.example.shribalajikripadham.data.repository.AshramRepository
 import com.example.shribalajikripadham.theme.AmberGold
 import com.example.shribalajikripadham.theme.MaroonPrimary
@@ -58,6 +59,16 @@ fun HavanApplicationScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var submittedAppNo by remember { mutableStateOf<String?>(null) }
     var showSuccessDialog by remember { mutableStateOf(false) }
+
+    var settings by remember { mutableStateOf(AshramSettings()) }
+    LaunchedEffect(Unit) {
+        settings = repository.getSettings()
+    }
+
+    val dynamicCost = if (settings.havanEstimatedCost > 0) settings.havanEstimatedCost else 14000
+    val formattedCost = remember(dynamicCost) {
+        java.text.NumberFormat.getIntegerInstance(java.util.Locale("en", "IN")).format(dynamicCost)
+    }
 
     Scaffold(
         topBar = {
@@ -137,21 +148,24 @@ fun HavanApplicationScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color(0xFFFFCC80))
 
-                    // Rule 1: Estimated Cost ~₹14,000
+                    // Rule 1: Estimated Cost (Super Admin Dynamic CMS)
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Text("💰 ", fontSize = 16.sp)
                         Column {
                             Text(
-                                text = if (isHindi) "हवन का अनुमानित खर्च: लगभग ₹14,000" else "Estimated Cost: Approx ₹14,000",
+                                text = if (isHindi) "हवन का अनुमानित खर्च: लगभग ₹$formattedCost" else "Estimated Cost: Approx ₹$formattedCost",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color(0xFFB71C1C)
                             )
                             Text(
-                                text = if (isHindi)
+                                text = if (settings.havanRulesNotice.isNotBlank()) {
+                                    settings.havanRulesNotice
+                                } else if (isHindi) {
                                     "समस्त हवन समिधा, आहुति द्रव्य, पूजन सामग्री, सूखा गोला, देशी घी एवं पूज्य गुरुजी व शिष्य सेवा दल व्यवस्था हेतु।"
-                                else
-                                    "For complete sacred wood, puja samagri, desi ghee, and Guruji & disciple sevadar arrangements.",
+                                } else {
+                                    "For complete sacred wood, puja samagri, desi ghee, and Guruji & disciple sevadar arrangements."
+                                },
                                 fontSize = 12.sp,
                                 color = Color(0xFF4E342E),
                                 lineHeight = 16.sp
@@ -388,9 +402,9 @@ fun HavanApplicationScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = if (isHindi)
-                                        "सहमति 1: मुझे ज्ञात है कि हवन सामग्री व पूजन विधि का अनुमानित खर्च लगभग ₹14,000 (चौदह हज़ार रुपये) होगा, जो मेरे द्वारा वहन किया जाएगा।"
+                                        "सहमति 1: मुझे ज्ञात है कि हवन सामग्री व पूजन विधि का अनुमानित खर्च लगभग ₹$formattedCost होगा, जो मेरे द्वारा वहन किया जाएगा।"
                                     else
-                                        "Consent 1: I acknowledge that the estimated cost of havan samagri is approx ₹14,000, which will be borne by me.",
+                                        "Consent 1: I acknowledge that the estimated cost of havan samagri is approx ₹$formattedCost, which will be borne by me.",
                                     fontSize = 12.sp,
                                     lineHeight = 16.sp,
                                     fontWeight = FontWeight.SemiBold,
@@ -479,9 +493,9 @@ fun HavanApplicationScreen(
 
                             if (!costAcknowledged || !travelFareAcknowledged) {
                                 errorMessage = if (isHindi)
-                                    "⚠️ आवेदन सबमिट करने हेतु दोनों अनुमतियां (हवन सामग्री खर्च ₹14,000 एवं गाड़ी किराया) स्वीकार करना अनिवार्य है।"
+                                    "⚠️ आवेदन सबमिट करने हेतु दोनों अनुमतियां (हवन सामग्री खर्च ₹$formattedCost एवं गाड़ी किराया) स्वीकार करना अनिवार्य है।"
                                 else
-                                    "⚠️ Both consents (Havan cost ~₹14,000 and travel fare) must be accepted to submit."
+                                    "⚠️ Both consents (Havan cost ~₹$formattedCost and travel fare) must be accepted to submit."
                                 return@Button
                             }
 

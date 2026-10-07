@@ -593,7 +593,9 @@ fun AdminInAppChatSection(
         }
     }
 
-    var selectedSevadar by remember { mutableStateOf<AshramSevadarContact?>(null) }
+    var selectedSevadar by remember(visibleSevadars, isSuperAdmin) {
+        mutableStateOf<AshramSevadarContact?>(if (!isSuperAdmin) visibleSevadars.firstOrNull() else null)
+    }
     var chatRefreshTrigger by remember { mutableIntStateOf(0) }
 
     if (selectedSevadar != null) {
@@ -651,10 +653,12 @@ fun AdminInAppChatSection(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = { selectedSevadar = null }, modifier = Modifier.size(32.dp)) {
-                            Text("⬅️", fontSize = 16.sp)
+                        if (isSuperAdmin) {
+                            IconButton(onClick = { selectedSevadar = null }, modifier = Modifier.size(32.dp)) {
+                                Text("⬅️", fontSize = 16.sp)
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(

@@ -1100,6 +1100,8 @@ object HostingerCentralSyncManager {
                 put("tuesday_current_serving_token", settings.tuesdayCurrentServingToken)
                 put("tuesday_running_token_number", settings.tuesdayRunningTokenNumber)
                 put("tuesday_token_notice", settings.tuesdayTokenNotice)
+                put("havan_estimated_cost", settings.havanEstimatedCost)
+                put("havan_rules_notice", settings.havanRulesNotice)
 
                 if (sevadars != null) {
                     val sArr = JSONArray()

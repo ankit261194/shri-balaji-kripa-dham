@@ -135,6 +135,8 @@ function getFallbackConfig() {
         "ashram_rules_hindi" => "1. प्रत्येक रविवार प्रातःकाल से दरबार प्रारंभ होता है।\n2. टोकन केवल आधिकारिक ऐप से मान्य है।\n3. एक मोबाइल से 1 ही टोकन बनेगा।\n4. पूर्ण शांति, स्वच्छता व मर्यादा बनाए रखें।",
         "aarti_lyrics" => "ॐ जय हनुमत वीरा, स्वामी जय हनुमत वीरा। संकट मोचन स्वामी, कृपा करो धीरा॥\n\nपवनपुत्र अतुलित बलधामा, अंजनी पुत्र पवनसुत नामा।\nहाथ वज्र औ ध्वजा विराजे, कांधे मूंज जनेऊ साजे॥\n\nसंकट कटे मिटे सब पीरा, जो सुमिरै हनुमत बलबीरा।\nजै जै जै हनुमान गोसाईं, कृपा करहु गुरुदेव की नाईं॥",
         "bus_seat_fare_amount" => 0,
+        "havan_estimated_cost" => 14000,
+        "havan_rules_notice" => "हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।",
         "config_version" => 1,
         "server_time" => $now,
         "sevadars" => [],
@@ -232,6 +234,8 @@ $targetCols = [
     "ashram_rules_hindi" => "TEXT",
     "aarti_lyrics" => "TEXT",
     "bus_seat_fare_amount" => "INT NOT NULL DEFAULT 0",
+    "havan_estimated_cost" => "INT NOT NULL DEFAULT 14000",
+    "havan_rules_notice" => "TEXT",
     "ui_sections" => "LONGTEXT DEFAULT NULL",
     "config_version" => "INT NOT NULL DEFAULT 1"
 ];
@@ -413,7 +417,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'ashram_history_hindi' => trim($input['ashram_history_hindi'] ?? ($input['ashram_history'] ?? ($current['ashram_history_hindi'] ?? ''))),
         'ashram_rules_hindi' => trim($input['ashram_rules_hindi'] ?? ($current['ashram_rules_hindi'] ?? '')),
         'aarti_lyrics' => trim($input['aarti_lyrics'] ?? ($current['aarti_lyrics'] ?? '')),
-        'bus_seat_fare_amount' => isset($input['bus_seat_fare_amount']) ? intval($input['bus_seat_fare_amount']) : intval($current['bus_seat_fare_amount'] ?? 0)
+        'bus_seat_fare_amount' => isset($input['bus_seat_fare_amount']) ? intval($input['bus_seat_fare_amount']) : intval($current['bus_seat_fare_amount'] ?? 0),
+        'havan_estimated_cost' => isset($input['havan_estimated_cost']) ? intval($input['havan_estimated_cost']) : intval($current['havan_estimated_cost'] ?? 14000),
+        'havan_rules_notice' => trim($input['havan_rules_notice'] ?? ($current['havan_rules_notice'] ?? 'हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।'))
     ];
 
     $updatePairs = [];
@@ -776,6 +782,8 @@ try {
         "ashram_history" => $row['ashram_history_hindi'] ?? $fb['ashram_history_hindi'],
         "ashram_rules_hindi" => $row['ashram_rules_hindi'] ?? $fb['ashram_rules_hindi'],
         "aarti_lyrics" => $row['aarti_lyrics'] ?? $fb['aarti_lyrics'],
+        "havan_estimated_cost" => isset($row['havan_estimated_cost']) ? intval($row['havan_estimated_cost']) : $fb['havan_estimated_cost'],
+        "havan_rules_notice" => !empty($row['havan_rules_notice']) ? $row['havan_rules_notice'] : $fb['havan_rules_notice'],
         "config_version" => isset($row['config_version']) ? intval($row['config_version']) : $fb['config_version'],
         "server_time" => time(),
         "sevadars" => $sevadars,

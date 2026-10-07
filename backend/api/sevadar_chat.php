@@ -370,6 +370,29 @@ if ($action === 'get_messages') {
             exit;
         }
 
+        // Privacy check: Non-superadmin sevadar cannot access other sevadars conversations
+        $adminPin = trim($input['admin_pin'] ?? $_GET['admin_pin'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_PIN'] ?? '');
+        $isSuper = ($adminPin === '1234');
+        if (!$isSuper && !empty($adminPin)) {
+            $pStmt = $pdo->prepare("SELECT role FROM admins WHERE pin = :pin AND is_active = 1 LIMIT 1");
+            $pStmt->execute([':pin' => $adminPin]);
+            if ($pStmt->fetchColumn() === 'SUPER_ADMIN') $isSuper = true;
+        }
+
+        if (!$isSuper && !empty($conversationId) && !empty($sevadarId)) {
+            $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM sevadar_chats WHERE conversation_id = :c AND sevadar_id = :s");
+            $checkStmt->execute([':c' => $conversationId, ':s' => $sevadarId]);
+            if ($checkStmt->fetchColumn() == 0) {
+                $otherStmt = $pdo->prepare("SELECT COUNT(*) FROM sevadar_chats WHERE conversation_id = :c");
+                $otherStmt->execute([':c' => $conversationId]);
+                if ($otherStmt->fetchColumn() > 0) {
+                    http_response_code(403);
+                    echo json_encode(["success" => false, "error" => "गोपनीयता सुरक्षा: केवल अधिकृत सेवादार अथवा सुपर एडमिन ही यह चैट देख सकते हैं।"], JSON_UNESCAPED_UNICODE);
+                    exit;
+                }
+            }
+        }
+
         if (!empty($conversationId)) {
             if ($sinceTimestamp > 0) {
                 $stmt = $pdo->prepare("SELECT * FROM sevadar_chats WHERE conversation_id = :conv AND created_at > :since ORDER BY created_at ASC LIMIT 300");
@@ -465,8 +488,39 @@ if ($action === 'mark_read') {
 // -----------------------------------------------------------------------------
 if ($action === 'list_conversations') {
     try {
-        $sevadarId = trim($input['sevadar_id'] ?? '');
-        $isSuperAdmin = !empty($input['is_super_admin']) || ($sevadarId === 'SUPER_ADMIN') || empty($sevadarId);
+        $sevadarId = trim($input['sevadar_id'] ?? $_GET['sevadar_id'] ?? '');
+        $adminPin = trim($input['admin_pin'] ?? $_GET['admin_pin'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_PIN'] ?? '');
+        $adminToken = trim($input['admin_token'] ?? $_GET['admin_token'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_TOKEN'] ?? '');
+        $role = strtoupper(trim($input['role'] ?? $_GET['role'] ?? ''));
+
+        // Verify if caller is truly SUPER_ADMIN
+        $isTrulySuperAdmin = false;
+        if ($role === 'SUPER_ADMIN' || !empty($input['is_super_admin']) || $sevadarId === 'SUPER_ADMIN') {
+            if (!empty($adminPin)) {
+                $pStmt = $pdo->prepare("SELECT role FROM admins WHERE pin = :pin AND is_active = 1 LIMIT 1");
+                $pStmt->execute([':pin' => $adminPin]);
+                $r = $pStmt->fetchColumn();
+                if ($r === 'SUPER_ADMIN' || $adminPin === '1234') {
+                    $isTrulySuperAdmin = true;
+                }
+            } elseif (!empty($adminToken)) {
+                $tStmt = $pdo->prepare("SELECT role FROM admin_sessions WHERE session_token = :t AND is_active = 1 LIMIT 1");
+                $tStmt->execute([':t' => $adminToken]);
+                $r = $tStmt->fetchColumn();
+                if ($r === 'SUPER_ADMIN') {
+                    $isTrulySuperAdmin = true;
+                }
+            }
+        }
+
+        // Strict Privacy Rule: ONLY verified Super Admin can view all or switch to other sevadars
+        $canSeeAll = $isTrulySuperAdmin && (!empty($input['is_super_admin']) || $sevadarId === 'SUPER_ADMIN' || empty($sevadarId));
+
+        if (!$canSeeAll && empty($sevadarId)) {
+            http_response_code(403);
+            echo json_encode(["success" => false, "error" => "गोपनीयता सुरक्षा: सेवादार केवल अपनी ही चैट देख सकते हैं।"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
 
         $sql = "SELECT 
                     conversation_id,
@@ -482,13 +536,13 @@ if ($action === 'list_conversations') {
                 FROM sevadar_chats 
                 WHERE id IN (
                     SELECT MAX(id) FROM sevadar_chats " . 
-                    (!$isSuperAdmin ? "WHERE sevadar_id = :sev " : "") . 
+                    (!$canSeeAll ? "WHERE sevadar_id = :sev " : "") . 
                     "GROUP BY conversation_id
                 )
                 ORDER BY created_at DESC";
 
         $stmt = $pdo->prepare($sql);
-        if (!$isSuperAdmin) {
+        if (!$canSeeAll) {
             $stmt->execute([':sev' => $sevadarId]);
         } else {
             $stmt->execute();

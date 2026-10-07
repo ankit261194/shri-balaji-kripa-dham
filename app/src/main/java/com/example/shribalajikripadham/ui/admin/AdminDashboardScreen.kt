@@ -220,6 +220,7 @@ fun AdminDashboardScreen(
     var notificationsList by remember { mutableStateOf<List<AppNotification>>(emptyList()) }
 
     var selectedTab by rememberSaveable { mutableIntStateOf(0) }
+    var sevadarPortalTab by rememberSaveable { mutableIntStateOf(0) }
 
     // Forms (Preserved across screen rotation and low memory pauses)
     var manualName by rememberSaveable { mutableStateOf("") }
@@ -1288,38 +1289,38 @@ fun AdminDashboardScreen(
                     .background(Color(0xFFF9F9F9))
             ) {
                 if (activeScreenTitle == null) {
-                    // COMPACT 1-LINE ADMIN STATUS BAR (LEAVING 95% SCREEN FOR GRID/LIST)
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 4.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (isSuper) Color(0xFFFFF9EE) else Color(0xFFF1F8E9),
-                        border = BorderStroke(1.dp, if (isSuper) AmberGold else Color(0xFF81C784)),
-                        shadowElevation = 0.5.dp
-                    ) {
-                        Row(
+                    if (isSuper) {
+                        // COMPACT 1-LINE ADMIN STATUS BAR (LEAVING 95% SCREEN FOR GRID/LIST)
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 10.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFFFF9EE),
+                            border = BorderStroke(1.dp, AmberGold),
+                            shadowElevation = 0.5.dp
                         ) {
-                            // Left: Role badge and device count
                             Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 5.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f, fill = false)
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(
-                                    text = if (isSuper) "👑 सुपर एडमिन" else "🙏 ${admin.name}",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    color = MaroonPrimary,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                if (isSuper) {
+                                // Left: Role badge and device count
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                ) {
+                                    Text(
+                                        text = "👑 सुपर एडमिन",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = MaroonPrimary,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Surface(
                                         shape = RoundedCornerShape(4.dp),
@@ -1336,108 +1337,318 @@ fun AdminDashboardScreen(
                                         )
                                     }
                                 }
-                            }
 
-                            // Right: Action buttons (गाइड, पासवर्ड, सुझाव)
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                // Right: Action buttons (गाइड, पासवर्ड, सुझाव)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                ) {
+                                    // Guide PDF Button
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = Color(0xFFEDE7F6),
+                                        border = BorderStroke(0.8.dp, Color(0xFFB39DDB)),
+                                        modifier = Modifier.clickable {
+                                            val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
+                                            if (file != null) {
+                                                com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
+                                                    context,
+                                                    file,
+                                                    if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
+                                                )
+                                            } else {
+                                                Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    ) {
+                                        Text(
+                                            text = "📘 गाइड",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF4A148C),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    }
+
+                                    // Password / PIN Self-Change Button
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = Color(0xFFE8F5E9),
+                                        border = BorderStroke(0.8.dp, Color(0xFF81C784)),
+                                        modifier = Modifier.clickable {
+                                            ownNewPassword = ""
+                                            ownNewPin = ""
+                                            ownCredentialsErrorMsg = null
+                                            showChangeOwnCredentialsDialog = true
+                                        }
+                                    ) {
+                                        Text(
+                                            text = "🔐 पिन",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF1B5E20),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    }
+
+                                    // Helpdesk / Query to Super Admin
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = Color(0xFFFFF3E0),
+                                        border = BorderStroke(0.8.dp, Color(0xFFFFB74D)),
+                                        modifier = Modifier.clickable {
+                                            showAdminSubmitQueryDialog = true
+                                        }
+                                    ) {
+                                        Text(
+                                            text = "✉️ सुझाव",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaroonPrimary,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                            maxLines = 1,
+                                            softWrap = false
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // UNIFIED ADMIN CONTROL HUB: LIST & GRID VIEW OF ALL MODULES
+                        AdminHubDashboardView(
+                            isHindi = isHindi,
+                            modules = allAdminModules.filter { allowedTabs.contains(it.tabTitle) },
+                            searchQuery = adminHubSearchQuery,
+                            onSearchQueryChange = { adminHubSearchQuery = it },
+                            selectedCategory = adminHubSelectedCategory,
+                            onSelectedCategoryChange = { adminHubSelectedCategory = it },
+                            isGridView = isAdminHubGridView,
+                            onToggleView = { isAdminHubGridView = it },
+                            onSelectModule = { item ->
+                                if (item.tabTitle.contains("सुझाव") || item.tabTitle.contains("Feedback") || item.tabTitle.contains("समस्या")) {
+                                    showAdminSubmitQueryDialog = true
+                                } else {
+                                    val idx = allowedTabs.indexOf(item.tabTitle)
+                                    if (idx >= 0) selectedTab = idx
+                                    activeScreenTitle = item.tabTitle
+                                }
+                            }
+                        )
+                    } else {
+                        // SEVADAR PORTAL: DEFAULT TO LIVE CHAT INBOX + SEGMENTED ACCESS TO OTHER PERMITTED SERVICES
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            // Sevadar Status Header & Quick Controls
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFF1F8E9),
+                                border = BorderStroke(1.dp, Color(0xFF81C784)),
+                                shadowElevation = 0.5.dp
                             ) {
-                                // Guide PDF Button
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = Color(0xFFEDE7F6),
-                                    border = BorderStroke(0.8.dp, Color(0xFFB39DDB)),
-                                    modifier = Modifier.clickable {
-                                        val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
-                                        if (file != null) {
-                                            com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
-                                                context,
-                                                file,
-                                                if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    ) {
+                                        Text(
+                                            text = "🙏 ${admin.name} (सेवादार)",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = MaroonPrimary,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = Color(0xFFEDE7F6),
+                                            border = BorderStroke(0.8.dp, Color(0xFFB39DDB)),
+                                            modifier = Modifier.clickable {
+                                                val file = com.example.shribalajikripadham.util.AshramManualPdfGenerator.generateAdminGuidePdf(context)
+                                                if (file != null) {
+                                                    com.example.shribalajikripadham.util.AshramManualPdfGenerator.openOrSharePdf(
+                                                        context,
+                                                        file,
+                                                        if (isHindi) "श्री बालाजी कृपा धाम - व्यवस्थापक मार्गदर्शिका" else "Shri Balaji Kripa Dham - Admin Manual"
+                                                    )
+                                                } else {
+                                                    Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        ) {
+                                            Text(
+                                                text = "📘 गाइड",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF4A148C),
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
-                                        } else {
-                                            Toast.makeText(context, if (isHindi) "PDF तैयार करने में असमर्थ" else "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                                        }
+
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = Color(0xFFE8F5E9),
+                                            border = BorderStroke(0.8.dp, Color(0xFF81C784)),
+                                            modifier = Modifier.clickable {
+                                                ownNewPassword = ""
+                                                ownNewPin = ""
+                                                ownCredentialsErrorMsg = null
+                                                showChangeOwnCredentialsDialog = true
+                                            }
+                                        ) {
+                                            Text(
+                                                text = "🔐 पिन",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF1B5E20),
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        }
+
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = Color(0xFFFFF3E0),
+                                            border = BorderStroke(0.8.dp, Color(0xFFFFB74D)),
+                                            modifier = Modifier.clickable {
+                                                showAdminSubmitQueryDialog = true
+                                            }
+                                        ) {
+                                            Text(
+                                                text = "✉️ सुझाव",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaroonPrimary,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
                                         }
                                     }
-                                ) {
-                                    Text(
-                                        text = "📘 गाइड",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF4A148C),
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
                                 }
+                            }
 
-                                // Password / PIN Self-Change Button
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = Color(0xFFE8F5E9),
-                                    border = BorderStroke(0.8.dp, Color(0xFF81C784)),
-                                    modifier = Modifier.clickable {
-                                        ownNewPassword = ""
-                                        ownNewPin = ""
-                                        ownCredentialsErrorMsg = null
-                                        showChangeOwnCredentialsDialog = true
-                                    }
+                            // High-Contrast Pro Segmented Switch: [💬 मेरी चैट (लाइव इनबॉक्स)] vs [📋 अन्य सेवाएं]
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, Color(0xFFCFD8DC)),
+                                shadowElevation = 1.dp
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Text(
-                                        text = "🔐 पिन",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF1B5E20),
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                }
+                                    Button(
+                                        onClick = { sevadarPortalTab = 0 },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (sevadarPortalTab == 0) SaffronPrimary else Color(0xFFF1F5F9),
+                                            contentColor = if (sevadarPortalTab == 0) Color.White else Color(0xFF334155)
+                                        ),
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isHindi) "💬 मेरी चैट (लाइव इनबॉक्स)" else "💬 My Chat (Live Inbox)",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
 
-                                // Helpdesk / Query to Super Admin
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = Color(0xFFFFF3E0),
-                                    border = BorderStroke(0.8.dp, Color(0xFFFFB74D)),
-                                    modifier = Modifier.clickable {
-                                        showAdminSubmitQueryDialog = true
+                                    Button(
+                                        onClick = { sevadarPortalTab = 1 },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = if (sevadarPortalTab == 1) MaroonPrimary else Color(0xFFF1F5F9),
+                                            contentColor = if (sevadarPortalTab == 1) Color.White else Color(0xFF334155)
+                                        ),
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isHindi) "📋 अन्य सेवाएं (${allowedTabs.size})" else "📋 Services (${allowedTabs.size})",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
                                     }
+                                }
+                            }
+
+                            if (sevadarPortalTab == 0) {
+                                // DEFAULT LIVE CHAT CONSOLE FOR SEVADAR: ZERO NAVIGATION FRICTION
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(bottom = 6.dp)
                                 ) {
-                                    Text(
-                                        text = "✉️ सुझाव",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaroonPrimary,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                        maxLines = 1,
-                                        softWrap = false
+                                    AdminInAppChatSection(
+                                        isHindi = isHindi,
+                                        currentUserRole = admin.role.name,
+                                        currentAdminId = admin.id.toString(),
+                                        currentAdminPhone = admin.phoneNumber,
+                                        superAdminName = superAdminAccount?.name ?: (if (isHindi) "सुपर एडमिन" else "Super Admin")
                                     )
                                 }
+                            } else {
+                                // OTHER PERMITTED MODULES (TOKEN, DARBAR, HAVAN, ETC.)
+                                AdminHubDashboardView(
+                                    isHindi = isHindi,
+                                    modules = allAdminModules.filter { allowedTabs.contains(it.tabTitle) },
+                                    searchQuery = adminHubSearchQuery,
+                                    onSearchQueryChange = { adminHubSearchQuery = it },
+                                    selectedCategory = adminHubSelectedCategory,
+                                    onSelectedCategoryChange = { adminHubSelectedCategory = it },
+                                    isGridView = isAdminHubGridView,
+                                    onToggleView = { isAdminHubGridView = it },
+                                    onSelectModule = { item ->
+                                        if (item.tabTitle.contains("सुझाव") || item.tabTitle.contains("Feedback") || item.tabTitle.contains("समस्या")) {
+                                            showAdminSubmitQueryDialog = true
+                                        } else {
+                                            val idx = allowedTabs.indexOf(item.tabTitle)
+                                            if (idx >= 0) selectedTab = idx
+                                            activeScreenTitle = item.tabTitle
+                                        }
+                                    }
+                                )
                             }
                         }
                     }
-
-                    // UNIFIED ADMIN CONTROL HUB: LIST & GRID VIEW OF ALL MODULES
-                    AdminHubDashboardView(
-                        isHindi = isHindi,
-                        modules = allAdminModules.filter { allowedTabs.contains(it.tabTitle) },
-                        searchQuery = adminHubSearchQuery,
-                        onSearchQueryChange = { adminHubSearchQuery = it },
-                        selectedCategory = adminHubSelectedCategory,
-                        onSelectedCategoryChange = { adminHubSelectedCategory = it },
-                        isGridView = isAdminHubGridView,
-                        onToggleView = { isAdminHubGridView = it },
-                        onSelectModule = { item ->
-                            if (item.tabTitle.contains("सुझाव") || item.tabTitle.contains("Feedback") || item.tabTitle.contains("समस्या")) {
-                                showAdminSubmitQueryDialog = true
-                            } else {
-                                val idx = allowedTabs.indexOf(item.tabTitle)
-                                if (idx >= 0) selectedTab = idx
-                                activeScreenTitle = item.tabTitle
-                            }
-                        }
-                    )
                 } else {
                     val currentTabTitle = activeScreenTitle ?: (allowedTabs.getOrNull(selectedTab) ?: "")
 

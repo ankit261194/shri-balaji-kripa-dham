@@ -190,7 +190,9 @@ class AshramRepository(context: Context) {
             tuesdayDarbarDate = try { cursor.getString(cursor.getColumnIndexOrThrow("tuesday_darbar_date")) ?: "" } catch (e: Exception) { "" },
             tuesdayCurrentServingToken = try { cursor.getInt(cursor.getColumnIndexOrThrow("tuesday_current_serving_token")) } catch (e: Exception) { 0 },
             tuesdayRunningTokenNumber = try { cursor.getInt(cursor.getColumnIndexOrThrow("tuesday_running_token_number")).coerceAtLeast(1) } catch (e: Exception) { 1 },
-            tuesdayTokenNotice = try { cursor.getString(cursor.getColumnIndexOrThrow("tuesday_token_notice")) ?: "बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।" } catch (e: Exception) { "बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।" }
+            tuesdayTokenNotice = try { cursor.getString(cursor.getColumnIndexOrThrow("tuesday_token_notice")) ?: "बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।" } catch (e: Exception) { "बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।" },
+            havanEstimatedCost = try { cursor.getInt(cursor.getColumnIndexOrThrow("havan_estimated_cost")).let { if (it > 0) it else 14000 } } catch (e: Exception) { 14000 },
+            havanRulesNotice = try { cursor.getString(cursor.getColumnIndexOrThrow("havan_rules_notice")) ?: "हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।" } catch (e: Exception) { "हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।" }
         )
     }
 
@@ -524,6 +526,8 @@ class AshramRepository(context: Context) {
             put("tuesday_current_serving_token", s.tuesdayCurrentServingToken)
             put("tuesday_running_token_number", s.tuesdayRunningTokenNumber)
             put("tuesday_token_notice", s.tuesdayTokenNotice)
+            put("havan_estimated_cost", s.havanEstimatedCost)
+            put("havan_rules_notice", s.havanRulesNotice)
         }
         val ok = safeUpdateAshramSettings(db, cv)
         if (ok) persistCurrentSettingsToAllLayers()
@@ -4378,13 +4382,19 @@ class AshramRepository(context: Context) {
                     "bank_name", "bank_account_holder", "bank_account_number", "bank_ifsc",
                     "bank_branch", "ashram_address", "ashram_directions", "contact_email",
                     "instagram_url", "whatsapp_channel_url", "footer_title", "footer_dedication",
-                    "footer_copyright", "ashram_parichay_hindi", "ashram_history_hindi", "ashram_rules_hindi"
+                    "footer_copyright", "ashram_parichay_hindi", "ashram_history_hindi", "ashram_rules_hindi",
+                    "havan_rules_notice"
                 )
                 for (col in cmsCols) {
                     if (cfg.has(col)) {
                         val v = cfg.optString(col, "")
                         if (v.isNotBlank()) cv.put(col, v)
                     }
+                }
+
+                if (cfg.has("havan_estimated_cost")) {
+                    val hCost = cfg.optInt("havan_estimated_cost", -1)
+                    if (hCost > 0) cv.put("havan_estimated_cost", hCost)
                 }
 
                 if (cfg.has("contact_phone")) {
@@ -4567,6 +4577,41 @@ class AshramRepository(context: Context) {
             val localSections = getUiSectionConfigs()
             Pair(true, com.example.shribalajikripadham.data.model.LiveUiConfigDto(sections = localSections))
         }
+    }
+
+    suspend fun updateHavanSettings(estimatedCost: Int, rulesNotice: String): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        try {
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN havan_estimated_cost INTEGER NOT NULL DEFAULT 14000")
+            db.execSQL("ALTER TABLE ashram_settings ADD COLUMN havan_rules_notice TEXT")
+        } catch (ignored: Exception) {}
+        val cv = ContentValues().apply {
+            put("havan_estimated_cost", estimatedCost)
+            put("havan_rules_notice", rulesNotice)
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) {
+            persistCurrentSettingsToAllLayers()
+            try {
+                val url = java.net.URL("https://shribalajikripadham.online/api/havan_service.php")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+                conn.setRequestProperty("X-SBKD-ADMIN-PIN", "1234")
+                conn.connectTimeout = 8000
+                conn.readTimeout = 8000
+                conn.doOutput = true
+                val payload = org.json.JSONObject().apply {
+                    put("action", "SAVE_CONFIG")
+                    put("admin_pin", "1234")
+                    put("havan_estimated_cost", estimatedCost)
+                    put("havan_rules_notice", rulesNotice)
+                }
+                conn.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
+                conn.responseCode
+            } catch (e: Exception) {}
+        }
+        ok
     }
 
     suspend fun publishLiveConfigToGitHub(

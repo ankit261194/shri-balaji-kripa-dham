@@ -137,7 +137,10 @@ data class AshramSettings(
     val tuesdayDarbarDate: String = "",
     val tuesdayCurrentServingToken: Int = 0,
     val tuesdayRunningTokenNumber: Int = 1,
-    val tuesdayTokenNotice: String = "बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।"
+    val tuesdayTokenNotice: String = "बुलन्दशहर मंगलवार दरबार: केवल टोकन प्रणाली मान्य।",
+    // Sacred Havan Anushthan CMS (Super Admin Editable)
+    val havanEstimatedCost: Int = 14000,
+    val havanRulesNotice: String = "हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।"
 )
 
 data class CustomCityDistance(

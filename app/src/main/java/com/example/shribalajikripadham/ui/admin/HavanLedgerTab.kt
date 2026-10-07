@@ -64,6 +64,20 @@ fun HavanLedgerTab(
     var contactedCount by remember { mutableIntStateOf(0) }
     var approvedCount by remember { mutableIntStateOf(0) }
 
+    val repository = remember { com.example.shribalajikripadham.data.repository.AshramRepository(context) }
+    var settings by remember { mutableStateOf(com.example.shribalajikripadham.data.model.AshramSettings()) }
+    var editableCost by remember { mutableStateOf("14000") }
+    var editableRules by remember { mutableStateOf("") }
+    var isSavingHavanConfig by remember { mutableStateOf(false) }
+    var showHavanConfigEditor by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val s = repository.getSettings()
+        settings = s
+        editableCost = s.havanEstimatedCost.toString()
+        editableRules = s.havanRulesNotice
+    }
+
     // Dialog state for updating status
     var selectedAppForEdit by remember { mutableStateOf<HavanApplicationItem?>(null) }
     var editStatus by remember { mutableStateOf("PENDING") }
@@ -173,6 +187,97 @@ fun HavanLedgerTab(
             }
             IconButton(onClick = { fetchHavanApplications() }) {
                 Text("🔄", fontSize = 18.sp)
+            }
+        }
+
+        // Super Admin CMS Control Card for Havan Estimated Cost & Rules
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
+            border = BorderStroke(1.dp, Color(0xFFFFB300))
+        ) {
+            Column(modifier = Modifier.padding(10.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showHavanConfigEditor = !showHavanConfigEditor },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("⚙️ ", fontSize = 16.sp)
+                        Column {
+                            Text(
+                                text = if (isHindi) "हवन सेटिंग्स व खर्च नियंत्रक (Super Admin CMS)" else "Havan Cost & Rules CMS",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Color(0xFFBF360C)
+                            )
+                            Text(
+                                text = if (isHindi) "वर्तमान अनुमानित खर्च: ₹${editableCost} | टैप करके बदलें" else "Current: ₹$editableCost",
+                                fontSize = 11.sp,
+                                color = Color(0xFF5D4037)
+                            )
+                        }
+                    }
+                    Text(if (showHavanConfigEditor) "▲ बंद करें" else "▼ बदलें", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaroonPrimary)
+                }
+
+                if (showHavanConfigEditor) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = editableCost,
+                        onValueChange = { editableCost = it.filter { ch -> ch.isDigit() } },
+                        label = { Text("अनुमानित खर्च (₹)", fontSize = 12.sp) },
+                        placeholder = { Text("उदा: 14000") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = editableRules,
+                        onValueChange = { editableRules = it },
+                        label = { Text("हवन नियम व वाहन किराया सूचना", fontSize = 12.sp) },
+                        placeholder = { Text("हवन सामग्री खर्च व गाड़ी किराया नियम...") },
+                        minLines = 2,
+                        maxLines = 4,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = {
+                            val cVal = editableCost.toIntOrNull() ?: 14000
+                            scope.launch {
+                                isSavingHavanConfig = true
+                                val ok = repository.updateHavanSettings(cVal, editableRules.trim())
+                                isSavingHavanConfig = false
+                                if (ok) {
+                                    settings = repository.getSettings()
+                                    Toast.makeText(context, if (isHindi) "✓ हवन सेटिंग्स (खर्च ₹$cVal व नियम) लाइव अपडेट हो गईं!" else "Havan settings updated live!", Toast.LENGTH_SHORT).show()
+                                    showHavanConfigEditor = false
+                                } else {
+                                    Toast.makeText(context, if (isHindi) "अपडेट करने में समस्या हुई" else "Update failed", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        enabled = !isSavingHavanConfig,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaroonPrimary)
+                    ) {
+                        Text(
+                            text = if (isSavingHavanConfig) "अपडेट हो रहा है..." else "💾 सेटिंग्स सुरक्षित करें व लाइव प्रसारित करें",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
             }
         }
 
