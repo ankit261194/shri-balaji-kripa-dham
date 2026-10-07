@@ -886,9 +886,9 @@ if ($action === 'answer_call') {
 
         $nowMs = intval(microtime(true) * 1000);
         $stmt = $pdo->prepare("UPDATE sevadar_call_sessions 
-            SET call_status = 'CONNECTED', connected_at = :nowMs, last_receiver_ping = :nowMs 
+            SET call_status = 'CONNECTED', connected_at = :connAt, last_receiver_ping = :pingAt 
             WHERE call_id = :cid AND (call_status = 'RINGING' OR call_status = 'DIALING')");
-        $stmt->execute([':nowMs' => $nowMs, ':cid' => $callId]);
+        $stmt->execute([':connAt' => $nowMs, ':pingAt' => $nowMs, ':cid' => $callId]);
 
         // Update chat log
         $chatUpd = $pdo->prepare("UPDATE sevadar_chats SET message_text = '📞 इन-ऐप कॉल कनेक्टेड (लाइव संवाद जारी...)', status = 'READ' WHERE msg_id = :mid");
