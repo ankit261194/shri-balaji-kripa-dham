@@ -22,8 +22,6 @@ try {
             ashram_directions = '',
             ashram_latitude = 28.3972915,
             ashram_longitude = 78.1460410,
-            latitude = 28.3972915,
-            longitude = 78.1460410,
             allowed_radius_meters = 200,
             outstation_min_distance_km = 30,
             is_outstation_advance_allowed = 1,
