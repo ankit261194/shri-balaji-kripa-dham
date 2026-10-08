@@ -26,6 +26,44 @@ object DevotionalAudioCacheManager {
     private const val NOMEDIA_FILE = ".nomedia"
     private const val MIN_VALID_FILE_SIZE = 30000L // 30 KB minimum for valid audio
 
+    private const val PREFS_NAME = "sbkd_audio_cache_metadata"
+    private const val KEY_CACHE_VERSION = "cache_build_version"
+    private const val KEY_PREFIX_URL = "url_"
+    private const val CURRENT_CACHE_VERSION = 153
+
+    /**
+     * Purges outdated or corrupt cached audio files when upgrading to Build 153+.
+     * Ensures all devotees listen to genuine, 100% verified authentic recordings.
+     */
+    fun purgeOutdatedAudioCachesIfNecessary(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val lastVersion = prefs.getInt(KEY_CACHE_VERSION, 0)
+        if (lastVersion < CURRENT_CACHE_VERSION) {
+            Log.i(TAG, "Upgrading audio cache to build $CURRENT_CACHE_VERSION: purging obsolete/mismatched audio files")
+            try {
+                val dir = getAudioDirectory(context)
+                dir.listFiles()?.forEach { file ->
+                    if (file.isFile && file.name != NOMEDIA_FILE) {
+                        file.delete()
+                    }
+                }
+                prefs.edit().clear().putInt(KEY_CACHE_VERSION, CURRENT_CACHE_VERSION).apply()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed purging old audio caches: ${e.message}")
+            }
+        }
+    }
+
+    fun getCachedUrl(context: Context, trackKey: String): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString("$KEY_PREFIX_URL$trackKey", "") ?: ""
+    }
+
+    fun setCachedUrl(context: Context, trackKey: String, url: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString("$KEY_PREFIX_URL$trackKey", url).apply()
+    }
+
     fun getAudioDirectory(context: Context): File {
         val dir = File(context.filesDir, DIRECTORY_NAME)
         if (!dir.exists()) {
@@ -53,12 +91,21 @@ object DevotionalAudioCacheManager {
 
     /**
      * Resolves the best playback source:
-     * If cached offline in hidden storage -> returns local file path (0ms buffer).
+     * If cached offline in hidden storage with matching URL -> returns local file path (0ms buffer).
      * Else -> returns remote stream URL.
      */
     fun getPlayableSource(context: Context, trackKey: String, remoteUrl: String): String {
+        purgeOutdatedAudioCachesIfNecessary(context)
         val file = getTrackFile(context, trackKey)
+        val cachedUrl = getCachedUrl(context, trackKey)
         if (file.exists() && file.length() > MIN_VALID_FILE_SIZE) {
+            // If the cached file came from a different URL than the current live URL, invalidate it
+            if (cachedUrl.isNotBlank() && remoteUrl.isNotBlank() && cachedUrl != remoteUrl) {
+                Log.w(TAG, "Purging stale cache for [$trackKey] due to URL mismatch: $cachedUrl vs $remoteUrl")
+                file.delete()
+                setCachedUrl(context, trackKey, "")
+                return remoteUrl
+            }
             Log.d(TAG, "Playing track [$trackKey] from OFFLINE hidden storage: ${file.absolutePath}")
             return file.absolutePath
         }
@@ -75,6 +122,7 @@ object DevotionalAudioCacheManager {
         tracks: List<SacredTrack> = emptyList()
     ) = withContext(Dispatchers.IO) {
         try {
+            purgeOutdatedAudioCachesIfNecessary(context)
             val audioDir = getAudioDirectory(context)
             Log.d(TAG, "Starting silent background audio pre-cache in: ${audioDir.absolutePath}")
 
@@ -174,6 +222,7 @@ object DevotionalAudioCacheManager {
             if (tempFile.length() > MIN_VALID_FILE_SIZE) {
                 if (targetFile.exists()) targetFile.delete()
                 tempFile.renameTo(targetFile)
+                setCachedUrl(context, trackKey, audioUrl)
                 Log.d(TAG, "Successfully cached $trackKey (${targetFile.length()} bytes)")
                 onProgress(1f)
                 return@withContext true
@@ -193,6 +242,7 @@ object DevotionalAudioCacheManager {
      */
     fun removeCachedTrack(context: Context, trackKey: String): Boolean {
         val file = getTrackFile(context, trackKey)
+        setCachedUrl(context, trackKey, "")
         return if (file.exists()) file.delete() else false
     }
 

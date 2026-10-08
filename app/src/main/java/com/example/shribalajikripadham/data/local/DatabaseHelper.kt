@@ -1212,8 +1212,12 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             }
         } catch (ignored: Exception) {}
 
-        // 9. Seed & Refresh Sacred Tracks (18 Authentic Bhajans & Aartis with 100% Unabridged Lyrics)
+        // 9. Seed & Refresh Sacred Tracks (40 Authentic Bhajans, Aartis & Durga Saptashati with 100% Verified Audio)
         try {
+            try {
+                db.delete("ashram_tracks", "track_key = 'durga_saptashati_nitya_path'", null)
+            } catch (ignored: Exception) {}
+
             com.example.shribalajikripadham.data.sacred.SACRED_TRACKS.forEach { track ->
                 val cv = ContentValues().apply {
                     put("track_key", track.trackKey)
@@ -1227,11 +1231,17 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
                     put("display_order", track.displayOrder)
                     put("youtube_search_query", track.youtubeSearchQuery)
                 }
-                val existing = db.rawQuery("SELECT id, lyrics_hindi FROM ashram_tracks WHERE track_key = ?", arrayOf(track.trackKey))
+                val existing = db.rawQuery("SELECT id, lyrics_hindi, audio_url, title_hindi, display_order FROM ashram_tracks WHERE track_key = ?", arrayOf(track.trackKey))
                 var needsUpdate = true
                 if (existing.moveToFirst()) {
                     val existingLyrics = existing.getString(1) ?: ""
-                    if (existingLyrics == track.lyricsHindi) {
+                    val existingAudio = existing.getString(2) ?: ""
+                    val existingTitle = existing.getString(3) ?: ""
+                    val existingOrder = existing.getInt(4)
+                    if (existingLyrics == track.lyricsHindi &&
+                        existingAudio == track.audioUrl &&
+                        existingTitle == track.titleHindi &&
+                        existingOrder == track.displayOrder) {
                         needsUpdate = false
                     }
                 }

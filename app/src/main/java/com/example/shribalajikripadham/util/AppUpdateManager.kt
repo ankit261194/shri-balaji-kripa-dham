@@ -13,6 +13,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import java.io.BufferedInputStream
 import java.io.File
@@ -106,13 +107,20 @@ object AppUpdateManager {
 
     suspend fun fetchLatestUpdateFromOnline(urlStr: String = DEFAULT_VERSION_JSON_URL): OnlineUpdateInfo? {
         return withContext(Dispatchers.IO) {
-            val fromAshram = fetchFromVersionJson(ASHRAM_VERSION_JSON_URL)
-            val fromJsDelivr = fetchFromVersionJson(DEFAULT_VERSION_JSON_URL)
-            val fromJsDelivrApp = fetchFromVersionJson(JSDELIVR_APP_UPDATE_URL)
-            val fromGitHubVersion = fetchFromVersionJson(GITHUB_VERSION_JSON_URL)
-            val fromAppUpdateJson = fetchFromVersionJson("https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/app_update.json")
-            val fromGitHub = fetchFromGitHubReleasesApi()
-            listOfNotNull(fromAshram, fromJsDelivr, fromJsDelivrApp, fromGitHubVersion, fromAppUpdateJson, fromGitHub).maxByOrNull { it.versionCode }
+            val fromAshram = async { fetchFromVersionJson(ASHRAM_VERSION_JSON_URL) }
+            val fromJsDelivr = async { fetchFromVersionJson(DEFAULT_VERSION_JSON_URL) }
+            val fromJsDelivrApp = async { fetchFromVersionJson(JSDELIVR_APP_UPDATE_URL) }
+            val fromGitHubVersion = async { fetchFromVersionJson(GITHUB_VERSION_JSON_URL) }
+            val fromAppUpdateJson = async { fetchFromVersionJson("https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/app_update.json") }
+            val fromGitHub = async { fetchFromGitHubReleasesApi() }
+            listOfNotNull(
+                fromAshram.await(),
+                fromJsDelivr.await(),
+                fromJsDelivrApp.await(),
+                fromGitHubVersion.await(),
+                fromAppUpdateJson.await(),
+                fromGitHub.await()
+            ).maxByOrNull { it.versionCode }
         }
     }
 
@@ -122,8 +130,8 @@ object AppUpdateManager {
             val cacheBusterUrl = "$baseUrl${delimiter}nocache=${System.currentTimeMillis()}&rand=${(1000..9999).random()}"
             val url = URL(cacheBusterUrl)
             val conn = url.openConnection() as HttpURLConnection
-            conn.connectTimeout = 10000
-            conn.readTimeout = 10000
+            conn.connectTimeout = 4000
+            conn.readTimeout = 4000
             conn.useCaches = false
             conn.defaultUseCaches = false
             conn.requestMethod = "GET"
