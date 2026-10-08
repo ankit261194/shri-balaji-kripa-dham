@@ -176,6 +176,32 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
             }
             context.startService(intent)
         }
+
+        fun seekForward(context: Context, deltaMs: Int = 10000) {
+            val newPos = (_currentPositionMs.value + deltaMs).coerceAtMost(_durationMs.value)
+            seekTo(context, newPos)
+        }
+
+        fun seekBackward(context: Context, deltaMs: Int = 10000) {
+            val newPos = (_currentPositionMs.value - deltaMs).coerceAtLeast(0)
+            seekTo(context, newPos)
+        }
+
+        private val _sleepTimerMinutes = MutableStateFlow(0)
+        val sleepTimerMinutes = _sleepTimerMinutes.asStateFlow()
+        private var sleepTimerJob: Job? = null
+
+        fun setSleepTimer(context: Context, minutes: Int) {
+            _sleepTimerMinutes.value = minutes
+            sleepTimerJob?.cancel()
+            if (minutes > 0) {
+                sleepTimerJob = CoroutineScope(Dispatchers.Main).launch {
+                    delay(minutes * 60 * 1000L)
+                    _sleepTimerMinutes.value = 0
+                    stopPlayback(context)
+                }
+            }
+        }
     }
 
     private var mediaPlayer: MediaPlayer? = null
@@ -273,11 +299,27 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
         } catch (e: Exception) {}
     }
 
+    private val noisyReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
+                if (mediaPlayer?.isPlaying == true) {
+                    mediaPlayer?.pause()
+                    _isPlaying.value = false
+                    updateNotification(false)
+                }
+            }
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        try {
+            val filter = android.content.IntentFilter(android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+            registerReceiver(noisyReceiver, filter)
+        } catch (_: Exception) {}
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -601,6 +643,9 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
 
     override fun onDestroy() {
         super.onDestroy()
+        try {
+            unregisterReceiver(noisyReceiver)
+        } catch (_: Exception) {}
         stopSelfService()
     }
 }

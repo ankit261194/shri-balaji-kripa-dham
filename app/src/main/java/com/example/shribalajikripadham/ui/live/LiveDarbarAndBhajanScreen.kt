@@ -76,6 +76,7 @@ fun LiveDarbarAndBhajanScreen(
 
     var currentTrackIndex by remember { mutableIntStateOf(0) }
     val playbackMode by BhajanAudioService.playbackMode.collectAsState()
+    val sleepTimerMinutes by BhajanAudioService.sleepTimerMinutes.collectAsState()
     var playbackErrorMessage by remember { mutableStateOf<String?>(null) }
     var showLyricsDialog by remember { mutableStateOf<SacredTrack?>(null) }
     var cacheRefreshCounter by remember { mutableIntStateOf(0) }
@@ -701,28 +702,16 @@ fun LiveDarbarAndBhajanScreen(
                                     horizontalArrangement = Arrangement.SpaceEvenly,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    IconButton(onClick = { BhajanAudioService.cyclePlaybackMode(context) }) {
-                                        val modeIcon = when (playbackMode) {
-                                            com.example.shribalajikripadham.service.PlaybackMode.CONTINUOUS -> "🔁"
-                                            com.example.shribalajikripadham.service.PlaybackMode.REPEAT_ONE -> "🔂"
-                                            com.example.shribalajikripadham.service.PlaybackMode.NO_REPEAT -> "➡️"
-                                        }
-                                        val modeColor = if (playbackMode == com.example.shribalajikripadham.service.PlaybackMode.NO_REPEAT) {
-                                            Color.White.copy(alpha = 0.5f)
-                                        } else {
-                                            Color(0xFFFFD54F)
-                                        }
-                                        Text(
-                                            text = modeIcon,
-                                            fontSize = 20.sp,
-                                            color = modeColor
-                                        )
-                                    }
-
                                     IconButton(onClick = {
                                         BhajanAudioService.playPrevious(context)
                                     }) {
-                                        Text(text = "⏮", fontSize = 24.sp, color = Color.White)
+                                        Text(text = "⏮", fontSize = 22.sp, color = Color.White)
+                                    }
+
+                                    IconButton(onClick = {
+                                        BhajanAudioService.seekBackward(context, 10000)
+                                    }) {
+                                        Text(text = "⏪10s", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
                                     }
 
                                     Box(
@@ -750,29 +739,88 @@ fun LiveDarbarAndBhajanScreen(
                                     }
 
                                     IconButton(onClick = {
-                                        BhajanAudioService.playNext(context)
+                                        BhajanAudioService.seekForward(context, 10000)
                                     }) {
-                                        Text(text = "⏭", fontSize = 24.sp, color = Color.White)
+                                        Text(text = "10s⏩", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
                                     }
 
                                     IconButton(onClick = {
-                                        BhajanAudioService.stopPlayback(context)
+                                        BhajanAudioService.playNext(context)
                                     }) {
-                                        Text(text = "⏹", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
+                                        Text(text = "⏭", fontSize = 22.sp, color = Color.White)
                                     }
                                 }
 
-                                val modeLabel = when (playbackMode) {
-                                    com.example.shribalajikripadham.service.PlaybackMode.CONTINUOUS -> "🔁 निरंतर पाठ (Auto-Advance)"
-                                    com.example.shribalajikripadham.service.PlaybackMode.REPEAT_ONE -> "🔂 जाप लूप (Repeat Current)"
-                                    com.example.shribalajikripadham.service.PlaybackMode.NO_REPEAT -> "➡️ एक बार (Single Play)"
+                                Spacer(Modifier.height(6.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Playback Mode Switch
+                                    Surface(
+                                        color = Color.White.copy(alpha = 0.12f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.clickable { BhajanAudioService.cyclePlaybackMode(context) }
+                                    ) {
+                                        val modeLabel = when (playbackMode) {
+                                            com.example.shribalajikripadham.service.PlaybackMode.CONTINUOUS -> "🔁 निरंतर पाठ"
+                                            com.example.shribalajikripadham.service.PlaybackMode.REPEAT_ONE -> "🔂 जाप लूप"
+                                            com.example.shribalajikripadham.service.PlaybackMode.NO_REPEAT -> "➡️ एक बार"
+                                        }
+                                        Text(
+                                            text = modeLabel,
+                                            fontSize = 11.sp,
+                                            color = Color(0xFFFFD54F),
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+
+                                    // Stop button
+                                    Surface(
+                                        color = Color.White.copy(alpha = 0.12f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.clickable { BhajanAudioService.stopPlayback(context) }
+                                    ) {
+                                        Text(
+                                            text = "⏹ बंद करें",
+                                            fontSize = 11.sp,
+                                            color = Color.White.copy(alpha = 0.8f),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+
+                                    // Sleep Timer Switch
+                                    Surface(
+                                        color = if (sleepTimerMinutes > 0) Color(0xFFFFD54F).copy(alpha = 0.25f) else Color.White.copy(alpha = 0.12f),
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.clickable {
+                                            val nextTimer = when (sleepTimerMinutes) {
+                                                0 -> 15
+                                                15 -> 30
+                                                30 -> 60
+                                                else -> 0
+                                            }
+                                            BhajanAudioService.setSleepTimer(context, nextTimer)
+                                            if (nextTimer > 0) {
+                                                Toast.makeText(context, "🌙 स्लीप टाइमर: $nextTimer मिनट में स्वतः बंद होगा", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, "🌙 स्लीप टाइमर बंद", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    ) {
+                                        val timerLabel = if (sleepTimerMinutes > 0) "🌙 ${sleepTimerMinutes}m टाइमर" else "🌙 टाइमर"
+                                        Text(
+                                            text = timerLabel,
+                                            fontSize = 11.sp,
+                                            color = if (sleepTimerMinutes > 0) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.8f),
+                                            fontWeight = FontWeight.SemiBold,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
                                 }
-                                Text(
-                                    text = modeLabel,
-                                    fontSize = 11.sp,
-                                    color = Color(0xFFFFD54F).copy(alpha = 0.9f),
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
 
                                 if (playbackErrorMessage != null) {
                                     Spacer(Modifier.height(6.dp))

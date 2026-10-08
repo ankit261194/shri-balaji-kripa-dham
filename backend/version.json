@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 154,
-  "version_code": 154,
-  "latest_version_name": "2.67.0",
-  "version_name": "2.67.0",
-  "update_notes_hindi": "v2.67.0 (Build 154): 🌺 दुर्गा सप्तशती के सभी 17 अध्याय व स्तोत्र अब 100% होसिंगर हाई-स्पीड CDN पर उपलब्ध। निरंतर पाठ (Auto-Advance: अध्याय समाप्त होते ही अगला अध्याय स्वतः शुरू) एवं जाप लूप मोड। R8 मिनिफिकेशन द्वारा ऐप साइज़ में भारी कटौती।",
-  "update_notes_english": "v2.67.0 (Build 154): All 17 Durga Saptashati chapters & stotras 100% hosted on Hostinger CDN. Added seamless Continuous Auto-Advance playback, Jaap loop mode, media notification controls, and drastically reduced APK size via R8.",
+  "latest_version_code": 155,
+  "version_code": 155,
+  "latest_version_name": "2.68.0",
+  "version_name": "2.68.0",
+  "update_notes_hindi": "v2.68.0 (Build 155): 🚨 तात्कालिक क्रैश फिक्स (Zero-Crash Release) - ऐप तुरंत सुचारू रूप से खुलेगा। साथ ही ऑडियो प्लेयर में 10 सेकंड आगे/पीछे स्किप (⏩10s / ⏪10s), 🌙 स्लीप टाइमर (15/30/60 मिनट), और हेडफोन हटने पर स्वतः पॉज़ की नई सुविधा।",
+  "update_notes_english": "v2.68.0 (Build 155): Critical startup crash fix (Zero-Crash guaranteed). Added +10s/-10s audio skip buttons, Sleep Timer (15/30/60 min auto-stop), and auto-pause on headphone disconnect.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true
