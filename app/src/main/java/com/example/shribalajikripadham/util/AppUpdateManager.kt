@@ -107,9 +107,6 @@ object AppUpdateManager {
     suspend fun fetchLatestUpdateFromOnline(urlStr: String = DEFAULT_VERSION_JSON_URL): OnlineUpdateInfo? {
         return withContext(Dispatchers.IO) {
             val fromAshram = fetchFromVersionJson(ASHRAM_VERSION_JSON_URL)
-            if (fromAshram != null && fromAshram.versionCode > 1) {
-                return@withContext fromAshram
-            }
             val fromJsDelivr = fetchFromVersionJson(DEFAULT_VERSION_JSON_URL)
             val fromJsDelivrApp = fetchFromVersionJson(JSDELIVR_APP_UPDATE_URL)
             val fromGitHubVersion = fetchFromVersionJson(GITHUB_VERSION_JSON_URL)

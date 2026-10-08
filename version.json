@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 151,
-  "version_code": 151,
-  "latest_version_name": "2.65.10",
-  "version_name": "2.65.10",
-  "update_notes_hindi": "v2.65.10 (Build 151): 🚩 रविवार टोकन प्रणाली पूर्ण शुद्धिकरण — केवल रविवार प्रातः 8:30 से सायं 5:00 बजे तक, 30 किमी / 200 मीटर जियोफेंस, 1 फोन 1 टोकन नियम व ज़ीरो-बाईपास सुरक्षा।",
-  "update_notes_english": "v2.65.10 (Build 151): Sunday Token System Hardening — Strictly Sunday 8:30 AM to 5:00 PM, 30km / 200m geofence, 1 Phone 1 Token & zero-bypass security.",
+  "latest_version_code": 152,
+  "version_code": 152,
+  "latest_version_name": "2.65.11",
+  "version_name": "2.65.11",
+  "update_notes_hindi": "v2.65.11 (Build 152): 🌺 श्री प्रेतराज सरकार आरती, श्री दुर्गा चालीसा, विन्ध्येश्वरी चालीसा, दुर्गा सप्तशती (नित्य सिद्ध पाठ व सम्पूर्ण 13 अध्याय), वीर हनुमंत साबर रक्षा मंत्र व पावन भजन जोड़े गए।",
+  "update_notes_english": "v2.65.11 (Build 152): Added authentic Pretraj Sarkar Aarti, Durga Chalisa, Vindhweshwari Chalisa, Durga Saptashati (Nitya Path & 13 Chapters), Veer Shabar Raksha Mantra & new Bhajans.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true

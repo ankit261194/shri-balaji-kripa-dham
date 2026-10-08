@@ -45,7 +45,6 @@ import com.example.shribalajikripadham.data.repository.AdminPermissionsUpdate
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.ui.common.SacredAvatar
-import com.example.shribalajikripadham.ui.feedback.DevoteeQueryDialog
 import com.example.shribalajikripadham.ui.home.AppUiLayout
 import com.example.shribalajikripadham.util.*
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -282,7 +281,6 @@ fun AdminDashboardScreen(
     var resetSevPin by remember { mutableStateOf("") }
     var resetCredentialsErrorMsg by remember { mutableStateOf<String?>(null) }
 
-    var showAdminSubmitQueryDialog by remember { mutableStateOf(false) }
     var showManageSevadarDirectoryDialog by remember { mutableStateOf(false) }
 
     // App Customizer
@@ -1305,10 +1303,7 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "महा-लेजर 📊" else "Master Ledger 📊")
             }
 
-            // 5. Helpdesk, ID Badges & Management Operations
-            if (isSuper || admin.canManageHelpdesk) {
-                allowedTabs.add(if (isHindi) "📩 सहायता व सुझाव" else "Helpdesk & Queries")
-            }
+            // 5. ID Badges & Management Operations
             if (isSuper || admin.canManageIdCards) {
                 allowedTabs.add(if (isHindi) "🪪 ID कार्ड स्टूडियो" else "🪪 ID Card Studio")
             }
@@ -1333,9 +1328,6 @@ fun AdminDashboardScreen(
                 // (Customizer removed)
                 allowedTabs.add(if (isHindi) "ऑटो-अपडेट" else "Updates")
             }
-
-            // Universal Feedback module for all admins/sevadars to submit issues/suggestions to Super Admin:
-            allowedTabs.add(if (isHindi) "📩 सुपरएडमिन को सुझाव / समस्या" else "Feedback to Super Admin")
 
             val allAdminModules = remember(isHindi) { getAshramAdminModules(isHindi) }
 
@@ -1395,7 +1387,7 @@ fun AdminDashboardScreen(
                                     }
                                 }
 
-                                // Right: Action buttons (गाइड, पासवर्ड, सुझाव)
+                                // Right: Action buttons (पिन / पासवर्ड)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(5.dp)
@@ -1418,26 +1410,6 @@ fun AdminDashboardScreen(
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFF1B5E20),
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                            maxLines = 1,
-                                            softWrap = false
-                                        )
-                                    }
-
-                                    // Helpdesk / Query to Super Admin
-                                    Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = Color(0xFFFFF3E0),
-                                        border = BorderStroke(0.8.dp, Color(0xFFFFB74D)),
-                                        modifier = Modifier.clickable {
-                                            showAdminSubmitQueryDialog = true
-                                        }
-                                    ) {
-                                        Text(
-                                            text = "✉️ सुझाव",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaroonPrimary,
                                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                                             maxLines = 1,
                                             softWrap = false
@@ -1595,7 +1567,7 @@ fun AdminDashboardScreen(
                                             modifier = Modifier
                                                 .height(34.dp)
                                                 .clickable {
-                                                    val idx = allowedTabs.indexOfFirst { it.contains("चैट") || it.contains("Helpdesk") || it.contains("पूछताछ") }
+                                                    val idx = allowedTabs.indexOfFirst { it.contains("चैट") }
                                                     if (idx >= 0) {
                                                         selectedTab = idx
                                                         activeScreenTitle = allowedTabs[idx]
@@ -1659,13 +1631,9 @@ fun AdminDashboardScreen(
                             isGridView = isAdminHubGridView,
                             onToggleView = { isAdminHubGridView = it },
                             onSelectModule = { item ->
-                                if (item.tabTitle.contains("सुझाव") || item.tabTitle.contains("Feedback") || item.tabTitle.contains("समस्या")) {
-                                    showAdminSubmitQueryDialog = true
-                                } else {
-                                    val idx = allowedTabs.indexOf(item.tabTitle)
-                                    if (idx >= 0) selectedTab = idx
-                                    activeScreenTitle = item.tabTitle
-                                }
+                                val idx = allowedTabs.indexOf(item.tabTitle)
+                                if (idx >= 0) selectedTab = idx
+                                activeScreenTitle = item.tabTitle
                             }
                         )
                     } else {
@@ -1727,25 +1695,6 @@ fun AdminDashboardScreen(
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color(0xFF1B5E20),
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                                                maxLines = 1,
-                                                softWrap = false
-                                            )
-                                        }
-
-                                        Surface(
-                                            shape = RoundedCornerShape(6.dp),
-                                            color = Color(0xFFFFF3E0),
-                                            border = BorderStroke(0.8.dp, Color(0xFFFFB74D)),
-                                            modifier = Modifier.clickable {
-                                                showAdminSubmitQueryDialog = true
-                                            }
-                                        ) {
-                                            Text(
-                                                text = "✉️ सुझाव",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaroonPrimary,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                                                 maxLines = 1,
                                                 softWrap = false
@@ -1840,13 +1789,9 @@ fun AdminDashboardScreen(
                                     isGridView = isAdminHubGridView,
                                     onToggleView = { isAdminHubGridView = it },
                                     onSelectModule = { item ->
-                                        if (item.tabTitle.contains("सुझाव") || item.tabTitle.contains("Feedback") || item.tabTitle.contains("समस्या")) {
-                                            showAdminSubmitQueryDialog = true
-                                        } else {
-                                            val idx = allowedTabs.indexOf(item.tabTitle)
-                                            if (idx >= 0) selectedTab = idx
-                                            activeScreenTitle = item.tabTitle
-                                        }
+                                        val idx = allowedTabs.indexOf(item.tabTitle)
+                                        if (idx >= 0) selectedTab = idx
+                                        activeScreenTitle = item.tabTitle
                                     }
                                 )
                             }
@@ -3019,28 +2964,6 @@ fun AdminDashboardScreen(
                                 settings = settings
                             )
                         }
-                        currentTabTitle == "📩 सहायता व सुझाव" || currentTabTitle == "Helpdesk & Queries" -> {
-                            AdminHelpdeskTab(
-                                isHindi = isHindi,
-                                repository = repository,
-                                superAdminName = admin.name,
-                                currentUserRole = if (admin.role == AdminRole.SUPER_ADMIN) "SUPER_ADMIN" else "SEVADAR",
-                                currentAdminId = admin.id.toString(),
-                                currentAdminPhone = admin.phoneNumber
-                            )
-                        }
-                        currentTabTitle == "📩 सुपरएडमिन को सुझाव / समस्या" || currentTabTitle == "Feedback to Super Admin" -> {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                DevoteeQueryDialog(
-                                    isHindi = isHindi,
-                                    repository = repository,
-                                    initialName = admin.name,
-                                    initialPhone = admin.phoneNumber,
-                                    userRole = if (admin.role == AdminRole.SUPER_ADMIN) "SUPER_ADMIN" else "ADMIN",
-                                    onDismiss = { activeScreenTitle = null }
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -3323,10 +3246,6 @@ fun AdminDashboardScreen(
                                 Text(if (isHindi) "📍 आश्रम GPS लोकेशन व जियोफेंसिंग बदलना" else "Change Ashram GPS & Geofence", fontSize = 13.sp)
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(checked = newSevCanHelpdesk, onCheckedChange = { newSevCanHelpdesk = it })
-                                Text(if (isHindi) "📩 सहायता व भक्त प्रश्नोत्तर (Helpdesk)" else "Helpdesk & Inquiries", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF283593))
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Checkbox(checked = newSevCanPaymentLedger, onCheckedChange = { newSevCanPaymentLedger = it })
                                 Text(if (isHindi) "💳 पेमेंट व दान लेजर (Payment Ledger)" else "Payment & Donation Ledger", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF2E7D32))
                             }
@@ -3372,7 +3291,6 @@ fun AdminDashboardScreen(
                                 if (newSevCanAartiBhajan) perms.add("आरती व भजन")
                                 if (newSevCanUiControl) perms.add("UI बॉक्स कंट्रोल")
                                 if (newSevCanIdCards) perms.add("ID कार्ड स्टूडियो")
-                                if (newSevCanHelpdesk) perms.add("सहायता व सुझाव")
                                 if (newSevCanPaymentLedger) perms.add("पेमेंट लेजर")
                                 if (newSevCanWebsite) perms.add("वेबसाइट व CMS")
                                 if (newSevCanServicesToggles) perms.add("सेवाएं टॉगल")
@@ -4040,10 +3958,6 @@ fun AdminDashboardScreen(
                                 Text(if (isHindi) "📍 आश्रम GPS लोकेशन व जियोफेंसिंग बदलना" else "Change Ashram GPS & Geofence", fontSize = 13.sp)
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(checked = editSevCanHelpdesk, onCheckedChange = { editSevCanHelpdesk = it })
-                                Text(if (isHindi) "📩 सहायता व भक्त प्रश्नोत्तर (Helpdesk)" else "Helpdesk & Inquiries", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF283593))
-                            }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Checkbox(checked = editSevCanPaymentLedger, onCheckedChange = { editSevCanPaymentLedger = it })
                                 Text(if (isHindi) "💳 पेमेंट व दान लेजर (Payment Ledger)" else "Payment & Donation Ledger", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF2E7D32))
                             }
@@ -4410,19 +4324,6 @@ fun AdminDashboardScreen(
                     Text(if (isHindi) "रद्द करें" else "Cancel")
                 }
             }
-        )
-    }
-
-    // --- ADMIN SUBMIT QUERY DIALOG (Admin -> Super Admin Helpdesk) ---
-    if (showAdminSubmitQueryDialog && loggedInAdmin != null) {
-        val curAdmin = loggedInAdmin!!
-        DevoteeQueryDialog(
-            isHindi = isHindi,
-            repository = repository,
-            initialName = curAdmin.name,
-            initialPhone = curAdmin.phoneNumber,
-            userRole = if (curAdmin.role == AdminRole.SUPER_ADMIN) "SUPER_ADMIN" else "ADMIN",
-            onDismiss = { showAdminSubmitQueryDialog = false }
         )
     }
 }

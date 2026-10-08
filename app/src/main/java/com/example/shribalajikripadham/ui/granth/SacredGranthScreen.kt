@@ -21,9 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.shribalajikripadham.data.sacred.HanumanBahukData
-import com.example.shribalajikripadham.data.sacred.HanumanashtakData
-import com.example.shribalajikripadham.data.sacred.SundarkandData
+import com.example.shribalajikripadham.data.sacred.*
 import com.example.shribalajikripadham.theme.AmberGold
 import com.example.shribalajikripadham.theme.MaroonAccent
 import com.example.shribalajikripadham.theme.MaroonPrimary
@@ -101,7 +99,11 @@ fun SacredGranthScreen(
                                 0 -> if (isHindi) "📖 सम्पूर्ण सुंदरकाण्ड" else "📖 Shri Sundarkand"
                                 1 -> if (isHindi) "🛡️ सम्पूर्ण हनुमान बाहुक" else "🛡️ Shri Hanuman Bahuk"
                                 2 -> if (isHindi) "🚩 संकटमोचन हनुमानाष्टक" else "🚩 Sankatmochan Hanumanashtak"
-                                else -> if (isHindi) "🪔 आश्रम ध्यान व संपुट" else "🪔 Ashram Dhyan & Samput"
+                                3 -> if (isHindi) "🪔 आश्रम ध्यान व संपुट" else "🪔 Ashram Dhyan & Samput"
+                                4 -> if (isHindi) "🌺 श्री दुर्गा सप्तशती (नित्य पाठ)" else "🌺 Durga Saptashati (Daily Path)"
+                                5 -> if (isHindi) "📖 श्री दुर्गा सप्तशती (सम्पूर्ण १३ अध्याय)" else "📖 Durga Saptashati (13 Chapters)"
+                                6 -> if (isHindi) "🚩 श्री वीर हनुमंत साबर रक्षा मंत्र" else "🚩 Shri Veer Shabar Raksha Mantra"
+                                else -> if (isHindi) "📖 पावन ग्रंथ व स्तुति" else "📖 Sacred Granths"
                             },
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
@@ -208,10 +210,11 @@ fun SacredGranthScreen(
                 .padding(innerPadding)
         ) {
             // 1. GRANTH SELECTION TABS
-            TabRow(
+            ScrollableTabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = selectedTheme.cardColor,
-                contentColor = MaroonPrimary
+                contentColor = MaroonPrimary,
+                edgePadding = 12.dp
             ) {
                 Tab(
                     selected = selectedTab == 0,
@@ -266,6 +269,48 @@ fun SacredGranthScreen(
                             "ध्यान व संपुट",
                             fontSize = 12.sp,
                             fontWeight = if (selectedTab == 3) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                )
+                Tab(
+                    selected = selectedTab == 4,
+                    onClick = {
+                        selectedTab = 4
+                        isAutoScrolling = false
+                    },
+                    text = {
+                        Text(
+                            "🌺 दुर्गा सप्तशती (नित्य)",
+                            fontSize = 12.sp,
+                            fontWeight = if (selectedTab == 4) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                )
+                Tab(
+                    selected = selectedTab == 5,
+                    onClick = {
+                        selectedTab = 5
+                        isAutoScrolling = false
+                    },
+                    text = {
+                        Text(
+                            "📖 सप्तशती (१३ अध्याय)",
+                            fontSize = 12.sp,
+                            fontWeight = if (selectedTab == 5) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                )
+                Tab(
+                    selected = selectedTab == 6,
+                    onClick = {
+                        selectedTab = 6
+                        isAutoScrolling = false
+                    },
+                    text = {
+                        Text(
+                            "🚩 वीर साबर रक्षा मंत्र",
+                            fontSize = 12.sp,
+                            fontWeight = if (selectedTab == 6) FontWeight.Bold else FontWeight.Normal
                         )
                     }
                 )
@@ -431,6 +476,60 @@ fun SacredGranthScreen(
                                 title = "⚔️ ५. श्री भैरव बाबा व प्रेतराज सरकार स्मरण",
                                 devanagariText = "ॐ भ्रं भैरवाय नमः।\nॐ नमो भगवते भैरवाय, सर्व विघ्न विनाशाय, सर्व भूत प्रेत बाधा निवारणाय नमः॥",
                                 meaning = "भावार्थ: धाम की पावन भूमि पर श्री भैरव बाबा और प्रेतराज सरकार की उपस्थिति से समस्त दुष्ट आत्माओं और नकारात्मक शक्तियों का शमन होता है और सत्य धर्म की विजय होती है।",
+                                theme = selectedTheme,
+                                fontSize = fontSizeSp
+                            )
+                        }
+                    }
+                    4 -> {
+                        // TAB 4: DURGA SAPTASHATI NITYA PATH (Kunjika, Kavach, Argala, Keelak, Kshama)
+                        item {
+                            IntroductoryNoticeCard(
+                                title = DurgaSaptashatiNityaPathData.title,
+                                note = "दुर्गा सप्तशती के सर्वाधिक सिद्ध एवं नित्य पढ़े जाने वाले पावन अंग। सिद्ध कुंजिका, श्री चंडी कवच, अर्गला, कीलक और क्षमा प्रार्थना से भगवती की कृपा सदा बनी रहती है।",
+                                theme = selectedTheme
+                            )
+                        }
+
+                        itemsIndexed(DurgaSaptashatiNityaPathData.verses) { index, verse ->
+                            SacredVerseCard(
+                                verse = verse,
+                                theme = selectedTheme,
+                                fontSize = fontSizeSp
+                            )
+                        }
+                    }
+                    5 -> {
+                        // TAB 5: DURGA SAPTASHATI 13 CHAPTERS (Complete unabridged)
+                        item {
+                            IntroductoryNoticeCard(
+                                title = DurgaSaptashatiSampurnaAdhyayData.title,
+                                note = "मार्कण्डेय पुराण अन्तर्गत श्री दुर्गा सप्तशती के सम्पूर्ण १३ अध्यायों का विधिवत पाठ। मधु-कैटभ वध (प्रथम चरित्र), महिषासुर वध (मध्यम चरित्र) और शुम्भ-निशुम्भ वध (उत्तर चरित्र) सहित।",
+                                theme = selectedTheme
+                            )
+                        }
+
+                        itemsIndexed(DurgaSaptashatiSampurnaAdhyayData.chapters) { index, chapter ->
+                            SacredVerseCard(
+                                verse = chapter,
+                                theme = selectedTheme,
+                                fontSize = fontSizeSp
+                            )
+                        }
+                    }
+                    6 -> {
+                        // TAB 6: HANUMAN VEER SHABAR RAKSHA MANTRA
+                        item {
+                            IntroductoryNoticeCard(
+                                title = HanumanVeerShabarMantraData.title,
+                                note = "श्री हनुमान जी का साक्षात जाग्रत वीर साबर रक्षा मंत्र। मुग्दर दाहिने हाथ, पर्वत बाएं हाथ। भूत-प्रेत, संकट, भय, रोग एवं तांत्रिक बाधा नाशक अमोघ रक्षा मंत्र।",
+                                theme = selectedTheme
+                            )
+                        }
+
+                        itemsIndexed(HanumanVeerShabarMantraData.verses) { index, verse ->
+                            SacredVerseCard(
+                                verse = verse,
                                 theme = selectedTheme,
                                 fontSize = fontSizeSp
                             )

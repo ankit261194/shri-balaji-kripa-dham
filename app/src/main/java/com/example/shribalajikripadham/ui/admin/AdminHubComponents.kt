@@ -180,14 +180,14 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
         ),
 
         // ==========================================
-        // 3. 💬 सेवादार व सहायता (Staff & Helpdesk)
+        // 3. 👥 सेवादार व स्टाफ (Staff & Sevadars)
         // ==========================================
         AdminHubModuleItem(
             tabTitle = if (isHindi) "सेवादार खाते" else "Sevadars",
             icon = "👥",
             titleHindi = "सेवादार खाते",
             titleEnglish = "Sevadar Management",
-            categoryHindi = "💬 सेवादार व सहायता",
+            categoryHindi = "👥 सेवादार व स्टाफ",
             descriptionHindi = "व्यवस्थापक व सेवादारों के अधिकार, फोटो व पिन प्रबंधन",
             descriptionEnglish = "Sevadar staff permissions, profile photos and security PINs",
             relatedTabs = listOf(
@@ -201,39 +201,13 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
             icon = "🪪",
             titleHindi = "ID कार्ड स्टूडियो",
             titleEnglish = "ID Card Studio",
-            categoryHindi = "💬 सेवादार व सहायता",
+            categoryHindi = "👥 सेवादार व स्टाफ",
             descriptionHindi = "सेवादारों के अधिकृत डिजिटल पहचान पत्र बनाएं व प्रिंट करें",
             descriptionEnglish = "Generate, preview and export official Sevadar ID badges",
             relatedTabs = listOf(
                 if (isHindi) "सेवादार खाते" else "Sevadars",
                 if (isHindi) "🛡️ सुरक्षा व ऑडिट" else "Security & Audit",
                 if (isHindi) "सुपर कंट्रोल" else "Super Control"
-            )
-        ),
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "📩 सहायता व सुझाव" else "Helpdesk & Queries",
-            icon = "📩",
-            titleHindi = "सहायता व सुझाव",
-            titleEnglish = "Helpdesk & Queries",
-            categoryHindi = "💬 सेवादार व सहायता",
-            descriptionHindi = "भक्तों व सेवादारों की समस्याएं, कमियां, सुझाव व समाधान",
-            descriptionEnglish = "Devotee and admin issues, complaints, suggestions and replies",
-            relatedTabs = listOf(
-                if (isHindi) "सेवादार खाते" else "Sevadars",
-                if (isHindi) "सुपर कंट्रोल" else "Super Control"
-            )
-        ),
-        AdminHubModuleItem(
-            tabTitle = if (isHindi) "📩 सुपरएडमिन को सुझाव / समस्या" else "Feedback to Super Admin",
-            icon = "📝",
-            titleHindi = "सुपरएडमिन को सुझाव / समस्या",
-            titleEnglish = "Feedback to Super Admin",
-            categoryHindi = "💬 सेवादार व सहायता",
-            descriptionHindi = "आश्रम व्यवस्था, कमियों या नए सुझावों की रिपोर्ट सीधे सुपर एडमिन को भेजें",
-            descriptionEnglish = "Send complaints, bugs and improvement suggestions directly to Super Admin",
-            relatedTabs = listOf(
-                if (isHindi) "टोकन कतार" else "Tokens",
-                if (isHindi) "सेवादार खाते" else "Sevadars"
             )
         ),
 
@@ -627,7 +601,7 @@ fun AdminHubDashboardView(
         if (isHindi) "सभी" else "All",
         if (isHindi) "🎫 टोकन व दर्शन" else "🎫 Tokens & Darbar",
         if (isHindi) "🔥 हवन, अर्जी व पर्चे" else "🔥 Havan & Parchas",
-        if (isHindi) "💬 सेवादार व सहायता" else "💬 Staff & Helpdesk",
+        if (isHindi) "👥 सेवादार व स्टाफ" else "👥 Sevadars & Staff",
         if (isHindi) "🌺 दर्शन व मीडिया" else "🌺 Darshan & Media",
         if (isHindi) "📊 लेजर व खाते" else "📊 Ledgers & Accounts",
         if (isHindi) "⚙️ सिस्टम व कंट्रोल" else "⚙️ System & Control"
