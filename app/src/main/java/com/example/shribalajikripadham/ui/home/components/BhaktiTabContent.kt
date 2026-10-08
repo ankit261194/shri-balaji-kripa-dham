@@ -161,7 +161,8 @@ fun BhaktiTabContent(
                                                 title = if (isHindi) track.titleHindi else track.titleEnglish,
                                                 artist = "श्री बालाजी कृपा धाम",
                                                 audioUrl = track.audioUrl,
-                                                trackKey = track.trackKey
+                                                trackKey = track.trackKey,
+                                                playlist = tracksList
                                             )
                                         }
                                     }

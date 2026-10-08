@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 153,
-  "version_code": 153,
-  "latest_version_name": "2.66.0",
-  "version_name": "2.66.0",
-  "update_notes_hindi": "v2.66.0 (Build 153): 🌺 संपूर्ण 40 पावन आरतियां, भजन व दुर्गा सप्तशती के सभी 17 अध्याय व स्तोत्र 100% प्रामाणिक ऑडियो व पाठ सहित। सभी ऑडियो ट्रैक मिलान पूरी निष्ठा से ठीक किए गए।",
-  "update_notes_english": "v2.66.0 (Build 153): Complete suite of 40 authentic devotional tracks including all 17 chapters and stotras of Durga Saptashati with 100% verified authentic audio & full unabridged lyrics.",
+  "latest_version_code": 154,
+  "version_code": 154,
+  "latest_version_name": "2.67.0",
+  "version_name": "2.67.0",
+  "update_notes_hindi": "v2.67.0 (Build 154): 🌺 दुर्गा सप्तशती के सभी 17 अध्याय व स्तोत्र अब 100% होसिंगर हाई-स्पीड CDN पर उपलब्ध। निरंतर पाठ (Auto-Advance: अध्याय समाप्त होते ही अगला अध्याय स्वतः शुरू) एवं जाप लूप मोड। R8 मिनिफिकेशन द्वारा ऐप साइज़ में भारी कटौती।",
+  "update_notes_english": "v2.67.0 (Build 154): All 17 Durga Saptashati chapters & stotras 100% hosted on Hostinger CDN. Added seamless Continuous Auto-Advance playback, Jaap loop mode, media notification controls, and drastically reduced APK size via R8.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true

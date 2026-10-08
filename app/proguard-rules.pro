@@ -71,5 +71,21 @@
 -keepclassmembers class com.onesignal.** { *; }
 -keep interface com.onesignal.** { *; }
 
+# 12. Keep MLKit Vision, Barcode & Text Recognition
+-keep class com.google.mlkit.** { *; }
+-dontwarn com.google.mlkit.**
+-keep class com.google.android.odml.** { *; }
+-dontwarn com.google.android.odml.**
+
+# 13. Keep Services, Repositories, Helpers, ViewModels & UI
+-keep class com.example.shribalajikripadham.service.** { *; }
+-keepclassmembers class com.example.shribalajikripadham.service.** { *; }
+-keep class com.example.shribalajikripadham.data.repository.** { *; }
+-keepclassmembers class com.example.shribalajikripadham.data.repository.** { *; }
+-keep class com.example.shribalajikripadham.util.** { *; }
+-keepclassmembers class com.example.shribalajikripadham.util.** { *; }
+-keep class com.example.shribalajikripadham.ui.** { *; }
+-keepclassmembers class com.example.shribalajikripadham.ui.** { *; }
+
 
 

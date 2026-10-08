@@ -75,7 +75,7 @@ fun LiveDarbarAndBhajanScreen(
     val totalDurationMs by BhajanAudioService.durationMs.collectAsState()
 
     var currentTrackIndex by remember { mutableIntStateOf(0) }
-    var isLooping by remember { mutableStateOf(false) }
+    val playbackMode by BhajanAudioService.playbackMode.collectAsState()
     var playbackErrorMessage by remember { mutableStateOf<String?>(null) }
     var showLyricsDialog by remember { mutableStateOf<SacredTrack?>(null) }
     var cacheRefreshCounter by remember { mutableIntStateOf(0) }
@@ -123,7 +123,8 @@ fun LiveDarbarAndBhajanScreen(
                 title = if (isHindi) track.titleHindi else track.titleEnglish,
                 artist = track.subtitleHindi.ifBlank { "श्री बालाजी कृपा धाम (डूँगरा जाट)" },
                 audioUrl = playableSource,
-                trackKey = track.trackKey
+                trackKey = track.trackKey,
+                playlist = tracksList
             )
         } catch (e: Exception) {
             playbackErrorMessage = e.localizedMessage
@@ -700,17 +701,26 @@ fun LiveDarbarAndBhajanScreen(
                                     horizontalArrangement = Arrangement.SpaceEvenly,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    IconButton(onClick = { isLooping = !isLooping }) {
+                                    IconButton(onClick = { BhajanAudioService.cyclePlaybackMode(context) }) {
+                                        val modeIcon = when (playbackMode) {
+                                            com.example.shribalajikripadham.service.PlaybackMode.CONTINUOUS -> "🔁"
+                                            com.example.shribalajikripadham.service.PlaybackMode.REPEAT_ONE -> "🔂"
+                                            com.example.shribalajikripadham.service.PlaybackMode.NO_REPEAT -> "➡️"
+                                        }
+                                        val modeColor = if (playbackMode == com.example.shribalajikripadham.service.PlaybackMode.NO_REPEAT) {
+                                            Color.White.copy(alpha = 0.5f)
+                                        } else {
+                                            Color(0xFFFFD54F)
+                                        }
                                         Text(
-                                            text = "🔁",
+                                            text = modeIcon,
                                             fontSize = 20.sp,
-                                            color = if (isLooping) Color(0xFFFFD54F) else Color.White.copy(alpha = 0.5f)
+                                            color = modeColor
                                         )
                                     }
 
                                     IconButton(onClick = {
-                                        val prevIdx = if (safeTrackIndex - 1 < 0) tracksList.size - 1 else safeTrackIndex - 1
-                                        playTrack(prevIdx)
+                                        BhajanAudioService.playPrevious(context)
                                     }) {
                                         Text(text = "⏮", fontSize = 24.sp, color = Color.White)
                                     }
@@ -740,8 +750,7 @@ fun LiveDarbarAndBhajanScreen(
                                     }
 
                                     IconButton(onClick = {
-                                        val nextIdx = (safeTrackIndex + 1) % tracksList.size
-                                        playTrack(nextIdx)
+                                        BhajanAudioService.playNext(context)
                                     }) {
                                         Text(text = "⏭", fontSize = 24.sp, color = Color.White)
                                     }
@@ -752,6 +761,18 @@ fun LiveDarbarAndBhajanScreen(
                                         Text(text = "⏹", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
                                     }
                                 }
+
+                                val modeLabel = when (playbackMode) {
+                                    com.example.shribalajikripadham.service.PlaybackMode.CONTINUOUS -> "🔁 निरंतर पाठ (Auto-Advance)"
+                                    com.example.shribalajikripadham.service.PlaybackMode.REPEAT_ONE -> "🔂 जाप लूप (Repeat Current)"
+                                    com.example.shribalajikripadham.service.PlaybackMode.NO_REPEAT -> "➡️ एक बार (Single Play)"
+                                }
+                                Text(
+                                    text = modeLabel,
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFFFD54F).copy(alpha = 0.9f),
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
 
                                 if (playbackErrorMessage != null) {
                                     Spacer(Modifier.height(6.dp))

@@ -15,6 +15,8 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.shribalajikripadham.MainActivity
+import com.example.shribalajikripadham.data.sacred.SACRED_TRACKS
+import com.example.shribalajikripadham.data.sacred.SacredTrack
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -23,6 +25,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+
+/**
+ * Playback Mode for Sacred Devotional Tracks:
+ * - CONTINUOUS: Seamlessly plays next chapter/stotra/bhajan in sequence (Default)
+ * - REPEAT_ONE: Jaap Loop Mode - repeats the same holy path or mantra continuously
+ * - NO_REPEAT: Plays current track once and stops
+ */
+enum class PlaybackMode {
+    CONTINUOUS,
+    REPEAT_ONE,
+    NO_REPEAT
+}
 
 class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
 
@@ -36,6 +50,9 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
         const val ACTION_TOGGLE = "com.example.shribalajikripadham.action.TOGGLE"
         const val ACTION_STOP = "com.example.shribalajikripadham.action.STOP"
         const val ACTION_SEEK = "com.example.shribalajikripadham.action.SEEK"
+        const val ACTION_NEXT = "com.example.shribalajikripadham.action.NEXT"
+        const val ACTION_PREV = "com.example.shribalajikripadham.action.PREV"
+        const val ACTION_CYCLE_MODE = "com.example.shribalajikripadham.action.CYCLE_MODE"
 
         const val EXTRA_TRACK_INDEX = "extra_track_index"
         const val EXTRA_TRACK_TITLE = "extra_track_title"
@@ -65,7 +82,29 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
         private val _currentArtist = MutableStateFlow("")
         val currentArtist = _currentArtist.asStateFlow()
 
-        fun playTrack(context: Context, trackIndex: Int, title: String, artist: String, audioUrl: String, trackKey: String = "") {
+        private val _playbackMode = MutableStateFlow(PlaybackMode.CONTINUOUS)
+        val playbackMode = _playbackMode.asStateFlow()
+
+        // Active playlist cache
+        @Volatile
+        private var activePlaylist: List<SacredTrack> = SACRED_TRACKS
+
+        fun setPlaylist(tracks: List<SacredTrack>) {
+            if (tracks.isNotEmpty()) {
+                activePlaylist = tracks
+            }
+        }
+
+        fun playTrack(
+            context: Context,
+            trackIndex: Int,
+            title: String,
+            artist: String,
+            audioUrl: String,
+            trackKey: String = "",
+            playlist: List<SacredTrack>? = null
+        ) {
+            playlist?.let { if (it.isNotEmpty()) activePlaylist = it }
             val intent = Intent(context, BhajanAudioService::class.java).apply {
                 action = ACTION_PLAY
                 putExtra(EXTRA_TRACK_INDEX, trackIndex)
@@ -84,6 +123,41 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
         fun togglePlayPause(context: Context) {
             val intent = Intent(context, BhajanAudioService::class.java).apply {
                 action = ACTION_TOGGLE
+            }
+            context.startService(intent)
+        }
+
+        fun playNext(context: Context) {
+            val intent = Intent(context, BhajanAudioService::class.java).apply {
+                action = ACTION_NEXT
+            }
+            context.startService(intent)
+        }
+
+        fun playPrevious(context: Context) {
+            val intent = Intent(context, BhajanAudioService::class.java).apply {
+                action = ACTION_PREV
+            }
+            context.startService(intent)
+        }
+
+        fun cyclePlaybackMode(context: Context) {
+            val nextMode = when (_playbackMode.value) {
+                PlaybackMode.CONTINUOUS -> PlaybackMode.REPEAT_ONE
+                PlaybackMode.REPEAT_ONE -> PlaybackMode.NO_REPEAT
+                PlaybackMode.NO_REPEAT -> PlaybackMode.CONTINUOUS
+            }
+            _playbackMode.value = nextMode
+            val intent = Intent(context, BhajanAudioService::class.java).apply {
+                action = ACTION_CYCLE_MODE
+            }
+            context.startService(intent)
+        }
+
+        fun setPlaybackMode(context: Context, mode: PlaybackMode) {
+            _playbackMode.value = mode
+            val intent = Intent(context, BhajanAudioService::class.java).apply {
+                action = ACTION_CYCLE_MODE
             }
             context.startService(intent)
         }
@@ -215,7 +289,6 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
                 val title = intent.getStringExtra(EXTRA_TRACK_TITLE) ?: "श्री बालाजी भजन"
                 val artist = intent.getStringExtra(EXTRA_TRACK_ARTIST) ?: "श्री बालाजी कृपा धाम"
                 val url = intent.getStringExtra(EXTRA_TRACK_URL) ?: ""
-
                 val trackKey = intent.getStringExtra(EXTRA_TRACK_KEY) ?: ""
 
                 trackIndex = index
@@ -253,12 +326,61 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
                 mediaPlayer?.seekTo(pos)
                 _currentPositionMs.value = pos
             }
+            ACTION_NEXT -> {
+                playNextTrackInternal()
+            }
+            ACTION_PREV -> {
+                playPreviousTrackInternal()
+            }
+            ACTION_CYCLE_MODE -> {
+                updateNotification(mediaPlayer?.isPlaying == true)
+            }
             ACTION_STOP -> {
                 stopSelfService()
             }
         }
 
         return START_NOT_STICKY
+    }
+
+    private fun playNextTrackInternal() {
+        val list = activePlaylist.ifEmpty { SACRED_TRACKS }
+        if (list.isEmpty()) return
+        val nextIndex = if (trackIndex in list.indices) (trackIndex + 1) % list.size else 0
+        playTrackByIndex(nextIndex, list)
+    }
+
+    private fun playPreviousTrackInternal() {
+        // Rewind to 0 if already played more than 3 seconds
+        if ((mediaPlayer?.currentPosition ?: 0) > 3000) {
+            mediaPlayer?.seekTo(0)
+            _currentPositionMs.value = 0
+            return
+        }
+        val list = activePlaylist.ifEmpty { SACRED_TRACKS }
+        if (list.isEmpty()) return
+        val prevIndex = if (trackIndex in list.indices) {
+            if (trackIndex - 1 < 0) list.size - 1 else trackIndex - 1
+        } else {
+            0
+        }
+        playTrackByIndex(prevIndex, list)
+    }
+
+    private fun playTrackByIndex(index: Int, list: List<SacredTrack>) {
+        if (index !in list.indices) return
+        val track = list[index]
+        trackIndex = index
+        trackTitle = track.titleHindi
+        trackArtist = track.subtitleHindi.ifBlank { "श्री बालाजी कृपा धाम" }
+        trackUrl = track.audioUrl
+
+        _currentTrackIndex.value = index
+        _currentTitle.value = track.titleHindi
+        _currentArtist.value = track.subtitleHindi
+
+        startForeground(NOTIFICATION_ID, buildNotification(isPlaying = true))
+        startAudioPlayback(track.audioUrl, track.trackKey)
     }
 
     private fun startAudioPlayback(url: String, trackKey: String) {
@@ -328,9 +450,32 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
     }
 
     override fun onCompletion(mp: MediaPlayer?) {
-        _isPlaying.value = false
-        _currentPositionMs.value = 0
-        updateNotification(false)
+        when (_playbackMode.value) {
+            PlaybackMode.REPEAT_ONE -> {
+                // Jaap Loop Mode: seamlessly replay the same sacred path / stotra
+                try {
+                    _currentPositionMs.value = 0
+                    mp?.seekTo(0)
+                    mp?.start()
+                    _isPlaying.value = true
+                    updateNotification(true)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in repeat loop: ${e.message}")
+                    _isPlaying.value = false
+                    updateNotification(false)
+                }
+            }
+            PlaybackMode.CONTINUOUS -> {
+                // Continuous Auto-Advance: seamlessly plays next chapter/stotra
+                _currentPositionMs.value = 0
+                playNextTrackInternal()
+            }
+            PlaybackMode.NO_REPEAT -> {
+                _isPlaying.value = false
+                _currentPositionMs.value = 0
+                updateNotification(false)
+            }
+        }
     }
 
     override fun onError(mp: MediaPlayer?, what: Int, extra: Int): Boolean {
@@ -382,9 +527,21 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val prevIntent = Intent(this, BhajanAudioService::class.java).apply { action = ACTION_PREV }
+        val prevPending = PendingIntent.getService(
+            this, 104, prevIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val toggleIntent = Intent(this, BhajanAudioService::class.java).apply { action = ACTION_TOGGLE }
         val togglePending = PendingIntent.getService(
             this, 102, toggleIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val nextIntent = Intent(this, BhajanAudioService::class.java).apply { action = ACTION_NEXT }
+        val nextPending = PendingIntent.getService(
+            this, 105, nextIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -395,19 +552,27 @@ class BhajanAudioService : Service(), MediaPlayer.OnPreparedListener, MediaPlaye
         )
 
         val toggleIcon = if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
-        val toggleText = if (isPlaying) "विराम (Pause)" else "चलाएं (Play)"
+        val toggleText = if (isPlaying) "विराम" else "चलाएं"
+
+        val modeLabel = when (_playbackMode.value) {
+            PlaybackMode.CONTINUOUS -> "निरंतर पाठ (Auto-Advance)"
+            PlaybackMode.REPEAT_ONE -> "जाप लूप (Repeat Current)"
+            PlaybackMode.NO_REPEAT -> "एक बार (Single)"
+        }
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setContentTitle(trackTitle.ifBlank { "श्री बालाजी पावन भजन" })
             .setContentText(trackArtist.ifBlank { "श्री बालाजी कृपा धाम, डूँगरा जाट" })
-            .setSubText("॥ श्री हनुमते नमः ॥")
+            .setSubText(modeLabel)
             .setContentIntent(openPending)
             .setOngoing(isPlaying)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .addAction(android.R.drawable.ic_media_previous, "पिछली", prevPending)
             .addAction(toggleIcon, toggleText, togglePending)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "बंद करें (Stop)", stopPending)
+            .addAction(android.R.drawable.ic_media_next, "अगली", nextPending)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "बंद करें", stopPending)
             .build()
     }
 

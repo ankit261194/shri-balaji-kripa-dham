@@ -12,8 +12,8 @@ android {
         applicationId = "com.example.shribalajikripadham"
         minSdk = 24
         targetSdk = 34
-        versionCode = 153
-        versionName = "2.66.0"
+        versionCode = 154
+        versionName = "2.67.0"
 
         ndk {
             abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
@@ -38,8 +38,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }

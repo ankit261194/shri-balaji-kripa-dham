@@ -1161,7 +1161,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Shri Devi Kavacham",
         subtitleHindi = "मार्कण्डेय पुराणोक्त • नवदुर्गा रक्षा कवच",
         durationText = "16:07",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/05%20Devi%20Kavacham.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_00_kavach.mp3",
         lyricsHindi = """॥ अथ श्रीदेव्याः कवचम् ॥
 
 मार्कण्डेय उवाच:
@@ -1204,7 +1204,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Shri Argala Stotram",
         subtitleHindi = "जयन्ती मङ्गला काली • रूपं देहि जयं देहि",
         durationText = "6:46",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/06%20Argala%20Stotram.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_00_argala.mp3",
         lyricsHindi = """॥ अथ अर्गलास्तोत्रम् ॥
 
 ॐ नमश्चण्डिकायै।
@@ -1240,7 +1240,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Shri Keelakam Stotram",
         subtitleHindi = "महामंत्र निष्कीलन • सर्व कल्याणकारी पाठ",
         durationText = "4:25",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/07%20Keelakam.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_00_keelak.mp3",
         lyricsHindi = """॥ अथ कीलकस्तोत्रम् ॥
 
 ॐ विशुद्धज्ञानदेहाय त्रिवेदीदिव्यचक्षुषे।
@@ -1269,7 +1269,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 1",
         subtitleHindi = "मधु-कैटभ वध • महाकाली प्रादुर्भाव",
         durationText = "21:41",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter%201%20Pradamodhyayha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_01_ch1.mp3",
         lyricsHindi = """॥ प्रथमोऽध्यायः - मधुकैटभवधः ॥
 ॐ नमश्चण्डिकायै।
 मार्कण्डेय उवाच:
@@ -1313,7 +1313,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 2",
         subtitleHindi = "महिषासुर की सेना का संहार • मध्यम चरित्र",
         durationText = "18:13",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter%202%20Divitiyodhyayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_02_ch2.mp3",
         lyricsHindi = """॥ द्वितीयोऽध्यायः - महिषासुरसैन्यवधः ॥
 
 ऋषिरुवाच:
@@ -1353,7 +1353,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 3",
         subtitleHindi = "महिषासुर वध • महालक्ष्मी पराक्रम",
         durationText = "10:51",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter%203%20Tritiyodhyayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_03_ch3.mp3",
         lyricsHindi = """॥ तृतीयोऽध्यायः - महिषासुरवधः ॥
 
 ऋषिरुवाच:
@@ -1389,7 +1389,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 4",
         subtitleHindi = "इन्द्रादि देवताओं द्वारा देवी-स्तुति (शक्रादि स्तुति)",
         durationText = "13:18",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter%204%20Chaturthodhayayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_04_ch4.mp3",
         lyricsHindi = """॥ चतुर्थोऽध्यायः - शक्रादिस्तुतिः ॥
 
 ऋषिरुवाच:
@@ -1426,7 +1426,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 5",
         subtitleHindi = "देवताओं द्वारा अपराजिता स्तुति व चण्ड-मुण्ड वार्ता",
         durationText = "28:09",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter%205%20Panchamodhyayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_05_ch5.mp3",
         lyricsHindi = """॥ पञ्चमोऽध्यायः - देवीदूतागमः ॥
 
 ऋषिरुवाच:
@@ -1463,7 +1463,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 6",
         subtitleHindi = "धूम्रलोचन वध • हुंकार से दैत्य भस्म",
         durationText = "6:21",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter%206%20Shashtodhyayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_06_ch6.mp3",
         lyricsHindi = """॥ षष्ठोऽध्यायः - धूम्रलोचनवधः ॥
 
 ऋषिरुवाच:
@@ -1495,7 +1495,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 7",
         subtitleHindi = "चण्ड और मुण्ड वध • चामुण्डा देवी प्राकट्य",
         durationText = "7:25",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter%207%20Saptamodhyayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_07_ch7.mp3",
         lyricsHindi = """॥ सप्तमोऽध्यायः - चण्डमुण्डवधः ॥
 
 ऋषिरुवाच:
@@ -1530,7 +1530,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 8",
         subtitleHindi = "रक्तबीज वध • मातृका शक्तियों का संग्राम",
         durationText = "15:57",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter%208%20Ashtamodhyayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_08_ch8.mp3",
         lyricsHindi = """॥ अष्टमोऽध्यायः - रक्तबीजवधः ॥
 
 ऋषिरुवाच:
@@ -1566,7 +1566,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 9",
         subtitleHindi = "निशुम्भ वध • भगवती का प्रचण्ड पराक्रम",
         durationText = "10:33",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter%209%20Navamodhyayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_09_ch9.mp3",
         lyricsHindi = """॥ नवमोऽध्यायः - निशुम्भवधः ॥
 
 ऋषिरुवाच:
@@ -1597,7 +1597,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 10",
         subtitleHindi = "शुम्भ वध • दैत्यराज का अंत",
         durationText = "7:55",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter10%20Dasamodhyayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_10_ch10.mp3",
         lyricsHindi = """॥ दशमोऽध्यायः - शुम्भवधः ॥
 
 ऋषिरुवाच:
@@ -1632,7 +1632,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 11",
         subtitleHindi = "देवताओं द्वारा नारायणी स्तुति एवं वरदान",
         durationText = "14:30",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter11%20Ekadhasadhyayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_11_ch11.mp3",
         lyricsHindi = """॥ एकादशोऽध्यायः - नारायणीस्तुतिः ॥
 
 ऋषिरुवाच:
@@ -1671,7 +1671,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 12",
         subtitleHindi = "देवी चरित्रों के पाठ का महात्म्य एवं फलश्रुति",
         durationText = "11:11",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter12%20Dwadhasodhyayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_12_ch12.mp3",
         lyricsHindi = """॥ द्वादशोऽध्यायः - फलस्तुतिः ॥
 
 देव्युवाच:
@@ -1701,7 +1701,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Durga Saptashati Chapter 13",
         subtitleHindi = "राजा सुरथ और समाधि वैश्य को वरदान प्राप्ति",
         durationText = "5:50",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Chapter13%20Triodasadhyayaha.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_13_ch13.mp3",
         lyricsHindi = """॥ त्रयोदशोऽध्यायः - सुरथवैश्ययोर्वरप्रदानम् ॥
 
 ऋषिरुवाच:
@@ -1736,7 +1736,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         titleEnglish = "Shri Devi Kshama Prarthana",
         subtitleHindi = "अपराधसहस्त्राणि क्रियन्तेऽहर्निशं मया • क्षमा स्तोत्र",
         durationText = "1:58",
-        audioUrl = "https://archive.org/download/DeviMahatmyamRecitationAudio/Kshama%20Prathana%20Stotram.mp3",
+        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_ds_14_kshama.mp3",
         lyricsHindi = """॥ अथ देव्याः अपराधक्षमापनस्तोत्रम् ॥
 
 अपराधसहस्त्राणि क्रियन्तेऽहर्निशं मया।
