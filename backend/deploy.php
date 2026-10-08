@@ -60,6 +60,7 @@ $filesToSync = [
     "api/delete_sacred_track.php",
     "api/clean_dummy_data.php",
     "api/upload_audio.php",
+    "api/fetch_saptashati_audio.php",
     "api/get_expenses.php",
     "api/save_expense.php",
     "api/delete_expense.php",
