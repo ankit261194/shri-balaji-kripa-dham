@@ -1685,35 +1685,25 @@ fun TokenRegistrationScreen(
                                 }
                                 val devoteeVillageOrCity = originAddress.trim().ifEmpty { city.trim() }.ifEmpty { if (isHindi) "स्थानीय" else "Local" }
 
-                                val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
-                                val ashLon = if (settings.longitude != 0.0) settings.longitude else 78.1460410
-                                val checkGpsDistM = if (userLatitude != 0.0 && userLongitude != 0.0) {
-                                    GeofenceLocationManager.calculateDistanceMeters(userLatitude, userLongitude, ashLat, ashLon)
-                                } else {
-                                    distanceMeters
-                                }
-                                val realGpsKm = if (checkGpsDistM > 0.0) (checkGpsDistM / 1000.0).toFloat() else estimatedDistanceKm
-
-                                if (!GeofenceLocationManager.isGeofenceGloballyBypassed && settings.isGeofenceEnforced && ((realGpsKm > 0f && realGpsKm < settings.outstationMinDistanceKm) || (estimatedDistanceKm > 0f && estimatedDistanceKm < settings.outstationMinDistanceKm)) && checkGpsDistM > settings.allowedRadiusMeters) {
-                                    val outKm = settings.outstationMinDistanceKm.toInt()
-                                    val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
-                                    val displayDist = if (realGpsKm > 0f) realGpsKm else estimatedDistanceKm
-                                    val cDist = String.format(Locale.US, "%.1f", displayDist)
-                                    locationAlertTitle = if (isHindi) "📍 स्थानीय भक्त नियम" else "📍 Local Devotee Policy"
-                                    locationAlertMessage = if (isHindi)
-                                        "⚠️ आपके चयनित शहर/गाँव ($devoteeVillageOrCity - $cDist किमी) की दूरी $outKm किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल आश्रम परिसर ($radM के भीतर) में उपस्थित होकर ही मान्य है। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें।"
-                                    else
-                                        "Your village/city ($cDist km) is within $outKm km radius. Local devotees can only register within $radM of Ashram."
-                                    showLocationAlertDialog = true
-                                    errorMessage = locationAlertMessage
-                                    return@Button
-                                }
-
                                 isSubmitting = true
                                 errorMessage = null
                                 scope.launch {
                                     try {
-                                        val loc = GeofenceLocationManager.getLastKnownLocation(context)
+                                        // 1. Actively acquire fresh GPS satellite location to eliminate Cold-Start 0.0 or Stale Cache
+                                        var loc = GeofenceLocationManager.getLastKnownLocation(context)
+                                        if (userLatitude == 0.0 || userLongitude == 0.0 || loc == null || (System.currentTimeMillis() - loc.time) > 20_000L || (loc.hasAccuracy() && loc.accuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS)) {
+                                            val fresh = GeofenceLocationManager.awaitFreshLocation(context, timeoutMs = 3500L)
+                                            if (fresh != null) {
+                                                loc = fresh
+                                                userLatitude = fresh.latitude
+                                                userLongitude = fresh.longitude
+                                                freshLocationAccuracy = if (fresh.hasAccuracy()) fresh.accuracy else 15.0f
+                                                isFreshLocationMock = if (GeofenceLocationManager.isMockCheckGloballyEnabled) {
+                                                    GeofenceLocationManager.isMockLocation(fresh, context)
+                                                } else false
+                                            }
+                                        }
+
                                         val isMock = if (GeofenceLocationManager.isMockCheckGloballyEnabled) {
                                             isFreshLocationMock || GeofenceLocationManager.isMockLocation(loc, context)
                                         } else false

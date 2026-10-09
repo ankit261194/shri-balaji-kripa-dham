@@ -1402,7 +1402,15 @@ fun FaceTokenRegistrationScreen(
                                                     isSubmitting = false
                                                     return@launch
                                                 }
-                                                val loc = GeofenceLocationManager.getLastKnownLocation(context)
+                                                var loc = GeofenceLocationManager.getLastKnownLocation(context)
+                                                if (userLatitude == 0.0 || userLongitude == 0.0 || loc == null || (System.currentTimeMillis() - loc.time) > 20_000L || (loc.hasAccuracy() && loc.accuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS)) {
+                                                    val fresh = GeofenceLocationManager.awaitFreshLocation(context, timeoutMs = 3500L)
+                                                    if (fresh != null) {
+                                                        loc = fresh
+                                                        userLatitude = fresh.latitude
+                                                        userLongitude = fresh.longitude
+                                                    }
+                                                }
                                                 val isMock = if (GeofenceLocationManager.isMockCheckGloballyEnabled) {
                                                     GeofenceLocationManager.isMockLocation(loc, context)
                                                 } else false
@@ -2021,7 +2029,15 @@ fun FaceTokenRegistrationScreen(
                                                 }
                                             }
 
-                                            val loc = GeofenceLocationManager.getLastKnownLocation(context)
+                                            var loc = GeofenceLocationManager.getLastKnownLocation(context)
+                                            if (userLatitude == 0.0 || userLongitude == 0.0 || loc == null || (System.currentTimeMillis() - loc.time) > 20_000L || (loc.hasAccuracy() && loc.accuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS)) {
+                                                val fresh = GeofenceLocationManager.awaitFreshLocation(context, timeoutMs = 3500L)
+                                                if (fresh != null) {
+                                                    loc = fresh
+                                                    userLatitude = fresh.latitude
+                                                    userLongitude = fresh.longitude
+                                                }
+                                            }
                                             val isMock = if (GeofenceLocationManager.isMockCheckGloballyEnabled) {
                                                 GeofenceLocationManager.isMockLocation(loc, context)
                                             } else false

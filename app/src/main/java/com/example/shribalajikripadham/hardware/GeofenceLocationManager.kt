@@ -8,6 +8,8 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.*
 
 data class LocationSecurityResult(
@@ -23,7 +25,7 @@ data class LocationSecurityResult(
 
 object GeofenceLocationManager {
 
-    const val MAX_ALLOWED_ACCURACY_METERS = 40.0f
+    const val MAX_ALLOWED_ACCURACY_METERS = 100.0f
     const val OUTSTATION_MIN_DISTANCE_METERS = 30000.0 // 30 km
     const val LOCAL_ASHRAM_MAX_DISTANCE_METERS = 200.0 // 200 meters
 
@@ -394,8 +396,9 @@ object GeofenceLocationManager {
         onLocationResult: (Location?) -> Unit
     ) {
         val last = getLastKnownLocation(context)
-        if (last != null && (System.currentTimeMillis() - last.time) < 30_000L && last.hasAccuracy() && last.accuracy <= MAX_ALLOWED_ACCURACY_METERS) {
+        if (last != null && (System.currentTimeMillis() - last.time) < 20_000L && last.hasAccuracy() && last.accuracy <= MAX_ALLOWED_ACCURACY_METERS) {
             onLocationResult(last)
+            return
         }
 
         val locManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
@@ -427,16 +430,43 @@ object GeofenceLocationManager {
             if (locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
                 locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000L, 1.0f, listener, mainLooper)
             }
-            // Auto timeout removal after 8 seconds
+            // Auto timeout removal after 5 seconds
             android.os.Handler(mainLooper).postDelayed({
                 if (!delivered) {
                     delivered = true
                     try { locManager.removeUpdates(listener) } catch (e: Exception) {}
                     onLocationResult(getLastKnownLocation(context))
                 }
-            }, 8000L)
+            }, 5000L)
         } catch (e: Exception) {
             onLocationResult(last)
+        }
+    }
+
+    /**
+     * Coroutine-based fresh location awaiter.
+     * Prevents Cold-Start 0.0 lat/lon or stale home cached location from prematurely blocking devotees.
+     */
+    suspend fun awaitFreshLocation(
+        context: Context,
+        timeoutMs: Long = 4000L
+    ): Location? {
+        val last = getLastKnownLocation(context)
+        if (last != null && (System.currentTimeMillis() - last.time) < 20_000L && last.hasAccuracy() && last.accuracy <= MAX_ALLOWED_ACCURACY_METERS) {
+            return last
+        }
+        return try {
+            withTimeoutOrNull(timeoutMs) {
+                suspendCancellableCoroutine<Location?> { cont ->
+                    requestFreshLocation(context) { loc ->
+                        if (cont.isActive) {
+                            cont.resumeWith(Result.success(loc ?: last))
+                        }
+                    }
+                }
+            } ?: getLastKnownLocation(context)
+        } catch (e: Exception) {
+            getLastKnownLocation(context)
         }
     }
 

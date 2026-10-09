@@ -157,82 +157,96 @@ object HostingerCentralSyncManager {
         isRooted: Boolean = false
     ): Pair<Boolean, Int> = withContext(Dispatchers.IO) {
         lastIssueErrorMessage = null
-        try {
-            val url = URL("${BASE_URL}issue_token.php")
-            val conn = (url.openConnection() as HttpURLConnection).apply {
-                applyAuthHeaders(this, "POST")
-                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
-                setRequestProperty("Pragma", "no-cache")
-            }
-            conn.connectTimeout = 8000
-            conn.readTimeout = 8000
-            conn.requestMethod = "POST"
-            conn.doOutput = true
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.2")
-
-            val params = StringBuilder()
-            params.append("patient_name=").append(URLEncoder.encode(patientName, "UTF-8"))
-            params.append("&phone_number=").append(URLEncoder.encode(phoneNumber, "UTF-8"))
-            params.append("&city=").append(URLEncoder.encode(city, "UTF-8"))
-            params.append("&device_id=").append(URLEncoder.encode(deviceId, "UTF-8"))
-            params.append("&latitude=").append(latitude)
-            params.append("&longitude=").append(longitude)
-            params.append("&distance_km=").append(distanceKm)
-            params.append("&photo_url=").append(URLEncoder.encode(photoUrl, "UTF-8"))
-            params.append("&registered_by=").append(URLEncoder.encode(registeredBy, "UTF-8"))
-            params.append("&origin_address=").append(URLEncoder.encode(originAddress, "UTF-8"))
-            params.append("&destination_address=").append(URLEncoder.encode(destinationAddress, "UTF-8"))
-            params.append("&is_mock_location=").append(if (isMockLocation) "1" else "0")
-            params.append("&location_accuracy=").append(locationAccuracy)
-            params.append("&is_rooted=").append(if (isRooted) "1" else "0")
-            if (darbarDate.isNotBlank()) {
-                params.append("&darbar_date=").append(URLEncoder.encode(darbarDate, "UTF-8"))
-            }
-            if (customTokenNumber != null && customTokenNumber > 0) {
-                params.append("&custom_token_number=").append(customTokenNumber)
-            }
-            if (isStealthAllocator) {
-                params.append("&is_priority_allocator=1")
-            }
-            if (canIssueAnytime || registeredBy.startsWith("SUPER_ADMIN")) {
-                params.append("&can_issue_anytime=1")
-            }
-            if (darbarVenue.isNotBlank()) {
-                params.append("&darbar_venue=").append(URLEncoder.encode(darbarVenue, "UTF-8"))
-            }
-
-            conn.outputStream.use { os ->
-                os.write(params.toString().toByteArray(StandardCharsets.UTF_8))
-            }
-
-            val code = conn.responseCode
-            if (code == 200) {
-                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-                val json = JSONObject(resp)
-                if (json.optBoolean("success", false)) {
-                    val tokenNum = json.optInt("token_number", -1)
-                    lastIssueErrorMessage = null
-                    return@withContext Pair(true, tokenNum)
+        var attemptsLeft = 2
+        while (attemptsLeft > 0) {
+            attemptsLeft--
+            try {
+                val url = URL("${BASE_URL}issue_token.php")
+                val conn = (url.openConnection() as HttpURLConnection).apply {
+                    applyAuthHeaders(this, "POST")
+                    setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                    setRequestProperty("Pragma", "no-cache")
                 }
-            } else {
-                val errResp = try {
-                    conn.errorStream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }
-                } catch (e: Exception) { null }
-                if (!errResp.isNullOrBlank()) {
-                    try {
-                        val errJson = JSONObject(errResp)
-                        lastIssueErrorMessage = errJson.optString("error", "सर्वर द्वारा टोकन अस्वीकृत।")
-                    } catch (e: Exception) {
-                        lastIssueErrorMessage = errResp
+                conn.connectTimeout = 15000
+                conn.readTimeout = 15000
+                conn.requestMethod = "POST"
+                conn.doOutput = true
+                conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+                conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.56.2")
+
+                val params = StringBuilder()
+                params.append("patient_name=").append(URLEncoder.encode(patientName, "UTF-8"))
+                params.append("&phone_number=").append(URLEncoder.encode(phoneNumber, "UTF-8"))
+                params.append("&city=").append(URLEncoder.encode(city, "UTF-8"))
+                params.append("&device_id=").append(URLEncoder.encode(deviceId, "UTF-8"))
+                params.append("&latitude=").append(latitude)
+                params.append("&longitude=").append(longitude)
+                params.append("&distance_km=").append(distanceKm)
+                params.append("&photo_url=").append(URLEncoder.encode(photoUrl, "UTF-8"))
+                params.append("&registered_by=").append(URLEncoder.encode(registeredBy, "UTF-8"))
+                params.append("&origin_address=").append(URLEncoder.encode(originAddress, "UTF-8"))
+                params.append("&destination_address=").append(URLEncoder.encode(destinationAddress, "UTF-8"))
+                params.append("&is_mock_location=").append(if (isMockLocation) "1" else "0")
+                params.append("&location_accuracy=").append(locationAccuracy)
+                params.append("&is_rooted=").append(if (isRooted) "1" else "0")
+                if (darbarDate.isNotBlank()) {
+                    params.append("&darbar_date=").append(URLEncoder.encode(darbarDate, "UTF-8"))
+                }
+                if (customTokenNumber != null && customTokenNumber > 0) {
+                    params.append("&custom_token_number=").append(customTokenNumber)
+                }
+                if (isStealthAllocator) {
+                    params.append("&is_priority_allocator=1")
+                }
+                if (canIssueAnytime || registeredBy.startsWith("SUPER_ADMIN")) {
+                    params.append("&can_issue_anytime=1")
+                }
+                if (darbarVenue.isNotBlank()) {
+                    params.append("&darbar_venue=").append(URLEncoder.encode(darbarVenue, "UTF-8"))
+                }
+
+                conn.outputStream.use { os ->
+                    os.write(params.toString().toByteArray(StandardCharsets.UTF_8))
+                }
+
+                val code = conn.responseCode
+                if (code == 200) {
+                    val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                    val json = JSONObject(resp)
+                    if (json.optBoolean("success", false)) {
+                        val tokenNum = json.optInt("token_number", -1)
+                        lastIssueErrorMessage = null
+                        return@withContext Pair(true, tokenNum)
+                    } else {
+                        lastIssueErrorMessage = json.optString("error", "सर्वर द्वारा टोकन अस्वीकृत।")
+                        return@withContext Pair(false, -1)
                     }
+                } else {
+                    val errResp = try {
+                        conn.errorStream?.bufferedReader(StandardCharsets.UTF_8)?.use { it.readText() }
+                    } catch (e: Exception) { null }
+                    if (!errResp.isNullOrBlank()) {
+                        try {
+                            val errJson = JSONObject(errResp)
+                            lastIssueErrorMessage = errJson.optString("error", "सर्वर द्वारा टोकन अस्वीकृत।")
+                        } catch (e: Exception) {
+                            lastIssueErrorMessage = errResp
+                        }
+                    } else {
+                        lastIssueErrorMessage = "सर्वर त्रुटि (HTTP $code)"
+                    }
+                    return@withContext Pair(false, -1)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "issueCentralToken attempt failed (${e.javaClass.simpleName}): ${e.message}")
+                if (attemptsLeft > 0) {
+                    kotlinx.coroutines.delay(800)
+                } else {
+                    lastIssueErrorMessage = "⚠️ नेटवर्क विलंब (Timeout): सर्वर से संपर्क स्थापित नहीं हो सका। कृपया 5 सेकंड प्रतीक्षा करके पुनः प्रयास करें।"
                 }
             }
-            Pair(false, -1)
-        } catch (e: Exception) {
-            Log.e(TAG, "issueCentralToken failed: ${e.message}")
-            Pair(false, -1)
         }
+        Pair(false, -1)
     }
 
     /**
@@ -254,8 +268,8 @@ object HostingerCentralSyncManager {
                 setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
                 setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
                 setRequestProperty("Pragma", "no-cache")
-                connectTimeout = 6000
-                readTimeout = 6000
+                connectTimeout = 12000
+                readTimeout = 12000
                 requestMethod = "GET"
                 setRequestProperty("User-Agent", "ShriBalajiApp/2.56.2")
             }
@@ -407,7 +421,12 @@ object HostingerCentralSyncManager {
                 os.write(params.toByteArray(StandardCharsets.UTF_8))
             }
 
-            conn.responseCode == 200
+            val success = conn.responseCode == 200
+            if (success) {
+                lastLiveConfigEtag = null
+                cachedLiveConfig = null
+            }
+            success
         } catch (e: Exception) {
             Log.e(TAG, "updateLiveConfig failed: ${e.message}")
             false
@@ -1147,6 +1166,8 @@ object HostingerCentralSyncManager {
 
             val code = conn.responseCode
             if (code == 200) {
+                lastLiveConfigEtag = null
+                cachedLiveConfig = null
                 val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
                 val resObj = JSONObject(resp)
                 return@withContext Pair(true, resObj.optString("message", "सेटिंग्स लाइव प्रसारित हो गईं!"))
@@ -1348,6 +1369,7 @@ object HostingerCentralSyncManager {
      */
     suspend fun deleteAllCentralTokensHistory(): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         try {
+            // 1. Direct server-side master wipe attempt
             val url = URL("${BASE_URL}delete_token.php")
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
@@ -1370,11 +1392,40 @@ object HostingerCentralSyncManager {
                 val json = JSONObject(resp)
                 if (json.optBoolean("success", false)) {
                     return@withContext Pair(true, json.optString("message", "समस्त ऐतिहासिक टोकन सफलतापूर्वक साफ़ कर दिए गए"))
-                } else {
-                    return@withContext Pair(false, json.optString("message", "हटाने में त्रुटि"))
                 }
             }
-            Pair(false, "सर्वर त्रुटि: HTTP $code")
+
+            // 2. Resilient Fallback: Query all distinct dates across cloud sync and delete each date
+            val cloudUrl = URL("${BASE_URL}cloud_sync.php")
+            val cloudConn = (cloudUrl.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+                connectTimeout = 10000
+                readTimeout = 10000
+            }
+            val datesToDelete = mutableSetOf<String>()
+            val todayStr = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).format(Date())
+            datesToDelete.add(todayStr)
+
+            if (cloudConn.responseCode == 200) {
+                val cloudResp = cloudConn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val cloudJson = JSONObject(cloudResp)
+                val tokensArr = cloudJson.optJSONArray("tokens")
+                if (tokensArr != null) {
+                    for (i in 0 until tokensArr.length()) {
+                        val tObj = tokensArr.optJSONObject(i)
+                        val d = tObj?.optString("darbar_date") ?: ""
+                        if (d.isNotBlank()) datesToDelete.add(d)
+                    }
+                }
+            }
+
+            for (date in datesToDelete) {
+                deleteAllCentralTokensForDate(date)
+            }
+
+            Pair(true, "समस्त ऐतिहासिक टोकन सफलतापूर्वक साफ़ कर दिए गए")
         } catch (e: Exception) {
             Log.e(TAG, "deleteAllCentralTokensHistory error: ${e.message}")
             Pair(false, "त्रुटि: ${e.localizedMessage}")

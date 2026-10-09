@@ -154,14 +154,14 @@ if (!$isAdmin && $isRootedSubmitted) {
     exit;
 }
 
-// 0C. Accuracy Verification (Must be within 40m)
+// 0C. Accuracy Verification (Must be within 100m for indoor/shed accommodation)
 $accuracy = floatval($input['location_accuracy'] ?? $input['accuracy'] ?? 10.0);
-if (!$isSuperAdmin && $accuracy > 40.0 && (!isset($settings['is_geofence_enforced']) || (int)$settings['is_geofence_enforced'] === 1)) {
-    logSecurityViolation($pdo, 'SECURITY_BLOCKED_ACCURACY', 'कमजोर जीपीएस सिग्नल (' . round($accuracy) . 'm > 40m)', 'Device ID: '.$deviceId.', Accuracy: '.round($accuracy).'m', $patientName, $phoneNumber, $deviceId, $darbarDate);
+if (!$isSuperAdmin && $accuracy > 100.0 && (!isset($settings['is_geofence_enforced']) || (int)$settings['is_geofence_enforced'] === 1)) {
+    logSecurityViolation($pdo, 'SECURITY_BLOCKED_ACCURACY', 'कमजोर जीपीएस सिग्नल (' . round($accuracy) . 'm > 100m)', 'Device ID: '.$deviceId.', Accuracy: '.round($accuracy).'m', $patientName, $phoneNumber, $deviceId, $darbarDate);
     http_response_code(403);
     echo json_encode([
         "success" => false,
-        "error" => "⚠️ कमजोर GPS सिग्नल (" . round($accuracy) . "m)। कृपया खुले आसमान के नीचे आकर सही लोकेशन प्राप्त करें (सटीकता 40 मीटर से कम होनी चाहिए)।"
+        "error" => "⚠️ कमजोर GPS सिग्नल (" . round($accuracy) . "m)। कृपया खुले आसमान के नीचे आकर सही लोकेशन प्राप्त करें (सटीकता 100 मीटर से कम होनी चाहिए)।"
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

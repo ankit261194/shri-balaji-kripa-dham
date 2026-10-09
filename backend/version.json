@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 157,
-  "version_code": 157,
-  "latest_version_name": "2.70.0",
-  "version_name": "2.70.0",
-  "update_notes_hindi": "v2.70.0 (Build 157): 🛡️ सब-एडमिन (Sub-Admin) सशक्त प्रणाली: सुपर एडमिन द्वारा सब-एडमिन का सृजन, सेवादार प्रबंधन व सेवा अधिकार, गोपनीयता सुरक्षा (Zero Chat Access)। ⚡ तत्काल टोकन लाइव फिक्स: किसी भी समय तत्काल टोकन वितरण चालू/बंद। 💥 महा-सफाई (Master Wipe): एकल टोकन, आज के टोकन अथवा आज तक के समस्त ऐतिहासिक टोकन 1-क्लिक में हर जगह से स्थायी विलोपन।",
-  "update_notes_english": "v2.70.0 (Build 157): Sub-Admin Role System with boundary controls (Zero Chat Access for privacy), Tatkal Instant Token Force-Open Live Fix across all devices, and Permanent Master Wipe Engine for single, daily, or all-time tokens.",
+  "latest_version_code": 159,
+  "version_code": 159,
+  "latest_version_name": "2.72.0",
+  "version_name": "2.72.0",
+  "update_notes_hindi": "v2.72.0 (Build 159): 🛰️ आश्रम जीपीएस व नेटवर्क समाधान: इनडोर/शेड सैटेलाइट सटीकता 100m, लाइव जीपीएस अधिग्रहण (0.0 व पुरानी लोकेशन एरर निवारण), सख्त 200m परिधि सुरक्षा यथावत, एवं 15s नेटवर्क टाइमआउट व ऑटो-रीट्राय जिससे इंटरनेट ऑन होने पर कभी गलत एरर न आए।",
+  "update_notes_english": "v2.72.0 (Build 159): Ashram indoor GPS 100m accuracy & live GPS lock with strict 200m geofence, and 15s resilient network timeout with auto-retry preventing false internet offline errors.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true

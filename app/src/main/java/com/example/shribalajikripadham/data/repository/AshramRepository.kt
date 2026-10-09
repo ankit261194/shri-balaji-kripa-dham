@@ -238,14 +238,14 @@ class AshramRepository(context: Context) {
         try {
             val fresh = getSettings()
             com.example.shribalajikripadham.data.local.AppPermanentVault.saveVault(appContext, getAllAdmins(), fresh)
-            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh, getAllSevadars(), getUiSectionConfigs())
-                } catch (e: Exception) {}
-                try {
-                    publishCurrentSettingsToGitHub()
-                } catch (e: Exception) {}
+            try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(fresh, getAllSevadars(), getUiSectionConfigs())
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+            try {
+                publishCurrentSettingsToGitHub()
+            } catch (e: Exception) {}
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -1246,7 +1246,7 @@ class AshramRepository(context: Context) {
                 if (!srvErr.isNullOrBlank()) {
                     throw SecurityException(srvErr)
                 }
-                throw IllegalStateException("⚠️ इंटरनेट कनेक्शन अनिवार्य है!\n\nटोकन नंबर में किसी भी टकराव (Duplicate Token) को रोकने के लिए सेंट्रल सर्वर से सीधा संपर्क अनिवार्य है। कृपया इंटरनेट चालू करें और पुनः प्रयास करें।")
+                throw IllegalStateException("⚠️ नेटवर्क विलंब (Timeout): सेंट्रल सर्वर से टोकन नंबर प्राप्त नहीं हो सका। कृपया 5 सेकंड प्रतीक्षा करके पुनः प्रयास करें।")
             } else {
                 centralTokenNumber = centralNum
             }
@@ -1256,7 +1256,7 @@ class AshramRepository(context: Context) {
                 if (!srvErr.isNullOrBlank()) {
                     throw SecurityException(srvErr)
                 }
-                throw IllegalStateException("⚠️ इंटरनेट कनेक्शन अनिवार्य है!\n\nटोकन नंबर में किसी भी टकराव को रोकने के लिए इंटरनेट चालू होना आवश्यक है।")
+                throw IllegalStateException("⚠️ नेटवर्क विलंब (Timeout): सेंट्रल सर्वर से टोकन नंबर प्राप्त नहीं हो सका। कृपया 5 सेकंड प्रतीक्षा करके पुनः प्रयास करें।")
             }
             centralTokenNumber = centralNum
         }
@@ -4444,10 +4444,12 @@ class AshramRepository(context: Context) {
 
     // --- Central GitHub Live Sync Methods ---
     suspend fun syncLiveConfigFromGitHub(): Pair<Boolean, LiveUiConfigDto?> = withContext(Dispatchers.IO) {
+        var hostingerSynced = false
         // Pull from Hostinger Central MySQL Server (Real-time live settings sync)
         try {
             val hostingerJson = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveConfig()
             if (hostingerJson != null && (hostingerJson.optBoolean("success", false) || hostingerJson.has("ashram_name") || hostingerJson.has("config"))) {
+                hostingerSynced = true
                 val cfg = if (hostingerJson.has("config")) hostingerJson.getJSONObject("config") else hostingerJson
                 val db = dbHelper.writableDatabase
                 val cv = ContentValues()
@@ -4741,14 +4743,31 @@ class AshramRepository(context: Context) {
                 }
 
                 val sc = remoteConfig.servicesConfig
-                cv.put("is_token_service_enabled", if (sc.isTokenServiceEnabled) 1 else 0)
-                if (sc.tokenServiceMode.isNotBlank()) {
-                    cv.put("token_service_mode", sc.tokenServiceMode)
-                    if (sc.tokenServiceMode.equals("FORCE_OPEN", ignoreCase = true)) {
-                        cv.put("is_token_service_enabled", 1)
-                        cv.put("is_darbar_active", 1)
-                    } else if (sc.tokenServiceMode.equals("FORCE_CLOSED", ignoreCase = true)) {
-                        cv.put("is_token_service_enabled", 0)
+                // ⚠️ CRITICAL FIX: If Hostinger Central MySQL already synced real-time settings,
+                // or if local SQLite is manually set to FORCE_OPEN / FORCE_CLOSED,
+                // DO NOT allow static un-updated GitHub config to downgrade/revert the mode!
+                if (!hostingerSynced) {
+                    val currentLocalMode = try {
+                        val cur = db.rawQuery("SELECT token_service_mode FROM ashram_settings WHERE id = 1", null)
+                        val m = if (cur.moveToFirst()) cur.getString(0) ?: "" else ""
+                        cur.close()
+                        m
+                    } catch (e: Exception) { "" }
+
+                    if (!currentLocalMode.equals("FORCE_OPEN", ignoreCase = true) && !currentLocalMode.equals("FORCE_CLOSED", ignoreCase = true)) {
+                        cv.put("is_token_service_enabled", if (sc.isTokenServiceEnabled) 1 else 0)
+                        if (sc.tokenServiceMode.isNotBlank()) {
+                            cv.put("token_service_mode", sc.tokenServiceMode)
+                            if (sc.tokenServiceMode.equals("FORCE_OPEN", ignoreCase = true)) {
+                                cv.put("is_token_service_enabled", 1)
+                                cv.put("is_darbar_active", 1)
+                            } else if (sc.tokenServiceMode.equals("FORCE_CLOSED", ignoreCase = true)) {
+                                cv.put("is_token_service_enabled", 0)
+                            }
+                        }
+                    }
+                    if (sc.scheduledTokenOpenTimestamp > 0L) {
+                        cv.put("scheduled_token_open_timestamp", sc.scheduledTokenOpenTimestamp)
                     }
                 }
                 cv.put("is_yatra_service_enabled", if (sc.isYatraServiceEnabled) 1 else 0)
@@ -4946,6 +4965,7 @@ class AshramRepository(context: Context) {
             ),
             servicesConfig = com.example.shribalajikripadham.data.model.ServicesConfigDto(
                 isTokenServiceEnabled = currentSettings.isTokenServiceEnabled,
+                tokenServiceMode = currentSettings.tokenServiceMode,
                 isYatraServiceEnabled = currentSettings.isYatraServiceEnabled,
                 isLiveCounterVisible = currentSettings.isLiveCounterVisible,
                 isEventsVisible = currentSettings.isEventsVisible,
@@ -6733,6 +6753,17 @@ class AshramRepository(context: Context) {
                 val cv = ContentValues().apply {
                     if (cfg.has("current_serving_token")) put("running_token_number", cfg.optInt("current_serving_token", 1).coerceAtLeast(1))
                     if (cfg.has("is_token_service_enabled")) put("is_token_service_enabled", if (cfg.optBoolean("is_token_service_enabled", true)) 1 else 0)
+                    if (cfg.has("token_service_mode") && cfg.optString("token_service_mode").isNotBlank()) {
+                        val hMode = cfg.optString("token_service_mode").trim()
+                        put("token_service_mode", hMode)
+                        if (hMode.equals("FORCE_OPEN", ignoreCase = true)) {
+                            put("is_token_service_enabled", 1)
+                            put("is_darbar_active", 1)
+                        } else if (hMode.equals("FORCE_CLOSED", ignoreCase = true)) {
+                            put("is_token_service_enabled", 0)
+                        }
+                    }
+                    if (cfg.has("scheduled_token_open_timestamp")) put("scheduled_token_open_timestamp", cfg.optLong("scheduled_token_open_timestamp", 0L))
                     if (cfg.has("is_bus_booking_live")) put("is_bus_booking_live", if (cfg.optBoolean("is_bus_booking_live", false)) 1 else 0)
                     if (cfg.has("is_live_counter_visible")) put("is_live_counter_visible", if (cfg.optBoolean("is_live_counter_visible", true)) 1 else 0)
                     if (cfg.has("is_darbar_active")) put("is_darbar_active", if (cfg.optBoolean("is_darbar_active", true)) 1 else 0)
