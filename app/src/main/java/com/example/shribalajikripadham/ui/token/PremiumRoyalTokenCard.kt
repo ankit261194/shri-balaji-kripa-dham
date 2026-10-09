@@ -471,6 +471,17 @@ fun PremiumRoyalTokenCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             // 5.8. 🔔 PRO LIVE TOKEN CALLING ALERT CARD
+            // 5. PRO SMART TOKEN CALLING & HAPTIC ALERT CARD
+            var isAlertOn by remember { mutableStateOf(com.example.shribalajikripadham.util.SmartTokenAlertHelper.isAlertEnabled(context)) }
+            var isPlayingTest by remember { mutableStateOf(false) }
+            val coroutineScope = rememberCoroutineScope()
+
+            DisposableEffect(Unit) {
+                onDispose {
+                    com.example.shribalajikripadham.util.SmartTokenAlertHelper.stopAllAlerts(context)
+                }
+            }
+
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E7)),
                 shape = RoundedCornerShape(14.dp),
@@ -481,49 +492,100 @@ fun PremiumRoyalTokenCard(
                 Column(modifier = Modifier.padding(14.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color(0xFF800000).copy(alpha = 0.12f),
-                            modifier = Modifier.size(38.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("🔔", fontSize = 20.sp)
+                            Surface(
+                                shape = CircleShape,
+                                color = if (isAlertOn) Color(0xFF800000).copy(alpha = 0.12f) else Color.LightGray.copy(alpha = 0.2f),
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(if (isAlertOn) "🔔" else "🔕", fontSize = 20.sp)
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "स्मार्ट टोकन कॉलिंग अलर्ट" else "Smart Token Calling Alert",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = if (isAlertOn) Color(0xFF800000) else Color.Gray
+                                )
+                                Text(
+                                    text = if (isAlertOn) {
+                                        if (isHindi) "सक्रिय: नंबर आने पर 1.6s मंदिर घंटी व कंपन" else "Active: 1.6s Temple chime when called"
+                                    } else {
+                                        if (isHindi) "बंद: कोई घंटी या कंपन नहीं बजेगा" else "Disabled: Silent mode"
+                                    },
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF5D4037)
+                                )
                             }
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = if (isHindi) "प्रो स्मार्ट टोकन कॉलिंग अलर्ट" else "Pro Smart Token Calling Alert",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF800000)
+
+                        Switch(
+                            checked = isAlertOn,
+                            onCheckedChange = { newState ->
+                                isAlertOn = newState
+                                com.example.shribalajikripadham.util.SmartTokenAlertHelper.setAlertEnabled(context, newState)
+                                if (!newState) {
+                                    com.example.shribalajikripadham.util.SmartTokenAlertHelper.stopAllAlerts(context)
+                                    isPlayingTest = false
+                                }
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color(0xFF800000),
+                                checkedTrackColor = Color(0xFFFFD54F),
+                                uncheckedThumbColor = Color.Gray,
+                                uncheckedTrackColor = Color.LightGray
                             )
-                            Text(
-                                text = if (isHindi) "सक्रिय: 5 टोकन पूर्व तीव्र वाइब्रेशन, घंटी व हिंदी आवाज़" else "Active: Vibration, Chime & Voice 5 tokens prior",
-                                fontSize = 11.sp,
-                                color = Color(0xFF5D4037)
-                            )
-                        }
+                        )
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    if (isAlertOn) {
+                        Spacer(modifier = Modifier.height(10.dp))
 
-                    Button(
-                        onClick = {
-                            com.example.shribalajikripadham.util.SmartTokenAlertHelper.testAlert(context)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF800000)),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = if (isHindi) "🔊 आवाज़, घंटी व वाइब्रेशन टेस्ट करें" else "🔊 Test Voice, Chime & Vibrate",
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    if (isPlayingTest) {
+                                        com.example.shribalajikripadham.util.SmartTokenAlertHelper.stopAllAlerts(context)
+                                        isPlayingTest = false
+                                    } else {
+                                        com.example.shribalajikripadham.util.SmartTokenAlertHelper.testAlert(context)
+                                        isPlayingTest = true
+                                        coroutineScope.launch {
+                                            kotlinx.coroutines.delay(2600L)
+                                            isPlayingTest = false
+                                        }
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isPlayingTest) Color(0xFFB71C1C) else Color(0xFF800000)
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = if (isPlayingTest) {
+                                        if (isHindi) "🛑 तुरंत रोकें (Stop Sound)" else "🛑 Stop Sound Now"
+                                    } else {
+                                        if (isHindi) "🔔 मंदिर घंटी व आवाज़ टेस्ट करें" else "🔔 Test Chime & Voice"
+                                    },
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     }
                 }
             }

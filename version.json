@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 155,
-  "version_code": 155,
-  "latest_version_name": "2.68.0",
-  "version_name": "2.68.0",
-  "update_notes_hindi": "v2.68.0 (Build 155): 🚨 तात्कालिक क्रैश फिक्स (Zero-Crash Release) - ऐप तुरंत सुचारू रूप से खुलेगा। साथ ही ऑडियो प्लेयर में 10 सेकंड आगे/पीछे स्किप (⏩10s / ⏪10s), 🌙 स्लीप टाइमर (15/30/60 मिनट), और हेडफोन हटने पर स्वतः पॉज़ की नई सुविधा।",
-  "update_notes_english": "v2.68.0 (Build 155): Critical startup crash fix (Zero-Crash guaranteed). Added +10s/-10s audio skip buttons, Sleep Timer (15/30/60 min auto-stop), and auto-pause on headphone disconnect.",
+  "latest_version_code": 156,
+  "version_code": 156,
+  "latest_version_name": "2.69.0",
+  "version_name": "2.69.0",
+  "update_notes_hindi": "v2.69.0 (Build 156): 🔔 टोकन अलर्ट धुन सुधार (Silent View & Gentle Chime): टोकन जनरेट करने या टोकन देखने पर लंबी अलार्म धुन बजना पूर्णतः बंद। अब केवल कतार आगे बढ़ने पर 1.6 सेकंड की पावन मंदिर घंटी बजेगी। अलर्ट चालू/बंद करने का स्विच व स्टॉप बटन जोड़ा गया।",
+  "update_notes_english": "v2.69.0 (Build 156): Fixed token alert audio: Eliminated long alarm ringtones when generating or viewing tokens. Now plays a gentle 1.6s sacred temple bell only when queue moves, auto-silences on exit, with an ON/OFF toggle switch.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true

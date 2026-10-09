@@ -7,8 +7,12 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.media.AudioAttributes
+import android.media.MediaPlayer
+import android.media.Ringtone
 import android.media.RingtoneManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -133,22 +137,103 @@ object SmartTokenAlertHelper {
         }
     }
 
+    private var activeMediaPlayer: MediaPlayer? = null
+    private var activeRingtone: Ringtone? = null
+    private val chimeHandler = Handler(Looper.getMainLooper())
+    private val stopChimeRunnable = Runnable {
+        stopChimeOnly()
+    }
+
+    private fun stopChimeOnly() {
+        try {
+            activeMediaPlayer?.let {
+                if (it.isPlaying) it.stop()
+                it.release()
+            }
+        } catch (e: Exception) {}
+        activeMediaPlayer = null
+
+        try {
+            activeRingtone?.let {
+                if (it.isPlaying) it.stop()
+            }
+        } catch (e: Exception) {}
+        activeRingtone = null
+    }
+
     /**
-     * अलार्म/घंटी की पावन टोन बजाता है
+     * तत्काल सभी ध्वनि, रिंगटोन, वाइब्रेशन और टीटीएस उद्घोषणा को रोक देता है
+     */
+    fun stopAllAlerts(context: Context? = null) {
+        chimeHandler.removeCallbacks(stopChimeRunnable)
+        stopChimeOnly()
+        try {
+            if (tts?.isSpeaking == true) {
+                tts?.stop()
+            }
+        } catch (e: Exception) {}
+        context?.let { ctx ->
+            try {
+                val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val vm = ctx.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                    vm?.defaultVibrator
+                } else {
+                    @Suppress("DEPRECATION")
+                    ctx.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                }
+                vibrator?.cancel()
+            } catch (e: Exception) {}
+        }
+        _inAppAlertState.value = null
+    }
+
+    /**
+     * मंदिर की पावन घंटी (temple_bell.wav, 1.6s) या छोटी सौम्य नोटिफिकेशन बीप बजाता है।
+     * किसी भी परिस्थिति में 30-60 सेकंड का लंबा अलार्म नहीं बजाएगा।
+     * अधिकतम 2.5 सेकंड में स्वतः पूर्णतः शांत हो जाएगा।
      */
     fun playAlertChime(context: Context) {
+        stopChimeOnly()
+        chimeHandler.removeCallbacks(stopChimeRunnable)
+
         try {
-            val alertUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            val ringtone = RingtoneManager.getRingtone(context.applicationContext, alertUri)
-            ringtone?.play()
+            // 1. प्राथमिकता: श्री बालाजी मंदिर की पावन पीतल घंटी WAV (res/raw/temple_bell.wav, 1.6s)
+            val resId = context.resources.getIdentifier("temple_bell", "raw", context.packageName)
+            if (resId != 0) {
+                val mp = MediaPlayer.create(context.applicationContext, resId)
+                if (mp != null) {
+                    activeMediaPlayer = mp
+                    mp.setOnCompletionListener {
+                        try { mp.release() } catch (e: Exception) {}
+                        if (activeMediaPlayer == mp) activeMediaPlayer = null
+                    }
+                    mp.start()
+                    // 2.5 सेकंड बाद स्वतः फोर्स-स्टॉप ताकि बैकग्राउंड में कभी न अटके
+                    chimeHandler.postDelayed(stopChimeRunnable, 2500L)
+                    return
+                }
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Chime play error: ${e.message}")
+            Log.w(TAG, "Temple bell raw playback fallback: ${e.message}")
+        }
+
+        // 2. वैकल्पिक: छोटी सौम्य नोटिफिकेशन बीप (TYPE_NOTIFICATION - कतई TYPE_ALARM नहीं)
+        try {
+            val notifUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val ringtone = RingtoneManager.getRingtone(context.applicationContext, notifUri)
+            if (ringtone != null) {
+                activeRingtone = ringtone
+                ringtone.play()
+                // 2.0 सेकंड बाद स्वतः बंद
+                chimeHandler.postDelayed(stopChimeRunnable, 2000L)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Notification chime play error: ${e.message}")
         }
     }
 
     /**
-     * प्रो नोटिफिकेशन चैनल तैयार करता है (साउंड व वाइब्रेशन सहित)
+     * प्रो नोटिफिकेशन चैनल तैयार करता है (सौम्य नोटिफिकेशन टोन व वाइब्रेशन सहित)
      */
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -157,15 +242,14 @@ object SmartTokenAlertHelper {
                 description = CHANNEL_DESCRIPTION
                 enableLights(true)
                 enableVibration(true)
-                vibrationPattern = longArrayOf(0, 800, 250, 800, 250, 1200)
+                vibrationPattern = longArrayOf(0, 400, 200, 400) // संक्षिप्त सौम्य कंपन
                 setShowBadge(true)
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
                 val audioAttributes = AudioAttributes.Builder()
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                     .build()
-                val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
                 setSound(soundUri, audioAttributes)
             }
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -214,7 +298,7 @@ object SmartTokenAlertHelper {
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(pendingIntent)
 
@@ -223,7 +307,22 @@ object SmartTokenAlertHelper {
     }
 
     /**
-     * टोकन अलर्ट की स्थिति की जांच कर आवश्यक होने पर रिंग, वाइब्रेट, वॉइस व नोटिफिकेशन ट्रिगर करता है
+     * वर्तमान सेवारत टोकन नंबर को पहले से देखा हुआ (Acknowledged) चिह्नित करता है
+     * ताकि टोकन जनरेट करने या टोकन देखने पर तुरंत अलार्म न बजे।
+     */
+    fun markCurrentServingAcknowledged(context: Context, servingNumber: Int) {
+        if (servingNumber <= 0) return
+        try {
+            val myTokPrefs = context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
+            myTokPrefs.edit().putInt("last_alerted_serving", servingNumber).apply()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to mark serving acknowledged: ${e.message}")
+        }
+    }
+
+    /**
+     * टोकन अलर्ट की स्थिति की जांच कर आवश्यक होने पर सौम्य घंटी (1.6s), वाइब्रेट, वॉइस व नोटिफिकेशन ट्रिगर करता है
+     * केवल तभी ट्रिगर होता है जब कतार वास्तव में आगे बढ़ती है (currentServing > lastAlertServing)।
      */
     fun evaluateAndTriggerAlert(
         context: Context,
@@ -243,8 +342,8 @@ object SmartTokenAlertHelper {
         val myTokPrefs = context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
         val lastAlertServing = myTokPrefs.getInt("last_alerted_serving", 0)
 
-        // बार-बार उसी सेवारत नंबर के लिए अलार्म न बजे
-        if (currentServing == lastAlertServing) return
+        // केवल तभी बजे जब कतार वास्तव में आगे बढ़ी हो (कदापि पहले से देखे नंबर या पुराने नंबर पर नहीं)
+        if (currentServing <= lastAlertServing) return
 
         val isTurnNow = currentServing == myToken
         val remaining = myToken - currentServing
@@ -253,13 +352,13 @@ object SmartTokenAlertHelper {
         if (isTurnNow) {
             val title = "🔔 आपका टोकन नंबर $myToken आ चुका है!"
             val msg = "जय श्री बालाजी! आपका पावन दर्शन हेतु नंबर आ गया है। कृपया तुरंत पूज्य गुरुजी के समक्ष दरबार में पधारें!"
-            val speech = "जय श्री बालाजी महाराज! भक्तजी ध्यान दें, आपका टोकन नंबर $myToken आ चुका है! कृपया तुरंत पूज्य गुरुजी के समक्ष पावन दर्शन हेतु पधारें।"
+            val speech = "जय श्री बालाजी महाराज! आपका टोकन नंबर $myToken आ चुका है। कृपया दरबार में पधारें।"
 
-            // 1. वाइब्रेशन
+            // 1. वाइब्रेशन (संक्षिप्त)
             if (isVibrateEnabled) vibrate(context)
-            // 2. अलार्म घंटी
+            // 2. मंदिर की पावन घंटी (1.6 सेकंड)
             playAlertChime(context)
-            // 3. वॉइस अनाउंसमेंट
+            // 3. संक्षिप्त वॉइस अनाउंसमेंट
             if (isVoiceEnabled) {
                 initTts(context)
                 speak(speech)
@@ -281,13 +380,13 @@ object SmartTokenAlertHelper {
         } else if (isApproaching) {
             val title = "🚨 आपका टोकन समीप है (केवल $remaining टोकन शेष)"
             val msg = "वर्तमान में टोकन #$currentServing बुलाया जा रहा है। आपका टोकन #$myToken है। कृपया तुरंत आश्रम हॉल में उपस्थित रहें!"
-            val speech = "जय श्री बालाजी महाराज! भक्तजी ध्यान दें, आपका टोकन नंबर $myToken जल्द ही आने वाला है। केवल $remaining नंबर शेष हैं। कृपया मुख्य दरबार हॉल में उपस्थित रहें।"
+            val speech = "जय श्री बालाजी महाराज! टोकन नंबर $myToken समीप है, केवल $remaining टोकन शेष हैं।"
 
             // 1. वाइब्रेशन
             if (isVibrateEnabled) vibrate(context)
-            // 2. अलार्म घंटी
+            // 2. मंदिर की पावन घंटी (1.6 सेकंड)
             playAlertChime(context)
-            // 3. वॉइस अनाउंसमेंट
+            // 3. संक्षिप्त वॉइस अनाउंसमेंट
             if (isVoiceEnabled) {
                 initTts(context)
                 speak(speech)
@@ -309,24 +408,25 @@ object SmartTokenAlertHelper {
     }
 
     /**
-     * भक्त को अपनी आवाज़ और वाइब्रेशन टेस्ट करने की सुविधा देता है
+     * भक्त को अपनी आवाज़ और मंदिर घंटी टेस्ट करने की सुविधा देता है (1.6 सेकंड में स्वतः शांत)
      */
     fun testAlert(context: Context) {
         initTts(context)
         vibrate(context)
         playAlertChime(context)
 
-        val testSpeech = "जय श्री बालाजी महाराज! यह प्रो टोकन अलर्ट का सफल परीक्षण है। आपका टोकन समीप आने पर इसी प्रकार घंटी, वाइब्रेशन और आवाज़ बजेगी।"
+        val testSpeech = "जय श्री बालाजी महाराज! टोकन अलर्ट सक्रिय है।"
         speak(testSpeech)
 
         Toast.makeText(
             context,
-            "🔔 प्रो टोकन अलर्ट टेस्ट सफल! फोन की रिंगटोन, वाइब्रेशन व आवाज़ सक्रिय है।",
-            Toast.LENGTH_LONG
+            "🔔 पावन मंदिर घंटी व अलर्ट टेस्ट (1.6 सेकंड में स्वतः शांत)",
+            Toast.LENGTH_SHORT
         ).show()
     }
 
     fun dismissInAppAlert() {
+        stopAllAlerts()
         _inAppAlertState.value = null
     }
 

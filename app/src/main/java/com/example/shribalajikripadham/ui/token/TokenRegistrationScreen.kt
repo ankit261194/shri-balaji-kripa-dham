@@ -499,16 +499,37 @@ fun TokenRegistrationScreen(
     }
 
     // 🔔 Live Smart Token Calling Evaluation (Sound + Vibration + TTS Voice)
+    // Devotee viewing token or generating token will NOT trigger unwanted alarm sound.
+    // Alert only triggers when runningTokenNumber ADVANCES forward while actively waiting.
+    var initialServingSeen by remember { mutableIntStateOf(-1) }
     LaunchedEffect(existingToken, settings.runningTokenNumber) {
         val tok = existingToken
         if (tok != null && settings.runningTokenNumber > 0) {
-            try {
-                com.example.shribalajikripadham.util.SmartTokenAlertHelper.evaluateAndTriggerAlert(
-                    context = context,
-                    myToken = tok.tokenNumber,
-                    currentServing = settings.runningTokenNumber
+            if (initialServingSeen == -1) {
+                // First launch / token view: simply record current serving number so viewing doesn't sound alarm
+                initialServingSeen = settings.runningTokenNumber
+                com.example.shribalajikripadham.util.SmartTokenAlertHelper.markCurrentServingAcknowledged(
+                    context,
+                    settings.runningTokenNumber
                 )
-            } catch (e: Exception) {}
+            } else if (settings.runningTokenNumber > initialServingSeen) {
+                // Queue advanced forward to a new serving number while devotee is waiting on screen!
+                try {
+                    com.example.shribalajikripadham.util.SmartTokenAlertHelper.evaluateAndTriggerAlert(
+                        context = context,
+                        myToken = tok.tokenNumber,
+                        currentServing = settings.runningTokenNumber
+                    )
+                } catch (e: Exception) {}
+                initialServingSeen = settings.runningTokenNumber
+            }
+        }
+    }
+
+    // Auto-silence all alerts if devotee navigates back or leaves screen
+    DisposableEffect(Unit) {
+        onDispose {
+            com.example.shribalajikripadham.util.SmartTokenAlertHelper.stopAllAlerts(context)
         }
     }
 
@@ -1844,6 +1865,12 @@ fun TokenRegistrationScreen(
 
                                         existingToken = created
                                         isSubmitting = false
+
+                                        // Newly created token: acknowledge current serving token so alert tune DOES NOT blast
+                                        com.example.shribalajikripadham.util.SmartTokenAlertHelper.markCurrentServingAcknowledged(
+                                            context,
+                                            settings.runningTokenNumber
+                                        )
 
                                         // Store devotee personal token preferences immediately
                                         try {
