@@ -162,7 +162,7 @@ try {
         require_once $baseDir . '/config/db.php';
         $pdo = function_exists('getDB') ? getDB() : null;
         if ($pdo) {
-            $pdo->exec("UPDATE ashram_settings SET whatsapp_channel_url = 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0' WHERE whatsapp_channel_url = '' OR whatsapp_channel_url LIKE '%/invite%' OR whatsapp_channel_url IS NULL");
+            $pdo->exec("UPDATE ashram_settings SET whatsapp_channel_url = 'https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w', whatsapp_group_url = 'https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w' WHERE id = 1 OR whatsapp_channel_url = '' OR whatsapp_channel_url LIKE '%/invite%' OR whatsapp_channel_url LIKE '%chat.whatsapp.com%' OR whatsapp_channel_url IS NULL");
             $pdo->exec("UPDATE ashram_settings SET is_tuesday_darbar_enabled = 0 WHERE is_tuesday_darbar_enabled IS NULL");
             $pdo->exec("UPDATE ashram_settings SET aarti_mangala_time = '', aarti_balbhog_time = '', aarti_sandhya_time = '', aarti_shayan_time = '', aarti_timings = '', is_aarti_timings_visible = 0 WHERE id = 1");
 

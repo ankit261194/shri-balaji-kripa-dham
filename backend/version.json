@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 159,
-  "version_code": 159,
-  "latest_version_name": "2.72.0",
-  "version_name": "2.72.0",
-  "update_notes_hindi": "v2.72.0 (Build 159): 🛰️ आश्रम जीपीएस व नेटवर्क समाधान: इनडोर/शेड सैटेलाइट सटीकता 100m, लाइव जीपीएस अधिग्रहण (0.0 व पुरानी लोकेशन एरर निवारण), सख्त 200m परिधि सुरक्षा यथावत, एवं 15s नेटवर्क टाइमआउट व ऑटो-रीट्राय जिससे इंटरनेट ऑन होने पर कभी गलत एरर न आए।",
-  "update_notes_english": "v2.72.0 (Build 159): Ashram indoor GPS 100m accuracy & live GPS lock with strict 200m geofence, and 15s resilient network timeout with auto-retry preventing false internet offline errors.",
+  "latest_version_code": 160,
+  "version_code": 160,
+  "latest_version_name": "2.73.0",
+  "version_name": "2.73.0",
+  "update_notes_hindi": "v2.73.0 (Build 160): 💬 आधिकारिक व्हाट्सएप चैनल इंटीग्रेशन: ऐप (होम स्क्रीन, साइडबार मेन्यू, आश्रम संपर्क) एवं वेबसाइट (हेडर, हीरो, फुटर) पर श्री बालाजी कृपा धाम के आधिकारिक व्हाट्सएप चैनल (https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w) से 1-क्लिक जुड़ें और दैनिक आरती दर्शन, पावन सूचनाएं व दरबार अपडेट सीधे व्हाट्सएप पर प्राप्त करें।",
+  "update_notes_english": "v2.73.0 (Build 160): Official WhatsApp Channel Integration across App (Home screen card, navigation drawer, Ashram helpline) and Website (Header, Hero Darbar card, Footer) for direct 1-click updates.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true

@@ -5056,6 +5056,7 @@ fun TokenQueueTab(
                                     AshramVoiceAnnouncementManager.announceStandbyDevotee(
                                         context = context,
                                         currentDevoteeName = currName,
+                                        currentTokenNumber = currentCalledDevotee?.tokenNumber ?: effectiveCallingNum,
                                         nextTokenNumber = callStandbyNum,
                                         nextDevoteeName = callStandbyName
                                     )
@@ -5545,11 +5546,12 @@ fun TokenQueueTab(
 
                             OutlinedButton(
                                 onClick = {
-                                    AshramVoiceAnnouncementManager.announceNextToken(
+                                    AshramVoiceAnnouncementManager.announceTokenWithQueueLogic(
                                         context = context,
-                                        tokenNumber = token.tokenNumber,
-                                        devoteeName = "व्यवस्थापक आरक्षित",
-                                        city = ""
+                                        targetToken = token.copy(patientName = "व्यवस्थापक आरक्षित"),
+                                        allTokens = todayTokens,
+                                        forceStandby = false,
+                                        onFrontTokenUpdated = { newFront -> onUpdateRunningToken(newFront) }
                                     )
                                 },
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
@@ -5806,11 +5808,12 @@ fun TokenQueueTab(
                             Spacer(modifier = Modifier.width(4.dp))
                             OutlinedButton(
                                 onClick = {
-                                    AshramVoiceAnnouncementManager.announceNextToken(
+                                    AshramVoiceAnnouncementManager.announceTokenWithQueueLogic(
                                         context = context,
-                                        tokenNumber = token.tokenNumber,
-                                        devoteeName = token.patientName,
-                                        city = token.city
+                                        targetToken = token,
+                                        allTokens = todayTokens,
+                                        forceStandby = false,
+                                        onFrontTokenUpdated = { newFront -> onUpdateRunningToken(newFront) }
                                     )
                                 },
                                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
@@ -5823,11 +5826,11 @@ fun TokenQueueTab(
                             Spacer(modifier = Modifier.width(4.dp))
                             OutlinedButton(
                                 onClick = {
-                                    AshramVoiceAnnouncementManager.announceStandbyDevotee(
+                                    AshramVoiceAnnouncementManager.announceTokenWithQueueLogic(
                                         context = context,
-                                        currentDevoteeName = currentCalledDevotee?.patientName ?: "",
-                                        nextTokenNumber = token.tokenNumber,
-                                        nextDevoteeName = token.patientName
+                                        targetToken = token,
+                                        allTokens = todayTokens,
+                                        forceStandby = true
                                     )
                                     Toast.makeText(
                                         context,
@@ -5861,6 +5864,7 @@ fun TokenQueueTab(
                                 border = BorderStroke(1.dp, Color(0xFF2E7D32)),
                                 modifier = Modifier.clickable {
                                     onUpdateStatus(token.id, TokenStatus.COMPLETED)
+                                    AshramVoiceAnnouncementManager.markDevoteeCompleted(token.tokenNumber)
                                 }
                             ) {
                                 Text(
@@ -10339,7 +10343,7 @@ fun AppCustomizerTab(
                     OutlinedTextField(
                         value = whatsappGroup,
                         onValueChange = onWhatsappGroupChange,
-                        label = { Text(if (isHindi) "💬 व्हाट्सएप्प ग्रुप लिंक" else "WhatsApp Group URL") },
+                        label = { Text(if (isHindi) "💬 आधिकारिक व्हाट्सएप्प चैनल लिंक" else "Official WhatsApp Channel URL") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))

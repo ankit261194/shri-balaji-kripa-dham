@@ -170,6 +170,34 @@ fun AshramTabContent(
                         Text(if (isHindi) "📍 गूगल मैप्स ➔" else "📍 Directions ➔", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Button(
+                    onClick = {
+                        val channelUrl = if (settings.whatsappChannelUrl.isNotBlank() && !settings.whatsappChannelUrl.contains("chat.whatsapp.com")) {
+                            settings.whatsappChannelUrl
+                        } else {
+                            "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w"
+                        }
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(channelUrl))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, if (isHindi) "व्हाट्सएप खोलने में असमर्थ" else "Unable to open WhatsApp", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (isHindi) "💬 आधिकारिक व्हाट्सएप चैनल फॉलो करें ➔" else "💬 Follow Official WhatsApp Channel ➔",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
         }
     }

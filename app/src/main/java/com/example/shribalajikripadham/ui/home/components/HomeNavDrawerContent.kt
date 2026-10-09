@@ -113,6 +113,19 @@ fun HomeNavDrawerContent(
             // Menu Items List
             val items = listOf(
                 DrawerMenuItem("🏠", "मुख्य पृष्ठ (दर्शन व टोकन)", "Home", onNavigateToHome),
+                DrawerMenuItem("💬", "व्हाट्सएप चैनल फॉलो करें", "Follow WhatsApp Channel", {
+                    val chUrl = if (settings.whatsappChannelUrl.isNotBlank() && !settings.whatsappChannelUrl.contains("chat.whatsapp.com")) {
+                        settings.whatsappChannelUrl
+                    } else {
+                        "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w"
+                    }
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(chUrl))
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, if (isHindi) "व्हाट्सएप खोलने में असमर्थ" else "Unable to open WhatsApp", Toast.LENGTH_SHORT).show()
+                    }
+                }),
                 DrawerMenuItem("🔴", "लाइव दर्शन व आरती/भजन", "Live Darbar", onNavigateToLiveDarbar),
                 DrawerMenuItem("🎟️", "रविवार दरबार टोकन", "Sunday Token", onNavigateToToken),
                 DrawerMenuItem("🤳", "फेस वेरिफिकेशन टोकन", "Face Token", onNavigateToFaceToken),

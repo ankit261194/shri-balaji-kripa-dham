@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.example.shribalajikripadham.data.model.Token
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
@@ -117,8 +118,8 @@ object AshramVoiceAnnouncementManager {
     private const val KEY_VOICE_KEY_SELECTION_MODE = "voice_key_selection_mode"
     private const val KEY_VOICE_MANUAL_SLOT = "voice_manual_slot"
 
-    const val DEFAULT_PRIMARY_TEMPLATE = "टोकन नंबर {tokenNumber}, श्री {devoteeName} जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
-    const val DEFAULT_STANDBY_TEMPLATE = "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, इसके बाद आपका नंबर है। कृपया आप {currentDevoteeName} जी के पीछे जाके बैठ जाएं, और बाकी सारे लोग पीछे जाके आराम से बैठ जाएं, जब तुम्हारा नंबर आएगा तो तुम्हें सूचित किया जाएगा।"
+    const val DEFAULT_PRIMARY_TEMPLATE = "टोकन नंबर {tokenNumber}, श्री {devoteeName} जी, कृपया गुरुजी के सम्मुख पधारें।"
+    const val DEFAULT_STANDBY_TEMPLATE = "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी, आप टोकन नंबर {currentTokenNumber} (श्री {currentDevoteeName} जी) के पीछे आकर बैठें।"
 
     const val PRESET_ELEVENLABS_MALE = "ELEVENLABS_MALE"
     const val PRESET_ELEVENLABS_FEMALE = "ELEVENLABS_FEMALE"
@@ -201,6 +202,33 @@ object AshramVoiceAnnouncementManager {
 
     private val _currentDevoteeName = MutableStateFlow<String>("")
     val currentDevoteeName: StateFlow<String> = _currentDevoteeName.asStateFlow()
+
+    // 🚩 Intelligent Darbar Chain State (Front Devotee & Standby Devotee behind them)
+    private val _frontDevoteeToken = MutableStateFlow<Int?>(null)
+    val frontDevoteeToken: StateFlow<Int?> = _frontDevoteeToken.asStateFlow()
+
+    private val _frontDevoteeName = MutableStateFlow<String>("")
+    val frontDevoteeName: StateFlow<String> = _frontDevoteeName.asStateFlow()
+
+    private val _standbyDevoteeToken = MutableStateFlow<Int?>(null)
+    val standbyDevoteeToken: StateFlow<Int?> = _standbyDevoteeToken.asStateFlow()
+
+    private val _standbyDevoteeName = MutableStateFlow<String>("")
+    val standbyDevoteeName: StateFlow<String> = _standbyDevoteeName.asStateFlow()
+
+    fun markDevoteeCompleted(completedTokenNumber: Int) {
+        if (_frontDevoteeToken.value == completedTokenNumber) {
+            if (_standbyDevoteeToken.value != null) {
+                _frontDevoteeToken.value = _standbyDevoteeToken.value
+                _frontDevoteeName.value = _standbyDevoteeName.value
+                _standbyDevoteeToken.value = null
+                _standbyDevoteeName.value = ""
+            } else {
+                _frontDevoteeToken.value = null
+                _frontDevoteeName.value = ""
+            }
+        }
+    }
 
     // --- ElevenLabs Multi-Key Balance Monitoring State ---
     private val _elevenLabsKeyBalances = MutableStateFlow<List<ElevenLabsKeyInfo>>(emptyList())
@@ -454,7 +482,8 @@ object AshramVoiceAnnouncementManager {
 
     fun getPrimaryTemplate(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_PRIMARY_TEMPLATE, DEFAULT_PRIMARY_TEMPLATE) ?: DEFAULT_PRIMARY_TEMPLATE
+        val saved = prefs.getString(KEY_PRIMARY_TEMPLATE, DEFAULT_PRIMARY_TEMPLATE) ?: DEFAULT_PRIMARY_TEMPLATE
+        return if (saved.contains("समीप आएं") || saved.isBlank()) DEFAULT_PRIMARY_TEMPLATE else saved
     }
 
     fun setPrimaryTemplate(context: Context, template: String) {
@@ -464,7 +493,12 @@ object AshramVoiceAnnouncementManager {
 
     fun getStandbyTemplate(context: Context): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_STANDBY_TEMPLATE, DEFAULT_STANDBY_TEMPLATE) ?: DEFAULT_STANDBY_TEMPLATE
+        val saved = prefs.getString(KEY_STANDBY_TEMPLATE, DEFAULT_STANDBY_TEMPLATE) ?: DEFAULT_STANDBY_TEMPLATE
+        return if (saved.contains("बाकी सारे लोग") || saved.contains("आराम से बैठ जाएं") || saved.contains("सूचित किया जाएगा") || saved.isBlank()) {
+            DEFAULT_STANDBY_TEMPLATE
+        } else {
+            saved
+        }
     }
 
     fun setStandbyTemplate(context: Context, template: String) {
@@ -1000,9 +1034,8 @@ object AshramVoiceAnnouncementManager {
     /**
      * 📢 PRIMARY & TWO-STAGE TEMPLE TOKEN CALLING WITH CROWD CONTROL
      * 
-     * Stage 1: "टोकन नंबर {४}, श्री रमेश कुमार जी, आपका नंबर आ गया है, तुरंत गुरुजी के समीप आएं।"
-     * Stage 2 (Auto 20s or manual tap):
-     * "टोकन नंबर {५}, श्री अंकित कुमार जी, अगला नंबर आपका है, कृपया रमेश कुमार जी के पीछे आकर बैठें, और सब पीछे जाके बैठ जाओ।"
+     * Stage 1 (Front): "टोकन नंबर {tokenNumber}, श्री {devoteeName} जी... कृपया गुरुजी के सम्मुख पधारें।"
+     * Stage 2 (Standby): "टोकन नंबर {nextTokenNumber}, श्री {nextDevoteeName} जी... आप टोकन नंबर {currentTokenNumber} (श्री {currentDevoteeName} जी) के पीछे आकर बैठें।"
      */
     fun announceNextToken(
         context: Context,
@@ -1023,112 +1056,69 @@ object AshramVoiceAnnouncementManager {
         boostAudioVolumeForLoudspeaker(context)
 
         val cleanName = devoteeName.trim()
-        val devDigits = toDevanagariDigits(tokenNumber)
         val hindiWords = numberToHindiWords(tokenNumber)
-
         val tokenSpoken = if (hindiWords.isNotBlank() && hindiWords != tokenNumber.toString()) {
             hindiWords
         } else {
             tokenNumber.toString()
         }
 
-        // Format Primary announcement using configured template
-        val template = getPrimaryTemplate(context)
+        // Format Primary announcement: respectful devotional tone
         val primaryAnnouncementText = if (cleanName.isNotBlank()) {
-            template.replace("{tokenNumber}", tokenSpoken)
-                .replace("{devoteeName}", cleanName)
+            "टोकन नंबर $tokenSpoken, श्री $cleanName जी... कृपया गुरुजी के सम्मुख पधारें।"
         } else {
-            template.replace("{tokenNumber}", tokenSpoken)
-                .replace("श्री {devoteeName} जी,", "")
-                .replace("श्री {devoteeName} जी", "")
-        }.trim()
+            "टोकन नंबर $tokenSpoken... कृपया गुरुजी के सम्मुख पधारें।"
+        }
 
         lastAnnouncementText = primaryAnnouncementText
         _currentAnnouncedToken.value = tokenNumber
         _currentAnnouncedText.value = primaryAnnouncementText
         _currentDevoteeName.value = cleanName
+        _frontDevoteeToken.value = tokenNumber
+        _frontDevoteeName.value = cleanName
         _standbyNextToken.value = if (nextTokenNumber > 0) nextTokenNumber else null
         _standbyNextName.value = nextDevoteeName.trim()
+        if (nextTokenNumber > 0) {
+            _standbyDevoteeToken.value = nextTokenNumber
+            _standbyDevoteeName.value = nextDevoteeName.trim()
+        }
 
         val activePreset = getSelectedVoicePreset(context)
 
-        // 🌟 ELEVENLABS AUDIO STITCHING ARCHITECTURE:
-        // Zero-credit, ultra-realistic human voice combining pre-baked audio clips (1 to 150)
-        // with dynamic devotee name & high token synthesis from ElevenLabs (cached forever).
-        // Uses Multi-Key Failover Pool (Keys 1 to 11) automatically!
+        // 🌟 ELEVENLABS FULL-SENTENCE REALISTIC HUMAN VOICE:
         if (activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) {
-            val genderDir = if (activePreset == PRESET_ELEVENLABS_FEMALE) "female" else "male"
             val voiceId = if (activePreset == PRESET_ELEVENLABS_FEMALE) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
             val apiKeys = getElevenLabsApiKeyList(context)
 
             CoroutineScope(Dispatchers.Main).launch {
-                val segments = mutableListOf<AudioSegment>()
-
-                // 1. Unified Token Number: "टोकन नंबर चार" (Zero English accent, pure Indian intonation)
-                val tokenNumAsset = "audio/$genderDir/token_num_$tokenNumber.mp3"
-                if (assetExists(context, tokenNumAsset)) {
-                    segments.add(AudioSegment.Asset(tokenNumAsset))
+                _isAnnouncing.value = true
+                val audioFile = if (apiKeys.isNotEmpty()) {
+                    ElevenLabsTtsEngine.synthesizeSpeechWithPool(
+                        context = context,
+                        text = primaryAnnouncementText,
+                        apiKeys = apiKeys,
+                        voiceId = voiceId
+                    )
                 } else {
-                    // For tokens beyond pre-baked asset (or > 150), synthesize "टोकन नंबर [संख्या]" using ElevenLabs pool & cache!
-                    val tokenIntroText = "टोकन नंबर $tokenSpoken"
-                    val tokenNumFile = if (apiKeys.isNotEmpty()) {
-                        ElevenLabsTtsEngine.synthesizeSpeechWithPool(
-                            context = context,
-                            text = tokenIntroText,
-                            apiKeys = apiKeys,
-                            voiceId = voiceId
-                        )
-                    } else {
-                        val cached = ElevenLabsTtsEngine.getCachedAudioFile(context, tokenIntroText, voiceId)
-                        if (cached.exists() && cached.length() > 500) cached else null
-                    }
-
-                    if (tokenNumFile != null && tokenNumFile.exists()) {
-                        segments.add(AudioSegment.FileAudio(tokenNumFile))
-                    } else {
-                        segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
-                        val numAsset = "audio/$genderDir/num_$tokenNumber.mp3"
-                        if (assetExists(context, numAsset)) {
-                            segments.add(AudioSegment.Asset(numAsset))
-                        }
-                    }
+                    val cached = ElevenLabsTtsEngine.getCachedAudioFile(context, primaryAnnouncementText, voiceId)
+                    if (cached.exists() && cached.length() > 500) cached else null
                 }
 
-                if (cleanName.isNotBlank()) {
-                    // 3. Salutation: "श्री"
-                    segments.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
-
-                    // 4. Devotee Name (Dynamic Synthesis with Multi-Key Failover Pool / Local Cache)
-                    val nameFile = if (apiKeys.isNotEmpty()) {
-                        ElevenLabsTtsEngine.synthesizeSpeechWithPool(
-                            context = context,
-                            text = cleanName,
-                            apiKeys = apiKeys,
-                            voiceId = voiceId
-                        )
-                    } else {
-                        val cached = ElevenLabsTtsEngine.getCachedAudioFile(context, cleanName, voiceId)
-                        if (cached.exists() && cached.length() > 500) cached else null
+                if (audioFile != null && audioFile.exists() && audioFile.length() > 500) {
+                    playAudioFile(audioFile) {
+                        _isAnnouncing.value = false
+                        triggerStandbyCountdownIfNeeded(context, cleanName, nextTokenNumber, nextDevoteeName, autoNextSeconds)
                     }
-
-                    if (nameFile != null && nameFile.exists()) {
-                        segments.add(AudioSegment.FileAudio(nameFile))
-                    }
-
-                    // 5. Guruji call prompt
-                    segments.add(AudioSegment.Asset("audio/$genderDir/call_guruji.mp3"))
                 } else {
-                    segments.add(AudioSegment.Asset("audio/$genderDir/call_guruji_direct.mp3"))
-                }
-
-                playAudioSegments(context, segments) {
-                    triggerStandbyCountdownIfNeeded(context, cleanName, nextTokenNumber, nextDevoteeName, autoNextSeconds)
+                    speakDevotionalText(context, primaryAnnouncementText) {
+                        triggerStandbyCountdownIfNeeded(context, cleanName, nextTokenNumber, nextDevoteeName, autoNextSeconds)
+                    }
                 }
             }
             return
         }
 
-        // Custom recording or cloud fallback (No bell chime)
+        // Custom recording or cloud/device fallback
         if (activePreset == PRESET_CUSTOM_RECORDED && hasCustomRecording(context)) {
             playCustomRecording(context) {
                 if (cleanName.isNotBlank()) {
@@ -1162,7 +1152,7 @@ object AshramVoiceAnnouncementManager {
 
         val delaySecs = if (autoNextSecondsParam >= 0) autoNextSecondsParam else getAutoNextDelaySeconds(context)
         if (delaySecs <= 0) {
-            announceStandbyDevotee(context, currentDevoteeName, nextTokenNumber, nextDevoteeName)
+            announceStandbyDevotee(context, currentDevoteeName, _frontDevoteeToken.value ?: 0, nextTokenNumber, nextDevoteeName)
             return
         }
 
@@ -1175,130 +1165,100 @@ object AshramVoiceAnnouncementManager {
             _standbySecondsRemaining.value = 0
             delay(300)
             _standbySecondsRemaining.value = null
-            announceStandbyDevotee(context, currentDevoteeName, nextTokenNumber, nextDevoteeName)
+            announceStandbyDevotee(context, currentDevoteeName, _frontDevoteeToken.value ?: 0, nextTokenNumber, nextDevoteeName)
         }
     }
 
     /**
      * 📢 STANDBY DEVOTEE & CROWD CONTROL ANNOUNCEMENT:
-     * "टोकन नंबर {next}, श्री {nextDevotee} जी, अगला नंबर आपका है, कृपया {currentDevotee} जी के पीछे आकर बैठें, और सब पीछे जाके बैठ जाओ।"
+     * "टोकन नंबर {next}, श्री {nextDevotee} जी... आप टोकन नंबर {current} (श्री {currentDevotee} जी) के पीछे आकर बैठें।"
      */
     fun announceStandbyDevotee(
         context: Context,
-        currentDevoteeName: String = _currentDevoteeName.value,
-        nextTokenNumber: Int = _standbyNextToken.value ?: 0,
-        nextDevoteeName: String = _standbyNextName.value
+        currentDevoteeName: String = _frontDevoteeName.value,
+        currentTokenNumber: Int = _frontDevoteeToken.value ?: 0,
+        nextTokenNumber: Int = _standbyDevoteeToken.value ?: 0,
+        nextDevoteeName: String = _standbyDevoteeName.value
     ) {
         if (isMuted(context) || !isVoiceServiceActiveToday(context) || nextTokenNumber <= 0) return
 
         standbyCountdownJob?.cancel()
         _standbySecondsRemaining.value = null
 
+        boostAudioVolumeForLoudspeaker(context)
+
         val cleanNextName = nextDevoteeName.trim()
         val cleanCurrentName = currentDevoteeName.trim()
 
-        val activePreset = getSelectedVoicePreset(context)
-        if (activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) {
-            val genderDir = if (activePreset == PRESET_ELEVENLABS_FEMALE) "female" else "male"
-            val voiceId = if (activePreset == PRESET_ELEVENLABS_FEMALE) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
-            val apiKeys = getElevenLabsApiKeyList(context)
-
-            val nextHindiWords = numberToHindiWords(nextTokenNumber)
-            val nextTokenSpoken = if (nextHindiWords.isNotBlank() && nextHindiWords != nextTokenNumber.toString()) {
-                nextHindiWords
-            } else {
-                nextTokenNumber.toString()
-            }
-
-            CoroutineScope(Dispatchers.Main).launch {
-                val segments = mutableListOf<AudioSegment>()
-
-                // 1. Unified Token Number: "टोकन नंबर पांच" (Zero English accent, pure Indian intonation)
-                val tokenNumAsset = "audio/$genderDir/token_num_$nextTokenNumber.mp3"
-                if (assetExists(context, tokenNumAsset)) {
-                    segments.add(AudioSegment.Asset(tokenNumAsset))
-                } else {
-                    // Dynamic synthesis for tokens beyond pre-baked assets (or > 150)
-                    val tokenIntroText = "टोकन नंबर $nextTokenSpoken"
-                    val tokenNumFile = if (apiKeys.isNotEmpty()) {
-                        ElevenLabsTtsEngine.synthesizeSpeechWithPool(
-                            context = context,
-                            text = tokenIntroText,
-                            apiKeys = apiKeys,
-                            voiceId = voiceId
-                        )
-                    } else {
-                        val cached = ElevenLabsTtsEngine.getCachedAudioFile(context, tokenIntroText, voiceId)
-                        if (cached.exists() && cached.length() > 500) cached else null
-                    }
-
-                    if (tokenNumFile != null && tokenNumFile.exists()) {
-                        segments.add(AudioSegment.FileAudio(tokenNumFile))
-                    } else {
-                        segments.add(AudioSegment.Asset("audio/$genderDir/token_intro.mp3"))
-                        val numAsset = "audio/$genderDir/num_$nextTokenNumber.mp3"
-                        if (assetExists(context, numAsset)) {
-                            segments.add(AudioSegment.Asset(numAsset))
-                        }
-                    }
-                }
-
-                if (cleanNextName.isNotBlank()) {
-                    // 3. Salutation: "श्री"
-                    segments.add(AudioSegment.Asset("audio/$genderDir/shri.mp3"))
-
-                    // 4. Next Devotee Name (Dynamic Synthesis with Multi-Key Failover Pool / Local Cache)
-                    val nextNameFile = if (apiKeys.isNotEmpty()) {
-                        ElevenLabsTtsEngine.synthesizeSpeechWithPool(
-                            context = context,
-                            text = cleanNextName,
-                            apiKeys = apiKeys,
-                            voiceId = voiceId
-                        )
-                    } else {
-                        val cached = ElevenLabsTtsEngine.getCachedAudioFile(context, cleanNextName, voiceId)
-                        if (cached.exists() && cached.length() > 500) cached else null
-                    }
-
-                    if (nextNameFile != null && nextNameFile.exists()) {
-                        segments.add(AudioSegment.FileAudio(nextNameFile))
-                    }
-
-                    // 5. Standby prompt: "कृपया इनके पीछे आकर बैठें..."
-                    segments.add(AudioSegment.Asset("audio/$genderDir/standby_behind_prompt.mp3"))
-                } else {
-                    segments.add(AudioSegment.Asset("audio/$genderDir/standby_direct.mp3"))
-                }
-
-                playAudioSegments(context, segments)
-            }
-            return
-        }
-
-        val nextDevDigits = toDevanagariDigits(nextTokenNumber)
         val nextHindiWords = numberToHindiWords(nextTokenNumber)
-
         val nextTokenSpoken = if (nextHindiWords.isNotBlank() && nextHindiWords != nextTokenNumber.toString()) {
             nextHindiWords
         } else {
             nextTokenNumber.toString()
         }
 
-        val template = getStandbyTemplate(context)
-        var standbyText = template.replace("{nextTokenNumber}", nextTokenSpoken)
-
-        standbyText = if (cleanNextName.isNotBlank()) {
-            standbyText.replace("{nextDevoteeName}", cleanNextName)
+        val currHindiWords = if (currentTokenNumber > 0) numberToHindiWords(currentTokenNumber) else ""
+        val currTokenSpoken = if (currHindiWords.isNotBlank() && currHindiWords != currentTokenNumber.toString()) {
+            currHindiWords
         } else {
-            standbyText.replace("श्री {nextDevoteeName} जी,", "")
-                .replace("श्री {nextDevoteeName} जी", "")
+            currentTokenNumber.toString()
         }
 
-        standbyText = if (cleanCurrentName.isNotBlank()) {
-            standbyText.replace("{currentDevoteeName}", cleanCurrentName)
-        } else {
-            standbyText.replace("कृपया {currentDevoteeName} जी के पीछे", "कृपया आगे")
-                .replace("{currentDevoteeName} जी", "आगे वाले भक्त")
+        val standbyText = when {
+            cleanNextName.isNotBlank() && cleanCurrentName.isNotBlank() && currentTokenNumber > 0 -> {
+                "टोकन नंबर $nextTokenSpoken, श्री $cleanNextName जी... आप टोकन नंबर $currTokenSpoken (श्री $cleanCurrentName जी) के पीछे आकर बैठें।"
+            }
+            cleanNextName.isNotBlank() && currentTokenNumber > 0 -> {
+                "टोकन नंबर $nextTokenSpoken, श्री $cleanNextName जी... आप टोकन नंबर $currTokenSpoken के पीछे आकर बैठें।"
+            }
+            cleanCurrentName.isNotBlank() && currentTokenNumber > 0 -> {
+                "टोकन नंबर $nextTokenSpoken... आप टोकन नंबर $currTokenSpoken (श्री $cleanCurrentName जी) के पीछे आकर बैठें।"
+            }
+            currentTokenNumber > 0 -> {
+                "टोकन नंबर $nextTokenSpoken... आप टोकन नंबर $currTokenSpoken के पीछे आकर बैठें।"
+            }
+            cleanNextName.isNotBlank() -> {
+                "टोकन नंबर $nextTokenSpoken, श्री $cleanNextName जी... कृपया पंक्ति में आकर बैठें।"
+            }
+            else -> {
+                "टोकन नंबर $nextTokenSpoken... कृपया पंक्ति में आकर बैठें।"
+            }
+        }
+
+        lastAnnouncementText = standbyText
+        _currentAnnouncedToken.value = nextTokenNumber
+        _currentAnnouncedText.value = standbyText
+        _standbyDevoteeToken.value = nextTokenNumber
+        _standbyDevoteeName.value = cleanNextName
+
+        val activePreset = getSelectedVoicePreset(context)
+        if (activePreset == PRESET_ELEVENLABS_MALE || activePreset == PRESET_ELEVENLABS_FEMALE) {
+            val voiceId = if (activePreset == PRESET_ELEVENLABS_FEMALE) ElevenLabsTtsEngine.VOICE_FEMALE_SARAH else ElevenLabsTtsEngine.VOICE_MALE_BRIAN
+            val apiKeys = getElevenLabsApiKeyList(context)
+
+            CoroutineScope(Dispatchers.Main).launch {
+                _isAnnouncing.value = true
+                val audioFile = if (apiKeys.isNotEmpty()) {
+                    ElevenLabsTtsEngine.synthesizeSpeechWithPool(
+                        context = context,
+                        text = standbyText,
+                        apiKeys = apiKeys,
+                        voiceId = voiceId
+                    )
+                } else {
+                    val cached = ElevenLabsTtsEngine.getCachedAudioFile(context, standbyText, voiceId)
+                    if (cached.exists() && cached.length() > 500) cached else null
+                }
+
+                if (audioFile != null && audioFile.exists() && audioFile.length() > 500) {
+                    playAudioFile(audioFile) {
+                        _isAnnouncing.value = false
+                    }
+                } else {
+                    speakDevotionalText(context, standbyText)
+                }
+            }
+            return
         }
 
         speakDevotionalText(context, standbyText)
@@ -1311,10 +1271,91 @@ object AshramVoiceAnnouncementManager {
         val nextNum = _standbyNextToken.value ?: return
         announceStandbyDevotee(
             context = context,
-            currentDevoteeName = _currentDevoteeName.value,
+            currentDevoteeName = _frontDevoteeName.value,
+            currentTokenNumber = _frontDevoteeToken.value ?: 0,
             nextTokenNumber = nextNum,
             nextDevoteeName = _standbyNextName.value
         )
+    }
+
+    /**
+     * 📢 Smart Darbar Chain Queue Coordinator:
+     * When admin taps loudspeaker or standby on any token in Token Queue:
+     * 1. If no one is sitting in front (or if this is the front token): Calls them to Guruji's front seat (सम्मुख).
+     * 2. If someone is already in front: Calls this token to sit right behind them:
+     *    "टोकन नंबर X, श्री Y जी... आप टोकन नंबर A (श्री B जी) के पीछे आकर बैठें।"
+     * 3. If a standby token was already sitting, that previous standby shifts to front, and this new token becomes standby behind them!
+     */
+    fun announceTokenWithQueueLogic(
+        context: Context,
+        targetToken: Token,
+        allTokens: List<Token>,
+        forceStandby: Boolean = false,
+        onFrontTokenUpdated: ((Int) -> Unit)? = null
+    ) {
+        val currentFrontNum = _frontDevoteeToken.value
+        val currentFrontName = _frontDevoteeName.value
+        val currentStandbyNum = _standbyDevoteeToken.value
+        val currentStandbyName = _standbyDevoteeName.value
+
+        if (forceStandby) {
+            val effectiveFrontNum = if (currentFrontNum != null && currentFrontNum > 0 && currentFrontNum != targetToken.tokenNumber) {
+                currentFrontNum
+            } else {
+                val prev = allTokens.filter { it.tokenNumber < targetToken.tokenNumber && it.tokenNumber > 0 }.maxByOrNull { it.tokenNumber }
+                prev?.tokenNumber ?: (targetToken.tokenNumber - 1).coerceAtLeast(1)
+            }
+            val effectiveFrontName = if (currentFrontNum != null && currentFrontNum > 0 && currentFrontNum != targetToken.tokenNumber) {
+                currentFrontName
+            } else {
+                allTokens.find { it.tokenNumber == effectiveFrontNum }?.patientName ?: ""
+            }
+
+            announceStandbyDevotee(
+                context = context,
+                currentDevoteeName = effectiveFrontName,
+                currentTokenNumber = effectiveFrontNum,
+                nextTokenNumber = targetToken.tokenNumber,
+                nextDevoteeName = targetToken.patientName
+            )
+            return
+        }
+
+        if (currentFrontNum == null || currentFrontNum <= 0 || currentFrontNum == targetToken.tokenNumber) {
+            announceNextToken(
+                context = context,
+                tokenNumber = targetToken.tokenNumber,
+                devoteeName = targetToken.patientName,
+                city = targetToken.city
+            )
+            _frontDevoteeToken.value = targetToken.tokenNumber
+            _frontDevoteeName.value = targetToken.patientName.trim()
+            _standbyDevoteeToken.value = null
+            _standbyDevoteeName.value = ""
+            onFrontTokenUpdated?.invoke(targetToken.tokenNumber)
+        } else {
+            if (currentStandbyNum != null && currentStandbyNum > 0 && currentStandbyNum != targetToken.tokenNumber) {
+                _frontDevoteeToken.value = currentStandbyNum
+                _frontDevoteeName.value = currentStandbyName
+                onFrontTokenUpdated?.invoke(currentStandbyNum)
+
+                announceStandbyDevotee(
+                    context = context,
+                    currentDevoteeName = currentStandbyName,
+                    currentTokenNumber = currentStandbyNum,
+                    nextTokenNumber = targetToken.tokenNumber,
+                    nextDevoteeName = targetToken.patientName
+                )
+            } else {
+                announceStandbyDevotee(
+                    context = context,
+                    currentDevoteeName = currentFrontName,
+                    currentTokenNumber = currentFrontNum,
+                    nextTokenNumber = targetToken.tokenNumber,
+                    nextDevoteeName = targetToken.patientName
+                )
+            }
+        }
     }
 
     /**

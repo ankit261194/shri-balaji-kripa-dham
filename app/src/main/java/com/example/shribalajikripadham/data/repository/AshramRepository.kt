@@ -101,7 +101,8 @@ class AshramRepository(context: Context) {
             updateNotes = cursor.getString(cursor.getColumnIndexOrThrow("update_notes")),
             apkDownloadUrl = cursor.getString(cursor.getColumnIndexOrThrow("apk_download_url")),
             isForceUpdate = cursor.getInt(cursor.getColumnIndexOrThrow("is_force_update")) == 1,
-            whatsappGroupUrl = try { val v = cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_group_url")); if (v.isNullOrBlank() || v.contains("/invite")) "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0" else v } catch (e: Exception) { "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0" },
+            whatsappGroupUrl = try { val v = cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_group_url")); if (v.isNullOrBlank() || v.contains("/invite") || v.contains("chat.whatsapp.com")) "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w" else v } catch (e: Exception) { "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w" },
+            whatsappChannelUrl = try { val v = cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_channel_url")); if (v.isNullOrBlank() || v.contains("/invite") || v.contains("chat.whatsapp.com")) "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w" else v } catch (e: Exception) { "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w" },
             whatsappNumber = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_number"))?.trim() ?: "" } catch (e: Exception) { "" },
             youtubeChannelUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("youtube_channel_url")) } catch (e: Exception) { "https://www.youtube.com/@ShriBalajiKripaDham" },
             facebookPageUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("facebook_page_url")) } catch (e: Exception) { "https://www.facebook.com/ShriBalajiKripaDham" },
@@ -173,7 +174,7 @@ class AshramRepository(context: Context) {
             websiteAshramDirections = try { cursor.getString(cursor.getColumnIndexOrThrow("ashram_directions")) ?: "" } catch (e: Exception) { "" },
             websiteContactEmail = try { cursor.getString(cursor.getColumnIndexOrThrow("contact_email")) ?: "shribalajikripadham@gmail.com" } catch (e: Exception) { "shribalajikripadham@gmail.com" },
             websiteInstagramUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("instagram_url")) ?: "https://www.instagram.com/shribalajikripadham" } catch (e: Exception) { "https://www.instagram.com/shribalajikripadham" },
-            websiteWhatsappChannelUrl = try { val v = cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_channel_url")); if (v.isNullOrBlank() || v.contains("/invite")) "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0" else v } catch (e: Exception) { "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0" },
+            websiteWhatsappChannelUrl = try { val v = cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_channel_url")); if (v.isNullOrBlank() || v.contains("/invite") || v.contains("chat.whatsapp.com")) "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w" else v } catch (e: Exception) { "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w" },
             websiteFooterTitle = try { cursor.getString(cursor.getColumnIndexOrThrow("footer_title")) ?: "श्री बालाजी कृपा धाम" } catch (e: Exception) { "श्री बालाजी कृपा धाम" },
             websiteFooterDedication = try { cursor.getString(cursor.getColumnIndexOrThrow("footer_dedication")) ?: "सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।" } catch (e: Exception) { "सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।" },
             websiteFooterCopyright = try { cursor.getString(cursor.getColumnIndexOrThrow("footer_copyright")) ?: "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।" } catch (e: Exception) { "© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।" },
@@ -756,6 +757,7 @@ class AshramRepository(context: Context) {
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
             put("whatsapp_group_url", whatsappGroupUrl.trim())
+            put("whatsapp_channel_url", whatsappGroupUrl.trim())
             put("whatsapp_number", whatsappNumber.trim())
             put("youtube_channel_url", youtubeUrl.trim())
             put("facebook_page_url", facebookUrl.trim())
@@ -4713,7 +4715,10 @@ class AshramRepository(context: Context) {
                 if (det.darbarTimings.isNotBlank()) cv.put("darbar_timings", det.darbarTimings)
                 if (det.freeDisclaimer.isNotBlank()) cv.put("free_disclaimer", det.freeDisclaimer)
                 if (det.whatsappNumber.isNotBlank()) cv.put("whatsapp_number", det.whatsappNumber)
-                if (det.whatsappGroupUrl.isNotBlank()) cv.put("whatsapp_group_url", det.whatsappGroupUrl)
+                if (det.whatsappGroupUrl.isNotBlank()) {
+                    cv.put("whatsapp_group_url", det.whatsappGroupUrl)
+                    cv.put("whatsapp_channel_url", det.whatsappGroupUrl)
+                }
                 if (det.youtubeChannelUrl.isNotBlank()) cv.put("youtube_channel_url", det.youtubeChannelUrl)
                 if (det.facebookPageUrl.isNotBlank()) cv.put("facebook_page_url", det.facebookPageUrl)
                 if (det.instagramUrl.isNotBlank()) cv.put("instagram_url", det.instagramUrl)

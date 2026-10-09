@@ -31,7 +31,7 @@ data class AshramDetailsConfigDto(
     val whatsappNumber: String = "",
     val darbarTimings: String = "प्रत्येक रविवार प्रातः 7:00 बजे से प्रभु इच्छा तक",
     val freeDisclaimer: String = "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।",
-    val whatsappGroupUrl: String = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0",
+    val whatsappGroupUrl: String = "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w",
     val youtubeChannelUrl: String = "https://www.youtube.com/@ShriBalajiKripaDham",
     val facebookPageUrl: String = "https://www.facebook.com/ShriBalajiKripaDham",
     val instagramUrl: String = "https://www.instagram.com/shribalajikripadham",
@@ -253,7 +253,9 @@ data class LiveUiConfigDto(
                         whatsappNumber = detObj.optString("whatsapp_number", "").trim(),
                         darbarTimings = detObj.optString("darbar_timings", "प्रत्येक रविवार प्रातः 7:00 बजे से प्रभु इच्छा तक"),
                         freeDisclaimer = detObj.optString("free_disclaimer", "भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क (FREE) इलाज। कोई शुल्क अथवा दक्षिणा नहीं ली जाती।"),
-                        whatsappGroupUrl = detObj.optString("whatsapp_group_url", "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0"),
+                        whatsappGroupUrl = detObj.optString("whatsapp_channel_url", detObj.optString("whatsapp_group_url", "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w")).let {
+                            if (it.isBlank() || it.contains("chat.whatsapp.com") || it.contains("/invite")) "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w" else it
+                        },
                         youtubeChannelUrl = detObj.optString("youtube_channel_url", "https://www.youtube.com/@ShriBalajiKripaDham"),
                         facebookPageUrl = detObj.optString("facebook_page_url", "https://www.facebook.com/ShriBalajiKripaDham"),
                         instagramUrl = detObj.optString("instagram_url", "https://www.instagram.com/shribalajikripadham"),

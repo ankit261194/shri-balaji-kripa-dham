@@ -1,6 +1,8 @@
 package com.example.shribalajikripadham.ui.home
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -385,6 +387,96 @@ fun HomeScreen(
                                 onNavigateToHavan = onNavigateToHavanApplication,
                                 onOpenSevadarHelpdesk = { showSevadarHelpdesk = true }
                             )
+
+                            // 6. Official WhatsApp Channel Card (1-Click Devotee Follow)
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        val channelUrl = if (settings.whatsappChannelUrl.isNotBlank() && !settings.whatsappChannelUrl.contains("chat.whatsapp.com")) {
+                                            settings.whatsappChannelUrl
+                                        } else {
+                                            "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w"
+                                        }
+                                        try {
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(channelUrl))
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, if (isHindi) "व्हाट्सएप खोलने में असमर्थ" else "Unable to open WhatsApp", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF4)),
+                                border = BorderStroke(1.5.dp, Color(0xFF25D366)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        modifier = Modifier.weight(1f),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = Color(0xFF25D366),
+                                            modifier = Modifier.size(46.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text("💬", fontSize = 24.sp)
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = if (isHindi) "आधिकारिक व्हाट्सएप चैनल" else "Official WhatsApp Channel",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.5.sp,
+                                                    color = Color(0xFF0F5132)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFF25D366).copy(alpha = 0.2f)
+                                                ) {
+                                                    Text(
+                                                        text = "OFFICIAL 🌿",
+                                                        fontSize = 8.5.sp,
+                                                        fontWeight = FontWeight.Black,
+                                                        color = Color(0xFF0F5132),
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = if (isHindi) "आरती दर्शन, दरबार सूचनाएं व ताजा अपडेट सीधे व्हाट्सएप पर पाएं" else "Get live darshan, aarti & notices on WhatsApp",
+                                                fontSize = 11.5.sp,
+                                                color = Color(0xFF2B5329),
+                                                lineHeight = 15.sp
+                                            )
+                                        }
+                                    }
+                                    Surface(
+                                        color = Color(0xFF25D366),
+                                        shape = RoundedCornerShape(20.dp),
+                                        modifier = Modifier.padding(start = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isHindi) "फॉलो करें ➔" else "Follow ➔",
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         ProHomeTab.TOKEN -> {
