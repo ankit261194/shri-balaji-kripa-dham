@@ -1051,6 +1051,8 @@ object HostingerCentralSyncManager {
                 put("scheduled_token_open_timestamp", settings.scheduledTokenOpenTimestamp)
                 put("app_download_url", settings.apkDownloadUrl)
                 put("app_share_url", settings.appShareUrl)
+                put("current_theme_id", settings.currentThemeId)
+                put("is_festival_theme_enforced", if (settings.isFestivalThemeEnforced) 1 else 0)
                 put("is_bus_booking_live", if (settings.isBusBookingLive) 1 else 0)
                 put("is_dharamshala_live", if (settings.isDharamshalaLive) 1 else 0)
                 put("is_live_counter_visible", if (settings.isLiveCounterVisible) 1 else 0)

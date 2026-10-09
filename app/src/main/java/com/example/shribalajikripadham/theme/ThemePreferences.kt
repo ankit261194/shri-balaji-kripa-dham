@@ -17,4 +17,24 @@ object ThemePreferences {
         val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_THEME_ID, theme.id).apply()
     }
+
+    fun getDivineThemes(): List<SacredTheme> = listOf(
+        SacredTheme.TIRANGA,
+        SacredTheme.DIVYA_DEEPAWALI,
+        SacredTheme.SHERAWALI_MAIYA,
+        SacredTheme.VEER_HANUMAN
+    )
+
+    fun getPeacefulThemes(): List<SacredTheme> = listOf(
+        SacredTheme.WHATSAPP_EMERALD,
+        SacredTheme.TELEGRAM_BLUE,
+        SacredTheme.CALM_SAGE_MINT,
+        SacredTheme.OCEAN_INDIGO,
+        SacredTheme.PEACEFUL_LAVENDER,
+        SacredTheme.MINIMAL_SLATE,
+        SacredTheme.SOOTHING_AMBER,
+        SacredTheme.WHATSAPP_DARK
+    )
+
+    fun getAllThemes(): List<SacredTheme> = getDivineThemes() + getPeacefulThemes()
 }

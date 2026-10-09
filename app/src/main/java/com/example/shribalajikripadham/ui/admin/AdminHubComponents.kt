@@ -433,11 +433,11 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
         AdminHubModuleItem(
             tabTitle = if (isHindi) "ऐप कस्टमाइजर" else "Customizer",
             icon = "🎨",
-            titleHindi = "ऐप कस्टमाइजर",
-            titleEnglish = "App Customizer",
+            titleHindi = "पावन थीम व कस्टमाइजर",
+            titleEnglish = "Sacred Themes & Customizer",
             categoryHindi = "⚙️ सिस्टम व कंट्रोल",
-            descriptionHindi = "आश्रम नाम, पता, संपर्क नंबर, व्हाट्सएप चैनल व सोशल लिंक्स",
-            descriptionEnglish = "Color palette, sacred themes, and visual aesthetics",
+            descriptionHindi = "4 दिव्य उत्सव थीम्स (तिरंगा, दीपावली, शेरावाली, हनुमान जी), रंग व आश्रम विवरण",
+            descriptionEnglish = "4 Divine sacred themes, cloud festival broadcast, and ashram details",
             relatedTabs = listOf(
                 if (isHindi) "सुपर कंट्रोल" else "Super Control",
                 if (isHindi) "सेवाएं ऑन/ऑफ" else "Services",

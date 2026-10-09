@@ -42,7 +42,8 @@ data class AshramSettings(
     val facebookPageUrl: String = "https://www.facebook.com/ShriBalajiKripaDham",
     val instagramUrl: String = "https://www.instagram.com/shribalajikripadham",
     val appShareUrl: String = "https://shribalajikripadham.online/app",
-    val currentThemeId: String = "maroon",
+    val currentThemeId: String = "whatsapp",
+    val isFestivalThemeEnforced: Boolean = false,
     val gurujiPhotoUri: String = "",
     val activeUiLayout: String = "CLASSIC_DARBAR",
     // Daily token limit quota (0 = unlimited)

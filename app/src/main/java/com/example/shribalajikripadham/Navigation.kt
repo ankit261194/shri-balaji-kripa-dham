@@ -218,6 +218,8 @@ fun MainNavigation(
 
             AppScreen.ADMIN -> AdminDashboardScreen(
                 isHindi = isHindi,
+                currentTheme = currentTheme,
+                onThemeChanged = onThemeChanged,
                 onBack = { navigateBack() },
                 onNavigateToHallDisplay = { navigateTo(AppScreen.HALL_DISPLAY) },
                 onNavigateToDataVault = { navigateTo(AppScreen.DATA_VAULT) }

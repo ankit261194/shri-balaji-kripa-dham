@@ -33,9 +33,142 @@ enum class SacredTheme(
     val cardBorderWidth: Dp = 0.8.dp,
     val cardElevation: Dp = 1.dp,
     val styleNameHindi: String = "वाट्सएप क्लीन",
-    val styleBadge: String = "💬 वाट्सएप • 12dp"
+    val styleBadge: String = "💬 वाट्सएप • 12dp",
+    val watermarkText: String = "",
+    val watermarkIcon: String = "",
+    val glowColor: Color = Color.Transparent,
+    val isTricolor: Boolean = false,
+    val festivalCategoryHindi: String = "दैनिक"
 ) {
-    // 1. WhatsApp Emerald - Soothing, iconic clean green (Default)
+    // =========================================================================
+    // 🌟 4 DIVINE SACRED THEMES (दिव्य उत्सव व राष्ट्र गौरव थीम्स)
+    // =========================================================================
+
+    // 1. 🇮🇳 Tiranga Theme (National Flag / Deshbhakti / अखंड भारत)
+    TIRANGA(
+        id = "tiranga",
+        nameHindi = "राष्ट्र ध्वज तिरंगा",
+        nameEnglish = "Tiranga National Pride",
+        icon = "🇮🇳",
+        primaryColor = Color(0xFFFF9933), // Deep Kesariya / Saffron
+        secondaryColor = Color(0xFF138808), // Sacred Emerald Green
+        topBarColor = Color(0xFFE65100), // Vibrant Saffron / Kesariya
+        headerGradientStart = Color(0xFFFF6F00),
+        headerGradientEnd = Color(0xFFE65100),
+        accentGold = Color(0xFF1A237E), // Navy Blue Ashoka Chakra
+        cardBorderColor = Color(0xFFD1E7DD),
+        backgroundLight = Color(0xFFF8FAF9),
+        surfaceLight = Color(0xFFFFFFFF),
+        isDark = false,
+        fontFamily = FontFamily.Default,
+        cardShape = RoundedCornerShape(14.dp),
+        buttonShape = RoundedCornerShape(10.dp),
+        cardBorderWidth = 1.dp,
+        cardElevation = 2.dp,
+        styleNameHindi = "राष्ट्र ध्वज तिरंगा (अखंड भारत)",
+        styleBadge = "🇮🇳 तिरंगा • अखंड भारत",
+        watermarkText = "वन्दे मातरम्",
+        watermarkIcon = "🇮🇳",
+        glowColor = Color(0xFFFF9933),
+        isTricolor = true,
+        festivalCategoryHindi = "राष्ट्रीय पर्व"
+    ),
+
+    // 2. 🪔 Divya Deepawali Theme (Festival of Lights / रोशनी का पावन पर्व)
+    DIVYA_DEEPAWALI(
+        id = "deepawali",
+        nameHindi = "दिव्य दीपावली",
+        nameEnglish = "Divya Deepawali (Lights)",
+        icon = "🪔",
+        primaryColor = Color(0xFFF59E0B), // Radiant Amber Gold
+        secondaryColor = Color(0xFFFBBF24), // Golden Ray Glow
+        topBarColor = Color(0xFF0F172A), // Royal Midnight Velvet
+        headerGradientStart = Color(0xFF1E293B),
+        headerGradientEnd = Color(0xFF0B0F19),
+        accentGold = Color(0xFFFDE68A), // Deepak Jyoti Gold
+        cardBorderColor = Color(0xFF374151),
+        backgroundLight = Color(0xFF0B0F19), // Deep Velvet Midnight Night
+        surfaceLight = Color(0xFF161F30), // Deep Slate Card Surface
+        isDark = true,
+        fontFamily = FontFamily.Default,
+        cardShape = RoundedCornerShape(16.dp),
+        buttonShape = RoundedCornerShape(12.dp),
+        cardBorderWidth = 1.2.dp,
+        cardElevation = 4.dp,
+        styleNameHindi = "दिव्य दीपावली (महालक्ष्मी प्रकाश)",
+        styleBadge = "🪔 दीपावली • दिव्य प्रकाश",
+        watermarkText = "शुभ दीपावली",
+        watermarkIcon = "🪔",
+        glowColor = Color(0xFFFBBF24),
+        isTricolor = false,
+        festivalCategoryHindi = "दीपावली महोत्सव"
+    ),
+
+    // 3. 🦁 Sherawali Maiya Theme (Maa Durga / Navratri Shakti / शेरावाली)
+    SHERAWALI_MAIYA(
+        id = "sherawali",
+        nameHindi = "शेरावाली मैया",
+        nameEnglish = "Sherawali Durga Shakti",
+        icon = "🦁",
+        primaryColor = Color(0xFF991B1B), // Deep Crimson Sindoor Red
+        secondaryColor = Color(0xFFDC2626), // Radiant Crimson Vermilion
+        topBarColor = Color(0xFF880808), // Sacred Sindoor Maroon
+        headerGradientStart = Color(0xFF991B1B),
+        headerGradientEnd = Color(0xFF5A0000),
+        accentGold = Color(0xFFD4AF37), // Golden Gota-Kinari Lace
+        cardBorderColor = Color(0xFFFECDD3),
+        backgroundLight = Color(0xFFFFF7F7), // Vermilion Sacred Warmth
+        surfaceLight = Color(0xFFFFFFFF),
+        isDark = false,
+        fontFamily = FontFamily.Default,
+        cardShape = RoundedCornerShape(14.dp),
+        buttonShape = RoundedCornerShape(10.dp),
+        cardBorderWidth = 1.dp,
+        cardElevation = 2.dp,
+        styleNameHindi = "शेरावाली मैया (नवरात्रि शक्ति)",
+        styleBadge = "🦁 शेरावाली • शक्ति स्वरूपा",
+        watermarkText = "जय माता दी",
+        watermarkIcon = "🦁",
+        glowColor = Color(0xFFEF4444),
+        isTricolor = false,
+        festivalCategoryHindi = "नवरात्रि उत्सव"
+    ),
+
+    // 4. 🚩 Veer Bajrangi Hanuman Ji Theme (Sindoori Balaji / संकट मोचन)
+    VEER_HANUMAN(
+        id = "hanuman",
+        nameHindi = "वीर बजरंगी हनुमान",
+        nameEnglish = "Veer Bajrangi Balaji",
+        icon = "🚩",
+        primaryColor = Color(0xFFC2410C), // Chameli Oil Sindoori Orange
+        secondaryColor = Color(0xFFEA580C), // Radiant Sindoor
+        topBarColor = Color(0xFF9A3412), // Deep Sindoori Bronze
+        headerGradientStart = Color(0xFFC2410C),
+        headerGradientEnd = Color(0xFF7C2D12),
+        accentGold = Color(0xFFF59E0B), // Ashtadhatu Antique Gold
+        cardBorderColor = Color(0xFFFED7AA), // Vajra Saffron Border
+        backgroundLight = Color(0xFFFFF8F1), // Sindoori Sandalwood Warmth
+        surfaceLight = Color(0xFFFFFFFF),
+        isDark = false,
+        fontFamily = FontFamily.Default,
+        cardShape = RoundedCornerShape(12.dp),
+        buttonShape = RoundedCornerShape(10.dp),
+        cardBorderWidth = 1.dp,
+        cardElevation = 2.dp,
+        styleNameHindi = "वीर बजरंगी हनुमान (संकट मोचन)",
+        styleBadge = "🚩 वीर बजरंगी • संकट मोचन",
+        watermarkText = "जय श्री राम",
+        watermarkIcon = "🚩",
+        glowColor = Color(0xFFF97316),
+        isTricolor = false,
+        festivalCategoryHindi = "हनुमान दरबार"
+    ),
+
+    // =========================================================================
+    // 🍃 8 MODERN PEACEFUL THEMES (शांत व सात्विक थीम्स)
+    // =========================================================================
+
+    // 5. WhatsApp Emerald - Soothing, iconic clean green (Default)
     WHATSAPP_EMERALD(
         id = "whatsapp",
         nameHindi = "वाट्सएप हरा",
@@ -57,7 +190,12 @@ enum class SacredTheme(
         cardBorderWidth = 0.8.dp,
         cardElevation = 1.dp,
         styleNameHindi = "वाट्सएप क्लीन एमराल्ड",
-        styleBadge = "💬 वाट्सएप • 12dp"
+        styleBadge = "💬 वाट्सएप • 12dp",
+        watermarkText = "श्री बालाजी धाम",
+        watermarkIcon = "💬",
+        glowColor = Color(0xFF25D366),
+        isTricolor = false,
+        festivalCategoryHindi = "दैनिक"
     ),
 
     // 2. Telegram Sky Blue - Modern, crisp, fresh
@@ -239,11 +377,15 @@ enum class SacredTheme(
         val DEFAULT = WHATSAPP_EMERALD
 
         // Backward-compatibility alias for legacy code
-        val ROYAL_MAROON: SacredTheme get() = WHATSAPP_EMERALD
+        val ROYAL_MAROON: SacredTheme get() = SHERAWALI_MAIYA
 
         fun fromId(id: String): SacredTheme {
             return when (id.lowercase().trim()) {
-                "whatsapp", "green", "emerald", "maroon" -> WHATSAPP_EMERALD
+                "tiranga", "flag", "india", "bharat", "deshbhakti" -> TIRANGA
+                "deepawali", "diwali", "roshni", "lights", "deep" -> DIVYA_DEEPAWALI
+                "sherawali", "durga", "maiya", "navratri", "shakti", "maroon" -> SHERAWALI_MAIYA
+                "hanuman", "bajrangi", "balaji", "sindoori", "sindoor" -> VEER_HANUMAN
+                "whatsapp", "green", "emerald" -> WHATSAPP_EMERALD
                 "telegram", "blue", "sky" -> TELEGRAM_BLUE
                 "sage", "mint" -> CALM_SAGE_MINT
                 "ocean", "navy", "indigo" -> OCEAN_INDIGO
@@ -265,7 +407,12 @@ data class SacredStyle(
     val cardBorderWidth: Dp,
     val cardElevation: Dp,
     val cardBorderColor: Color,
-    val isDark: Boolean
+    val isDark: Boolean,
+    val watermarkText: String = "",
+    val watermarkIcon: String = "",
+    val glowColor: Color = Color.Transparent,
+    val isTricolor: Boolean = false,
+    val styleBadge: String = ""
 )
 
 val LocalSacredStyle = staticCompositionLocalOf {
@@ -277,6 +424,11 @@ val LocalSacredStyle = staticCompositionLocalOf {
         cardBorderWidth = SacredTheme.WHATSAPP_EMERALD.cardBorderWidth,
         cardElevation = SacredTheme.WHATSAPP_EMERALD.cardElevation,
         cardBorderColor = SacredTheme.WHATSAPP_EMERALD.cardBorderColor,
-        isDark = false
+        isDark = false,
+        watermarkText = SacredTheme.WHATSAPP_EMERALD.watermarkText,
+        watermarkIcon = SacredTheme.WHATSAPP_EMERALD.watermarkIcon,
+        glowColor = SacredTheme.WHATSAPP_EMERALD.glowColor,
+        isTricolor = SacredTheme.WHATSAPP_EMERALD.isTricolor,
+        styleBadge = SacredTheme.WHATSAPP_EMERALD.styleBadge
     )
 }

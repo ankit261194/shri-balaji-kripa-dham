@@ -101,7 +101,12 @@ fun ShriBalajiKripaDhamTheme(
         cardBorderWidth = sacredTheme.cardBorderWidth,
         cardElevation = sacredTheme.cardElevation,
         cardBorderColor = sacredTheme.cardBorderColor,
-        isDark = sacredTheme.isDark
+        isDark = sacredTheme.isDark,
+        watermarkText = sacredTheme.watermarkText,
+        watermarkIcon = sacredTheme.watermarkIcon,
+        glowColor = sacredTheme.glowColor,
+        isTricolor = sacredTheme.isTricolor,
+        styleBadge = sacredTheme.styleBadge
     )
 
     CompositionLocalProvider(LocalSacredStyle provides activeStyle) {

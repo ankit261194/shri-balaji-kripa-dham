@@ -106,6 +106,16 @@ fun HomeScreen(
         }
     }
 
+    // Auto-Adopt Super Admin Festival Broadcast Theme if Enforced Nationwide
+    LaunchedEffect(settings.isFestivalThemeEnforced, settings.currentThemeId) {
+        if (settings.isFestivalThemeEnforced && settings.currentThemeId.isNotBlank()) {
+            val festivalTheme = SacredTheme.fromId(settings.currentThemeId)
+            if (currentTheme != festivalTheme) {
+                onThemeChanged(festivalTheme)
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         while (isActive) {
             currentTimeMs = System.currentTimeMillis()
@@ -215,7 +225,7 @@ fun HomeScreen(
                         val msg = if (isHindi) {
                             "🚩 ॐ श्री हनुमते नमः 🚩\n\nश्री बालाजी कृपा धाम (डूँगरा जाट, बुलन्दशहर)\nरविवार टोकन, दिव्य दर्शन व आरती हेतु आधिकारिक ऐप डाउनलोड करें:\n$shareUrl"
                         } else {
-                            "🚩 Om Shri Hanumate Namah 🚩\n\nShri Balaji Kripa Dham (Dungra Jaat, Bulandshahr)\nDownload official app:\n$shareUrl"
+                            "🚩 Om Shri Hanumate Namah 🚩\n\nShri Balaji Kripa धाम (Dungra Jaat, Bulandshahr)\nDownload official app:\n$shareUrl"
                         }
                         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                             type = "text/plain"
@@ -224,7 +234,8 @@ fun HomeScreen(
                         context.startActivity(android.content.Intent.createChooser(intent, "ऐप शेयर करें"))
                     }
                 },
-                onOpenManualPdf = {}
+                onOpenManualPdf = {},
+                onThemeChanged = onThemeChanged
             )
         }
     ) {
@@ -245,7 +256,8 @@ fun HomeScreen(
                     onOpenManualPdf = {},
                     onOpenSevadarChat = { showSevadarHelpdesk = true },
                     onToggleLanguage = onToggleLanguage,
-                    onOpenAdmin = onNavigateToAdmin
+                    onOpenAdmin = onNavigateToAdmin,
+                    onThemeChanged = onThemeChanged
                 )
             },
             bottomBar = {

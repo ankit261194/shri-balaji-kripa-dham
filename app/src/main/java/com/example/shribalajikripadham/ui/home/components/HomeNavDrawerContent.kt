@@ -11,7 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,10 +54,12 @@ fun HomeNavDrawerContent(
     onNavigateToAdmin: () -> Unit,
     onCheckUpdate: () -> Unit,
     onShareApp: () -> Unit,
-    onOpenManualPdf: () -> Unit
+    onOpenManualPdf: () -> Unit,
+    onThemeChanged: (SacredTheme) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    var showThemeDialog by remember { mutableStateOf(false) }
 
     ModalDrawerSheet(
         drawerContainerColor = currentTheme.surfaceLight,
@@ -145,6 +147,7 @@ fun HomeNavDrawerContent(
                 DrawerMenuItem("📜", "डिजिटल पावन पर्चा", "Digital Parchas", onNavigateToParchas),
                 DrawerMenuItem("👥", "सेवादार संपर्क व लाइव चैट", "Sevadar Helpdesk", onOpenSevadarHelpdesk),
                 DrawerMenuItem("🔥", "हवन कराने हेतु आवेदन", "Sacred Havan", onNavigateToHavan),
+                DrawerMenuItem("🎨", "ऐप थीम बदलें (${currentTheme.icon} ${currentTheme.nameHindi})", "Change Theme (${currentTheme.nameEnglish})", { showThemeDialog = true }),
 
                 DrawerMenuItem("🔄", "ऐप अपडेट जांचें (Live)", "Check Updates", onCheckUpdate),
                 DrawerMenuItem("📲", "ऐप शेयर करें (भक्तों को भेजें)", "Share App", onShareApp),
@@ -182,5 +185,16 @@ fun HomeNavDrawerContent(
                 modifier = Modifier.padding(16.dp)
             )
         }
+    }
+
+    if (showThemeDialog) {
+        com.example.shribalajikripadham.ui.theme.SacredThemeChooserDialog(
+            currentTheme = currentTheme,
+            isHindi = isHindi,
+            onDismissRequest = { showThemeDialog = false },
+            onThemeSelected = { newTheme ->
+                onThemeChanged(newTheme)
+            }
+        )
     }
 }

@@ -108,7 +108,8 @@ class AshramRepository(context: Context) {
             facebookPageUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("facebook_page_url")) } catch (e: Exception) { "https://www.facebook.com/ShriBalajiKripaDham" },
             instagramUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("instagram_url")) } catch (e: Exception) { "https://www.instagram.com/shribalajikripadham" },
             appShareUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("app_share_url")) } catch (e: Exception) { "https://shribalajikripadham.online/app" },
-            currentThemeId = try { cursor.getString(cursor.getColumnIndexOrThrow("current_theme_id")) } catch (e: Exception) { "maroon" },
+            currentThemeId = try { cursor.getString(cursor.getColumnIndexOrThrow("current_theme_id")) } catch (e: Exception) { "whatsapp" },
+            isFestivalThemeEnforced = try { cursor.getInt(cursor.getColumnIndexOrThrow("is_festival_theme_enforced")) == 1 } catch (e: Exception) { false },
             gurujiPhotoUri = try { cursor.getString(cursor.getColumnIndexOrThrow("guruji_photo_uri")) } catch (e: Exception) { "" } ?: "",
             activeUiLayout = try { cursor.getString(cursor.getColumnIndexOrThrow("active_ui_layout")) } catch (e: Exception) { "CLASSIC_DARBAR" } ?: "CLASSIC_DARBAR",
             maxDailyTokens = try { cursor.getInt(cursor.getColumnIndexOrThrow("max_daily_tokens")) } catch (e: Exception) { 0 },
@@ -779,6 +780,26 @@ class AshramRepository(context: Context) {
         }
         val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
         if (ok) persistCurrentSettingsToAllLayers()
+        ok
+    }
+
+    suspend fun updateFestivalThemeBroadcast(themeId: String, isEnforced: Boolean): Boolean = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        val cv = ContentValues().apply {
+            put("current_theme_id", themeId)
+            put("is_festival_theme_enforced", if (isEnforced) 1 else 0)
+        }
+        val ok = db.update("ashram_settings", cv, "id = 1", null) > 0
+        if (ok) {
+            persistCurrentSettingsToAllLayers()
+            try {
+                // Trigger immediate central cloud live sync to Hostinger
+                val updatedSettings = getSettings()
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.updateFullLiveConfig(updatedSettings)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
         ok
     }
 
@@ -4678,6 +4699,15 @@ class AshramRepository(context: Context) {
                         val parsedSections = UiSectionConfig.fromJson(secArr.toString())
                         saveUiSectionConfigs(parsedSections)
                     }
+                }
+
+                if (cfg.has("current_theme_id")) {
+                    val tId = cfg.optString("current_theme_id", "").trim()
+                    if (tId.isNotBlank()) cv.put("current_theme_id", tId)
+                }
+                if (cfg.has("is_festival_theme_enforced")) {
+                    val isEnforced = cfg.optBoolean("is_festival_theme_enforced", false) || (cfg.optInt("is_festival_theme_enforced", 0) == 1)
+                    cv.put("is_festival_theme_enforced", if (isEnforced) 1 else 0)
                 }
 
                 if (cv.size() > 0) {

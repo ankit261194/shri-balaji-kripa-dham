@@ -138,6 +138,8 @@ function getFallbackConfig() {
         "bus_seat_fare_amount" => 0,
         "havan_estimated_cost" => 14000,
         "havan_rules_notice" => "हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।",
+        "current_theme_id" => "whatsapp",
+        "is_festival_theme_enforced" => false,
         "config_version" => 1,
         "server_time" => $now,
         "sevadars" => [],
@@ -238,6 +240,8 @@ $targetCols = [
     "bus_seat_fare_amount" => "INT NOT NULL DEFAULT 0",
     "havan_estimated_cost" => "INT NOT NULL DEFAULT 14000",
     "havan_rules_notice" => "TEXT",
+    "current_theme_id" => "VARCHAR(100) NOT NULL DEFAULT 'whatsapp'",
+    "is_festival_theme_enforced" => "TINYINT(1) NOT NULL DEFAULT 0",
     "ui_sections" => "LONGTEXT DEFAULT NULL",
     "config_version" => "INT NOT NULL DEFAULT 1"
 ];
@@ -423,7 +427,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'aarti_lyrics' => trim($input['aarti_lyrics'] ?? ($current['aarti_lyrics'] ?? '')),
         'bus_seat_fare_amount' => isset($input['bus_seat_fare_amount']) ? intval($input['bus_seat_fare_amount']) : intval($current['bus_seat_fare_amount'] ?? 0),
         'havan_estimated_cost' => isset($input['havan_estimated_cost']) ? intval($input['havan_estimated_cost']) : intval($current['havan_estimated_cost'] ?? 14000),
-        'havan_rules_notice' => trim($input['havan_rules_notice'] ?? ($current['havan_rules_notice'] ?? 'हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।'))
+        'havan_rules_notice' => trim($input['havan_rules_notice'] ?? ($current['havan_rules_notice'] ?? 'हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।')),
+        'current_theme_id' => trim($input['current_theme_id'] ?? ($current['current_theme_id'] ?? 'whatsapp')),
+        'is_festival_theme_enforced' => isset($input['is_festival_theme_enforced']) ? intval($input['is_festival_theme_enforced']) : intval($current['is_festival_theme_enforced'] ?? 0)
     ];
 
     // Tatkal (FORCE_OPEN) automatic activation:

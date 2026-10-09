@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -46,28 +47,56 @@ fun PremiumRoyalTokenCard(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val sacredStyle = LocalSacredStyle.current
+    val sacredTheme = sacredStyle.theme
+
     var showPrinterDialog by remember { mutableStateOf(false) }
     var isPrinting by remember { mutableStateOf(false) }
 
     val sdfDate = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
     val formattedTimestamp = sdfDate.format(Date(token.createdAt))
 
-    // Royal Golden-Saffron Gradient Brushes
-    val goldGradientBrush = Brush.linearGradient(
-        colors = listOf(
-            Color(0xFFD4AF37), // Metallic Gold
-            Color(0xFFFFDF73), // Brilliant Light Gold
-            Color(0xFFFF8C00), // Deep Saffron Orange
-            Color(0xFFD4AF37)
+    // Dynamic Thematic Border & Header Brushes
+    val dynamicBorderBrush = when (sacredTheme) {
+        SacredTheme.TIRANGA -> Brush.linearGradient(
+            colors = listOf(Color(0xFFFF9933), Color(0xFFFFFFFF), Color(0xFF138808), Color(0xFFFF9933))
         )
-    )
+        SacredTheme.DIVYA_DEEPAWALI -> Brush.linearGradient(
+            colors = listOf(Color(0xFFF59E0B), Color(0xFFFDE68A), Color(0xFFFBBF24), Color(0xFFD97706))
+        )
+        SacredTheme.SHERAWALI_MAIYA -> Brush.linearGradient(
+            colors = listOf(Color(0xFFD4AF37), Color(0xFFFFD700), Color(0xFFB91C1C), Color(0xFFD4AF37))
+        )
+        SacredTheme.VEER_HANUMAN -> Brush.linearGradient(
+            colors = listOf(Color(0xFFC2410C), Color(0xFFF59E0B), Color(0xFFB45309), Color(0xFFC2410C))
+        )
+        else -> Brush.linearGradient(
+            colors = listOf(
+                Color(0xFFD4AF37),
+                Color(0xFFFFDF73),
+                Color(0xFFFF8C00),
+                Color(0xFFD4AF37)
+            )
+        )
+    }
 
-    val royalHeaderBrush = Brush.verticalGradient(
-        colors = listOf(
-            Color(0xFF800000), // Deep Royal Maroon
-            Color(0xFF4A0000)  // Imperial Dark Burgundy
+    val dynamicHeaderBrush = when (sacredTheme) {
+        SacredTheme.TIRANGA -> Brush.verticalGradient(
+            colors = listOf(Color(0xFFFF6F00), Color(0xFFE65100))
         )
-    )
+        SacredTheme.DIVYA_DEEPAWALI -> Brush.verticalGradient(
+            colors = listOf(Color(0xFF1E293B), Color(0xFF0B0F19))
+        )
+        SacredTheme.SHERAWALI_MAIYA -> Brush.verticalGradient(
+            colors = listOf(Color(0xFF991B1B), Color(0xFF5A0000))
+        )
+        SacredTheme.VEER_HANUMAN -> Brush.verticalGradient(
+            colors = listOf(Color(0xFFC2410C), Color(0xFF7C2D12))
+        )
+        else -> Brush.verticalGradient(
+            colors = listOf(sacredTheme.headerGradientStart, sacredTheme.headerGradientEnd)
+        )
+    }
 
     val parchmentBgBrush = Brush.verticalGradient(
         colors = listOf(
@@ -81,7 +110,7 @@ fun PremiumRoyalTokenCard(
         modifier = modifier
             .fillMaxWidth()
             .shadow(16.dp, RoundedCornerShape(24.dp))
-            .border(BorderStroke(4.dp, goldGradientBrush), RoundedCornerShape(24.dp)),
+            .border(BorderStroke(3.5.dp, dynamicBorderBrush), RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
@@ -103,7 +132,7 @@ fun PremiumRoyalTokenCard(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(royalHeaderBrush)
+                        .background(dynamicHeaderBrush)
                         .padding(vertical = 12.dp, horizontal = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -196,7 +225,7 @@ fun PremiumRoyalTokenCard(
             Surface(
                 color = Color.White,
                 shape = RoundedCornerShape(18.dp),
-                border = BorderStroke(2.dp, goldGradientBrush),
+                border = BorderStroke(2.dp, dynamicBorderBrush),
                 shadowElevation = 6.dp,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -213,15 +242,45 @@ fun PremiumRoyalTokenCard(
                         color = Color(0xFF795548)
                     )
 
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
-                    Text(
-                        text = "#${token.tokenNumber}",
-                        fontSize = 58.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFFD84315),
-                        textAlign = TextAlign.Center
-                    )
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (sacredTheme.watermarkIcon.isNotBlank()) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.alpha(0.09f)
+                            ) {
+                                Text(
+                                    text = sacredTheme.watermarkIcon,
+                                    fontSize = 76.sp
+                                )
+                                if (sacredTheme.watermarkText.isNotBlank()) {
+                                    Text(
+                                        text = sacredTheme.watermarkText,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = "#${token.tokenNumber}",
+                            fontSize = 58.sp,
+                            fontWeight = FontWeight.Black,
+                            color = when (sacredTheme) {
+                                SacredTheme.DIVYA_DEEPAWALI -> Color(0xFFD97706)
+                                SacredTheme.SHERAWALI_MAIYA -> Color(0xFF991B1B)
+                                SacredTheme.VEER_HANUMAN -> Color(0xFFC2410C)
+                                SacredTheme.TIRANGA -> Color(0xFFE65100)
+                                else -> Color(0xFFD84315)
+                            },
+                            textAlign = TextAlign.Center
+                        )
+                    }
 
                     Surface(
                         color = Color(0xFFE8F5E9),

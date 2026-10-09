@@ -45,6 +45,7 @@ import com.example.shribalajikripadham.data.repository.AdminPermissionsUpdate
 import com.example.shribalajikripadham.hardware.GeofenceLocationManager
 import com.example.shribalajikripadham.theme.*
 import com.example.shribalajikripadham.ui.common.SacredAvatar
+import com.example.shribalajikripadham.ui.theme.SacredThemeChooserDialog
 import com.example.shribalajikripadham.ui.home.AppUiLayout
 import com.example.shribalajikripadham.util.*
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -82,6 +83,8 @@ data class CreatedSevadarShareData(
 @Composable
 fun AdminDashboardScreen(
     isHindi: Boolean,
+    currentTheme: SacredTheme = SacredTheme.WHATSAPP_EMERALD,
+    onThemeChanged: (SacredTheme) -> Unit = {},
     onBack: () -> Unit,
     onNavigateToHallDisplay: () -> Unit = {},
     onNavigateToDataVault: () -> Unit = {}
@@ -97,6 +100,7 @@ fun AdminDashboardScreen(
     var myLoginTimestamp by remember { mutableLongStateOf(0L) }
     var forceLogoutMessage by remember { mutableStateOf<String?>(null) }
     var showLogoutExitDialog by remember { mutableStateOf(false) }
+    var showAdminThemeDialog by remember { mutableStateOf(false) }
     var activeScreenTitle by rememberSaveable { mutableStateOf<String?>(null) }
     var adminHubSearchQuery by rememberSaveable { mutableStateOf("") }
     var adminHubSelectedCategory by rememberSaveable { mutableStateOf("सभी") }
@@ -835,6 +839,9 @@ fun AdminDashboardScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showAdminThemeDialog = true }) {
+                        Text(currentTheme.icon, fontSize = 20.sp)
+                    }
                     if (loggedInAdmin != null) {
                         if (activeScreenTitle != null) {
                             IconButton(onClick = { activeScreenTitle = null }) {
@@ -848,10 +855,22 @@ fun AdminDashboardScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaroonPrimary)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = currentTheme.topBarColor)
             )
         }
     ) { padding ->
+        if (showAdminThemeDialog) {
+            SacredThemeChooserDialog(
+                currentTheme = currentTheme,
+                isHindi = isHindi,
+                onDismissRequest = { showAdminThemeDialog = false },
+                onThemeSelected = { newTheme ->
+                    onThemeChanged(newTheme)
+                    ThemePreferences.setSelectedTheme(context, newTheme)
+                    showAdminThemeDialog = false
+                }
+            )
+        }
         if (loggedInAdmin == null) {
             // --- AUTHENTICATION SCREEN ---
             var selectedLoginPortal by remember { mutableStateOf(AdminRole.SUPER_ADMIN) }
@@ -2696,9 +2715,14 @@ fun AdminDashboardScreen(
                                 onRefresh = { refreshData() }
                             )
                         }
-                        currentTabTitle == "ऐप कस्टमाइजर" || currentTabTitle == "Customizer" -> {
+                        currentTabTitle == "ऐप कस्टमाइजर" || currentTabTitle == "Customizer" || currentTabTitle.contains("कस्टमाइजर") || currentTabTitle.contains("Customizer") -> {
                             AppCustomizerTab(
                                 isHindi = isHindi,
+                                currentTheme = currentTheme,
+                                onThemeChanged = onThemeChanged,
+                                isSuperAdmin = isSuperUser,
+                                settings = settings,
+                                repository = repository,
                                 ashramName = customAshramName,
                                 onAshramNameChange = { customAshramName = it },
                                 gurujiName = customGurujiName,
@@ -10018,6 +10042,11 @@ private fun ServiceSwitchRow(title: String, checked: Boolean, onCheckedChange: (
 @Composable
 fun AppCustomizerTab(
     isHindi: Boolean,
+    currentTheme: SacredTheme = SacredTheme.WHATSAPP_EMERALD,
+    onThemeChanged: (SacredTheme) -> Unit = {},
+    isSuperAdmin: Boolean = false,
+    settings: AshramSettings = AshramSettings(),
+    repository: AshramRepository? = null,
     ashramName: String,
     onAshramNameChange: (String) -> Unit,
     gurujiName: String,
@@ -10131,6 +10160,301 @@ fun AppCustomizerTab(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        // =========================================================================
+        // 🎨 1. SACRED THEMES & CLOUD FESTIVAL BROADCAST STUDIO
+        // =========================================================================
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = if (currentTheme.isDark) Color(0xFF1E293B) else Color.White),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.5.dp, currentTheme.accentGold.copy(alpha = 0.8f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("🎨", fontSize = 24.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = if (isHindi) "पावन एवं उत्सव थीम इंजन" else "Sacred Theme Engine & Studio",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 17.sp,
+                                    color = if (currentTheme.isDark) Color.White else MaroonPrimary
+                                )
+                                Text(
+                                    text = if (isHindi) "MI-स्टाइल 360° पूर्ण कायापलट: यूजर व एडमिन दोनों में सक्रिय" else "MI-Style 360° Transformation across User & Admin",
+                                    fontSize = 11.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                        // Current Theme Pill
+                        Surface(
+                            color = currentTheme.primaryColor.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(1.dp, currentTheme.primaryColor)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(currentTheme.icon, fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isHindi) currentTheme.nameHindi else currentTheme.nameEnglish,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = currentTheme.primaryColor
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 4 Divine Sacred Themes Section
+                    Text(
+                        text = if (isHindi) "🌟 4 दिव्य उत्सव व राष्ट्र गौरव थीम्स (मुख्य थीम्स)" else "🌟 4 Divine Sacred Themes",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.5.sp,
+                        color = if (currentTheme.isDark) Color(0xFFFFD54F) else Color(0xFFB45309)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val divineThemes = ThemePreferences.getDivineThemes()
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        divineThemes.chunked(2).forEach { rowThemes ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                rowThemes.forEach { themeItem ->
+                                    val isSelected = themeItem.id == currentTheme.id
+                                    Card(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable {
+                                                onThemeChanged(themeItem)
+                                                ThemePreferences.setSelectedTheme(context, themeItem)
+                                                Toast.makeText(context, if (isHindi) "🎨 थीम लागू: ${themeItem.nameHindi}" else "Theme applied: ${themeItem.nameEnglish}", Toast.LENGTH_SHORT).show()
+                                            },
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = if (isSelected) themeItem.primaryColor.copy(alpha = 0.12f) else (if (currentTheme.isDark) Color(0xFF0F172A) else Color(0xFFFAFAFA))
+                                        ),
+                                        border = BorderStroke(
+                                            if (isSelected) 2.dp else 1.dp,
+                                            if (isSelected) themeItem.primaryColor else Color.LightGray.copy(alpha = 0.5f)
+                                        )
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(themeItem.icon, fontSize = 22.sp)
+                                                if (isSelected) {
+                                                    Surface(
+                                                        color = themeItem.primaryColor,
+                                                        shape = CircleShape
+                                                    ) {
+                                                        Text("✓", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp))
+                                                    }
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = if (isHindi) themeItem.nameHindi else themeItem.nameEnglish,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp,
+                                                color = if (currentTheme.isDark) Color.White else Color(0xFF1E293B),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                text = themeItem.styleBadge,
+                                                fontSize = 9.5.sp,
+                                                color = Color.Gray,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Spacer(modifier = Modifier.height(6.dp))
+                                            // Palette preview dots
+                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(themeItem.primaryColor))
+                                                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(themeItem.secondaryColor))
+                                                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(themeItem.topBarColor))
+                                                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(themeItem.accentGold))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // 8 Peaceful Themes Quick Chips
+                    Text(
+                        text = if (isHindi) "🍃 8 शांत व निर्मल दैनिक थीम्स" else "🍃 8 Peaceful Everyday Themes",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = if (currentTheme.isDark) Color(0xFF90CAF9) else Color(0xFF1E3A8A)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    val peacefulThemes = ThemePreferences.getPeacefulThemes()
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(peacefulThemes) { pTheme ->
+                            val isPSelected = pTheme.id == currentTheme.id
+                            Surface(
+                                modifier = Modifier.clickable {
+                                    onThemeChanged(pTheme)
+                                    ThemePreferences.setSelectedTheme(context, pTheme)
+                                    Toast.makeText(context, if (isHindi) "🎨 थीम लागू: ${pTheme.nameHindi}" else "Theme applied: ${pTheme.nameEnglish}", Toast.LENGTH_SHORT).show()
+                                },
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isPSelected) pTheme.primaryColor.copy(alpha = 0.2f) else (if (currentTheme.isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9)),
+                                border = BorderStroke(
+                                    if (isPSelected) 1.5.dp else 0.8.dp,
+                                    if (isPSelected) pTheme.primaryColor else Color.LightGray.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(pTheme.primaryColor))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "${pTheme.icon} ${if (isHindi) pTheme.nameHindi else pTheme.nameEnglish}",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = if (isPSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (currentTheme.isDark) Color.White else Color(0xFF334155)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Super Admin Cloud Festival Broadcast Section
+                    if (isSuperAdmin && repository != null) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        var isEnforcedState by remember { mutableStateOf(settings.isFestivalThemeEnforced) }
+                        var isBroadcasting by remember { mutableStateOf(false) }
+
+                        Surface(
+                            color = if (isEnforcedState) Color(0xFFFFF7ED) else (if (currentTheme.isDark) Color(0xFF111827) else Color(0xFFF8FAFC)),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.2.dp, if (isEnforcedState) Color(0xFFEA580C) else Color(0xFFCBD5E1)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("📢", fontSize = 16.sp)
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = if (isHindi) "अखिल भारतीय उत्सव थीम प्रसारण" else "Nationwide Festival Theme Broadcast",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 13.5.sp,
+                                                color = if (isEnforcedState) Color(0xFFC2410C) else (if (currentTheme.isDark) Color.White else Color(0xFF1E293B))
+                                            )
+                                        }
+                                        Text(
+                                            text = if (isHindi)
+                                                "सक्रिय होने पर पूरे भारत में सभी भक्तों के ऐप में यह थीम स्वतः लागू हो जाएगी!"
+                                            else
+                                                "When enabled, broadcasts this theme to all devotees across India!",
+                                            fontSize = 10.5.sp,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                    Switch(
+                                        checked = isEnforcedState,
+                                        onCheckedChange = { newState ->
+                                            isEnforcedState = newState
+                                            scope.launch {
+                                                val ok = repository.updateFestivalThemeBroadcast(currentTheme.id, newState)
+                                                if (ok) {
+                                                    Toast.makeText(
+                                                        context,
+                                                        if (newState) (if (isHindi) "🚀 उत्सव थीम प्रसारण सक्रिय! सभी भक्तों के मोबाइल में लागू।" else "Festival theme broadcast activated!")
+                                                        else (if (isHindi) "सामान्य मोड: भक्तों को अपनी पसंद की थीम चुनने की छूट।" else "Festival override turned off."),
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
+                                Button(
+                                    onClick = {
+                                        scope.launch {
+                                            isBroadcasting = true
+                                            try {
+                                                val ok = repository.updateFestivalThemeBroadcast(currentTheme.id, isEnforcedState)
+                                                if (ok) {
+                                                    Toast.makeText(
+                                                        context,
+                                                        if (isHindi) "✅ लाइव क्लाउड पर थीम (${currentTheme.nameHindi}) सफलतापूर्वक प्रसारित!" else "Successfully broadcast theme to Cloud!",
+                                                        Toast.LENGTH_LONG
+                                                    ).show()
+                                                } else {
+                                                    Toast.makeText(context, if (isHindi) "त्रुटि: प्रसारण विफल" else "Broadcast failed", Toast.LENGTH_SHORT).show()
+                                                }
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                            } finally {
+                                                isBroadcasting = false
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
+                                    shape = RoundedCornerShape(10.dp),
+                                    enabled = !isBroadcasting
+                                ) {
+                                    Text(
+                                        text = if (isBroadcasting)
+                                            (if (isHindi) "प्रसारित हो रहा है..." else "Broadcasting...")
+                                        else
+                                            (if (isHindi) "🚀 लाइव क्लाउड पर अभी प्रसारित करें (Broadcast Now)" else "Broadcast Live to Cloud"),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.5.sp,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         item {
             Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Column(modifier = Modifier.padding(16.dp)) {

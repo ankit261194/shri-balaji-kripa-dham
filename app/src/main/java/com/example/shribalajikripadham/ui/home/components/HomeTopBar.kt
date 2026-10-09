@@ -41,9 +41,11 @@ fun HomeTopBar(
     onOpenManualPdf: () -> Unit,
     onOpenSevadarChat: () -> Unit,
     onToggleLanguage: () -> Unit,
-    onOpenAdmin: () -> Unit
+    onOpenAdmin: () -> Unit,
+    onThemeChanged: (SacredTheme) -> Unit = {}
 ) {
     var showMoreMenu by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
 
     TopAppBar(
         navigationIcon = {
@@ -138,7 +140,18 @@ fun HomeTopBar(
                 )
             }
 
-            // 2. Sevadar Live Chat (💬)
+            // 2. Theme Chooser Palette Button (🎨)
+            IconButton(
+                onClick = { showThemeDialog = true },
+                modifier = Modifier.size(36.dp)
+            ) {
+                Text(
+                    text = "🎨",
+                    fontSize = 18.sp
+                )
+            }
+
+            // 3. Sevadar Live Chat (💬)
             IconButton(
                 onClick = onOpenSevadarChat,
                 modifier = Modifier.size(36.dp)
@@ -146,7 +159,7 @@ fun HomeTopBar(
                 Text("💬", fontSize = 18.sp)
             }
 
-            // 3. More Actions Dropdown Menu (⋮)
+            // 4. More Actions Dropdown Menu (⋮)
             Box {
                 IconButton(
                     onClick = { showMoreMenu = true },
@@ -162,6 +175,20 @@ fun HomeTopBar(
                     DropdownMenuItem(
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🎨", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(if (isHindi) "ऐप थीम बदलें (${currentTheme.icon})" else "Change Theme (${currentTheme.icon})", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        },
+                        onClick = {
+                            showMoreMenu = false
+                            showThemeDialog = true
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("🔄", fontSize = 16.sp)
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(if (isHindi) "डेटा रीफ्रेश करें" else "Refresh Data", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -172,8 +199,6 @@ fun HomeTopBar(
                             onRefresh()
                         }
                     )
-
-
 
                     DropdownMenuItem(
                         text = {
@@ -195,4 +220,15 @@ fun HomeTopBar(
             containerColor = currentTheme.topBarColor
         )
     )
+
+    if (showThemeDialog) {
+        com.example.shribalajikripadham.ui.theme.SacredThemeChooserDialog(
+            currentTheme = currentTheme,
+            isHindi = isHindi,
+            onDismissRequest = { showThemeDialog = false },
+            onThemeSelected = { newTheme ->
+                onThemeChanged(newTheme)
+            }
+        )
+    }
 }

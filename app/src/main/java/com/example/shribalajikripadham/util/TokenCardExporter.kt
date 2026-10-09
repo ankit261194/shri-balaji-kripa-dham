@@ -30,61 +30,115 @@ object TokenCardExporter {
     fun renderRoyalTokenCardBitmap(
         context: Context,
         token: Token,
-        settings: AshramSettings
+        settings: AshramSettings,
+        theme: com.example.shribalajikripadham.theme.SacredTheme = com.example.shribalajikripadham.theme.ThemePreferences.getSelectedTheme(context)
     ): Bitmap {
         val bitmap = Bitmap.createBitmap(CARD_WIDTH, CARD_HEIGHT, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
         // 1. Radiant Parchment Background
+        val bgColors = if (theme.isDark) {
+            intArrayOf(
+                Color.parseColor("#0B0F19"),
+                Color.parseColor("#111827"),
+                Color.parseColor("#161F30")
+            )
+        } else {
+            intArrayOf(
+                Color.parseColor("#FFFDF9"),
+                Color.parseColor("#FFF9EE"),
+                Color.parseColor("#FFF3E0")
+            )
+        }
+
         val bgPaint = Paint().apply {
             isAntiAlias = true
             shader = LinearGradient(
                 0f, 0f, CARD_WIDTH.toFloat(), CARD_HEIGHT.toFloat(),
-                intArrayOf(
-                    Color.parseColor("#FFFDF9"),
-                    Color.parseColor("#FFF9EE"),
-                    Color.parseColor("#FFF3E0")
-                ),
+                bgColors,
                 null,
                 Shader.TileMode.CLAMP
             )
         }
         canvas.drawRect(0f, 0f, CARD_WIDTH.toFloat(), CARD_HEIGHT.toFloat(), bgPaint)
 
-        // 2. Outer Royal Golden Gradient Border (16px)
+        // 2. Outer Dynamic Theme Gradient Border (16px)
+        val borderColors = when (theme) {
+            com.example.shribalajikripadham.theme.SacredTheme.TIRANGA -> intArrayOf(
+                Color.parseColor("#FF9933"), // Saffron
+                Color.parseColor("#FFFFFF"), // White
+                Color.parseColor("#138808"), // Green
+                Color.parseColor("#FF9933")
+            )
+            com.example.shribalajikripadham.theme.SacredTheme.DIVYA_DEEPAWALI -> intArrayOf(
+                Color.parseColor("#F59E0B"), // Amber Gold
+                Color.parseColor("#FDE68A"), // Deepak Light
+                Color.parseColor("#FBBF24"), // Gold Ray
+                Color.parseColor("#D97706")
+            )
+            com.example.shribalajikripadham.theme.SacredTheme.SHERAWALI_MAIYA -> intArrayOf(
+                Color.parseColor("#D4AF37"), // Gota Gold
+                Color.parseColor("#FFD700"), // Radiant Gold
+                Color.parseColor("#B91C1C"), // Crimson Sindoor
+                Color.parseColor("#D4AF37")
+            )
+            com.example.shribalajikripadham.theme.SacredTheme.VEER_HANUMAN -> intArrayOf(
+                Color.parseColor("#C2410C"), // Chameli Orange
+                Color.parseColor("#F59E0B"), // Antique Gold
+                Color.parseColor("#B45309"), // Ashtadhatu Bronze
+                Color.parseColor("#C2410C")
+            )
+            else -> intArrayOf(
+                Color.parseColor("#D4AF37"), // Metallic Gold
+                Color.parseColor("#FFD700"), // Brilliant Gold
+                Color.parseColor("#FF8C00"), // Dark Orange
+                Color.parseColor("#D4AF37")
+            )
+        }
+
         val goldBorderPaint = Paint().apply {
             isAntiAlias = true
             style = Paint.Style.STROKE
             strokeWidth = 16f
             shader = LinearGradient(
                 0f, 0f, CARD_WIDTH.toFloat(), CARD_HEIGHT.toFloat(),
-                intArrayOf(
-                    Color.parseColor("#D4AF37"), // Metallic Gold
-                    Color.parseColor("#FFD700"), // Brilliant Gold
-                    Color.parseColor("#FF8C00"), // Dark Orange
-                    Color.parseColor("#D4AF37")
-                ),
+                borderColors,
                 null,
                 Shader.TileMode.CLAMP
             )
         }
         canvas.drawRoundRect(RectF(16f, 16f, CARD_WIDTH - 16f, CARD_HEIGHT - 16f), 32f, 32f, goldBorderPaint)
 
-        // 3. Inner Sacred Maroon Inset Border (4px)
+        // 3. Inner Sacred Inset Border (4px)
+        val innerBorderColor = when (theme) {
+            com.example.shribalajikripadham.theme.SacredTheme.TIRANGA -> Color.parseColor("#138808")
+            com.example.shribalajikripadham.theme.SacredTheme.DIVYA_DEEPAWALI -> Color.parseColor("#F59E0B")
+            com.example.shribalajikripadham.theme.SacredTheme.SHERAWALI_MAIYA -> Color.parseColor("#800000")
+            com.example.shribalajikripadham.theme.SacredTheme.VEER_HANUMAN -> Color.parseColor("#C2410C")
+            else -> Color.parseColor("#800000")
+        }
         val innerBorderPaint = Paint().apply {
             isAntiAlias = true
             style = Paint.Style.STROKE
             strokeWidth = 4f
-            color = Color.parseColor("#800000") // Sacred Maroon
+            color = innerBorderColor
         }
         canvas.drawRoundRect(RectF(32f, 32f, CARD_WIDTH - 32f, CARD_HEIGHT - 32f), 24f, 24f, innerBorderPaint)
 
         // 4. Sacred Header Banner Box
+        val headerColors = when (theme) {
+            com.example.shribalajikripadham.theme.SacredTheme.TIRANGA -> intArrayOf(Color.parseColor("#FF6F00"), Color.parseColor("#E65100"))
+            com.example.shribalajikripadham.theme.SacredTheme.DIVYA_DEEPAWALI -> intArrayOf(Color.parseColor("#1E293B"), Color.parseColor("#0B0F19"))
+            com.example.shribalajikripadham.theme.SacredTheme.SHERAWALI_MAIYA -> intArrayOf(Color.parseColor("#991B1B"), Color.parseColor("#5A0000"))
+            com.example.shribalajikripadham.theme.SacredTheme.VEER_HANUMAN -> intArrayOf(Color.parseColor("#C2410C"), Color.parseColor("#7C2D12"))
+            else -> intArrayOf(Color.parseColor("#800000"), Color.parseColor("#5A0000"))
+        }
+
         val headerBannerPaint = Paint().apply {
             isAntiAlias = true
             shader = LinearGradient(
                 0f, 40f, 0f, 260f,
-                intArrayOf(Color.parseColor("#800000"), Color.parseColor("#5A0000")),
+                headerColors,
                 null,
                 Shader.TileMode.CLAMP
             )
@@ -102,14 +156,22 @@ object TokenCardExporter {
         canvas.drawRoundRect(headerRect, 20f, 20f, bannerOutline)
 
         // Header Sacred Inscription
+        val mantraText = when (theme) {
+            com.example.shribalajikripadham.theme.SacredTheme.TIRANGA -> "🇮🇳 ॥ वन्दे मातरम् • भारत माता की जय ॥ 🇮🇳"
+            com.example.shribalajikripadham.theme.SacredTheme.DIVYA_DEEPAWALI -> "🪔 ॥ शुभ दीपावली • महालक्ष्मी कृपा ॥ 🪔"
+            com.example.shribalajikripadham.theme.SacredTheme.SHERAWALI_MAIYA -> "🦁 ॥ जय माता दी • सर्व मंगल मांगल्ये ॥ 🦁"
+            com.example.shribalajikripadham.theme.SacredTheme.VEER_HANUMAN -> "🚩 ॥ जय श्री राम • संकट मोचन हनुमाना ॥ 🚩"
+            else -> "🚩 ॥ श्री हनुमते नमः ॥ 🚩"
+        }
+
         val mantraPaint = Paint().apply {
             isAntiAlias = true
             color = Color.parseColor("#FFD700")
-            textSize = 26f
+            textSize = 25f
             typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("🚩 ॥ श्री हनुमते नमः ॥ 🚩", (CARD_WIDTH / 2).toFloat(), 95f, mantraPaint)
+        canvas.drawText(mantraText, (CARD_WIDTH / 2).toFloat(), 95f, mantraPaint)
 
         // Official Sanstha Title
         val titlePaint = Paint().apply {
@@ -199,6 +261,19 @@ object TokenCardExporter {
             textAlign = Paint.Align.CENTER
         }
         canvas.drawText("॥ आपका अधिकृत दर्शन टोकन क्रमांक ॥", (CARD_WIDTH / 2).toFloat(), 420f, tokenSubPaint)
+
+        // Sacred Theme Watermark Behind Token Number
+        if (theme.watermarkText.isNotBlank()) {
+            val watermarkPaint = Paint().apply {
+                isAntiAlias = true
+                color = if (theme.isDark) Color.parseColor("#90CAF9") else Color.parseColor("#B0BEC5")
+                alpha = 48
+                textSize = 34f
+                typeface = Typeface.create(Typeface.SERIF, Typeface.BOLD)
+                textAlign = Paint.Align.CENTER
+            }
+            canvas.drawText("${theme.watermarkIcon} ${theme.watermarkText} ${theme.watermarkIcon}", (CARD_WIDTH / 2).toFloat(), 468f, watermarkPaint)
+        }
 
         // Massive Token Number
         val hugeTokenPaint = Paint().apply {
