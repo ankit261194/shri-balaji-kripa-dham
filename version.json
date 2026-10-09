@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 160,
-  "version_code": 160,
-  "latest_version_name": "2.73.0",
-  "version_name": "2.73.0",
-  "update_notes_hindi": "v2.73.0 (Build 160): 💬 आधिकारिक व्हाट्सएप चैनल इंटीग्रेशन: ऐप (होम स्क्रीन, साइडबार मेन्यू, आश्रम संपर्क) एवं वेबसाइट (हेडर, हीरो, फुटर) पर श्री बालाजी कृपा धाम के आधिकारिक व्हाट्सएप चैनल (https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w) से 1-क्लिक जुड़ें और दैनिक आरती दर्शन, पावन सूचनाएं व दरबार अपडेट सीधे व्हाट्सएप पर प्राप्त करें।",
-  "update_notes_english": "v2.73.0 (Build 160): Official WhatsApp Channel Integration across App (Home screen card, navigation drawer, Ashram helpline) and Website (Header, Hero Darbar card, Footer) for direct 1-click updates.",
+  "latest_version_code": 161,
+  "version_code": 161,
+  "latest_version_name": "2.74.0",
+  "version_name": "2.74.0",
+  "update_notes_hindi": "v2.74.0 (Build 161): 💬 आधिकारिक व्हाट्सएप चैनल और 👥 व्हाट्सएप ग्रुप का पूर्ण सह-अस्तित्व: ऐप (होम स्क्रीन, साइडबार, आश्रम हेल्पलाइन, एडमिन सेटिंग्स) और वेबसाइट (हेडर, हीरो, फुटर) पर आधिकारिक व्हाट्सएप चैनल (अपडेट्स व दर्शन हेतु) और आधिकारिक व्हाट्सएप ग्रुप (भक्त संगति हेतु) दोनों 1-क्लिक एक्सेस के साथ उपलब्ध।",
+  "update_notes_english": "v2.74.0 (Build 161): Official WhatsApp Channel and Official WhatsApp Group coexistence across Android App and Website for 1-click access.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true

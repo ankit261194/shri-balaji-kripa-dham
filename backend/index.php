@@ -225,6 +225,10 @@ $youtubeLiveUrl = !empty($settings['youtube_live_url']) ? $settings['youtube_liv
 $whatsappChannelUrl = (!empty($settings['whatsapp_channel_url']) && !str_contains($settings['whatsapp_channel_url'], 'chat.whatsapp.com'))
     ? $settings['whatsapp_channel_url'] 
     : 'https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w';
+
+$whatsappGroupUrl = (!empty($settings['whatsapp_group_url']) && !str_contains($settings['whatsapp_group_url'], '/channel/'))
+    ? $settings['whatsapp_group_url'] 
+    : 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0';
 $footerTitle = !empty($settings['footer_title']) ? $settings['footer_title'] : 'श्री बालाजी कृपा धाम';
 $footerDedication = !empty($settings['footer_dedication']) ? $settings['footer_dedication'] : 'सर्वस्व श्री रामभक्त वीर हनुमान जी महाराज के पावन चरणों में समर्पित।';
 $footerCopyright = !empty($settings['footer_copyright']) ? $settings['footer_copyright'] : '© 2026 श्री बालाजी कृपा धाम सेवा ट्रस्ट। सर्वाधिकार सुरक्षित।';
@@ -1386,6 +1390,9 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                 <a href="<?= htmlspecialchars($whatsappChannelUrl) ?>" target="_blank" class="btn-nav-social btn-whatsapp-channel" style="background: #25D366; color: #ffffff;" title="श्री बालाजी कृपा धाम आधिकारिक व्हाट्सएप चैनल फॉलो करें">
                     <span>💬 WhatsApp चैनल</span>
                 </a>
+                <a href="<?= htmlspecialchars($whatsappGroupUrl) ?>" target="_blank" class="btn-nav-social btn-whatsapp-group" style="background: #128C7E; color: #ffffff;" title="श्री बालाजी कृपा धाम आधिकारिक व्हाट्सएप ग्रुप में शामिल हों">
+                    <span>👥 WhatsApp ग्रुप</span>
+                </a>
                 <a href="<?= htmlspecialchars($facebookUrl) ?>" target="_blank" class="btn-nav-social btn-nav-facebook" title="आधिकारिक फेसबुक पेज">
                     <span>📘 Facebook</span>
                 </a>
@@ -1427,8 +1434,11 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                 <a href="download.php" class="btn-darbar-token">
                     📲 रविवार टोकन हेतु ऐप डाउनलोड करें
                 </a>
-                <a href="<?= htmlspecialchars($whatsappChannelUrl) ?>" target="_blank" class="btn-whatsapp-channel" style="background: #25D366; color: #ffffff; padding: 11px 22px; border-radius: 25px; text-decoration: none; font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4); transition: transform 0.2s ease;">
+                <a href="<?= htmlspecialchars($whatsappChannelUrl) ?>" target="_blank" class="btn-whatsapp-channel" style="background: #25D366; color: #ffffff; padding: 11px 20px; border-radius: 25px; text-decoration: none; font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.4); transition: transform 0.2s ease;">
                     💬 व्हाट्सएप चैनल फॉलो करें (Follow Channel)
+                </a>
+                <a href="<?= htmlspecialchars($whatsappGroupUrl) ?>" target="_blank" class="btn-whatsapp-group" style="background: #128C7E; color: #ffffff; padding: 11px 20px; border-radius: 25px; text-decoration: none; font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(18, 140, 126, 0.4); transition: transform 0.2s ease;">
+                    👥 व्हाट्सएप ग्रुप से जुड़ें (Join Group)
                 </a>
                 <a href="https://www.google.com/maps/search/?api=1&query=28.3972915,78.1460410" target="_blank" class="btn-darbar-route">
                     🗺️ आश्रम का गूगल मैप्स मार्ग
@@ -1890,7 +1900,10 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                 📸 इंस्टाग्राम
             </a>
             <a href="<?= htmlspecialchars($whatsappChannelUrl) ?>" target="_blank" class="btn-whatsapp-channel" style="color: #ffffff; background: #25D366; padding: 7px 16px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
-                💬 व्हाट्सएप चैनल फॉलो करें
+                💬 व्हाट्सएप चैनल
+            </a>
+            <a href="<?= htmlspecialchars($whatsappGroupUrl) ?>" target="_blank" class="btn-whatsapp-group" style="color: #ffffff; background: #128C7E; padding: 7px 16px; border-radius: 20px; text-decoration: none; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;">
+                👥 व्हाट्सएप ग्रुप
             </a>
         </div>
 
@@ -2146,6 +2159,14 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
                                 ? 'https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w' 
                                 : cfg.whatsapp_channel_url;
                             document.querySelectorAll('.btn-whatsapp-channel').forEach(el => { el.href = waCh; });
+                        }
+
+                        // WhatsApp Official Group Dynamic Link
+                        if (cfg.whatsapp_group_url) {
+                            const waGrp = cfg.whatsapp_group_url.includes('/channel/') 
+                                ? 'https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0' 
+                                : cfg.whatsapp_group_url;
+                            document.querySelectorAll('.btn-whatsapp-group').forEach(el => { el.href = waGrp; });
                         }
 
                         // Contact Phone Dynamic Link (Real Admin Number Only)

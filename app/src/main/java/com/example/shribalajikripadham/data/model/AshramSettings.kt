@@ -35,7 +35,7 @@ data class AshramSettings(
     val apkDownloadUrl: String = "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
     val isForceUpdate: Boolean = false,
     // Social Media Links & App Sharing
-    val whatsappGroupUrl: String = "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w",
+    val whatsappGroupUrl: String = "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0",
     val whatsappChannelUrl: String = "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w",
     val whatsappNumber: String = "",
     val youtubeChannelUrl: String = "https://www.youtube.com/@ShriBalajiKripaDham",

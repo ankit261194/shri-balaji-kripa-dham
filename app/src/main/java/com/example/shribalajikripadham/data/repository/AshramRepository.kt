@@ -101,7 +101,7 @@ class AshramRepository(context: Context) {
             updateNotes = cursor.getString(cursor.getColumnIndexOrThrow("update_notes")),
             apkDownloadUrl = cursor.getString(cursor.getColumnIndexOrThrow("apk_download_url")),
             isForceUpdate = cursor.getInt(cursor.getColumnIndexOrThrow("is_force_update")) == 1,
-            whatsappGroupUrl = try { val v = cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_group_url")); if (v.isNullOrBlank() || v.contains("/invite") || v.contains("chat.whatsapp.com")) "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w" else v } catch (e: Exception) { "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w" },
+            whatsappGroupUrl = try { val v = cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_group_url")); if (v.isNullOrBlank() || v.contains("/channel/")) "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0" else v } catch (e: Exception) { "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0" },
             whatsappChannelUrl = try { val v = cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_channel_url")); if (v.isNullOrBlank() || v.contains("/invite") || v.contains("chat.whatsapp.com")) "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w" else v } catch (e: Exception) { "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w" },
             whatsappNumber = try { cursor.getString(cursor.getColumnIndexOrThrow("whatsapp_number"))?.trim() ?: "" } catch (e: Exception) { "" },
             youtubeChannelUrl = try { cursor.getString(cursor.getColumnIndexOrThrow("youtube_channel_url")) } catch (e: Exception) { "https://www.youtube.com/@ShriBalajiKripaDham" },
@@ -748,6 +748,7 @@ class AshramRepository(context: Context) {
 
     suspend fun updateSocialLinks(
         whatsappGroupUrl: String,
+        whatsappChannelUrl: String = "https://whatsapp.com/channel/0029VaCZJTmJ3jv2UwiMtY1w",
         whatsappNumber: String,
         youtubeUrl: String,
         facebookUrl: String,
@@ -757,7 +758,7 @@ class AshramRepository(context: Context) {
         val db = dbHelper.writableDatabase
         val cv = ContentValues().apply {
             put("whatsapp_group_url", whatsappGroupUrl.trim())
-            put("whatsapp_channel_url", whatsappGroupUrl.trim())
+            put("whatsapp_channel_url", whatsappChannelUrl.trim())
             put("whatsapp_number", whatsappNumber.trim())
             put("youtube_channel_url", youtubeUrl.trim())
             put("facebook_page_url", facebookUrl.trim())
@@ -4717,7 +4718,9 @@ class AshramRepository(context: Context) {
                 if (det.whatsappNumber.isNotBlank()) cv.put("whatsapp_number", det.whatsappNumber)
                 if (det.whatsappGroupUrl.isNotBlank()) {
                     cv.put("whatsapp_group_url", det.whatsappGroupUrl)
-                    cv.put("whatsapp_channel_url", det.whatsappGroupUrl)
+                }
+                if (det.whatsappChannelUrl.isNotBlank()) {
+                    cv.put("whatsapp_channel_url", det.whatsappChannelUrl)
                 }
                 if (det.youtubeChannelUrl.isNotBlank()) cv.put("youtube_channel_url", det.youtubeChannelUrl)
                 if (det.facebookPageUrl.isNotBlank()) cv.put("facebook_page_url", det.facebookPageUrl)
@@ -4947,6 +4950,7 @@ class AshramRepository(context: Context) {
                 darbarTimings = currentSettings.darbarTimings,
                 freeDisclaimer = currentSettings.freeDisclaimer,
                 whatsappGroupUrl = currentSettings.whatsappGroupUrl,
+                whatsappChannelUrl = currentSettings.whatsappChannelUrl,
                 youtubeChannelUrl = currentSettings.youtubeChannelUrl,
                 facebookPageUrl = currentSettings.facebookPageUrl,
                 instagramUrl = currentSettings.instagramUrl,

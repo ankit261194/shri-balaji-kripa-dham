@@ -296,6 +296,7 @@ fun AdminDashboardScreen(
     var customDisclaimer by remember { mutableStateOf("") }
     var customEmergencyNotice by remember { mutableStateOf("") }
     var customWhatsappGroup by remember { mutableStateOf("") }
+    var customWhatsappChannel by remember { mutableStateOf("") }
     var customYoutubeChannel by remember { mutableStateOf("") }
     var customFacebookPage by remember { mutableStateOf("") }
     var customInstagramPage by remember { mutableStateOf("") }
@@ -436,6 +437,7 @@ fun AdminDashboardScreen(
             customDisclaimer = s.freeDisclaimer
             customEmergencyNotice = s.emergencyNoticeText
             customWhatsappGroup = s.whatsappGroupUrl
+            customWhatsappChannel = s.whatsappChannelUrl
             customYoutubeChannel = s.youtubeChannelUrl
             customFacebookPage = s.facebookPageUrl
             customInstagramPage = s.instagramUrl
@@ -2723,6 +2725,8 @@ fun AdminDashboardScreen(
                                 onAshramRulesHindiChange = { customRulesHindi = it },
                                 whatsappGroup = customWhatsappGroup,
                                 onWhatsappGroupChange = { customWhatsappGroup = it },
+                                whatsappChannel = customWhatsappChannel,
+                                onWhatsappChannelChange = { customWhatsappChannel = it },
                                 youtubeChannel = customYoutubeChannel,
                                 onYoutubeChannelChange = { customYoutubeChannel = it },
                                 facebookPage = customFacebookPage,
@@ -2771,12 +2775,13 @@ fun AdminDashboardScreen(
                                         )
                                         repository.updateGurujiPhoto(customGurujiPhotoUri)
                                         repository.updateSocialLinks(
-                                            customWhatsappGroup,
-                                            customPhone,
-                                            customYoutubeChannel,
-                                            customFacebookPage,
-                                            customInstagramPage,
-                                            customAppShareUrl
+                                            whatsappGroupUrl = customWhatsappGroup,
+                                            whatsappChannelUrl = customWhatsappChannel,
+                                            whatsappNumber = customPhone,
+                                            youtubeUrl = customYoutubeChannel,
+                                            facebookUrl = customFacebookPage,
+                                            instagramUrl = customInstagramPage,
+                                            appShareUrl = customAppShareUrl
                                         )
                                         repository.updateSundayTokenBanner(
                                             customSundayTokenBannerTitle,
@@ -10031,6 +10036,8 @@ fun AppCustomizerTab(
     onEmergencyNoticeChange: (String) -> Unit,
     whatsappGroup: String,
     onWhatsappGroupChange: (String) -> Unit,
+    whatsappChannel: String = "",
+    onWhatsappChannelChange: (String) -> Unit = {},
     youtubeChannel: String,
     onYoutubeChannelChange: (String) -> Unit,
     facebookPage: String,
@@ -10341,9 +10348,16 @@ fun AppCustomizerTab(
 
                     Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
+                        value = whatsappChannel,
+                        onValueChange = onWhatsappChannelChange,
+                        label = { Text(if (isHindi) "💬 आधिकारिक व्हाट्सएप्प चैनल लिंक (Follow Channel)" else "Official WhatsApp Channel URL") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
                         value = whatsappGroup,
                         onValueChange = onWhatsappGroupChange,
-                        label = { Text(if (isHindi) "💬 आधिकारिक व्हाट्सएप्प चैनल लिंक" else "Official WhatsApp Channel URL") },
+                        label = { Text(if (isHindi) "👥 आधिकारिक व्हाट्सएप्प ग्रुप लिंक (Join Group)" else "Official WhatsApp Group URL") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))

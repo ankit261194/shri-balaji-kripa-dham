@@ -198,6 +198,34 @@ fun AshramTabContent(
                         color = Color.White
                     )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = {
+                        val groupUrl = if (settings.whatsappGroupUrl.isNotBlank() && !settings.whatsappGroupUrl.contains("/channel/")) {
+                            settings.whatsappGroupUrl
+                        } else {
+                            "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0"
+                        }
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(groupUrl))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, if (isHindi) "व्हाट्सएप खोलने में असमर्थ" else "Unable to open WhatsApp", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF128C7E)),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = if (isHindi) "👥 आधिकारिक व्हाट्सएप ग्रुप से जुड़ें ➔" else "👥 Join Official WhatsApp Group ➔",
+                        fontSize = 12.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
         }
     }

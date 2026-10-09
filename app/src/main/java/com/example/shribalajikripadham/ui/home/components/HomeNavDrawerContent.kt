@@ -126,6 +126,19 @@ fun HomeNavDrawerContent(
                         Toast.makeText(context, if (isHindi) "व्हाट्सएप खोलने में असमर्थ" else "Unable to open WhatsApp", Toast.LENGTH_SHORT).show()
                     }
                 }),
+                DrawerMenuItem("👥", "व्हाट्सएप ग्रुप से जुड़ें", "Join WhatsApp Group", {
+                    val grpUrl = if (settings.whatsappGroupUrl.isNotBlank() && !settings.whatsappGroupUrl.contains("/channel/")) {
+                        settings.whatsappGroupUrl
+                    } else {
+                        "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0"
+                    }
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(grpUrl))
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(context, if (isHindi) "व्हाट्सएप खोलने में असमर्थ" else "Unable to open WhatsApp", Toast.LENGTH_SHORT).show()
+                    }
+                }),
                 DrawerMenuItem("🔴", "लाइव दर्शन व आरती/भजन", "Live Darbar", onNavigateToLiveDarbar),
                 DrawerMenuItem("🎟️", "रविवार दरबार टोकन", "Sunday Token", onNavigateToToken),
                 DrawerMenuItem("🤳", "फेस वेरिफिकेशन टोकन", "Face Token", onNavigateToFaceToken),

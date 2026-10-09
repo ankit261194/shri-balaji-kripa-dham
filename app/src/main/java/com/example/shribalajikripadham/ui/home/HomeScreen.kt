@@ -477,6 +477,98 @@ fun HomeScreen(
                                     }
                                 }
                             }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // 6.1 Official WhatsApp Group Card (1-Click Devotee Join)
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        val groupUrl = if (settings.whatsappGroupUrl.isNotBlank() && !settings.whatsappGroupUrl.contains("/channel/")) {
+                                            settings.whatsappGroupUrl
+                                        } else {
+                                            "https://chat.whatsapp.com/IxB0hJ95XMc65wvcrTpBg5?s=cl&p=a&mlu=4&iam=0"
+                                        }
+                                        try {
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(groupUrl))
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, if (isHindi) "व्हाट्सएप खोलने में असमर्थ" else "Unable to open WhatsApp", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF9)),
+                                border = BorderStroke(1.5.dp, Color(0xFF128C7E)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        modifier = Modifier.weight(1f),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = Color(0xFF128C7E),
+                                            modifier = Modifier.size(46.dp)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text("👥", fontSize = 24.sp)
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = if (isHindi) "आधिकारिक व्हाट्सएप ग्रुप" else "Official WhatsApp Group",
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.5.sp,
+                                                    color = Color(0xFF064E3B)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Surface(
+                                                    shape = RoundedCornerShape(4.dp),
+                                                    color = Color(0xFF128C7E).copy(alpha = 0.2f)
+                                                ) {
+                                                    Text(
+                                                        text = "COMMUNITY 🤝",
+                                                        fontSize = 8.5.sp,
+                                                        fontWeight = FontWeight.Black,
+                                                        color = Color(0xFF064E3B),
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                    )
+                                                }
+                                            }
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = if (isHindi) "धाम संगत व भक्तों के आधिकारिक ग्रुप में शामिल हों" else "Join official devotee community group",
+                                                fontSize = 11.5.sp,
+                                                color = Color(0xFF134E4A),
+                                                lineHeight = 15.sp
+                                            )
+                                        }
+                                    }
+                                    Surface(
+                                        color = Color(0xFF128C7E),
+                                        shape = RoundedCornerShape(20.dp),
+                                        modifier = Modifier.padding(start = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = if (isHindi) "ग्रुप से जुड़ें ➔" else "Join ➔",
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         ProHomeTab.TOKEN -> {
