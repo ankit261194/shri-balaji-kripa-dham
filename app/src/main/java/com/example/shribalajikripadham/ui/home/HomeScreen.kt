@@ -95,9 +95,12 @@ fun HomeScreen(
     // Live Settings & Adaptive Background Sync
     LaunchedEffect(Unit) {
         try {
+            repository.syncLiveConfigFromGitHub()
             settings = repository.getSettings()
         } catch (e: Exception) {
-            e.printStackTrace()
+            try {
+                settings = repository.getSettings()
+            } catch (_: Exception) {}
         }
     }
 
@@ -134,11 +137,8 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         while (isActive) {
             try {
-                val rawCfg = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.fetchLiveConfig()
-                if (rawCfg != null && (rawCfg.optBoolean("success", false) || rawCfg.has("config"))) {
-                    val fresh = repository.getSettings()
-                    settings = fresh
-                }
+                repository.syncLiveConfigFromGitHub()
+                settings = repository.getSettings()
             } catch (e: Exception) {
                 // Smooth fallback
             }

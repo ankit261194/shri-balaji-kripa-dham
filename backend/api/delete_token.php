@@ -34,6 +34,33 @@ $tokenId = intval($input['token_id'] ?? 0);
 $pdo = getDB();
 
 try {
+    if ($action === 'DELETE_ALL_HISTORY' || $action === 'PURGE_ALL_TOKENS') {
+        $stmt = $pdo->query("DELETE FROM tokens");
+        $deletedCount = $stmt->rowCount();
+
+        // Also clean device hardware registration locks to allow fresh generation
+        try {
+            $pdo->query("DELETE FROM device_registrations");
+        } catch (Exception $ex) {}
+
+        // Reset running token numbers and serving tokens in settings
+        try {
+            $pdo->exec("UPDATE ashram_settings SET 
+                current_serving_token = 0, 
+                running_token_number = 0, 
+                tuesday_current_serving_token = 0, 
+                tuesday_running_token_number = 0 
+                WHERE id = 1");
+        } catch (Exception $ex) {}
+
+        echo json_encode([
+            "success" => true,
+            "message" => "आश्रम के समस्त ऐतिहासिक ($deletedCount) टोकन स्थायी रूप से साफ़ (Master Wiped) कर दिए गए।",
+            "deleted_count" => $deletedCount
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     if ($action === 'DELETE_ALL_FOR_DATE') {
         if (empty($darbarDate)) {
             http_response_code(400);

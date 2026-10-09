@@ -91,6 +91,8 @@ fun AdminDashboardScreen(
     val scope = rememberCoroutineScope()
 
     var loggedInAdmin by remember { mutableStateOf<Admin?>(null) }
+    val isSuperUser = loggedInAdmin?.role == AdminRole.SUPER_ADMIN
+    val isSubAdminUser = loggedInAdmin?.role == AdminRole.SUB_ADMIN
     var currentSessionId by remember { mutableStateOf("") }
     var myLoginTimestamp by remember { mutableLongStateOf(0L) }
     var forceLogoutMessage by remember { mutableStateOf<String?>(null) }
@@ -246,6 +248,7 @@ fun AdminDashboardScreen(
     var newSevPhone by remember { mutableStateOf("") }
     var newSevPassword by remember { mutableStateOf("") }
     var newSevPin by remember { mutableStateOf("") }
+    var newSevRole by remember { mutableStateOf(AdminRole.SEVADAR) }
     var newSevCanTokens by remember { mutableStateOf(true) }
     var newSevCanVoiceSettings by remember { mutableStateOf(false) }
     var newSevCanManualTokens by remember { mutableStateOf(true) }
@@ -366,6 +369,7 @@ fun AdminDashboardScreen(
     var editSevPhone by remember { mutableStateOf("") }
     var editSevPassword by remember { mutableStateOf("") }
     var editSevPin by remember { mutableStateOf("") }
+    var editSevRole by remember { mutableStateOf(AdminRole.SEVADAR) }
     var editSevErrorMsg by remember { mutableStateOf<String?>(null) }
     var superAdminAccount by remember { mutableStateOf<Admin?>(null) }
     var editSevCanTokens by remember { mutableStateOf(false) }
@@ -1248,6 +1252,7 @@ fun AdminDashboardScreen(
             // --- LOGGED IN DASHBOARD ---
             val admin = loggedInAdmin!!
             val isSuper = admin.role == AdminRole.SUPER_ADMIN
+            val isSubAdmin = admin.role == AdminRole.SUB_ADMIN
 
             // Build allowed tabs based on granular decoupled permissions
             val allowedTabs = mutableListOf<String>()
@@ -1314,7 +1319,7 @@ fun AdminDashboardScreen(
                 allowedTabs.add(if (isHindi) "GPS लोकेशन" else "Location")
             }
 // (City Distances removed)
-            if (isSuper || admin.canManageAdmins) {
+            if (isSuper || isSubAdmin || admin.canManageAdmins) {
                 allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
             }
 
@@ -1636,6 +1641,88 @@ fun AdminDashboardScreen(
                                 activeScreenTitle = item.tabTitle
                             }
                         )
+                    } else if (isSubAdmin) {
+                        // SUB-ADMIN PORTAL: Full Unified Admin Control Hub with Sevadar Management (Strictly No Devotee Chat)
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFE8EAF6),
+                                border = BorderStroke(1.dp, Color(0xFF3F51B5)),
+                                shadowElevation = 0.5.dp
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    ) {
+                                        Text(
+                                            text = "🛡️ ${admin.name} (सब-एडमिन)",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = Color(0xFF1A237E),
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = Color(0xFFEDE7F6),
+                                            border = BorderStroke(0.8.dp, Color(0xFF5C6BC0)),
+                                            modifier = Modifier.clickable {
+                                                ownNewPassword = ""
+                                                ownNewPin = ""
+                                                ownCredentialsErrorMsg = null
+                                                showChangeOwnCredentialsDialog = true
+                                            }
+                                        ) {
+                                            Text(
+                                                text = "🔐 पिन/पासवर्ड",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF283593),
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                                maxLines = 1,
+                                                softWrap = false
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            AdminHubDashboardView(
+                                isHindi = isHindi,
+                                modules = allAdminModules.filter { allowedTabs.contains(it.tabTitle) && !it.tabTitle.contains("चैट") && !it.tabTitle.contains("Chat") },
+                                searchQuery = adminHubSearchQuery,
+                                onSearchQueryChange = { adminHubSearchQuery = it },
+                                selectedCategory = adminHubSelectedCategory,
+                                onSelectedCategoryChange = { adminHubSelectedCategory = it },
+                                isGridView = isAdminHubGridView,
+                                onToggleView = { isAdminHubGridView = it },
+                                onSelectModule = { item ->
+                                    val idx = allowedTabs.indexOf(item.tabTitle)
+                                    if (idx >= 0) selectedTab = idx
+                                    activeScreenTitle = item.tabTitle
+                                }
+                            )
+                        }
                     } else {
                         // SEVADAR PORTAL: DEFAULT TO LIVE CHAT INBOX + SEGMENTED ACCESS TO OTHER PERMITTED SERVICES
                         Column(
@@ -1850,6 +1937,19 @@ fun AdminDashboardScreen(
                                     settings = settings.copy(runningTokenNumber = 1)
                                     scope.launch {
                                         val (ok, msg) = repository.deleteAllTokensForDate(dateToWipe, admin.name)
+                                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                                        allSundayDates = repository.getAllTokenDates()
+                                        todayTokens = repository.getAllTokensToday()
+                                        queueTokensForSelectedDate = repository.getAllTokensForDate(selectedQueueDate)
+                                        refreshData()
+                                    }
+                                },
+                                onDeleteAllTokensAllTime = {
+                                    todayTokens = emptyList()
+                                    queueTokensForSelectedDate = emptyList()
+                                    settings = settings.copy(runningTokenNumber = 1)
+                                    scope.launch {
+                                        val (ok, msg) = repository.deleteAllTokensAllTime(admin.name)
                                         Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                                         allSundayDates = repository.getAllTokenDates()
                                         todayTokens = repository.getAllTokensToday()
@@ -2194,7 +2294,11 @@ fun AdminDashboardScreen(
                             SevadarManagementTab(
                                 isHindi = isHindi,
                                 admins = adminsList,
-                                onOpenCreate = { showCreateSevadarDialog = true },
+                                loggedInAdmin = admin,
+                                onOpenCreate = { 
+                                    newSevRole = AdminRole.SEVADAR
+                                    showCreateSevadarDialog = true 
+                                },
                                 onManageDirectory = { showManageSevadarDirectoryDialog = true },
                                 onToggleAnywhere = { targetAdmin, isEnabled ->
                                     scope.launch {
@@ -2246,6 +2350,7 @@ fun AdminDashboardScreen(
                                     editSevName = targetAdmin.name
                                     editSevUsername = targetAdmin.username
                                     editSevPhone = targetAdmin.phoneNumber
+                                    editSevRole = targetAdmin.role
                                     editSevPassword = ""
                                     editSevPin = ""
                                     editSevErrorMsg = null
@@ -3008,6 +3113,51 @@ fun AdminDashboardScreen(
                         }
                     }
 
+                    if (isSuperUser) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E5F5)),
+                            border = BorderStroke(1.dp, Color(0xFFCE93D8)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = if (isHindi) "पद / भूमिका चुनें (Account Role)" else "Select Role",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF4A148C)
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilterChip(
+                                        selected = newSevRole == AdminRole.SEVADAR,
+                                        onClick = { newSevRole = AdminRole.SEVADAR },
+                                        label = { Text(if (isHindi) "🚩 सेवादार" else "Sevadar") }
+                                    )
+                                    FilterChip(
+                                        selected = newSevRole == AdminRole.SUB_ADMIN,
+                                        onClick = { 
+                                            newSevRole = AdminRole.SUB_ADMIN
+                                            newSevCanHelpdesk = false
+                                        },
+                                        label = { Text(if (isHindi) "🛡️ सब-एडमिन" else "Sub-Admin") }
+                                    )
+                                }
+                                if (newSevRole == AdminRole.SUB_ADMIN) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = if (isHindi)
+                                            "ℹ️ सब-एडमिन: नए सेवादार जोड़ सकते हैं और सेवाएँ प्रबंधित कर सकते हैं। गोपनीयता सुरक्षा: भक्तों/सेवादारों की चैट देखना पूर्णतः प्रतिबंधित है।"
+                                        else
+                                            "ℹ️ Sub-Admin: Can add sevadars & manage services. Strictly zero chat/helpdesk access.",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF6A1B9A)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     OutlinedTextField(
                         value = newSevName,
                         onValueChange = { newSevName = it; createSevErrorMsg = null },
@@ -3300,7 +3450,7 @@ fun AdminDashboardScreen(
                                     name = newSevName,
                                     username = newSevUsername,
                                     phone = newSevPhone,
-                                    role = AdminRole.SEVADAR,
+                                    role = if (isSuperUser) newSevRole else AdminRole.SEVADAR,
                                     password = newSevPassword,
                                     pin = newSevPin,
                                     canManageTokens = newSevCanTokens,
@@ -3327,7 +3477,7 @@ fun AdminDashboardScreen(
                                     canManageUiControl = newSevCanUiControl,
                                     canManageTuesdayDarbar = newSevCanTuesdayDarbar,
                                     canManageIdCards = newSevCanIdCards,
-                                    canManageHelpdesk = newSevCanHelpdesk,
+                                    canManageHelpdesk = if ((if (isSuperUser) newSevRole else AdminRole.SEVADAR) == AdminRole.SUB_ADMIN) false else newSevCanHelpdesk,
                                     canViewPaymentLedger = newSevCanPaymentLedger,
                                     canManageWebsite = newSevCanWebsite,
                                     canManageServicesToggles = newSevCanServicesToggles,
@@ -3720,6 +3870,51 @@ fun AdminDashboardScreen(
                         }
                     }
 
+                    if (isSuperUser && target.role != AdminRole.SUPER_ADMIN) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E5F5)),
+                            border = BorderStroke(1.dp, Color(0xFFCE93D8)),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text(
+                                    text = if (isHindi) "पद / भूमिका बदलें (Account Role)" else "Change Role",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = Color(0xFF4A148C)
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FilterChip(
+                                        selected = editSevRole == AdminRole.SEVADAR,
+                                        onClick = { editSevRole = AdminRole.SEVADAR },
+                                        label = { Text(if (isHindi) "🚩 सेवादार" else "Sevadar") }
+                                    )
+                                    FilterChip(
+                                        selected = editSevRole == AdminRole.SUB_ADMIN,
+                                        onClick = { 
+                                            editSevRole = AdminRole.SUB_ADMIN
+                                            editSevCanHelpdesk = false
+                                        },
+                                        label = { Text(if (isHindi) "🛡️ सब-एडमिन" else "Sub-Admin") }
+                                    )
+                                }
+                                if (editSevRole == AdminRole.SUB_ADMIN) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = if (isHindi)
+                                            "ℹ️ सब-एडमिन को भक्तों की व्यक्तिगत चैट/हेल्पडेस्क देखने की अनुमति नहीं दी जा सकती।"
+                                        else
+                                            "ℹ️ Sub-Admin is strictly prohibited from viewing devotee chats/helpdesk.",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF6A1B9A)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     OutlinedTextField(
                         value = editSevName,
                         onValueChange = { editSevName = it; editSevErrorMsg = null },
@@ -3986,6 +4181,7 @@ fun AdminDashboardScreen(
                                 name = editSevName,
                                 username = editSevUsername,
                                 phone = editSevPhone,
+                                role = if (isSuperUser) editSevRole else target.role,
                                 password = editSevPassword.ifBlank { null },
                                 pin = editSevPin.ifBlank { null },
                                 photoUri = editSevPhotoUri,
@@ -4014,7 +4210,7 @@ fun AdminDashboardScreen(
                                     canManageUiControl = editSevCanUiControl,
                                     canManageTuesdayDarbar = editSevCanTuesdayDarbar,
                                     canManageIdCards = editSevCanIdCards,
-                                    canManageHelpdesk = editSevCanHelpdesk,
+                                    canManageHelpdesk = if ((if (isSuperUser) editSevRole else target.role) == AdminRole.SUB_ADMIN) false else editSevCanHelpdesk,
                                     canViewPaymentLedger = editSevCanPaymentLedger,
                                     canManageWebsite = editSevCanWebsite,
                                     canManageServicesToggles = editSevCanServicesToggles,
@@ -4347,6 +4543,7 @@ fun TokenQueueTab(
     selectedDarbarDate: String = settings.darbarDate,
     onSelectDarbarDate: (String) -> Unit = {},
     onDeleteAllTokensForSelectedDate: ((String) -> Unit)? = null,
+    onDeleteAllTokensAllTime: (() -> Unit)? = null,
     onUpdateRunningToken: (Int) -> Unit,
     onUpdateStatus: (Long, TokenStatus) -> Unit,
     onToggleDarshan: (Long, Boolean) -> Unit,
@@ -4400,6 +4597,7 @@ fun TokenQueueTab(
     var fillCity by remember { mutableStateOf("डूँगरा जाट (स्थानीय)") }
 
     var showWipeSundayDialog by remember { mutableStateOf(false) }
+    var showWipeAllTimeDialog by remember { mutableStateOf(false) }
     var showCustomDateDialog by remember { mutableStateOf(false) }
     var showVoiceSettingsDialog by remember { mutableStateOf(false) }
     var showQuickVoicePickerDialog by remember { mutableStateOf(false) }
@@ -4571,9 +4769,28 @@ fun TokenQueueTab(
                                     modifier = Modifier.clickable { showWipeSundayDialog = true }
                                 ) {
                                     Text(
-                                        text = "🗑️",
-                                        fontSize = 11.sp,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 4.dp)
+                                        text = if (isHindi) "🗑️ आज के" else "🗑️ Date",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFC62828),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+
+                            if (isSuperAdmin && onDeleteAllTokensAllTime != null) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFFB71C1C),
+                                    border = BorderStroke(0.8.dp, Color(0xFFD32F2F)),
+                                    modifier = Modifier.clickable { showWipeAllTimeDialog = true }
+                                ) {
+                                    Text(
+                                        text = if (isHindi) "💥 समस्त मिटाएं" else "💥 Wipe All",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                                     )
                                 }
                             }
@@ -6096,6 +6313,44 @@ fun TokenQueueTab(
             },
             dismissButton = {
                 TextButton(onClick = { showWipeSundayDialog = false }) {
+                    Text(if (isHindi) "रद्द करें" else "Cancel")
+                }
+            }
+        )
+    }
+
+    // Confirmation Dialog for Master Wipe (ALL Tokens across ALL Dates)
+    if (showWipeAllTimeDialog) {
+        AlertDialog(
+            onDismissRequest = { showWipeAllTimeDialog = false },
+            title = {
+                Text(
+                    text = if (isHindi) "💥 महा-सफाई: आज तक के समस्त टोकन मिटाएं" else "💥 Master Wipe: Delete All Tokens Ever",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFB71C1C)
+                )
+            },
+            text = {
+                Text(
+                    text = if (isHindi)
+                        "⚠️ अत्यंत महत्वपूर्ण चेतावनी:\n\nयह क्रिया आज तक की सभी तारीखों के समस्त टोकन को हर जगह से हमेशा के लिए पूर्णतः मिटा देगी:\n• आश्रम स्थानीय डेटाबेस\n• होस्टिंगर क्लाउड सर्वर\n• भक्तों के फोन की पर्चियां\n\nऔर टोकन क्रमांक 1 पर रीसेट हो जाएगा।\n\nक्या आप वास्तव में सभी टोकन मिटाना चाहते हैं? यह क्रिया कभी वापस नहीं हो सकती।"
+                    else
+                        "⚠️ Critical Warning:\n\nThis action will permanently delete ALL tokens across ALL dates everywhere:\n• Local Database\n• Hostinger Cloud Server\n• Devotee phone offline receipts\n\nAnd reset token counter to 1.\n\nAre you sure you want to proceed? This is irreversible."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeleteAllTokensAllTime?.invoke()
+                        showWipeAllTimeDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB71C1C))
+                ) {
+                    Text(if (isHindi) "हाँ, समस्त टोकन मिटाएं" else "Yes, Delete Everything", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWipeAllTimeDialog = false }) {
                     Text(if (isHindi) "रद्द करें" else "Cancel")
                 }
             }
@@ -8317,6 +8572,7 @@ fun BroadcastNotificationTab(
 fun SevadarManagementTab(
     isHindi: Boolean,
     admins: List<Admin>,
+    loggedInAdmin: Admin? = null,
     onOpenCreate: () -> Unit,
     onManageDirectory: () -> Unit = {},
     onOpenEdit: (Admin) -> Unit,
@@ -8329,6 +8585,9 @@ fun SevadarManagementTab(
     onSendWhatsApp: (Admin) -> Unit,
     onDelete: (Admin) -> Unit
 ) {
+    val isCallerSuperAdmin = loggedInAdmin?.role == AdminRole.SUPER_ADMIN
+    val isCallerSubAdmin = loggedInAdmin?.role == AdminRole.SUB_ADMIN
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -8364,6 +8623,12 @@ fun SevadarManagementTab(
         }
 
         items(admins) { a ->
+            val canManageThisAccount = when {
+                isCallerSuperAdmin -> a.role != AdminRole.SUPER_ADMIN
+                isCallerSubAdmin -> a.role == AdminRole.SEVADAR
+                else -> false
+            }
+
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = if (!a.isActive) Color(0xFFFAFAFA) else Color.White
@@ -8386,10 +8651,18 @@ fun SevadarManagementTab(
                         }
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = if (a.role == AdminRole.SUPER_ADMIN) SaffronPrimary else Color(0xFF388E3C)
+                            color = when (a.role) {
+                                AdminRole.SUPER_ADMIN -> SaffronPrimary
+                                AdminRole.SUB_ADMIN -> Color(0xFF1E88E5)
+                                AdminRole.SEVADAR -> Color(0xFF388E3C)
+                            }
                         ) {
                             Text(
-                                a.role.name,
+                                text = when (a.role) {
+                                    AdminRole.SUPER_ADMIN -> if (isHindi) "👑 सुपर एडमिन" else "SUPER ADMIN"
+                                    AdminRole.SUB_ADMIN -> if (isHindi) "🛡️ सब-एडमिन" else "SUB-ADMIN"
+                                    AdminRole.SEVADAR -> if (isHindi) "🚩 सेवादार" else "SEVADAR"
+                                },
                                 color = Color.White,
                                 fontSize = 10.sp,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -8429,7 +8702,7 @@ fun SevadarManagementTab(
                         color = Color.DarkGray
                     )
 
-                    if (a.role != AdminRole.SUPER_ADMIN) {
+                    if (canManageThisAccount) {
                         Spacer(modifier = Modifier.height(8.dp))
                         // Anywhere Token Issuance Quick Switch
                         Surface(
@@ -8659,6 +8932,48 @@ fun SevadarManagementTab(
                             }
                             OutlinedButton(onClick = { onDelete(a) }) {
                                 Text(if (isHindi) "हटाएं" else "Delete", color = Color.Red, fontSize = 12.sp)
+                            }
+                        }
+                    } else if (isCallerSubAdmin && a.role == AdminRole.SUPER_ADMIN) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            color = Color(0xFFFFF3E0),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFFB74D))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("🔒", fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (isHindi) "परम व्यवस्थापक (सुपर एडमिन) - सुरक्षित खाता। सब-एडमिन द्वारा संपादन व हटाना प्रतिबंधित है।" else "Protected Super Admin Account. Strictly read-only for Sub-Admin.",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFB71C1C)
+                                )
+                            }
+                        }
+                    } else if (isCallerSubAdmin && a.role == AdminRole.SUB_ADMIN && a.id != loggedInAdmin?.id) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            color = Color(0xFFEDE7F6),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFB39DDB))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("🛡️", fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (isHindi) "सब-एडमिन खाता - केवल सुपर एडमिन द्वारा ही संपादित या हटाया जा सकता है।" else "Sub-Admin Account. Can only be managed by Super Admin.",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFF4A148C)
+                                )
                             }
                         }
                     }

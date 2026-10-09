@@ -2,6 +2,7 @@ package com.example.shribalajikripadham.data.model
 
 enum class AdminRole {
     SUPER_ADMIN,
+    SUB_ADMIN,
     SEVADAR
 }
 

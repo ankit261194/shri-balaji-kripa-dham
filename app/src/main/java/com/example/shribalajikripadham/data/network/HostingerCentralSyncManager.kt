@@ -1029,6 +1029,7 @@ object HostingerCentralSyncManager {
                 put("daily_token_limit", if (settings.maxDailyTokens > 0) settings.maxDailyTokens else 1000)
                 put("is_token_service_enabled", if (settings.isTokenServiceEnabled) 1 else 0)
                 put("token_service_mode", settings.tokenServiceMode)
+                put("scheduled_token_open_timestamp", settings.scheduledTokenOpenTimestamp)
                 put("app_download_url", settings.apkDownloadUrl)
                 put("app_share_url", settings.appShareUrl)
                 put("is_bus_booking_live", if (settings.isBusBookingLive) 1 else 0)
@@ -1341,6 +1342,45 @@ object HostingerCentralSyncManager {
             Pair(false, "त्रुटि: ${e.localizedMessage}")
         }
     }
+
+    /**
+     * SuperAdmin: Delete ALL historical tokens across all dates from Central Hostinger MySQL (Master Wipe)
+     */
+    suspend fun deleteAllCentralTokensHistory(): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("${BASE_URL}delete_token.php")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                setRequestProperty("X-SBKD-API-KEY", API_SECRET_KEY)
+                setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate")
+                setRequestProperty("Pragma", "no-cache")
+            }
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            conn.requestMethod = "POST"
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            conn.setRequestProperty("User-Agent", "ShriBalajiApp/2.70.0")
+
+            val params = "action=DELETE_ALL_HISTORY&api_key=${URLEncoder.encode(API_SECRET_KEY, "UTF-8")}"
+            conn.outputStream.use { it.write(params.toByteArray(StandardCharsets.UTF_8)) }
+
+            val code = conn.responseCode
+            if (code == 200) {
+                val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
+                val json = JSONObject(resp)
+                if (json.optBoolean("success", false)) {
+                    return@withContext Pair(true, json.optString("message", "समस्त ऐतिहासिक टोकन सफलतापूर्वक साफ़ कर दिए गए"))
+                } else {
+                    return@withContext Pair(false, json.optString("message", "हटाने में त्रुटि"))
+                }
+            }
+            Pair(false, "सर्वर त्रुटि: HTTP $code")
+        } catch (e: Exception) {
+            Log.e(TAG, "deleteAllCentralTokensHistory error: ${e.message}")
+            Pair(false, "त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
 
     /**
      * Save Sevadar to Central Hostinger MySQL

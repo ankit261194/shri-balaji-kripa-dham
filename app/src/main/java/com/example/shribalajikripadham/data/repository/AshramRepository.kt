@@ -1027,30 +1027,31 @@ class AshramRepository(context: Context) {
             val open = (tSched is com.example.shribalajikripadham.util.TuesdayScheduleState.Open) && settings.isTuesdayDarbarEnabled
             if (isDevoteeRequest && !open) {
                 when (tSched) {
-                    is com.example.shribalajikripadham.util.TuesdayScheduleState.CountdownActive -> throw IllegalStateException(tSched.messageHindi)
-                    is com.example.shribalajikripadham.util.TuesdayScheduleState.TuesdayBeforeStart -> throw IllegalStateException(tSched.messageHindi)
-                    is com.example.shribalajikripadham.util.TuesdayScheduleState.TuesdayClosedEvening -> throw IllegalStateException(tSched.messageHindi)
-                    is com.example.shribalajikripadham.util.TuesdayScheduleState.NonTuesday -> throw IllegalStateException(tSched.messageHindi)
-                    is com.example.shribalajikripadham.util.TuesdayScheduleState.ServiceDisabled -> throw IllegalStateException(tSched.messageHindi)
-                    is com.example.shribalajikripadham.util.TuesdayScheduleState.CustomScheduled -> throw IllegalStateException(tSched.messageHindi)
-                    else -> throw IllegalStateException("मंगलवार बुलन्दशहर दरबार वर्तमान में विश्राम पर है।")
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.CountdownActive -> throw java.lang.IllegalStateException(tSched.messageHindi)
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.TuesdayBeforeStart -> throw java.lang.IllegalStateException(tSched.messageHindi)
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.TuesdayClosedEvening -> throw java.lang.IllegalStateException(tSched.messageHindi)
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.NonTuesday -> throw java.lang.IllegalStateException(tSched.messageHindi)
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.ServiceDisabled -> throw java.lang.IllegalStateException(tSched.messageHindi)
+                    is com.example.shribalajikripadham.util.TuesdayScheduleState.CustomScheduled -> throw java.lang.IllegalStateException(tSched.messageHindi)
+                    else -> throw java.lang.IllegalStateException("मंगलवार बुलन्दशहर दरबार वर्तमान में विश्राम पर है।")
                 }
             }
             open
         } else {
             val sched = com.example.shribalajikripadham.util.SundayTokenScheduleHelper.evaluateSchedule(settings)
-            val open = (sched is com.example.shribalajikripadham.util.SundayScheduleState.Open) && (settings.isDarbarActive || settings.tokenServiceMode.equals("AUTO_SUNDAY", ignoreCase = true))
+            val isForceOpen = settings.tokenServiceMode.equals("FORCE_OPEN", ignoreCase = true)
+            val open = (sched is com.example.shribalajikripadham.util.SundayScheduleState.Open) && (settings.isDarbarActive || settings.tokenServiceMode.equals("AUTO_SUNDAY", ignoreCase = true) || isForceOpen)
             if (isDevoteeRequest && !open) {
                 when (sched) {
-                    is com.example.shribalajikripadham.util.SundayScheduleState.CountdownActive -> throw IllegalStateException(sched.messageHindi)
-                    is com.example.shribalajikripadham.util.SundayScheduleState.SundayBeforeStart -> throw IllegalStateException(sched.messageHindi)
-                    is com.example.shribalajikripadham.util.SundayScheduleState.SundayClosedEvening -> throw IllegalStateException(sched.messageHindi)
-                    is com.example.shribalajikripadham.util.SundayScheduleState.NonSunday -> throw IllegalStateException(sched.messageHindi)
-                    is com.example.shribalajikripadham.util.SundayScheduleState.ServiceDisabled -> throw IllegalStateException(sched.messageHindi)
-                    is com.example.shribalajikripadham.util.SundayScheduleState.CustomScheduled -> throw IllegalStateException(sched.messageHindi)
+                    is com.example.shribalajikripadham.util.SundayScheduleState.CountdownActive -> throw java.lang.IllegalStateException(sched.messageHindi)
+                    is com.example.shribalajikripadham.util.SundayScheduleState.SundayBeforeStart -> throw java.lang.IllegalStateException(sched.messageHindi)
+                    is com.example.shribalajikripadham.util.SundayScheduleState.SundayClosedEvening -> throw java.lang.IllegalStateException(sched.messageHindi)
+                    is com.example.shribalajikripadham.util.SundayScheduleState.NonSunday -> throw java.lang.IllegalStateException(sched.messageHindi)
+                    is com.example.shribalajikripadham.util.SundayScheduleState.ServiceDisabled -> throw java.lang.IllegalStateException(sched.messageHindi)
+                    is com.example.shribalajikripadham.util.SundayScheduleState.CustomScheduled -> throw java.lang.IllegalStateException(sched.messageHindi)
                     else -> {
-                        if (!settings.isDarbarActive && !settings.tokenServiceMode.equals("AUTO_SUNDAY", ignoreCase = true)) {
-                            throw IllegalStateException("दरबार वर्तमान में विश्राम पर है। टोकन पंजीकरण बंद है।")
+                        if (!settings.isDarbarActive && !settings.tokenServiceMode.equals("AUTO_SUNDAY", ignoreCase = true) && !isForceOpen) {
+                            throw java.lang.IllegalStateException("दरबार वर्तमान में विश्राम पर है। टोकन पंजीकरण बंद है।")
                         }
                     }
                 }
@@ -2911,7 +2912,7 @@ class AshramRepository(context: Context) {
             put("can_change_location", if (canChangeLocation) 1 else 0)
             put("can_send_notifications", if (canSendNotifications) 1 else 0)
             put("can_edit_ashram_info", if (canEditAshramInfo) 1 else 0)
-            put("can_manage_admins", if (role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_admins", if (role == AdminRole.SUPER_ADMIN || role == AdminRole.SUB_ADMIN) 1 else 0)
             put("can_view_devotee_photos", if (canViewDevoteePhotos || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_issue_tokens_anywhere", if (canIssueTokensAnywhere || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_scan_paper_register", if (canScanPaperRegister || role == AdminRole.SUPER_ADMIN) 1 else 0)
@@ -2929,7 +2930,7 @@ class AshramRepository(context: Context) {
             put("can_manage_ui_control", if (canManageUiControl || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_manage_tuesday_darbar", if (canManageTuesdayDarbar || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_manage_id_cards", if (canManageIdCards || role == AdminRole.SUPER_ADMIN) 1 else 0)
-            put("can_manage_helpdesk", if (canManageHelpdesk || role == AdminRole.SUPER_ADMIN) 1 else 0)
+            put("can_manage_helpdesk", if (role == AdminRole.SUB_ADMIN) 0 else if (canManageHelpdesk || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_view_payment_ledger", if (canViewPaymentLedger || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_manage_website", if (canManageWebsite || role == AdminRole.SUPER_ADMIN) 1 else 0)
             put("can_manage_services_toggles", if (canManageServicesToggles || role == AdminRole.SUPER_ADMIN) 1 else 0)
@@ -2968,7 +2969,8 @@ class AshramRepository(context: Context) {
         password: String? = null,
         pin: String? = null,
         photoUri: String? = null,
-        permissions: AdminPermissionsUpdate? = null
+        permissions: AdminPermissionsUpdate? = null,
+        role: AdminRole? = null
     ): Pair<Boolean, String> = withContext(Dispatchers.IO) {
         val check = validateUniqueCredentials(
             username = username,
@@ -2985,6 +2987,13 @@ class AshramRepository(context: Context) {
             put("name", name.trim())
             put("username", username.trim())
             put("phone", phone.trim())
+            if (role != null) {
+                put("role", role.name)
+                put("can_manage_admins", if (role == AdminRole.SUPER_ADMIN || role == AdminRole.SUB_ADMIN) 1 else 0)
+                if (role == AdminRole.SUB_ADMIN) {
+                    put("can_manage_helpdesk", 0)
+                }
+            }
             if (!password.isNullOrBlank()) {
                 put("password_hash", DatabaseHelper.hashPassword(password.trim()))
                 put("raw_password", password.trim())
@@ -3021,7 +3030,11 @@ class AshramRepository(context: Context) {
                 put("can_manage_ui_control", if (p.canManageUiControl) 1 else 0)
                 put("can_manage_tuesday_darbar", if (p.canManageTuesdayDarbar) 1 else 0)
                 put("can_manage_id_cards", if (p.canManageIdCards) 1 else 0)
-                put("can_manage_helpdesk", if (p.canManageHelpdesk) 1 else 0)
+                if (role == AdminRole.SUB_ADMIN) {
+                    put("can_manage_helpdesk", 0)
+                } else {
+                    put("can_manage_helpdesk", if (p.canManageHelpdesk) 1 else 0)
+                }
                 put("can_view_payment_ledger", if (p.canViewPaymentLedger) 1 else 0)
                 put("can_manage_website", if (p.canManageWebsite) 1 else 0)
                 put("can_manage_services_toggles", if (p.canManageServicesToggles) 1 else 0)
@@ -3040,7 +3053,7 @@ class AshramRepository(context: Context) {
                         name = name.trim(),
                         username = username.trim(),
                         phone = phone.trim(),
-                        role = "SEVADAR",
+                        role = role?.name ?: "SEVADAR",
                         password = password?.trim() ?: "",
                         pin = pin?.trim() ?: "",
                         isActive = permissions?.isActive ?: true
@@ -3583,15 +3596,31 @@ class AshramRepository(context: Context) {
         val db = dbHelper.writableDatabase
         var tokenNum = 0
         var darbarDate = ""
-        val cur = db.rawQuery("SELECT token_number, darbar_date FROM tokens WHERE id = ?", arrayOf(tokenId.toString()))
+        var deviceId = ""
+        val cur = db.rawQuery("SELECT token_number, darbar_date, device_id FROM tokens WHERE id = ?", arrayOf(tokenId.toString()))
         if (cur.moveToFirst()) {
             tokenNum = cur.getInt(0)
-            darbarDate = cur.getString(1)
+            darbarDate = cur.getString(1) ?: ""
+            deviceId = if (cur.columnCount > 2) cur.getString(2) ?: "" else ""
         }
         cur.close()
 
         val deleted = db.delete("tokens", "id = ?", arrayOf(tokenId.toString())) > 0
         if (deleted && tokenNum > 0) {
+            // 🗑️ Delete persistent device receipt on disk to eradicate old token
+            try {
+                if (deviceId.isNotBlank() && darbarDate.isNotBlank()) {
+                    com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.deleteReceipt(deviceId, darbarDate)
+                }
+            } catch (e: Exception) {}
+
+            // Clean up device_registrations entry for this token
+            try {
+                if (darbarDate.isNotBlank()) {
+                    db.delete("device_registrations", "darbar_date = ? AND token_number = ?", arrayOf(darbarDate, tokenNum.toString()))
+                }
+            } catch (e: Exception) {}
+
             // 📜 Log to Audit Trail Ledger
             try {
                 val role = if (adminName.contains("SUPER", true) || adminName.contains("अंकित", true)) "SUPER_ADMIN" else "SEVADAR"
@@ -3643,6 +3672,10 @@ class AshramRepository(context: Context) {
                 db.update("ashram_settings", cv, "id = 1", null)
             } catch (e: Exception) {}
 
+            try {
+                com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.clearAllReceipts(appContext)
+            } catch (e: Exception) {}
+
             val centralRes = try {
                 com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.deleteAllCentralTokensForDate(darbarDate)
             } catch (e: Exception) {
@@ -3657,13 +3690,64 @@ class AshramRepository(context: Context) {
                     role = "SUPER_ADMIN",
                     reason = "रविवार ($darbarDate) के टोकन मिटाए गए",
                     darbarDate = darbarDate,
-                    details = "दिनांक $darbarDate का टोकन डेटा सुपरएडमिन द्वारा स्थायी रूप से साफ़ किया गया"
+                    details = "दिनांक $darbarDate का टोकन डेटा सुपरएडमिन द्वारा स्थायी रूप से साफ़ किया गया (हटाए गए: $localCount)"
                 )
             } catch (e: Exception) {}
 
             Pair(true, "दिनांक $darbarDate का संपूर्ण टोकन डेटा सफलतापूर्वक साफ़ कर दिया गया।")
         } catch (e: Exception) {
             Pair(false, "हटाने में त्रुटि: ${e.localizedMessage}")
+        }
+    }
+
+    /**
+     * SuperAdmin: Delete ALL tokens across ALL dates (Master Wipe)
+     * Resets running token number to 1, completely empties tokens and device_registrations tables,
+     * clears persistent token receipts, and invokes Hostinger Central DELETE_ALL_HISTORY.
+     */
+    suspend fun deleteAllTokensAllTime(adminName: String = "SUPER_ADMIN"): Pair<Boolean, String> = withContext(Dispatchers.IO) {
+        val db = dbHelper.writableDatabase
+        try {
+            val localCount = db.delete("tokens", null, null)
+            try {
+                db.delete("device_registrations", null, null)
+            } catch (e: Exception) {}
+
+            try {
+                val cv = ContentValues().apply {
+                    put("running_token_number", 1)
+                    put("current_serving_token", 1)
+                    put("tuesday_running_token_number", 1)
+                    put("tuesday_current_serving_token", 1)
+                }
+                db.update("ashram_settings", cv, "id = 1", null)
+            } catch (e: Exception) {}
+
+            try {
+                com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.clearAllReceipts(appContext)
+            } catch (e: Exception) {}
+
+            val centralRes = try {
+                com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.deleteAllCentralTokensHistory()
+            } catch (e: Exception) {
+                Pair(true, "सर्वर सिंक")
+            }
+
+            try {
+                dbHelper.insertAuditLog(
+                    action = "ALL_TOKENS_MASTER_WIPED",
+                    tokenNumber = 0,
+                    performedBy = adminName,
+                    role = "SUPER_ADMIN",
+                    reason = "आज तक के समस्त टोकन मिटाए गए (Master Wipe)",
+                    darbarDate = "ALL_TIME",
+                    details = "सुपरएडमिन ($adminName) द्वारा आज तक के सभी तिथियों के समस्त टोकन स्थायी रूप से मिटा दिए गए। (स्थानीय हटाए गए: $localCount)"
+                )
+            } catch (e: Exception) {}
+
+            Pair(true, "आज तक के समस्त टोकन (कुल $localCount) डेटाबेस व केंद्रीय सर्वर से हमेशा के लिए साफ़ कर दिए गए।")
+        } catch (e: Exception) {
+            Pair(false, "मास्टर विलोपन में त्रुटि: ${e.localizedMessage}")
         }
     }
 
@@ -4394,6 +4478,141 @@ class AshramRepository(context: Context) {
 
                 if (cfg.has("is_darbar_active")) cv.put("is_darbar_active", if (cfg.optBoolean("is_darbar_active")) 1 else 0)
                 if (cfg.has("is_token_service_enabled")) cv.put("is_token_service_enabled", if (cfg.optBoolean("is_token_service_enabled")) 1 else 0)
+
+                // ⚡ Token Service Modes & Direct Scheduling Sync
+                if (cfg.has("token_service_mode")) {
+                    val mode = cfg.optString("token_service_mode", "").trim()
+                    if (mode.isNotBlank()) {
+                        cv.put("token_service_mode", mode)
+                        if (mode.equals("FORCE_OPEN", ignoreCase = true)) {
+                            cv.put("is_token_service_enabled", 1)
+                            cv.put("is_darbar_active", 1)
+                        } else if (mode.equals("FORCE_CLOSED", ignoreCase = true)) {
+                            cv.put("is_token_service_enabled", 0)
+                        }
+                    }
+                }
+                if (cfg.has("scheduled_token_open_timestamp")) {
+                    cv.put("scheduled_token_open_timestamp", cfg.optLong("scheduled_token_open_timestamp", 0L))
+                }
+
+                // ⚡ Tuesday Darbar Mode & Configuration Sync
+                if (cfg.has("is_tuesday_darbar_enabled")) {
+                    cv.put("is_tuesday_darbar_enabled", if (cfg.optBoolean("is_tuesday_darbar_enabled")) 1 else 0)
+                }
+                if (cfg.has("tuesday_token_service_mode")) {
+                    val tMode = cfg.optString("tuesday_token_service_mode", "").trim()
+                    if (tMode.isNotBlank()) cv.put("tuesday_token_service_mode", tMode)
+                }
+                if (cfg.has("tuesday_scheduled_open_timestamp")) {
+                    cv.put("tuesday_scheduled_open_timestamp", cfg.optLong("tuesday_scheduled_open_timestamp", 0L))
+                }
+                if (cfg.has("tuesday_darbar_name")) {
+                    val tName = cfg.optString("tuesday_darbar_name", "").trim()
+                    if (tName.isNotBlank()) cv.put("tuesday_darbar_name", tName)
+                }
+                if (cfg.has("tuesday_darbar_address")) {
+                    val tAddr = cfg.optString("tuesday_darbar_address", "").trim()
+                    if (tAddr.isNotBlank()) cv.put("tuesday_darbar_address", tAddr)
+                }
+                if (cfg.has("tuesday_darbar_timings")) {
+                    val tTime = cfg.optString("tuesday_darbar_timings", "").trim()
+                    if (tTime.isNotBlank()) cv.put("tuesday_darbar_timings", tTime)
+                }
+                if (cfg.has("tuesday_darbar_date")) {
+                    cv.put("tuesday_darbar_date", cfg.optString("tuesday_darbar_date", "").trim())
+                }
+                if (cfg.has("tuesday_current_serving_token")) {
+                    cv.put("tuesday_current_serving_token", cfg.optInt("tuesday_current_serving_token", 0))
+                }
+                if (cfg.has("tuesday_running_token_number")) {
+                    cv.put("tuesday_running_token_number", cfg.optInt("tuesday_running_token_number", 1))
+                }
+                if (cfg.has("tuesday_token_notice")) {
+                    val tNotice = cfg.optString("tuesday_token_notice", "").trim()
+                    if (tNotice.isNotBlank()) cv.put("tuesday_token_notice", tNotice)
+                }
+                if (cfg.has("tuesday_latitude")) {
+                    cv.put("tuesday_latitude", cfg.optDouble("tuesday_latitude", 28.4069))
+                }
+                if (cfg.has("tuesday_longitude")) {
+                    cv.put("tuesday_longitude", cfg.optDouble("tuesday_longitude", 77.8498))
+                }
+                if (cfg.has("tuesday_allowed_radius_meters")) {
+                    cv.put("tuesday_allowed_radius_meters", cfg.optDouble("tuesday_allowed_radius_meters", 200.0))
+                }
+                if (cfg.has("tuesday_outstation_min_distance_km")) {
+                    cv.put("tuesday_outstation_min_distance_km", cfg.optDouble("tuesday_outstation_min_distance_km", 30.0))
+                }
+
+                // ⚡ Geofence, Distance & Outstation Controls
+                if (cfg.has("latitude") && cfg.has("longitude")) {
+                    val lat = cfg.optDouble("latitude", 0.0)
+                    val lng = cfg.optDouble("longitude", 0.0)
+                    if (lat != 0.0 && lng != 0.0) {
+                        cv.put("latitude", lat)
+                        cv.put("longitude", lng)
+                    }
+                }
+                if (cfg.has("allowed_radius_meters")) {
+                    val rad = cfg.optDouble("allowed_radius_meters", 0.0)
+                    if (rad > 0.0) cv.put("allowed_radius_meters", rad)
+                }
+                if (cfg.has("outstation_min_distance_km")) {
+                    val dist = cfg.optDouble("outstation_min_distance_km", 0.0)
+                    if (dist > 0.0) cv.put("outstation_min_distance_km", dist)
+                }
+                if (cfg.has("is_geofence_enforced")) {
+                    cv.put("is_geofence_enforced", if (cfg.optBoolean("is_geofence_enforced")) 1 else 0)
+                }
+                if (cfg.has("is_outstation_advance_allowed")) {
+                    cv.put("is_outstation_advance_allowed", if (cfg.optBoolean("is_outstation_advance_allowed")) 1 else 0)
+                }
+
+                // ⚡ Sunday Token Banner & Custom Notice
+                if (cfg.has("sunday_token_banner_title")) {
+                    val v = cfg.optString("sunday_token_banner_title", "").trim()
+                    if (v.isNotBlank()) cv.put("sunday_token_banner_title", v)
+                }
+                if (cfg.has("sunday_token_banner_text")) {
+                    val v = cfg.optString("sunday_token_banner_text", "").trim()
+                    if (v.isNotBlank()) cv.put("sunday_token_banner_text", v)
+                }
+                if (cfg.has("sunday_token_custom_notice")) {
+                    cv.put("sunday_token_custom_notice", cfg.optString("sunday_token_custom_notice", "").trim())
+                }
+
+                // ⚡ Token Limits, Reserved & Live Darbar Streaming
+                if (cfg.has("max_daily_tokens")) {
+                    cv.put("max_daily_tokens", cfg.optInt("max_daily_tokens", 0))
+                } else if (cfg.has("daily_token_limit")) {
+                    cv.put("max_daily_tokens", cfg.optInt("daily_token_limit", 0))
+                }
+                if (cfg.has("allow_admin_reserved_tokens")) {
+                    cv.put("allow_admin_reserved_tokens", if (cfg.optBoolean("allow_admin_reserved_tokens")) 1 else 0)
+                } else if (cfg.has("can_admin_issue_reserved_tokens")) {
+                    cv.put("allow_admin_reserved_tokens", if (cfg.optBoolean("can_admin_issue_reserved_tokens")) 1 else 0)
+                }
+                if (cfg.has("is_darbar_live_now")) {
+                    cv.put("is_darbar_live_now", if (cfg.optBoolean("is_darbar_live_now")) 1 else 0)
+                }
+                if (cfg.has("live_stream_title")) {
+                    val v = cfg.optString("live_stream_title", "").trim()
+                    if (v.isNotBlank()) cv.put("live_stream_title", v)
+                }
+                if (cfg.has("live_stream_url")) {
+                    val v = cfg.optString("live_stream_url", "").trim()
+                    if (v.isNotBlank()) cv.put("live_stream_url", v)
+                }
+                if (cfg.has("youtube_live_url")) {
+                    val v = cfg.optString("youtube_live_url", "").trim()
+                    if (v.isNotBlank()) cv.put("youtube_live_url", v)
+                }
+                if (cfg.has("facebook_live_url")) {
+                    val v = cfg.optString("facebook_live_url", "").trim()
+                    if (v.isNotBlank()) cv.put("facebook_live_url", v)
+                }
+
                 if (cfg.has("is_bus_booking_live")) cv.put("is_bus_booking_live", if (cfg.optBoolean("is_bus_booking_live")) 1 else 0)
                 if (cfg.has("is_payment_feature_live")) cv.put("is_payment_feature_live", if (cfg.optBoolean("is_payment_feature_live")) 1 else 0)
                 if (cfg.has("bus_seat_fare_amount")) {
@@ -4523,6 +4742,15 @@ class AshramRepository(context: Context) {
 
                 val sc = remoteConfig.servicesConfig
                 cv.put("is_token_service_enabled", if (sc.isTokenServiceEnabled) 1 else 0)
+                if (sc.tokenServiceMode.isNotBlank()) {
+                    cv.put("token_service_mode", sc.tokenServiceMode)
+                    if (sc.tokenServiceMode.equals("FORCE_OPEN", ignoreCase = true)) {
+                        cv.put("is_token_service_enabled", 1)
+                        cv.put("is_darbar_active", 1)
+                    } else if (sc.tokenServiceMode.equals("FORCE_CLOSED", ignoreCase = true)) {
+                        cv.put("is_token_service_enabled", 0)
+                    }
+                }
                 cv.put("is_yatra_service_enabled", if (sc.isYatraServiceEnabled) 1 else 0)
                 cv.put("is_live_counter_visible", if (sc.isLiveCounterVisible) 1 else 0)
                 cv.put("is_events_visible", if (sc.isEventsVisible) 1 else 0)

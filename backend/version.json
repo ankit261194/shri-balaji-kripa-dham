@@ -1,10 +1,10 @@
 {
-  "latest_version_code": 156,
-  "version_code": 156,
-  "latest_version_name": "2.69.0",
-  "version_name": "2.69.0",
-  "update_notes_hindi": "v2.69.0 (Build 156): 🔔 टोकन अलर्ट धुन सुधार (Silent View & Gentle Chime): टोकन जनरेट करने या टोकन देखने पर लंबी अलार्म धुन बजना पूर्णतः बंद। अब केवल कतार आगे बढ़ने पर 1.6 सेकंड की पावन मंदिर घंटी बजेगी। अलर्ट चालू/बंद करने का स्विच व स्टॉप बटन जोड़ा गया।",
-  "update_notes_english": "v2.69.0 (Build 156): Fixed token alert audio: Eliminated long alarm ringtones when generating or viewing tokens. Now plays a gentle 1.6s sacred temple bell only when queue moves, auto-silences on exit, with an ON/OFF toggle switch.",
+  "latest_version_code": 157,
+  "version_code": 157,
+  "latest_version_name": "2.70.0",
+  "version_name": "2.70.0",
+  "update_notes_hindi": "v2.70.0 (Build 157): 🛡️ सब-एडमिन (Sub-Admin) सशक्त प्रणाली: सुपर एडमिन द्वारा सब-एडमिन का सृजन, सेवादार प्रबंधन व सेवा अधिकार, गोपनीयता सुरक्षा (Zero Chat Access)। ⚡ तत्काल टोकन लाइव फिक्स: किसी भी समय तत्काल टोकन वितरण चालू/बंद। 💥 महा-सफाई (Master Wipe): एकल टोकन, आज के टोकन अथवा आज तक के समस्त ऐतिहासिक टोकन 1-क्लिक में हर जगह से स्थायी विलोपन।",
+  "update_notes_english": "v2.70.0 (Build 157): Sub-Admin Role System with boundary controls (Zero Chat Access for privacy), Tatkal Instant Token Force-Open Live Fix across all devices, and Permanent Master Wipe Engine for single, daily, or all-time tokens.",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true

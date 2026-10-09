@@ -55,6 +55,7 @@ function getFallbackConfig() {
         "daily_token_limit" => 1000,
         "is_token_service_enabled" => true,
         "token_service_mode" => "AUTO_SUNDAY",
+        "scheduled_token_open_timestamp" => 0,
         "is_tuesday_darbar_enabled" => false,
         "tuesday_darbar_name" => "श्री बालाजी कृपा धाम (मंगलवार दरबार, बुलन्दशहर)",
         "tuesday_darbar_address" => "बुलन्दशहर, उत्तर प्रदेश",
@@ -161,6 +162,7 @@ $targetCols = [
     "daily_token_limit" => "INT NOT NULL DEFAULT 1000",
     "is_token_service_enabled" => "TINYINT(1) NOT NULL DEFAULT 1",
     "token_service_mode" => "VARCHAR(30) NOT NULL DEFAULT 'AUTO_SUNDAY'",
+    "scheduled_token_open_timestamp" => "BIGINT NOT NULL DEFAULT 0",
     "is_tuesday_darbar_enabled" => "TINYINT(1) NOT NULL DEFAULT 0",
     "tuesday_darbar_name" => "VARCHAR(255) NOT NULL DEFAULT 'श्री बालाजी कृपा धाम (मंगलवार दरबार, बुलन्दशहर)'",
     "tuesday_darbar_address" => "TEXT",
@@ -346,6 +348,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'daily_token_limit' => isset($input['daily_token_limit']) ? intval($input['daily_token_limit']) : intval($current['daily_token_limit'] ?? 1000),
         'is_token_service_enabled' => isset($input['is_token_service_enabled']) ? intval($input['is_token_service_enabled']) : intval($current['is_token_service_enabled'] ?? 1),
         'token_service_mode' => trim($input['token_service_mode'] ?? ($current['token_service_mode'] ?? 'AUTO_SUNDAY')),
+        'scheduled_token_open_timestamp' => isset($input['scheduled_token_open_timestamp']) ? intval($input['scheduled_token_open_timestamp']) : intval($current['scheduled_token_open_timestamp'] ?? 0),
         'is_tuesday_darbar_enabled' => isset($input['is_tuesday_darbar_enabled']) ? intval($input['is_tuesday_darbar_enabled']) : intval($current['is_tuesday_darbar_enabled'] ?? 0),
         'tuesday_darbar_name' => trim($input['tuesday_darbar_name'] ?? ($current['tuesday_darbar_name'] ?? 'श्री बालाजी कृपा धाम (मंगलवार दरबार, बुलन्दशहर)')),
         'tuesday_darbar_address' => trim($input['tuesday_darbar_address'] ?? ($current['tuesday_darbar_address'] ?? 'बुलन्दशहर, उत्तर प्रदेश')),
@@ -421,6 +424,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'havan_estimated_cost' => isset($input['havan_estimated_cost']) ? intval($input['havan_estimated_cost']) : intval($current['havan_estimated_cost'] ?? 14000),
         'havan_rules_notice' => trim($input['havan_rules_notice'] ?? ($current['havan_rules_notice'] ?? 'हवन अनुष्ठान का अनुमानित खर्च लगभग ₹14,000 होता है। गाड़ी का आने-जाने का सम्पूर्ण किराया यजमान (भगत) को स्वयं वहन करना होगा।'))
     ];
+
+    // Tatkal (FORCE_OPEN) automatic activation:
+    if (($fields['token_service_mode'] ?? '') === 'FORCE_OPEN') {
+        $fields['is_token_service_enabled'] = 1;
+        $fields['is_darbar_active'] = 1;
+    }
+    if (($fields['tuesday_token_service_mode'] ?? '') === 'FORCE_OPEN') {
+        $fields['is_tuesday_darbar_enabled'] = 1;
+    }
 
     $updatePairs = [];
     $bindings = [];
@@ -703,6 +715,7 @@ try {
         "daily_token_limit" => isset($row['daily_token_limit']) ? intval($row['daily_token_limit']) : $fb['daily_token_limit'],
         "is_token_service_enabled" => isset($row['is_token_service_enabled']) ? boolval($row['is_token_service_enabled']) : $fb['is_token_service_enabled'],
         "token_service_mode" => !empty($row['token_service_mode']) ? $row['token_service_mode'] : $fb['token_service_mode'],
+        "scheduled_token_open_timestamp" => isset($row['scheduled_token_open_timestamp']) ? intval($row['scheduled_token_open_timestamp']) : $fb['scheduled_token_open_timestamp'],
         "is_tuesday_darbar_enabled" => isset($row['is_tuesday_darbar_enabled']) ? boolval($row['is_tuesday_darbar_enabled']) : $fb['is_tuesday_darbar_enabled'],
         "tuesday_darbar_name" => !empty($row['tuesday_darbar_name']) ? $row['tuesday_darbar_name'] : $fb['tuesday_darbar_name'],
         "tuesday_darbar_address" => !empty($row['tuesday_darbar_address']) ? $row['tuesday_darbar_address'] : $fb['tuesday_darbar_address'],

@@ -409,7 +409,35 @@ if ($action === 'get_messages') {
         }
 
         // Privacy check: Non-superadmin sevadar cannot access other sevadars conversations
+        $callerRole = strtoupper(trim($input['role'] ?? $_GET['role'] ?? ''));
         $adminPin = trim($input['admin_pin'] ?? $_GET['admin_pin'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_PIN'] ?? '');
+        $adminToken = trim($input['admin_token'] ?? $_GET['admin_token'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_TOKEN'] ?? '');
+
+        // Sub-admin Privacy Blocker: SUB_ADMIN is strictly prohibited from viewing any chats
+        if ($callerRole === 'SUB_ADMIN') {
+            http_response_code(403);
+            echo json_encode(["success" => false, "error" => "गोपनीयता सुरक्षा: सब-एडमिन (Sub-Admin) को भक्तों व सेवादारों की व्यक्तिगत चैट देखने की अनुमति नहीं है।"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if (!empty($adminPin) && $adminPin !== '1234') {
+            $rStmt = $pdo->prepare("SELECT role FROM admins WHERE pin = :pin AND is_active = 1 LIMIT 1");
+            $rStmt->execute([':pin' => $adminPin]);
+            if ($rStmt->fetchColumn() === 'SUB_ADMIN') {
+                http_response_code(403);
+                echo json_encode(["success" => false, "error" => "गोपनीयता सुरक्षा: सब-एडमिन (Sub-Admin) को भक्तों व सेवादारों की व्यक्तिगत चैट देखने की अनुमति नहीं है।"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+        if (!empty($adminToken)) {
+            $rStmt = $pdo->prepare("SELECT role FROM admin_sessions WHERE session_token = :t AND is_active = 1 LIMIT 1");
+            $rStmt->execute([':t' => $adminToken]);
+            if ($rStmt->fetchColumn() === 'SUB_ADMIN') {
+                http_response_code(403);
+                echo json_encode(["success" => false, "error" => "गोपनीयता सुरक्षा: सब-एडमिन (Sub-Admin) को भक्तों व सेवादारों की व्यक्तिगत चैट देखने की अनुमति नहीं है।"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+
         $isSuper = ($adminPin === '1234');
         if (!$isSuper && !empty($adminPin)) {
             $pStmt = $pdo->prepare("SELECT role FROM admins WHERE pin = :pin AND is_active = 1 LIMIT 1");
@@ -530,6 +558,31 @@ if ($action === 'list_conversations') {
         $adminPin = trim($input['admin_pin'] ?? $_GET['admin_pin'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_PIN'] ?? '');
         $adminToken = trim($input['admin_token'] ?? $_GET['admin_token'] ?? $_SERVER['HTTP_X_SBKD_ADMIN_TOKEN'] ?? '');
         $role = strtoupper(trim($input['role'] ?? $_GET['role'] ?? ''));
+
+        // Sub-admin Privacy Blocker: SUB_ADMIN is strictly prohibited from viewing any chats
+        if ($role === 'SUB_ADMIN') {
+            http_response_code(403);
+            echo json_encode(["success" => false, "error" => "गोपनीयता सुरक्षा: सब-एडमिन (Sub-Admin) को भक्तों व सेवादारों की व्यक्तिगत चैट देखने की अनुमति नहीं है।"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        if (!empty($adminPin) && $adminPin !== '1234') {
+            $pStmt = $pdo->prepare("SELECT role FROM admins WHERE pin = :pin AND is_active = 1 LIMIT 1");
+            $pStmt->execute([':pin' => $adminPin]);
+            if ($pStmt->fetchColumn() === 'SUB_ADMIN') {
+                http_response_code(403);
+                echo json_encode(["success" => false, "error" => "गोपनीयता सुरक्षा: सब-एडमिन (Sub-Admin) को भक्तों व सेवादारों की व्यक्तिगत चैट देखने की अनुमति नहीं है।"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
+        if (!empty($adminToken)) {
+            $pStmt = $pdo->prepare("SELECT role FROM admin_sessions WHERE session_token = :t AND is_active = 1 LIMIT 1");
+            $pStmt->execute([':t' => $adminToken]);
+            if ($pStmt->fetchColumn() === 'SUB_ADMIN') {
+                http_response_code(403);
+                echo json_encode(["success" => false, "error" => "गोपनीयता सुरक्षा: सब-एडमिन (Sub-Admin) को भक्तों व सेवादारों की व्यक्तिगत चैट देखने की अनुमति नहीं है।"], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
+        }
 
         // Verify if caller is truly SUPER_ADMIN
         $isTrulySuperAdmin = false;

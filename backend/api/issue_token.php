@@ -340,11 +340,17 @@ if (!$isSuperAdmin) {
         $isTuesdayOpen = ($tuesdayServiceMode === 'FORCE_OPEN') || 
             ($tuesdayServiceMode === 'AUTO_TUESDAY' && $dayOfWeek === 2 && $currentMinutes >= $startMinutes && $currentMinutes < $endMinutes);
 
+        // Tatkal (FORCE_OPEN) mode activation for Tuesday:
+        if ($tuesdayServiceMode === 'FORCE_OPEN') {
+            $isTuesdayOpen = true;
+            $isTuesdayDarbarEnabled = true;
+        }
+
         if (!$isTuesdayDarbarEnabled || $tuesdayServiceMode === 'FORCE_CLOSED' || !$isTuesdayOpen) {
             http_response_code(403);
             echo json_encode([
                 "success" => false,
-                "error" => "⚠️ मंगलवार बुलन्दशहर दरबार टोकन सेवा वर्तमान में विश्राम पर है।\n\nटोकन केवल मंगलवार प्रातः 8:00 बजे से सायं 5:00 बजे तक ही बनाए जा सकते हैं। किसी भी सामान्य एडमिन अथवा भक्त द्वारा पहले टोकन बनाना प्रतिबंधित है।"
+                "error" => "⚠️ मंगलवार बुलन्दशहर दरबार टोकन सेवा वर्तमान में विश्राम पर है。\n\nटोकन केवल मंगलवार प्रातः 8:00 बजे से सायं 5:00 बजे तक ही बनाए जा सकते हैं। किसी भी सामान्य एडमिन अथवा भक्त द्वारा पहले टोकन बनाना प्रतिबंधित है।"
             ], JSON_UNESCAPED_UNICODE);
             exit;
         }
@@ -360,9 +366,14 @@ if (!$isSuperAdmin) {
         $isSundayOpen = ($tokenServiceMode === 'FORCE_OPEN') || 
             ($tokenServiceMode === 'AUTO_SUNDAY' && $dayOfWeek === 0 && $currentMinutes >= $startMinutes && $currentMinutes < $endMinutes);
 
-        // Fail-safe: In AUTO_SUNDAY mode on Sunday during darbar hours, Darbar is active by schedule
-        if ($isSundayOpen && $tokenServiceMode === 'AUTO_SUNDAY') {
+        // Tatkal (FORCE_OPEN) mode activation & fail-safe for AUTO_SUNDAY:
+        if ($tokenServiceMode === 'FORCE_OPEN') {
+            $isSundayOpen = true;
             $isDarbarActive = true;
+            $isTokenServiceEnabled = true;
+        } elseif ($isSundayOpen && $tokenServiceMode === 'AUTO_SUNDAY') {
+            $isDarbarActive = true;
+            $isTokenServiceEnabled = true;
         }
 
         if (!$isTokenServiceEnabled || !$isDarbarActive || $tokenServiceMode === 'FORCE_CLOSED' || !$isSundayOpen) {

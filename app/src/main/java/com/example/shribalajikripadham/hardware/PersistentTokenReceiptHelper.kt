@@ -127,4 +127,40 @@ object PersistentTokenReceiptHelper {
             null
         }
     }
+
+    /**
+     * Deletes persistent receipt when a single token is deleted by Admin.
+     */
+    fun deleteReceipt(deviceId: String, darbarDate: String) {
+        try {
+            val folder = getReceiptsFolder() ?: return
+            val prefix = deviceId.take(16)
+            val safeDate = darbarDate.replace(" ", "_").replace("/", "_").replace("-", "_")
+            val file = File(folder, "token_${safeDate}_${prefix}.json")
+            if (file.exists()) file.delete()
+            val matching = folder.listFiles { f ->
+                f.isFile && f.name.startsWith("token_") && (f.name.contains(prefix) || f.name.contains(safeDate))
+            }
+            matching?.forEach { it.delete() }
+        } catch (_: Exception) {}
+    }
+
+    /**
+     * Permanently wipes all persistent token receipts across all dates (Master Wipe).
+     */
+    fun clearAllReceipts(context: Context? = null) {
+        try {
+            val folder = getReceiptsFolder() ?: return
+            folder.listFiles { f -> f.isFile && f.name.startsWith("token_") }?.forEach {
+                it.delete()
+            }
+            if (context != null) {
+                try {
+                    context.getSharedPreferences("sbkd_devotee_my_token_prefs", Context.MODE_PRIVATE)
+                        .edit().clear().apply()
+                } catch (_: Exception) {}
+            }
+        } catch (_: Exception) {}
+    }
 }
+

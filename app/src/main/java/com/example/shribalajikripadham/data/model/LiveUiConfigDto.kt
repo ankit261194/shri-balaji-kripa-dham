@@ -41,6 +41,7 @@ data class AshramDetailsConfigDto(
 
 data class ServicesConfigDto(
     val isTokenServiceEnabled: Boolean = true,
+    val tokenServiceMode: String = "AUTO_SUNDAY",
     val isYatraServiceEnabled: Boolean = false,
     val isLiveCounterVisible: Boolean = true,
     val isEventsVisible: Boolean = true,
