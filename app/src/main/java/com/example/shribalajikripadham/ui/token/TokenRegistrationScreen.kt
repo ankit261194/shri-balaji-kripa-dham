@@ -291,7 +291,7 @@ fun TokenRegistrationScreen(
         }
     }
 
-    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
@@ -809,7 +809,6 @@ fun TokenRegistrationScreen(
                             titleText = if (isHindi) "टोकन पंजीकरण पूर्व-निर्धारित है" else "Token Registration Scheduled",
                             descText = if (isHindi) scheduleState.messageHindi else scheduleState.messageEnglish
                         )
-                        else -> ScheduleBannerVisual(Color.White, Color.Gray, "ℹ️", "", "")
                     }
                     val (bannerBg, borderCol, iconText, titleText, descText) = visual
 

@@ -329,7 +329,7 @@ fun SuperIdCardStudioTab(
                                 readOnly = true,
                                 label = { Text("सूचीबद्ध सेवादारों में से चुनें") },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isSevadarDropdownExpanded) },
-                                modifier = Modifier
+                                modifier = @Suppress("DEPRECATION") Modifier
                                     .menuAnchor()
                                     .fillMaxWidth()
                             )
@@ -427,7 +427,7 @@ fun SuperIdCardStudioTab(
                                 onClick = {
                                     scope.launch {
                                         val rotated = DevoteePhotoHelper.rotateSavedPhoto(context, photoUri, 90f)
-                                        if (rotated != null) {
+                                        if (rotated.isNotBlank()) {
                                             photoUri = rotated
                                             Toast.makeText(context, "🔄 फोटो 90° घुमाई गई", Toast.LENGTH_SHORT).show()
                                         }
@@ -478,6 +478,7 @@ fun SuperIdCardStudioTab(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     // Front / Back Tab Switcher
+                    @Suppress("DEPRECATION")
                     TabRow(
                         selectedTabIndex = previewSideTab,
                         containerColor = Color(0xFFF5F5F5),

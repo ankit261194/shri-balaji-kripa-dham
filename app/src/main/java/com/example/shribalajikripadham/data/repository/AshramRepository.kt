@@ -1233,7 +1233,6 @@ class AshramRepository(context: Context) {
 
         val finalPhotoUri = if (photoUri.startsWith("http://") || photoUri.startsWith("https://")) photoUri else ""
 
-        var centralTokenNumber: Int? = null
         var centralOk = false
         var centralNum = -1
         try {
@@ -1264,26 +1263,14 @@ class AshramRepository(context: Context) {
             e.printStackTrace()
         }
 
-        if (customTokenNumber == null || customTokenNumber <= 0) {
-            if (!centralOk || centralNum <= 0) {
-                val srvErr = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.lastIssueErrorMessage
-                if (!srvErr.isNullOrBlank()) {
-                    throw SecurityException(srvErr)
-                }
-                throw IllegalStateException("⚠️ नेटवर्क विलंब (Timeout): सेंट्रल सर्वर से टोकन नंबर प्राप्त नहीं हो सका। कृपया 5 सेकंड प्रतीक्षा करके पुनः प्रयास करें।")
-            } else {
-                centralTokenNumber = centralNum
+        if (!centralOk || centralNum <= 0) {
+            val srvErr = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.lastIssueErrorMessage
+            if (!srvErr.isNullOrBlank()) {
+                throw SecurityException(srvErr)
             }
-        } else {
-            if (!centralOk || centralNum <= 0) {
-                val srvErr = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.lastIssueErrorMessage
-                if (!srvErr.isNullOrBlank()) {
-                    throw SecurityException(srvErr)
-                }
-                throw IllegalStateException("⚠️ नेटवर्क विलंब (Timeout): सेंट्रल सर्वर से टोकन नंबर प्राप्त नहीं हो सका। कृपया 5 सेकंड प्रतीक्षा करके पुनः प्रयास करें।")
-            }
-            centralTokenNumber = centralNum
+            throw IllegalStateException("⚠️ नेटवर्क विलंब (Timeout): सेंट्रल सर्वर से टोकन नंबर प्राप्त नहीं हो सका। कृपया 5 सेकंड प्रतीक्षा करके पुनः प्रयास करें।")
         }
+        val centralTokenNumber = centralNum
 
         // Strict Thread & Atomic SQLite Lock to eliminate Token Race Conditions
         synchronized(tokenGenerationLock) {
@@ -1308,23 +1295,8 @@ class AshramRepository(context: Context) {
                     // If replacing a previously cancelled token with this number, remove old entry
                     db.delete("tokens", "(darbar_date = ? OR darbar_date = ?) AND token_number = ? AND status = 'CANCELLED'", arrayOf(today, targetDarbarDate, customTokenNumber.toString()))
                     customTokenNumber
-                } else if (centralTokenNumber != null && centralTokenNumber > 0) {
-                    centralTokenNumber
                 } else {
-                    val maxTokenCursor = db.rawQuery(
-                        "SELECT MAX(token_number) FROM tokens WHERE darbar_date = ? OR darbar_date = ?",
-                        arrayOf(today, targetDarbarDate)
-                    )
-                    var num = 1
-                    if (maxTokenCursor.moveToFirst() && !maxTokenCursor.isNull(0)) {
-                        num = maxTokenCursor.getInt(0) + 1
-                    }
-                    maxTokenCursor.close()
-                    // Public tokens must skip VIP slots [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
-                    while (num <= 20 && num % 2 == 0) {
-                        num++
-                    }
-                    num
+                    centralTokenNumber
                 }
 
                 val tokenValues = ContentValues().apply {
@@ -1438,26 +1410,6 @@ class AshramRepository(context: Context) {
                 com.example.shribalajikripadham.data.network.GoogleSheetTokenSyncManager.postTokenToSheet(appContext, createdToken)
             } catch (e: Exception) {}
 
-            // 🌐 Real-Time Hostinger Sync (Ensures MySQL has this token even if generated offline or via custom token)
-            if (centralTokenNumber == null) {
-                try {
-                    com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.issueCentralToken(
-                        patientName = createdToken.patientName,
-                        phoneNumber = createdToken.phoneNumber,
-                        city = createdToken.city,
-                        deviceId = createdToken.deviceId,
-                        latitude = createdToken.latitude,
-                        longitude = createdToken.longitude,
-                        distanceKm = createdToken.distanceKm.toDouble(),
-                        photoUrl = createdToken.photoUri,
-                        registeredBy = createdToken.registeredBy,
-                        originAddress = createdToken.originAddress,
-                        destinationAddress = createdToken.destinationAddress,
-                        darbarDate = createdToken.darbarDate,
-                        canIssueAnytime = shouldBypassGeofence || (isAdminDesk && (bypassGeofence || settings.allowAdminReservedTokens))
-                    )
-                } catch (e: Exception) {}
-            }
 
             // 🌐 Central Devotee Profile Sync (Saves contact to registry for cross-device lookup)
             try {

@@ -219,7 +219,7 @@ fun AntigravityStudioTab(
             "☁️ डिप्लॉयर",
             "🔓 अनब्लॉकर"
         )
-        ScrollableTabRow(
+        PrimaryScrollableTabRow(
             selectedTabIndex = selectedStudioTabIndex,
             containerColor = Color(0xFF1E293B),
             contentColor = Color(0xFF60A5FA),

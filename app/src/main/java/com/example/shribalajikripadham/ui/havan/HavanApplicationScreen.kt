@@ -67,7 +67,7 @@ fun HavanApplicationScreen(
 
     val dynamicCost = if (settings.havanEstimatedCost > 0) settings.havanEstimatedCost else 14000
     val formattedCost = remember(dynamicCost) {
-        java.text.NumberFormat.getIntegerInstance(java.util.Locale("en", "IN")).format(dynamicCost)
+        java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("en-IN")).format(dynamicCost)
     }
 
     Scaffold(

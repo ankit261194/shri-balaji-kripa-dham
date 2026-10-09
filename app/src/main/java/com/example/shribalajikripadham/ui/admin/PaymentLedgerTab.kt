@@ -788,7 +788,7 @@ private fun PaymentCard(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Divider(color = Color(0xFFF5F5F5))
+            HorizontalDivider(color = Color(0xFFF5F5F5))
             Spacer(modifier = Modifier.height(4.dp))
 
             // Bottom Actions

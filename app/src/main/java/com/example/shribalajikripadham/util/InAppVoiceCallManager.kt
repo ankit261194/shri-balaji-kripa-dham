@@ -81,6 +81,7 @@ object InAppVoiceCallManager {
         try {
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
             audioManager?.mode = AudioManager.MODE_IN_COMMUNICATION
+            @Suppress("DEPRECATION")
             audioManager?.isSpeakerphoneOn = true
         } catch (e: Exception) {
             Log.w(TAG, "Audio manager setup warning: ${e.message}")
@@ -328,6 +329,7 @@ object InAppVoiceCallManager {
         isSpeakerOn = !isSpeakerOn
         try {
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+            @Suppress("DEPRECATION")
             audioManager?.isSpeakerphoneOn = isSpeakerOn
         } catch (ignored: Exception) {}
         return isSpeakerOn
@@ -403,6 +405,7 @@ object InAppVoiceCallManager {
         try {
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
             audioManager?.mode = AudioManager.MODE_NORMAL
+            @Suppress("DEPRECATION")
             audioManager?.isSpeakerphoneOn = false
             audioManager?.isMicrophoneMute = false
         } catch (ignored: Exception) {}

@@ -66,7 +66,7 @@ object TuesdayTokenScheduleHelper {
     }
 
     fun formatNextTuesdayDateHindi(nextTuesday: Calendar): String {
-        val sdf = SimpleDateFormat("dd MMMM yyyy", Locale("hi", "IN"))
+        val sdf = SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("hi-IN"))
         return sdf.format(nextTuesday.time)
     }
 

@@ -102,7 +102,7 @@ fun GoogleSheetLedgerTab(
                     Text(text = "☁️", fontSize = 28.sp)
                 }
 
-                Divider(color = AmberGold.copy(alpha = 0.5f), thickness = 1.dp)
+                HorizontalDivider(color = AmberGold.copy(alpha = 0.5f), thickness = 1.dp)
 
                 // 3 Cloud indicators
                 Row(

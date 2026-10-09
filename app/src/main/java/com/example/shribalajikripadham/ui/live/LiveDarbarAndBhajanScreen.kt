@@ -190,7 +190,7 @@ fun LiveDarbarAndBhajanScreen(
                 .padding(innerPadding)
         ) {
             // Tab Selector
-            TabRow(
+            PrimaryTabRow(
                 selectedTabIndex = selectedTabIndex,
                 containerColor = MaroonPrimary.copy(alpha = 0.95f),
                 contentColor = Color.White

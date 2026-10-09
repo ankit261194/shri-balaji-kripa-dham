@@ -283,7 +283,7 @@ object SacredParchaPdfGenerator {
             isAntiAlias = true
             textAlign = Paint.Align.CENTER
         }
-        val genDate = SimpleDateFormat("dd MMMM yyyy, hh:mm a", Locale("hi", "IN")).format(Date())
+        val genDate = SimpleDateFormat("dd MMMM yyyy, hh:mm a", Locale.forLanguageTag("hi-IN")).format(Date())
         canvas.drawText("श्री बालाजी कृपा धाम, डूँगरा जाट | निःशुल्क जनसेवा | प्रिंट समय: $genDate", PAGE_WIDTH / 2f, footerY + 12f, footerMetaPaint)
 
         pdfDoc.finishPage(page)

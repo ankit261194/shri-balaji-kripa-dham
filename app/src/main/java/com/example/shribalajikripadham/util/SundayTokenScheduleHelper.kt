@@ -66,7 +66,7 @@ object SundayTokenScheduleHelper {
     }
 
     fun formatNextSundayDateHindi(nextSunday: Calendar): String {
-        val sdf = SimpleDateFormat("dd MMMM yyyy", Locale("hi", "IN"))
+        val sdf = SimpleDateFormat("dd MMMM yyyy", Locale.forLanguageTag("hi-IN"))
         return sdf.format(nextSunday.time)
     }
 
@@ -281,7 +281,7 @@ object SundayTokenScheduleHelper {
         val minutesRemaining = Math.max(1, Math.round(peopleAhead * averageMinutesPerToken).toInt())
         val etaCal = Calendar.getInstance()
         etaCal.add(Calendar.MINUTE, minutesRemaining)
-        val timeFmt = SimpleDateFormat("hh:mm a", Locale("hi", "IN"))
+        val timeFmt = SimpleDateFormat("hh:mm a", Locale.forLanguageTag("hi-IN"))
         val etaTimeStr = timeFmt.format(etaCal.time)
 
         return QueueEtaResult(

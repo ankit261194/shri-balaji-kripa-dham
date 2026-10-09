@@ -363,7 +363,7 @@ fun DharamshalaBookingScreen(
                 shadowElevation = 2.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                TabRow(
+                PrimaryTabRow(
                     selectedTabIndex = activeTab,
                     containerColor = Color.White,
                     contentColor = MaroonAccent

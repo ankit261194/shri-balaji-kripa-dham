@@ -77,7 +77,7 @@ object SmartTokenAlertHelper {
             try {
                 tts = TextToSpeech(context.applicationContext) { status ->
                     if (status == TextToSpeech.SUCCESS) {
-                        val result = tts?.setLanguage(Locale("hi", "IN"))
+                        val result = tts?.setLanguage(Locale.forLanguageTag("hi-IN"))
                         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                             tts?.setLanguage(Locale.getDefault())
                         }

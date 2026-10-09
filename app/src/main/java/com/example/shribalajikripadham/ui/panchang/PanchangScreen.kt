@@ -387,7 +387,7 @@ fun PanchangScreen(
                         )
 
                         // Day / Night Toggle
-                        TabRow(
+                        PrimaryTabRow(
                             selectedTabIndex = selectedChoghadiyaTab,
                             modifier = Modifier
                                 .width(170.dp)

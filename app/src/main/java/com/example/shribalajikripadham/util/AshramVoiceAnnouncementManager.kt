@@ -746,7 +746,7 @@ object AshramVoiceAnnouncementManager {
         val appContext = context.applicationContext
         tts = TextToSpeech(appContext) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val hindiLocale = Locale("hi", "IN")
+                val hindiLocale = Locale.forLanguageTag("hi-IN")
                 val res = tts?.setLanguage(hindiLocale)
                 if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
                     tts?.language = Locale.getDefault()
@@ -1576,7 +1576,7 @@ object AshramVoiceAnnouncementManager {
 
     fun isHindiLanguageAvailable(): Boolean {
         return try {
-            val res = tts?.isLanguageAvailable(Locale("hi", "IN")) ?: TextToSpeech.LANG_NOT_SUPPORTED
+            val res = tts?.isLanguageAvailable(Locale.forLanguageTag("hi-IN")) ?: TextToSpeech.LANG_NOT_SUPPORTED
             res >= TextToSpeech.LANG_AVAILABLE
         } catch (e: Exception) {
             false

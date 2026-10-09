@@ -8988,7 +8988,7 @@ fun SevadarManagementTab(
                                 )
                             }
                         }
-                    } else if (isCallerSubAdmin && a.role == AdminRole.SUB_ADMIN && a.id != loggedInAdmin?.id) {
+                    } else if (isCallerSubAdmin && a.role == AdminRole.SUB_ADMIN && a.id != loggedInAdmin.id) {
                         Surface(
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                             color = Color(0xFFEDE7F6),
@@ -9417,7 +9417,6 @@ fun PublicServiceMatrixTab(
                         "🔴 सुपर एडमिन द्वारा टोकन सेवा बंद रखी गई है (Force Closed)"
                     else
                         "🔴 Token Service Disabled by SuperAdmin"
-                    else -> if (isHindi) "🟢 सामान्य स्थिति" else "🟢 Normal"
                 }
 
                 Surface(
@@ -9719,7 +9718,7 @@ fun PublicServiceMatrixTab(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-                Divider(color = Color(0xFFE0E0E0))
+                HorizontalDivider(color = Color(0xFFE0E0E0))
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(

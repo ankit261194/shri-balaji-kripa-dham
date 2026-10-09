@@ -45,9 +45,9 @@ object SacredOfflineVaniEngine : TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            val result = tts?.setLanguage(Locale("hi", "IN"))
+            val result = tts?.setLanguage(Locale.forLanguageTag("hi-IN"))
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                tts?.setLanguage(Locale("hi"))
+                tts?.setLanguage(Locale.forLanguageTag("hi"))
             }
             tts?.setSpeechRate(0.88f) // Reverent, serene devotional recitation tempo
             tts?.setPitch(0.95f)
@@ -69,7 +69,12 @@ object SacredOfflineVaniEngine : TextToSpeech.OnInitListener {
                     }
                 }
 
+                @Deprecated("Deprecated in Java")
                 override fun onError(utteranceId: String?) {
+                    _isReciting.value = false
+                }
+
+                override fun onError(utteranceId: String?, errorCode: Int) {
                     _isReciting.value = false
                 }
             })

@@ -397,9 +397,13 @@ object IndiaLocationsDatabase {
 
                             val village = addr?.optString("village", "").orEmpty()
                             val hamlet = addr?.optString("hamlet", "").orEmpty()
-                            val suburb = addr?.optString("suburb", addr?.optString("neighbourhood", "")).orEmpty()
-                            val town = addr?.optString("town", addr?.optString("city", "")).orEmpty()
-                            val district = addr?.optString("state_district", addr?.optString("county", addr?.optString("district", ""))).orEmpty()
+                            val suburb = (addr?.optString("suburb")?.takeIf { it.isNotBlank() }
+                                ?: addr?.optString("neighbourhood")).orEmpty()
+                            val town = (addr?.optString("town")?.takeIf { it.isNotBlank() }
+                                ?: addr?.optString("city")).orEmpty()
+                            val district = (addr?.optString("state_district")?.takeIf { it.isNotBlank() }
+                                ?: addr?.optString("county")?.takeIf { it.isNotBlank() }
+                                ?: addr?.optString("district")).orEmpty()
                             val state = addr?.optString("state", "भारत") ?: "भारत"
                             val type = obj.optString("type", "स्थान")
 

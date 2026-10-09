@@ -121,7 +121,7 @@ fun DevoteeQueryDialog(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Tabs: New Query vs My Queries
-                TabRow(
+                PrimaryTabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = Color(0xFFF5F5F5),
                     contentColor = MaroonPrimary
@@ -377,7 +377,7 @@ fun DevoteeQueryDialog(
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 items(myQueries) { q ->
-                                    val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale("hi", "IN"))
+                                    val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.forLanguageTag("hi-IN"))
                                     val dateStr = try { sdf.format(Date(q.createdAt)) } catch (e: Exception) { "" }
 
                                     Card(

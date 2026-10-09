@@ -1532,7 +1532,7 @@ fun FaceTokenRegistrationScreen(
                                                 isEmbeddingAutoUpdated = updated
                                                 scanState = FaceScanState.TOKEN_GENERATED
                                                 try {
-                                                    val phoneToRegister = token?.phoneNumber ?: match.profile.phoneNumber
+                                                    val phoneToRegister = token.phoneNumber.ifBlank { match.profile.phoneNumber }
                                                     com.example.shribalajikripadham.notification.AshramFirebaseMessagingService.registerDevoteePhone(context, phoneToRegister)
                                                 } catch (e: Exception) {}
                                             } catch (e: SecurityException) {

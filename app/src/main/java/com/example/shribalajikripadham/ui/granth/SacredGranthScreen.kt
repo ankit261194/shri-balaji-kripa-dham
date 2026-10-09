@@ -210,7 +210,7 @@ fun SacredGranthScreen(
                 .padding(innerPadding)
         ) {
             // 1. GRANTH SELECTION TABS
-            ScrollableTabRow(
+            PrimaryScrollableTabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = selectedTheme.cardColor,
                 contentColor = MaroonPrimary,

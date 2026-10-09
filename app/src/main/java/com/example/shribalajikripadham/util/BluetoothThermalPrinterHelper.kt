@@ -3,6 +3,7 @@ package com.example.shribalajikripadham.util
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.pm.PackageManager
@@ -55,7 +56,8 @@ object BluetoothThermalPrinterHelper {
     fun getPairedDevices(context: Context): List<BluetoothDevice> {
         return try {
             if (!hasBluetoothPermission(context)) return emptyList()
-            val adapter = BluetoothAdapter.getDefaultAdapter() ?: return emptyList()
+            val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
+            val adapter = manager?.adapter ?: @Suppress("DEPRECATION") BluetoothAdapter.getDefaultAdapter() ?: return emptyList()
             if (!adapter.isEnabled) return emptyList()
             adapter.bondedDevices?.toList() ?: emptyList()
         } catch (e: Exception) {
@@ -72,6 +74,7 @@ object BluetoothThermalPrinterHelper {
         var socket: BluetoothSocket? = null
         var outputStream: OutputStream? = null
         try {
+            @Suppress("DEPRECATION")
             val adapter = BluetoothAdapter.getDefaultAdapter()
             adapter?.cancelDiscovery()
 

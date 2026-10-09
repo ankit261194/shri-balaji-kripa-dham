@@ -511,7 +511,7 @@ object HostingerCentralSyncManager {
                 val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
                 val json = JSONObject(resp)
                 if (json.optBoolean("success", false)) {
-                    return@withContext json.optString("photo_url", null)
+                    return@withContext if (json.has("photo_url") && !json.isNull("photo_url")) json.optString("photo_url") else null
                 }
             }
             null
@@ -2268,7 +2268,7 @@ object HostingerCentralSyncManager {
                 val resp = conn.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
                 val json = JSONObject(resp)
                 if (json.optBoolean("success", false)) {
-                    return@withContext json.optString("audio_url", null)
+                    return@withContext if (json.has("audio_url") && !json.isNull("audio_url")) json.optString("audio_url") else null
                 }
             }
             null

@@ -86,7 +86,7 @@ fun AshramHallDisplayScreen(
 
     // Clock ticker (every second)
     LaunchedEffect(Unit) {
-        val sdf = SimpleDateFormat("hh:mm:ss a • EEEE, d MMMM yyyy", Locale("hi", "IN"))
+        val sdf = SimpleDateFormat("hh:mm:ss a • EEEE, d MMMM yyyy", Locale.forLanguageTag("hi-IN"))
         while (isActive) {
             currentTimeString = sdf.format(Date())
             delay(1000)

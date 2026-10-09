@@ -744,6 +744,7 @@ fun Camera2PreviewView(
                                                 previewRequestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF)
                                             }
 
+                                            @Suppress("DEPRECATION")
                                             camera.createCaptureSession(
                                                 listOf(surface),
                                                 object : CameraCaptureSession.StateCallback() {

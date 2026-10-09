@@ -158,7 +158,7 @@ object BusTicketPdfGenerator {
         }
 
         val bookingId = "SBKD-BUS-${System.currentTimeMillis().toString().takeLast(6)}"
-        val issueTime = SimpleDateFormat("dd MMMM yyyy, hh:mm a", Locale("hi", "IN")).format(Date())
+        val issueTime = SimpleDateFormat("dd MMMM yyyy, hh:mm a", Locale.forLanguageTag("hi-IN")).format(Date())
 
         // Meta Column 1
         canvas.drawText("बुकिंग आईडी (Booking ID):", MARGIN + 22f, currentY + 18f, metaLabelPaint)

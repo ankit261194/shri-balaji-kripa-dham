@@ -323,7 +323,7 @@ object StatusPosterGenerator {
             textSize = 27f
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
-        val dateStr = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale("hi", "IN")).format(Date())
+        val dateStr = SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.forLanguageTag("hi-IN")).format(Date())
         canvas.drawText("॥ ${todayTheme.daySubtitle} ॥", width / 2f, 875f, textPaint)
 
         textPaint.apply {

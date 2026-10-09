@@ -243,7 +243,7 @@ fun BusLedgerTab(
         Spacer(modifier = Modifier.height(10.dp))
 
         // VIEW TABS (Seat Map vs Passenger Ledger vs Pending Approvals)
-        TabRow(
+        PrimaryTabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color(0xFFFFF3E0),
             contentColor = MaroonPrimary
@@ -733,7 +733,7 @@ fun BusLedgerTab(
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
-                    Divider(color = Color(0xFFEEEEEE))
+                    HorizontalDivider(color = Color(0xFFEEEEEE))
                     Spacer(modifier = Modifier.height(10.dp))
 
                     DetailItem(if (isHindi) "यात्री का नाम" else "Passenger Name", s.passengerName)
@@ -1496,7 +1496,7 @@ private fun PassengerCard(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Divider(color = Color(0xFFF5F5F5))
+            HorizontalDivider(color = Color(0xFFF5F5F5))
             Spacer(modifier = Modifier.height(6.dp))
 
             Row(
