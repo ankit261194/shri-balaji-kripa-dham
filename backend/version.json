@@ -1,11 +1,9 @@
 {
-  "latest_version_code": 162,
-  "version_code": 162,
-  "latest_version_name": "2.75.0",
-  "version_name": "2.75.0",
-  "update_notes_hindi": "v2.75.0 (Build 162): 🎨 MI-स्टाइल 360° पावन एवं दिव्य थीम इंजन: 4 अद्वितीय पावन थीम्स — 🇮🇳 राष्ट्र ध्वज तिरंगा, 🪔 दिव्य दीपावली, 🦁 शेरावाली मैया (माँ दुर्गा), और 🚩 वीर बजरंगी हनुमान जी (संकट मोचन)। संपूर्ण ऐप (भक्त पैनल, टोकन पर्ची, साइडबार, सेवादार व सुपर एडमिन कंट्रोल पैनल) का पूर्ण कायापलट एवं सुपर एडमिन अखिल भारतीय उत्सव थीम प्रसारण सुविधा।",
-  "update_notes_english": "v2.75.0 (Build 162): MI-Style 360° Sacred Theme Engine with 4 Divine Sacred Themes (Tiranga National Pride, Divya Deepawali, Sherawali Maiya, Veer Hanuman Ji) across Devotee and Admin panels with Cloud Festival Broadcast.",
+  "versionCode": 164,
+  "versionName": "2.77.0",
+  "apkUrl": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
-  "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
-  "is_force_update": true
+  "apkSize": "80.8 MB",
+  "releaseNotes": "1. 12 पावन थीम्स (शेरावाली मैया, दीपावली, वीर हनुमान, आदि) के दिव्य रूप, विशिष्ट देव-प्रतीक व पावन मंत्र\n2. अलौकिक दर्शन का पूर्ण चित्र (JPEG फ़ाइल) शेयरिंग\n3. दर्शन व्यूज वास्तविक व स्थिर\n4. दरबार लाइव केवल रविवार टोकन वितरण समय पर लाइव\n5. सभी कृत्रिम ऑडियो हटाकर केवल 100% प्रामाणिक पारंपरिक आरतियाँ व चालीसा",
+  "forceUpdate": false
 }

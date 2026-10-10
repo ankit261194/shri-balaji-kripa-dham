@@ -76,6 +76,7 @@ fun HomeScreen(
     var selectedTab by remember { mutableStateOf(ProHomeTab.DARSHAN) }
     var viewingLyricsTrack by remember { mutableStateOf<SacredTrack?>(null) }
     var showSevadarHelpdesk by remember { mutableStateOf(false) }
+    var showThemeChooserDialog by remember { mutableStateOf(false) }
     var currentTimeMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var updateAvailableInfo by remember { mutableStateOf<AppUpdateManager.OnlineUpdateInfo?>(null) }
     var isDownloadingUpdate by remember { mutableStateOf(false) }
@@ -285,6 +286,13 @@ fun HomeScreen(
                 ) {
                     when (selectedTab) {
                         ProHomeTab.DARSHAN -> {
+                            // 0. Dynamic Devotional Theme Aura Banner (Deity Motifs & Sacred Chants)
+                            SacredThemeAuraBanner(
+                                isHindi = isHindi,
+                                currentTheme = currentTheme,
+                                onOpenThemeChooser = { showThemeChooserDialog = true }
+                            )
+
                             // 1. Daily Consecrated Darshan Card (Hero)
                             DailyDarshanHeroCard(
                                 isHindi = isHindi,
@@ -665,6 +673,19 @@ fun HomeScreen(
         com.example.shribalajikripadham.ui.feedback.SevadarHelpdeskDialog(
             isHindi = isHindi,
             onDismiss = { showSevadarHelpdesk = false }
+        )
+    }
+
+    // Sacred Theme Chooser Dialog
+    if (showThemeChooserDialog) {
+        com.example.shribalajikripadham.ui.theme.SacredThemeChooserDialog(
+            currentTheme = currentTheme,
+            isHindi = isHindi,
+            onThemeSelected = { newTheme ->
+                onThemeChanged(newTheme)
+                showThemeChooserDialog = false
+            },
+            onDismissRequest = { showThemeChooserDialog = false }
         )
     }
 

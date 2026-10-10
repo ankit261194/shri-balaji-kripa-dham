@@ -33,7 +33,8 @@ fun LiveDarbarStatusCard(
     onNavigateToToken: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isDarbarLive = settings.isDarbarActive || settings.isDarbarLiveNow
+    // Strictly LIVE ONLY when tokens are actually being distributed / registration is OPEN
+    val isDarbarLive = scheduleState is SundayScheduleState.Open
 
     Card(
         colors = CardDefaults.cardColors(
@@ -87,7 +88,7 @@ fun LiveDarbarStatusCard(
                             text = if (isDarbarLive) {
                                 if (isHindi) "दरबार लाइव चल रहा है" else "Darbar is LIVE Now"
                             } else {
-                                if (isHindi) "रविवार दरबार स्थिति" else "Sunday Darbar Status"
+                                if (isHindi) "टोकन पंजीकरण अभी बंद है" else "Token Registration Closed"
                             },
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
@@ -98,14 +99,14 @@ fun LiveDarbarStatusCard(
 
                         // Pulse or Status Pill
                         Surface(
-                            color = if (isDarbarLive) Color(0xFFFFCCBC) else Color(0xFFE8F5E9),
+                            color = if (isDarbarLive) Color(0xFFFFCCBC) else Color(0xFFF1F5F9),
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                text = if (isDarbarLive) "LIVE" else "ACTIVE",
+                                text = if (isDarbarLive) "LIVE" else if (scheduleState is SundayScheduleState.CountdownActive) "SOON" else "CLOSED",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = if (isDarbarLive) Color(0xFFBF360C) else Color(0xFF2E7D32),
+                                color = if (isDarbarLive) Color(0xFFBF360C) else Color(0xFF64748B),
                                 modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                             )
                         }
@@ -117,15 +118,17 @@ fun LiveDarbarStatusCard(
                         text = if (isDarbarLive) {
                             val cur = settings.runningTokenNumber
                             if (cur > 0) {
-                                if (isHindi) "वर्तमान सेवा टोकन: #$cur" else "Current Serving Token: #$cur"
+                                if (isHindi) "वर्तमान सेवा टोकन: #$cur • दर्शन जारी" else "Serving Token: #$cur • In Progress"
                             } else {
-                                if (isHindi) "भक्त दर्शन व अर्जी प्रारंभ" else "Darshan & Arzi in Progress"
+                                if (isHindi) "टोकन पंजीकरण खुला है • अर्जी प्रारंभ" else "Token Registration is OPEN"
                             }
                         } else {
                             when (scheduleState) {
-                                is SundayScheduleState.Open -> if (isHindi) "टोकन पंजीकरण खुला है" else "Token Registration is OPEN"
-                                is SundayScheduleState.CountdownActive -> if (isHindi) "टोकन शुरू होने में समय बाकी" else "Registration opening shortly"
-                                else -> if (isHindi) "डूँगरा जाट • प्रत्येक रविवार" else "Dungra Jaat • Every Sunday"
+                                is SundayScheduleState.CountdownActive -> if (isHindi) "टोकन शुरू होने में समय बाकी (${scheduleState.formattedTarget})" else "Opening shortly (${scheduleState.formattedTarget})"
+                                is SundayScheduleState.SundayBeforeStart -> if (isHindi) "आज रविवार प्रातः 8:30 बजे से टोकन खुलेंगे" else "Tokens open today at 8:30 AM"
+                                is SundayScheduleState.SundayClosedEvening -> if (isHindi) "आज का टोकन समय समाप्त • डूँगरा जाट" else "Today's Darbar session closed"
+                                is SundayScheduleState.NonSunday -> if (isHindi) "डूँगरा जाट • प्रत्येक रविवार प्रातः 8:30 से" else "Dungra Jaat • Every Sunday from 8:30 AM"
+                                else -> if (isHindi) "डूँगरा जाट • प्रत्येक रविवार प्रातः 8:30 से" else "Dungra Jaat • Every Sunday from 8:30 AM"
                             }
                         },
                         fontSize = 12.sp,

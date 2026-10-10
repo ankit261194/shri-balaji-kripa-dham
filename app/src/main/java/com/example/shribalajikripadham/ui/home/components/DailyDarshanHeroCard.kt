@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.widget.Toast
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -300,16 +302,72 @@ fun DailyDarshanHeroCard(
 
                 Button(
                     onClick = {
-                        val shareText = if (isHindi) {
-                            "🚩 श्री बालाजी कृपा धाम, डूँगरा जाट 🚩\nआज के पावन अलौकिक दर्शन:\n$photoUrl\n\nआश्रम का आधिकारिक ऐप डाउनलोड करें: https://shribalajikripadham.online/app"
-                        } else {
-                            "🚩 Shri Balaji Kripa Dham, Dungra Jaat 🚩\nToday's Divine Darshan:\n$photoUrl\n\nDownload Official App: https://shribalajikripadham.online/app"
+                        scope.launch(Dispatchers.IO) {
+                            var shareUri: Uri? = null
+                            try {
+                                val cacheFile = File(context.filesDir, "daily_darshan_consecrated.jpg")
+                                val bmpToShare = darshanBitmap ?: if (cacheFile.exists() && cacheFile.length() > 0) {
+                                    BitmapFactory.decodeFile(cacheFile.absolutePath)
+                                } else {
+                                    BitmapFactory.decodeResource(context.resources, R.drawable.app_logo)
+                                }
+
+                                if (bmpToShare != null) {
+                                    val shareDir = File(context.cacheDir, "darshan_shares")
+                                    if (!shareDir.exists()) shareDir.mkdirs()
+                                    val shareFile = File(shareDir, "Darshan_${System.currentTimeMillis()}.jpg")
+                                    FileOutputStream(shareFile).use { fos ->
+                                        bmpToShare.compress(Bitmap.CompressFormat.JPEG, 92, fos)
+                                        fos.flush()
+                                    }
+                                    shareUri = FileProvider.getUriForFile(
+                                        context,
+                                        "${context.packageName}.fileprovider",
+                                        shareFile
+                                    )
+                                }
+                            } catch (e: Exception) {
+                                shareUri = null
+                            }
+
+                            withContext(Dispatchers.Main) {
+                                val shareCaption = if (isHindi) {
+                                    "🚩 *श्री बालाजी कृपा धाम, डूँगरा जाट* 🚩\n" +
+                                    "*परम पूज्य गुरुजी तेजवीर सिंह जी*\n" +
+                                    "══════════════════════════\n" +
+                                    "🌺 *आज का पावन अलौकिक श्रृंगार दर्शन* 🌺\n" +
+                                    "📅 *तिथि:* $darshanDateStr\n" +
+                                    "══════════════════════════\n" +
+                                    "🙏 *भूत-प्रेत व मानसिक समस्याओं का पूर्णतः निःशुल्क इलाज*\n" +
+                                    "📲 *रविवार टोकन व लाइव दर्शन हेतु ऐप:* https://shribalajikripadham.online/app"
+                                } else {
+                                    "🚩 *Shri Balaji Kripa Dham, Dungra Jaat* 🚩\n" +
+                                    "*Param Poojya Guruji Tejveer Singh Ji*\n" +
+                                    "══════════════════════════\n" +
+                                    "🌺 *Today's Divine Alokik Darshan* 🌺\n" +
+                                    "📅 *Date:* $darshanDateStr\n" +
+                                    "══════════════════════════\n" +
+                                    "📲 *Official App:* https://shribalajikripadham.online/app"
+                                }
+
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    if (shareUri != null) {
+                                        type = "image/jpeg"
+                                        putExtra(Intent.EXTRA_STREAM, shareUri)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    } else {
+                                        type = "text/plain"
+                                    }
+                                    putExtra(Intent.EXTRA_TEXT, shareCaption)
+                                    putExtra(Intent.EXTRA_SUBJECT, if (isHindi) "आज का पावन अलौकिक दर्शन" else "Divine Darshan")
+                                }
+                                try {
+                                    context.startActivity(Intent.createChooser(shareIntent, if (isHindi) "अलौकिक दर्शन शेयर करें" else "Share Sacred Darshan"))
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, if (isHindi) "शेयर करने में असमर्थ" else "Unable to share", Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         }
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, shareText)
-                        }
-                        context.startActivity(Intent.createChooser(intent, "दर्शन शेयर करें"))
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = currentTheme.primaryColor),
                     shape = RoundedCornerShape(10.dp),

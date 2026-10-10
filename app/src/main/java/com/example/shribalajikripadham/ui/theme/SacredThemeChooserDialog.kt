@@ -378,13 +378,7 @@ private fun DivineThemeCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = when (theme) {
-                        SacredTheme.TIRANGA -> if (isHindi) "केसरिया शीर्ष • 24-तीलियों का अशोक चक्र • अखंड भारत" else "Saffron header • Ashoka Chakra • India pride"
-                        SacredTheme.DIVYA_DEEPAWALI -> if (isHindi) "मखमली रात्रि • जगमगाते दीपकों की स्वर्णिम आभा" else "Velvet night • Glowing earthen diya aura"
-                        SacredTheme.SHERAWALI_MAIYA -> if (isHindi) "सिन्दूरी लाल चोला • स्वर्णिम गोटा-किनारी • त्रिशूल" else "Crimson Sindoor • Gota-kinari gold • Trishul"
-                        SacredTheme.VEER_HANUMAN -> if (isHindi) "चमेली तेल सिन्दूर • अष्टधातु कांस्य • वज्र सुरक्षा" else "Sindoori Balaji • Antique bronze • Vajra border"
-                        else -> theme.styleNameHindi
-                    },
+                    text = if (isHindi) theme.divineChantHindi.ifBlank { theme.styleNameHindi } else theme.divineChantEnglish,
                     fontSize = 10.8.sp,
                     color = if (theme.isDark) Color(0xFFCBD5E1) else Color(0xFF475569),
                     maxLines = 1,
@@ -392,14 +386,14 @@ private fun DivineThemeCard(
                     modifier = Modifier.weight(1f)
                 )
 
-                if (theme.watermarkText.isNotBlank()) {
+                if (theme.divineMotif.isNotBlank() || theme.watermarkText.isNotBlank()) {
                     Surface(
                         shape = RoundedCornerShape(6.dp),
                         color = theme.primaryColor.copy(alpha = 0.12f),
                         border = BorderStroke(0.6.dp, theme.primaryColor.copy(alpha = 0.3f))
                     ) {
                         Text(
-                            text = "${theme.watermarkIcon} ${theme.watermarkText}",
+                            text = if (theme.divineMotif.isNotBlank()) "${theme.divineMotif.take(4).trim()} ${theme.watermarkText}" else "${theme.watermarkIcon} ${theme.watermarkText}",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = theme.primaryColor,
@@ -471,9 +465,11 @@ private fun PeacefulThemeCard(
                         }
                     }
                     Text(
-                        text = theme.styleBadge,
+                        text = if (isHindi) theme.divineChantHindi.ifBlank { theme.styleBadge } else theme.divineChantEnglish,
                         fontSize = 10.5.sp,
-                        color = if (theme.isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+                        color = if (theme.isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

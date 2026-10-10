@@ -2,7 +2,7 @@ package com.example.shribalajikripadham.data.sacred
 
 /**
  * श्री बालाजी कृपा धाम (डूँगरा जाट) - पावन आरती, भजन एवं संपूर्ण दुर्गा सप्तशती डेटा मॉडल
- * 40 Authentic pre-loaded devotional tracks with 100% complete, unabridged sacred verses.
+ * 34 100% Authentic, Pure Traditional Devotional Tracks (Zero Synthetic/TTS) with 100% complete, unabridged sacred verses.
  * 100% Verified, live high-speed audio streams - Zero dummy links - Zero truncated verses.
  */
 data class SacredTrack(
@@ -20,8 +20,7 @@ data class SacredTrack(
 )
 
 val SACRED_TRACKS: List<SacredTrack> = listOf(
-    SacredTrack(
-        id = 1,
+    SacredTrack(id = 1,
         trackKey = "hanuman_chalisa",
         titleHindi = "श्री हनुमान चालीसा",
         titleEnglish = "Shri Hanuman Chalisa",
@@ -142,8 +141,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         displayOrder = 1,
         youtubeSearchQuery = "Shri Hanuman Chalisa Hariharan Gulshan Kumar"
     ),
-    SacredTrack(
-        id = 2,
+    SacredTrack(id = 2,
         trackKey = "hanuman_aarti",
         titleHindi = "आरती कीजै हनुमान लला की",
         titleEnglish = "Aarti Kije Hanuman Lala Ki",
@@ -193,8 +191,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         displayOrder = 2,
         youtubeSearchQuery = "Aarti Kije Hanuman Lala Ki Hariharan"
     ),
-    SacredTrack(
-        id = 3,
+    SacredTrack(id = 3,
         trackKey = "balaji_aarti",
         titleHindi = "श्री बालाजी महाराज की आरती",
         titleEnglish = "Shri Balaji Maharaj Aarti",
@@ -236,8 +233,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         displayOrder = 3,
         youtubeSearchQuery = "Shri Balaji Maharaj Ki Aarti"
     ),
-    SacredTrack(
-        id = 4,
+    SacredTrack(id = 4,
         trackKey = "sankat_mochan",
         titleHindi = "संकट मोचन हनुमानाष्टक",
         titleEnglish = "Sankat Mochan Hanumanashtak",
@@ -323,8 +319,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         displayOrder = 4,
         youtubeSearchQuery = "Sankat Mochan Hanumanashtak Hariharan"
     ),
-    SacredTrack(
-        id = 5,
+    SacredTrack(id = 5,
         trackKey = "bajrang_baan",
         titleHindi = "श्री बजरंग बाण",
         titleEnglish = "Shri Bajrang Baan",
@@ -413,8 +408,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         displayOrder = 5,
         youtubeSearchQuery = "Shri Bajrang Baan Hariharan"
     ),
-    SacredTrack(
-        id = 6,
+    SacredTrack(id = 6,
         trackKey = "bhairav_aarti",
         titleHindi = "श्री भैरव जी की आरती (सुनो जी भैरव लाडले)",
         titleEnglish = "Shri Bhairav Ladle Aarti",
@@ -457,74 +451,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
         displayOrder = 6,
         youtubeSearchQuery = "Shri Bhairav Dev Aarti"
     ),
-    SacredTrack(
-        id = 7,
-        trackKey = "pretraj_chalisa",
-        titleHindi = "श्री प्रेतराज सरकार की आरती व चालीसा",
-        titleEnglish = "Shri Pretraj Sarkar Aarti & Chalisa",
-        subtitleHindi = "संकट भंजन • दुष्ट दलन • संपूर्ण पाठ",
-        durationText = "6:30",
-        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791441293_a95a78.mp3",
-        lyricsHindi = """॥ श्री प्रेतराज सरकार पावन वंदना व आरती ॥
-जय प्रेतराज कृपालु मेरी अरज अब सुन लीजिये।
-मैं शरण तुम्हारी आ गया, मेरी विपदा को हर लीजिये॥ (ध्रुवपद)
-
-शीश पर मुकुट विराजे, गल मोतियन की माल।
-हाथ में सोटा सोहता, भाल तिलक लाल॥
-दुष्ट दलन पावन प्रभू, संकट हरन दयाल।
-भूत पिशाच थर-थर कांपें, देख रूप विकराल॥
-जय प्रेतराज कृपालु मेरी अरज अब सुन लीजिये...
-
-असुर निकंदन तेज प्रतापी, भक्तन के प्रतिपाला।
-श्री बालाजी संग विराजे, महिमा अति विशाला॥
-चौकी पर प्रभु रूप सुहावे, हाथ खड्ग सोहे।
-दुखियों के सब दुख हरते, त्रिभुवन जन मोहे॥
-जय प्रेतराज कृपालु मेरी अरज अब सुन लीजिये...
-
-बालाजी की सेना के, तुम सेनापति वीर।
-भक्त जनों के काज संवारे, हरे भक्त की पीर॥
-दंड प्रचंड तुम्हारो स्वामी, दुष्टन को संहारे।
-जो जन शरण तुम्हारी आए, तिनके काज संवारे॥
-जय प्रेतराज कृपालु मेरी अरज अब सुन लीजिये...
-
-कंचन थाल कपूर सुहाई, आरती करत पुकारी।
-जय प्रेतराज देव दयाला, विपदा हरो हमारी॥
-आरती जो कोई नर-नारी गावे, मनवांछित फल पावे।
-कहत दास प्रभु शरण तिहारी, यम का भय न सतावे॥
-जय प्रेतराज कृपालु मेरी अरज अब सुन लीजिये।
-मैं शरण तुम्हारी आ गया, मेरी विपदा को हर लीजिये॥
-
-॥ श्री प्रेतराज सरकार चालीसा ॥
-॥ दोहा ॥
-सुमिरि चरण प्रेतराज के, धरम धुरंधर धीर।
-हरहु सकल भव आपदा, मेटहु जन की पीर॥
-
-॥ चौपाई ॥
-जय जय जय प्रेतराज बलिवाना। दुष्ट दलन पावन भगवाना॥
-तुम सुग्रीव राम के दासा। पूरन करहु भक्त अभिलाषा॥
-श्री बालाजी के संग विराजे। चौकी पर प्रभु रूप सुहाजे॥
-भूत पिशाच डाकिनी भागी। तुम्हरी शरण जो प्राणी लागी॥
-रोग दोष सब पल में टारो। कृपा दृष्टि कर भक्त उबारो॥
-जो जन ध्यान धरे मन लाई। ताके संकट देहु मिटाई॥
-जय प्रेतराज देव दयाला। सदा करहु भक्तन प्रतिपाला॥
-असुर निकंदन परम प्रतापी। कांपत थर-थर अधमी पापी॥
-भैरव संग तुम्हारी जोड़ी। महिमा कही न जाय निहोरी॥
-हाथ में सोटा खड्ग विराजे। दुष्ट दलन रण डंका बाजे॥
-जो जन अर्जी धाम लगावे। प्रेतराज ताके कष्ट नशावे॥
-परम पुनीत धाम कल्याणा। डूँगरा जाट महिमा जग जाना॥
-गुरुदेव तेजवीर की बानी। संकट कटे सुखी हो प्राणी॥
-जो यह चालीसा नित ध्यावै। सर्व सुखों का भोग लगावै॥
-पुत्र पौत्र धन धान्य बढ़ावै। अन्त काल प्रभु पद को पावै॥
-
-॥ दोहा ॥
-प्रेतराज सरकार की, जो नित आरती गाय।
-सकल कलेश बिकार मिटें, परमानन्द समायं॥""".trimIndent(),
-        isPublished = true,
-        displayOrder = 7,
-        youtubeSearchQuery = "Shri Pretraj Sarkar Chalisa"
-    ),
-    SacredTrack(
-        id = 8,
+    SacredTrack(id = 7,
         trackKey = "guru_vandana",
         titleHindi = "श्री गुरुदेव जी की आरती",
         titleEnglish = "Shri Gurudev Ji Ki Aarti",
@@ -572,11 +499,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 भव सागर से तरकर, परम गति पावै॥
 ॐ जय जय जय गुरुदेव हरे॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 8,
+        displayOrder = 7,
         youtubeSearchQuery = "Guru Vandana Shloka Anuradha Paudwal"
     ),
-    SacredTrack(
-        id = 9,
+    SacredTrack(id = 8,
         trackKey = "ram_stuti",
         titleHindi = "श्री रामचन्द्र कृपालु भजु मन",
         titleEnglish = "Shri Ram Stuti",
@@ -608,11 +534,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 जानी गौरी अनुकूल सिय हिय हरषु न जाइ कहि।
 मंजुल मंगल मूल बाम अंग फरकन लगे॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 9,
+        displayOrder = 8,
         youtubeSearchQuery = "Shri Ram Chandra Kripalu Bhajman Nitin Mukesh"
     ),
-    SacredTrack(
-        id = 10,
+    SacredTrack(id = 9,
         trackKey = "ganesh_aarti",
         titleHindi = "जय गणेश जय गणेश देवा",
         titleEnglish = "Jai Ganesh Deva",
@@ -637,11 +562,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 जय गणेश, जय गणेश, जय गणेश देवा।
 माता जाकी पार्वती, पिता महादेवा॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 10,
+        displayOrder = 9,
         youtubeSearchQuery = "Jai Ganesh Deva Anuradha Paudwal"
     ),
-    SacredTrack(
-        id = 11,
+    SacredTrack(id = 10,
         trackKey = "durga_aarti",
         titleHindi = "जय अम्बे गौरी (दुर्गा आरती)",
         titleEnglish = "Jai Ambe Gauri",
@@ -686,11 +610,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 जय अम्बे गौरी, मैया जय श्यामा गौरी।
 तुमको निशिदिन ध्यावत, हरि ब्रह्मा शिवरी॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 11,
+        displayOrder = 10,
         youtubeSearchQuery = "Jai Ambe Gauri Anuradha Paudwal"
     ),
-    SacredTrack(
-        id = 12,
+    SacredTrack(id = 11,
         trackKey = "shiv_aarti",
         titleHindi = "ॐ जय शिव ओंकारा",
         titleEnglish = "Om Jai Shiv Omkara",
@@ -726,11 +649,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॐ जय शिव ओंकारा, स्वामी जय शिव ओंकारा।
 ब्रह्मा, विष्णु, सदाशिव, अर्द्धांगी धारा॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 12,
+        displayOrder = 11,
         youtubeSearchQuery = "Om Jai Shiv Omkara Anuradha Paudwal"
     ),
-    SacredTrack(
-        id = 13,
+    SacredTrack(id = 12,
         trackKey = "ramayan_aarti",
         titleHindi = "आरती श्री रामायण जी की",
         titleEnglish = "Aarti Shri Ramayan Ji Ki",
@@ -762,11 +684,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 आरती श्री रामायण जी की।
 कीरति कलित ललित सिय-पी की॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 13,
+        displayOrder = 12,
         youtubeSearchQuery = "Aarti Shri Ramayan Ji Ki"
     ),
-    SacredTrack(
-        id = 14,
+    SacredTrack(id = 13,
         trackKey = "jagdish_aarti",
         titleHindi = "ॐ जय जगदीश हरे",
         titleEnglish = "Om Jai Jagdish Hare",
@@ -805,11 +726,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॐ जय जगदीश हरे, स्वामी जय जगदीश हरे।
 भक्त जनों के संकट, क्षण में दूर करे॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 14,
+        displayOrder = 13,
         youtubeSearchQuery = "Om Jai Jagdish Hare Anuradha Paudwal"
     ),
-    SacredTrack(
-        id = 15,
+    SacredTrack(id = 14,
         trackKey = "laxmi_aarti",
         titleHindi = "ॐ जय लक्ष्मी माता",
         titleEnglish = "Om Jai Lakshmi Mata",
@@ -842,11 +762,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॐ जय लक्ष्मी माता, मैया जय लक्ष्मी माता।
 तुमको निशदिन सेवत, हर विष्णु विधाता॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 15,
+        displayOrder = 14,
         youtubeSearchQuery = "Om Jai Lakshmi Mata Anuradha Paudwal"
     ),
-    SacredTrack(
-        id = 16,
+    SacredTrack(id = 15,
         trackKey = "kunj_bihari_aarti",
         titleHindi = "आरती कुंजबिहारी की",
         titleEnglish = "Aarti Kunj Bihari Ki",
@@ -879,70 +798,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 कहत दास बलिहारी की, श्री गिरिधर कृष्ण मुरारी की॥
 आरती कुंजबिहारी की, श्री गिरिधर कृष्ण मुरारी की॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 16,
+        displayOrder = 15,
         youtubeSearchQuery = "Aarti Kunj Bihari Ki Hariharan"
     ),
-    SacredTrack(
-        id = 17,
-        trackKey = "khatu_shyam_aarti",
-        titleHindi = "ॐ जय श्री श्यामा हरे",
-        titleEnglish = "Om Jai Shri Shyama Hare",
-        subtitleHindi = "खाटू श्याम जी की पावन आरती",
-        durationText = "5:00",
-        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791441343_136194.mp3",
-        lyricsHindi = """ॐ जय श्री श्यामा हरे, बाबा जय श्री श्यामा हरे।
-खाटू धाम विराजत, अनुपम रूप धरे॥ ॐ जय श्री श्यामा हरे... (ध्रुवपद)
-
-रतन जड़ित सिंहासन, अद्भुत छवि सोहे।
-मोदक भोग लगत हैं, सुर-मुनि मन मोहे॥ ॐ जय श्री श्यामा हरे...
-
-गले वैजयंती माला, शीश मुकुट साजे।
-कानन कुंडल झलकत, नूपुर पग बाजे॥ ॐ जय श्री श्यामा हरे...
-
-तीन बाण के धारी, शीश के दानी।
-कलयुग में अवतारी, महिमा जग जानी॥ ॐ जय श्री श्यामा हरे...
-
-हारे के सहारे, लखदातार कहाए।
-जो जन शरण तिहारी, संकट मिट जाए॥ ॐ जय श्री श्यामा हरे...
-
-आरती जो कोई गावे, प्रेम सहित ध्यावे।
-कहत श्याम जन सेवक, मनवांछित फल पावे॥
-ॐ जय श्री श्यामा हरे, बाबा जय श्री श्यामा हरे।
-खाटू धाम विराजत, अनुपम रूप धरे॥""".trimIndent(),
-        isPublished = true,
-        displayOrder = 17,
-        youtubeSearchQuery = "Om Jai Shri Shyama Hare Aarti"
-    ),
-    SacredTrack(
-        id = 18,
-        trackKey = "satyanarayan_aarti",
-        titleHindi = "जय लक्ष्मी रमणा",
-        titleEnglish = "Jai Lakshmi Ramana",
-        subtitleHindi = "श्री सत्यनारायण जी की पावन आरती",
-        durationText = "4:30",
-        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791441351_3ee6b3.mp3",
-        lyricsHindi = """जय लक्ष्मी रमणा, स्वामी जय लक्ष्मी रमणा।
-सत्यनारायण स्वामी, जन पातक हरणा॥ ॐ जय लक्ष्मी रमणा... (ध्रुवपद)
-
-रत्न जड़ित सिंहासन, अद्भुत छबि राजै।
-नारद करत निराजन, घण्टा धुनि बाजै॥ ॐ जय लक्ष्मी रमणा...
-
-प्रकट भये कलि कारण, द्विज को दरश दियो।
-बूढ़ो ब्राह्मण बनके, कंचन महल कियो॥ ॐ जय लक्ष्मी रमणा...
-
-दुर्बल भील कठौता, जिन पर कृपा करी।
-लीन्यो भक्ति भाव बस, सम्पति अमित भरी॥ ॐ जय लक्ष्मी रमणा...
-
-सत्यनारायण जी की आरती, जो कोई नर गावै।
-कहत शिवानन्द स्वामी, मनवांछित फल पावै॥
-जय लक्ष्मी रमणा, स्वामी जय लक्ष्मी रमणा।
-सत्यनारायण स्वामी, जन पातक हरणा॥""".trimIndent(),
-        isPublished = true,
-        displayOrder = 18,
-        youtubeSearchQuery = "Jai Lakshmi Ramana Anuradha Paudwal"
-    ),
-    SacredTrack(
-        id = 19,
+    SacredTrack(id = 16,
         trackKey = "durga_chalisa",
         titleHindi = "श्री दुर्गा चालीसा",
         titleEnglish = "Shri Durga Chalisa",
@@ -1000,11 +859,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 शरणागत रक्षा करे, भक्त रहे निशंक।
 मैय्या की कृपा भई, रंक बने सिर छत्र॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 19,
+        displayOrder = 16,
         youtubeSearchQuery = "Shri Durga Chalisa Anuradha Paudwal"
     ),
-    SacredTrack(
-        id = 20,
+    SacredTrack(id = 17,
         trackKey = "vindhweshwari_chalisa",
         titleHindi = "श्री विन्ध्येश्वरी चालीसा",
         titleEnglish = "Shri Vindhweshwari Chalisa",
@@ -1038,124 +896,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 विन्ध्येश्वरी चालीसा, जो जन पढ़ै सनेह।
 पावै सो सुख संपदा, निर्मल होवै देह॥""".trimIndent(),
         isPublished = true,
-        displayOrder = 20,
+        displayOrder = 17,
         youtubeSearchQuery = "Shri Vindhweshwari Chalisa"
     ),
-    SacredTrack(
-        id = 21,
-        trackKey = "hanuman_veer_raksha_mantra",
-        titleHindi = "श्री वीर हनुमंत साबर रक्षा मंत्र",
-        titleEnglish = "Shri Veer Hanumant Shabar Raksha Mantra",
-        subtitleHindi = "मुग्दर दाहिने हाथ • पर्वत बाएं हाथ • संकट नाशक सिद्ध मंत्र",
-        durationText = "5:10",
-        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791441216_bc947e.mp3",
-        lyricsHindi = """॥ श्री वीर हनुमंत साबर रक्षा मंत्र ॥
-
-ॐ नमो वीर बली हनुमंत जी,
-मुग्दर दाहिने हाथ।
-मार मार पछाड़िया,
-पर्वत बाएं हाथ॥
-
-धूं-धूं-धूं-धूंकार चले,
-काल भैरों किलकिलाय।
-हनुमंत वीर रण में धावे,
-दुष्टन को मार भगावे॥
-
-भूत प्रेत पिशाच डाकिनी,
-शाकिनी बेताल कांपत थर-थर।
-जो कोई सतावे बालाजी के भक्त को,
-ताहि मुग्दर से चूर-चूर कर॥
-
-बजरंग बाण की आन,
-माता अंजनी की आन,
-श्री रामचन्द्र जी की दुहाई।
-शब्द सांचा, पिण्ड कांचा,
-फुरो मन्त्र ईश्वरो वाचा॥
-
-॥ संकट निवारण फल ॥
-इस सिद्ध साबर मंत्र का प्रातः व सायं ११ बार पाठ करने से
-भूत-प्रेत, नजर-दोष, भय, तांत्रिक पीड़ा व असाध्य संकटों से रक्षा होती है।""".trimIndent(),
-        isPublished = true,
-        displayOrder = 21,
-        youtubeSearchQuery = "Veer Hanumant Shabar Mantra"
-    ),
-    SacredTrack(
-        id = 22,
-        trackKey = "bhajan_meri_naav_chali",
-        titleHindi = "मेरी नाव चली बजरंग बली (भजन)",
-        titleEnglish = "Meri Naav Chali Bajrang Bali (Bhajan)",
-        subtitleHindi = "जरा बल्ली कृपा की लगा देना • पावन संकटमोचन भजन",
-        durationText = "6:45",
-        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791441369_309dbf.mp3",
-        lyricsHindi = """॥ पावन भजन: मेरी नाव चली बजरंग बली ॥
-
-मेरी नाव चली बजरंग बली,
-जरा बल्ली कृपा की लगा देना।
-भवसागर बीच भंवर में फंसी,
-पार किनारे लगा देना॥ (ध्रुवपद)
-
-तूफां है बड़ा, मझधार बड़ी,
-कोई और नहीं है सहारा यहाँ।
-इक तेरा भरोसा है दाता,
-मेरी बिगड़ी को आके बना देना॥
-मेरी नाव चली बजरंग बली...
-
-तूने राम जी के सब काज किए,
-सीता माता की सुध लाए कपी।
-लक्ष्मण जी के प्राण बचाए प्रभु,
-मेरा भी कष्ट मिटा देना॥
-मेरी नाव चली बजरंग बली...
-
-अहिरावण को पाताल में मारा,
-लंका में मचाया था हाहाकार।
-मैं दीन-हीन दुर्बल बालक,
-मुझ दास पर दया बरसा देना॥
-मेरी नाव चली बजरंग बली...
-
-डूँगरा धाम में तेरा पहरा,
-तेरी महिमा गावे सब नर-नारी।
-हाथ जोड़ कर विनती करूँ,
-मेरी नैया को पार लगा देना॥
-मेरी नाव चली बजरंग बली,
-जरा बल्ली कृपा की लगा देना॥""".trimIndent(),
-        isPublished = true,
-        displayOrder = 22,
-        youtubeSearchQuery = "Meri Naav Chali Bajrang Bali Lakhbir Singh Lakha"
-    ),
-    SacredTrack(
-        id = 23,
-        trackKey = "bhajan_aaj_mangalwar_hai",
-        titleHindi = "आज मंगलवार है महावीर का वार है (भजन)",
-        titleEnglish = "Aaj Mangalwar Hai Mahaveer Ka Vaar Hai (Bhajan)",
-        subtitleHindi = "सच्चे मन से जो भी बोले उसका बेड़ा पार है • बालाजी भजन",
-        durationText = "6:10",
-        audioUrl = "https://shribalajikripadham.online/uploads/audio/sbkd_audio_1791441389_2564d8.mp3",
-        lyricsHindi = """॥ पावन भजन: आज मंगलवार है महावीर का वार है ॥
-
-आज मंगलवार है, महावीर का वार है।
-सच्चे मन से जो भी बोले, उसका बेड़ा पार है॥ (ध्रुवपद)
-
-लाल लंगोटा हाथ में सोटा, केसरीनंदन प्यारा है।
-सूरज को फल समझ के खाया, ऐसा पवन दुलारा है॥
-जिनके सीने में सिया-राम, वो अंजनी का लाल है।
-आज मंगलवार है, महावीर का वार है...
-
-संकट कटे मिटे सब पीरा, जो सुमरे हनुमत बलबीरा।
-भूत पिशाच निकट नहिं आवै, जब नाम सुनावे जगधीरा॥
-जिस पर कृपा करे बजरंगी, मिट जाता भव का भार है।
-आज मंगलवार है, महावीर का वार है...
-
-डूँगरा जाट में दरबार सजा, बालाजी की जय-जयकार हुई।
-जो भी आया खाली झोली, उसकी झोली भरपूर हुई॥
-तेजवीर गुरुदेव की वाणी, सच्चा यह दरबार है।
-आज मंगलवार है, महावीर का वार है।
-सच्चे मन से जो भी बोले, उसका बेड़ा पार है॥""".trimIndent(),
-        isPublished = true,
-        displayOrder = 23,
-        youtubeSearchQuery = "Aaj Mangalwar Hai Mahaveer Ka Vaar Hai"
-    ),
-    SacredTrack(
-        id = 24,
+    SacredTrack(id = 18,
         trackKey = "durga_saptashati_kavach",
         titleHindi = "श्री देवी कवचम्",
         titleEnglish = "Shri Devi Kavacham",
@@ -1194,11 +938,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 ऋषि मार्कण्डेय जी ने पूछा: हे पितामह! संसार में जो परम गोपनीय तथा मनुष्यों की सब प्रकार से रक्षा करने वाला साधन हो, वह मुझे बताइए। ब्रह्मा जी बोले: हे महामुने! नवदुर्गाओं के नौ दिव्य स्वरूप—शैलपुत्री, ब्रह्मचारिणी, चन्द्रघण्टा, कूष्माण्डा, स्कन्दमाता, कात्यायनी, कालरात्रि, महागौरी और सिद्धिदात्री हैं। जो मनुष्य इस देवी कवच का पाठ करता है, वह युद्ध में, दावानल में या घोर संकट में भी किसी विपत्ति में नहीं पड़ता। दशों दिशाओं में जगदम्बा स्वयं उसकी रक्षा करती हैं।""".trimIndent(),
         isPublished = true,
-        displayOrder = 24,
+        displayOrder = 18,
         youtubeSearchQuery = "Shri Devi Kavacham"
     ),
-    SacredTrack(
-        id = 25,
+    SacredTrack(id = 19,
         trackKey = "durga_saptashati_argala",
         titleHindi = "श्री अर्गला स्तोत्रम्",
         titleEnglish = "Shri Argala Stotram",
@@ -1230,11 +973,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 हे जयन्ती, मङ्गला, काली, भद्रकाली, कपालिनी, दुर्गा, क्षमा, शिवा, धात्री, स्वाहा और स्वधा नामों से प्रसिद्ध जगदम्बिके! आपको मेरा नमन है। हे चामुण्डा! हे समस्त जीवों के दुःखों को हरने वाली कालरात्रि! आपकी सदा जय हो। हे मधुकैटभ का संहार करने वाली, महिषासुर-मर्दिनी, रक्तबीज व चण्ड-मुण्ड का नाश करने वाली माँ भवानी! मुझे दिव्य आत्म-स्वरूप दीजिए, विजय दीजिए, सुयश प्रदान कीजिए और मेरे भीतर के कामादि काम-क्रोध-लोभ रूपी शत्रुओं का नाश कीजिए।""".trimIndent(),
         isPublished = true,
-        displayOrder = 25,
+        displayOrder = 19,
         youtubeSearchQuery = "Shri Argala Stotram"
     ),
-    SacredTrack(
-        id = 26,
+    SacredTrack(id = 20,
         trackKey = "durga_saptashati_keelak",
         titleHindi = "श्री कीलक स्तोत्रम्",
         titleEnglish = "Shri Keelakam Stotram",
@@ -1259,11 +1001,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 जिनका स्वरूप निर्मल ज्ञानमय है, तीनों वेद जिनके दिव्य नेत्र हैं, जो कल्याण की प्राप्ति के हेतु और मस्तक पर अर्धचन्द्र धारण करते हैं, उन भगवान शिव को नमस्कार है। भगवान शिव ने इस महास्तोत्र को गुप्त (कीलित) कर रखा है। जो निष्काम भाव से भगवती की आराधना करता है, उसका कीलन समाप्त हो जाता है और केवल स्तोत्र के पाठ मात्र से उसकी समस्त अभीष्ट सिद्धियां एवं मनोकामनाएं सुलभ हो जाती हैं।""".trimIndent(),
         isPublished = true,
-        displayOrder = 26,
+        displayOrder = 20,
         youtubeSearchQuery = "Shri Keelak Stotram"
     ),
-    SacredTrack(
-        id = 27,
+    SacredTrack(id = 21,
         trackKey = "durga_saptashati_ch1",
         titleHindi = "दुर्गा सप्तशती - प्रथमोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 1",
@@ -1303,11 +1044,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 मार्कण्डेय जी बोले: सूर्यपुत्र सावर्णि आठवें मनु कहे जाते हैं। उनकी उत्पत्ति की कथा सुनो। प्राचीन काल में राजा सुरथ अपनी प्रजा का पुत्रवत पालन करते थे, परंतु शत्रुओं और दुष्ट मंत्रियों ने उनका राज्य छीन लिया। दुःखी होकर राजा सुरथ घने वन में मेधा ऋषि के आश्रम पहुंचे। वहीं समाधि नामक एक वैश्य भी अपने स्वार्थी पुत्र-स्त्री द्वारा निकाले जाने पर शोकमग्न होकर आया। दोनों ने महर्षि मेधा से पूछा कि बुद्धिमान होकर भी हमारा चित्त उस झूठी ममता और मोह में क्यों फंस रहा है? ऋषि ने कहा: भगवती महामाया ज्ञानियों के चित्त को भी बलपूर्वक खींचकर मोह में डाल देती हैं। वही संसार को रचती हैं और प्रसन्न होने पर मुक्ति प्रदान करती हैं। तत्पश्चात ऋषि ने सृष्टि के आदि में योगनिद्रा में लीन भगवान विष्णु के कानों के मैल से उत्पन्न मधुकैटभ के वध की पावन कथा सुनाई।""".trimIndent(),
         isPublished = true,
-        displayOrder = 27,
+        displayOrder = 21,
         youtubeSearchQuery = "Durga Saptashati Chapter 1"
     ),
-    SacredTrack(
-        id = 28,
+    SacredTrack(id = 22,
         trackKey = "durga_saptashati_ch2",
         titleHindi = "दुर्गा सप्तशती - द्वितीयोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 2",
@@ -1343,11 +1083,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 ऋषि बोले: प्राचीन समय में महिषासुर दैत्यों का और इन्द्र देवताओं के स्वामी थे। सौ वर्षों तक घोर देवासुर संग्राम हुआ, जिसमें महिषासुर ने देवताओं को पराजित कर स्वर्ग पर अधिकार कर लिया। सब देवता ब्रह्मा जी को आगे करके भगवान शिव और श्रीविष्णु के पास पहुंचे। देवताओं का कष्ट सुनकर श्रीहरि और शिवजी के मुख से भयंकर तेज प्रकट हुआ। इन्द्रादि समस्त देवताओं के शरीरों से भी दिव्य तेज निकलकर एकाकार हो गया और उस तेजोपुंज से समस्त लोकों को आलोकित करने वाली एक अद्वितीय 'भगवती दुर्गा' प्रकट हुईं। शिवजी ने त्रिशूल, विष्णु जी ने चक्र, वरुण ने शंख, अग्नि ने शक्ति और हिमवान ने सिंह वाहन दिया। भगवती ने भयंकर गर्जना कर महिषासुर के सेनापतियों—चिक्षुर, चामर, उदग्र आदि दैत्यों का संहार कर दिया।""".trimIndent(),
         isPublished = true,
-        displayOrder = 28,
+        displayOrder = 22,
         youtubeSearchQuery = "Durga Saptashati Chapter 2"
     ),
-    SacredTrack(
-        id = 29,
+    SacredTrack(id = 23,
         trackKey = "durga_saptashati_ch3",
         titleHindi = "दुर्गा सप्तशती - तृतीयोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 3",
@@ -1379,11 +1118,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 महिषासुर ने जब अपनी सेना का नाश देखा तो वह स्वयं महिष (भैंसे) का रूप धरकर युद्धभूमि में आया। उसने अपने खुरों और सींगों से पर्वतों को उखाड़कर फेंका। भगवती ने पाश फेंककर उसे बांध लिया। तब उसने सिंह, फिर खड्गधारी पुरुष और फिर पुनः विशाल महिष का रूप धारण किया। जगदम्बा ने दिव्य मधु का पान कर अट्टहास किया और उछलकर महिषासुर की छाती पर अपना चरण रख दिया और गले पर त्रिशूल से प्रहार किया। जैसे ही महिष के मुख से वह असुर आधा बाहर निकला, देवी ने अपनी तीक्ष्ण तलवार से उसका मस्तक काट दिया। महिषासुर के मरते ही समस्त देवगण हर्षित होकर पुष्पवृष्टि करने लगे।""".trimIndent(),
         isPublished = true,
-        displayOrder = 29,
+        displayOrder = 23,
         youtubeSearchQuery = "Durga Saptashati Chapter 3"
     ),
-    SacredTrack(
-        id = 30,
+    SacredTrack(id = 24,
         trackKey = "durga_saptashati_ch4",
         titleHindi = "दुर्गा सप्तशती - चतुर्थोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 4",
@@ -1416,11 +1154,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 महिषासुर के वध के पश्चात इन्द्र आदि देवता भगवती के चरणों में नतमस्तक होकर स्तुति करने लगे: 'हे नारायणी! आप ही पुण्यवानों के घरों में लक्ष्मी रूप से, पापियों के यहाँ दरिद्रता रूप से, शुद्ध अन्तःकरण वाले पुरुषों के हृदय में सुबुद्धि रूप से और कुलीन पुरुषों में लज्जा रूप से निवास करती हैं। हे शरणागत-दीन-दुखियों का उद्धार करने वाली सर्वेश्वरी! हम आपको बारंबार प्रणाम करते हैं।' देवी ने प्रसन्न होकर वरदान दिया कि जब-जब संसार में घोर असुर बाधा उपस्थित होगी, तब-तब मैं अवतार लेकर भक्तों की रक्षा करूँगी।""".trimIndent(),
         isPublished = true,
-        displayOrder = 30,
+        displayOrder = 24,
         youtubeSearchQuery = "Durga Saptashati Chapter 4"
     ),
-    SacredTrack(
-        id = 31,
+    SacredTrack(id = 25,
         trackKey = "durga_saptashati_ch5",
         titleHindi = "दुर्गा सप्तशती - पञ्चमोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 5",
@@ -1453,11 +1190,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 ऋषि बोले: कालान्तर में शुम्भ और निशुम्भ नामक दैत्य भाइयों ने तीनों लोकों और यज्ञ-भागों को छीन लिया। तब व्याकुल देवता हिमालय पर जाकर भगवती की स्तुति करने लगे: 'जो देवी समस्त प्राणियों में मातृरूप, शक्तिरूप, शान्तिरूप, चेतना और दया रूप में स्थित हैं, उन्हें हमारा बारंबार नमन है।' तब माता पार्वती के शरीर से कौशिकी देवी प्रकट हुईं। चण्ड और मुण्ड ने देवी का अलौकिक सौंदर्य देखकर शुम्भ से कहा कि वह त्रिभुवन-सुन्दरी आपके महल में शोभा पाने योग्य है। शुम्भ ने दूत भेजा, जिसे देवी ने उत्तर दिया: 'जो मुझे युद्ध में पराजित करेगा, वही मेरा स्वामी होगा।'""".trimIndent(),
         isPublished = true,
-        displayOrder = 31,
+        displayOrder = 25,
         youtubeSearchQuery = "Durga Saptashati Chapter 5"
     ),
-    SacredTrack(
-        id = 32,
+    SacredTrack(id = 26,
         trackKey = "durga_saptashati_ch6",
         titleHindi = "दुर्गा सप्तशती - षष्ठोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 6",
@@ -1485,11 +1221,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 दूत की बात सुनकर शुम्भ क्रोध से आगबबूला हो गया और उसने अपने महाबली सेनापति धूम्रलोचन को साठ हजार असुरों के साथ भेजा कि उस स्त्री के केश पकड़कर बलपूर्वक घसीट लाओ। धूम्रलोचन ने जाकर देवी को ललकारा। तब भगवती ने केवल 'हुंकार' भरी, और उस एक ही हुंकार से धूम्रलोचन जलकर भस्म का ढेर बन गया! देवी के वाहन सिंह ने उसकी सारी सेना को नखों और दांतों से फाड़कर समाप्त कर दिया।""".trimIndent(),
         isPublished = true,
-        displayOrder = 32,
+        displayOrder = 26,
         youtubeSearchQuery = "Durga Saptashati Chapter 6"
     ),
-    SacredTrack(
-        id = 33,
+    SacredTrack(id = 27,
         trackKey = "durga_saptashati_ch7",
         titleHindi = "दुर्गा सप्तशती - सप्तमोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 7",
@@ -1520,11 +1255,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 शुम्भ की आज्ञा पाकर चण्ड और मुण्ड विशाल सेना लेकर पहुंचे। उन्हें देखकर अम्बिका देवी को बड़ा क्रोध हुआ और उनके ललाट से भयंकर मुख वाली, नरमुण्डों की माला पहने, व्याघ्रचर्मधारिणी 'माँ काली' प्रकट हुईं। माँ काली ने हाथियों, घोड़ों और असुरों को अपने विशाल मुख में चबाना शुरू कर दिया। चण्ड और मुण्ड ने बाण बरसाए, पर काली माता ने चण्ड के केश पकड़कर खड्ग से सिर काट डाला और मुण्ड को भी यमलोक पहुंचा दिया। दोनों के कटे सिर लाकर कौशिकी देवी को दिए। तब जगदम्बा ने कहा: तुमने चण्ड और मुण्ड का संहार किया है, अतः संसार में तुम 'चामुण्डा' नाम से विख्यात होगी।""".trimIndent(),
         isPublished = true,
-        displayOrder = 33,
+        displayOrder = 27,
         youtubeSearchQuery = "Durga Saptashati Chapter 7"
     ),
-    SacredTrack(
-        id = 34,
+    SacredTrack(id = 28,
         trackKey = "durga_saptashati_ch8",
         titleHindi = "दुर्गा सप्तशती - अष्टमोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 8",
@@ -1556,11 +1290,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 चण्ड-मुण्ड की मृत्यु से कुपित होकर शुम्भ ने संपूर्ण दैत्य सेना को झोंक दिया। उस समय ब्रह्मा, शिव, कार्तिकेय, विष्णु आदि देवों की शक्तियां (सप्त मातृकाएं) प्रकट होकर युद्ध करने लगीं। तब 'रक्तबीज' नामक दैत्य आया, जिसके शरीर से रक्त की जितनी बूँदें धरती पर गिरती थीं, उतने ही बलशाली नए रक्तबीज पैदा हो जाते थे। सारा आकाश रक्तबीजों से भर गया। तब भगवती चण्डिका ने चामुण्डा से कहा: 'हे चामुण्डे! तुम अपना मुख फैलाओ, मेरे शस्त्र प्रहार से इसके गिरने वाले रक्त को तुम मुख में पीती जाओ।' देवी ने त्रिशूल से रक्तबीज को बींध दिया और चामुण्डा ने उसका एक बूँद रक्त भी भूमि पर नहीं गिरने दिया। रक्त समाप्त होते ही रक्तबीज निष्प्राण होकर गिर पड़ा।""".trimIndent(),
         isPublished = true,
-        displayOrder = 34,
+        displayOrder = 28,
         youtubeSearchQuery = "Durga Saptashati Chapter 8"
     ),
-    SacredTrack(
-        id = 35,
+    SacredTrack(id = 29,
         trackKey = "durga_saptashati_ch9",
         titleHindi = "दुर्गा सप्तशती - नवमोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 9",
@@ -1587,11 +1320,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 रक्तबीज के मारे जाने पर शुम्भ और निशुम्भ क्रोधाग्नि में जलने लगे। निशुम्भ ने विशाल सेना के साथ देवी पर आक्रमण किया। उसने गदा, खड्ग और शक्ति से प्रहार किए, परंतु भगवती ने अपने तीक्ष्ण बाणों से उसके सभी अस्त्र-शस्त्र काट दिए। जब निशुम्भ मुक्का तानकर दौड़ा तो देवी ने त्रिशूल से उसकी छाती छलनी कर दी। उसके हृदय से एक दूसरा पुरुष 'ठहर-ठहर' कहते हुए निकला, देवी ने तत्काल तलवार से उसका भी मस्तक काट दिया। निशुम्भ की मृत्यु से असुरों में हाहाकार मच गया।""".trimIndent(),
         isPublished = true,
-        displayOrder = 35,
+        displayOrder = 29,
         youtubeSearchQuery = "Durga Saptashati Chapter 9"
     ),
-    SacredTrack(
-        id = 36,
+    SacredTrack(id = 30,
         trackKey = "durga_saptashati_ch10",
         titleHindi = "दुर्गा सप्तशती - दशमोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 10",
@@ -1622,11 +1354,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 अपने भाई निशुम्भ को मरा देखकर शुम्भ ने क्रोध से कहा: 'अरी घमंडी स्त्री! तू दूसरी देवियों की शक्ति के सहारे लड़ती है और अहंकार करती है!' देवी ने कहा: 'मूर्ख! इस संसार में मैं अकेली ही हूँ, मेरे सिवा दूसरी कौन है? देख, ये सब मेरी ही विभूतियाँ हैं जो मुझमें ही विलीन हो रही हैं।' तत्पश्चात सभी मातृकाएं देवी के शरीर में समा गईं। अब केवल भगवती और शुम्भ अकेले रह गए। दोनों में आकाश और पृथ्वी पर भयंकर द्वन्द्व युद्ध हुआ। देवी ने शुम्भ को उठाकर आकाश में घुमाकर भूमि पर पटका और त्रिशूल से उसकी छाती विदीर्ण कर दी। शुम्भ के मरते ही तीनों लोक भयमुक्त हो गए, नदियां निर्मल जल बहाने लगीं और स्वर्ग में दुंदुभियां बजने लगीं।""".trimIndent(),
         isPublished = true,
-        displayOrder = 36,
+        displayOrder = 30,
         youtubeSearchQuery = "Durga Saptashati Chapter 10"
     ),
-    SacredTrack(
-        id = 37,
+    SacredTrack(id = 31,
         trackKey = "durga_saptashati_ch11",
         titleHindi = "दुर्गा सप्तशती - एकादशोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 11",
@@ -1661,11 +1392,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 शुम्भ-निशुम्भ के वध के बाद समस्त देवताओं ने माँ कात्यायनी की प्रसिद्ध 'नारायणी स्तुति' की: 'हे शरणागतों की पीड़ा हरने वाली जगन्माता! प्रसन्न होइए। आप तीनों लोकों की स्वामिनी हैं। हे दुर्गे! आप समस्त भय से हमारी रक्षा करें। आप प्रसन्न होने पर समस्त रोगों को नष्ट कर देती हैं और कुपित होने पर सब कामनाएं छीन लेती हैं। जो आपकी शरण में आ जाते हैं, उन पर कोई विपत्ति नहीं आती।' भगवती ने देवताओं को वरदान दिया कि जहाँ-जहाँ इस स्तुति और सप्तशती का पाठ होगा, वहाँ कभी अकाल, महामारी, शत्रु-भय और दारिद्र्य नहीं रहेगा।""".trimIndent(),
         isPublished = true,
-        displayOrder = 37,
+        displayOrder = 31,
         youtubeSearchQuery = "Durga Saptashati Chapter 11"
     ),
-    SacredTrack(
-        id = 38,
+    SacredTrack(id = 32,
         trackKey = "durga_saptashati_ch12",
         titleHindi = "दुर्गा सप्तशती - द्वादशोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 12",
@@ -1691,11 +1421,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 भगवती बोलीं: जो मनुष्य एकाग्रचित्त होकर इन स्तोत्रों द्वारा मेरी नित्य स्तुति करेगा, उसकी समस्त बाधाओं का मैं नाश कर दूँगी। मधुकैटभ वध, महिषासुर वध और शुम्भ-निशुम्भ वध के इस माहात्म्य को जो अष्टमी, चतुर्दशी और नवमी को भक्तिपूर्वक सुनेगा या पढ़ेगा, उसे कोई पाप या संकट नहीं घेरेगा। घर में दरिद्रता नहीं आएगी, चोर, अग्नि, राजा या जल का भय नहीं होगा। दुःस्वप्न, ग्रह-पीड़ा और अकाल मृत्यु के समय इस माहात्म्य का पाठ परम शांति प्रदान करने वाला है।""".trimIndent(),
         isPublished = true,
-        displayOrder = 38,
+        displayOrder = 32,
         youtubeSearchQuery = "Durga Saptashati Chapter 12"
     ),
-    SacredTrack(
-        id = 39,
+    SacredTrack(id = 33,
         trackKey = "durga_saptashati_ch13",
         titleHindi = "दुर्गा सप्तशती - त्रयोदशोऽध्यायः",
         titleEnglish = "Durga Saptashati Chapter 13",
@@ -1726,11 +1455,10 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 महर्षि मेधा बोले: हे राजन्! यह मैंने तुम्हें भगवती महामाया का उत्तम माहात्म्य सुनाया। तब राजा सुरथ और समाधि वैश्य ने नदी के तट पर मिट्टी की देवी प्रतिमा बनाकर तीन वर्ष तक निराहार रहकर कठोर तपस्या की। तब जगदम्बा साक्षात् प्रकट हुईं और वर मांगने को कहा। राजा ने अपने खोए हुए राज्य की पुनः प्राप्ति और अगले जन्म में अखण्ड राज्य मांगा। वैश्य ने संसार के बंधनों से मुक्ति देने वाला ब्रह्मज्ञान मांगा। देवी ने राजा को उनका राज्य देकर अगले जन्म में 'सावर्णि मनु' बनने का वरदान दिया और वैश्य को परम ज्ञान प्रदान कर मोक्ष प्रदान किया।""".trimIndent(),
         isPublished = true,
-        displayOrder = 39,
+        displayOrder = 33,
         youtubeSearchQuery = "Durga Saptashati Chapter 13"
     ),
-    SacredTrack(
-        id = 40,
+    SacredTrack(id = 34,
         trackKey = "durga_saptashati_kshama",
         titleHindi = "श्री देवी अपराध क्षमापन स्तोत्रम्",
         titleEnglish = "Shri Devi Kshama Prarthana",
@@ -1757,7 +1485,7 @@ val SACRED_TRACKS: List<SacredTrack> = listOf(
 ॥ हिंदी भावार्थ ॥
 हे परमेश्वरि! मेरे द्वारा दिन-रात सहस्त्रों अपराध होते रहते हैं। 'यह मेरा सेवक है' ऐसा मानकर आप मेरे अपराधों को क्षमा करें। मैं न आवाहन करना जानता हूँ, न विसर्जन करना, और न ही विधिपूर्वक पूजन करना जानता हूँ। हे सुरेश्वरि! मुझे क्षमा करें। मेरा यह पाठ मन्त्रहीन, क्रियाहीन और भक्तिहीन है; फिर भी हे देवि! आपके अनुग्रह से यह पूर्ण हो। हे जगन्माता! मैं अपराधी होकर भी आपकी शरण में आया हूँ, अब आप जैसी कृपा चाहें, वैसी मुझ दीन पर करें।""".trimIndent(),
         isPublished = true,
-        displayOrder = 40,
+        displayOrder = 34,
         youtubeSearchQuery = "Devi Aparadha Kshamapana Stotram"
     )
 )

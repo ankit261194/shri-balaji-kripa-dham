@@ -1213,10 +1213,10 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             }
         } catch (ignored: Exception) {}
 
-        // 9. Seed & Refresh Sacred Tracks (40 Authentic Bhajans, Aartis & Durga Saptashati with 100% Verified Audio)
+        // 9. Seed & Refresh Sacred Tracks (34 100% Authentic Bhajans, Aartis & Durga Saptashati with Real Audio)
         try {
             try {
-                db.delete("ashram_tracks", "track_key = 'durga_saptashati_nitya_path'", null)
+                db.delete("ashram_tracks", "track_key IN ('durga_saptashati_nitya_path', 'pretraj_chalisa', 'khatu_shyam_aarti', 'satyanarayan_aarti', 'hanuman_veer_raksha_mantra', 'bhajan_meri_naav_chali', 'bhajan_aaj_mangalwar_hai')", null)
             } catch (ignored: Exception) {}
 
             com.example.shribalajikripadham.data.sacred.SACRED_TRACKS.forEach { track ->

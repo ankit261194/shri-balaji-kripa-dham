@@ -106,7 +106,11 @@ fun ShriBalajiKripaDhamTheme(
         watermarkIcon = sacredTheme.watermarkIcon,
         glowColor = sacredTheme.glowColor,
         isTricolor = sacredTheme.isTricolor,
-        styleBadge = sacredTheme.styleBadge
+        styleBadge = sacredTheme.styleBadge,
+        divineMotif = sacredTheme.divineMotif,
+        divineChantHindi = sacredTheme.divineChantHindi,
+        divineChantEnglish = sacredTheme.divineChantEnglish,
+        festiveBannerTitle = sacredTheme.festiveBannerTitle
     )
 
     CompositionLocalProvider(LocalSacredStyle provides activeStyle) {

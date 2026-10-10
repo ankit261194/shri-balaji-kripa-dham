@@ -38,7 +38,11 @@ enum class SacredTheme(
     val watermarkIcon: String = "",
     val glowColor: Color = Color.Transparent,
     val isTricolor: Boolean = false,
-    val festivalCategoryHindi: String = "दैनिक"
+    val festivalCategoryHindi: String = "दैनिक",
+    val divineMotif: String = "",
+    val divineChantHindi: String = "",
+    val divineChantEnglish: String = "",
+    val festiveBannerTitle: String = ""
 ) {
     // =========================================================================
     // 🌟 4 DIVINE SACRED THEMES (दिव्य उत्सव व राष्ट्र गौरव थीम्स)
@@ -71,7 +75,11 @@ enum class SacredTheme(
         watermarkIcon = "🇮🇳",
         glowColor = Color(0xFFFF9933),
         isTricolor = true,
-        festivalCategoryHindi = "राष्ट्रीय पर्व"
+        festivalCategoryHindi = "राष्ट्रीय पर्व",
+        divineMotif = "🇮🇳 ☸️ 🇮🇳",
+        divineChantHindi = "वन्दे मातरम् • अखंड भारत राष्ट्र गौरव",
+        divineChantEnglish = "Vande Mataram • Akhand Bharat Pride",
+        festiveBannerTitle = "राष्ट्र गौरव तिरंगा उत्सव"
     ),
 
     // 2. 🪔 Divya Deepawali Theme (Festival of Lights / रोशनी का पावन पर्व)
@@ -101,7 +109,11 @@ enum class SacredTheme(
         watermarkIcon = "🪔",
         glowColor = Color(0xFFFBBF24),
         isTricolor = false,
-        festivalCategoryHindi = "दीपावली महोत्सव"
+        festivalCategoryHindi = "दीपावली महोत्सव",
+        divineMotif = "🪔 ✨ 🪔",
+        divineChantHindi = "शुभ दीपावली • महालक्ष्मी प्रकाश एवं सुख-समृद्धि",
+        divineChantEnglish = "Shubh Deepawali • Divine Light of Mahalakshmi",
+        festiveBannerTitle = "दिव्य दीपोत्सव एवं महालक्ष्मी कृपा"
     ),
 
     // 3. 🦁 Sherawali Maiya Theme (Maa Durga / Navratri Shakti / शेरावाली)
@@ -131,7 +143,11 @@ enum class SacredTheme(
         watermarkIcon = "🦁",
         glowColor = Color(0xFFEF4444),
         isTricolor = false,
-        festivalCategoryHindi = "नवरात्रि उत्सव"
+        festivalCategoryHindi = "नवरात्रि उत्सव",
+        divineMotif = "🔱 🦁 🔱",
+        divineChantHindi = "जय माता दी • शक्ति स्वरूपा माँ शेरावाली की असीम कृपा",
+        divineChantEnglish = "Jai Mata Di • Divine Grace of Maa Sherawali",
+        festiveBannerTitle = "नवरात्रि शक्ति स्वरूपा शेरावाली मैया"
     ),
 
     // 4. 🚩 Veer Bajrangi Hanuman Ji Theme (Sindoori Balaji / संकट मोचन)
@@ -161,7 +177,11 @@ enum class SacredTheme(
         watermarkIcon = "🚩",
         glowColor = Color(0xFFF97316),
         isTricolor = false,
-        festivalCategoryHindi = "हनुमान दरबार"
+        festivalCategoryHindi = "हनुमान दरबार",
+        divineMotif = "🚩 ⚡ 🚩",
+        divineChantHindi = "जय श्री राम • संकट मोचन श्री बालाजी महाराज",
+        divineChantEnglish = "Jai Shri Ram • Sankat Mochan Balaji Maharaj",
+        festiveBannerTitle = "वीर बजरंगी संकट मोचन दरबार"
     ),
 
     // =========================================================================
@@ -195,10 +215,14 @@ enum class SacredTheme(
         watermarkIcon = "💬",
         glowColor = Color(0xFF25D366),
         isTricolor = false,
-        festivalCategoryHindi = "दैनिक"
+        festivalCategoryHindi = "दैनिक",
+        divineMotif = "💬 🍃 💬",
+        divineChantHindi = "श्री बालाजी कृपा धाम • दैनिक दर्शन व सेवा",
+        divineChantEnglish = "Shri Balaji Kripa Dham • Daily Darshan & Seva",
+        festiveBannerTitle = "दैनिक पावन दर्शन"
     ),
 
-    // 2. Telegram Sky Blue - Modern, crisp, fresh
+    // 6. Telegram Sky Blue - Modern, crisp, fresh
     TELEGRAM_BLUE(
         id = "telegram",
         nameHindi = "टेलीग्राम नीला",
@@ -220,10 +244,14 @@ enum class SacredTheme(
         cardBorderWidth = 0.8.dp,
         cardElevation = 1.dp,
         styleNameHindi = "टेलीग्राम स्काई ब्लू",
-        styleBadge = "✈️ टेलीग्राम • 14dp"
+        styleBadge = "✈️ टेलीग्राम • 14dp",
+        divineMotif = "✈️ 🌊 ✈️",
+        divineChantHindi = "निर्मल आकाश जैसी शांति • भक्ति व समर्पण",
+        divineChantEnglish = "Sky Calm • Pure Devotion & Serenity",
+        festiveBannerTitle = "टेलीग्राम शांत स्काई"
     ),
 
-    // 3. Calm Sage Mint - Peaceful, Ayurvedic, serene forest
+    // 7. Calm Sage Mint - Peaceful, Ayurvedic, serene forest
     CALM_SAGE_MINT(
         id = "sage",
         nameHindi = "शांत पुदीना (Sage Mint)",
@@ -245,10 +273,14 @@ enum class SacredTheme(
         cardBorderWidth = 0.8.dp,
         cardElevation = 1.dp,
         styleNameHindi = "शांत सात्विक पुदीना",
-        styleBadge = "🍃 सात्विक • 14dp"
+        styleBadge = "🍃 सात्विक • 14dp",
+        divineMotif = "🍃 🌿 🍃",
+        divineChantHindi = "सात्विक शांति • तुलसी व सेज मिंट शीतलता",
+        divineChantEnglish = "Peaceful Sage Mint • Ayurvedic Serenity",
+        festiveBannerTitle = "सात्विक प्राकृतिक शांति"
     ),
 
-    // 4. Ocean Indigo - Deep, calm, executive
+    // 8. Ocean Indigo - Deep, calm, executive
     OCEAN_INDIGO(
         id = "ocean",
         nameHindi = "शांत महासागर (Navy Blue)",
@@ -270,10 +302,14 @@ enum class SacredTheme(
         cardBorderWidth = 0.8.dp,
         cardElevation = 1.dp,
         styleNameHindi = "शांत गंभीर नेवी",
-        styleBadge = "🌊 नेवी • 12dp"
+        styleBadge = "🌊 नेवी • 12dp",
+        divineMotif = "🌊 ⚓ 🌊",
+        divineChantHindi = "गंभीर भक्ति महासागर • स्थिर मन व ध्यान",
+        divineChantEnglish = "Deep Ocean Calm • Steady Devotion & Peace",
+        festiveBannerTitle = "शांत महासागर नेवी"
     ),
 
-    // 5. Peaceful Lavender - Gentle, soothing spiritual iris
+    // 9. Peaceful Lavender - Gentle, soothing spiritual iris
     PEACEFUL_LAVENDER(
         id = "lavender",
         nameHindi = "सौम्य लैवेंडर (Soft Iris)",
@@ -295,10 +331,14 @@ enum class SacredTheme(
         cardBorderWidth = 0.8.dp,
         cardElevation = 1.dp,
         styleNameHindi = "सौम्य शांति लैवेंडर",
-        styleBadge = "🪻 लैवेंडर • 14dp"
+        styleBadge = "🪻 लैवेंडर • 14dp",
+        divineMotif = "🪻 🌸 🪻",
+        divineChantHindi = "सौम्य पारिजात शांति • कोमल आध्यात्मिक आभा",
+        divineChantEnglish = "Gentle Lavender • Spiritual Harmony",
+        festiveBannerTitle = "सौम्य लैवेंडर शांति"
     ),
 
-    // 6. Minimal Slate - Apple-inspired clean dark slate & cyan
+    // 10. Minimal Slate - Apple-inspired clean dark slate & cyan
     MINIMAL_SLATE(
         id = "slate",
         nameHindi = "एप्पल मिनिमल स्लेट",
@@ -320,10 +360,14 @@ enum class SacredTheme(
         cardBorderWidth = 0.8.dp,
         cardElevation = 1.dp,
         styleNameHindi = "एप्पल मिनिमल स्लेट",
-        styleBadge = "🩶 स्लेट • 16dp"
+        styleBadge = "🩶 स्लेट • 16dp",
+        divineMotif = "🩶 🏛️ 🩶",
+        divineChantHindi = "सादगी व स्वच्छता • एकाग्र चित्त प्रार्थना",
+        divineChantEnglish = "Minimal Slate • Pure Simplicity & Focus",
+        festiveBannerTitle = "एप्पल मिनिमल स्लेट"
     ),
 
-    // 7. Soothing Amber - Earthy sandalwood, calm warm amber
+    // 11. Soothing Amber - Earthy sandalwood, calm warm amber
     SOOTHING_AMBER(
         id = "amber",
         nameHindi = "सात्विक चंदन (Soft Amber)",
@@ -345,10 +389,14 @@ enum class SacredTheme(
         cardBorderWidth = 0.8.dp,
         cardElevation = 1.dp,
         styleNameHindi = "सात्विक सौम्य चंदन",
-        styleBadge = "🪵 चंदन • 12dp"
+        styleBadge = "🪵 चंदन • 12dp",
+        divineMotif = "🪵 🪔 🪵",
+        divineChantHindi = "ॐ नमो भगवते वासुदेवाय • सात्विक चंदन सुगंध",
+        divineChantEnglish = "Sacred Sandalwood • Calming Amber Fragrance",
+        festiveBannerTitle = "सात्विक चंदन पीतांबर"
     ),
 
-    // 8. WhatsApp Dark Night - Official WhatsApp Dark Mode
+    // 12. WhatsApp Dark Night - Official WhatsApp Dark Mode
     WHATSAPP_DARK(
         id = "dark",
         nameHindi = "वाट्सएप डार्क नाइट",
@@ -370,7 +418,11 @@ enum class SacredTheme(
         cardBorderWidth = 0.8.dp,
         cardElevation = 1.dp,
         styleNameHindi = "वाट्सएप नाइट डार्क",
-        styleBadge = "🌙 वाट्सएप • डार्क 12dp"
+        styleBadge = "🌙 वाट्सएप • डार्क 12dp",
+        divineMotif = "🌙 ✨ 🌙",
+        divineChantHindi = "रात्रि ध्यान व विश्राम • नयनाभिराम शांत दर्शन",
+        divineChantEnglish = "Night Meditation • Soothing Dark Mode",
+        festiveBannerTitle = "वाट्सएप नाइट डार्क"
     );
 
     companion object {
@@ -412,7 +464,11 @@ data class SacredStyle(
     val watermarkIcon: String = "",
     val glowColor: Color = Color.Transparent,
     val isTricolor: Boolean = false,
-    val styleBadge: String = ""
+    val styleBadge: String = "",
+    val divineMotif: String = "",
+    val divineChantHindi: String = "",
+    val divineChantEnglish: String = "",
+    val festiveBannerTitle: String = ""
 )
 
 val LocalSacredStyle = staticCompositionLocalOf {
@@ -429,6 +485,10 @@ val LocalSacredStyle = staticCompositionLocalOf {
         watermarkIcon = SacredTheme.WHATSAPP_EMERALD.watermarkIcon,
         glowColor = SacredTheme.WHATSAPP_EMERALD.glowColor,
         isTricolor = SacredTheme.WHATSAPP_EMERALD.isTricolor,
-        styleBadge = SacredTheme.WHATSAPP_EMERALD.styleBadge
+        styleBadge = SacredTheme.WHATSAPP_EMERALD.styleBadge,
+        divineMotif = SacredTheme.WHATSAPP_EMERALD.divineMotif,
+        divineChantHindi = SacredTheme.WHATSAPP_EMERALD.divineChantHindi,
+        divineChantEnglish = SacredTheme.WHATSAPP_EMERALD.divineChantEnglish,
+        festiveBannerTitle = SacredTheme.WHATSAPP_EMERALD.festiveBannerTitle
     )
 }
