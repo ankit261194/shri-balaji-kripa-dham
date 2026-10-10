@@ -32,6 +32,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.shribalajikripadham.R
 import com.example.shribalajikripadham.theme.SacredTheme
+import com.example.shribalajikripadham.ui.theme.SacredTempleCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -155,11 +156,8 @@ fun DailyDarshanHeroCard(
         loadDarshan(forceRefresh = false)
     }
 
-    Card(
-        colors = CardDefaults.cardColors(containerColor = currentTheme.surfaceLight),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, currentTheme.cardBorderColor.copy(alpha = 0.5f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    SacredTempleCard(
+        currentTheme = currentTheme,
         modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(12.dp)) {

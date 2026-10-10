@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shribalajikripadham.data.model.AshramSettings
 import com.example.shribalajikripadham.theme.SacredTheme
+import com.example.shribalajikripadham.ui.theme.SacredTempleCard
 import com.example.shribalajikripadham.util.SundayScheduleState
 
 /**
@@ -36,16 +37,10 @@ fun LiveDarbarStatusCard(
     // Strictly LIVE ONLY when tokens are actually being distributed / registration is OPEN
     val isDarbarLive = scheduleState is SundayScheduleState.Open
 
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDarbarLive) Color(0xFFFFF3E0) else currentTheme.surfaceLight
-        ),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(
-            1.2.dp,
-            if (isDarbarLive) Color(0xFFFF9800) else currentTheme.cardBorderColor.copy(alpha = 0.6f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    SacredTempleCard(
+        currentTheme = currentTheme,
+        containerColor = if (isDarbarLive) Color(0xFFFFF3E0) else currentTheme.surfaceLight,
+        borderGoldColor = if (isDarbarLive) Color(0xFFFF9800) else currentTheme.accentGold,
         modifier = modifier
             .fillMaxWidth()
             .clickable {

@@ -31,6 +31,7 @@ import com.example.shribalajikripadham.theme.MaroonPrimary
 import com.example.shribalajikripadham.theme.SaffronPrimary
 import com.example.shribalajikripadham.theme.SacredTheme
 import com.example.shribalajikripadham.ui.home.components.*
+import com.example.shribalajikripadham.ui.theme.SacredThematicBackground
 import com.example.shribalajikripadham.util.AppUpdateManager
 import com.example.shribalajikripadham.util.AshramManualPdfGenerator
 import com.example.shribalajikripadham.util.SundayScheduleState
@@ -271,11 +272,12 @@ fun HomeScreen(
             },
             containerColor = currentTheme.backgroundLight
         ) { innerPadding ->
-            Box(
+            SacredThematicBackground(
+                currentTheme = currentTheme,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .background(currentTheme.backgroundLight)
+                    .padding(innerPadding),
+                showToran = true
             ) {
                 Column(
                     modifier = Modifier
