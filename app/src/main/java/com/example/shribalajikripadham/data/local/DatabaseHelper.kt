@@ -14,7 +14,7 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
 
     companion object {
         const val DATABASE_NAME = "shri_balaji_kripa_dham.db"
-        const val DATABASE_VERSION = 25
+        const val DATABASE_VERSION = 26
 
         // Cryptographically salted precomputed hashes (Zero plain credentials in bytecode)
         const val MASTER_PIN_RAW_HASH = "0581fd688d7aee6463c55b053661a94bdc4badef25a23514cfe2621397012f35"
@@ -1213,10 +1213,10 @@ class DatabaseHelper(private val context: Context) : SQLiteOpenHelper(context, D
             }
         } catch (ignored: Exception) {}
 
-        // 9. Seed & Refresh Sacred Tracks (34 100% Authentic Bhajans, Aartis & Durga Saptashati with Real Audio)
+        // 9. Seed & Refresh Sacred Tracks (38 100% Authentic Bhajans, Aartis & Durga Saptashati with Real Audio)
         try {
             try {
-                db.delete("ashram_tracks", "track_key IN ('durga_saptashati_nitya_path', 'pretraj_chalisa', 'khatu_shyam_aarti', 'satyanarayan_aarti', 'hanuman_veer_raksha_mantra', 'bhajan_meri_naav_chali', 'bhajan_aaj_mangalwar_hai')", null)
+                db.delete("ashram_tracks", "track_key IN ('durga_saptashati_nitya_path', 'pretraj_chalisa', 'khatu_shyam_aarti', 'hanuman_veer_raksha_mantra')", null)
             } catch (ignored: Exception) {}
 
             com.example.shribalajikripadham.data.sacred.SACRED_TRACKS.forEach { track ->

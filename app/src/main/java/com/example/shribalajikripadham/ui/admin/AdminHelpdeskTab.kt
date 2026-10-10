@@ -583,7 +583,7 @@ fun AdminInAppChatSection(
                 listOf(
                     AshramSevadarContact(
                         id = currentAdminId.ifBlank { "sev_current" },
-                        name = superAdminName,
+                        name = if (isHindi) "अधिकृत सेवादार" else "Authorized Sevadar",
                         department = "आश्रम सेवा",
                         roleTitleHindi = "सेवादार",
                         phoneNumber = currentAdminPhone,

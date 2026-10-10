@@ -119,24 +119,6 @@ fun SacredThematicBackground(
             .fillMaxSize()
             .background(gradientBrush)
     ) {
-        // Layer 1: High-Definition Vector Deity Watermark
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            SacredThemeGraphics.drawThemeWatermark(
-                drawScope = this,
-                theme = currentTheme,
-                primaryColor = currentTheme.primaryColor,
-                accentColor = currentTheme.accentGold
-            )
-        }
-
-        // Layer 2: Main Content + Top Toran Festoon
-        Column(modifier = Modifier.fillMaxSize()) {
-            if (showToran) {
-                MandirToranHeader(currentTheme = currentTheme)
-            }
-            Box(modifier = Modifier.weight(1f)) {
-                content()
-            }
-        }
+        content()
     }
 }

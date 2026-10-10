@@ -183,6 +183,20 @@ fun getAshramAdminModules(isHindi: Boolean): List<AdminHubModuleItem> {
         // 3. 👥 सेवादार व स्टाफ (Staff & Sevadars)
         // ==========================================
         AdminHubModuleItem(
+            tabTitle = if (isHindi) "💬 धाम सेवादार सहायता केंद्र" else "💬 Sevadar Helpdesk",
+            icon = "💬",
+            titleHindi = "धाम सेवादार सहायता केंद्र",
+            titleEnglish = "Sevadar Helpdesk & Chat",
+            categoryHindi = "👥 सेवादार व स्टाफ",
+            descriptionHindi = "भक्तों के लाइव प्रश्न, सेवादार चैट व वॉइस कॉल प्रबंधन",
+            descriptionEnglish = "Live devotee chat inquiries, sevadar direct messaging and calling",
+            relatedTabs = listOf(
+                if (isHindi) "सेवादार खाते" else "Sevadars",
+                if (isHindi) "सूचना भेजें" else "Broadcast",
+                if (isHindi) "सुपर कंट्रोल" else "Super Control"
+            )
+        ),
+        AdminHubModuleItem(
             tabTitle = if (isHindi) "सेवादार खाते" else "Sevadars",
             icon = "👥",
             titleHindi = "सेवादार खाते",

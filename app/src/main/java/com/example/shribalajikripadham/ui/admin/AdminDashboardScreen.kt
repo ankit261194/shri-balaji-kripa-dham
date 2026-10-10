@@ -267,7 +267,7 @@ fun AdminDashboardScreen(
     var newSevCanUiControl by remember { mutableStateOf(false) }
     var newSevCanTuesdayDarbar by remember { mutableStateOf(false) }
     var newSevCanIdCards by remember { mutableStateOf(false) }
-    var newSevCanHelpdesk by remember { mutableStateOf(false) }
+    var newSevCanHelpdesk by remember { mutableStateOf(true) }
     var newSevCanPaymentLedger by remember { mutableStateOf(false) }
     var newSevCanWebsite by remember { mutableStateOf(false) }
     var newSevCanServicesToggles by remember { mutableStateOf(false) }
@@ -510,6 +510,19 @@ fun AdminDashboardScreen(
             }
             queueTokensForSelectedDate = repository.getAllTokensForDate(selectedQueueDate)
             adminsList = repository.getAllAdmins()
+            adminsList.filter { it.role == AdminRole.SEVADAR || it.canManageHelpdesk }.forEach { a ->
+                val contact = com.example.shribalajikripadham.data.model.AshramSevadarContact(
+                    id = a.id.toString(),
+                    name = a.name,
+                    department = "आश्रम सेवा",
+                    roleTitleHindi = "सेवादार",
+                    phoneNumber = a.phoneNumber,
+                    whatsappNumber = a.phoneNumber,
+                    isAvailable = true,
+                    description = "अधिकृत सेवादार"
+                )
+                com.example.shribalajikripadham.data.repository.SevadarDirectoryManager.addSevadar(context, contact)
+            }
             superAdminAccount = repository.getSuperAdmin()
             eventsList = repository.getAllEvents()
             notificationsList = repository.getAllNotifications()
@@ -1343,6 +1356,9 @@ fun AdminDashboardScreen(
             if (isSuper || isSubAdmin || admin.canManageAdmins) {
                 allowedTabs.add(if (isHindi) "सेवादार खाते" else "Sevadars")
             }
+            if (isSuper || admin.canManageHelpdesk || admin.role == AdminRole.SEVADAR) {
+                allowedTabs.add(if (isHindi) "💬 धाम सेवादार सहायता केंद्र" else "💬 Sevadar Helpdesk")
+            }
 
             // 6. Super Admin Root Architecture & Diagnostics
             if (isSuper) {
@@ -1927,6 +1943,16 @@ fun AdminDashboardScreen(
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         when {
+                            currentTabTitle == "💬 धाम सेवादार सहायता केंद्र" || currentTabTitle == "💬 Sevadar Helpdesk" -> {
+                                AdminHelpdeskTab(
+                                    isHindi = isHindi,
+                                    repository = repository,
+                                    superAdminName = superAdminAccount?.name ?: (if (isHindi) "सुपर एडमिन" else "Super Admin"),
+                                    currentUserRole = admin.role.name,
+                                    currentAdminId = admin.id.toString(),
+                                    currentAdminPhone = admin.phoneNumber
+                                )
+                            }
                             currentTabTitle == "🎙️ टोकन वॉइस व 5-API" || currentTabTitle == "Voice & 5-API" -> {
                                 VoiceAndApiSettingsScreen(
                                     isHindi = isHindi,
@@ -3506,7 +3532,7 @@ fun AdminDashboardScreen(
                                     canManageUiControl = newSevCanUiControl,
                                     canManageTuesdayDarbar = newSevCanTuesdayDarbar,
                                     canManageIdCards = newSevCanIdCards,
-                                    canManageHelpdesk = if ((if (isSuperUser) newSevRole else AdminRole.SEVADAR) == AdminRole.SUB_ADMIN) false else newSevCanHelpdesk,
+                                    canManageHelpdesk = if ((if (isSuperUser) newSevRole else AdminRole.SEVADAR) == AdminRole.SUB_ADMIN) false else true,
                                     canViewPaymentLedger = newSevCanPaymentLedger,
                                     canManageWebsite = newSevCanWebsite,
                                     canManageServicesToggles = newSevCanServicesToggles,
@@ -3544,7 +3570,7 @@ fun AdminDashboardScreen(
                                     newSevCanUiControl = false
                                     newSevCanTuesdayDarbar = false
                                     newSevCanIdCards = false
-                                    newSevCanHelpdesk = false
+                                    newSevCanHelpdesk = true
                                     newSevCanPaymentLedger = false
                                     newSevCanWebsite = false
                                     newSevCanServicesToggles = false
