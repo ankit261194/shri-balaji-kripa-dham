@@ -153,23 +153,36 @@ object AppUpdateManager {
                 val parsedCode = when {
                     json.has("latest_version_code") -> json.optInt("latest_version_code", 1)
                     json.has("version_code") -> json.optInt("version_code", 1)
+                    json.has("versionCode") -> json.optInt("versionCode", 1)
                     else -> 1
                 }
                 val parsedName = when {
                     json.has("latest_version_name") -> json.optString("latest_version_name", "1.0")
                     json.has("version_name") -> json.optString("version_name", "1.0")
+                    json.has("versionName") -> json.optString("versionName", "1.0")
                     else -> "1.0"
                 }
                 val parsedForce = when {
                     json.has("is_force_update") -> json.optBoolean("is_force_update", false)
                     json.has("is_force") -> json.optBoolean("is_force", false)
+                    json.has("forceUpdate") -> json.optBoolean("forceUpdate", false)
                     else -> false
+                }
+                val parsedHindiNotes = when {
+                    json.has("update_notes_hindi") && json.optString("update_notes_hindi").isNotBlank() -> json.optString("update_notes_hindi")
+                    json.has("releaseNotes") && json.optString("releaseNotes").isNotBlank() -> json.optString("releaseNotes")
+                    else -> ""
+                }
+                val parsedEnglishNotes = when {
+                    json.has("update_notes_english") && json.optString("update_notes_english").isNotBlank() -> json.optString("update_notes_english")
+                    json.has("releaseNotes") && json.optString("releaseNotes").isNotBlank() -> json.optString("releaseNotes")
+                    else -> ""
                 }
                 OnlineUpdateInfo(
                     versionCode = parsedCode,
                     versionName = parsedName,
-                    updateNotesHindi = json.optString("update_notes_hindi", ""),
-                    updateNotesEnglish = json.optString("update_notes_english", ""),
+                    updateNotesHindi = parsedHindiNotes,
+                    updateNotesEnglish = parsedEnglishNotes,
                     apkUrl = parsedApkUrl,
                     isForce = parsedForce,
                     webhookUrl = json.optString("webhook_url", "")

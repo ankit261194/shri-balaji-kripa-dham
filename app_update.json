@@ -1,11 +1,19 @@
 {
-  "latest_version_code": 153,
-  "version_code": 153,
-  "latest_version_name": "2.66.0",
-  "version_name": "2.66.0",
-  "update_notes_hindi": "v2.66.0 (Build 153): 🌺 संपूर्ण 40 पावन आरतियां, भजन व दुर्गा सप्तशती के सभी 17 अध्याय व स्तोत्र 100% प्रामाणिक ऑडियो व पाठ सहित। सभी ऑडियो ट्रैक मिलान पूरी निष्ठा से ठीक किए गए।",
-  "update_notes_english": "v2.66.0 (Build 153): Complete suite of 40 authentic devotional tracks including all 17 chapters and stotras of Durga Saptashati with 100% verified authentic audio & full unabridged lyrics.",
+  "latest_version_code": 164,
+  "version_code": 164,
+  "versionCode": 164,
+  "latest_version_name": "2.77.0",
+  "version_name": "2.77.0",
+  "versionName": "2.77.0",
+  "update_notes_hindi": "v2.77.0 (बिल्ड 164): 🌺 12 पावन थीम्स (शेरावाली मैया, दीपावली, वीर हनुमान आदि) के दिव्य रूप, देव-प्रतीक व मंत्र; अलौकिक दर्शन का पूर्ण चित्र (JPEG) शेयरिंग; दर्शन व्यूज वास्तविक व स्थिर; दरबार लाइव केवल रविवार टोकन वितरण समय पर लाइव; सभी कृत्रिम ऑडियो हटाकर केवल 100% प्रामाणिक पारंपरिक आरतियां व चालीसा।",
+  "update_notes_english": "v2.77.0 (Build 164): 12 Authentic Sacred Themes with deity motifs & chants, direct JPEG photo sharing for Alokik Darshan, organic stable darshan views, Darbar Live strictly during Sunday token hours, and purge of synthetic audio.",
+  "releaseNotes": "1. 12 पावन थीम्स (शेरावाली मैया, दीपावली, वीर हनुमान, आदि) के दिव्य रूप, विशिष्ट देव-प्रतीक व पावन मंत्र\n2. अलौकिक दर्शन का पूर्ण चित्र (JPEG फ़ाइल) शेयरिंग\n3. दर्शन व्यूज वास्तविक व स्थिर\n4. दरबार लाइव केवल रविवार टोकन वितरण समय पर लाइव\n5. सभी कृत्रिम ऑडियो हटाकर केवल 100% प्रामाणिक पारंपरिक आरतियाँ व चालीसा",
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
+  "apkUrl": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
+  "apk_download_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
+  "apkSize": "80.8 MB",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
-  "is_force_update": true
+  "is_force_update": true,
+  "is_force": true,
+  "forceUpdate": true
 }
