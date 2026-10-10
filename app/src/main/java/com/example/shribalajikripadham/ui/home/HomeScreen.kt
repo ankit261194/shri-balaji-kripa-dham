@@ -386,6 +386,7 @@ fun HomeScreen(
                                 isHindi = isHindi,
                                 currentTheme = currentTheme,
                                 isTuesdayEnabled = settings.isTuesdayDarbarEnabled,
+                                scheduleState = scheduleState,
                                 onNavigateToToken = onNavigateToToken,
                                 onNavigateToFaceToken = onNavigateToFaceToken,
                                 onNavigateToTuesdayToken = onNavigateToTuesdayToken

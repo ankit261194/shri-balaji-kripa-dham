@@ -1743,13 +1743,27 @@ fun TokenRegistrationScreen(
                                             return@launch
                                         }
 
-                                        val accuracy = if (freshLocationAccuracy in 0.1f..250.0f) freshLocationAccuracy else (if (loc != null && loc.hasAccuracy()) loc.accuracy else 10.0f)
-                                        if (settings.isGeofenceEnforced && accuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS) {
+                                        val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: 0.0)
+                                        val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: 0.0)
+
+                                        if (settings.isGeofenceEnforced && (finalLat == 0.0 || finalLon == 0.0)) {
+                                            errorMessage = if (isHindi) "⚠️ वैध जीपीएस लोकेशन नहीं मिली। कृपया फोन का GPS चालू करें और पुनः प्रयास करें।" else "Valid GPS location required. Please turn on GPS."
+                                            isSubmitting = false
+                                            return@launch
+                                        }
+
+                                        val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
+                                        val ashLon = if (settings.longitude != 0.0) settings.longitude else 78.1460410
+                                        val currentCalculatedDist = GeofenceLocationManager.calculateDistanceMeters(finalLat, finalLon, ashLat, ashLon)
+                                        val isOutstationDevotee = (currentCalculatedDist >= ((settings.outstationMinDistanceKm - 2.0).coerceAtLeast(1.0) * 1000.0))
+
+                                        val accuracy = if (freshLocationAccuracy in 0.1f..350.0f) freshLocationAccuracy else (if (loc != null && loc.hasAccuracy()) loc.accuracy else 15.0f)
+                                        if (!isOutstationDevotee && settings.isGeofenceEnforced && accuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS) {
                                             val maxAcc = GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS.toInt()
                                             errorMessage = if (isHindi)
-                                                "⚠️ कमजोर जीपीएस सिग्नल (${String.format(Locale.US, "%.0f", accuracy)}m)। कृपया खुले आसमान के नीचे आकर पुनः प्रयास करें (सटीकता $maxAcc मीटर से कम होनी चाहिए)।"
+                                                "⚠️ कमजोर जीपीएस सिग्नल (${String.format(Locale.US, "%.0f", accuracy)}m)। कृपया खुले आसमान के नीचे आकर पुनः प्रयास करें।"
                                             else
-                                                "⚠️ Inaccurate GPS signal (${String.format(Locale.US, "%.0f", accuracy)}m). Please stand under open sky (must be within $maxAcc meters)."
+                                                "⚠️ Inaccurate GPS signal (${String.format(Locale.US, "%.0f", accuracy)}m). Please stand under open sky."
                                             try {
                                                 repository.logAuditEvent(
                                                     action = "SECURITY_BLOCKED_ACCURACY",
@@ -1762,18 +1776,8 @@ fun TokenRegistrationScreen(
                                             isSubmitting = false
                                             return@launch
                                         }
-                                        val finalLat = if (userLatitude != 0.0) userLatitude else (loc?.latitude ?: 0.0)
-                                        val finalLon = if (userLongitude != 0.0) userLongitude else (loc?.longitude ?: 0.0)
-
-                                        if (settings.isGeofenceEnforced && (finalLat == 0.0 || finalLon == 0.0)) {
-                                            errorMessage = if (isHindi) "⚠️ वैध जीपीएस लोकेशन नहीं मिली। कृपया GPS चालू करें और पुनः प्रयास करें।" else "Valid GPS location required. Please turn on GPS."
-                                            isSubmitting = false
-                                            return@launch
-                                        }
 
                                         if (settings.isGeofenceEnforced) {
-                                            val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
-                                            val ashLon = if (settings.longitude != 0.0) settings.longitude else 78.1460410
                                             val isCentroidSpoof = (kotlin.math.abs(finalLat - ashLat) < 0.000005 && kotlin.math.abs(finalLon - ashLon) < 0.000005)
                                             if (isCentroidSpoof) {
                                                 errorMessage = if (isHindi)
@@ -1784,10 +1788,14 @@ fun TokenRegistrationScreen(
                                                 return@launch
                                             }
                                             val currentGpsMeters = GeofenceLocationManager.calculateDistanceMeters(finalLat, finalLon, ashLat, ashLon)
-                                            val outstationM = settings.outstationMinDistanceKm * 1000.0
-                                            val isAtAshram = currentGpsMeters <= settings.allowedRadiusMeters
-                                            val isOutstationAdvance = currentGpsMeters > outstationM && settings.isOutstationAdvanceAllowed
-                                            if (!isAtAshram && !isOutstationAdvance) {
+                                            val isPermitted = GeofenceLocationManager.isTokenDistancePermitted(
+                                                distanceMeters = currentGpsMeters,
+                                                isGeofenceEnforced = true,
+                                                allowedRadiusMeters = settings.allowedRadiusMeters,
+                                                isOutstationAdvanceAllowed = settings.isOutstationAdvanceAllowed,
+                                                outstationMinDistanceKm = settings.outstationMinDistanceKm
+                                            )
+                                            if (!isPermitted) {
                                                 val distKm = String.format(Locale.US, "%.1f", currentGpsMeters / 1000.0)
                                                 val outKm = settings.outstationMinDistanceKm.toInt()
                                                 val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
@@ -1807,23 +1815,8 @@ fun TokenRegistrationScreen(
                                                 isSubmitting = false
                                                 return@launch
                                             }
-
-                                            // Anti-Spoof: Mismatch check between claimed local address and spoofed GPS location (> 30 km)
-                                            val localKeywords = listOf("डूंगरा", "डुंगरा", "अनूपशहर", "जहांगीराबाद", "जहागीराबाद", "डिबाई", "शिकारपुर", "औरंगाबाद", "स्याना", "बुलंदशहर", "बुलन्दशहर", "dungra", "anupshahr", "anupshahar", "jahangirabad", "dibai", "shikarpur", "bulandshahr")
-                                            val enteredText = "${devoteeVillageOrCity.trim()} ${originAddress.trim()}".lowercase(Locale.ROOT)
-                                            val isClaimingLocalTown = localKeywords.any { enteredText.contains(it) }
-                                            if (isClaimingLocalTown && currentGpsMeters > outstationM) {
-                                                errorMessage = if (isHindi)
-                                                    "⚠️ पता व लोकेशन विसंगति: आपने स्थानीय क्षेत्र ($devoteeVillageOrCity) दर्ज किया है, जबकि फोन की जीपीएस लोकेशन 30 किमी से अधिक दूर दिख रही है। कृपया फ़ेक ऐप बंद करें अथवा सही वास्तविक लोकेशन से प्रयास करें।"
-                                                else
-                                                    "Address & GPS mismatch: Local address claimed ($devoteeVillageOrCity) but GPS distance is > 30 km. Please disable mock GPS."
-                                                isSubmitting = false
-                                                return@launch
-                                            }
                                         }
 
-                                        val ashLat = if (settings.latitude != 0.0) settings.latitude else 28.3972915
-                                        val ashLon = if (settings.longitude != 0.0) settings.longitude else 78.1460410
                                         val distFromDarbarM = GeofenceLocationManager.calculateDistanceMeters(finalLat, finalLon, ashLat, ashLon)
                                         val finalDistanceKm = if (distFromDarbarM <= settings.allowedRadiusMeters) {
                                             (kotlin.math.round((distFromDarbarM / 1000.0) * 10) / 10).toFloat()

@@ -16,6 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shribalajikripadham.theme.SacredTheme
+import com.example.shribalajikripadham.util.SundayScheduleState
+import com.example.shribalajikripadham.util.SundayTokenScheduleHelper
 
 /**
  * Pro-Tier Sunday & Tuesday Token Call-to-Action Card.
@@ -26,6 +28,7 @@ fun SundayTokenActionCard(
     isHindi: Boolean,
     currentTheme: SacredTheme,
     isTuesdayEnabled: Boolean,
+    scheduleState: SundayScheduleState = SundayScheduleState.Open,
     onNavigateToToken: () -> Unit,
     onNavigateToFaceToken: () -> Unit,
     onNavigateToTuesdayToken: () -> Unit,
@@ -87,6 +90,91 @@ fun SundayTokenActionCard(
                 }
             }
 
+            // Real-Time Countdown Box if within 12-hour Sunday Window
+            if (scheduleState is SundayScheduleState.CountdownActive) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.Black.copy(alpha = 0.25f)
+                    ),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.2.dp, Color(0xFFFFD54F).copy(alpha = 0.85f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "⏳ ",
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = if (isHindi) "टोकन उल्टी गिनती प्रारंभ (12 घंटे पूर्व)" else "Token Registration Countdown",
+                                color = Color(0xFFFFE082),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Large Digital Ticking Clock
+                        val remainingClock = SundayTokenScheduleHelper.formatCountdown(scheduleState.remainingMillis)
+                        Surface(
+                            color = Color.Black.copy(alpha = 0.35f),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color(0xFFFFD54F).copy(alpha = 0.5f))
+                        ) {
+                            Text(
+                                text = remainingClock,
+                                color = Color(0xFFFFD54F),
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 2.sp,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = if (isHindi) {
+                                "${scheduleState.formattedTarget} टोकन स्वतः खुल जाएंगे"
+                            } else {
+                                "Opens automatically at ${scheduleState.formattedTarget}"
+                            },
+                            color = Color.White.copy(alpha = 0.92f),
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            } else if (scheduleState is SundayScheduleState.Open) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(text = "🟢 ", fontSize = 12.sp)
+                    Text(
+                        text = if (isHindi) "टोकन पंजीकरण सक्रिय है • अर्जी स्वीकार हो रही है" else "Token Registration is LIVE Now",
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(14.dp))
 
             // Action Buttons
@@ -106,7 +194,13 @@ fun SundayTokenActionCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = if (isHindi) "🎟️ टोकन प्राप्त करें" else "🎟️ Get Token",
+                        text = if (scheduleState is SundayScheduleState.CountdownActive) {
+                            if (isHindi) "⏳ टोकन उल्टी गिनती" else "⏳ Countdown Active"
+                        } else if (scheduleState is SundayScheduleState.Open) {
+                            if (isHindi) "🎟️ तुरंत टोकन लें (LIVE)" else "🎟️ Get Token (LIVE)"
+                        } else {
+                            if (isHindi) "🎟️ टोकन प्राप्त करें" else "🎟️ Get Token"
+                        },
                         fontSize = 13.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = currentTheme.primaryColor

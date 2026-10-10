@@ -25,14 +25,14 @@ data class LocationSecurityResult(
 
 object GeofenceLocationManager {
 
-    const val MAX_ALLOWED_ACCURACY_METERS = 100.0f
+    const val MAX_ALLOWED_ACCURACY_METERS = 250.0f
     const val OUTSTATION_MIN_DISTANCE_METERS = 30000.0 // 30 km
     const val LOCAL_ASHRAM_MAX_DISTANCE_METERS = 200.0 // 200 meters
 
     /**
      * Dual-Distance Eligibility Evaluator:
-     * - Devotees > 30 km: Can register token in advance from home/city.
-     * - Devotees <= 30 km: MUST be physically within 200m of Ashram (Gram Dungra Jaat).
+     * - Devotees >= 28 km: Can register token in advance from home/city (with road-curvature buffer).
+     * - Local Devotees: MUST be physically within Ashram perimeter (allowedRadius + 150m GPS drift buffer).
      */
     fun isTokenDistancePermitted(
         distanceMeters: Double,
@@ -43,9 +43,11 @@ object GeofenceLocationManager {
     ): Boolean {
         if (!isGeofenceEnforced) return true
         if (distanceMeters < 0.0) return false // Negative distance = no GPS fix, strictly not permitted!
-        val outstationMinMeters = outstationMinDistanceKm * 1000.0
-        val isOutstationPermitted = isOutstationAdvanceAllowed && (distanceMeters > outstationMinMeters)
-        val isLocalPermitted = (distanceMeters <= allowedRadiusMeters)
+        // 2 km buffer for outstation straight-line vs actual road distance
+        val outstationMinMeters = ((outstationMinDistanceKm - 2.0).coerceAtLeast(1.0)) * 1000.0
+        val isOutstationPermitted = isOutstationAdvanceAllowed && (distanceMeters >= outstationMinMeters)
+        // 150m GPS drift and campus buffer for Ashram local devotees (200m + 150m = 350m radius)
+        val isLocalPermitted = (distanceMeters <= (allowedRadiusMeters + 150.0))
         return isOutstationPermitted || isLocalPermitted
     }
 
@@ -107,13 +109,7 @@ object GeofenceLocationManager {
      * Checks if device is rooted or has Magisk / KernelSU / su binary installed.
      */
     fun isDeviceRooted(context: Context): Boolean {
-        // 1. Check build tags for test-keys
-        val buildTags = Build.TAGS
-        if (buildTags != null && buildTags.contains("test-keys")) {
-            return true
-        }
-
-        // 2. Check for su binaries in system paths
+        // 1. Check for verified su binaries in system paths (genuine root only)
         for (path in ROOT_BINARY_PATHS) {
             try {
                 if (java.io.File(path).exists()) return true
@@ -297,25 +293,13 @@ object GeofenceLocationManager {
             )
         }
 
-        // 2. Validate Accuracy Threshold (Must be <= MAX_ALLOWED_ACCURACY_METERS)
-        val accuracy = if (location.hasAccuracy()) location.accuracy else Float.MAX_VALUE
-        if (accuracy > MAX_ALLOWED_ACCURACY_METERS) {
-            return LocationSecurityResult(
-                isValid = false,
-                isMock = false,
-                accuracyMeters = accuracy,
-                distanceMeters = calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon),
-                isInsideGeofence = false,
-                securityExceptionReason = "⚠️ जीपीएस सिग्नल बहुत कमज़ोर है (${String.format(java.util.Locale.US, "%.1f", accuracy)}m > ${MAX_ALLOWED_ACCURACY_METERS}m)। कृपया खुले स्थान पर आकर प्रयास करें।"
-            )
-        }
-
-        // 3. Dual-Distance Evaluation
+        // 2. Dual-Distance Evaluation
         val distance = calculateDistanceMeters(location.latitude, location.longitude, ashramLat, ashramLon)
-        val outstationMinMeters = outstationMinDistanceKm * 1000.0
+        val outstationMinMeters = ((outstationMinDistanceKm - 2.0).coerceAtLeast(1.0)) * 1000.0
+        val accuracy = if (location.hasAccuracy()) location.accuracy else 20.0f
 
-        // Case A: Devotee is coming from > outstationMinDistanceKm away -> Advance token is permitted
-        if (isOutstationAdvanceAllowed && distance > outstationMinMeters) {
+        // Case A: Devotee is coming from >= outstationMinDistanceKm away -> Advance token is permitted from home/village
+        if (isOutstationAdvanceAllowed && distance >= outstationMinMeters) {
             return LocationSecurityResult(
                 isValid = true,
                 isMock = false,
@@ -328,8 +312,20 @@ object GeofenceLocationManager {
             )
         }
 
-        // Case B: Devotee is physically at Ashram (<= allowedRadiusMeters) -> Local token permitted
-        if (distance <= allowedRadiusMeters) {
+        // Case B: Devotee is physically at Ashram (<= allowedRadiusMeters + 150m drift buffer)
+        val effectiveRadius = allowedRadiusMeters + 150.0
+        if (distance <= effectiveRadius) {
+            // Validate Accuracy Threshold for local Ashram check
+            if (accuracy > MAX_ALLOWED_ACCURACY_METERS) {
+                return LocationSecurityResult(
+                    isValid = false,
+                    isMock = false,
+                    accuracyMeters = accuracy,
+                    distanceMeters = distance,
+                    isInsideGeofence = false,
+                    securityExceptionReason = "⚠️ जीपीएस सिग्नल बहुत कमज़ोर है (${String.format(java.util.Locale.US, "%.0f", accuracy)}m)। कृपया खुले स्थान पर आकर प्रयास करें।"
+                )
+            }
             return LocationSecurityResult(
                 isValid = true,
                 isMock = false,

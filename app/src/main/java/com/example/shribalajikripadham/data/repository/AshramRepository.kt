@@ -1095,10 +1095,6 @@ class AshramRepository(context: Context) {
                 throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
             }
 
-            if (locationAccuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS) {
-                throw SecurityException("Security Exception: Inaccurate GPS signal (${String.format("%.1f", locationAccuracy)}m). Please stand in open area.")
-            }
-
             if (settings.isGeofenceEnforced) {
                 if (latitude == 0.0 && longitude == 0.0) {
                     throw SecurityException("कृपया GPS चालू करें और $targetVenueLabel परिसर में उपस्थित रहें।")
@@ -1110,6 +1106,15 @@ class AshramRepository(context: Context) {
                     latitude, longitude,
                     targetLat, targetLng
                 )
+                val outstationThresholdM = ((targetOutstationKm - 2.0).coerceAtLeast(1.0)) * 1000.0
+                val isOutstation = distance >= outstationThresholdM
+
+                // Accuracy validation applies ONLY to local devotees (< 28 km)
+                // Devotees registering in advance from home (> 28 km) are exempt from indoor accuracy check
+                if (!isOutstation && locationAccuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS) {
+                    throw SecurityException("Security Exception: Inaccurate GPS signal (${String.format("%.1f", locationAccuracy)}m). Please stand in open area.")
+                }
+
                 val isPermitted = GeofenceLocationManager.isTokenDistancePermitted(
                     distanceMeters = distance,
                     isGeofenceEnforced = true,

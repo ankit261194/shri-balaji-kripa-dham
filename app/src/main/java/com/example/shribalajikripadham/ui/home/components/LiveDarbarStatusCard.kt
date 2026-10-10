@@ -36,11 +36,12 @@ fun LiveDarbarStatusCard(
 ) {
     // Strictly LIVE ONLY when tokens are actually being distributed / registration is OPEN
     val isDarbarLive = scheduleState is SundayScheduleState.Open
+    val isCountdown = scheduleState is SundayScheduleState.CountdownActive
 
     SacredTempleCard(
         currentTheme = currentTheme,
-        containerColor = if (isDarbarLive) Color(0xFFFFF3E0) else currentTheme.surfaceLight,
-        borderGoldColor = if (isDarbarLive) Color(0xFFFF9800) else currentTheme.accentGold,
+        containerColor = if (isDarbarLive) Color(0xFFFFF3E0) else if (isCountdown) Color(0xFFFFFDE7) else currentTheme.surfaceLight,
+        borderGoldColor = if (isDarbarLive) Color(0xFFFF9800) else if (isCountdown) Color(0xFFFFB300) else currentTheme.accentGold,
         modifier = modifier
             .fillMaxWidth()
             .clickable {
@@ -65,12 +66,13 @@ fun LiveDarbarStatusCard(
                         .clip(CircleShape)
                         .background(
                             if (isDarbarLive) Color(0xFFE65100)
+                            else if (isCountdown) Color(0xFFFF8F00).copy(alpha = 0.18f)
                             else currentTheme.primaryColor.copy(alpha = 0.10f)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (isDarbarLive) "🔴" else "🎟️",
+                        text = if (isDarbarLive) "🔴" else if (isCountdown) "⏳" else "🎟️",
                         fontSize = 20.sp
                     )
                 }
@@ -82,27 +84,29 @@ fun LiveDarbarStatusCard(
                         Text(
                             text = if (isDarbarLive) {
                                 if (isHindi) "दरबार लाइव चल रहा है" else "Darbar is LIVE Now"
+                            } else if (isCountdown) {
+                                if (isHindi) "⏳ टोकन उल्टी गिनती जारी" else "⏳ Token Countdown Active"
                             } else {
                                 if (isHindi) "टोकन पंजीकरण अभी बंद है" else "Token Registration Closed"
                             },
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
-                            color = if (isDarbarLive) Color(0xFFBF360C) else currentTheme.primaryColor
+                            color = if (isDarbarLive) Color(0xFFBF360C) else if (isCountdown) Color(0xFFE65100) else currentTheme.primaryColor
                         )
 
                         Spacer(modifier = Modifier.width(6.dp))
 
                         // Pulse or Status Pill
                         Surface(
-                            color = if (isDarbarLive) Color(0xFFFFCCBC) else Color(0xFFF1F5F9),
+                            color = if (isDarbarLive) Color(0xFFFFCCBC) else if (isCountdown) Color(0xFFFFE082) else Color(0xFFF1F5F9),
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
-                                text = if (isDarbarLive) "LIVE" else if (scheduleState is SundayScheduleState.CountdownActive) "SOON" else "CLOSED",
+                                text = if (isDarbarLive) "LIVE" else if (isCountdown) "COUNTDOWN" else "CLOSED",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = if (isDarbarLive) Color(0xFFBF360C) else Color(0xFF64748B),
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                color = if (isDarbarLive) Color(0xFFBF360C) else if (isCountdown) Color(0xFFE65100) else Color(0xFF64748B),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
                     }
@@ -119,7 +123,11 @@ fun LiveDarbarStatusCard(
                             }
                         } else {
                             when (scheduleState) {
-                                is SundayScheduleState.CountdownActive -> if (isHindi) "टोकन शुरू होने में समय बाकी (${scheduleState.formattedTarget})" else "Opening shortly (${scheduleState.formattedTarget})"
+                                is SundayScheduleState.CountdownActive -> {
+                                    val clock = com.example.shribalajikripadham.util.SundayTokenScheduleHelper.formatCountdown(scheduleState.remainingMillis)
+                                    if (isHindi) "⏰ शेष समय: $clock • ${scheduleState.formattedTarget} स्वतः खुलेंगे"
+                                    else "⏰ Time left: $clock • Opens at ${scheduleState.formattedTarget}"
+                                }
                                 is SundayScheduleState.SundayBeforeStart -> if (isHindi) "आज रविवार प्रातः 8:30 बजे से टोकन खुलेंगे" else "Tokens open today at 8:30 AM"
                                 is SundayScheduleState.SundayClosedEvening -> if (isHindi) "आज का टोकन समय समाप्त • डूँगरा जाट" else "Today's Darbar session closed"
                                 is SundayScheduleState.NonSunday -> if (isHindi) "डूँगरा जाट • प्रत्येक रविवार प्रातः 8:30 से" else "Dungra Jaat • Every Sunday from 8:30 AM"
