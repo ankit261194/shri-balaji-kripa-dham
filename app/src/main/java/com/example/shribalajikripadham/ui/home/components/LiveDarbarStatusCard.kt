@@ -71,21 +71,38 @@ fun LiveDarbarStatusCard(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = if (isDarbarLive) "🔴" else if (isCountdown) "⏳" else "🎟️",
-                        fontSize = 20.sp
-                    )
+                    if (isDarbarLive) {
+                        Text(text = "🔴", fontSize = 20.sp)
+                    } else if (isCountdown) {
+                        AnimatedSacredHourglass(
+                            size = 26.dp,
+                            primaryColor = Color(0xFFE65100),
+                            sandColor = Color(0xFFFF9800),
+                            sandDarkColor = Color(0xFFBF360C)
+                        )
+                    } else {
+                        Text(text = "🎟️", fontSize = 20.sp)
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isCountdown) {
+                            AnimatedSacredHourglass(
+                                size = 16.dp,
+                                primaryColor = Color(0xFFE65100),
+                                sandColor = Color(0xFFFF9800),
+                                sandDarkColor = Color(0xFFBF360C)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                        }
                         Text(
                             text = if (isDarbarLive) {
                                 if (isHindi) "दरबार लाइव चल रहा है" else "Darbar is LIVE Now"
                             } else if (isCountdown) {
-                                if (isHindi) "⏳ टोकन उल्टी गिनती जारी" else "⏳ Token Countdown Active"
+                                if (isHindi) "टोकन उल्टी गिनती जारी" else "Token Countdown Active"
                             } else {
                                 if (isHindi) "टोकन पंजीकरण अभी बंद है" else "Token Registration Closed"
                             },

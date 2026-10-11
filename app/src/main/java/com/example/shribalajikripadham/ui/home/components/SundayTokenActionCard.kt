@@ -111,10 +111,13 @@ fun SundayTokenActionCard(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
-                            Text(
-                                text = "⏳ ",
-                                fontSize = 14.sp
+                            AnimatedSacredHourglass(
+                                size = 22.dp,
+                                primaryColor = Color(0xFFFFD54F),
+                                sandColor = Color(0xFFFFB300),
+                                sandDarkColor = Color(0xFFE65100)
                             )
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = if (isHindi) "टोकन उल्टी गिनती प्रारंभ (12 घंटे पूर्व)" else "Token Registration Countdown",
                                 color = Color(0xFFFFE082),
@@ -193,18 +196,40 @@ fun SundayTokenActionCard(
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(
-                        text = if (scheduleState is SundayScheduleState.CountdownActive) {
-                            if (isHindi) "⏳ टोकन उल्टी गिनती" else "⏳ Countdown Active"
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        if (scheduleState is SundayScheduleState.CountdownActive) {
+                            AnimatedSacredHourglass(
+                                size = 18.dp,
+                                primaryColor = currentTheme.primaryColor,
+                                sandColor = currentTheme.primaryColor,
+                                sandDarkColor = currentTheme.headerGradientStart
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isHindi) "टोकन उल्टी गिनती" else "Countdown Active",
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = currentTheme.primaryColor
+                            )
                         } else if (scheduleState is SundayScheduleState.Open) {
-                            if (isHindi) "🎟️ तुरंत टोकन लें (LIVE)" else "🎟️ Get Token (LIVE)"
+                            Text(
+                                text = if (isHindi) "🎟️ तुरंत टोकन लें (LIVE)" else "🎟️ Get Token (LIVE)",
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = currentTheme.primaryColor
+                            )
                         } else {
-                            if (isHindi) "🎟️ टोकन प्राप्त करें" else "🎟️ Get Token"
-                        },
-                        fontSize = 13.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = currentTheme.primaryColor
-                    )
+                            Text(
+                                text = if (isHindi) "🎟️ टोकन प्राप्त करें" else "🎟️ Get Token",
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = currentTheme.primaryColor
+                            )
+                        }
+                    }
                 }
 
                 // Face Token Button

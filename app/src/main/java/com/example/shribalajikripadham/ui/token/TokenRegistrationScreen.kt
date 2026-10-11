@@ -821,7 +821,16 @@ fun TokenRegistrationScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(iconText, fontSize = 28.sp)
+                                if (scheduleState is SundayScheduleState.CountdownActive) {
+                                    com.example.shribalajikripadham.ui.home.components.AnimatedSacredHourglass(
+                                        size = 30.dp,
+                                        primaryColor = Color(0xFFE65100),
+                                        sandColor = Color(0xFFFF9800),
+                                        sandDarkColor = Color(0xFFBF360C)
+                                    )
+                                } else {
+                                    Text(iconText, fontSize = 28.sp)
+                                }
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = titleText,
