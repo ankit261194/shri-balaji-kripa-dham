@@ -58,25 +58,33 @@ if (isset($_GET['sync_version'])) {
 
 // Status check
 if (isset($_GET['status']) || isset($_GET['check'])) {
-    $apkFiles = glob($dlDir . '/*.apk');
+    $allFiles = is_dir($dlDir) ? @scandir($dlDir) : [];
     $summary = [];
-    if (!empty($apkFiles)) {
-        foreach ($apkFiles as $f) {
-            $summary[basename($f)] = [
-                "size" => filesize($f),
-                "size_mb" => round(filesize($f) / (1024 * 1024), 2) . " MB",
-                "mtime" => date("Y-m-d H:i:s", filemtime($f))
+    if (!empty($allFiles)) {
+        foreach ($allFiles as $f) {
+            if ($f === '.' || $f === '..') continue;
+            $fullPath = $dlDir . '/' . $f;
+            $summary[$f] = [
+                "size" => @filesize($fullPath),
+                "size_mb" => round(@filesize($fullPath) / (1024 * 1024), 2) . " MB",
+                "mtime" => @date("Y-m-d H:i:s", @filemtime($fullPath)),
+                "is_file" => @is_file($fullPath),
+                "is_readable" => @is_readable($fullPath)
             ];
         }
     }
     echo json_encode([
         "success" => true,
+        "base_dir" => __DIR__,
+        "dl_dir" => $dlDir,
         "dlDir_exists" => is_dir($dlDir),
+        "dlDir_writable" => is_writable($dlDir),
+        "disk_free_mb" => round(@disk_free_space(__DIR__) / (1024 * 1024), 2),
         "target_release_exists" => file_exists($targetFile),
-        "target_release_size" => file_exists($targetFile) ? filesize($targetFile) : 0,
+        "target_release_size" => file_exists($targetFile) ? @filesize($targetFile) : 0,
         "tmp_exists" => file_exists($tmpFile),
-        "tmp_size" => file_exists($tmpFile) ? filesize($tmpFile) : 0,
-        "files" => $summary
+        "tmp_size" => file_exists($tmpFile) ? @filesize($tmpFile) : 0,
+        "scandir_files" => $summary
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     exit;
 }
