@@ -157,78 +157,16 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     "size_mb" => round(filesize($targetFile) / (1024 * 1024), 2) . " MB"
                 ]);
                 exit;
-            }
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
+            // Create versioned copies for Build 168 (just 1 copy, ultra fast, no I/O timeout)
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v168.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v167.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v166.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v165.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v164.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v163.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v162.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v161.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v160.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v159.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v158.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v157.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v156.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v155.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v154.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v153.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v152.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v151.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v150.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v149.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v148.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v147.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v146.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v145.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v144.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v143.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v142.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v141.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v140.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v139.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v138.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v137.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v136.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v135.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v134.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v133.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v132.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v131.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v130.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v129.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v128.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v127.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v126.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v125.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v124.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v123.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v122.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v121.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v120.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v119.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v118.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v117.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v116.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v115.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v114.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v113.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v112.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v111.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v110.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v109.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v108.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v107.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v106.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v105.apk');
+            @chmod($dlDir . '/ShriBalajiKripaDham-v168.apk', 0644);
             echo json_encode([
                 "success" => true,
                 "complete" => true,
                 "size" => filesize($targetFile),
                 "size_mb" => round(filesize($targetFile) / (1024 * 1024), 2) . " MB",
-                "v107" => file_exists($dlDir . '/ShriBalajiKripaDham-v107.apk')
+                "release_exists" => file_exists($dlDir . '/ShriBalajiKripaDham-release.apk'),
+                "v168_exists" => file_exists($dlDir . '/ShriBalajiKripaDham-v168.apk')
             ]);
             exit;
         }
