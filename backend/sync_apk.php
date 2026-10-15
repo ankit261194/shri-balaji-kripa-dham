@@ -157,6 +157,7 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     "size_mb" => round(filesize($targetFile) / (1024 * 1024), 2) . " MB"
                 ]);
                 exit;
+            }
             // Create versioned copies for Build 168 (just 1 copy, ultra fast, no I/O timeout)
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v168.apk');
             @chmod($dlDir . '/ShriBalajiKripaDham-v168.apk', 0644);
