@@ -159,16 +159,56 @@ if (file_exists($targetFile) && filesize($targetFile) > 10000000) {
     exit;
 }
 
-// 2. Fallback to external CDN or GitHub if local file is missing
-$cdnUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/latest/download/ShriBalajiKripaDham-release.apk";
+// 2. Fallback handling when local file is missing
+$externalCdnUrl = '';
 if (file_exists(__DIR__ . '/version.json')) {
     $vj = @json_decode(file_get_contents(__DIR__ . '/version.json'), true);
-    if (!empty($vj['apk_url']) && strpos($vj['apk_url'], 'download.php') === false) {
-        $cdnUrl = $vj['apk_url'];
+    if (!empty($vj['apk_url'])) {
+        $candidateUrl = trim($vj['apk_url']);
+        // Only redirect if candidateUrl is truly external (different host or not downloads/*.apk on same domain)
+        $parsedHost = parse_url($candidateUrl, PHP_URL_HOST);
+        $currentHost = $_SERVER['HTTP_HOST'] ?? 'shribalajikripadham.online';
+        if ($parsedHost && $parsedHost !== $currentHost) {
+            $externalCdnUrl = $candidateUrl;
+        }
     }
 }
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Pragma: no-cache");
-header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-header("Location: " . $cdnUrl, true, 302);
+
+if (!empty($externalCdnUrl)) {
+    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+    header("Pragma: no-cache");
+    header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+    header("Location: " . $externalCdnUrl, true, 302);
+    exit;
+}
+
+// Devotional Fallback Status Page (Never redirect in a loop)
+http_response_code(503);
+header("Content-Type: text/html; charset=utf-8");
+header("Retry-After: 30");
+?>
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>श्री बालाजी कृपा धाम - ऐप डाउनलोड</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #FFF8E7; color: #3E2723; text-align: center; padding: 40px 20px; }
+        .card { max-width: 500px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 5px solid #FF9800; }
+        h1 { color: #E65100; font-size: 1.6rem; margin-bottom: 12px; }
+        p { font-size: 1rem; line-height: 1.6; color: #5D4037; }
+        .btn { display: inline-block; margin-top: 20px; padding: 12px 28px; background: linear-gradient(135deg, #FF9800, #E65100); color: white; text-decoration: none; border-radius: 25px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚩 श्री बालाजी कृपा धाम</h1>
+        <p>नवीनतम ऐप संस्करण सर्वर पर सिंक किया जा रहा है।<br>कृपया कुछ ही पलों में पुनः प्रयास करें।</p>
+        <a href="download.php" class="btn">पुनः डाउनलोड करें</a>
+    </div>
+</body>
+</html>
+<?php
 exit;
+

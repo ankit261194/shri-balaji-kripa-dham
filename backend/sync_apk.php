@@ -56,6 +56,31 @@ if (isset($_GET['sync_version'])) {
     }
 }
 
+// Status check
+if (isset($_GET['status']) || isset($_GET['check'])) {
+    $apkFiles = glob($dlDir . '/*.apk');
+    $summary = [];
+    if (!empty($apkFiles)) {
+        foreach ($apkFiles as $f) {
+            $summary[basename($f)] = [
+                "size" => filesize($f),
+                "size_mb" => round(filesize($f) / (1024 * 1024), 2) . " MB",
+                "mtime" => date("Y-m-d H:i:s", filemtime($f))
+            ];
+        }
+    }
+    echo json_encode([
+        "success" => true,
+        "dlDir_exists" => is_dir($dlDir),
+        "target_release_exists" => file_exists($targetFile),
+        "target_release_size" => file_exists($targetFile) ? filesize($targetFile) : 0,
+        "tmp_exists" => file_exists($tmpFile),
+        "tmp_size" => file_exists($tmpFile) ? filesize($tmpFile) : 0,
+        "files" => $summary
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 // Reset requested
 if (isset($_GET['reset'])) {
     $app = strtolower(trim($_GET['app'] ?? ''));
@@ -79,9 +104,13 @@ if (isset($_GET['upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         fclose($fp);
         if (filesize($tmpFile) > 10000000) {
             rename($tmpFile, $targetFile);
+            @chmod($targetFile, 0644);
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v125.apk');
-            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v124.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v168.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v167.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v166.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v165.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v164.apk');
             echo json_encode([
                 "success" => true,
                 "method" => "upload",
@@ -93,7 +122,7 @@ if (isset($_GET['upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// 1B. Chunked Upload Mode (Appends 5MB chunks to avoid timeouts)
+// 1B. Chunked Upload Mode (Appends 2-5MB chunks to avoid timeouts)
 if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $chunkIndex = intval($_GET['chunk'] ?? 0);
     $isLast = isset($_GET['last']) && ($_GET['last'] === '1' || $_GET['last'] === 'true');
@@ -116,6 +145,7 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $currentSize = file_exists($tmpFile) ? filesize($tmpFile) : 0;
         if ($isLast && $currentSize > 10000000) {
             rename($tmpFile, $targetFile);
+            @chmod($targetFile, 0644);
             if ($app === 'elevex') {
                 @copy($targetFile, $elevexDir . '/Ankit_EleveX_latest.apk');
                 echo json_encode([
@@ -129,6 +159,10 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-release.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v168.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v167.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v166.apk');
+            @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v165.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v164.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v163.apk');
             @copy($targetFile, $dlDir . '/ShriBalajiKripaDham-v162.apk');
