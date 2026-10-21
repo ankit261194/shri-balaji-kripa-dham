@@ -91,6 +91,7 @@ $filesToSync = [
     "api/send_otp.php",
     "api/verify_otp.php",
     "api/device_session.php",
+    "api/sync_leads.php",
     "sync_elevex_apk.php",
     "elevex_gateway/app_update.json"
 ];
