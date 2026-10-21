@@ -195,7 +195,7 @@ if ($action === 'create_repair_lead') {
                 $notifStmt->execute([
                     ':title' => "🚨 नई लिफ्ट ब्रेकडाउन: $buildingName ($city)",
                     ':msg' => "ब्रांड: $liftBrand | समस्या: $issueCat. तुरंत स्वीकार करें!",
-                    ':lid' => $leadId
+                    ':lid' => (int)$leadId
                 ]);
             } catch (Exception $ne) {}
 
@@ -241,20 +241,21 @@ if ($action === 'update_tech_status') {
             $stmt = $db->prepare("
                 UPDATE elevex_repair_leads 
                 SET status = :st, tech_user_id = :tuid, tech_name = :tn, tech_phone = :tp 
-                WHERE id = :lid OR lead_ref = :lid
+                WHERE id = :lid OR lead_ref = :lref
             ");
             $stmt->execute([
                 ':st' => $status, 
                 ':tuid' => $techUserId, 
                 ':tn' => $techName, 
                 ':tp' => $techPhone, 
-                ':lid' => $leadId
+                ':lid' => intval($leadId),
+                ':lref' => $leadId
             ]);
 
             // Notify owner about technician status
             try {
-                $leadQuery = $db->prepare("SELECT owner_phone, building_name, completion_otp FROM elevex_repair_leads WHERE id = :lid OR lead_ref = :lid LIMIT 1");
-                $leadQuery->execute([':lid' => $leadId]);
+                $leadQuery = $db->prepare("SELECT id, owner_phone, building_name, completion_otp FROM elevex_repair_leads WHERE id = :lid OR lead_ref = :lref LIMIT 1");
+                $leadQuery->execute([':lid' => intval($leadId), ':lref' => $leadId]);
                 $leadRow = $leadQuery->fetch(PDO::FETCH_ASSOC);
 
                 if ($leadRow && !empty($leadRow['owner_phone'])) {
@@ -280,7 +281,7 @@ if ($action === 'update_tech_status') {
                             ':ph' => $leadRow['owner_phone'],
                             ':title' => $ownerTitle,
                             ':msg' => $ownerMsg,
-                            ':lid' => (int)$leadId
+                            ':lid' => (int)$leadRow['id']
                         ]);
                     }
                 }
@@ -316,8 +317,8 @@ if ($action === 'verify_and_complete_lead') {
 
     if ($db) {
         try {
-            $checkStmt = $db->prepare("SELECT id, completion_otp, owner_phone, building_name FROM elevex_repair_leads WHERE id = :lid OR lead_ref = :lid LIMIT 1");
-            $checkStmt->execute([':lid' => $leadId]);
+            $checkStmt = $db->prepare("SELECT id, completion_otp, owner_phone, building_name FROM elevex_repair_leads WHERE id = :lid OR lead_ref = :lref LIMIT 1");
+            $checkStmt->execute([':lid' => intval($leadId), ':lref' => $leadId]);
             $lead = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$lead) {
@@ -342,12 +343,13 @@ if ($action === 'verify_and_complete_lead') {
                     service_notes = :notes, 
                     total_amount = :amt, 
                     completed_at = NOW() 
-                WHERE id = :lid OR lead_ref = :lid
+                WHERE id = :lid OR lead_ref = :lref
             ");
             $updateStmt->execute([
                 ':notes' => $serviceNotes,
                 ':amt' => $amount,
-                ':lid' => $leadId
+                ':lid' => intval($leadId),
+                ':lref' => $leadId
             ]);
 
             // Notify owner of job completion
@@ -361,7 +363,7 @@ if ($action === 'verify_and_complete_lead') {
                         ':ph' => $lead['owner_phone'],
                         ':title' => "✅ लिफ्ट मेंटेनेंस कार्य पूर्ण!",
                         ':msg' => "आपकी लिफ्ट (${lead['building_name']}) सफलतापूर्वक ठीक हो गई है। डिजिटल जॉबशीट जनरेट हो गई है।",
-                        ':lid' => $lead['id']
+                        ':lid' => (int)$lead['id']
                     ]);
                 }
             } catch (Exception $ne) {}
