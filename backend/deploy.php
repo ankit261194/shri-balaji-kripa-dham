@@ -93,6 +93,7 @@ $filesToSync = [
     "api/device_session.php",
     "api/sync_leads.php",
     "sync_elevex_apk.php",
+    "sync_ecommerce.php",
     "elevex_gateway/app_update.json"
 ];
 
