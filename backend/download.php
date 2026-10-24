@@ -23,9 +23,34 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
     $exactFile = "$elevexDir/Ankit_EleveX_v{$latestVer}_Final.apk";
     if (file_exists($exactFile) && filesize($exactFile) > 10000000) {
         $targetFile = $exactFile;
-    } else {
-        // 2. Fallback: Natural sort of all APKs descending (latest version always first)
+    }
+
+    // 2. Fallback: Check standard Release APK
+    if (empty($targetFile)) {
+        $relFile = "$elevexDir/Ankit_EleveX_Release.apk";
+        if (file_exists($relFile) && filesize($relFile) > 10000000) {
+            $targetFile = $relFile;
+        }
+    }
+
+    // 3. Fallback: Natural sort of all APKs descending (latest version always first)
+    if (empty($targetFile)) {
         $files = glob("$elevexDir/Ankit_EleveX*.apk");
+        if (!empty($files)) {
+            natsort($files);
+            $files = array_reverse($files);
+            foreach ($files as $f) {
+                if (filesize($f) > 10000000) {
+                    $targetFile = $f;
+                    break;
+                }
+            }
+        }
+    }
+
+    // 4. Fallback: Check root downloads directory
+    if (empty($targetFile)) {
+        $files = glob(__DIR__ . '/downloads/Ankit_EleveX*.apk');
         if (!empty($files)) {
             natsort($files);
             $files = array_reverse($files);
@@ -40,7 +65,7 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
 
     if (!empty($targetFile) && file_exists($targetFile)) {
         $filesize = filesize($targetFile);
-        $filename = basename($targetFile);
+        $filename = "Ankit_EleveX_v{$latestVer}_Final.apk";
 
         while (ob_get_level()) ob_end_clean();
         header("Content-Type: application/vnd.android.package-archive");
@@ -64,8 +89,10 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
         exit;
     }
 
-    // High-Speed GitHub Releases Cloud Mirror Fallback (Always Guaranteed & Dynamic)
-    header("Location: https://github.com/ankit261194/ankits-liftramban/releases/download/v{$latestVer}/Ankit_EleveX_v{$latestVer}_Final.apk");
+    // Graceful 404 response if no APK is found on server - NEVER redirect to broken GitHub URL
+    http_response_code(404);
+    header('Content-Type: text/html; charset=utf-8');
+    echo "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Update In Progress</title></head><body style='font-family:sans-serif;text-align:center;padding:50px;'><h2>अपडेट फ़ाइल सर्वर पर तैयार हो रही है</h2><p>कृपया 2 मिनट बाद पुनः प्रयास करें।</p></body></html>";
     exit;
 }
 
