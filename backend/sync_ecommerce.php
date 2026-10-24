@@ -20,39 +20,47 @@ if (!is_dir($targetBaseDir)) {
     @mkdir($targetBaseDir, 0755, true);
 }
 
+// Clean old assets if exists to prevent stale chunks
+$assetsDir = $targetBaseDir . '/assets';
+if (is_dir($assetsDir)) {
+    foreach (glob($assetsDir . '/*') as $f) {
+        if (is_file($f)) @unlink($f);
+    }
+}
+
 $files = [
+    "api/.htaccess",
+    "api/data.json",
+    "api/index.php",
+    "assets/BentoGrid-7cxG5yvw.js",
+    "assets/CameraBarcodeScannerModal-1qBMXYUg.js",
+    "assets/CourierDashboard-D5e7zbnp.js",
+    "assets/CustomerStorefront-D_Jbz2Zi.js",
+    "assets/DemoHub-CbNEiEe_.js",
+    "assets/feature-crossborder-recs-BoSLzOf3.js",
+    "assets/feature-escrow-engine-CUoOmFlS.js",
+    "assets/feature-fraud-engine-DlAMle6S.js",
+    "assets/feature-tax-compliance-DRD7YHOB.js",
+    "assets/feature-vendor-subscription-BGLmVyHO.js",
+    "assets/feature-video-shopping-3x1k_4L0.js",
+    "assets/index-C-LfsLzw.js",
+    "assets/index-CiqTCk71.css",
+    "assets/InstallWizard-Dr5H0w1E.js",
+    "assets/InventoryAlertsModal-BzwZc38J.js",
+    "assets/SlideOverDrawer-CJR7freH.js",
+    "assets/SuperAdminDashboard-BUckJbfp.js",
+    "assets/TaxInvoiceModal-COR3oBBV.js",
+    "assets/vendor-misc-nwr-sXqd.js",
+    "assets/vendor-network-BcNqe6-g.js",
+    "assets/vendor-react-C9PhKaO_.js",
+    "assets/VendorPortal-Bo-kR89l.js",
+    "assets/VendorPublicStoreModal-DX6y6k2X.js",
+    "HOW_TO_UPLOAD_TO_CPANEL.txt",
     "index.html",
     "manifest.json",
     "robots.txt",
     "sitemap.xml",
-    "sw.js",
-    "HOW_TO_UPLOAD_TO_CPANEL.txt",
-    "api/.htaccess",
-    "api/data.json",
-    "api/index.php",
-    "assets/BentoGrid-BEJ22lZW.js",
-    "assets/CameraBarcodeScannerModal-Dyfq1uX7.js",
-    "assets/CourierDashboard-hjx-FSWu.js",
-    "assets/CustomerStorefront-Dx5coxKB.js",
-    "assets/DemoHub-Cw7VLFNo.js",
-    "assets/InstallWizard-BiDaQRq8.js",
-    "assets/InventoryAlertsModal-Lx9qvVnc.js",
-    "assets/SlideOverDrawer-DmmRCURG.js",
-    "assets/SuperAdminDashboard-jLlnk_Fa.js",
-    "assets/TaxInvoiceModal-Dah49oJR.js",
-    "assets/VendorPortal-CqiNBG2w.js",
-    "assets/VendorPublicStoreModal-BlHi8YcW.js",
-    "assets/feature-crossborder-recs-CTZThTUK.js",
-    "assets/feature-escrow-engine-qfCiB9Pb.js",
-    "assets/feature-fraud-engine-DK1sCz6c.js",
-    "assets/feature-tax-compliance-CAVEt73r.js",
-    "assets/feature-vendor-subscription-DttKQRQ3.js",
-    "assets/feature-video-shopping-DhTnMjOy.js",
-    "assets/index-CZAMOnsB.js",
-    "assets/index-CiqTCk71.css",
-    "assets/vendor-misc-nwr-sXqd.js",
-    "assets/vendor-network-BcNqe6-g.js",
-    "assets/vendor-react-rxyxaCp0.js"
+    "sw.js"
 ];
 
 $updated = [];
@@ -64,8 +72,8 @@ function fetchRemote($url) {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-        curl_setopt($ch, CURLOPT_USERAGENT, "AuraMarket-Deployer/1.0");
+        curl_setopt($ch, CURLOPT_TIMEOUT, 25);
+        curl_setopt($ch, CURLOPT_USERAGENT, "AuraMarket-Deployer/2.0");
         $res = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
