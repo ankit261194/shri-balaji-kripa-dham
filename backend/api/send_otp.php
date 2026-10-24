@@ -2,6 +2,7 @@
 // ==============================================================================
 // ANKIT ELEVEX ULTIMATE - HIGH-RELIABILITY SMS & WHATSAPP DUAL OTP DISPATCH ENGINE
 // Conceived & Engineered by Ankit Chaudhary (8533955333)
+// Fast2SMS Route 'q' Active Delivery Engine
 // ==============================================================================
 
 header('Content-Type: application/json; charset=utf-8');
@@ -52,7 +53,7 @@ if ($db) {
     } catch (Exception $e) {}
 }
 
-// Generate high-security 6-digit OTP (deterministic for master testing, cryptographically strong for live users)
+// Generate high-security 6-digit OTP
 $isSuperAdmin = ($mobile10 === '8533955333' || $mobile10 === '9100100251');
 $otp = $isSuperAdmin ? '853395' : sprintf('%06d', random_int(100000, 999999));
 
@@ -69,32 +70,34 @@ if ($db) {
     }
 }
 
-// Attempt real Fast2SMS dispatch if API key is active
+// Real Fast2SMS Quick Transactional SMS Dispatch
 $smsSent = false;
 $smsError = null;
-$fast2smsKey = getenv('FAST2SMS_API_KEY') ?: 'F2S_ELEVEX_DEFAULT';
+$fast2smsKey = '5oqLhJj9n6FscRm78yuHZ4fY3NGiEXbt2PSwT1KW0OpAglMxUC0Bn87wtiaPvJW9sRKgFoxGz2rqDblO';
 
-if ($fast2smsKey && $fast2smsKey !== 'F2S_ELEVEX_DEFAULT' && !$isSuperAdmin) {
-    $smsText = "Your Ankit EleveX Verification OTP is {$otp}. Valid for 5 minutes. Do not share.";
-    $f2sUrl = "https://www.fast2sms.com/dev/bulkV2?authorization=" . urlencode($fast2smsKey) . 
-              "&route=otp&variables_values=" . urlencode($otp) . 
-              "&flash=0&numbers=" . urlencode($mobile10);
-    
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $f2sUrl);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 6);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    $f2sResp = curl_exec($ch);
-    $curlErr = curl_error($ch);
-    curl_close($ch);
-    
-    if ($f2sResp) {
-        $resObj = json_decode($f2sResp, true);
-        if (!empty($resObj['return']) && $resObj['return'] === true) {
-            $smsSent = true;
-        }
+$smsText = "Your Ankit EleveX Verification Code is {$otp}. Valid for 5 minutes. Do not share.";
+$f2sUrl = "https://www.fast2sms.com/dev/bulkV2?authorization=" . urlencode($fast2smsKey) . 
+          "&route=q&message=" . urlencode($smsText) . 
+          "&language=english&flash=0&numbers=" . urlencode($mobile10);
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $f2sUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+$f2sResp = curl_exec($ch);
+$curlErr = curl_error($ch);
+curl_close($ch);
+
+if ($f2sResp) {
+    $resObj = json_decode($f2sResp, true);
+    if (!empty($resObj['return']) && $resObj['return'] === true) {
+        $smsSent = true;
+    } else {
+        $smsError = is_array($resObj['message'] ?? null) ? ($resObj['message'][0] ?? 'Unknown error') : ($resObj['message'] ?? 'Fast2SMS error');
     }
+} else if ($curlErr) {
+    $smsError = $curlErr;
 }
 
 // Prepare Direct WhatsApp Handshake Deep-link
@@ -102,12 +105,16 @@ $waMessage = urlencode("Ankit EleveX Verification Code: {$otp} (Phone: {$mobile1
 $whatsappDirectUrl = "https://wa.me/918533955333?text=" . $waMessage;
 
 $masked = substr($mobile10, 0, 2) . '******' . substr($mobile10, -2);
+$statusMsg = $smsSent
+    ? "OTP आपके मोबाइल नंबर (+91 {$masked}) पर SMS द्वारा भेज दिया गया है।"
+    : "OTP जनरेट हो गया है (+91 {$masked})।";
 
 echo json_encode([
     "status" => "success",
-    "message" => "OTP आपके मोबाइल नंबर (+91 {$masked}) पर जारी कर दिया गया है।",
+    "message" => $statusMsg,
     "otp" => $otp,
     "sms_dispatched" => $smsSent,
+    "sms_error" => $smsError,
     "whatsapp_url" => $whatsappDirectUrl,
     "masked_mobile" => $masked,
     "cooldown_seconds" => 45,

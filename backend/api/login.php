@@ -24,7 +24,7 @@ $mpin = trim($input['mpin'] ?? $_POST['mpin'] ?? '');
 
 if (strlen($mobile) < 10) {
     http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "कृपया 10-अंकीय मान्य मोबाइल नंबर दर्ज करें।"], JSON_UNESCAPED_UNICODE);
+    echo json_encode(["status" => "error", "message" => "कृपया 10-अंकीय वैध मोबाइल नंबर दर्ज करें।"], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -61,7 +61,6 @@ if ($db) {
 
 // 2. SuperAdmin Master Account Check (Ankit Chaudhary)
 if ($mobile === '8533955333' || $mobile === '918533955333') {
-    // Master PINs: 8533, 1234, 910010025123343
     if ($mpin === '8533' || $mpin === '1234' || $mpin === '910010025123343' || hash('sha256', $mpin) === hash('sha256', '8533')) {
         $authToken = 'SUPER_ADMIN_TOKEN_' . bin2hex(random_bytes(16));
         echo json_encode([
@@ -103,7 +102,7 @@ if ($db) {
                 $profile = !empty($user['profile_json']) ? json_decode($user['profile_json'], true) : [];
                 echo json_encode([
                     "status" => "success",
-                    "message" => "लॉगिन सफल रहा!",
+                    "message" => "लॉगिन सफल!",
                     "user" => [
                         "id" => intval($user['id']),
                         "role" => $user['role'] ?? 'technician',
@@ -125,11 +124,9 @@ if ($db) {
     } catch (Exception $e) {}
 }
 
-// 4. Default Authenticated Response for Authorized Field Technicians
-// (Allows instant onboarding if DB table is syncing)
 http_response_code(404);
 echo json_encode([
     "status" => "error",
-    "message" => "यह मोबाइल नंबर पंजीकृत नहीं है। कृपया 'नया खाता बनाएं' पर क्लिक करके पंजीकरण करें।"
+    "message" => "यह मोबाइल नंबर पंजीकृत नहीं है। कृपया 'नया खाता बनाएं' पर क्लिक करके साइन अप करें।"
 ], JSON_UNESCAPED_UNICODE);
 exit;

@@ -23,13 +23,13 @@ $input = !empty($raw) ? json_decode($raw, true) : [];
 $mobile = preg_replace('/[^0-9]/', '', $input['mobile'] ?? $_POST['mobile'] ?? '');
 $mpin = trim($input['mpin'] ?? $_POST['mpin'] ?? '');
 $role = trim($input['role'] ?? $_POST['role'] ?? 'technician');
-$fullName = trim($input['full_name'] ?? $_POST['full_name'] ?? 'इंजीनियर');
+$fullName = trim($input['full_name'] ?? $_POST['full_name'] ?? 'फील्ड इंजीनियर');
 $state = trim($input['state'] ?? $_POST['state'] ?? '');
 $city = trim($input['city'] ?? $_POST['city'] ?? '');
 
 if (strlen($mobile) < 10) {
     http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "कृपया 10-अंकीय मान्य मोबाइल नंबर दर्ज करें।"], JSON_UNESCAPED_UNICODE);
+    echo json_encode(["status" => "error", "message" => "कृपया 10-अंकीय वैध मोबाइल नंबर दर्ज करें।"], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -96,7 +96,7 @@ if ($db) {
         http_response_code(201);
         echo json_encode([
             "status" => "success",
-            "message" => "पंजीकरण सफल रहा! आपका खाता सक्रिय हो गया है।",
+            "message" => "खाता सफलतापूर्वक बन गया! अब आप सीधे लॉगिन कर सकते हैं।",
             "user" => [
                 "id" => intval($newId),
                 "role" => $role,
@@ -109,24 +109,12 @@ if ($db) {
         ], JSON_UNESCAPED_UNICODE);
         exit;
     } catch (Exception $e) {
-        // Fallback response if DB insert fails
+        http_response_code(500);
+        echo json_encode(["status" => "error", "message" => "पंजीकरण में त्रुटि: " . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 }
 
-// Resilient Fallback
-$authToken = 'ONLINE_TOKEN_' . bin2hex(random_bytes(16));
-http_response_code(201);
-echo json_encode([
-    "status" => "success",
-    "message" => "पंजीकरण सफल रहा!",
-    "user" => [
-        "id" => time() % 100000,
-        "role" => $role,
-        "mobile" => $mobile,
-        "full_name" => $fullName,
-        "state" => $state,
-        "city" => $city,
-        "auth_token" => $authToken
-    ]
-], JSON_UNESCAPED_UNICODE);
+http_response_code(500);
+echo json_encode(["status" => "error", "message" => "डेटाबेस कनेक्शन उपलब्ध नहीं है"], JSON_UNESCAPED_UNICODE);
 exit;

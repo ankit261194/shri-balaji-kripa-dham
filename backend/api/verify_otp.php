@@ -79,19 +79,18 @@ if (!$isValid) {
     http_response_code(400);
     echo json_encode([
         "status" => "error",
-        "message" => "अमान्य या समय-समाप्त OTP! कृपया पुनः प्रयास करें।",
+        "message" => "गलत OTP कोड! कृपया सही 6-अंकीय OTP पुनः दर्ज करें।",
         "remaining_attempts" => 3
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// 1. Single Active Device Enforcement (Deactivate any previously active device)
+// 1. Single Active Device Enforcement
 $deviceMigrated = false;
 $newSessionToken = 'SES_' . bin2hex(random_bytes(16));
 
 if ($db) {
     try {
-        // Check if there was another active device for this user
         $checkOld = $db->prepare("SELECT id, device_name FROM elevex_devices WHERE user_mobile = :mob AND device_id != :did AND is_active = 1");
         $checkOld->execute([':mob' => $mobile10, ':did' => $deviceId]);
         $oldDevice = $checkOld->fetch();
@@ -99,11 +98,9 @@ if ($db) {
             $deviceMigrated = true;
         }
 
-        // Deactivate all older devices for this user (Enforcing 1 active device)
         $deact = $db->prepare("UPDATE elevex_devices SET is_active = 0 WHERE user_mobile = :mob AND device_id != :did");
         $deact->execute([':mob' => $mobile10, ':did' => $deviceId]);
 
-        // Register or activate current device
         $checkExisting = $db->prepare("SELECT id FROM elevex_devices WHERE user_mobile = :mob AND device_id = :did LIMIT 1");
         $checkExisting->execute([':mob' => $mobile10, ':did' => $deviceId]);
         $existing = $checkExisting->fetch();
@@ -141,7 +138,6 @@ if ($db) {
                 "offline_lease_key" => hash('sha256', $mobile10 . ':' . $deviceId . ':' . substr($subRow['expires_at'], 0, 10) . ':ELEVEX_PRO_SECRET')
             ];
         } else {
-            // Give 7-day initial pro trial on first verification
             $exp = date('Y-m-d H:i:s', strtotime('+7 days'));
             $insSub = $db->prepare("INSERT INTO elevex_subscriptions (user_mobile, plan_name, amount, expires_at, status) VALUES (:m, '7_DAYS_TRIAL', 0, :exp, 'active')");
             $insSub->execute([':m' => $mobile10, ':exp' => $exp]);
@@ -164,9 +160,8 @@ if ($db) {
         $stmt->execute([':mob' => $mobile, ':m10' => $mobile10]);
         $user = $stmt->fetch();
         if (!$user) {
-            // Auto-register user as technician so they are never blocked
             $userName = ($mobile10 === '8533955333' || $mobile10 === '8006518960') ? 'अंकित चौधरी' : 'फील्ड इंजीनियर';
-            $userRole = ($mobile10 === '8533955333') ? 'technician' : 'technician';
+            $userRole = 'technician';
             $ins = $db->prepare("INSERT INTO elevex_users (mobile, mpin_hash, role, full_name, state, city) VALUES (:mob, '', :role, :name, 'Uttar Pradesh', 'Meerut')");
             $ins->execute([':mob' => $mobile10, ':role' => $userRole, ':name' => $userName]);
             $newId = $db->lastInsertId();
@@ -205,7 +200,7 @@ echo json_encode([
         "id" => intval($user['id'] ?? time()),
         "role" => $user['role'] ?? 'technician',
         "mobile" => $user['mobile'] ?? $mobile10,
-        "full_name" => $user['full_name'] ?? 'फील्ड इंजीनियर',
+        "full_name" => $user['full_name'] ?? (($mobile10 === '8533955333' || $mobile10 === '8006518960') ? 'अंकित चौधरी' : 'फील्ड इंजीनियर'),
         "state" => $user['state'] ?? 'Uttar Pradesh',
         "city" => $user['city'] ?? 'Meerut'
     ]
