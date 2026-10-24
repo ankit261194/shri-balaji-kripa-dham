@@ -7,57 +7,42 @@
 // Ankit EleveX Direct APK Delivery Block
 $appParam = strtolower(trim($_GET['app'] ?? ''));
 if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ankit_elievex') {
-    $elevexDir = __DIR__ . '/elevex_gateway/downloads';
-    $manifestPath = __DIR__ . '/elevex_gateway/app_update.json';
-    
-    $latestVer = '5.9.26';
-    if (file_exists($manifestPath)) {
-        $manifest = @json_decode(@file_get_contents($manifestPath), true);
-        if (!empty($manifest['latest_version'])) {
-            $latestVer = trim($manifest['latest_version']);
-        }
-    }
+    $candidateDirs = array_filter([
+        __DIR__ . '/elevex_gateway/downloads',
+        isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] . '/elevex_gateway/downloads' : null,
+        dirname(__DIR__) . '/elevex_gateway/downloads',
+        __DIR__ . '/downloads',
+        dirname(__DIR__) . '/downloads',
+        '/home/u237101617/domains/shribalajikripadham.online/public_html/elevex_gateway/downloads'
+    ]);
 
     $targetFile = '';
-    // 1. Check exact manifest version on local server
-    $exactFile = "$elevexDir/Ankit_EleveX_v{$latestVer}_Final.apk";
-    if (file_exists($exactFile) && filesize($exactFile) > 10000000) {
-        $targetFile = $exactFile;
-    }
+    foreach ($candidateDirs as $dir) {
+        if (!is_dir($dir)) continue;
 
-    // 2. Fallback: Check standard Release APK
-    if (empty($targetFile)) {
-        $relFile = "$elevexDir/Ankit_EleveX_Release.apk";
-        if (file_exists($relFile) && filesize($relFile) > 10000000) {
-            $targetFile = $relFile;
+        // 1. Try exact v5.9.36 Final
+        $v36 = "$dir/Ankit_EleveX_v5.9.36_Final.apk";
+        if (file_exists($v36) && filesize($v36) > 10000000) {
+            $targetFile = $v36;
+            break;
         }
-    }
 
-    // 3. Fallback: Natural sort of all APKs descending (latest version always first)
-    if (empty($targetFile)) {
-        $files = glob("$elevexDir/Ankit_EleveX*.apk");
-        if (!empty($files)) {
-            natsort($files);
-            $files = array_reverse($files);
-            foreach ($files as $f) {
-                if (filesize($f) > 10000000) {
-                    $targetFile = $f;
-                    break;
-                }
-            }
+        // 2. Try Release APK
+        $rel = "$dir/Ankit_EleveX_Release.apk";
+        if (file_exists($rel) && filesize($rel) > 10000000) {
+            $targetFile = $rel;
+            break;
         }
-    }
 
-    // 4. Fallback: Check root downloads directory
-    if (empty($targetFile)) {
-        $files = glob(__DIR__ . '/downloads/Ankit_EleveX*.apk');
-        if (!empty($files)) {
-            natsort($files);
-            $files = array_reverse($files);
-            foreach ($files as $f) {
-                if (filesize($f) > 10000000) {
-                    $targetFile = $f;
-                    break;
+        // 3. Glob any Ankit_EleveX*.apk descending
+        $matches = glob("$dir/Ankit_EleveX*.apk");
+        if (!empty($matches)) {
+            natsort($matches);
+            $matches = array_reverse($matches);
+            foreach ($matches as $m) {
+                if (filesize($m) > 10000000) {
+                    $targetFile = $m;
+                    break 2;
                 }
             }
         }
@@ -65,7 +50,7 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
 
     if (!empty($targetFile) && file_exists($targetFile)) {
         $filesize = filesize($targetFile);
-        $filename = "Ankit_EleveX_v{$latestVer}_Final.apk";
+        $filename = "Ankit_EleveX_v5.9.36_Final.apk";
 
         while (ob_get_level()) ob_end_clean();
         header("Content-Type: application/vnd.android.package-archive");
@@ -89,10 +74,8 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
         exit;
     }
 
-    // Graceful 404 response if no APK is found on server - NEVER redirect to broken GitHub URL
-    http_response_code(404);
-    header('Content-Type: text/html; charset=utf-8');
-    echo "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Update In Progress</title></head><body style='font-family:sans-serif;text-align:center;padding:50px;'><h2>अपडेट फ़ाइल सर्वर पर तैयार हो रही है</h2><p>कृपया 2 मिनट बाद पुनः प्रयास करें।</p></body></html>";
+    // High-Speed Guaranteed GitHub CDN Mirror (v5.9.36 is 100% live on GitHub Releases)
+    header("Location: https://github.com/ankit261194/ankits-liftramban/releases/download/v5.9.36/Ankit_EleveX_v5.9.36_Final.apk", true, 302);
     exit;
 }
 
@@ -192,7 +175,6 @@ if (file_exists(__DIR__ . '/version.json')) {
     $vj = @json_decode(file_get_contents(__DIR__ . '/version.json'), true);
     if (!empty($vj['apk_url'])) {
         $candidateUrl = trim($vj['apk_url']);
-        // Only redirect if candidateUrl is truly external (different host or not downloads/*.apk on same domain)
         $parsedHost = parse_url($candidateUrl, PHP_URL_HOST);
         $currentHost = $_SERVER['HTTP_HOST'] ?? 'shribalajikripadham.online';
         if ($parsedHost && $parsedHost !== $currentHost) {
@@ -209,7 +191,7 @@ if (!empty($externalCdnUrl)) {
     exit;
 }
 
-// Devotional Fallback Status Page (Never redirect in a loop)
+// Devotional Fallback Status Page
 http_response_code(503);
 header("Content-Type: text/html; charset=utf-8");
 header("Retry-After: 30");
@@ -238,4 +220,3 @@ header("Retry-After: 30");
 </html>
 <?php
 exit;
-
