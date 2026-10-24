@@ -49,13 +49,19 @@ $tmpFile = $targetFile . '.tmp';
 if (isset($_GET['status'])) {
     $exists = file_exists($targetFile);
     $size = $exists ? filesize($targetFile) : 0;
+    $allFiles = glob($targetDir . '/*');
     echo json_encode([
         "success" => true,
         "filename" => $apkFilename,
+        "targetDir" => $targetDir,
+        "targetFile" => $targetFile,
         "exists" => $exists,
         "size" => $size,
         "size_mb" => round($size / (1024 * 1024), 2) . " MB",
-        "last_modified" => $exists ? date("Y-m-d H:i:s", filemtime($targetFile)) : null
+        "last_modified" => $exists ? date("Y-m-d H:i:s", filemtime($targetFile)) : null,
+        "all_files" => $allFiles ? array_map(function($f) {
+            return basename($f) . ' (' . round(filesize($f)/(1024*1024), 2) . ' MB)';
+        }, $allFiles) : []
     ]);
     exit;
 }
