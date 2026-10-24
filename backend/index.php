@@ -2343,5 +2343,48 @@ $darshanViews = ($rawViews > 250) ? $rawViews : $timeBasedViews;
         updateLiveStatus();
         scheduleNextPoll();
     </script>
+
+<!-- AuraMarket Live E-Commerce Demo Floating Bottom Banner / Popup -->
+<div id="auraDemoFloatingPopup" style="display: none; position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 99999; width: 92%; max-width: 680px; background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); color: #ffffff; padding: 12px 18px; border-radius: 16px; box-shadow: 0 12px 36px rgba(0,0,0,0.45), 0 0 0 1px rgba(245, 158, 11, 0.45); font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; align-items: center; justify-content: space-between; gap: 14px; backdrop-filter: blur(12px);">
+    <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+        <div style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #f59e0b, #d97706); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);">
+            🛍️
+        </div>
+        <div style="overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <span style="font-size: 0.9rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.2px;">AuraMarket Multi-Vendor Demo</span>
+                <span style="font-size: 0.65rem; font-weight: 800; background: #22c55e; color: #052e16; padding: 2px 7px; border-radius: 999px; text-transform: uppercase;">Live Active</span>
+            </div>
+            <p style="margin: 2px 0 0 0; font-size: 0.75rem; color: #94a3b8; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                Next-Gen E-Commerce Demo (Customer, Vendor, Admin & Courier Simulator)
+            </p>
+        </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        <a href="/ecommerce-demo/" target="_blank" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #0f172a; font-weight: 800; font-size: 0.78rem; padding: 8px 14px; border-radius: 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform='scale(1)'">
+            <span>Live Demo Kholein</span>
+            <span>➔</span>
+        </a>
+        <button onclick="document.getElementById('auraDemoFloatingPopup').style.display='none'" style="background: rgba(255,255,255,0.12); border: none; color: #cbd5e1; width: 28px; height: 28px; border-radius: 50%; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;" title="Close">
+            ✕
+        </button>
+    </div>
+</div>
+<script>
+    setTimeout(function() {
+        var el = document.getElementById('auraDemoFloatingPopup');
+        if (el) {
+            el.style.display = 'flex';
+            el.style.animation = 'auraSlideUp 0.4s ease-out forwards';
+        }
+    }, 600);
+</script>
+<style>
+    @keyframes auraSlideUp {
+        from { opacity: 0; transform: translate(-50%, 25px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
+    }
+</style>
 </body>
+
 </html>
