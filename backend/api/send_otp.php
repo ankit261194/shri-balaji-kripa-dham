@@ -101,7 +101,7 @@ if ($f2sResp) {
 }
 
 // Prepare Direct WhatsApp Handshake Deep-link
-$waMessage = urlencode("Ankit EleveX Verification Code: {$otp} (Phone: {$mobile10})");
+$waMessage = urlencode("Need Ankit EleveX Verification Support for Phone: {$mobile10}");
 $whatsappDirectUrl = "https://wa.me/918533955333?text=" . $waMessage;
 
 $masked = substr($mobile10, 0, 2) . '******' . substr($mobile10, -2);
@@ -112,7 +112,6 @@ $statusMsg = $smsSent
 echo json_encode([
     "status" => "success",
     "message" => $statusMsg,
-    "otp" => $otp,
     "sms_dispatched" => $smsSent,
     "sms_error" => $smsError,
     "whatsapp_url" => $whatsappDirectUrl,
