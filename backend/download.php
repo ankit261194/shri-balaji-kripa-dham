@@ -20,14 +20,21 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
     foreach ($candidateDirs as $dir) {
         if (!is_dir($dir)) continue;
 
-        // 1. Try exact v5.9.36 Final
+        // 1. Try exact v5.9.37 Final
+        $v37 = "$dir/Ankit_EleveX_v5.9.37_Final.apk";
+        if (file_exists($v37) && filesize($v37) > 10000000) {
+            $targetFile = $v37;
+            break;
+        }
+
+        // 2. Try exact v5.9.36 Final
         $v36 = "$dir/Ankit_EleveX_v5.9.36_Final.apk";
         if (file_exists($v36) && filesize($v36) > 10000000) {
             $targetFile = $v36;
             break;
         }
 
-        // 2. Try Release APK
+        // 3. Try Release APK
         $rel = "$dir/Ankit_EleveX_Release.apk";
         if (file_exists($rel) && filesize($rel) > 10000000) {
             $targetFile = $rel;
@@ -50,7 +57,7 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
 
     if (!empty($targetFile) && file_exists($targetFile)) {
         $filesize = filesize($targetFile);
-        $filename = "Ankit_EleveX_v5.9.36_Final.apk";
+        $filename = "Ankit_EleveX_v5.9.37_Final.apk";
 
         while (ob_get_level()) ob_end_clean();
         header("Content-Type: application/vnd.android.package-archive");
@@ -74,8 +81,8 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
         exit;
     }
 
-    // High-Speed Guaranteed GitHub CDN Mirror (v5.9.36 is 100% live on GitHub Releases)
-    header("Location: https://github.com/ankit261194/ankits-liftramban/releases/download/v5.9.36/Ankit_EleveX_v5.9.36_Final.apk", true, 302);
+    // High-Speed Guaranteed GitHub CDN Mirror (v5.9.37 is 100% live on GitHub Releases)
+    header("Location: https://github.com/ankit261194/ankits-liftramban/releases/download/v5.9.37/Ankit_EleveX_v5.9.37_Final.apk", true, 302);
     exit;
 }
 
