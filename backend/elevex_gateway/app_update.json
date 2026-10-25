@@ -1,11 +1,11 @@
 {
-  "latest_version": "5.9.37",
-  "version_code": 627,
+  "latest_version": "5.9.38",
+  "version_code": 628,
   "force_update": true,
-  "title_en": "ANKIT ELEVEX PRO v5.9.37 (Build 627) - Pure SMS OTP & Zero Dummy Data",
-  "title_hi": "अंकित एलेवेक्स प्रो v5.9.37 (बिल्ड 627) - शुद्ध SMS OTP व शून्य डमी डेटा",
-  "release_notes_en": "• Zero On-Screen OTP Box: OTP is purely sent via SMS to your phone SIM; no codes are displayed on screen.\n• Complete Dummy Data Elimination: Zero fake companies, technicians, or inventory.\n• Live Version Verification: Distinct v5.9.37 (Build 627) badge on login screen.\n• Single-Device High Security Authentication.",
-  "release_notes_hi": "• स्क्रीन पर OTP बॉक्स पूरी तरह बंद: OTP केवल आपके मोबाइल पर गुप्त SMS द्वारा आएगा, स्क्रीन पर कोई कोड नहीं दिखेगा।\n• संपूर्ण डमी डेटा सफ़ाई: कोई फ़र्ज़ी कंपनी, कर्मचारी या पार्ट्स नहीं।\n• लाइव वर्ज़न पहचान: लॉगिन स्क्रीन पर स्पष्ट v5.9.37 (Build 627) बैज।\n• 100% सुरक्षित क्लाउड लॉगिन।",
+  "title_en": "ANKIT ELEVEX PRO v5.9.38 (Build 628) - Pure SMS OTP & Zero Dummy Data",
+  "title_hi": "अंकित एलेवेक्स प्रो v5.9.38 (बिल्ड 628) - शुद्ध SMS OTP व शून्य डमी डेटा",
+  "release_notes_en": "• Zero On-Screen OTP Box: OTP is purely sent via SMS to your phone SIM; no codes are displayed on screen.\n• Complete Dummy Data Elimination: Zero fake companies, technicians, or inventory.\n• Live Version Verification: Distinct v5.9.38 (Build 628) badge on login screen.\n• Single-Device High Security Authentication.",
+  "release_notes_hi": "• स्क्रीन पर OTP बॉक्स पूरी तरह बंद: OTP केवल आपके मोबाइल पर गुप्त SMS द्वारा आएगा, स्क्रीन पर कोई कोड नहीं दिखेगा।\n• संपूर्ण डमी डेटा सफ़ाई: कोई फ़र्ज़ी कंपनी, कर्मचारी या पार्ट्स नहीं।\n• लाइव वर्ज़न पहचान: लॉगिन स्क्रीन पर स्पष्ट v5.9.38 (Build 628) बैज।\n• 100% सुरक्षित क्लाउड लॉगिन।",
   "apk_download_url": "https://shribalajikripadham.online/download.php?app=elevex",
   "file_size": "40.8 MB"
 }
