@@ -660,8 +660,8 @@ fun AdminInAppChatSection(
                                 name = superAdminName,
                                 department = "आश्रम सेवादार",
                                 roleTitleHindi = "प्रभारी",
-                                phoneNumber = "9100100251",
-                                whatsappNumber = "9100100251"
+                                phoneNumber = "",
+                                whatsappNumber = ""
                             )
                             incomingCallData = null
                         },

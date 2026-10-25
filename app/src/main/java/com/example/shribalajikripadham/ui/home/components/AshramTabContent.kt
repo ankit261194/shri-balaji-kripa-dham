@@ -139,7 +139,7 @@ fun AshramTabContent(
                 ) {
                     Button(
                         onClick = {
-                            val phone = settings.contactPhone.ifBlank { "9100100251" }
+                            val phone = settings.contactPhone.ifBlank { "8171064598" }
                             try {
                                 val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))
                                 context.startActivity(intent)

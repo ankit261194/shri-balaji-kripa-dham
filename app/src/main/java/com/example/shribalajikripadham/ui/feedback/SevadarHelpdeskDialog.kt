@@ -275,7 +275,7 @@ fun SevadarHelpdeskDialog(
     // Real In-App Voice Call Dialog (Zero-Telecom, Pure Native Calling)
     if (activeVoiceCallSevadar != null) {
         val prefs = context.getSharedPreferences("app_user_prefs", Context.MODE_PRIVATE)
-        val userPhone = prefs.getString("user_phone", "")?.takeIf { it.isNotBlank() } ?: "9100100251"
+        val userPhone = prefs.getString("user_phone", "")?.takeIf { it.isNotBlank() } ?: "8171064598"
         val userName = prefs.getString("user_name", "")?.takeIf { it.isNotBlank() } ?: "भक्त"
         InAppVoiceCallDialog(
             sevadar = activeVoiceCallSevadar!!,
@@ -478,7 +478,7 @@ fun SevadarInAppChatDialog(
 
     // Retrieve devotee phone from app preferences or fallback
     val prefs = context.getSharedPreferences("app_user_prefs", Context.MODE_PRIVATE)
-    val userPhone = prefs.getString("user_phone", "")?.takeIf { it.isNotBlank() } ?: "9100100000"
+    val userPhone = prefs.getString("user_phone", "") ?: ""
     val userName = prefs.getString("user_name", "")?.takeIf { it.isNotBlank() } ?: "भक्त"
     val convId = "conv_${sevadar.id}_${userPhone.replace(Regex("[^0-9]"), "")}"
 

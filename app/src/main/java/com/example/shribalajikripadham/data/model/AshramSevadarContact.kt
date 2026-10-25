@@ -29,7 +29,7 @@ data class AshramSevadarContact(
 
     companion object {
         fun fromJson(json: JSONObject): AshramSevadarContact {
-            val phone = json.optString("phone", json.optString("phoneNumber", "9100100251"))
+            val phone = json.optString("phone", json.optString("phoneNumber", ""))
             val wa = json.optString("whatsapp", json.optString("whatsappNumber", phone))
             val role = json.optString("role", json.optString("roleTitleHindi", "सेवादार"))
             val dept = json.optString("department", "सामान्य आश्रम सहायता")

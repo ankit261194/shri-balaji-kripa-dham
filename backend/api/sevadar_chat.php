@@ -176,103 +176,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($action === 'get_sevadars') {
     try {
         $stmt = $pdo->query("SELECT * FROM sevadars WHERE is_active = 1 ORDER BY display_order ASC, id ASC");
-        $sevadars = $stmt->fetchAll();
-
-        // Seed defaults if empty
-        if (empty($sevadars)) {
-            $defaults = [
-                [
-                    'name' => 'श्री बालाजी कृपा धाम (आधिकारिक हेल्पलाइन)',
-                    'role' => 'मुख्य आश्रम सेवादार',
-                    'department' => 'सामान्य आश्रम सहायता',
-                    'phone' => '9100100251',
-                    'whatsapp' => '9100100251',
-                    'photo_url' => '',
-                    'bio' => 'धाम पता, नियम, मंगलवार/रविवार दरबार समय व संपूर्ण आधिकारिक जानकारी',
-                    'is_available' => 1,
-                    'display_order' => 1
-                ],
-                [
-                    'name' => 'सेवादार राहुल शर्मा',
-                    'role' => 'टोकन व दर्शन सेवादार',
-                    'department' => 'टोकन व दर्शन सहायता',
-                    'phone' => '9100100252',
-                    'whatsapp' => '9100100252',
-                    'photo_url' => '',
-                    'bio' => 'रविवार व मंगलवार दरबार टोकन, कतार स्थिति व दर्शन व्यवस्था',
-                    'is_available' => 1,
-                    'display_order' => 2
-                ],
-                [
-                    'name' => 'सेवादार अमित त्यागी',
-                    'role' => 'अर्जी व डाक प्रभारी',
-                    'department' => 'अर्जी व डाक सेवा',
-                    'phone' => '9100100253',
-                    'whatsapp' => '9100100253',
-                    'photo_url' => '',
-                    'bio' => 'नारियल अर्जी, डाक द्वारा अर्जी व पर्चा संबंधित मार्गदर्शन',
-                    'is_available' => 1,
-                    'display_order' => 3
-                ],
-                [
-                    'name' => 'सेवादार सोनू चौधरी',
-                    'role' => 'यात्रा व परिवहन सेवादार',
-                    'department' => 'बस व यात्रा व्यवस्था',
-                    'phone' => '9100100254',
-                    'whatsapp' => '9100100254',
-                    'photo_url' => '',
-                    'bio' => 'दिल्ली/नोएडा/बुलंदशहर से धाम तक बस सीट बुकिंग व मार्ग सहायता',
-                    'is_available' => 1,
-                    'display_order' => 4
-                ],
-                [
-                    'name' => 'पंडित जी / मुख्य अर्चक',
-                    'role' => 'यज्ञ व अनुष्ठान सेवादार',
-                    'department' => 'हवन व पूजा सेवा',
-                    'phone' => '9100100255',
-                    'whatsapp' => '9100100255',
-                    'photo_url' => '',
-                    'bio' => 'विशेष संकट निवारण हवन, महायज्ञ संकल्प व पूजा सामग्री',
-                    'is_available' => 1,
-                    'display_order' => 5
-                ],
-                [
-                    'name' => 'सेवादार विजयपाल जी',
-                    'role' => 'भंडारा व धर्मशाला प्रभारी',
-                    'department' => 'भंडारा व आवास',
-                    'phone' => '9100100256',
-                    'whatsapp' => '9100100256',
-                    'photo_url' => '',
-                    'bio' => 'आश्रम विश्राम गृह, धर्मशाला व 24 घंटे महाप्रसाद भंडारा व्यवस्था',
-                    'is_available' => 1,
-                    'display_order' => 6
-                ]
-            ];
-
-            $insStmt = $pdo->prepare("INSERT INTO sevadars (name, role, department, phone, whatsapp, photo_url, bio, is_available, display_order, is_active, created_at) VALUES (:name, :role, :department, :phone, :whatsapp, :photo_url, :bio, :is_available, :display_order, 1, :created_at)");
-            $nowMs = intval(microtime(true) * 1000);
-            foreach ($defaults as $d) {
-                $insStmt->execute([
-                    ':name' => $d['name'],
-                    ':role' => $d['role'],
-                    ':department' => $d['department'],
-                    ':phone' => $d['phone'],
-                    ':whatsapp' => $d['whatsapp'],
-                    ':photo_url' => $d['photo_url'],
-                    ':bio' => $d['bio'],
-                    ':is_available' => $d['is_available'],
-                    ':display_order' => $d['display_order'],
-                    ':created_at' => $nowMs
-                ]);
-            }
-            $sevadars = $pdo->query("SELECT * FROM sevadars WHERE is_active = 1 ORDER BY display_order ASC, id ASC")->fetchAll();
-        }
+        $sevadars = $stmt ? $stmt->fetchAll() : [];
 
         echo json_encode([
             "success" => true,
             "sevadars" => $sevadars
         ], JSON_UNESCAPED_UNICODE);
         exit;
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(["success" => false, "error" => $e->getMessage(), "sevadars" => []], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+}
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(["success" => false, "error" => $e->getMessage()], JSON_UNESCAPED_UNICODE);

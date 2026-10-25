@@ -37,7 +37,7 @@ import com.example.shribalajikripadham.util.InAppVoiceCallManager
 fun InAppVoiceCallDialog(
     sevadar: AshramSevadarContact,
     callerName: String = "भक्त",
-    callerPhone: String = "9100100251",
+    callerPhone: String = "8171064598",
     callerRole: String = "DEVOTEE",
     onDismiss: () -> Unit
 ) {

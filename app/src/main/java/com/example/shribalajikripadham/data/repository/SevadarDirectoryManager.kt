@@ -21,27 +21,14 @@ object SevadarDirectoryManager {
     }
 
     fun getDefaultSevadars(): List<AshramSevadarContact> {
-        return listOf(
-            AshramSevadarContact(
-                id = "ashram_helpline_main",
-                name = "श्री बालाजी कृपा धाम (आधिकारिक हेल्पलाइन)",
-                department = "सामान्य आश्रम सहायता",
-                roleTitleHindi = "मुख्य आश्रम सेवादार",
-                phoneNumber = "9100100251",
-                whatsappNumber = "9100100251",
-                isAvailable = true,
-                description = "धाम पता, नियम, मंगलवार/रविवार दरबार समय व संपूर्ण आधिकारिक जानकारी"
-            )
-        )
+        return emptyList()
     }
 
     fun getAllSevadars(context: Context): List<AshramSevadarContact> {
         val prefs = getPrefs(context)
         val rawJson = prefs.getString(KEY_SEVADARS, null)
         if (rawJson.isNullOrBlank()) {
-            val defaults = getDefaultSevadars()
-            saveSevadars(context, defaults)
-            return defaults
+            return emptyList()
         }
         return try {
             val array = JSONArray(rawJson)

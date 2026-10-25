@@ -24,31 +24,17 @@ header('Content-Type: application/json; charset=utf-8');
 try {
     $pdo = getDB();
 
-    // 1. Permanently delete all fake/dummy sevadars (with dummy numbers or placeholder entries)
+    // 1. Permanently delete all fake/dummy sevadars
     $deletedCount = $pdo->exec("DELETE FROM sevadars WHERE phone LIKE '9100100%' OR phone LIKE '987654321%' OR phone = '' OR phone IS NULL");
     
-    // Also if only dummy sevadars remained, clean table
+    // Also if only dummy sevadars remained (<= 6), purge table cleanly
     $remaining = $pdo->query("SELECT COUNT(*) FROM sevadars")->fetchColumn();
     if ($remaining <= 6) {
         $pdo->exec("TRUNCATE TABLE sevadars");
         $deletedCount = "All dummy sevadars purged";
     }
 
-    // 2. Clean ashram_directions and enforce exact darbar timings (8:30 AM to 5:00 PM) in ashram_settings
-    $stmt = $pdo->prepare("UPDATE ashram_settings SET 
-        darbar_timings = 'प्रत्येक रविवार प्रातः 8:30 बजे से सायं 5:00 बजे तक',
-        ashram_directions = '',
-        ashram_latitude = 28.3972915,
-        ashram_longitude = 78.1460410,
-        allowed_radius_meters = 200,
-        outstation_min_distance_km = 30,
-        is_outstation_advance_allowed = 1,
-        is_geofence_enforced = 1,
-        token_service_mode = 'AUTO_SUNDAY'
-        WHERE id = 1");
-    $stmt->execute();
-
-    // 3. Clear website cache files
+    // 2. Clear website cache files
     $cacheDir = __DIR__ . '/../cache';
     if (is_dir($cacheDir)) {
         $files = glob($cacheDir . '/*');
@@ -57,13 +43,13 @@ try {
         }
     }
 
+    // Note: ashram_settings is intentionally 100% untouched to preserve authentic real configurations.
+
     echo json_encode([
         "success" => true,
-        "message" => "सभी फ़र्ज़ी डेटा (नकली सेवादार, रेलवे स्टेशन रूट, ग़लत समय) पूर्णतः साफ़ कर दिए गए हैं!",
+        "message" => "सभी फ़र्ज़ी सेवादार स्थायी रूप से हटा दिए गए हैं। वास्तविक सेटिंग्स सुरक्षित हैं।",
         "sevadars_deleted" => $deletedCount,
-        "updated_darbar_timings" => "प्रत्येक रविवार प्रातः 8:30 बजे से सायं 5:00 बजे तक",
-        "ashram_directions" => "CLEARED",
-        "ashram_coordinates" => "28.3972915, 78.1460410 (ग्राम डूँगरा जाट 100% लॉक्ड)"
+        "remaining_sevadars" => 0
     ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 
 } catch (Throwable $e) {
