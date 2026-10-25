@@ -20,8 +20,8 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
     foreach ($candidateDirs as $dir) {
         if (!is_dir($dir)) continue;
 
-        // 1. Try exact v5.9.38 Final
-        $v37 = "$dir/Ankit_EleveX_v5.9.38_Final.apk";
+        // 1. Try exact v5.9.39 Final
+        $v37 = "$dir/Ankit_EleveX_v5.9.39_Final.apk";
         if (file_exists($v37) && filesize($v37) > 10000000) {
             $targetFile = $v37;
             break;
@@ -57,7 +57,7 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
 
     if (!empty($targetFile) && file_exists($targetFile)) {
         $filesize = filesize($targetFile);
-        $filename = "Ankit_EleveX_v5.9.38_Final.apk";
+        $filename = "Ankit_EleveX_v5.9.39_Final.apk";
 
         while (ob_get_level()) ob_end_clean();
         header("Content-Type: application/vnd.android.package-archive");
@@ -81,8 +81,8 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
         exit;
     }
 
-    // High-Speed Guaranteed GitHub CDN Mirror (v5.9.38 is 100% live on GitHub Releases)
-    header("Location: https://github.com/ankit261194/ankits-liftramban/releases/download/v5.9.38/Ankit_EleveX_v5.9.38_Final.apk", true, 302);
+    // High-Speed Guaranteed GitHub CDN Mirror (v5.9.39 is 100% live on GitHub Releases)
+    header("Location: https://github.com/ankit261194/ankits-liftramban/releases/download/v5.9.39/Ankit_EleveX_v5.9.39_Final.apk", true, 302);
     exit;
 }
 

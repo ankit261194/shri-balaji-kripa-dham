@@ -1,11 +1,11 @@
 {
-  "latest_version": "5.9.38",
-  "version_code": 628,
+  "latest_version": "5.9.39",
+  "version_code": 629,
   "force_update": true,
-  "title_en": "ANKIT ELEVEX PRO v5.9.38 (Build 628) - Pure SMS OTP & Zero Dummy Data",
-  "title_hi": "अंकित एलेवेक्स प्रो v5.9.38 (बिल्ड 628) - शुद्ध SMS OTP व शून्य डमी डेटा",
-  "release_notes_en": "• Zero On-Screen OTP Box: OTP is purely sent via SMS to your phone SIM; no codes are displayed on screen.\n• Complete Dummy Data Elimination: Zero fake companies, technicians, or inventory.\n• Live Version Verification: Distinct v5.9.38 (Build 628) badge on login screen.\n• Single-Device High Security Authentication.",
-  "release_notes_hi": "• स्क्रीन पर OTP बॉक्स पूरी तरह बंद: OTP केवल आपके मोबाइल पर गुप्त SMS द्वारा आएगा, स्क्रीन पर कोई कोड नहीं दिखेगा।\n• संपूर्ण डमी डेटा सफ़ाई: कोई फ़र्ज़ी कंपनी, कर्मचारी या पार्ट्स नहीं।\n• लाइव वर्ज़न पहचान: लॉगिन स्क्रीन पर स्पष्ट v5.9.38 (Build 628) बैज।\n• 100% सुरक्षित क्लाउड लॉगिन।",
+  "title_en": "ANKIT ELEVEX PRO v5.9.39 (Build 629) - Complete 5-Phase Enterprise Architecture",
+  "title_hi": "अंकित एलेवेक्स प्रो v5.9.39 (बिल्ड 629) - पूर्ण 5-फेज एंटरप्राइज आर्किटेक्चर",
+  "release_notes_en": "• Full 5-Phase Enterprise Architecture: Complete modular decomposition of monolithic hubs.\n• SQLite Diagnostic Storage Engine: Sub-millisecond indexed error code queries.\n• Hardware-Bound Session Security: Cryptographic device binding and anti-tamper vault.\n• 100% Inter & JetBrains Mono Typography with 0 glow artifacts.",
+  "release_notes_hi": "• पूर्ण 5-फेज एंटरप्राइज आर्किटेक्चर: सभी 3,700+ लाइन वाले स्क्रीन मॉड्यूलर टैब्स में विभाजित।\n• SQLite डायग्नोस्टिक इंजन: सब-मिलीसेकंड इंडेक्स्ड फॉल्ट सर्च।\n• हार्डवेयर-बाउंड सेशन सुरक्षा: क्रिप्टोग्राफिक डिवाइस बाइंडिंग व छेड़छाड़-रोधी वॉल्ट।\n• 100% इंटर व जेटब्रेन्स मोनो टाइपोग्राफी व शून्य चमक/ग्लिच।",
   "apk_download_url": "https://shribalajikripadham.online/download.php?app=elevex",
-  "file_size": "40.8 MB"
+  "file_size": "39.2 MB"
 }
