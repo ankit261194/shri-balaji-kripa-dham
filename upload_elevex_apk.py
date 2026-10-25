@@ -4,9 +4,9 @@ import time
 import urllib.request
 import json
 
-APK_PATH = r"C:\Users\hp\Downloads\abc\Ankit_EleveX_v5.9.36_Final.apk"
+APK_PATH = r"C:\Users\hp\Downloads\abc\Ankit_EleveX_v5.9.37_Final.apk"
 BASE_URL = "https://shribalajikripadham.online/sync_elevex_apk.php"
-VERSION = "5.9.36"
+VERSION = "5.9.37"
 CHUNK_SIZE = 3 * 1024 * 1024  # 3 MB per chunk for reliable HTTP delivery
 
 def upload():
