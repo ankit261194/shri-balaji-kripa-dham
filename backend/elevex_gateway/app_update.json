@@ -1,11 +1,11 @@
 {
-  "latest_version": "5.9.39",
-  "version_code": 629,
+  "latest_version": "5.9.40",
+  "version_code": 630,
   "force_update": true,
-  "title_en": "ANKIT ELEVEX PRO v5.9.39 (Build 629) - Complete 5-Phase Enterprise Architecture",
-  "title_hi": "अंकित एलेवेक्स प्रो v5.9.39 (बिल्ड 629) - पूर्ण 5-फेज एंटरप्राइज आर्किटेक्चर",
-  "release_notes_en": "• Full 5-Phase Enterprise Architecture: Complete modular decomposition of monolithic hubs.\n• SQLite Diagnostic Storage Engine: Sub-millisecond indexed error code queries.\n• Hardware-Bound Session Security: Cryptographic device binding and anti-tamper vault.\n• 100% Inter & JetBrains Mono Typography with 0 glow artifacts.",
-  "release_notes_hi": "• पूर्ण 5-फेज एंटरप्राइज आर्किटेक्चर: सभी 3,700+ लाइन वाले स्क्रीन मॉड्यूलर टैब्स में विभाजित।\n• SQLite डायग्नोस्टिक इंजन: सब-मिलीसेकंड इंडेक्स्ड फॉल्ट सर्च।\n• हार्डवेयर-बाउंड सेशन सुरक्षा: क्रिप्टोग्राफिक डिवाइस बाइंडिंग व छेड़छाड़-रोधी वॉल्ट।\n• 100% इंटर व जेटब्रेन्स मोनो टाइपोग्राफी व शून्य चमक/ग्लिच।",
+  "title_en": "ANKIT ELEVEX PRO v5.9.40 (Build 630) - Official MNC Enterprise Design System",
+  "title_hi": "अंकित एलेवेक्स प्रो v5.9.40 (बिल्ड 630) - ऑफिशियल MNC कॉर्पोरेट डिज़ाइन सिस्टम",
+  "release_notes_en": "• Official Fortune 500 MNC Enterprise Design System: Otis, Siemens & ABB executive slate styling.\n• 100% Inter & JetBrains Mono Typography: Complete eradication of non-standard gaming fonts.\n• Precision Corporate Sky & Sapphire Palette: Zero glowing neon cyan artifacts.\n• Hairline 1px structural borders & high-contrast telemetry.",
+  "release_notes_hi": "• ऑफिशियल फॉर्च्यून 500 MNC कॉर्पोरेट डिज़ाइन सिस्टम: ओटिस, सीमेंस व एबीबी इंडस्ट्रियल स्टैंडर्ड।\n• 100% इंटर व जेटब्रेन्स मोनो टाइपोग्राफी: गैर-मानक गेमिंग फॉन्ट्स पूरी तरह समाप्त।\n• प्रेसिजन कॉर्पोरेट स्काई व सफायर पैलेट: सभी निऑन चमक व विकृतियाँ समाप्त।\n• सूक्ष्म 1px स्ट्रक्चरल बॉर्डर्स व हाई-कंट्रास्ट टेलीमेट्री।",
   "apk_download_url": "https://shribalajikripadham.online/download.php?app=elevex",
-  "file_size": "39.2 MB"
+  "file_size": "39.0 MB"
 }
