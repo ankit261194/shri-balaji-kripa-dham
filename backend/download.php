@@ -87,34 +87,50 @@ if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ank
 }
 
 $requestedVer = isset($_GET['v']) ? intval($_GET['v']) : 0;
+$candidateDirs = array_filter([
+    __DIR__ . '/downloads',
+    isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] . '/downloads' : null,
+    dirname(__DIR__) . '/downloads',
+    '/home/u237101617/domains/shribalajikripadham.online/public_html/downloads'
+]);
+
 $targetFile = '';
 
 // Priority 1: Requested version if specified
 if ($requestedVer > 0) {
-    $verFile = __DIR__ . "/downloads/ShriBalajiKripaDham-v{$requestedVer}.apk";
-    if (file_exists($verFile) && filesize($verFile) > 10000000) {
-        $targetFile = $verFile;
+    foreach ($candidateDirs as $dir) {
+        $verFile = "$dir/ShriBalajiKripaDham-v{$requestedVer}.apk";
+        if (file_exists($verFile) && filesize($verFile) > 10000000) {
+            $targetFile = $verFile;
+            break;
+        }
     }
 }
 
 // Priority 2: ShriBalajiKripaDham-release.apk (Always latest compiled build)
 if (empty($targetFile)) {
-    $relFile = __DIR__ . '/downloads/ShriBalajiKripaDham-release.apk';
-    if (file_exists($relFile) && filesize($relFile) > 10000000) {
-        $targetFile = $relFile;
+    foreach ($candidateDirs as $dir) {
+        $relFile = "$dir/ShriBalajiKripaDham-release.apk";
+        if (file_exists($relFile) && filesize($relFile) > 10000000) {
+            $targetFile = $relFile;
+            break;
+        }
     }
 }
 
 // Priority 3: Highest version found in downloads directory
 if (empty($targetFile)) {
-    $files = glob(__DIR__ . '/downloads/ShriBalajiKripaDham-*.apk');
-    if (!empty($files)) {
-        natsort($files);
-        $files = array_reverse($files);
-        foreach ($files as $f) {
-            if (filesize($f) > 10000000) {
-                $targetFile = $f;
-                break;
+    foreach ($candidateDirs as $dir) {
+        if (!is_dir($dir)) continue;
+        $files = glob("$dir/ShriBalajiKripaDham-*.apk");
+        if (!empty($files)) {
+            natsort($files);
+            $files = array_reverse($files);
+            foreach ($files as $f) {
+                if (filesize($f) > 10000000) {
+                    $targetFile = $f;
+                    break 2;
+                }
             }
         }
     }
@@ -176,7 +192,7 @@ if (file_exists($targetFile) && filesize($targetFile) > 10000000) {
     exit;
 }
 
-// 2. Fallback handling when local file is missing
+// 2. Guaranteed Fallback handling when local file is missing
 $externalCdnUrl = '';
 if (file_exists(__DIR__ . '/version.json')) {
     $vj = @json_decode(file_get_contents(__DIR__ . '/version.json'), true);
@@ -188,6 +204,12 @@ if (file_exists(__DIR__ . '/version.json')) {
             $externalCdnUrl = $candidateUrl;
         }
     }
+}
+
+// Guaranteed High-Speed GitHub Releases CDN Mirror (v2.81.0 Build 168 is 100% LIVE)
+if (empty($externalCdnUrl)) {
+    $tag = 'v2.81.0';
+    $externalCdnUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/{$tag}/ShriBalajiKripaDham-release.apk";
 }
 
 if (!empty($externalCdnUrl)) {

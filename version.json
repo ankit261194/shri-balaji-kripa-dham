@@ -11,6 +11,7 @@
   "apk_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "apkUrl": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
   "apk_download_url": "https://shribalajikripadham.online/downloads/ShriBalajiKripaDham-release.apk",
+  "apk_fallback_url": "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/v2.81.0/ShriBalajiKripaDham-release.apk",
   "apkSize": "80.8 MB",
   "webhook_url": "https://script.google.com/macros/s/AKfycbzz_gaO2sIkKE1oApOK3HY__VA-wO3228WcXxmFU--Y4PH8ow47G13vPSrfUV_QqpG4/exec",
   "is_force_update": true,
