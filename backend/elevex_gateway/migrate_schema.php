@@ -152,6 +152,16 @@ foreach ($tables as $name => $ddl) {
     }
 }
 
+// Standardize character set and collation across all 6 tables to prevent collation mismatch errors
+$tableNames = ['elevex_companies', 'elevex_users', 'elevex_lifts_amc', 'elevex_breakdowns', 'elevex_attendance_ledger', 'elevex_technician_telemetry'];
+foreach ($tableNames as $tName) {
+    try {
+        $pdo->exec("ALTER TABLE $tName CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    } catch (Exception $e) {
+        $results[$tName . '_collation_error'] = $e->getMessage();
+    }
+}
+
 // Seamless migration of elevex_users table for existing databases
 try {
     $existingCols = [];

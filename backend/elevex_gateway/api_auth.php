@@ -53,7 +53,7 @@ if ($action === 'login') {
     // Check user across phone formats
     $stmt = $pdo->prepare("SELECT u.*, c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.features_config, c.default_language 
                            FROM elevex_users u 
-                           JOIN elevex_companies c ON u.tenant_id = c.tenant_id 
+                           JOIN elevex_companies c ON u.tenant_id COLLATE utf8mb4_unicode_ci = c.tenant_id COLLATE utf8mb4_unicode_ci 
                            WHERE (u.phone = :p OR u.phone = :norm OR u.phone = :full) AND u.is_active = 1 LIMIT 1");
     $stmt->execute([':p' => $phoneRaw, ':norm' => $normPhone, ':full' => $fullPhone]);
     $user = $stmt->fetch();
