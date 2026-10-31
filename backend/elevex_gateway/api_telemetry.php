@@ -4,12 +4,17 @@
 // Shri Balaji Kripa Dham Cloud Server (Hostinger NVMe SSD)
 // ==============================================================================
 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/config.php';
 
-$pdo = getDbConnection();
-if (!$pdo) {
-    sendJsonResponse(["success" => false, "error" => "Database connection unavailable"], 500);
-}
+try {
+    $pdo = getDbConnection();
+    if (!$pdo) {
+        sendJsonResponse(["success" => false, "error" => "Database connection unavailable"], 500);
+    }
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $input = getJsonInput();
@@ -245,4 +250,12 @@ if ($action === 'superadmin_edit_attendance') {
     ]);
 }
 
-sendJsonResponse(["success" => false, "error" => "Invalid telemetry action"], 400);
+    sendJsonResponse(["success" => false, "error" => "Invalid telemetry action"], 400);
+} catch (Throwable $e) {
+    sendJsonResponse([
+        "success" => false,
+        "error" => "Exception: " . $e->getMessage(),
+        "file" => basename($e->getFile()),
+        "line" => $e->getLine()
+    ], 500);
+}
