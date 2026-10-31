@@ -118,7 +118,14 @@ if ($action === 'heartbeat') {
     $lat = floatval($input['lat'] ?? 0);
     $lng = floatval($input['lng'] ?? 0);
     $isMock = !empty($input['is_mock']);
-    $battery = intval($input['battery'] ?? 100);
+    $battery = intval($input['battery'] ?? $input['battery_percentage'] ?? 100);
+    $isCharging = !empty($input['is_charging']) ? 1 : 0;
+    $powerState = trim($input['power_state'] ?? $input['device_power_state'] ?? 'ONLINE');
+    $validStates = ['ONLINE', 'SHUTTING_DOWN_USER', 'SHUTTING_DOWN_LOW_BATTERY', 'OFFLINE_TIMEOUT'];
+    if (!in_array($powerState, $validStates)) {
+        $powerState = 'ONLINE';
+    }
+    $shutdownAt = ($powerState === 'SHUTTING_DOWN_USER' || $powerState === 'SHUTTING_DOWN_LOW_BATTERY') ? date('Y-m-d H:i:s') : null;
     $customLandmark = trim($input['location_text'] ?? '');
 
     if ($technicianId === 0 || $lat == 0 || $lng == 0) {
@@ -151,10 +158,10 @@ if ($action === 'heartbeat') {
         $landmarkText = resolveLiveReverseGeocode($pdo, $lat, $lng);
     }
 
-    // Upsert into telemetry table
+    // Upsert into telemetry table with power state & battery tracking
     $stmtUp = $pdo->prepare("INSERT INTO elevex_technician_telemetry 
-        (tenant_id, technician_id, current_lat, current_lng, location_landmark_text, current_site_id, is_mock_location, battery_percentage, last_heartbeat) 
-        VALUES (:t, :tid, :lat, :lng, :lmark, :sid, :mock, :bat, NOW()) 
+        (tenant_id, technician_id, current_lat, current_lng, location_landmark_text, current_site_id, is_mock_location, battery_percentage, is_charging, device_power_state, shutdown_at, last_heartbeat) 
+        VALUES (:t, :tid, :lat, :lng, :lmark, :sid, :mock, :bat, :charging, :pstate, :sdown, NOW()) 
         ON DUPLICATE KEY UPDATE 
         current_lat = VALUES(current_lat),
         current_lng = VALUES(current_lng),
@@ -162,6 +169,9 @@ if ($action === 'heartbeat') {
         current_site_id = VALUES(current_site_id),
         is_mock_location = VALUES(is_mock_location),
         battery_percentage = VALUES(battery_percentage),
+        is_charging = VALUES(is_charging),
+        device_power_state = VALUES(device_power_state),
+        shutdown_at = VALUES(shutdown_at),
         last_heartbeat = NOW()");
     
     $stmtUp->execute([
@@ -172,25 +182,31 @@ if ($action === 'heartbeat') {
         ':lmark' => $landmarkText,
         ':sid' => $matchedSiteId,
         ':mock' => $isMock ? 1 : 0,
-        ':bat' => $battery
+        ':bat' => $battery,
+        ':charging' => $isCharging,
+        ':pstate' => $powerState,
+        ':sdown' => $shutdownAt
     ]);
 
     sendJsonResponse([
         "success" => true,
         "landmark_text" => $landmarkText,
         "is_inside_site" => $matchedSiteId !== null,
-        "is_mock_flagged" => $isMock
+        "is_mock_flagged" => $isMock,
+        "device_power_state" => $powerState,
+        "battery_percentage" => $battery
     ]);
 }
 
-// 2. Supervisor View: Get Real-time Technician Fleet with Text Locations
+// 2. Supervisor View: Get Real-time Technician Fleet with Text Locations & Power States
 if ($action === 'get_technician_fleet') {
     $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
 
     $stmt = $pdo->prepare("SELECT u.id as technician_id, u.full_name, u.phone, 
                                   t.current_lat, t.current_lng, t.location_landmark_text, 
-                                  t.is_mock_location, t.battery_percentage, t.last_heartbeat,
-                                  CASE WHEN t.last_heartbeat >= DATE_SUB(NOW(), INTERVAL 10 MINUTE) THEN 1 ELSE 0 END as is_online,
+                                  t.is_mock_location, t.battery_percentage, t.is_charging,
+                                  t.device_power_state, t.shutdown_at, t.last_heartbeat,
+                                  CASE WHEN t.last_heartbeat >= DATE_SUB(NOW(), INTERVAL 10 MINUTE) AND (t.device_power_state = 'ONLINE' OR t.device_power_state IS NULL) THEN 1 ELSE 0 END as is_online,
                                   (SELECT COUNT(*) FROM elevex_breakdowns WHERE assigned_technician_id = u.id AND status IN ('assigned', 'technician_enroute', 'on_site')) as active_jobs
                            FROM elevex_users u
                            LEFT JOIN elevex_technician_telemetry t ON u.id = t.technician_id
@@ -198,6 +214,27 @@ if ($action === 'get_technician_fleet') {
                            ORDER BY is_online DESC, u.full_name ASC");
     $stmt->execute([':t' => $tenantId]);
     $fleet = $stmt->fetchAll();
+
+    foreach ($fleet as &$tech) {
+        $power = $tech['device_power_state'] ?? 'ONLINE';
+        $bat = intval($tech['battery_percentage'] ?? 100);
+        $shutTime = !empty($tech['shutdown_at']) ? date("h:i A", strtotime($tech['shutdown_at'])) : '';
+        
+        if ($power === 'SHUTTING_DOWN_USER') {
+            $tech['status_badge'] = "📴 Phone Switched Off by Tech" . ($shutTime ? " at $shutTime" : "") . " ($bat%)";
+            $tech['status_color'] = "error";
+        } else if ($power === 'SHUTTING_DOWN_LOW_BATTERY') {
+            $tech['status_badge'] = "🪫 Phone Battery Drained" . ($shutTime ? " at $shutTime" : "") . " ($bat%)";
+            $tech['status_color'] = "error";
+        } else if ($tech['is_online'] == 0) {
+            $tech['status_badge'] = "⚠️ Signal Lost / Offline (>10 mins)";
+            $tech['status_color'] = "warning";
+        } else {
+            $tech['status_badge'] = "🟢 Live / Online ($bat%)";
+            $tech['status_color'] = "success";
+        }
+    }
+    unset($tech);
 
     sendJsonResponse([
         "success" => true,

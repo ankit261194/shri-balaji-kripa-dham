@@ -137,8 +137,12 @@ $tables = [
         current_site_id INT NULL,
         is_mock_location TINYINT(1) DEFAULT 0,
         battery_percentage INT DEFAULT 100,
+        is_charging TINYINT(1) DEFAULT 0,
+        device_power_state ENUM('ONLINE', 'SHUTTING_DOWN_USER', 'SHUTTING_DOWN_LOW_BATTERY', 'OFFLINE_TIMEOUT') DEFAULT 'ONLINE',
+        shutdown_at DATETIME NULL,
         last_heartbeat DATETIME NOT NULL,
-        INDEX idx_tenant_telemetry (tenant_id)
+        INDEX idx_tenant_telemetry (tenant_id),
+        INDEX idx_power_state (device_power_state)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
 
     // 7. Dynamic OpenStreetMap Reverse Geocoding Cache
@@ -222,6 +226,24 @@ try {
     $results['elevex_users_migration'] = "COLUMNS_VERIFIED_AND_UPDATED";
 } catch (Exception $e) {
     $results['elevex_users_migration_error'] = $e->getMessage();
+}
+
+// Ensure columns exist on elevex_technician_telemetry
+try {
+    $colsStmt = $pdo->query("SHOW COLUMNS FROM elevex_technician_telemetry");
+    $existingCols = $colsStmt->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('device_power_state', $existingCols)) {
+        $pdo->exec("ALTER TABLE elevex_technician_telemetry ADD COLUMN device_power_state ENUM('ONLINE', 'SHUTTING_DOWN_USER', 'SHUTTING_DOWN_LOW_BATTERY', 'OFFLINE_TIMEOUT') DEFAULT 'ONLINE'");
+    }
+    if (!in_array('shutdown_at', $existingCols)) {
+        $pdo->exec("ALTER TABLE elevex_technician_telemetry ADD COLUMN shutdown_at DATETIME NULL");
+    }
+    if (!in_array('is_charging', $existingCols)) {
+        $pdo->exec("ALTER TABLE elevex_technician_telemetry ADD COLUMN is_charging TINYINT(1) DEFAULT 0");
+    }
+    $results['elevex_telemetry_migration'] = "COLUMNS_VERIFIED_AND_UPDATED";
+} catch (Exception $e) {
+    $results['elevex_telemetry_migration_error'] = $e->getMessage();
 }
 
 // Seed Master SuperAdmin Ankit Chaudhary
