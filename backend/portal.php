@@ -32,6 +32,7 @@ if ($pdo) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
     <title>EleveX Pro | कॉर्पोरेट डेस्कटॉप वेब डैशबोर्ड</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -964,17 +965,17 @@ if ($pdo) {
             <strong>Ankit EleveX Pro</strong> • एंटरप्राइज मल्टी-टेनेंट कॉर्पोरेट डैशबोर्ड • होस्टेड ऑन Hostinger NVMe SSD
         </div>
         <div class="footer-links">
-            <a href="download.php?app=superadmin">SuperAdmin APK</a>
-            <a href="download.php?app=supervisor">Supervisor APK</a>
-            <a href="download.php?app=technician">Technician APK</a>
-            <a href="download.php?app=owner">Owner APK</a>
-            <a href="download.php?app=gateway">Master Gateway</a>
+            <a href="/download.php?app=superadmin">SuperAdmin APK</a>
+            <a href="/download.php?app=supervisor">Supervisor APK</a>
+            <a href="/download.php?app=technician">Technician APK</a>
+            <a href="/download.php?app=owner">Owner APK</a>
+            <a href="/download.php?app=gateway">Master Gateway</a>
         </div>
     </footer>
 
     <!-- Interactive AJAX Engine -->
     <script>
-        const API_BASE = 'elevex_gateway';
+        const API_BASE = '/elevex_gateway';
         const SUPER_ADMIN_PHONE = '8533955333';
         let currentTenantId = '<?= htmlspecialchars($defaultTenant) ?>';
         let availableLifts = [];
@@ -1183,7 +1184,7 @@ if ($pdo) {
             const techId = select.value;
 
             try {
-                const resp = await fetch(`${API_BASE}/api_dispatch.php`, {
+                const resp = await fetch(`${API_BASE}/api_dispatch.php?action=manual_dispatch`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1282,7 +1283,7 @@ if ($pdo) {
             const autoDisp = document.getElementById('modalAutoDispatch').value === '1';
 
             try {
-                const resp = await fetch(`${API_BASE}/api_dispatch.php`, {
+                const resp = await fetch(`${API_BASE}/api_dispatch.php?action=create_breakdown`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1325,7 +1326,7 @@ if ($pdo) {
             const reason = document.getElementById('auditReason').value;
 
             try {
-                const resp = await fetch(`${API_BASE}/api_telemetry.php`, {
+                const resp = await fetch(`${API_BASE}/api_telemetry.php?action=superadmin_edit_attendance`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

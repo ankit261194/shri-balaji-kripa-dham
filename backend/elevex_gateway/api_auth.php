@@ -16,8 +16,8 @@ try {
         sendJsonResponse(["success" => false, "error" => "Database connection unavailable"], 500);
     }
 
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
 $input = getJsonInput();
+$action = $_GET['action'] ?? $_POST['action'] ?? ($input['action'] ?? '');
 
 function ensureAuthColumns($pdo) {
     static $ensured = false;
