@@ -273,4 +273,81 @@ if ($action === 'rate_service') {
     ]);
 }
 
+// 7. Add AMC Lift
+if ($action === 'add_lift') {
+    $tenantId = trim($input['tenant_id'] ?? '');
+    $code = trim($input['lift_unique_code'] ?? 'LIFT-' . rand(100, 999));
+    $building = trim($input['building_name'] ?? '');
+    $address = trim($input['building_address'] ?? '');
+    $landmark = trim($input['landmark_name'] ?? 'Pari Chowk');
+    $lat = floatval($input['lat'] ?? 28.4744);
+    $lng = floatval($input['lng'] ?? 77.5040);
+    $geofence = intval($input['geofence_radius_meters'] ?? 100);
+    $brand = trim($input['controller_brand'] ?? 'MONARCH');
+    $amcType = trim($input['amc_type'] ?? 'Comprehensive');
+    $validUntil = trim($input['amc_valid_until'] ?? date('Y-m-d', strtotime('+1 year')));
+    $ownerId = !empty($input['owner_id']) ? intval($input['owner_id']) : null;
+
+    if (empty($tenantId) || empty($building)) {
+        sendJsonResponse(["success" => false, "error" => "कंपनी व बिल्डिंग का नाम अनिवार्य है"], 400);
+    }
+
+    $stmt = $pdo->prepare("INSERT INTO elevex_lifts_amc 
+        (tenant_id, owner_id, lift_unique_code, building_name, building_address, landmark_name, lat, lng, geofence_radius_meters, controller_brand, amc_type, amc_valid_until, is_active) 
+        VALUES (:t, :oid, :code, :bname, :baddr, :lmark, :lat, :lng, :geo, :brand, :atype, :vuntil, 1)");
+    $stmt->execute([
+        ':t' => $tenantId,
+        ':oid' => $ownerId,
+        ':code' => $code,
+        ':bname' => $building,
+        ':baddr' => $address,
+        ':lmark' => $landmark,
+        ':lat' => $lat,
+        ':lng' => $lng,
+        ':geo' => $geofence,
+        ':brand' => $brand,
+        ':atype' => $amcType,
+        ':vuntil' => $validUntil
+    ]);
+
+    $liftId = intval($pdo->lastInsertId());
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "लिफ्ट AMC साइट सफलतापूर्वक जोड़ी गई!",
+        "lift_id" => $liftId,
+        "lift_code" => $code
+    ]);
+}
+
+// 8. List AMC Lifts for Company
+if ($action === 'list_lifts') {
+    $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $ownerId = intval($input['owner_id'] ?? $_GET['owner_id'] ?? 0);
+
+    $sql = "SELECT l.*, 
+                   (SELECT COUNT(*) FROM elevex_breakdowns WHERE lift_id = l.id AND status != 'resolved') as active_issues,
+                   (SELECT full_name FROM elevex_users WHERE id = l.owner_id LIMIT 1) as owner_name,
+                   (SELECT phone FROM elevex_users WHERE id = l.owner_id LIMIT 1) as owner_phone
+            FROM elevex_lifts_amc l 
+            WHERE l.tenant_id = :t AND l.is_active = 1";
+    $params = [':t' => $tenantId];
+
+    if ($ownerId > 0) {
+        $sql .= " AND l.owner_id = :oid";
+        $params[':oid'] = $ownerId;
+    }
+
+    $sql .= " ORDER BY l.building_name ASC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $lifts = $stmt->fetchAll();
+
+    sendJsonResponse([
+        "success" => true,
+        "count" => count($lifts),
+        "lifts" => $lifts
+    ]);
+}
+
 sendJsonResponse(["success" => false, "error" => "Invalid dispatch action"], 400);

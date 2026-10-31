@@ -225,4 +225,83 @@ if ($action === 'list_companies') {
     ]);
 }
 
+// 5. Add User (Technician, Supervisor, Owner)
+if ($action === 'add_user') {
+    $tenantId = trim($input['tenant_id'] ?? '');
+    $role = trim($input['role'] ?? 'technician');
+    $fullName = trim($input['full_name'] ?? '');
+    $phone = normalizePhone($input['phone'] ?? '');
+    $mpin = trim($input['mpin'] ?? '1234');
+    $preferredLang = trim($input['preferred_language'] ?? 'hi');
+
+    if (empty($tenantId) || empty($fullName) || empty($phone)) {
+        sendJsonResponse(["success" => false, "error" => "कंपनी, नाम व फोन अनिवार्य है"], 400);
+    }
+
+    $mpinHash = password_hash($mpin, PASSWORD_BCRYPT);
+
+    $stmtCheck = $pdo->prepare("SELECT id FROM elevex_users WHERE phone = :p LIMIT 1");
+    $stmtCheck->execute([':p' => $phone]);
+    $existing = $stmtCheck->fetch();
+
+    if ($existing) {
+        $stmtUp = $pdo->prepare("UPDATE elevex_users SET tenant_id = :t, role = :r, full_name = :n, mpin_hash = :m, preferred_language = :lang, is_active = 1 WHERE id = :id");
+        $stmtUp->execute([
+            ':t' => $tenantId,
+            ':r' => $role,
+            ':n' => $fullName,
+            ':m' => $mpinHash,
+            ':lang' => $preferredLang,
+            ':id' => $existing['id']
+        ]);
+        $userId = intval($existing['id']);
+    } else {
+        $stmtIns = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mpin_hash, preferred_language, is_active) 
+                                  VALUES (:t, :r, :n, :p, :m, :lang, 1)");
+        $stmtIns->execute([
+            ':t' => $tenantId,
+            ':r' => $role,
+            ':n' => $fullName,
+            ':p' => $phone,
+            ':m' => $mpinHash,
+            ':lang' => $preferredLang
+        ]);
+        $userId = intval($pdo->lastInsertId());
+    }
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "उपयोगकर्ता सफलतापूर्वक पंजीकृत किया गया!",
+        "user_id" => $userId,
+        "role" => $role,
+        "phone" => $phone
+    ]);
+}
+
+// 6. List Users for Company
+if ($action === 'list_users') {
+    $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $roleFilter = trim($input['role'] ?? $_GET['role'] ?? '');
+
+    $sql = "SELECT id, tenant_id, role, full_name, phone, hardware_device_id, preferred_language, is_active, created_at 
+            FROM elevex_users WHERE tenant_id = :t AND is_active = 1";
+    $params = [':t' => $tenantId];
+
+    if (!empty($roleFilter)) {
+        $sql .= " AND role = :r";
+        $params[':r'] = $roleFilter;
+    }
+
+    $sql .= " ORDER BY full_name ASC";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $users = $stmt->fetchAll();
+
+    sendJsonResponse([
+        "success" => true,
+        "count" => count($users),
+        "users" => $users
+    ]);
+}
+
 sendJsonResponse(["success" => false, "error" => "Invalid action requested"], 400);
