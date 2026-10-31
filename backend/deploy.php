@@ -98,7 +98,10 @@ $filesToSync = [
     "elevex_gateway/migrate_schema.php",
     "elevex_gateway/api_auth.php",
     "elevex_gateway/api_dispatch.php",
-    "elevex_gateway/api_telemetry.php"
+    "elevex_gateway/api_telemetry.php",
+    "elevex_gateway/seed_ecosystem.php",
+    "portal.php",
+    "portal/index.php"
 ];
 
 // Support selective fast deployment of single or specific files via ?file=api/app_queries.php

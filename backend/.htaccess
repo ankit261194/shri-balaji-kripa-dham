@@ -15,6 +15,7 @@ Options -Indexes
     RewriteRule ^download/?$ download.php [L]
     RewriteRule ^app/?$ download.php [L]
     RewriteRule ^apk/?$ download.php [L]
+    RewriteRule ^portal/?$ portal.php [L]
 </IfModule>
 
 # ------------------------------------------------------------------------------

@@ -295,9 +295,17 @@ try {
     $results['seed_error'] = $e->getMessage();
 }
 
+if (isset($_GET['seed']) || isset($_POST['seed']) || !empty($_REQUEST['ecosystem'])) {
+    if (file_exists(__DIR__ . '/seed_ecosystem.php')) {
+        require __DIR__ . '/seed_ecosystem.php';
+        exit;
+    }
+}
+
 echo json_encode([
     "success" => true,
     "status" => "SCHEMA_V4_INITIALIZED",
     "tables" => $results,
     "timestamp" => date("Y-m-d H:i:s")
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
