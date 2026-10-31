@@ -1,11 +1,13 @@
 {
   "latest_version": "5.9.40",
   "version_code": 630,
-  "force_update": true,
-  "title_en": "ANKIT ELEVEX PRO v5.9.40 (Build 630) - Official MNC Enterprise Design System",
-  "title_hi": "अंकित एलेवेक्स प्रो v5.9.40 (बिल्ड 630) - ऑफिशियल MNC कॉर्पोरेट डिज़ाइन सिस्टम",
-  "release_notes_en": "• Official Fortune 500 MNC Enterprise Design System: Otis, Siemens & ABB executive slate styling.\n• 100% Inter & JetBrains Mono Typography: Complete eradication of non-standard gaming fonts.\n• Precision Corporate Sky & Sapphire Palette: Zero glowing neon cyan artifacts.\n• Hairline 1px structural borders & high-contrast telemetry.",
-  "release_notes_hi": "• ऑफिशियल फॉर्च्यून 500 MNC कॉर्पोरेट डिज़ाइन सिस्टम: ओटिस, सीमेंस व एबीबी इंडस्ट्रियल स्टैंडर्ड।\n• 100% इंटर व जेटब्रेन्स मोनो टाइपोग्राफी: गैर-मानक गेमिंग फॉन्ट्स पूरी तरह समाप्त।\n• प्रेसिजन कॉर्पोरेट स्काई व सफायर पैलेट: सभी निऑन चमक व विकृतियाँ समाप्त।\n• सूक्ष्म 1px स्ट्रक्चरल बॉर्डर्स व हाई-कंट्रास्ट टेलीमेट्री।",
+  "force_update": false,
+  "title_en": "ANKIT ELEVEX PRO v5.9.40 (Build 630) - Enterprise 4-App Architecture",
+  "title_hi": "अंकित एलेवेक्स प्रो v5.9.40 (बिल्ड 630) - एंटरप्राइज 4-ऐप आर्किटेक्चर",
+  "release_notes_en": "• 4 Dedicated Fortune 500 MNC Apps: Super Admin, Supervisor, Field Technician, Owner/RWA.\n• Enterprise Kiosk Device Admin & Anti-Force-Stop Lock.\n• 1,012+ OEM Fault Code Engine with sub-millisecond offline lookup.\n• Real-Time Haversine Nearest Dispatch & Cryptographically Sealed Attendance Ledger.",
+  "release_notes_hi": "• 4 समर्पित फॉर्च्यून 500 MNC ऐप्स: सुपर एडमिन, सुपरवाइजर, फील्ड टेक्नीशियन, लिफ्ट ओनर।\n• एंटरप्राइज कियोस्क डिवाइस एडमिन व एंटी-फोर्स-स्टॉप लॉक सुरक्षा।\n• 1,012+ OEM फॉल्ट कोड डायग्नोस्टिक इंजन बिना इंटरनेट सब-मिलीसेकंड सर्च।\n• रियल-टाइम हैवर्सिन नियरेस्ट डिस्पैच व सीलबंद अटेंडेंस लेज़र ऑडिट।",
   "apk_download_url": "https://shribalajikripadham.online/download.php?app=elevex",
-  "file_size": "39.0 MB"
+  "file_size": "39.0 MB",
+  "sha256_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "verified_oem_brands": ["MONARCH", "STEP", "OTIS", "SCHINDLER", "KONE"]
 }
