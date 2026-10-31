@@ -354,7 +354,7 @@ if ($action === 'get_attendance_ledger') {
     ]);
 }
 
-// 6. SuperAdmin Supreme Edit (Only SuperAdmin can edit attendance)
+// 6. SuperAdmin Supreme Edit (Only SuperAdmin can edit attendance with mandatory audit trail)
 if ($action === 'superadmin_edit_attendance') {
     $callerPhone = trim($input['caller_phone'] ?? '');
     $cleanPhone = preg_replace('/[^0-9]/', '', $callerPhone);
@@ -368,16 +368,29 @@ if ($action === 'superadmin_edit_attendance') {
 
     $recordId = intval($input['record_id'] ?? 0);
     $newPunchIn = trim($input['punch_in_time'] ?? '');
-    $reason = trim($input['edit_reason'] ?? 'SuperAdmin Administrative Correction');
+    $reason = trim($input['edit_reason'] ?? '');
+
+    if (empty($reason) || strlen($reason) < 5) {
+        sendJsonResponse(["success" => false, "error" => "सुपरएडमिन ऑडिट संपादन के लिए विधिक कारण (कम से कम 5 अक्षर) अनिवार्य है"], 400);
+    }
 
     $stmt = $pdo->prepare("UPDATE elevex_attendance_ledger 
         SET punch_in_time = :pi, edited_by_superadmin_at = NOW(), superadmin_edit_reason = :r 
         WHERE id = :rid");
     $stmt->execute([':pi' => $newPunchIn, ':r' => $reason, ':rid' => $recordId]);
 
+    // Fetch updated record
+    $fetchStmt = $pdo->prepare("SELECT * FROM elevex_attendance_ledger WHERE id = :rid");
+    $fetchStmt->execute([':rid' => $recordId]);
+    $updatedRow = $fetchStmt->fetch(PDO::FETCH_ASSOC);
+
     sendJsonResponse([
         "success" => true,
-        "message" => "लेज़र रिकॉर्ड सुपरएडमिन द्वारा सफलतापूर्वक संशोधित किया गया!"
+        "message" => "लेज़र रिकॉर्ड सुपरएडमिन द्वारा विधिक ऑडिट ट्रेल के साथ सफलतापूर्वक संशोधित किया गया!",
+        "record_id" => $recordId,
+        "edited_by_superadmin_at" => $updatedRow['edited_by_superadmin_at'] ?? date("Y-m-d H:i:s"),
+        "superadmin_edit_reason" => $reason,
+        "updated_record" => $updatedRow
     ]);
 }
 

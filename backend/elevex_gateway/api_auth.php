@@ -232,6 +232,109 @@ if ($action === 'list_companies') {
     ]);
 }
 
+// 4.1 SuperAdmin Ghost Switch Tenant (Supreme Controller)
+if ($action === 'ghost_switch_tenant') {
+    $callerPhone = trim($input['caller_phone'] ?? $_GET['caller_phone'] ?? '');
+    if (!isSuperAdmin($pdo, $callerPhone)) {
+        sendJsonResponse(["success" => false, "error" => "केवल सुपर एडमिन ही घोस्ट मोड सक्रिय कर सकते हैं"], 403);
+    }
+
+    $targetTenant = trim($input['target_tenant_id'] ?? $_GET['target_tenant_id'] ?? '');
+    if (empty($targetTenant)) {
+        sendJsonResponse(["success" => false, "error" => "टारगेट कंपनी (tenant_id) अनिवार्य है"], 400);
+    }
+
+    $stmtC = $pdo->prepare("SELECT * FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+    $stmtC->execute([':t' => $targetTenant]);
+    $company = $stmtC->fetch(PDO::FETCH_ASSOC);
+
+    if (!$company) {
+        sendJsonResponse(["success" => false, "error" => "कंपनी नहीं मिली (Company not found)"], 404);
+    }
+
+    $statsStmt = $pdo->prepare("SELECT 
+        (SELECT COUNT(*) FROM elevex_users WHERE tenant_id = :t1 AND is_active = 1) as total_users,
+        (SELECT COUNT(*) FROM elevex_users WHERE tenant_id = :t2 AND role IN ('technician', 'senior_technician') AND is_active = 1) as total_technicians,
+        (SELECT COUNT(*) FROM elevex_technician_telemetry WHERE tenant_id = :t3 AND last_heartbeat > NOW() - INTERVAL 10 MINUTE AND device_power_state = 'ONLINE') as online_technicians,
+        (SELECT COUNT(*) FROM elevex_lifts_amc WHERE tenant_id = :t4 AND is_active = 1) as total_lifts,
+        (SELECT COUNT(*) FROM elevex_breakdowns WHERE tenant_id = :t5 AND status NOT IN ('resolved', 'cancelled')) as active_breakdowns");
+    
+    $statsStmt->execute([
+        ':t1' => $targetTenant,
+        ':t2' => $targetTenant,
+        ':t3' => $targetTenant,
+        ':t4' => $targetTenant,
+        ':t5' => $targetTenant
+    ]);
+    $fleetStats = $statsStmt->fetch(PDO::FETCH_ASSOC);
+
+    $features = !empty($company['features_config']) ? json_decode($company['features_config'], true) : [];
+
+    sendJsonResponse([
+        "success" => true,
+        "ghost_mode" => true,
+        "caller_phone" => normalizePhone($callerPhone),
+        "target_tenant_id" => $targetTenant,
+        "company" => [
+            "tenant_id" => $company['tenant_id'],
+            "company_name" => $company['company_name'],
+            "brand_display_name" => $company['brand_display_name'],
+            "logo_url" => $company['logo_url'],
+            "primary_color" => $company['primary_color_hex'] ?: '#0284C7',
+            "support_phone" => $company['support_phone'],
+            "office_address" => $company['office_address'],
+            "features" => $features,
+            "default_language" => $company['default_language'] ?: 'hi'
+        ],
+        "fleet_stats" => [
+            "total_users" => intval($fleetStats['total_users'] ?? 0),
+            "total_technicians" => intval($fleetStats['total_technicians'] ?? 0),
+            "online_technicians" => intval($fleetStats['online_technicians'] ?? 0),
+            "total_lifts" => intval($fleetStats['total_lifts'] ?? 0),
+            "active_breakdowns" => intval($fleetStats['active_breakdowns'] ?? 0)
+        ]
+    ]);
+}
+
+// 4.2 SuperAdmin Batch Feature Toggles
+if ($action === 'update_company_features') {
+    $callerPhone = trim($input['caller_phone'] ?? '');
+    if (!isSuperAdmin($pdo, $callerPhone)) {
+        sendJsonResponse(["success" => false, "error" => "Unauthorized"], 403);
+    }
+
+    $targetTenant = trim($input['target_tenant_id'] ?? '');
+    $newFeatures = $input['features'] ?? [];
+
+    if (empty($targetTenant)) {
+        sendJsonResponse(["success" => false, "error" => "Target tenant_id required"], 400);
+    }
+
+    $stmtC = $pdo->prepare("SELECT features_config FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+    $stmtC->execute([':t' => $targetTenant]);
+    $row = $stmtC->fetch(PDO::FETCH_ASSOC);
+    if (!$row) {
+        sendJsonResponse(["success" => false, "error" => "Company not found"], 404);
+    }
+
+    $config = !empty($row['features_config']) ? json_decode($row['features_config'], true) : [];
+    if (is_array($newFeatures)) {
+        foreach ($newFeatures as $k => $v) {
+            $config[$k] = $v;
+        }
+    }
+
+    $stmtUp = $pdo->prepare("UPDATE elevex_companies SET features_config = :fc, updated_at = NOW() WHERE tenant_id = :t");
+    $stmtUp->execute([':fc' => json_encode($config), ':t' => $targetTenant]);
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "कंपनी फीचर्स सफलतापूर्वक अपडेट किए गए (Features updated)",
+        "tenant_id" => $targetTenant,
+        "features" => $config
+    ]);
+}
+
 // 5. Add User (Technician, Supervisor, Owner)
 if ($action === 'add_user') {
     $tenantId = trim($input['tenant_id'] ?? '');
