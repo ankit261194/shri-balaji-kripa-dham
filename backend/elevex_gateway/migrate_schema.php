@@ -44,7 +44,7 @@ $tables = [
     "elevex_users" => "CREATE TABLE IF NOT EXISTS elevex_users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         tenant_id VARCHAR(64) NOT NULL,
-        role ENUM('superadmin', 'company_admin', 'supervisor', 'technician', 'owner') NOT NULL,
+        role VARCHAR(50) NOT NULL DEFAULT 'technician',
         full_name VARCHAR(128) NOT NULL,
         phone VARCHAR(20) NOT NULL,
         mpin_hash VARCHAR(255) NULL,
@@ -54,7 +54,7 @@ $tables = [
         is_active TINYINT(1) DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY uq_tenant_phone (tenant_id, phone),
+        INDEX idx_tenant_phone (tenant_id, phone),
         INDEX idx_tenant_role (tenant_id, role)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
 
@@ -152,7 +152,41 @@ foreach ($tables as $name => $ddl) {
     }
 }
 
-// 7. Seed Master SuperAdmin Ankit Chaudhary
+// Seamless migration of elevex_users table for existing databases
+try {
+    $existingCols = [];
+    $colStmt = $pdo->query("SHOW COLUMNS FROM elevex_users");
+    while ($col = $colStmt->fetch()) {
+        $existingCols[] = $col['Field'];
+    }
+
+    if (!in_array('tenant_id', $existingCols)) {
+        $pdo->exec("ALTER TABLE elevex_users ADD COLUMN tenant_id VARCHAR(64) NOT NULL DEFAULT 'tenant_master_elevex'");
+    }
+    if (!in_array('phone', $existingCols)) {
+        $pdo->exec("ALTER TABLE elevex_users ADD COLUMN phone VARCHAR(20) NULL");
+        if (in_array('mobile', $existingCols)) {
+            $pdo->exec("UPDATE elevex_users SET phone = mobile WHERE phone IS NULL OR phone = ''");
+        }
+    }
+    if (!in_array('hardware_device_id', $existingCols)) {
+        $pdo->exec("ALTER TABLE elevex_users ADD COLUMN hardware_device_id VARCHAR(128) NULL");
+    }
+    if (!in_array('fcm_token', $existingCols)) {
+        $pdo->exec("ALTER TABLE elevex_users ADD COLUMN fcm_token TEXT NULL");
+    }
+    if (!in_array('preferred_language', $existingCols)) {
+        $pdo->exec("ALTER TABLE elevex_users ADD COLUMN preferred_language VARCHAR(8) DEFAULT 'hi'");
+    }
+    if (!in_array('is_active', $existingCols)) {
+        $pdo->exec("ALTER TABLE elevex_users ADD COLUMN is_active TINYINT(1) DEFAULT 1");
+    }
+    $results['elevex_users_migration'] = "COLUMNS_VERIFIED_AND_UPDATED";
+} catch (Exception $e) {
+    $results['elevex_users_migration_error'] = $e->getMessage();
+}
+
+// Seed Master SuperAdmin Ankit Chaudhary
 try {
     $superTenant = 'tenant_master_elevex';
     $superCheck = $pdo->prepare("SELECT id FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
@@ -177,9 +211,11 @@ try {
         $results['seed_master_company'] = "EXISTS";
     }
 
-    $userCheck = $pdo->prepare("SELECT id FROM elevex_users WHERE phone = :p AND tenant_id = :t LIMIT 1");
-    $userCheck->execute([':p' => '8533955333', ':t' => $superTenant]);
-    if (!$userCheck->fetch()) {
+    $userCheck = $pdo->prepare("SELECT id FROM elevex_users WHERE (phone = :p OR phone = :p2) LIMIT 1");
+    $userCheck->execute([':p' => '8533955333', ':p2' => '+918533955333']);
+    $existingUser = $userCheck->fetch();
+
+    if (!$existingUser) {
         $mpinHash = password_hash('1234', PASSWORD_BCRYPT);
         $stmtU = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mpin_hash, is_active) VALUES (:t, 'superadmin', :n, :p, :m, 1)");
         $stmtU->execute([
@@ -190,7 +226,10 @@ try {
         ]);
         $results['seed_super_user'] = "INSERTED";
     } else {
-        $results['seed_super_user'] = "EXISTS";
+        // Ensure role is superadmin and tenant_id is set
+        $stmtUp = $pdo->prepare("UPDATE elevex_users SET role = 'superadmin', tenant_id = :t, is_active = 1 WHERE id = :id");
+        $stmtUp->execute([':t' => $superTenant, ':id' => $existingUser['id']]);
+        $results['seed_super_user'] = "EXISTS_AND_PROMOTED_TO_SUPERADMIN";
     }
 } catch (Exception $e) {
     $results['seed_error'] = $e->getMessage();

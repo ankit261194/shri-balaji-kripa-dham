@@ -154,9 +154,12 @@ if ($action === 'manual_dispatch') {
 // 3. SuperAdmin Ghost Silent Reassign (No one knows SuperAdmin intervened)
 if ($action === 'ghost_reassign') {
     $callerPhone = trim($input['caller_phone'] ?? '');
-    $stmtAdmin = $pdo->prepare("SELECT role FROM elevex_users WHERE phone = :p AND role = 'superadmin' AND is_active = 1 LIMIT 1");
-    $stmtAdmin->execute([':p' => $callerPhone]);
-    if (!$stmtAdmin->fetch() && $callerPhone !== '8533955333') {
+    $cleanPhone = preg_replace('/[^0-9]/', '', $callerPhone);
+    $normPhone = strlen($cleanPhone) > 10 ? substr($cleanPhone, -10) : $cleanPhone;
+    
+    $stmtAdmin = $pdo->prepare("SELECT role FROM elevex_users WHERE (phone = :p OR phone = :norm OR phone = :full) AND role = 'superadmin' AND is_active = 1 LIMIT 1");
+    $stmtAdmin->execute([':p' => $callerPhone, ':norm' => $normPhone, ':full' => '+91' . $normPhone]);
+    if (!$stmtAdmin->fetch() && $normPhone !== '8533955333') {
         sendJsonResponse(["success" => false, "error" => "Unauthorized Ghost Override"], 403);
     }
 

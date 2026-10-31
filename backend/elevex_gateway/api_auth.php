@@ -14,22 +14,43 @@ if (!$pdo) {
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $input = getJsonInput();
 
+function normalizePhone($raw) {
+    $clean = preg_replace('/[^0-9]/', '', (string)$raw);
+    return strlen($clean) > 10 ? substr($clean, -10) : $clean;
+}
+
+// Helper to check SuperAdmin authority
+function isSuperAdmin($pdo, $phone) {
+    $norm = normalizePhone($phone);
+    if ($norm === '8533955333') return true;
+    try {
+        $stmt = $pdo->prepare("SELECT role FROM elevex_users WHERE (phone = :p OR phone = :norm OR phone = :full) AND role = 'superadmin' AND is_active = 1 LIMIT 1");
+        $stmt->execute([':p' => $phone, ':norm' => $norm, ':full' => '+91' . $norm]);
+        return (bool)$stmt->fetch();
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
 // 1. Multi-Role Login (Phone + MPIN + Hardware Device ID)
 if ($action === 'login') {
-    $phone = trim($input['phone'] ?? '');
+    $phoneRaw = trim($input['phone'] ?? '');
     $mpin = trim($input['mpin'] ?? '');
     $deviceId = trim($input['device_id'] ?? '');
 
-    if (empty($phone)) {
+    if (empty($phoneRaw)) {
         sendJsonResponse(["success" => false, "error" => "मोबाइल नंबर अनिवार्य है (Phone number is required)"], 400);
     }
 
-    // Check user
+    $normPhone = normalizePhone($phoneRaw);
+    $fullPhone = '+91' . $normPhone;
+
+    // Check user across phone formats
     $stmt = $pdo->prepare("SELECT u.*, c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.features_config, c.default_language 
                            FROM elevex_users u 
                            JOIN elevex_companies c ON u.tenant_id = c.tenant_id 
-                           WHERE u.phone = :p AND u.is_active = 1 LIMIT 1");
-    $stmt->execute([':p' => $phone]);
+                           WHERE (u.phone = :p OR u.phone = :norm OR u.phone = :full) AND u.is_active = 1 LIMIT 1");
+    $stmt->execute([':p' => $phoneRaw, ':norm' => $normPhone, ':full' => $fullPhone]);
     $user = $stmt->fetch();
 
     if (!$user) {
@@ -77,11 +98,7 @@ if ($action === 'login') {
 // 2. SuperAdmin Company Provisioning (Creates Company & White-Label Setup)
 if ($action === 'create_company') {
     $callerPhone = trim($input['caller_phone'] ?? '');
-    
-    // Check SuperAdmin authority
-    $stmtAdmin = $pdo->prepare("SELECT role FROM elevex_users WHERE phone = :p AND role = 'superadmin' AND is_active = 1 LIMIT 1");
-    $stmtAdmin->execute([':p' => $callerPhone]);
-    if (!$stmtAdmin->fetch() && $callerPhone !== '8533955333') {
+    if (!isSuperAdmin($pdo, $callerPhone)) {
         sendJsonResponse(["success" => false, "error" => "केवल सुपर एडमिन ही नई कंपनी बना सकते हैं (SuperAdmin authorization required)"], 403);
     }
 
@@ -135,7 +152,7 @@ if ($action === 'create_company') {
         $stmtUsr->execute([
             ':tid' => $tenantId,
             ':name' => $adminName,
-            ':phone' => $adminPhone,
+            ':phone' => normalizePhone($adminPhone),
             ':mpin' => $defaultMpin
         ]);
 
@@ -146,7 +163,7 @@ if ($action === 'create_company') {
             "message" => "नई कंपनी व 3-ऐप्स वाइट लेबलिंग प्रोफाइल सफलतापूर्वक सक्रिय हुई!",
             "tenant_id" => $tenantId,
             "company_name" => $cname,
-            "admin_phone" => $adminPhone,
+            "admin_phone" => normalizePhone($adminPhone),
             "default_mpin" => "1234"
         ]);
     } catch (Exception $e) {
@@ -158,16 +175,13 @@ if ($action === 'create_company') {
 // 3. SuperAdmin Dynamic Feature Toggles
 if ($action === 'toggle_feature') {
     $callerPhone = trim($input['caller_phone'] ?? '');
+    if (!isSuperAdmin($pdo, $callerPhone)) {
+        sendJsonResponse(["success" => false, "error" => "Unauthorized"], 403);
+    }
+
     $targetTenant = trim($input['target_tenant_id'] ?? '');
     $featureKey = trim($input['feature_key'] ?? '');
     $enabled = !empty($input['enabled']);
-
-    // Check SuperAdmin
-    $stmtAdmin = $pdo->prepare("SELECT role FROM elevex_users WHERE phone = :p AND role = 'superadmin' AND is_active = 1 LIMIT 1");
-    $stmtAdmin->execute([':p' => $callerPhone]);
-    if (!$stmtAdmin->fetch() && $callerPhone !== '8533955333') {
-        sendJsonResponse(["success" => false, "error" => "Unauthorized"], 403);
-    }
 
     $stmtC = $pdo->prepare("SELECT features_config FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
     $stmtC->execute([':t' => $targetTenant]);
@@ -193,9 +207,7 @@ if ($action === 'toggle_feature') {
 // 4. List All Companies (SuperAdmin Ghost View)
 if ($action === 'list_companies') {
     $callerPhone = trim($input['caller_phone'] ?? $_GET['caller_phone'] ?? '');
-    $stmtAdmin = $pdo->prepare("SELECT role FROM elevex_users WHERE phone = :p AND role = 'superadmin' AND is_active = 1 LIMIT 1");
-    $stmtAdmin->execute([':p' => $callerPhone]);
-    if (!$stmtAdmin->fetch() && $callerPhone !== '8533955333') {
+    if (!isSuperAdmin($pdo, $callerPhone)) {
         sendJsonResponse(["success" => false, "error" => "Unauthorized"], 403);
     }
 

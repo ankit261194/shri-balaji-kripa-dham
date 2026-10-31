@@ -221,9 +221,12 @@ if ($action === 'get_attendance_ledger') {
 // 6. SuperAdmin Supreme Edit (Only SuperAdmin can edit attendance)
 if ($action === 'superadmin_edit_attendance') {
     $callerPhone = trim($input['caller_phone'] ?? '');
-    $stmtAdmin = $pdo->prepare("SELECT role FROM elevex_users WHERE phone = :p AND role = 'superadmin' AND is_active = 1 LIMIT 1");
-    $stmtAdmin->execute([':p' => $callerPhone]);
-    if (!$stmtAdmin->fetch() && $callerPhone !== '8533955333') {
+    $cleanPhone = preg_replace('/[^0-9]/', '', $callerPhone);
+    $normPhone = strlen($cleanPhone) > 10 ? substr($cleanPhone, -10) : $cleanPhone;
+    
+    $stmtAdmin = $pdo->prepare("SELECT role FROM elevex_users WHERE (phone = :p OR phone = :norm OR phone = :full) AND role = 'superadmin' AND is_active = 1 LIMIT 1");
+    $stmtAdmin->execute([':p' => $callerPhone, ':norm' => $normPhone, ':full' => '+91' . $normPhone]);
+    if (!$stmtAdmin->fetch() && $normPhone !== '8533955333') {
         sendJsonResponse(["success" => false, "error" => "केवल सुपर एडमिन ही लेज़र रिकॉर्ड संशोधित कर सकते हैं"], 403);
     }
 
