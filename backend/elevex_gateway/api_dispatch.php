@@ -299,8 +299,13 @@ if ($action === 'update_breakdown_status') {
         sendJsonResponse(["success" => false, "error" => "अमान्य स्टेटस"], 400);
     }
 
-    $stmt = $pdo->prepare("UPDATE elevex_breakdowns SET status = :s WHERE id = :bid AND (assigned_technician_id = :tid OR :tid = 0)");
-    $stmt->execute([':s' => $status, ':bid' => $ticketId, ':tid' => $technicianId]);
+    if ($technicianId > 0) {
+        $stmt = $pdo->prepare("UPDATE elevex_breakdowns SET status = :s WHERE id = :bid AND assigned_technician_id = :tid");
+        $stmt->execute([':s' => $status, ':bid' => $ticketId, ':tid' => $technicianId]);
+    } else {
+        $stmt = $pdo->prepare("UPDATE elevex_breakdowns SET status = :s WHERE id = :bid");
+        $stmt->execute([':s' => $status, ':bid' => $ticketId]);
+    }
 
     sendJsonResponse([
         "success" => true,
