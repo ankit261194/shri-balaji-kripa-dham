@@ -90,16 +90,32 @@ if ($action === 'login') {
         }
     }
 
-    // Update Hardware Device ID binding if passed
-    if (!empty($deviceId)) {
-        $stmtDev = $pdo->prepare("UPDATE elevex_users SET hardware_device_id = :did, updated_at = NOW() WHERE id = :uid");
-        $stmtDev->execute([':did' => $deviceId, ':uid' => $user['id']]);
-    }
+    // Issue Cryptographic SHA-256 Bearer Session Token (30-day validity)
+    $sessionToken = bin2hex(random_bytes(32));
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+    $playerParam = trim($input['onesignal_player_id'] ?? $input['player_id'] ?? '');
 
-    // Return complete dynamic branding + user role
+    $updateSql = "UPDATE elevex_users SET session_token = :st, session_token_expires_at = :exp";
+    $updateParams = [':st' => $sessionToken, ':exp' => $expiresAt, ':uid' => $user['id']];
+    if (!empty($playerParam)) {
+        $updateSql .= ", onesignal_player_id = :pid";
+        $updateParams[':pid'] = $playerParam;
+    }
+    if (!empty($deviceId)) {
+        $updateSql .= ", hardware_device_id = :did";
+        $updateParams[':did'] = $deviceId;
+    }
+    $updateSql .= ", updated_at = NOW() WHERE id = :uid";
+    $stmtDev = $pdo->prepare($updateSql);
+    $stmtDev->execute($updateParams);
+
+    // Return complete dynamic branding + user role + Bearer session token
     sendJsonResponse([
         "success" => true,
         "message" => "लॉगिन सफल (Login successful)",
+        "session_token" => $sessionToken,
+        "token_type" => "Bearer",
+        "expires_at" => $expiresAt,
         "user" => [
             "id" => intval($user['id']),
             "tenant_id" => $user['tenant_id'],
