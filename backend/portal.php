@@ -9,6 +9,7 @@ ini_set('display_errors', 0);
 error_reporting(0);
 
 require_once __DIR__ . '/elevex_gateway/config.php';
+header('Content-Type: text/html; charset=utf-8');
 
 $pdo = getDbConnection();
 
