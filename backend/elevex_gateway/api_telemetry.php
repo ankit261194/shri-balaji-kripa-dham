@@ -413,16 +413,17 @@ if ($action === 'log_tamper_alert') {
         WHERE technician_id = :tid");
     $stmtTel->execute([':tid' => $technicianId]);
 
-    // 2. Insert tamper incident into attendance ledger
+    // 2. Insert tamper incident into attendance ledger with immutable audit seal
     $auditNote = "[CRITICAL TAMPER ALERT] Type: {$tamperType} | Details: {$details}";
     $stmtAudit = $pdo->prepare("INSERT INTO elevex_attendance_ledger 
-        (tenant_id, technician_id, punch_date, punch_time, punch_type, lat, lng, is_mock_detected, superadmin_edit_reason, is_locked, created_at) 
-        VALUES (:t, :tid, CURDATE(), CURTIME(), 'TAMPER_LOCK', :lat, :lng, 1, :note, 1, NOW())");
+        (tenant_id, technician_id, duty_date, punch_in_time, punch_in_lat, punch_in_lng, punch_in_location_text, is_mock_detected, superadmin_edit_reason, is_locked_immutable, created_at) 
+        VALUES (:t, :tid, CURDATE(), NOW(), :lat, :lng, :ltext, 1, :note, 1, NOW())");
     $stmtAudit->execute([
         ':t' => $tenantId,
         ':tid' => $technicianId,
         ':lat' => $lat,
         ':lng' => $lng,
+        ':ltext' => "[SECURITY TAMPER ALERT] " . $tamperType,
         ':note' => $auditNote
     ]);
 
