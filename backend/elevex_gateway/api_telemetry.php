@@ -31,6 +31,86 @@ function getDistanceMeters($lat1, $lon1, $lat2, $lon2) {
     return $earthRadius * $c;
 }
 
+// Live Dynamic OpenStreetMap Reverse Geocoding with High-Speed MySQL Cache
+function resolveLiveReverseGeocode($pdo, $lat, $lng) {
+    $latRound = round(floatval($lat), 4);
+    $lngRound = round(floatval($lng), 4);
+
+    // 1. Check local MySQL cache table first (sub-millisecond instant hit)
+    try {
+        $stmtCache = $pdo->prepare("SELECT formatted_landmark FROM elevex_geocode_cache WHERE lat_round = :lat AND lng_round = :lng LIMIT 1");
+        $stmtCache->execute([':lat' => $latRound, ':lng' => $lngRound]);
+        $cached = $stmtCache->fetch();
+        if ($cached && !empty($cached['formatted_landmark'])) {
+            return $cached['formatted_landmark'];
+        }
+    } catch (Throwable $e) {}
+
+    // 2. Query Live OpenStreetMap Nominatim API
+    $landmark = "📍 Location (" . $latRound . ", " . $lngRound . ")";
+    $road = null;
+    $suburb = null;
+    $city = null;
+    $state = null;
+
+    $url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=" . urlencode($lat) . "&lon=" . urlencode($lng) . "&zoom=18&addressdetails=1";
+    $opts = [
+        "http" => [
+            "method" => "GET",
+            "header" => "User-Agent: AnkitEleveX-Industrial-Fleet-Telemetry/1.0\r\nAccept: application/json\r\n",
+            "timeout" => 4
+        ]
+    ];
+    $context = stream_context_create($opts);
+
+    try {
+        $resp = @file_get_contents($url, false, $context);
+        if ($resp) {
+            $data = json_decode($resp, true);
+            if ($data && !empty($data['address'])) {
+                $addr = $data['address'];
+                $road = $addr['road'] ?? $addr['pedestrian'] ?? $addr['street'] ?? $addr['highway'] ?? null;
+                $suburb = $addr['suburb'] ?? $addr['neighbourhood'] ?? $addr['residential'] ?? $addr['commercial'] ?? $addr['industrial'] ?? null;
+                $city = $addr['city'] ?? $addr['town'] ?? $addr['city_district'] ?? $addr['district'] ?? null;
+                $state = $addr['state'] ?? null;
+
+                $parts = [];
+                if (!empty($road)) $parts[] = $road;
+                if (!empty($suburb) && $suburb !== $road) $parts[] = $suburb;
+                if (!empty($city)) $parts[] = $city;
+
+                if (!empty($parts)) {
+                    $landmark = "📍 " . implode(", ", $parts);
+                } else if (!empty($data['display_name'])) {
+                    $tokens = explode(",", $data['display_name']);
+                    $landmark = "📍 " . trim(implode(", ", array_slice($tokens, 0, 3)));
+                }
+            }
+        }
+    } catch (Throwable $e) {}
+
+    // 3. Cache the resolved landmark into MySQL for fast future queries
+    if (!empty($landmark) && strpos($landmark, "Location (") === false) {
+        try {
+            $stmtSave = $pdo->prepare("INSERT INTO elevex_geocode_cache 
+                (lat_round, lng_round, formatted_landmark, road_name, suburb_name, city_name, state_name, source) 
+                VALUES (:lat, :lng, :lmark, :road, :sub, :city, :state, 'nominatim')
+                ON DUPLICATE KEY UPDATE formatted_landmark = VALUES(formatted_landmark)");
+            $stmtSave->execute([
+                ':lat' => $latRound,
+                ':lng' => $lngRound,
+                ':lmark' => $landmark,
+                ':road' => $road,
+                ':sub' => $suburb,
+                ':city' => $city,
+                ':state' => $state
+            ]);
+        } catch (Throwable $e) {}
+    }
+
+    return $landmark;
+}
+
 // 1. Technician Heartbeat Telemetry (Anti-Mock GPS & Site Geofence Matching)
 if ($action === 'heartbeat') {
     $tenantId = trim($input['tenant_id'] ?? '');
@@ -45,32 +125,30 @@ if ($action === 'heartbeat') {
         sendJsonResponse(["success" => false, "error" => "अमान्य टेलीमेट्री डेटा"], 400);
     }
 
-    // Check if technician is physically inside any registered AMC site in this company
+    // Priority 1: Check if technician is physically inside any registered AMC site in this company
     $matchedSiteId = null;
-    $landmarkText = $customLandmark ?: "Greater Noida Area";
+    $landmarkText = $customLandmark;
 
-    $stmtSites = $pdo->prepare("SELECT id, building_name, landmark_name, lat, lng, geofence_radius_meters 
-                                FROM elevex_lifts_amc WHERE tenant_id = :t AND is_active = 1");
-    $stmtSites->execute([':t' => $tenantId]);
-    $sites = $stmtSites->fetchAll();
+    if (empty($landmarkText)) {
+        $stmtSites = $pdo->prepare("SELECT id, building_name, landmark_name, lat, lng, geofence_radius_meters 
+                                    FROM elevex_lifts_amc WHERE tenant_id = :t AND is_active = 1");
+        $stmtSites->execute([':t' => $tenantId]);
+        $sites = $stmtSites->fetchAll();
 
-    foreach ($sites as $site) {
-        $dist = getDistanceMeters($lat, $lng, $site['lat'], $site['lng']);
-        $radius = $site['geofence_radius_meters'] ?: 150;
-        if ($dist <= $radius) {
-            $matchedSiteId = $site['id'];
-            $landmarkText = "🏢 " . $site['building_name'] . " (" . $site['landmark_name'] . ")";
-            break;
+        foreach ($sites as $site) {
+            $dist = getDistanceMeters($lat, $lng, $site['lat'], $site['lng']);
+            $radius = $site['geofence_radius_meters'] ?: 150;
+            if ($dist <= $radius) {
+                $matchedSiteId = $site['id'];
+                $landmarkText = "🏢 " . $site['building_name'] . " (" . $site['landmark_name'] . ")";
+                break;
+            }
         }
     }
 
-    if (!$matchedSiteId && empty($customLandmark)) {
-        // Approximate landmark fallback
-        if ($lat >= 28.46 && $lat <= 28.49 && $lng >= 77.49 && $lng <= 77.52) {
-            $landmarkText = "📍 Pari Chowk Commercial Belt (On the Move)";
-        } else {
-            $landmarkText = "📍 Moving (" . round($lat, 4) . ", " . round($lng, 4) . ")";
-        }
+    // Priority 2: If NOT inside any registered AMC site, resolve live OpenStreetMap dynamic reverse geocoding
+    if (!$matchedSiteId && empty($landmarkText)) {
+        $landmarkText = resolveLiveReverseGeocode($pdo, $lat, $lng);
     }
 
     // Upsert into telemetry table
@@ -135,7 +213,10 @@ if ($action === 'punch_in') {
     $lat = floatval($input['lat'] ?? 0);
     $lng = floatval($input['lng'] ?? 0);
     $isMock = !empty($input['is_mock']);
-    $locationText = trim($input['location_text'] ?? 'Site Location');
+    $locationText = trim($input['location_text'] ?? '');
+    if (empty($locationText) || $locationText === 'Site Location') {
+        $locationText = resolveLiveReverseGeocode($pdo, $lat, $lng);
+    }
 
     if ($technicianId === 0 || $lat == 0 || $lng == 0) {
         sendJsonResponse(["success" => false, "error" => "अमान्य हाज़िरी कोऑर्डिनेट्स"], 400);

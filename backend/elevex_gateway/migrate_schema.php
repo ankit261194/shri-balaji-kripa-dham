@@ -139,6 +139,22 @@ $tables = [
         battery_percentage INT DEFAULT 100,
         last_heartbeat DATETIME NOT NULL,
         INDEX idx_tenant_telemetry (tenant_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+
+    // 7. Dynamic OpenStreetMap Reverse Geocoding Cache
+    "elevex_geocode_cache" => "CREATE TABLE IF NOT EXISTS elevex_geocode_cache (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        lat_round DECIMAL(8, 4) NOT NULL,
+        lng_round DECIMAL(8, 4) NOT NULL,
+        formatted_landmark VARCHAR(255) NOT NULL,
+        road_name VARCHAR(128) NULL,
+        suburb_name VARCHAR(128) NULL,
+        city_name VARCHAR(128) NULL,
+        state_name VARCHAR(128) NULL,
+        source VARCHAR(32) DEFAULT 'nominatim',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_lat_lng_grid (lat_round, lng_round)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
 ];
 
@@ -152,8 +168,8 @@ foreach ($tables as $name => $ddl) {
     }
 }
 
-// Standardize character set and collation across all 6 tables to prevent collation mismatch errors
-$tableNames = ['elevex_companies', 'elevex_users', 'elevex_lifts_amc', 'elevex_breakdowns', 'elevex_attendance_ledger', 'elevex_technician_telemetry'];
+// Standardize character set and collation across all tables to prevent collation mismatch errors
+$tableNames = ['elevex_companies', 'elevex_users', 'elevex_lifts_amc', 'elevex_breakdowns', 'elevex_attendance_ledger', 'elevex_technician_telemetry', 'elevex_geocode_cache'];
 foreach ($tableNames as $tName) {
     try {
         $pdo->exec("ALTER TABLE $tName CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
