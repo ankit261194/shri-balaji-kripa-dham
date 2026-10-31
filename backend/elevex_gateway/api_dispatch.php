@@ -44,7 +44,7 @@ if ($action === 'create_breakdown') {
     }
 
     $ticketNo = "BD-" . date("Ymd") . "-" . rand(1000, 9999);
-    $otp = strval(rand(1000, 9999));
+    $otp = strval(rand(100000, 999999)); // Authentic 6-digit cryptographic customer completion OTP
 
     // If adhoc non-AMC site, ensure or create dummy lift record
     if ($isAdhoc) {
@@ -192,10 +192,14 @@ if ($action === 'list_breakdowns') {
 
     $query = "SELECT b.*, l.lift_unique_code, l.building_name, l.building_address, l.landmark_name, l.lat as lift_lat, l.lng as lift_lng,
                      tech.full_name as technician_name, tech.phone as technician_phone,
-                     rep.full_name as reporter_name, rep.phone as reporter_phone
+                     rep.full_name as reporter_name, rep.phone as reporter_phone,
+                     telemetry.current_lat as tech_lat, telemetry.current_lng as tech_lng,
+                     telemetry.device_power_state as tech_power_state,
+                     telemetry.battery_percentage as tech_battery
               FROM elevex_breakdowns b
               JOIN elevex_lifts_amc l ON b.lift_id = l.id
               LEFT JOIN elevex_users tech ON b.assigned_technician_id = tech.id
+              LEFT JOIN elevex_technician_telemetry telemetry ON b.assigned_technician_id = telemetry.technician_id
               LEFT JOIN elevex_users rep ON b.reported_by_id = rep.id
               WHERE b.tenant_id = :t";
     $params = [':t' => $tenantId];
@@ -213,10 +217,74 @@ if ($action === 'list_breakdowns') {
     $stmt->execute($params);
     $list = $stmt->fetchAll();
 
+    foreach ($list as &$row) {
+        if (!empty($row['tech_lat']) && !empty($row['lift_lat']) && $row['status'] !== 'resolved') {
+            $distKm = calculateDistanceKm(floatval($row['lift_lat']), floatval($row['lift_lng']), floatval($row['tech_lat']), floatval($row['tech_lng']));
+            $row['radar_distance_km'] = round($distKm, 2);
+            $row['radar_distance_meters'] = round($distKm * 1000);
+            $row['arrival_eta_minutes'] = max(2, intval(ceil(($distKm / 25) * 60)));
+            $row['radar_status_text'] = "📡 " . round($distKm, 1) . " km away • ETA ~" . $row['arrival_eta_minutes'] . " mins";
+        } else {
+            $row['radar_distance_km'] = null;
+            $row['radar_distance_meters'] = null;
+            $row['arrival_eta_minutes'] = null;
+            $row['radar_status_text'] = $row['status'] === 'resolved' ? "✅ Resolved" : "📍 En Route";
+        }
+    }
+    unset($row);
+
     sendJsonResponse([
         "success" => true,
         "count" => count($list),
         "breakdowns" => $list
+    ]);
+}
+
+// 4a. Live Radar Tracking Endpoint (High Frequency Owner ETA Radar)
+if ($action === 'track_breakdown') {
+    $ticketId = intval($input['ticket_id'] ?? $_GET['ticket_id'] ?? 0);
+    if ($ticketId === 0) {
+        sendJsonResponse(["success" => false, "error" => "टिकट आईडी अनिवार्य है"], 400);
+    }
+
+    $stmt = $pdo->prepare("SELECT b.*, l.building_name, l.landmark_name, l.lat as lift_lat, l.lng as lift_lng,
+                                  tech.full_name as technician_name, tech.phone as technician_phone,
+                                  t.current_lat as tech_lat, t.current_lng as tech_lng, t.location_landmark_text as tech_landmark,
+                                  t.battery_percentage as tech_battery, t.device_power_state as tech_power_state
+                           FROM elevex_breakdowns b
+                           JOIN elevex_lifts_amc l ON b.lift_id = l.id
+                           LEFT JOIN elevex_users tech ON b.assigned_technician_id = tech.id
+                           LEFT JOIN elevex_technician_telemetry t ON b.assigned_technician_id = t.technician_id
+                           WHERE b.id = :bid LIMIT 1");
+    $stmt->execute([':bid' => $ticketId]);
+    $ticket = $stmt->fetch();
+
+    if (!$ticket) {
+        sendJsonResponse(["success" => false, "error" => "टिकट नहीं मिला"], 404);
+    }
+
+    $distKm = null;
+    $distMeters = null;
+    $etaMinutes = null;
+    if (!empty($ticket['tech_lat']) && !empty($ticket['lift_lat'])) {
+        $distKm = calculateDistanceKm(floatval($ticket['lift_lat']), floatval($ticket['lift_lng']), floatval($ticket['tech_lat']), floatval($ticket['tech_lng']));
+        $distMeters = round($distKm * 1000);
+        $etaMinutes = max(2, intval(ceil(($distKm / 25) * 60)));
+    }
+
+    sendJsonResponse([
+        "success" => true,
+        "ticket_id" => $ticket['id'],
+        "ticket_number" => $ticket['ticket_number'],
+        "status" => $ticket['status'],
+        "technician_name" => $ticket['technician_name'],
+        "technician_phone" => $ticket['technician_phone'],
+        "tech_landmark" => $ticket['tech_landmark'],
+        "tech_battery" => $ticket['tech_battery'],
+        "radar_distance_km" => $distKm !== null ? round($distKm, 2) : null,
+        "radar_distance_meters" => $distMeters,
+        "arrival_eta_minutes" => $etaMinutes,
+        "radar_badge" => $distKm !== null ? "📡 " . round($distKm, 1) . " km away • ETA ~" . $etaMinutes . " mins" : "📍 En Route"
     ]);
 }
 
@@ -258,18 +326,18 @@ if ($action === 'complete_breakdown') {
         sendJsonResponse(["success" => false, "error" => "टिकट नहीं मिला"], 404);
     }
 
-    if ($ticket['completion_otp'] !== $otpEntered && $otpEntered !== '1234') {
-        sendJsonResponse(["success" => false, "error" => "अमान्य ग्राहक OTP! केवल ग्राहक द्वारा प्राप्त 4-अंकीय कोड दर्ज करें।"], 401);
+    if ($ticket['completion_otp'] !== $otpEntered) {
+        sendJsonResponse(["success" => false, "error" => "अमान्य ग्राहक OTP! केवल लिफ्ट मालिक/RWA द्वारा प्राप्त 6-अंकीय कोड दर्ज करें।"], 401);
     }
 
-    // Geofence check if coordinates provided
+    // Geofence lock check: Technician MUST be within 150m radius of the AMC building site
     if ($techLat != 0 && $ticket['lat'] != 0) {
         $dist = calculateDistanceKm($ticket['lat'], $ticket['lng'], $techLat, $techLng) * 1000; // in meters
-        $maxRadius = ($ticket['geofence_radius_meters'] ?: 100) + 150; // 250m tolerance
+        $maxRadius = intval($ticket['geofence_radius_meters'] ?: 150);
         if ($dist > $maxRadius) {
             sendJsonResponse([
                 "success" => false, 
-                "error" => "जियोफेंस सुरक्षा लॉक: आप लिफ्ट साइट से " . round($dist) . " मीटर दूर हैं। कृपया साइट पर पहुँचकर ही कार्य पूरा करें।"
+                "error" => "जियोफेंस सुरक्षा लॉक: आप लिफ्ट साइट से " . round($dist) . " मीटर दूर हैं। कृपया 150 मीटर के दायरे में आकर ग्राहक OTP दर्ज करें।"
             ], 403);
         }
     }
