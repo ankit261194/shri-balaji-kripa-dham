@@ -136,7 +136,7 @@ if (isset($elevexApps[$appParam])) {
         $filesize = filesize($targetFile);
         while (ob_get_level()) ob_end_clean();
         header("Content-Type: application/vnd.android.package-archive");
-        header("Content-Disposition: attachment; filename="{$filename}"");
+        header("Content-Disposition: attachment; filename=\"" . $filename . "\"");
         header("Content-Length: {$filesize}");
         header("Accept-Ranges: bytes");
         header("Cache-Control: public, no-cache, no-store, must-revalidate, max-age=0");
