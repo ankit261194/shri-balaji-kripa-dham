@@ -409,7 +409,7 @@ if ($action === 'log_tamper_alert') {
 
     // 1. Update technician telemetry state to TAMPER_LOCKED
     $stmtTel = $pdo->prepare("UPDATE elevex_technician_telemetry 
-        SET is_kiosk_locked = 1, device_power_state = 'TAMPER_LOCKED', last_seen_at = NOW() 
+        SET device_power_state = 'TAMPER_LOCKED', is_mock_location = 1, last_heartbeat = NOW() 
         WHERE technician_id = :tid");
     $stmtTel->execute([':tid' => $technicianId]);
 
