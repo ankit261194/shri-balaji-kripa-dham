@@ -94,7 +94,11 @@ $filesToSync = [
     "api/sync_leads.php",
     "sync_elevex_apk.php",
     "sync_ecommerce.php",
-    "elevex_gateway/app_update.json"
+    "elevex_gateway/app_update.json",
+    "elevex_gateway/migrate_schema.php",
+    "elevex_gateway/api_auth.php",
+    "elevex_gateway/api_dispatch.php",
+    "elevex_gateway/api_telemetry.php"
 ];
 
 // Support selective fast deployment of single or specific files via ?file=api/app_queries.php
