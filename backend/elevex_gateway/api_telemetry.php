@@ -367,8 +367,8 @@ if ($action === 'superadmin_edit_attendance') {
     }
 
     $recordId = intval($input['record_id'] ?? 0);
-    $newPunchIn = trim($input['punch_in_time'] ?? '');
-    $reason = trim($input['edit_reason'] ?? '');
+    $newPunchIn = trim($input['punch_in_time'] ?? $input['new_punch_in_time'] ?? '');
+    $reason = trim($input['edit_reason'] ?? $input['reason'] ?? '');
 
     if (empty($reason) || strlen($reason) < 5) {
         sendJsonResponse(["success" => false, "error" => "सुपरएडमिन ऑडिट संपादन के लिए विधिक कारण (कम से कम 5 अक्षर) अनिवार्य है"], 400);
