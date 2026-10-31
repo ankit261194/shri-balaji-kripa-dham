@@ -60,9 +60,9 @@ function isSuperAdmin($pdo, $phone) {
 
 // 1. Multi-Role Login (Phone + MPIN + Hardware Device ID)
 if ($action === 'login') {
-    $phoneRaw = trim($input['phone'] ?? '');
-    $mpin = trim($input['mpin'] ?? '');
-    $deviceId = trim($input['device_id'] ?? '');
+    $phoneRaw = trim($input['phone'] ?? $input['mobile'] ?? $_POST['phone'] ?? $_POST['mobile'] ?? $_GET['phone'] ?? $_GET['mobile'] ?? '');
+    $mpin = trim($input['mpin'] ?? $input['pin'] ?? $_POST['mpin'] ?? $_POST['pin'] ?? '');
+    $deviceId = trim($input['device_id'] ?? $_POST['device_id'] ?? $_GET['device_id'] ?? '');
 
     if (empty($phoneRaw)) {
         sendJsonResponse(["success" => false, "error" => "मोबाइल नंबर अनिवार्य है (Phone number is required)"], 400);
