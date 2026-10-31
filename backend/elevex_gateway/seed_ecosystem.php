@@ -351,12 +351,13 @@ foreach ($usersData as $u) {
         } else {
             $stmtIns = $pdo->prepare("INSERT INTO elevex_users 
                 (tenant_id, role, full_name, phone, mobile, mpin_hash, hardware_device_id, is_active)
-                VALUES (:t, :r, :n, :p, :p, :m, :d, 1)");
+                VALUES (:t, :r, :n, :p, :mob, :m, :d, 1)");
             $stmtIns->execute([
                 ':t' => $u['tenant_id'],
                 ':r' => $u['role'],
                 ':n' => $u['full_name'],
                 ':p' => $normPhone,
+                ':mob' => $normPhone,
                 ':m' => $mpinHash,
                 ':d' => $u['device_id']
             ]);
@@ -769,15 +770,19 @@ foreach ($breakdownData as $bd) {
         $techId = $bd['tech_phone'] ? ($userMap[$bd['tech_phone']] ?? null) : null;
 
         if ($liftId && $reporterId) {
+            $assignedAt = !empty($techId) ? date('Y-m-d H:i:s') : null;
+            $resolvedAt = ($bd['status'] === 'resolved') ? date('Y-m-d H:i:s') : null;
+
             $stmtBd = $pdo->prepare("INSERT INTO elevex_breakdowns 
                 (tenant_id, ticket_number, lift_id, reported_by_id, assigned_technician_id, dispatch_mode, status, issue_description, completion_otp, customer_rating, customer_feedback, created_at, assigned_at, resolved_at)
-                VALUES (:t, :tno, :lid, :rid, :tid, :dmode, :status, :issue, :otp, :rating, :fb, NOW(), IF(:tid IS NOT NULL, NOW(), NULL), IF(:status = 'resolved', NOW(), NULL))
+                VALUES (:t, :tno, :lid, :rid, :tid, :dmode, :status, :issue, :otp, :rating, :fb, NOW(), :aat, :rat)
                 ON DUPLICATE KEY UPDATE 
                 status = VALUES(status),
                 assigned_technician_id = VALUES(assigned_technician_id),
                 issue_description = VALUES(issue_description),
                 customer_rating = VALUES(customer_rating),
-                customer_feedback = VALUES(customer_feedback)");
+                customer_feedback = VALUES(customer_feedback),
+                resolved_at = VALUES(resolved_at)");
             $stmtBd->execute([
                 ':t' => $bd['tenant_id'],
                 ':tno' => $bd['ticket_number'],
@@ -789,7 +794,9 @@ foreach ($breakdownData as $bd) {
                 ':issue' => $bd['issue'],
                 ':otp' => $bd['otp'],
                 ':rating' => $bd['rating'],
-                ':fb' => $bd['feedback']
+                ':fb' => $bd['feedback'],
+                ':aat' => $assignedAt,
+                ':rat' => $resolvedAt
             ]);
             $results['breakdowns'][$bd['ticket_number']] = "UPSERTED ({$bd['status']})";
         }
