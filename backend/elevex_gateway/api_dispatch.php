@@ -220,6 +220,26 @@ if ($action === 'list_breakdowns') {
     ]);
 }
 
+// 4b. Update Breakdown Status by Technician
+if ($action === 'update_breakdown_status') {
+    $ticketId = intval($input['ticket_id'] ?? 0);
+    $status = trim($input['status'] ?? 'in_progress');
+    $technicianId = intval($input['technician_id'] ?? 0);
+
+    $allowed = ['assigned', 'technician_enroute', 'on_site', 'in_progress'];
+    if (!in_array($status, $allowed)) {
+        sendJsonResponse(["success" => false, "error" => "अमान्य स्टेटस"], 400);
+    }
+
+    $stmt = $pdo->prepare("UPDATE elevex_breakdowns SET status = :s WHERE id = :bid AND (assigned_technician_id = :tid OR :tid = 0)");
+    $stmt->execute([':s' => $status, ':bid' => $ticketId, ':tid' => $technicianId]);
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "स्टेटस सफलतापूर्वक अपडेट हुआ: $status"
+    ]);
+}
+
 // 5. Complete Breakdown by Technician (Requires Customer OTP)
 if ($action === 'complete_breakdown') {
     $ticketId = intval($input['ticket_id'] ?? 0);

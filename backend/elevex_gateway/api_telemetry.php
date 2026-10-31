@@ -202,17 +202,30 @@ if ($action === 'punch_out') {
     ]);
 }
 
-// 5. Get Attendance Ledger (Supervisor View - Non Editable)
+// 5. Get Attendance Ledger (Supervisor View - Non Editable & Technician Self Ledger)
 if ($action === 'get_attendance_ledger') {
     $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
     $date = trim($input['date'] ?? $_GET['date'] ?? date("Y-m-d"));
+    $techId = intval($input['technician_id'] ?? $_GET['technician_id'] ?? 0);
 
-    $stmt = $pdo->prepare("SELECT a.*, u.full_name, u.phone 
-                           FROM elevex_attendance_ledger a
-                           JOIN elevex_users u ON a.technician_id = u.id
-                           WHERE a.tenant_id = :t AND a.duty_date = :d
-                           ORDER BY a.punch_in_time DESC");
-    $stmt->execute([':t' => $tenantId, ':d' => $date]);
+    $query = "SELECT a.*, u.full_name, u.phone 
+              FROM elevex_attendance_ledger a
+              JOIN elevex_users u ON a.technician_id = u.id
+              WHERE a.tenant_id = :t";
+    $params = [':t' => $tenantId];
+
+    if (!empty($date) && $date !== 'all') {
+        $query .= " AND a.duty_date = :d";
+        $params[':d'] = $date;
+    }
+    if ($techId > 0) {
+        $query .= " AND a.technician_id = :tid";
+        $params[':tid'] = $techId;
+    }
+    $query .= " ORDER BY a.punch_in_time DESC";
+
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
     $records = $stmt->fetchAll();
 
     sendJsonResponse([
