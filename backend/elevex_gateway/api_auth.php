@@ -152,12 +152,13 @@ if ($action === 'create_company') {
 
         // Create Default Company Admin user
         $defaultMpin = password_hash('1234', PASSWORD_BCRYPT);
-        $stmtUsr = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mpin_hash, is_active) 
-                                  VALUES (:tid, 'company_admin', :name, :phone, :mpin, 1)");
+        $cleanAdminPhone = normalizePhone($adminPhone);
+        $stmtUsr = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mobile, mpin_hash, is_active) 
+                                  VALUES (:tid, 'company_admin', :name, :phone, :phone, :mpin, 1)");
         $stmtUsr->execute([
             ':tid' => $tenantId,
             ':name' => $adminName,
-            ':phone' => normalizePhone($adminPhone),
+            ':phone' => $cleanAdminPhone,
             ':mpin' => $defaultMpin
         ]);
 
@@ -261,8 +262,8 @@ if ($action === 'add_user') {
         ]);
         $userId = intval($existing['id']);
     } else {
-        $stmtIns = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mpin_hash, preferred_language, is_active) 
-                                  VALUES (:t, :r, :n, :p, :m, :lang, 1)");
+        $stmtIns = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mobile, mpin_hash, preferred_language, is_active) 
+                                  VALUES (:t, :r, :n, :p, :p, :m, :lang, 1)");
         $stmtIns->execute([
             ':t' => $tenantId,
             ':r' => $role,

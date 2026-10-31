@@ -191,6 +191,18 @@ try {
     if (!in_array('is_active', $existingCols)) {
         $pdo->exec("ALTER TABLE elevex_users ADD COLUMN is_active TINYINT(1) DEFAULT 1");
     }
+
+    if (in_array('mobile', $existingCols)) {
+        try {
+            $pdo->exec("ALTER TABLE elevex_users MODIFY COLUMN mobile VARCHAR(20) NULL DEFAULT NULL");
+            $idxStmt = $pdo->query("SHOW INDEX FROM elevex_users");
+            while ($idx = $idxStmt->fetch()) {
+                if (($idx['Column_name'] === 'mobile' || $idx['Key_name'] === 'mobile') && $idx['Key_name'] !== 'PRIMARY') {
+                    $pdo->exec("ALTER TABLE elevex_users DROP INDEX " . $idx['Key_name']);
+                }
+            }
+        } catch (Exception $e) {}
+    }
     $results['elevex_users_migration'] = "COLUMNS_VERIFIED_AND_UPDATED";
 } catch (Exception $e) {
     $results['elevex_users_migration_error'] = $e->getMessage();
