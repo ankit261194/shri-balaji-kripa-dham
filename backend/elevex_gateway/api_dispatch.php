@@ -20,6 +20,72 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $input = getJsonInput();
 
 // Helper: Haversine distance in KM
+// Helper: Instant OneSignal Siren Push Dispatch
+function sendOneSignalSirenNotification($pdo, $technicianId, $ticketNumber, $description, $liftName = '') {
+    try {
+        $stmt = $pdo->prepare("SELECT onesignal_player_id, full_name, phone FROM elevex_users WHERE id = :id LIMIT 1");
+        $stmt->execute([':id' => $technicianId]);
+        $tech = $stmt->fetch();
+
+        $playerId = $tech['onesignal_player_id'] ?? null;
+        $appId = "04f981dc-8316-43bc-91ca-71bf9129525c";
+
+        $payload = [
+            "app_id" => $appId,
+            "headings" => [
+                "en" => "🚨 EMERGENCY BREAKDOWN DISPATCH",
+                "hi" => "🚨 आपातकालीन लिफ्ट ब्रेकडाउन अलर्ट"
+            ],
+            "contents" => [
+                "en" => "Ticket: {$ticketNumber} | {$description} - Immediate Attention Required!",
+                "hi" => "टिकट: {$ticketNumber} | {$description} - तुरंत साइट पर पहुंचें!"
+            ],
+            "android_channel_id" => "elevex_emergency_siren_channel",
+            "android_sound" => "emergency_siren",
+            "priority" => 10,
+            "data" => [
+                "type" => "BREAKDOWN_DISPATCH",
+                "ticket_number" => $ticketNumber,
+                "technician_id" => $technicianId,
+                "play_siren" => true
+            ]
+        ];
+
+        if (!empty($playerId)) {
+            $payload["include_player_ids"] = [$playerId];
+        } else {
+            $payload["included_segments"] = ["Subscribed Users"];
+        }
+
+        $ch = curl_init("https://onesignal.com/api/v1/notifications");
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json; charset=utf-8',
+            'Authorization: Basic ZmFjMjFkMTItMzM0NC00NWIyLWFjYjEtN2I5YjI3MjM3YzA1'
+        ]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+        $res = curl_exec($ch);
+        curl_close($ch);
+
+        return [
+            "dispatched" => true,
+            "target_technician_id" => $technicianId,
+            "player_id" => $playerId,
+            "siren_channel" => "elevex_emergency_siren_channel",
+            "onesignal_status" => json_decode($res, true) ?: ["raw" => $res]
+        ];
+    } catch (Exception $e) {
+        return [
+            "dispatched" => false,
+            "error" => $e->getMessage()
+        ];
+    }
+}
+
 function calculateDistanceKm($lat1, $lon1, $lat2, $lon2) {
     $earthRadius = 6371;
     $dLat = deg2rad($lat2 - $lat1);
@@ -124,6 +190,11 @@ if ($action === 'create_breakdown') {
         }
     }
 
+    $sirenInfo = null;
+    if ($assignedTech !== null) {
+        $sirenInfo = sendOneSignalSirenNotification($pdo, $assignedTech['id'], $ticketNo, $description);
+    }
+
     sendJsonResponse([
         "success" => true,
         "message" => "ब्रेकडाउन टिकट सफलतापूर्वक दर्ज हुआ!",
@@ -131,7 +202,8 @@ if ($action === 'create_breakdown') {
         "ticket_number" => $ticketNo,
         "completion_otp" => $otp,
         "auto_assigned" => $assignedTech !== null,
-        "assigned_technician" => $assignedTech
+        "assigned_technician" => $assignedTech,
+        "siren_dispatch" => $sirenInfo
     ]);
 }
 

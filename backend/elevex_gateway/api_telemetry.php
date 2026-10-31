@@ -394,7 +394,49 @@ if ($action === 'superadmin_edit_attendance') {
     ]);
 }
 
-    sendJsonResponse(["success" => false, "error" => "Invalid telemetry action"], 400);
+    // 6. Native Tamper Detection Telemetry (Developer Options, USB Debugging, Root Detector)
+if ($action === 'log_tamper_alert') {
+    $tenantId = trim($input['tenant_id'] ?? '');
+    $technicianId = intval($input['technician_id'] ?? 0);
+    $tamperType = trim($input['tamper_type'] ?? 'DEVELOPER_OPTIONS_ENABLED');
+    $details = trim($input['details'] ?? 'Device integrity compromised / USB debugging detected');
+    $lat = floatval($input['lat'] ?? 28.4744);
+    $lng = floatval($input['lng'] ?? 77.5040);
+
+    if (empty($tenantId) || $technicianId === 0) {
+        sendJsonResponse(["success" => false, "error" => "Tenant ID and Technician ID required"], 400);
+    }
+
+    // 1. Update technician telemetry state to TAMPER_LOCKED
+    $stmtTel = $pdo->prepare("UPDATE elevex_technician_telemetry 
+        SET is_kiosk_locked = 1, device_power_state = 'TAMPER_LOCKED', last_seen_at = NOW() 
+        WHERE technician_id = :tid");
+    $stmtTel->execute([':tid' => $technicianId]);
+
+    // 2. Insert tamper incident into attendance ledger
+    $auditNote = "[CRITICAL TAMPER ALERT] Type: {$tamperType} | Details: {$details}";
+    $stmtAudit = $pdo->prepare("INSERT INTO elevex_attendance_ledger 
+        (tenant_id, technician_id, punch_date, punch_time, punch_type, lat, lng, is_mock_detected, superadmin_edit_reason, is_locked, created_at) 
+        VALUES (:t, :tid, CURDATE(), CURTIME(), 'TAMPER_LOCK', :lat, :lng, 1, :note, 1, NOW())");
+    $stmtAudit->execute([
+        ':t' => $tenantId,
+        ':tid' => $technicianId,
+        ':lat' => $lat,
+        ':lng' => $lng,
+        ':note' => $auditNote
+    ]);
+
+    sendJsonResponse([
+        "success" => true,
+        "tamper_locked" => true,
+        "message" => "🚨 सुरक्षा उल्लंघन दर्ज: टर्मिनल को सुरक्षा कारणों से फ्रीज कर दिया गया है (Tamper event logged, terminal frozen)",
+        "tamper_type" => $tamperType,
+        "technician_id" => $technicianId,
+        "recorded_at" => date('Y-m-d H:i:s')
+    ]);
+}
+
+sendJsonResponse(["success" => false, "error" => "Invalid telemetry action"], 400);
 } catch (Throwable $e) {
     sendJsonResponse([
         "success" => false,

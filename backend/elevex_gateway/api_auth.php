@@ -19,6 +19,27 @@ try {
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $input = getJsonInput();
 
+function ensureAuthColumns($pdo) {
+    static $ensured = false;
+    if ($ensured) return;
+    $cols = [
+        "session_token" => "VARCHAR(64) NULL",
+        "session_token_expires_at" => "DATETIME NULL",
+        "onesignal_player_id" => "VARCHAR(64) NULL"
+    ];
+    foreach ($cols as $col => $def) {
+        try {
+            $pdo->exec("ALTER TABLE elevex_users ADD COLUMN IF NOT EXISTS $col $def");
+        } catch (Exception $e) {
+            try {
+                $pdo->exec("ALTER TABLE elevex_users ADD COLUMN $col $def");
+            } catch (Exception $e2) {}
+        }
+    }
+    $ensured = true;
+}
+ensureAuthColumns($pdo);
+
 function normalizePhone($raw) {
     $clean = preg_replace('/[^0-9]/', '', (string)$raw);
     return strlen($clean) > 10 ? substr($clean, -10) : $clean;
@@ -437,7 +458,43 @@ if ($action === 'update_language') {
     ]);
 }
 
-    sendJsonResponse(["success" => false, "error" => "Invalid action requested"], 400);
+    // 7. Update OneSignal Player ID Binding
+if ($action === 'update_onesignal_id') {
+    $userId = intval($input['user_id'] ?? 0);
+    $phone = trim($input['phone'] ?? '');
+    $playerId = trim($input['player_id'] ?? $input['onesignal_player_id'] ?? '');
+
+    if (empty($playerId)) {
+        sendJsonResponse(["success" => false, "error" => "Player ID अनिवार्य है"], 400);
+    }
+
+    if ($userId > 0) {
+        $stmt = $pdo->prepare("UPDATE elevex_users SET onesignal_player_id = :pid, updated_at = NOW() WHERE id = :uid");
+        $stmt->execute([':pid' => $playerId, ':uid' => $userId]);
+    } else if (!empty($phone)) {
+        $cleanPhone = normalizePhone($phone);
+        $stmt = $pdo->prepare("UPDATE elevex_users SET onesignal_player_id = :pid, updated_at = NOW() WHERE phone = :p OR phone = :full");
+        $stmt->execute([':pid' => $playerId, ':p' => $cleanPhone, ':full' => '+91' . $cleanPhone]);
+    }
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "OneSignal Player ID सफलतापूर्वक पंजीकृत (OneSignal registered)",
+        "player_id" => $playerId
+    ]);
+}
+
+// 8. Cryptographic Bearer Session Verification
+if ($action === 'verify_session') {
+    $authUser = verifyBearerToken($pdo);
+    sendJsonResponse([
+        "success" => true,
+        "message" => "सत्र मान्य है (Session valid)",
+        "user" => $authUser
+    ]);
+}
+
+sendJsonResponse(["success" => false, "error" => "Invalid action requested"], 400);
 } catch (Throwable $e) {
     sendJsonResponse([
         "success" => false,
