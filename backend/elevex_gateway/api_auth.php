@@ -312,6 +312,28 @@ if ($action === 'list_users') {
     ]);
 }
 
+// 6. Update User Preferred Language (Cloud Preference Sync)
+if ($action === 'update_language') {
+    $userId = intval($input['user_id'] ?? 0);
+    $phone = trim($input['phone'] ?? '');
+    $lang = trim($input['language'] ?? $input['language_code'] ?? 'hi');
+
+    if ($userId > 0) {
+        $stmt = $pdo->prepare("UPDATE elevex_users SET preferred_language = :lang, updated_at = NOW() WHERE id = :uid");
+        $stmt->execute([':lang' => $lang, ':uid' => $userId]);
+    } else if (!empty($phone)) {
+        $cleanPhone = normalizePhone($phone);
+        $stmt = $pdo->prepare("UPDATE elevex_users SET preferred_language = :lang, updated_at = NOW() WHERE phone = :p");
+        $stmt->execute([':lang' => $lang, ':p' => $cleanPhone]);
+    }
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "भाषा प्राथमिकता सफलतापूर्वक सहेजी गई (Language preference saved)",
+        "preferred_language" => $lang
+    ]);
+}
+
     sendJsonResponse(["success" => false, "error" => "Invalid action requested"], 400);
 } catch (Throwable $e) {
     sendJsonResponse([
