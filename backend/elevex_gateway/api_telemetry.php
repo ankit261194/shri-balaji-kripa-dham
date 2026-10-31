@@ -417,7 +417,11 @@ if ($action === 'log_tamper_alert') {
     $auditNote = "[CRITICAL TAMPER ALERT] Type: {$tamperType} | Details: {$details}";
     $stmtAudit = $pdo->prepare("INSERT INTO elevex_attendance_ledger 
         (tenant_id, technician_id, duty_date, punch_in_time, punch_in_lat, punch_in_lng, punch_in_location_text, is_mock_detected, superadmin_edit_reason, is_locked_immutable, created_at) 
-        VALUES (:t, :tid, CURDATE(), NOW(), :lat, :lng, :ltext, 1, :note, 1, NOW())");
+        VALUES (:t, :tid, CURDATE(), NOW(), :lat, :lng, :ltext, 1, :note, 1, NOW())
+        ON DUPLICATE KEY UPDATE 
+        superadmin_edit_reason = CONCAT(COALESCE(superadmin_edit_reason, ''), ' | ', VALUES(superadmin_edit_reason)),
+        is_mock_detected = 1,
+        is_locked_immutable = 1");
     $stmtAudit->execute([
         ':t' => $tenantId,
         ':tid' => $technicianId,
