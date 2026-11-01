@@ -245,6 +245,7 @@ if ($action === 'get_technician_fleet') {
 
 // 3. Punch In Attendance (Immutable Server UTC Record)
 if ($action === 'punch_in') {
+    $authUser = verifyBearerToken($pdo);
     $tenantId = trim($input['tenant_id'] ?? '');
     $technicianId = intval($input['technician_id'] ?? 0);
     $lat = floatval($input['lat'] ?? 0);
@@ -303,6 +304,7 @@ if ($action === 'punch_in') {
 
 // 4. Punch Out Attendance
 if ($action === 'punch_out') {
+    $authUser = verifyBearerToken($pdo);
     $technicianId = intval($input['technician_id'] ?? 0);
     $lat = floatval($input['lat'] ?? 0);
     $lng = floatval($input['lng'] ?? 0);
@@ -356,6 +358,7 @@ if ($action === 'get_attendance_ledger') {
 
 // 6. SuperAdmin Supreme Edit (Only SuperAdmin can edit attendance with mandatory audit trail)
 if ($action === 'superadmin_edit_attendance') {
+    $authUser = verifyBearerToken($pdo, 'superadmin');
     $callerPhone = trim($input['caller_phone'] ?? '');
     $cleanPhone = preg_replace('/[^0-9]/', '', $callerPhone);
     $normPhone = strlen($cleanPhone) > 10 ? substr($cleanPhone, -10) : $cleanPhone;
@@ -396,6 +399,7 @@ if ($action === 'superadmin_edit_attendance') {
 
     // 6. Native Tamper Detection Telemetry (Developer Options, USB Debugging, Root Detector)
 if ($action === 'log_tamper_alert') {
+    $authUser = verifyBearerToken($pdo);
     $tenantId = trim($input['tenant_id'] ?? '');
     $technicianId = intval($input['technician_id'] ?? 0);
     $tamperType = trim($input['tamper_type'] ?? 'DEVELOPER_OPTIONS_ENABLED');

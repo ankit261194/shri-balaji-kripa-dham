@@ -99,6 +99,7 @@ function calculateDistanceKm($lat1, $lon1, $lat2, $lon2) {
 
 // 1. Create Breakdown Ticket (Owner 1-Click SOS or Supervisor Manual Ticket)
 if ($action === 'create_breakdown') {
+    $authUser = verifyBearerToken($pdo);
     $tenantId = trim($input['tenant_id'] ?? '');
     $liftId = intval($input['lift_id'] ?? 0);
     $reportedById = intval($input['reported_by_id'] ?? 0);
@@ -209,6 +210,7 @@ if ($action === 'create_breakdown') {
 
 // 2. Supervisor Manual Dispatch
 if ($action === 'manual_dispatch') {
+    $authUser = verifyBearerToken($pdo);
     $ticketId = intval($input['ticket_id'] ?? 0);
     $technicianId = intval($input['technician_id'] ?? 0);
     $supervisorId = intval($input['supervisor_id'] ?? 0);
@@ -230,6 +232,7 @@ if ($action === 'manual_dispatch') {
 
 // 3. SuperAdmin Ghost Silent Reassign (No one knows SuperAdmin intervened)
 if ($action === 'ghost_reassign') {
+    $authUser = verifyBearerToken($pdo, 'superadmin');
     $callerPhone = trim($input['caller_phone'] ?? '');
     $cleanPhone = preg_replace('/[^0-9]/', '', $callerPhone);
     $normPhone = strlen($cleanPhone) > 10 ? substr($cleanPhone, -10) : $cleanPhone;
@@ -362,6 +365,7 @@ if ($action === 'track_breakdown') {
 
 // 4b. Update Breakdown Status by Technician
 if ($action === 'update_breakdown_status') {
+    $authUser = verifyBearerToken($pdo);
     $ticketId = intval($input['ticket_id'] ?? 0);
     $status = trim($input['status'] ?? 'in_progress');
     $technicianId = intval($input['technician_id'] ?? 0);
@@ -387,6 +391,7 @@ if ($action === 'update_breakdown_status') {
 
 // 5. Complete Breakdown by Technician (Requires Customer OTP)
 if ($action === 'complete_breakdown') {
+    $authUser = verifyBearerToken($pdo);
     $ticketId = intval($input['ticket_id'] ?? 0);
     $otpEntered = trim($input['otp'] ?? '');
     $techLat = floatval($input['tech_lat'] ?? 0);
@@ -430,6 +435,7 @@ if ($action === 'complete_breakdown') {
 
 // 6. Owner Star Rating
 if ($action === 'rate_service') {
+    $authUser = verifyBearerToken($pdo);
     $ticketId = intval($input['ticket_id'] ?? 0);
     $rating = intval($input['rating'] ?? 5);
     $feedback = trim($input['feedback'] ?? '');
@@ -445,6 +451,7 @@ if ($action === 'rate_service') {
 
 // 7. Add AMC Lift
 if ($action === 'add_lift') {
+    $authUser = verifyBearerToken($pdo);
     $tenantId = trim($input['tenant_id'] ?? '');
     $code = trim($input['lift_unique_code'] ?? 'LIFT-' . rand(100, 999));
     $building = trim($input['building_name'] ?? '');
