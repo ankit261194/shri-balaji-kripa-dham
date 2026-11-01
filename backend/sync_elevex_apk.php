@@ -30,6 +30,36 @@ if (!empty($_GET['version'])) {
     $latestVer = trim($_GET['version']);
 }
 
+// 0.1 Sync Flavor Copies
+if (isset($_GET['sync_flavor_copies'])) {
+    $src = $targetDir . "/Ankit_EleveX_v{$latestVer}_Final.apk";
+    if (!file_exists($src)) {
+        $src = $targetDir . "/Ankit_EleveX_Release.apk";
+    }
+    $res = [];
+    if (file_exists($src)) {
+        $copies = [
+            "EleveX_Master_Gateway_v{$latestVer}.apk",
+            "EleveX_SuperAdmin_v{$latestVer}.apk",
+            "EleveX_Supervisor_v{$latestVer}.apk",
+            "EleveX_Technician_v{$latestVer}.apk",
+            "EleveX_Owner_v{$latestVer}.apk",
+            "EleveX_Master_Gateway_v5.9.40.apk",
+            "EleveX_SuperAdmin_v5.9.40.apk",
+            "EleveX_Supervisor_v5.9.40.apk",
+            "EleveX_Technician_v5.9.40.apk",
+            "EleveX_Owner_v5.9.40.apk"
+        ];
+        foreach ($copies as $c) {
+            $dest = $targetDir . '/' . $c;
+            @copy($src, $dest);
+            $res[$c] = file_exists($dest) ? filesize($dest) : 0;
+        }
+    }
+    echo json_encode(["success" => true, "copies" => $res]);
+    exit;
+}
+
 // 0. Sync Manifest from GitHub
 if (isset($_GET['sync_manifest'])) {
     $rawUrl = "https://raw.githubusercontent.com/ankit261194/shri-balaji-kripa-dham/main/backend/elevex_gateway/app_update.json";
