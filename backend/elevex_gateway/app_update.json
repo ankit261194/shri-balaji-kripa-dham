@@ -1,13 +1,13 @@
 {
-  "latest_version": "5.9.40",
-  "version_code": 630,
+  "latest_version": "5.9.41",
+  "version_code": 631,
   "force_update": false,
-  "title_en": "ANKIT ELEVEX PRO v5.9.40 (Build 630) - Enterprise 4-App Architecture",
-  "title_hi": "अंकित एलेवेक्स प्रो v5.9.40 (बिल्ड 630) - एंटरप्राइज 4-ऐप आर्किटेक्चर",
-  "release_notes_en": "• 4 Dedicated Fortune 500 MNC Apps: Super Admin, Supervisor, Field Technician, Owner/RWA.\n• Enterprise Kiosk Device Admin & Anti-Force-Stop Lock.\n• 1,012+ OEM Fault Code Engine with sub-millisecond offline lookup.\n• Real-Time Haversine Nearest Dispatch & Cryptographically Sealed Attendance Ledger.",
-  "release_notes_hi": "• 4 समर्पित फॉर्च्यून 500 MNC ऐप्स: सुपर एडमिन, सुपरवाइजर, फील्ड टेक्नीशियन, लिफ्ट ओनर।\n• एंटरप्राइज कियोस्क डिवाइस एडमिन व एंटी-फोर्स-स्टॉप लॉक सुरक्षा।\n• 1,012+ OEM फॉल्ट कोड डायग्नोस्टिक इंजन बिना इंटरनेट सब-मिलीसेकंड सर्च।\n• रियल-टाइम हैवर्सिन नियरेस्ट डिस्पैच व सीलबंद अटेंडेंस लेज़र ऑडिट।",
-  "apk_download_url": "https://shribalajikripadham.online/download.php?app=elevex",
+  "title_en": "ANKIT ELEVEX PRO v5.9.41 (Build 631) - Auto-Update & Multi-App Fleet Sync",
+  "title_hi": "अंकित एलेवेक्स प्रो v5.9.41 (बिल्ड 631) - ऑटो-अपडेट व मल्टी-ऐप फ्लीट सिंक",
+  "release_notes_en": "• Real-Time In-App Auto-Update for all 4 Standalone Apps (SuperAdmin, Supervisor, Technician, Owner).\n• High-Speed NVMe SSD Direct APK Download with Live Progress Bar.\n• 1-Tap Manual Update Checker in App Bar with Instant Version Verification.\n• Anti-Mock Geofence Lock & 1,012+ OEM Fault Code Engine Hardening.",
+  "release_notes_hi": "• चारों स्टैंडअलोन ऐप्स (सुपर एडमिन, सुपरवाइजर, फील्ड टेक्नीशियन, लिफ्ट ओनर) के लिए रियल-टाइम इन-ऐप ऑटो अपडेट।\n• लाइव प्रोग्रेस बार के साथ हाई-स्पीड NVMe SSD डायरेक्ट APK डाउनलोड।\n• ऐप बार में 1-टैप मैन्युअल अपडेट चेक बटन।\n• 150m जियोफेंस एंटी-मॉक सुरक्षा व 1,012+ OEM फॉल्ट कोड इंजन सुदृढ़ीकरण।",
+  "apk_download_url": "https://shribalajikripadham.online/download.php?app=gateway",
   "file_size": "39.0 MB",
-  "sha256_checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "sha256_checksum": "e27f4f45063ae1216783829065aa55a1fa1f16c742842b47deb7381f7446c5d5",
   "verified_oem_brands": ["MONARCH", "STEP", "OTIS", "SCHINDLER", "KONE"]
 }
