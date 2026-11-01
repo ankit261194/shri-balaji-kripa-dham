@@ -352,7 +352,7 @@ header("Content-Type: text/html; charset=utf-8");
     <div class="header">
         <div class="badge-live">HOSTINGER NVMe SSD • HIGH-SPEED MIRROR</div>
         <h1>Ankit EleveX Pro Suite</h1>
-        <p class="subtitle">अंकित एलेवेक्स प्रो — इंडस्ट्रियल लिफ्ट फ्लीट इकोसिस्टम (v5.9.40 • Build 630)<br>Dedicated Standalone Enterprise APKs for Super Admin, Supervisor, Technician & Lift Owners</p>
+        <p class="subtitle">अंकित एलेवेक्स प्रो — इंडस्ट्रियल लिफ्ट फ्लीट इकोसिस्टम (v5.9.41 • Build 631)<br>Dedicated Standalone Enterprise APKs for Super Admin, Supervisor, Technician & Lift Owners</p>
     </div>
 
     <div class="grid">
