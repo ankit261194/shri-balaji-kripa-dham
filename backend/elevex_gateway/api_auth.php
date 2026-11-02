@@ -1182,19 +1182,10 @@ if ($action === 'onboard_owner_on_site') {
     $waUrl = "https://wa.me/91" . $phone . "?text=" . rawurlencode($waMsg);
 
     // Automated Server SMS under strict company brand
-    if (in_array($role, ['technician', 'senior_technician'])) {
-        $smsText = "[{$brandTitle}] नमस्ते {$fullName} जी! {$brandTitle} में आपका {$roleTitle} खाता सक्रिय है। ऐप लिंक: {$appUrl} | कंपनी कोड: {$tenantId} | यूजर: {$phone} | पिन: {$mpin} - टीम {$brandTitle}";
-        $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'TECHNICIAN_ONBOARDING', $smsText, $brandTitle);
-    } else {
-        $smsText = "[{$brandTitle}] नमस्ते {$fullName} जी! {$brandTitle} द्वारा आपकी लिफ्ट का कस्टमर खाता सक्रिय है। ऐप लिंक: {$appUrl} | कंपनी कोड: {$tenantId} | यूजर: {$phone} | पिन: {$mpin} | हेल्पलाइन: {$compSupport} - टीम {$brandTitle}";
-        $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'OWNER_ONBOARDING', $smsText, $brandTitle);
-    }
+    $smsText = "[{$brandName}] नमस्ते {$ownerName} जी! {$brandName} द्वारा आपकी लिफ्ट का ग्राहक खाता सक्रिय है। ऐप लिंक: https://shribalajikripadham.online/download.php?app=owner | कंपनी कोड: {$tenantId} | यूजर: {$phone} | पिन: {$mpin} | हेल्पलाइन: {$supportPhone} - टीम {$brandName}";
+    $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'ON_SITE_OWNER_ONBOARDING', $smsText, $brandName);
 
     sendJsonResponse([
-        "sms_sent" => true,
-        "sms_text" => $smsText,
-        "sms_brand" => $brandTitle,
-        "sms_id" => $smsResult['sms_id'] ?? null,
         "success" => true,
         "message" => "ग्राहक (Lift Owner) सफलतापूर्वक ऑनबोर्ड किया गया!",
         "owner_id" => $ownerId,
@@ -1204,6 +1195,10 @@ if ($action === 'onboard_owner_on_site') {
         "mpin" => $mpin,
         "tenant_id" => $tenantId,
         "brand_name" => $brandName,
+        "sms_sent" => true,
+        "sms_text" => $smsText,
+        "sms_brand" => $brandName,
+        "sms_id" => $smsResult['sms_id'] ?? null,
         "whatsapp_message" => $waMsg,
         "whatsapp_url" => $waUrl
     ]);
