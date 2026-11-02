@@ -87,7 +87,11 @@ if ($action === 'login') {
 
     // Verify MPIN if provided and set
     if (!empty($user['mpin_hash']) && !empty($mpin)) {
-        if (!password_verify($mpin, $user['mpin_hash']) && $mpin !== '1234') {
+        $isValidMpin = password_verify($mpin, $user['mpin_hash']);
+        if (!$isValidMpin && empty($user['mpin_changed_at']) && $mpin === '1234') {
+            $isValidMpin = true;
+        }
+        if (!$isValidMpin) {
             sendJsonResponse(["success" => false, "error" => "गलत सुरक्षा पिन (Invalid Security MPIN)"], 401);
         }
     }
@@ -551,7 +555,11 @@ if ($action === 'change_mpin') {
     $curr = $stmtU->fetch();
 
     if (!empty($curr['mpin_hash']) && !empty($oldMpin)) {
-        if (!password_verify($oldMpin, $curr['mpin_hash']) && $oldMpin !== '1234') {
+        $isValidOld = password_verify($oldMpin, $curr['mpin_hash']);
+        if (!$isValidOld && empty($curr['mpin_changed_at']) && $oldMpin === '1234') {
+            $isValidOld = true;
+        }
+        if (!$isValidOld) {
             sendJsonResponse(["success" => false, "error" => "वर्तमान सुरक्षा पिन गलत है (Invalid current MPIN)"], 401);
         }
     }
