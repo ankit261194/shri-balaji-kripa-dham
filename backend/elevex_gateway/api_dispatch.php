@@ -372,10 +372,18 @@ if ($action === 'list_breakdowns') {
     }
     unset($row);
 
+    $stmtColor = $pdo->prepare("SELECT primary_color_hex, brand_display_name FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+    $stmtColor->execute([':t' => $tenantId]);
+    $cColorRow = $stmtColor->fetch();
+
     sendJsonResponse([
         "success" => true,
         "count" => count($list),
-        "breakdowns" => $list
+        "breakdowns" => $list,
+        "is_company_active" => $compStatus['is_active'],
+        "features" => $compStatus['features'],
+        "primary_color" => $cColorRow['primary_color_hex'] ?? '#0284C7',
+        "brand_name" => $cColorRow['brand_display_name'] ?? ''
     ]);
 }
 

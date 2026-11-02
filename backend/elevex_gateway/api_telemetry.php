@@ -188,13 +188,23 @@ if ($action === 'heartbeat') {
         ':sdown' => $shutdownAt
     ]);
 
+    // Gate 6: Zero-Update Live Cloud Theming & Service Configuration
+    $compStatus = getCompanyStatusAndFeatures($pdo, $tenantId);
+    $stmtCompInfo = $pdo->prepare("SELECT primary_color_hex, brand_display_name FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+    $stmtCompInfo->execute([':t' => $tenantId]);
+    $compInfo = $stmtCompInfo->fetch();
+
     sendJsonResponse([
         "success" => true,
         "landmark_text" => $landmarkText,
         "is_inside_site" => $matchedSiteId !== null,
         "is_mock_flagged" => $isMock,
         "device_power_state" => $powerState,
-        "battery_percentage" => $battery
+        "battery_percentage" => $battery,
+        "is_company_active" => $compStatus['is_active'],
+        "features" => $compStatus['features'],
+        "primary_color" => $compInfo['primary_color_hex'] ?? '#0284C7',
+        "brand_name" => $compInfo['brand_display_name'] ?? ''
     ]);
 }
 
