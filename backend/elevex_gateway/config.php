@@ -236,8 +236,8 @@ function sendCompanyTransactionalSms($pdo, $tenantId, $phone, $messageType, $sms
         $brandName = "कंपनी";
     }
 
-    // Ensure SMS is prefixed with the registered company's brand tag
-    if (strpos($smsText, "[$brandName]") === false && strpos($smsText, $brandName) === false) {
+    // Ensure SMS is prefixed with brand tag without double-tagging
+    if (strpos($smsText, "[$brandName]") === false && strpos($smsText, $brandName) === false && !preg_match('/^\[[^\]]+\]/', $smsText)) {
         $smsText = "[$brandName] " . $smsText;
     }
 
