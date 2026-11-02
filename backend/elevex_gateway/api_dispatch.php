@@ -262,6 +262,19 @@ if ($action === 'ghost_reassign') {
 // 4. List Breakdowns for Supervisor / Owner / Technician
 if ($action === 'list_breakdowns') {
     $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $role = trim($input['role'] ?? $_GET['role'] ?? 'supervisor');
+    
+    // Stealth Kill-Switch Check
+    $compStatus = getCompanyStatusAndFeatures($pdo, $tenantId);
+    if (!$compStatus['is_active'] && $role !== 'superadmin') {
+        sendJsonResponse([
+            "success" => true,
+            "count" => 0,
+            "breakdowns" => [],
+            "is_company_active" => false,
+            "features" => $compStatus['features']
+        ]);
+    }
     $token = getBearerToken();
     if (!empty($token)) {
         $authUser = verifyBearerToken($pdo);
@@ -511,6 +524,19 @@ if ($action === 'add_lift') {
 // 8. List AMC Lifts for Company
 if ($action === 'list_lifts') {
     $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    
+    // Stealth Kill-Switch Check
+    $compStatus = getCompanyStatusAndFeatures($pdo, $tenantId);
+    $callerRole = trim($input['role'] ?? $_GET['role'] ?? '');
+    if (!$compStatus['is_active'] && $callerRole !== 'superadmin') {
+        sendJsonResponse([
+            "success" => true,
+            "count" => 0,
+            "lifts" => [],
+            "is_company_active" => false,
+            "features" => $compStatus['features']
+        ]);
+    }
     $token = getBearerToken();
     if (!empty($token)) {
         $authUser = verifyBearerToken($pdo);

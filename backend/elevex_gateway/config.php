@@ -158,3 +158,30 @@ function enforceTenantIsolation($authUser, &$targetTenantId) {
     }
     return true;
 }
+
+/**
+ * Resolves Company active status and dynamic feature entitlements
+ */
+function getCompanyStatusAndFeatures($pdo, $tenantId) {
+    static $statusCache = [];
+    if (isset($statusCache[$tenantId])) return $statusCache[$tenantId];
+    try {
+        $stmt = $pdo->prepare("SELECT is_active, features_config FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+        $stmt->execute([':t' => $tenantId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            $res = ['is_active' => false, 'features' => []];
+        } else {
+            $feat = !empty($row['features_config']) ? json_decode($row['features_config'], true) : [];
+            $active = (intval($row['is_active']) === 1);
+            if (isset($feat['master_service_active']) && $feat['master_service_active'] === false) {
+                $active = false;
+            }
+            $res = ['is_active' => $active, 'features' => $feat];
+        }
+        $statusCache[$tenantId] = $res;
+        return $res;
+    } catch (Exception $e) {
+        return ['is_active' => true, 'features' => []];
+    }
+}

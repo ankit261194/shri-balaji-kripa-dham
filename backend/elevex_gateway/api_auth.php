@@ -180,9 +180,17 @@ if ($action === 'create_company') {
             VALUES (:tid, :cname, :bname, :logo, :col, :ph, :addr, :feat, 1)");
         
         $features = json_encode([
+            "master_service_active" => true,
+            "spare_parts_quotation" => false, // STRICT: Locked by SuperAdmin by default
+            "whatsapp_pdf_jobsheet" => true,
+            "offline_outbox_sync" => true,
+            "emergency_siren_wakeup" => true,
+            "amc_routine_scheduler" => true,
+            "anti_spoof_gps" => true,
+            "engineering_tools_47" => true,
+            "customer_feedback_rating" => true,
             "door_drive_specialist" => true,
             "offline_diagnostics" => true,
-            "anti_spoof_gps" => true,
             "auto_dispatch" => true,
             "unlimited_free_tier" => true
         ]);
@@ -293,6 +301,36 @@ if ($action === 'create_company') {
     }
 }
 
+// 2.9 Get Company Profile & Live Features
+if ($action === 'get_company_profile') {
+    $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    if (empty($tenantId)) {
+        sendJsonResponse(["success" => false, "error" => "Tenant ID required"], 400);
+    }
+    $statusInfo = getCompanyStatusAndFeatures($pdo, $tenantId);
+    $stmtC = $pdo->prepare("SELECT tenant_id, company_name, brand_display_name, logo_url, primary_color_hex, support_phone, office_address, default_language, is_active, features_config FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+    $stmtC->execute([':t' => $tenantId]);
+    $comp = $stmtC->fetch(PDO::FETCH_ASSOC);
+    if (!$comp) {
+        sendJsonResponse(["success" => false, "error" => "Company not found"], 404);
+    }
+    sendJsonResponse([
+        "success" => true,
+        "company" => [
+            "tenant_id" => $comp['tenant_id'],
+            "company_name" => $comp['company_name'],
+            "brand_display_name" => $comp['brand_display_name'],
+            "logo_url" => $comp['logo_url'],
+            "primary_color" => $comp['primary_color_hex'] ?: '#0284C7',
+            "support_phone" => $comp['support_phone'],
+            "office_address" => $comp['office_address'],
+            "is_active" => $statusInfo['is_active'],
+            "features" => $statusInfo['features'],
+            "default_language" => $comp['default_language'] ?: 'hi'
+        ]
+    ]);
+}
+
 // 3. SuperAdmin Dynamic Feature Toggles
 if ($action === 'toggle_feature') {
     $callerPhone = trim($input['caller_phone'] ?? '');
@@ -314,14 +352,22 @@ if ($action === 'toggle_feature') {
     $config = !empty($row['features_config']) ? json_decode($row['features_config'], true) : [];
     $config[$featureKey] = $enabled;
 
-    $stmtUp = $pdo->prepare("UPDATE elevex_companies SET features_config = :fc, updated_at = NOW() WHERE tenant_id = :t");
-    $stmtUp->execute([':fc' => json_encode($config), ':t' => $targetTenant]);
+    if ($featureKey === 'master_service_active') {
+        $stmtUp = $pdo->prepare("UPDATE elevex_companies SET features_config = :fc, is_active = :act, updated_at = NOW() WHERE tenant_id = :t");
+        $stmtUp->execute([':fc' => json_encode($config), ':act' => $enabled ? 1 : 0, ':t' => $targetTenant]);
+    } else {
+        $stmtUp = $pdo->prepare("UPDATE elevex_companies SET features_config = :fc, updated_at = NOW() WHERE tenant_id = :t");
+        $stmtUp->execute([':fc' => json_encode($config), ':t' => $targetTenant]);
+    }
 
     sendJsonResponse([
         "success" => true,
         "message" => "Feature toggle updated successfully",
         "tenant_id" => $targetTenant,
-        "features" => $config
+        "feature_key" => $featureKey,
+        "enabled" => $enabled,
+        "features" => $config,
+        "is_active" => ($featureKey === 'master_service_active') ? ($enabled ? 1 : 0) : intval($row['is_active'])
     ]);
 }
 
@@ -340,7 +386,26 @@ if ($action === 'list_companies') {
                          (SELECT phone FROM elevex_users WHERE tenant_id = c.tenant_id AND role IN ('supervisor', 'company_admin') ORDER BY id ASC LIMIT 1) as supervisor_phone
                          FROM elevex_companies c ORDER BY c.id DESC");
     $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $defaultFeatures = [
+        "master_service_active" => true,
+        "spare_parts_quotation" => false, // STRICT: Default LOCKED by SuperAdmin
+        "whatsapp_pdf_jobsheet" => true,
+        "offline_outbox_sync" => true,
+        "emergency_siren_wakeup" => true,
+        "amc_routine_scheduler" => true,
+        "anti_spoof_gps" => true,
+        "engineering_tools_47" => true,
+        "customer_feedback_rating" => true,
+        "door_drive_specialist" => true,
+        "offline_diagnostics" => true,
+        "auto_dispatch" => true,
+        "unlimited_free_tier" => true
+    ];
     foreach ($companies as &$comp) {
+        $cFeat = !empty($comp['features_config']) ? json_decode($comp['features_config'], true) : [];
+        if (!is_array($cFeat)) $cFeat = [];
+        $mergedFeat = array_merge($defaultFeatures, $cFeat);
+        $comp['features_config'] = json_encode($mergedFeat);
         $sName = !empty($comp['supervisor_name']) ? $comp['supervisor_name'] : 'हेड सुपरवाइज़र';
         $sPhone = normalizePhone(!empty($comp['supervisor_phone']) ? $comp['supervisor_phone'] : $comp['support_phone']);
         $tId = $comp['tenant_id'];

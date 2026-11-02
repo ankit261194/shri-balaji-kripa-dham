@@ -201,6 +201,18 @@ if ($action === 'heartbeat') {
 // 2. Supervisor View: Get Real-time Technician Fleet with Text Locations & Power States
 if ($action === 'get_technician_fleet') {
     $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    
+    // Stealth Kill-Switch Check
+    $compStatus = getCompanyStatusAndFeatures($pdo, $tenantId);
+    if (!$compStatus['is_active']) {
+        sendJsonResponse([
+            "success" => true,
+            "count" => 0,
+            "fleet" => [],
+            "is_company_active" => false,
+            "features" => $compStatus['features']
+        ]);
+    }
     $token = getBearerToken();
     if (!empty($token)) {
         $authUser = verifyBearerToken($pdo);
