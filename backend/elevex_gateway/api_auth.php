@@ -342,7 +342,7 @@ if ($action === 'toggle_feature') {
     $featureKey = trim($input['feature_key'] ?? '');
     $enabled = !empty($input['enabled']);
 
-    $stmtC = $pdo->prepare("SELECT features_config FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+    $stmtC = $pdo->prepare("SELECT features_config, is_active FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
     $stmtC->execute([':t' => $targetTenant]);
     $row = $stmtC->fetch();
     if (!$row) {
@@ -367,7 +367,7 @@ if ($action === 'toggle_feature') {
         "feature_key" => $featureKey,
         "enabled" => $enabled,
         "features" => $config,
-        "is_active" => ($featureKey === 'master_service_active') ? ($enabled ? 1 : 0) : intval($row['is_active'])
+        "is_active" => ($featureKey === 'master_service_active') ? ($enabled ? 1 : 0) : intval($row['is_active'] ?? 1)
     ]);
 }
 
@@ -526,7 +526,7 @@ if ($action === 'update_company_features') {
         sendJsonResponse(["success" => false, "error" => "Target tenant_id required"], 400);
     }
 
-    $stmtC = $pdo->prepare("SELECT features_config FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+    $stmtC = $pdo->prepare("SELECT features_config, is_active FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
     $stmtC->execute([':t' => $targetTenant]);
     $row = $stmtC->fetch(PDO::FETCH_ASSOC);
     if (!$row) {
