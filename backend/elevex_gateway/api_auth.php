@@ -1029,19 +1029,10 @@ if ($action === 'request_company_otp') {
     $waUrl = "https://wa.me/91" . $phone . "?text=" . rawurlencode($waMsg);
 
     // Automated Server SMS under strict company brand
-    if (in_array($role, ['technician', 'senior_technician'])) {
-        $smsText = "[{$brandTitle}] नमस्ते {$fullName} जी! {$brandTitle} में आपका {$roleTitle} खाता सक्रिय है। ऐप लिंक: {$appUrl} | कंपनी कोड: {$tenantId} | यूजर: {$phone} | पिन: {$mpin} - टीम {$brandTitle}";
-        $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'TECHNICIAN_ONBOARDING', $smsText, $brandTitle);
-    } else {
-        $smsText = "[{$brandTitle}] नमस्ते {$fullName} जी! {$brandTitle} द्वारा आपकी लिफ्ट का कस्टमर खाता सक्रिय है। ऐप लिंक: {$appUrl} | कंपनी कोड: {$tenantId} | यूजर: {$phone} | पिन: {$mpin} | हेल्पलाइन: {$compSupport} - टीम {$brandTitle}";
-        $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'OWNER_ONBOARDING', $smsText, $brandTitle);
-    }
+    $smsText = "[{$brandName}] आपका {$brandName} सुरक्षा कोड: {$otpCode}. यह 5 मिनट के लिए मान्य है। किसी से शेयर न करें। - टीम {$brandName}";
+    $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'SECURITY_OTP', $smsText, $brandName);
 
     sendJsonResponse([
-        "sms_sent" => true,
-        "sms_text" => $smsText,
-        "sms_brand" => $brandTitle,
-        "sms_id" => $smsResult['sms_id'] ?? null,
         "success" => true,
         "message" => "सत्यापन कोड सफलतापूर्वक तैयार हुआ",
         "otp_code" => $otpCode,
@@ -1049,6 +1040,10 @@ if ($action === 'request_company_otp') {
         "brand_name" => $brandName,
         "purpose" => $purpose,
         "expires_at" => $expiresAt,
+        "sms_sent" => true,
+        "sms_text" => $smsText,
+        "sms_brand" => $brandName,
+        "sms_id" => $smsResult['sms_id'] ?? null,
         "whatsapp_message" => $waMsg,
         "whatsapp_url" => $waUrl
     ]);

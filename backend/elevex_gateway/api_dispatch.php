@@ -1470,15 +1470,15 @@ if ($action === 'get_dynamic_layout') {
     $supportPhone = "9811001122";
 
     if (!empty($tenantId)) {
-        $stmtC = $pdo->prepare("SELECT brand_display_name, company_name, logo_url, theme_color_primary, theme_color_secondary, support_phone 
+        $stmtC = $pdo->prepare("SELECT brand_display_name, company_name, logo_url, primary_color_hex, support_phone 
                                 FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
         $stmtC->execute([':t' => $tenantId]);
         $comp = $stmtC->fetch();
         if ($comp) {
             $brandName = !empty($comp['brand_display_name']) ? $comp['brand_display_name'] : $comp['company_name'];
             if (!empty($comp['logo_url'])) $brandLogo = $comp['logo_url'];
-            if (!empty($comp['theme_color_primary'])) $themePrimary = $comp['theme_color_primary'];
-            if (!empty($comp['theme_color_secondary'])) $themeAccent = $comp['theme_color_secondary'];
+            if (!empty($comp['primary_color_hex'])) $themePrimary = $comp['primary_color_hex'];
+            
             if (!empty($comp['support_phone'])) $supportPhone = $comp['support_phone'];
         }
     }
