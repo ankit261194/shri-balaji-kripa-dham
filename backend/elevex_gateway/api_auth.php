@@ -1177,10 +1177,11 @@ if ($action === 'onboard_owner_on_site') {
     } else if (!empty($buildingName) || !empty($input['lift_unique_code']) || !empty($liftCode)) {
         $lCode = !empty($liftCode) ? $liftCode : (!empty($input['lift_unique_code']) ? trim($input['lift_unique_code']) : ('LIFT-' . rand(100, 999)));
         $isAmc = (strtoupper($contractType) === 'NON_AMC') ? 0 : 1;
+        $ctrlValue = trim(!empty($input['controller_model']) ? $input['controller_model'] : 'अनिर्दिष्ट / कस्टम (Custom / Non-Standard)');
         $stmtNewLift = $pdo->prepare("INSERT INTO elevex_lifts_amc 
-            (tenant_id, building_name, lift_unique_code, building_address, contract_type, is_amc, owner_id, controller_model, stops_count, capacity_kg, next_service_due_date, created_at)
+            (tenant_id, building_name, lift_unique_code, building_address, contract_type, is_amc, owner_id, controller_brand, controller_model, stops_count, capacity_kg, next_service_due_date, created_at)
             VALUES 
-            (:t, :bname, :code, :addr, :ctype, :isamc, :oid, :ctrl, :stops, :cap, DATE_ADD(CURDATE(), INTERVAL 30 DAY), NOW())");
+            (:t, :bname, :code, :addr, :ctype, :isamc, :oid, :cbrand, :cmodel, :stops, :cap, DATE_ADD(CURDATE(), INTERVAL 30 DAY), NOW())");
         $stmtNewLift->execute([
             ':t' => $tenantId,
             ':bname' => $buildingName,
@@ -1189,7 +1190,8 @@ if ($action === 'onboard_owner_on_site') {
             ':ctype' => $contractType,
             ':isamc' => $isAmc,
             ':oid' => $ownerId,
-            ':ctrl' => trim(!empty($input['controller_model']) ? $input['controller_model'] : 'अनिर्दिष्ट / कस्टम (Custom / Non-Standard)'),
+            ':cbrand' => $ctrlValue,
+            ':cmodel' => $ctrlValue,
             ':stops' => intval($input['stops_count'] ?? 0),
             ':cap' => intval($input['capacity_kg'] ?? 0)
         ]);

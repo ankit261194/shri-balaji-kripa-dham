@@ -22,7 +22,7 @@ $isAmcMode = false;
 if ($scheduleId > 0) {
     $isAmcMode = true;
     $stmtAmc = $pdo->prepare("SELECT s.*, 
-                     l.lift_unique_code, l.building_name, l.building_address, l.landmark_name, l.controller_brand, l.amc_type,
+                     l.lift_unique_code, l.building_name, l.building_address, l.landmark_name, COALESCE(NULLIF(l.controller_brand, ''), NULLIF(l.controller_model, ''), 'अनिर्दिष्ट / कस्टम') as controller_brand, l.amc_type,
                      c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.office_address,
                      c.gst_number, c.cin_number, c.official_email, c.website_domain, c.bank_upi_id,
                      tech.full_name as tech_name, tech.phone as tech_phone
@@ -46,7 +46,7 @@ if ($scheduleId > 0) {
     $job['owner_phone'] = '';
 } else {
     $query = "SELECT b.*, 
-                     l.lift_unique_code, l.building_name, l.building_address, l.landmark_name, l.controller_brand, l.amc_type,
+                     l.lift_unique_code, l.building_name, l.building_address, l.landmark_name, COALESCE(NULLIF(l.controller_brand, ''), NULLIF(l.controller_model, ''), 'अनिर्दिष्ट / कस्टम') as controller_brand, l.amc_type,
                      c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.office_address,
                      c.gst_number, c.cin_number, c.official_email, c.website_domain, c.bank_upi_id,
                      tech.full_name as tech_name, tech.phone as tech_phone,
@@ -359,7 +359,7 @@ $waUrl = "https://wa.me/?text=" . rawurlencode($waShareText);
         <div class="info-card">
             <h4>साइट / बिल्डिंग विवरण (Site Details)</h4>
             <p><?= htmlspecialchars($job['building_name']) ?></p>
-            <span>लिफ्ट कोड: <b><?= htmlspecialchars($job['lift_unique_code'] ?: 'LIFT-001') ?></b> (<?= htmlspecialchars($job['controller_brand'] ?: 'MONARCH') ?>)</span>
+            <span>लिफ्ट कोड: <b><?= htmlspecialchars($job['lift_unique_code'] ?: 'साइट लिफ्ट') ?></b> (<?= htmlspecialchars($job['controller_brand'] ?: 'अनिर्दिष्ट / कस्टम') ?>)</span>
             <span>स्थान: <?= htmlspecialchars($job['landmark_name'] ?: $job['building_address']) ?></span>
         </div>
         <div class="info-card">
