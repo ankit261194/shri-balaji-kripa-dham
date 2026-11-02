@@ -335,6 +335,19 @@ try {
     $results['elevex_users_attributes_error'] = $e->getMessage();
 }
 
+// 3.5 Create Platform Config Table
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_config (
+        setting_key VARCHAR(100) PRIMARY KEY,
+        setting_value TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+    $results['elevex_config'] = "TABLE_READY";
+} catch (Exception $e) {
+    $results['elevex_config_error'] = $e->getMessage();
+}
+
 // 4. Create Company-Branded OTP Table
 try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_sms_logs (

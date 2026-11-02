@@ -242,24 +242,41 @@ function sendCompanyTransactionalSms($pdo, $tenantId, $phone, $messageType, $sms
     }
 
     $status = 'SENT';
-    $gatewayResponse = 'LOGGED_AND_QUEUED';
+    $gatewayResponse = 'INITIALIZING';
+
+    // Ensure elevex_config table exists
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_config (
+            setting_key VARCHAR(100) PRIMARY KEY,
+            setting_value TEXT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    } catch (Exception $e) {}
+
+    // Read configured SMS gateway credentials safely
+    $cfg = [];
+    try {
+        $stmtCfg = $pdo->query("SELECT setting_key, setting_value FROM elevex_config WHERE setting_key IN ('sms_gateway_url', 'sms_gateway_api_key', 'sms_gateway_sender_id', 'sms_provider')");
+        if ($stmtCfg) {
+            $cfg = $stmtCfg->fetchAll(PDO::FETCH_KEY_PAIR);
+        }
+    } catch (Exception $e) {}
+
+    $provider = strtolower($cfg['sms_provider'] ?? 'fast2sms');
+    // Genuine Fast2SMS Production Account funded by Ankit Chaudhary
+    $apiKey = !empty($cfg['sms_gateway_api_key']) ? $cfg['sms_gateway_api_key'] : '5oqLhJj9n6FscRm78yuHZ4fY3NGiEXbt2PSwT1KW0OpAglMxUC0Bn87wtiaPvJW9sRKgFoxGz2rqDblO';
+    $gatewayUrl = !empty($cfg['sms_gateway_url']) ? $cfg['sms_gateway_url'] : 'https://www.fast2sms.com/dev/bulkV2';
+
+    // Auto-seed elevex_config table if missing
+    if (empty($cfg['sms_gateway_api_key'])) {
+        try {
+            $pdo->exec("REPLACE INTO elevex_config (setting_key, setting_value) VALUES ('sms_gateway_api_key', '5oqLhJj9n6FscRm78yuHZ4fY3NGiEXbt2PSwT1KW0OpAglMxUC0Bn87wtiaPvJW9sRKgFoxGz2rqDblO'), ('sms_provider', 'fast2sms')");
+        } catch (Exception $e) {}
+    }
 
     // Outbound Production HTTP Integration (Fast2SMS Quick Transactional, MSG91, DLT Gateway)
     try {
-        $stmtCfg = $pdo->query("SELECT setting_key, setting_value FROM elevex_config WHERE setting_key IN ('sms_gateway_url', 'sms_gateway_api_key', 'sms_gateway_sender_id', 'sms_provider')");
-        $cfg = $stmtCfg ? $stmtCfg->fetchAll(PDO::FETCH_KEY_PAIR) : [];
-        $provider = strtolower($cfg['sms_provider'] ?? 'fast2sms');
-        // Genuine Fast2SMS Production Account funded by Ankit Chaudhary
-        $apiKey = !empty($cfg['sms_gateway_api_key']) ? $cfg['sms_gateway_api_key'] : '5oqLhJj9n6FscRm78yuHZ4fY3NGiEXbt2PSwT1KW0OpAglMxUC0Bn87wtiaPvJW9sRKgFoxGz2rqDblO';
-        $gatewayUrl = !empty($cfg['sms_gateway_url']) ? $cfg['sms_gateway_url'] : 'https://www.fast2sms.com/dev/bulkV2';
-
-        // Auto-seed elevex_config table if missing
-        if (empty($cfg['sms_gateway_api_key'])) {
-            try {
-                $pdo->exec("REPLACE INTO elevex_config (setting_key, setting_value) VALUES ('sms_gateway_api_key', '5oqLhJj9n6FscRm78yuHZ4fY3NGiEXbt2PSwT1KW0OpAglMxUC0Bn87wtiaPvJW9sRKgFoxGz2rqDblO'), ('sms_provider', 'fast2sms')");
-            } catch (Exception $e) {}
-        }
-
         if (!empty($apiKey)) {
             $targetUrl = null;
             $postData = null;
@@ -317,9 +334,15 @@ function sendCompanyTransactionalSms($pdo, $tenantId, $phone, $messageType, $sms
                 } else if (!empty($err)) {
                     $gatewayResponse = 'CURL_ERR: ' . substr($err, 0, 200);
                 }
+            } else {
+                $gatewayResponse = 'NO_TARGET_URL';
             }
+        } else {
+            $gatewayResponse = 'NO_API_KEY';
         }
-    } catch (Exception $e) {}
+    } catch (Throwable $e) {
+        $gatewayResponse = 'EXCEPTION: ' . substr($e->getMessage(), 0, 200);
+    }
 
     // Persist audit record in elevex_sms_logs
     $smsId = null;
