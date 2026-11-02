@@ -771,14 +771,21 @@ if ($action === 'trigger_emergency_sos') {
     $ticketNo = 'SOS-' . date('ymd') . '-' . rand(1000, 9999);
     $otp = strval(rand(100000, 999999));
 
-    // Find nearest on-duty technician
+    // Find nearest on-duty technician or active technician
     $stmtTech = $pdo->prepare("SELECT t.technician_id, u.full_name, u.phone, t.current_lat, t.current_lng
                                FROM elevex_technician_telemetry t
                                JOIN elevex_users u ON t.technician_id = u.id
-                               WHERE t.tenant_id = :t AND t.duty_status = 'on_duty'
+                               WHERE t.tenant_id = :t AND u.is_active = 1
                                ORDER BY (POW(t.current_lat - :lat, 2) + POW(t.current_lng - :lng, 2)) ASC LIMIT 1");
     $stmtTech->execute([':t' => $tenantId, ':lat' => $lift['lat'], ':lng' => $lift['lng']]);
     $assignedTech = $stmtTech->fetch();
+
+    if (!$assignedTech) {
+        $stmtFallback = $pdo->prepare("SELECT id as technician_id, full_name, phone FROM elevex_users WHERE tenant_id = :t AND role = 'technician' AND is_active = 1 LIMIT 1");
+        $stmtFallback->execute([':t' => $tenantId]);
+        $assignedTech = $stmtFallback->fetch();
+    }
+
     $techId = $assignedTech ? intval($assignedTech['technician_id']) : null;
     $status = $techId ? 'assigned' : 'pending';
 
