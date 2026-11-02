@@ -50,6 +50,7 @@ if (!function_exists('normalizePhone')) {
 }
 
 // Helper to check SuperAdmin authority
+if (!function_exists("isSuperAdmin")) {
 function isSuperAdmin($pdo, $phone) {
     $norm = normalizePhone($phone);
     if ($norm === '8533955333') return true;
@@ -60,6 +61,7 @@ function isSuperAdmin($pdo, $phone) {
     } catch (Exception $e) {
         return false;
     }
+}
 }
 
 // 1. Multi-Role Login (Company Code + Phone + MPIN + Hardware Device ID)
