@@ -1042,6 +1042,337 @@ if ($action === 'complete_amc_routine') {
 }
 
 
+    
+// -----------------------------------------------------------------------------
+// ENTERPRISE MODULE 1: SUPERVISOR LIFT INVENTORY (AMC vs Non-AMC Tabs)
+// -----------------------------------------------------------------------------
+if ($action === 'get_supervisor_lift_inventory') {
+    $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    if (empty($tenantId)) {
+        sendJsonResponse(["success" => false, "error" => "Tenant ID required"], 400);
+    }
+
+    // Lookup company branding
+    $stmtC = $pdo->prepare("SELECT company_name, brand_display_name, support_phone FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+    $stmtC->execute([':t' => $tenantId]);
+    $comp = $stmtC->fetch(PDO::FETCH_ASSOC);
+    $brandName = !empty($comp['brand_display_name']) ? $comp['brand_display_name'] : ($comp['company_name'] ?? 'Elevators');
+
+    $stmtLifts = $pdo->prepare("SELECT l.*, 
+                                       owner.full_name as owner_name, owner.phone as owner_phone,
+                                       tech.full_name as last_tech_name
+                                FROM elevex_lifts_amc l
+                                LEFT JOIN elevex_users owner ON l.owner_id = owner.id
+                                LEFT JOIN elevex_users tech ON l.last_serviced_by_technician_id = tech.id
+                                WHERE l.tenant_id = :t AND l.is_active = 1
+                                ORDER BY l.building_name ASC");
+    $stmtLifts->execute([':t' => $tenantId]);
+    $allLifts = $stmtLifts->fetchAll(PDO::FETCH_ASSOC);
+
+    $amcLifts = [];
+    $nonAmcLifts = [];
+    $renewalDueCount = 0;
+    $currentYear = intval(date('Y'));
+    $currentMonth = intval(date('n'));
+
+    foreach ($allLifts as $l) {
+        $isAmc = (isset($l['is_amc']) && intval($l['is_amc']) === 0) ? false : true;
+        if (strtolower($l['amc_type'] ?? '') === 'non-amc' || strtolower($l['contract_type'] ?? '') === 'non-amc') {
+            $isAmc = false;
+        }
+
+        $expiryDate = $l['amc_valid_until'] ?: ($l['amc_end_date'] ?: date('Y-12-31'));
+        $daysUntilExpiry = intval((strtotime($expiryDate) - time()) / 86400);
+        $isRenewalDue = ($isAmc && $daysUntilExpiry >= 0 && $daysUntilExpiry <= 30);
+        if ($isRenewalDue) $renewalDueCount++;
+
+        // Get count of completed routines this year
+        $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM elevex_amc_schedules WHERE lift_id = :lid AND routine_year = :yr AND status = 'completed'");
+        $stmtCount->execute([':lid' => $l['id'], ':yr' => $currentYear]);
+        $completedRoutines = intval($stmtCount->fetchColumn() ?: 0);
+
+        // Technical specs map
+        $techSpecs = [
+            "controller_brand" => $l['controller_brand'] ?: 'MONARCH',
+            "controller_model" => $l['controller_model'] ?: 'NICE 3000+',
+            "machine_type" => $l['machine_type'] ?: 'Geared Traction',
+            "door_type" => $l['door_type'] ?: 'Auto Center Opening',
+            "stops_count" => $l['stops_count'] ?: 'G+4 Stops',
+            "capacity_kg" => $l['capacity_kg'] ?: '6 Passenger (408 KG)'
+        ];
+
+        if ($isAmc) {
+            $amcLifts[] = [
+                "id" => intval($l['id']),
+                "lift_unique_code" => $l['lift_unique_code'],
+                "building_name" => $l['building_name'],
+                "building_address" => $l['building_address'],
+                "landmark_name" => $l['landmark_name'],
+                "owner_name" => $l['owner_name'] ?: 'Society Management',
+                "owner_phone" => $l['owner_phone'] ?: '',
+                "contract_type" => $l['contract_type'] ?: ($l['amc_type'] ?: 'Comprehensive'),
+                "amc_valid_until" => $expiryDate,
+                "days_until_expiry" => $daysUntilExpiry,
+                "is_renewal_due" => $isRenewalDue,
+                "renewal_alert" => $isRenewalDue ? "⚠️ AMC रिन्यूअल अलर्ट: अनुबंध {$daysUntilExpiry} दिनों में समाप्त हो रहा है" : null,
+                "completed_routines_year" => $completedRoutines,
+                "total_routines_year" => 12,
+                "last_service_date" => $l['last_service_date'] ?: $l['last_serviced_date'],
+                "last_technician_name" => $l['last_serviced_by_technician_name'] ?: $l['last_tech_name'],
+                "next_service_due_date" => $l['next_service_due_date'] ?: date('Y-m-d', strtotime('+30 days')),
+                "technical_specs" => $techSpecs
+            ];
+        } else {
+            $perVisit = floatval($l['per_visit_charge'] ?? 800.00);
+            $proposalText = "🏢 *" . $brandName . "* 🏢\n\n"
+                          . "📋 *वार्षिक लिफ्ट मेंटेनेंस अनुबंध (AMC) प्रपोजल*\n"
+                          . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                          . "नमस्ते " . ($l['owner_name'] ?: 'ग्राहक') . " जी,\n\n"
+                          . "आपकी बिल्डिंग *" . $l['building_name'] . "* की लिफ्ट के नियमित सुरक्षित संचालन, जीरो ब्रेकडाउन और आपातकालीन रेस्क्यू सुरक्षा हेतु *" . $brandName . "* का विशेष 12-महीने का AMC प्लान उपलब्ध है।\n\n"
+                          . "✨ *AMC की मुख्य सुविधाएं:*\n"
+                          . "• 12 महीने में 12 नियमित सुरक्षा सर्विस\n"
+                          . "• 24x7 इमरजेंसी ब्रेकडाउन हेल्पलाइन\n"
+                          . "• 1-टैप डिजिटल कस्टमर ऐप व लाइव ट्रैकिंग\n"
+                          . "• प्रमाणित डिजिटल जॉब शीट्स व ISO सुरक्षा\n\n"
+                          . "📞 अधिक जानकारी व कोटेशन हेतु संपर्क करें: " . (!empty($comp['support_phone']) ? $comp['support_phone'] : '') . "\n"
+                          . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+
+            $nonAmcLifts[] = [
+                "id" => intval($l['id']),
+                "lift_unique_code" => $l['lift_unique_code'],
+                "building_name" => $l['building_name'],
+                "building_address" => $l['building_address'],
+                "landmark_name" => $l['landmark_name'],
+                "owner_name" => $l['owner_name'] ?: 'Site Incharge',
+                "owner_phone" => $l['owner_phone'] ?: '',
+                "contract_type" => "Non-AMC (On-Demand)",
+                "per_visit_charge" => $perVisit,
+                "last_service_date" => $l['last_service_date'] ?: $l['last_serviced_date'],
+                "amc_proposal_message" => $proposalText,
+                "amc_proposal_whatsapp_url" => !empty($l['owner_phone']) ? "https://wa.me/91" . normalizePhone($l['owner_phone']) . "?text=" . rawurlencode($proposalText) : "",
+                "technical_specs" => $techSpecs
+            ];
+        }
+    }
+
+    sendJsonResponse([
+        "success" => true,
+        "tenant_id" => $tenantId,
+        "company_name" => $brandName,
+        "amc_lifts" => $amcLifts,
+        "non_amc_lifts" => $nonAmcLifts,
+        "total_amc_count" => count($amcLifts),
+        "total_non_amc_count" => count($nonAmcLifts),
+        "renewal_due_count" => $renewalDueCount
+    ]);
+}
+
+// -----------------------------------------------------------------------------
+// ENTERPRISE MODULE 2: SUPERVISOR 100% MANUAL SERVICE DISPATCH
+// -----------------------------------------------------------------------------
+if ($action === 'manual_dispatch_service') {
+    $tenantId = trim($input['tenant_id'] ?? '');
+    $liftId = intval($input['lift_id'] ?? 0);
+    $techId = intval($input['technician_id'] ?? 0);
+    $serviceType = trim($input['service_type'] ?? 'ROUTINE_AMC');
+    $scheduledDate = trim($input['scheduled_date'] ?? date('Y-m-d'));
+    $instructions = trim($input['instructions'] ?? 'नियमित मासिक प्रिवेंटिव मेंटेनेंस जांच');
+
+    if (empty($tenantId) || $liftId <= 0) {
+        sendJsonResponse(["success" => false, "error" => "कंपनी व लिफ्ट का चयन अनिवार्य है"], 400);
+    }
+
+    // Lookup lift details
+    $stmtL = $pdo->prepare("SELECT building_name, lift_unique_code, landmark_name FROM elevex_lifts_amc WHERE id = :id AND tenant_id = :t LIMIT 1");
+    $stmtL->execute([':id' => $liftId, ':t' => $tenantId]);
+    $lift = $stmtL->fetch(PDO::FETCH_ASSOC);
+    if (!$lift) {
+        sendJsonResponse(["success" => false, "error" => "लिफ्ट नहीं मिली"], 404);
+    }
+
+    $techName = "Unassigned";
+    if ($techId > 0) {
+        $stmtT = $pdo->prepare("SELECT full_name, phone FROM elevex_users WHERE id = :id AND tenant_id = :t LIMIT 1");
+        $stmtT->execute([':id' => $techId, ':t' => $tenantId]);
+        $tech = $stmtT->fetch();
+        if ($tech) {
+            $techName = $tech['full_name'];
+            // Send instant siren push notification
+            sendOneSignalSirenNotification($pdo, $techId, "SVC-" . date('ymd') . "-{$liftId}", "मैन्युअल सर्विस असाइनमेंट: " . $lift['building_name'], $lift['lift_unique_code']);
+        }
+    }
+
+    // Update schedule or create dispatch entry
+    $schedYear = intval(date('Y', strtotime($scheduledDate)));
+    $schedMonth = intval(date('n', strtotime($scheduledDate)));
+
+    $stmtCheck = $pdo->prepare("SELECT id FROM elevex_amc_schedules WHERE lift_id = :lid AND routine_year = :yr AND routine_month = :mo LIMIT 1");
+    $stmtCheck->execute([':lid' => $liftId, ':yr' => $schedYear, ':mo' => $schedMonth]);
+    $existingSched = $stmtCheck->fetch();
+
+    if ($existingSched) {
+        $stmtUp = $pdo->prepare("UPDATE elevex_amc_schedules SET assigned_technician_id = :tid, status = 'assigned', service_notes = :ins WHERE id = :sid");
+        $stmtUp->execute([':tid' => $techId > 0 ? $techId : null, ':ins' => $instructions, ':sid' => $existingSched['id']]);
+        $scheduleId = $existingSched['id'];
+    } else {
+        $stmtIns = $pdo->prepare("INSERT INTO elevex_amc_schedules (tenant_id, lift_id, routine_year, routine_month, status, assigned_technician_id, service_notes) 
+                                  VALUES (:t, :lid, :yr, :mo, 'assigned', :tid, :ins)");
+        $stmtIns->execute([':t' => $tenantId, ':lid' => $liftId, ':yr' => $schedYear, ':mo' => $schedMonth, ':tid' => $techId > 0 ? $techId : null, ':ins' => $instructions]);
+        $scheduleId = $pdo->lastInsertId();
+    }
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => ($techId > 0) ? "सर्विस सफलतापूर्वक {$techName} को असाइन की गई!" : "सर्विस सफलतापूर्वक शेड्यूल की गई (मैन्युअल डिस्पैच पेंडिंग)",
+        "schedule_id" => intval($scheduleId),
+        "lift_name" => $lift['building_name'] . " (" . $lift['lift_unique_code'] . ")",
+        "technician_name" => $techName,
+        "scheduled_date" => $scheduledDate
+    ]);
+}
+
+// -----------------------------------------------------------------------------
+// ENTERPRISE MODULE 3: TECHNICIAN LIFT DIRECTORY (With Green Audit Badge)
+// -----------------------------------------------------------------------------
+if ($action === 'get_technician_lift_directory') {
+    $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $techId = intval($input['technician_id'] ?? $_GET['technician_id'] ?? 0);
+
+    if (empty($tenantId)) {
+        sendJsonResponse(["success" => false, "error" => "Tenant ID required"], 400);
+    }
+
+    $currentYear = intval(date('Y'));
+    $currentMonth = intval(date('n'));
+
+    $stmt = $pdo->prepare("SELECT l.*, 
+                                  owner.full_name as owner_name, owner.phone as owner_phone,
+                                  s.id as schedule_id, s.status as schedule_status, s.completed_at,
+                                  s_tech.full_name as servicing_tech_name
+                           FROM elevex_lifts_amc l
+                           LEFT JOIN elevex_users owner ON l.owner_id = owner.id
+                           LEFT JOIN elevex_amc_schedules s ON l.id = s.lift_id AND s.routine_year = :yr AND s.routine_month = :mo
+                           LEFT JOIN elevex_users s_tech ON s.assigned_technician_id = s_tech.id
+                           WHERE l.tenant_id = :t AND l.is_active = 1
+                           ORDER BY l.building_name ASC");
+    $stmt->execute([':yr' => $currentYear, ':mo' => $currentMonth, ':t' => $tenantId]);
+    $lifts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $formattedLifts = [];
+    foreach ($lifts as $l) {
+        $isCompleted = ($l['schedule_status'] === 'completed');
+        $servicingTech = $l['servicing_tech_name'] ?: ($l['last_serviced_by_technician_name'] ?: 'अधिकृत टेक्नीशियन');
+        $completionDate = $l['completed_at'] ? date("d-M-Y", strtotime($l['completed_at'])) : ($l['last_service_date'] ? date("d-M-Y", strtotime($l['last_service_date'])) : '');
+
+        $formattedLifts[] = [
+            "id" => intval($l['id']),
+            "lift_unique_code" => $l['lift_unique_code'],
+            "building_name" => $l['building_name'],
+            "building_address" => $l['building_address'],
+            "landmark_name" => $l['landmark_name'],
+            "owner_name" => $l['owner_name'] ?: 'Building Manager',
+            "owner_phone" => $l['owner_phone'] ?: '',
+            "controller_brand" => $l['controller_brand'] ?: 'MONARCH',
+            "controller_model" => $l['controller_model'] ?: 'NICE 3000+',
+            "is_amc" => (isset($l['is_amc']) && intval($l['is_amc']) === 0) ? false : true,
+            "is_serviced_this_month" => $isCompleted,
+            "audit_badge" => [
+                "is_serviced" => $isCompleted,
+                "badge_text" => $isCompleted ? "✅ इस महीने की सर्विस पूर्ण" : "⏳ सर्विस ड्यू (Pending)",
+                "status_color" => $isCompleted ? "#059669" : "#D97706",
+                "serviced_by" => $isCompleted ? $servicingTech : null,
+                "serviced_date" => $isCompleted ? $completionDate : null,
+                "subtext" => $isCompleted ? "तारीख: {$completionDate} | टेक्नीशियन: {$servicingTech}" : "इस माह की नियमित सर्विस लंबित है"
+            ],
+            "schedule_id" => intval($l['schedule_id'] ?? 0),
+            "next_service_due_date" => date('Y-m-d', strtotime('+30 days')),
+            "jobsheet_url" => $isCompleted ? "https://shribalajikripadham.online/elevex_gateway/jobsheet.php?schedule_id=" . $l['schedule_id'] : null
+        ];
+    }
+
+    sendJsonResponse([
+        "success" => true,
+        "count" => count($formattedLifts),
+        "lifts" => $formattedLifts
+    ]);
+}
+
+// -----------------------------------------------------------------------------
+// ENTERPRISE MODULE 4: COMPLETE BREAKDOWN RESOLUTION WORKFLOW
+// -----------------------------------------------------------------------------
+if ($action === 'resolve_breakdown_script') {
+    $ticketNumber = trim($input['ticket_number'] ?? '');
+    $techId = intval($input['technician_id'] ?? 0);
+    $rootCause = trim($input['root_cause_category'] ?? 'DOOR_LOCK_FAULT');
+    $rootDetails = trim($input['root_cause_details'] ?? '');
+    $replacedParts = trim($input['replaced_parts'] ?? 'NONE');
+    $resolutionNotes = trim($input['resolution_notes'] ?? 'समस्या का निवारण किया गया। लिफ्ट सुचारू रूप से चालू है।');
+    $sigBase64 = trim($input['customer_signature_base64'] ?? '');
+    $otpCode = trim($input['customer_otp_code'] ?? '');
+
+    if (empty($ticketNumber)) {
+        sendJsonResponse(["success" => false, "error" => "टिकट संख्या अनिवार्य है"], 400);
+    }
+
+    $stmtT = $pdo->prepare("SELECT b.*, l.building_name, l.lift_unique_code 
+                           FROM elevex_breakdowns b 
+                           JOIN elevex_lifts_amc l ON b.lift_id = l.id 
+                           WHERE b.ticket_number = :tn LIMIT 1");
+    $stmtT->execute([':tn' => $ticketNumber]);
+    $ticket = $stmtT->fetch(PDO::FETCH_ASSOC);
+
+    if (!$ticket) {
+        sendJsonResponse(["success" => false, "error" => "ब्रेकडाउन टिकट नहीं मिला"], 404);
+    }
+
+    // Save signature image if provided
+    $sigUrl = null;
+    if (!empty($sigBase64)) {
+        $uploadDir = __DIR__ . '/../../uploads/';
+        if (!is_dir($uploadDir)) @mkdir($uploadDir, 0755, true);
+        $sigData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $sigBase64));
+        if ($sigData) {
+            $sigFilename = "sig_bd_{$ticket['id']}_" . time() . ".png";
+            file_put_contents($uploadDir . $sigFilename, $sigData);
+            $sigUrl = "https://shribalajikripadham.online/uploads/{$sigFilename}";
+        }
+    }
+
+    $fullNotes = "फॉल्ट कारण: [{$rootCause}] {$rootDetails}\nबदले गए पार्ट्स: {$replacedParts}\nटिप्पणी: {$resolutionNotes}";
+
+    $stmtUp = $pdo->prepare("UPDATE elevex_breakdowns 
+                            SET status = 'resolved',
+                                resolution_notes = :notes,
+                                replaced_parts = :parts,
+                                customer_signature_url = COALESCE(:sig, customer_signature_url),
+                                resolved_at = NOW(),
+                                assigned_technician_id = COALESCE(:tid, assigned_technician_id)
+                            WHERE id = :id");
+    $stmtUp->execute([
+        ':notes' => $fullNotes,
+        ':parts' => $replacedParts,
+        ':sig' => $sigUrl,
+        ':tid' => $techId > 0 ? $techId : null,
+        ':id' => $ticket['id']
+    ]);
+
+    // Update lift service audit
+    $pdo->prepare("UPDATE elevex_lifts_amc SET last_service_date = CURDATE(), last_serviced_date = NOW(), last_serviced_by_technician_id = :tid WHERE id = :lid")
+        ->execute([':tid' => $techId > 0 ? $techId : null, ':lid' => $ticket['lift_id']]);
+
+    $jobsheetUrl = "https://shribalajikripadham.online/elevex_gateway/jobsheet.php?ticket_id=" . $ticket['id'];
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "✅ ब्रेकडाउन शिकायत का निवारण सफलतापूर्वक पूर्ण व प्रमाणित हुआ!",
+        "ticket_number" => $ticketNumber,
+        "building_name" => $ticket['building_name'],
+        "jobsheet_url" => $jobsheetUrl,
+        "signature_url" => $sigUrl,
+        "resolved_at" => date("Y-m-d H:i:s")
+    ]);
+}
+
     sendJsonResponse(["success" => false, "error" => "Invalid dispatch action"], 400);
 } catch (Throwable $e) {
     sendJsonResponse([

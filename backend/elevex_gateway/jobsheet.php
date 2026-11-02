@@ -24,6 +24,7 @@ if ($scheduleId > 0) {
     $stmtAmc = $pdo->prepare("SELECT s.*, 
                      l.lift_unique_code, l.building_name, l.building_address, l.landmark_name, l.controller_brand, l.amc_type,
                      c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.office_address,
+                     c.gst_number, c.cin_number, c.official_email, c.website_domain, c.bank_upi_id,
                      tech.full_name as tech_name, tech.phone as tech_phone
               FROM elevex_amc_schedules s
               JOIN elevex_lifts_amc l ON s.lift_id = l.id
@@ -47,6 +48,7 @@ if ($scheduleId > 0) {
     $query = "SELECT b.*, 
                      l.lift_unique_code, l.building_name, l.building_address, l.landmark_name, l.controller_brand, l.amc_type,
                      c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.office_address,
+                     c.gst_number, c.cin_number, c.official_email, c.website_domain, c.bank_upi_id,
                      tech.full_name as tech_name, tech.phone as tech_phone,
                      owner.full_name as owner_name, owner.phone as owner_phone
               FROM elevex_breakdowns b
@@ -81,9 +83,9 @@ $resolvedDate = !empty($job['resolved_at']) ? date("d M Y, h:i A", strtotime($jo
 $createdDate = !empty($job['created_at']) ? date("d M Y, h:i A", strtotime($job['created_at'])) : '';
 
 if ($isAmcMode) {
-    $waShareText = "📋 Ankit EleveX Pro - AMC Service Certificate for " . $job['building_name'] . " (" . $job['ticket_number'] . "):\nhttps://shribalajikripadham.online/elevex_gateway/jobsheet.php?schedule_id=" . $job['id'];
+    $waShareText = "📋 " . $brandName . " - AMC Service Certificate for " . $job['building_name'] . " (" . $job['ticket_number'] . "):\nhttps://shribalajikripadham.online/elevex_gateway/jobsheet.php?schedule_id=" . $job['id'];
 } else {
-    $waShareText = "📋 Ankit EleveX Pro - Job Sheet for Ticket " . $job['ticket_number'] . " at " . $job['building_name'] . ":\nhttps://shribalajikripadham.online/elevex_gateway/jobsheet.php?ticket_id=" . $job['id'];
+    $waShareText = "📋 " . $brandName . " - Job Sheet for Ticket " . $job['ticket_number'] . " at " . $job['building_name'] . ":\nhttps://shribalajikripadham.online/elevex_gateway/jobsheet.php?ticket_id=" . $job['id'];
 }
 $waUrl = "https://wa.me/?text=" . rawurlencode($waShareText);
 ?>
@@ -312,7 +314,7 @@ $waUrl = "https://wa.me/?text=" . rawurlencode($waShareText);
 
 <div class="container">
     <div class="top-bar">
-        <span style="font-size: 12px; font-weight: 600; color: #475569;">Ankit EleveX Pro • MNC Enterprise Verification</span>
+        <span style="font-size: 12px; font-weight: 600; color: #475569;"><?= htmlspecialchars($brandName) ?> • अधिकृत डिजिटल सेवा प्रमाण पत्र</span>
         <div style="display: flex; gap: 8px;">
             <a href="<?= htmlspecialchars($waUrl) ?>" target="_blank" class="action-btn btn-wa">📲 WhatsApp शेयर</a>
             <button onclick="window.print()" class="action-btn btn-print">🖨️ प्रिंट / PDF सेव करें</button>
@@ -323,7 +325,12 @@ $waUrl = "https://wa.me/?text=" . rawurlencode($waShareText);
         <div>
             <div class="brand-title"><?= htmlspecialchars($brandName) ?></div>
             <div class="company-subtitle"><?= htmlspecialchars($job['company_name']) ?> • 24x7 हेल्पलाइन: <?= htmlspecialchars($job['support_phone']) ?></div>
-            <div style="font-size: 11px; color: #64748B; margin-top: 4px;"><?= htmlspecialchars($job['office_address']) ?></div>
+            <div style="font-size: 11px; color: #64748B; margin-top: 4px;">
+                <?= htmlspecialchars($job['office_address']) ?>
+                <?php if (!empty($job['gst_number'])): ?> • GSTIN: <b><?= htmlspecialchars($job['gst_number']) ?></b><?php endif; ?>
+                <?php if (!empty($job['cin_number'])): ?> • CIN: <b><?= htmlspecialchars($job['cin_number']) ?></b><?php endif; ?>
+                <?php if (!empty($job['website_domain'])): ?> • 🌐 <?= htmlspecialchars($job['website_domain']) ?><?php endif; ?>
+            </div>
         </div>
         <div class="ticket-badge">
             <div class="ticket-no"><?= htmlspecialchars($job['ticket_number']) ?></div>

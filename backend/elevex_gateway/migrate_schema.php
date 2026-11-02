@@ -246,6 +246,124 @@ try {
     $results['elevex_telemetry_migration_error'] = $e->getMessage();
 }
 
+// -----------------------------------------------------------------------------
+// ENTERPRISE SCHEMA UPGRADE: 12-POINT CORPORATE PROFORMA & EXTENDED LIFT INVENTORY
+// -----------------------------------------------------------------------------
+
+// 1. Upgrade elevex_companies with Corporate Dossier (GST, CIN, Bank UPI, SEO Domain)
+try {
+    $compColsStmt = $pdo->query("SHOW COLUMNS FROM elevex_companies");
+    $existingCompCols = $compColsStmt->fetchAll(PDO::FETCH_COLUMN);
+    $companyDossier = [
+        "gst_number" => "VARCHAR(15) NULL",
+        "cin_number" => "VARCHAR(21) NULL",
+        "msme_number" => "VARCHAR(30) NULL",
+        "registered_address" => "TEXT NULL",
+        "city" => "VARCHAR(100) NULL",
+        "state" => "VARCHAR(100) NULL",
+        "pincode" => "VARCHAR(10) NULL",
+        "official_email" => "VARCHAR(150) NULL",
+        "tollfree_phone" => "VARCHAR(20) NULL",
+        "website_domain" => "VARCHAR(200) NULL",
+        "seo_keywords" => "TEXT NULL",
+        "google_maps_link" => "VARCHAR(300) NULL",
+        "bank_name" => "VARCHAR(100) NULL",
+        "bank_account_no" => "VARCHAR(50) NULL",
+        "bank_ifsc" => "VARCHAR(20) NULL",
+        "bank_upi_id" => "VARCHAR(100) NULL",
+        "services_catalog" => "TEXT NULL"
+    ];
+    foreach ($companyDossier as $col => $def) {
+        if (!in_array($col, $existingCompCols)) {
+            $pdo->exec("ALTER TABLE elevex_companies ADD COLUMN $col $def");
+        }
+    }
+    $results['elevex_companies_dossier'] = "CORPORATE_PROFORMA_COLUMNS_ADDED";
+} catch (Exception $e) {
+    $results['elevex_companies_dossier_error'] = $e->getMessage();
+}
+
+// 2. Upgrade elevex_lifts_amc with Full Inventory Attributes (AMC vs Non-AMC, Tech Specs, Green Audit)
+try {
+    $liftColsStmt = $pdo->query("SHOW COLUMNS FROM elevex_lifts_amc");
+    $existingLiftCols = $liftColsStmt->fetchAll(PDO::FETCH_COLUMN);
+    $liftAttributes = [
+        "is_amc" => "TINYINT(1) DEFAULT 1",
+        "contract_type" => "VARCHAR(30) DEFAULT 'COMPREHENSIVE'",
+        "amc_start_date" => "DATE NULL",
+        "amc_end_date" => "DATE NULL",
+        "per_visit_charge" => "DECIMAL(10,2) DEFAULT 0.00",
+        "controller_model" => "VARCHAR(100) NULL",
+        "machine_type" => "VARCHAR(50) NULL",
+        "door_type" => "VARCHAR(50) NULL",
+        "stops_count" => "VARCHAR(20) NULL",
+        "capacity_kg" => "VARCHAR(30) NULL",
+        "last_serviced_date" => "DATETIME NULL",
+        "last_serviced_by_technician_id" => "INT NULL",
+        "last_serviced_by_technician_name" => "VARCHAR(100) NULL",
+        "next_service_due_date" => "DATE NULL"
+    ];
+    foreach ($liftAttributes as $col => $def) {
+        if (!in_array($col, $existingLiftCols)) {
+            $pdo->exec("ALTER TABLE elevex_lifts_amc ADD COLUMN $col $def");
+        }
+    }
+    $results['elevex_lifts_inventory'] = "LIFT_INVENTORY_ATTRIBUTES_ADDED";
+} catch (Exception $e) {
+    $results['elevex_lifts_inventory_error'] = $e->getMessage();
+}
+
+// 3. Upgrade elevex_users with Skills, Aadhar, Tool Kit, and Creator
+try {
+    $userColsStmt = $pdo->query("SHOW COLUMNS FROM elevex_users");
+    $existingUserCols = $userColsStmt->fetchAll(PDO::FETCH_COLUMN);
+    $userAttributes = [
+        "device_id" => "VARCHAR(100) NULL",
+        "skill_grade" => "VARCHAR(50) NULL",
+        "aadhar_no" => "VARCHAR(20) NULL",
+        "safety_kit_status" => "VARCHAR(50) NULL",
+        "created_by_technician_id" => "INT NULL",
+        "created_by_supervisor_id" => "INT NULL"
+    ];
+    foreach ($userAttributes as $col => $def) {
+        if (!in_array($col, $existingUserCols)) {
+            $pdo->exec("ALTER TABLE elevex_users ADD COLUMN $col $def");
+        }
+    }
+    $results['elevex_users_attributes'] = "USER_SKILLS_AND_ID_ADDED";
+} catch (Exception $e) {
+    $results['elevex_users_attributes_error'] = $e->getMessage();
+}
+
+// 4. Create Company-Branded OTP Table
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_company_otps (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        otp_code VARCHAR(6) NOT NULL,
+        purpose VARCHAR(50) NOT NULL,
+        reference_id VARCHAR(64) NULL,
+        is_verified TINYINT(1) DEFAULT 0,
+        expires_at DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_tenant_phone (tenant_id, phone),
+        INDEX idx_verify (phone, otp_code, is_verified)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+    $results['elevex_company_otps'] = "TABLE_READY";
+} catch (Exception $e) {
+    $results['elevex_company_otps_error'] = $e->getMessage();
+}
+
+// 5. PURGE ALL OLD TEST SEED ACCOUNTS (Zero Dummy Data Enforcement)
+try {
+    $purgeStmt = $pdo->prepare("DELETE FROM elevex_users WHERE phone IN ('9811001122', '9811004455') OR (role = 'technician' AND full_name LIKE '%Demo%')");
+    $purgeStmt->execute();
+    $results['test_seed_purge'] = "DEMO_USERS_PURGED";
+} catch (Exception $e) {
+    $results['test_seed_purge_error'] = $e->getMessage();
+}
+
 // Seed Master SuperAdmin Ankit Chaudhary
 try {
     $superTenant = 'tenant_master_elevex';

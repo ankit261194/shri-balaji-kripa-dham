@@ -86,11 +86,11 @@ if ($action === 'login') {
     }
 
     // Verify MPIN if provided and set
-    if (!empty($user['mpin_hash']) && !empty($mpin)) {
-        $isValidMpin = password_verify($mpin, $user['mpin_hash']);
-        if (!$isValidMpin && empty($user['mpin_changed_at']) && $mpin === '1234') {
-            $isValidMpin = true;
+    if (!empty($user['mpin_hash'])) {
+        if (empty($mpin)) {
+            sendJsonResponse(["success" => false, "error" => "सुरक्षा पिन अनिवार्य है (Security PIN required)"], 400);
         }
+        $isValidMpin = password_verify($mpin, $user['mpin_hash']);
         if (!$isValidMpin) {
             sendJsonResponse(["success" => false, "error" => "गलत सुरक्षा पिन (Invalid Security MPIN)"], 401);
         }
@@ -162,10 +162,40 @@ if ($action === 'create_company') {
     $adminPhone = trim($input['admin_phone'] ?? $phone);
     $supervisorName = trim($input['supervisor_name'] ?? $adminName);
     $supervisorPhone = trim($input['supervisor_phone'] ?? $adminPhone);
-    $supervisorMpin = trim($input['supervisor_mpin'] ?? $input['default_mpin'] ?? '1234');
+    $supervisorMpin = trim($input['supervisor_mpin'] ?? $input['default_mpin'] ?? '');
+    if (empty($supervisorMpin)) {
+        $supervisorMpin = strval(rand(1000, 9999));
+    }
+
+    // Extended 12-Point Corporate Proforma Fields
+    $gstNumber = strtoupper(trim($input['gst_number'] ?? ''));
+    $cinNumber = strtoupper(trim($input['cin_number'] ?? ''));
+    $msmeNumber = trim($input['msme_number'] ?? '');
+    $city = trim($input['city'] ?? '');
+    $state = trim($input['state'] ?? '');
+    $pincode = trim($input['pincode'] ?? '');
+    $officialEmail = trim($input['official_email'] ?? '');
+    $tollfreePhone = trim($input['tollfree_phone'] ?? '');
+    $websiteDomain = trim($input['website_domain'] ?? '');
+    $seoKeywords = trim($input['seo_keywords'] ?? '');
+    $googleMapsLink = trim($input['google_maps_link'] ?? '');
+    $bankName = trim($input['bank_name'] ?? '');
+    $bankAccountNo = trim($input['bank_account_no'] ?? '');
+    $bankIfsc = strtoupper(trim($input['bank_ifsc'] ?? ''));
+    $bankUpiId = trim($input['bank_upi_id'] ?? '');
+    $servicesCatalog = $input['services_catalog'] ?? [];
+    $servicesCatalogJson = is_array($servicesCatalog) ? json_encode($servicesCatalog) : (is_string($servicesCatalog) ? $servicesCatalog : '[]');
 
     if (empty($cname) || empty($phone)) {
         sendJsonResponse(["success" => false, "error" => "कंपनी का नाम व फोन नंबर अनिवार्य है"], 400);
+    }
+
+    // 15-digit GSTIN format validation (if provided)
+    if (!empty($gstNumber)) {
+        $gstRegex = '/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/';
+        if (!preg_match($gstRegex, $gstNumber)) {
+            sendJsonResponse(["success" => false, "error" => "अमान्य 15-अंकीय GSTIN संख्या (Invalid 15-digit GSTIN format)"], 400);
+        }
     }
 
     // Generate unique tenant_id
@@ -176,8 +206,14 @@ if ($action === 'create_company') {
         $pdo->beginTransaction();
 
         $stmtComp = $pdo->prepare("INSERT INTO elevex_companies 
-            (tenant_id, company_name, brand_display_name, logo_url, primary_color_hex, support_phone, office_address, features_config, is_active) 
-            VALUES (:tid, :cname, :bname, :logo, :col, :ph, :addr, :feat, 1)");
+            (tenant_id, company_name, brand_display_name, logo_url, primary_color_hex, support_phone, office_address,
+             gst_number, cin_number, msme_number, registered_address, city, state, pincode, official_email, tollfree_phone,
+             website_domain, seo_keywords, google_maps_link, bank_name, bank_account_no, bank_ifsc, bank_upi_id, services_catalog,
+             features_config, is_active) 
+            VALUES (:tid, :cname, :bname, :logo, :col, :ph, :addr,
+                    :gst, :cin, :msme, :reg_addr, :city, :state, :pin, :email, :tf,
+                    :web, :seo, :gmaps, :bname_bank, :acc, :ifsc, :upi, :services,
+                    :feat, 1)");
         
         $features = json_encode([
             "master_service_active" => true,
@@ -203,6 +239,23 @@ if ($action === 'create_company') {
             ':col' => $color,
             ':ph' => $phone,
             ':addr' => $address,
+            ':gst' => $gstNumber,
+            ':cin' => $cinNumber,
+            ':msme' => $msmeNumber,
+            ':reg_addr' => $address,
+            ':city' => $city,
+            ':state' => $state,
+            ':pin' => $pincode,
+            ':email' => $officialEmail,
+            ':tf' => $tollfreePhone,
+            ':web' => $websiteDomain,
+            ':seo' => $seoKeywords,
+            ':gmaps' => $googleMapsLink,
+            ':bname_bank' => $bankName,
+            ':acc' => $bankAccountNo,
+            ':ifsc' => $bankIfsc,
+            ':upi' => $bankUpiId,
+            ':services' => $servicesCatalogJson,
             ':feat' => $features
         ]);
 
@@ -253,16 +306,18 @@ if ($action === 'create_company') {
 
         $pdo->commit();
 
-        // 1-Click WhatsApp Onboarding Message & Link
-        $waMsg = "🏢 *Ankit EleveX Pro - सुपरवाइज़र आमंत्रण (Supervisor Onboarding)* 🏢
+        // 100% White-Label Company Branded WhatsApp Onboarding Message & Link
+        $supportLine = !empty($tollfreePhone) ? $tollfreePhone : $phone;
+        $waMsg = "🏢 *" . $brandName . "* 🏢
 
 "
-               . "प्रिय " . $supervisorName . " जी,
-"
-               . "आपको *" . $cname . "* का हेड सुपरवाइज़र (Operations Head) नियुक्त किया गया है।
+               . "नमस्ते " . $supervisorName . " जी,
 
 "
-               . "📲 *Supervisor Cockpit App डाउनलोड करें:*
+               . "आपको *" . $brandName . "* का हेड सुपरवाइज़र (Operations Head) नियुक्त किया गया है।
+
+"
+               . "📲 *Supervisor Portal App डाउनलोड लिंक:*
 "
                . "https://shribalajikripadham.online/download.php?app=supervisor
 
@@ -271,15 +326,18 @@ if ($action === 'create_company') {
 "
                . "• कंपनी कोड (Tenant ID): `" . $tenantId . "`
 "
-               . "• यूजरनेम / मोबाइल: `" . $cleanSupervisorPhone . "`
+               . "• यूजर आईडी / मोबाइल: `" . $cleanSupervisorPhone . "`
 "
-               . "• लॉगिन पिन / पासवर्ड: `" . $supervisorMpin . "`
+               . "• सुरक्षा पिन: `" . $supervisorMpin . "`
 
 "
-               . "👉 कृपया ऐप डाउनलोड करके तुरंत लॉगिन करें और अपनी टीम के टेक्नीशियनों और लिफ्ट ग्राहकों को जोड़ना शुरू करें।
-
+               . (!empty($websiteDomain) ? "🌐 आधिकारिक वेबसाइट: " . $websiteDomain . "
+" : "")
+               . "📞 सपोर्ट हेल्पलाइन: " . $supportLine . "
 "
-               . "हेल्पलाइन / तकनीकी सहायता: 8533955333 (अंकित चौधरी)";
+               . (!empty($address) ? "📍 ऑफिस: " . $address . "
+" : "")
+               . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
         $waUrl = "https://wa.me/91" . $cleanSupervisorPhone . "?text=" . rawurlencode($waMsg);
 
         sendJsonResponse([
@@ -410,32 +468,32 @@ if ($action === 'list_companies') {
         $sPhone = normalizePhone(!empty($comp['supervisor_phone']) ? $comp['supervisor_phone'] : $comp['support_phone']);
         $tId = $comp['tenant_id'];
         $cName = $comp['company_name'];
-        $waMsg = "🏢 *Ankit EleveX Pro - सुपरवाइज़र आमंत्रण (Supervisor Onboarding)* 🏢
+        $waMsg = "🏢 *" . $cName . "* 🏢
 
 "
-               . "प्रिय " . $sName . " जी,
-"
-               . "आपको *" . $cName . "* का हेड सुपरवाइज़र नियुक्त किया गया है।
+               . "नमस्ते " . $sName . " जी,
 
 "
-               . "📲 *Supervisor Cockpit App डाउनलोड करें:*
+               . "आपको *" . $cName . "* का सुपरवाइज़र नियुक्त किया गया है।
+
+"
+               . "📲 *Supervisor Portal App डाउनलोड:*
 "
                . "https://shribalajikripadham.online/download.php?app=supervisor
 
 "
-               . "🔐 *आपके लॉगिन क्रेडेंशियल्स:*
+               . "🔐 *लॉगिन क्रेडेंशियल्स:*
 "
-               . "• कंपनी कोड (Tenant ID): `" . $tId . "`
+               . "• कंपनी कोड: `" . $tId . "`
 "
-               . "• यूजरनेम / मोबाइल: `" . $sPhone . "`
+               . "• यूजर आईडी: `" . $sPhone . "`
 "
-               . "• लॉगिन पिन / पासवर्ड: `1234`
+               . "• सुरक्षा पिन: `1234`
 
 "
-               . "👉 कृपया ऐप डाउनलोड करके तुरंत लॉगिन करें और अपने टेक्नीशियनों और लिफ्ट ग्राहकों को जोड़ना शुरू करें।
-
+               . "📞 सपोर्ट हेल्पलाइन: " . (!empty($comp['support_phone']) ? $comp['support_phone'] : '9811001122') . "
 "
-               . "हेल्पलाइन / तकनीकी सहायता: 8533955333 (अंकित चौधरी)";
+               . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
         $comp['whatsapp_message'] = $waMsg;
         $comp['whatsapp_url'] = "https://wa.me/91" . $sPhone . "?text=" . rawurlencode($waMsg);
     }
@@ -557,10 +615,16 @@ if ($action === 'add_user') {
     $role = trim($input['role'] ?? 'technician');
     $fullName = trim($input['full_name'] ?? '');
     $phone = normalizePhone($input['phone'] ?? '');
-    $mpin = trim($input['mpin'] ?? '1234');
+    $mpin = trim($input['mpin'] ?? '');
+    if (empty($mpin)) {
+        $mpin = strval(rand(1000, 9999));
+    }
     $preferredLang = trim($input['preferred_language'] ?? 'hi');
     $liftId = intval($input['lift_id'] ?? 0);
     $liftCode = trim($input['lift_unique_code'] ?? $input['lift_code'] ?? '');
+    $skillGrade = trim($input['skill_grade'] ?? 'Field Specialist');
+    $aadharNo = trim($input['aadhar_no'] ?? '');
+    $safetyKit = trim($input['safety_kit_status'] ?? 'VERIFIED_ACTIVE');
 
     // Token Auth & Tenant Isolation Wall
     $token = getBearerToken();
@@ -584,19 +648,22 @@ if ($action === 'add_user') {
     $existing = $stmtCheck->fetch();
 
     if ($existing) {
-        $stmtUp = $pdo->prepare("UPDATE elevex_users SET tenant_id = :t, role = :r, full_name = :n, mpin_hash = :m, preferred_language = :lang, is_first_login = 1, mpin_changed_at = NULL, is_active = 1 WHERE id = :id");
+        $stmtUp = $pdo->prepare("UPDATE elevex_users SET tenant_id = :t, role = :r, full_name = :n, mpin_hash = :m, preferred_language = :lang, skill_grade = :sg, aadhar_no = :aadh, safety_kit_status = :sk, is_first_login = 1, mpin_changed_at = NULL, is_active = 1 WHERE id = :id");
         $stmtUp->execute([
             ':t' => $tenantId,
             ':r' => $role,
             ':n' => $fullName,
             ':m' => $mpinHash,
             ':lang' => $preferredLang,
+            ':sg' => $skillGrade,
+            ':aadh' => $aadharNo,
+            ':sk' => $safetyKit,
             ':id' => $existing['id']
         ]);
         $userId = intval($existing['id']);
     } else {
-        $stmtIns = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mobile, mpin_hash, preferred_language, is_first_login, is_active) 
-                                  VALUES (:t, :r, :n, :p, :mob, :m, :lang, 1, 1)");
+        $stmtIns = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mobile, mpin_hash, preferred_language, skill_grade, aadhar_no, safety_kit_status, is_first_login, is_active) 
+                                  VALUES (:t, :r, :n, :p, :mob, :m, :lang, :sg, :aadh, :sk, 1, 1)");
         $stmtIns->execute([
             ':t' => $tenantId,
             ':r' => $role,
@@ -604,7 +671,10 @@ if ($action === 'add_user') {
             ':p' => $phone,
             ':mob' => $phone,
             ':m' => $mpinHash,
-            ':lang' => $preferredLang
+            ':lang' => $preferredLang,
+            ':sg' => $skillGrade,
+            ':aadh' => $aadharNo,
+            ':sk' => $safetyKit
         ]);
         $userId = intval($pdo->lastInsertId());
     }
@@ -626,43 +696,72 @@ if ($action === 'add_user') {
     $comp = $stmtC->fetch(PDO::FETCH_ASSOC);
     $cName = $comp['company_name'] ?? 'EleveX Network';
 
-    // 1-Click WhatsApp Onboarding Message & Link
+    // 100% White-Label Company Branded WhatsApp Onboarding Message & Link
+    $compSupport = !empty($comp['support_phone']) ? $comp['support_phone'] : '';
+    $brandTitle = !empty($comp['brand_display_name']) ? $comp['brand_display_name'] : $cName;
+
     if (in_array($role, ['technician', 'senior_technician'])) {
         $roleTitle = ($role === 'senior_technician') ? "सीनियर फील्ड टेक्नीशियन (Senior Technician)" : "फील्ड टेक्नीशियन (Field Technician)";
         $appUrl = "https://shribalajikripadham.online/download.php?app=technician";
-        $waMsg = "🛠️ *Ankit EleveX Pro - फील्ड तकनीशियन आमंत्रण (Technician Onboarding)* 🛠️\n\n"
-               . "प्रिय *" . $fullName . "* जी,\n"
-               . "आपको *" . $cName . "* में *" . $roleTitle . "* के रूप में पंजीकृत कर दिया गया है।\n\n"
-               . "📲 *Technician Toolkit App डाउनलोड लिंक:*\n"
-               . $appUrl . "\n\n"
-               . "🔐 *लॉगिन क्रेडेंशियल्स:*\n"
-               . "• कंपनी कोड (Tenant ID): `" . $tenantId . "`\n"
-               . "• यूजरनेम / मोबाइल: `" . $phone . "`\n"
-               . "• लॉगिन पिन / पासवर्ड: `" . $mpin . "`\n\n"
-               . "⚡ *मुख्य निर्देश:*\n"
-               . "1. ऊपर दिए लिंक से ऐप डाउनलोड व इंस्टॉल करें।\n"
-               . "2. अपने मोबाइल व पिन से लॉगिन करके लोकेशन परमिशन की अनुमति दें।\n"
-               . "3. असाइन किए गए ब्रेकडाउन टिकट स्वीकार करें व ग्राहक OTP से जॉब क्लोज करें।\n\n"
-               . "हेल्पलाइन / तकनीकी सहायता: 8533955333 (अंकित चौधरी)";
+        $waMsg = "🛠️ *" . $brandTitle . "* 🛠️
+
+"
+               . "नमस्ते *" . $fullName . "* जी,
+"
+               . "आपको *" . $brandTitle . "* में *" . $roleTitle . "* के रूप में पंजीकृत किया गया है।
+
+"
+               . "📲 *Technician App डाउनलोड लिंक:*
+"
+               . $appUrl . "
+
+"
+               . "🔐 *आपके लॉगिन क्रेडेंशियल्स:*
+"
+               . "• कंपनी कोड (Tenant ID): `" . $tenantId . "`
+"
+               . "• यूजर आईडी / मोबाइल: `" . $phone . "`
+"
+               . "• सुरक्षा पिन: `" . $mpin . "`
+
+"
+               . "⚡ *निर्देश:* ऐप डाउनलोड करके लॉगिन करें और फील्ड कार्य शुरू करें।
+"
+               . (!empty($compSupport) ? "📞 हेल्पलाइन: " . $compSupport . "
+" : "")
+               . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
     } else {
         $appUrl = "https://shribalajikripadham.online/download.php?app=owner";
-        $waMsg = "🏢 *Ankit EleveX Pro - लिफ्ट ओनर / ग्राहक पोर्टल आमंत्रण (Owner Portal)* 🏢\n\n"
-               . "प्रिय *" . $fullName . "* जी,\n"
-               . "आपकी लिफ्ट की सुरक्षा और रियल-टाइम मॉनिटरिंग हेतु *" . $cName . "* द्वारा आपका ओनर अकाउंट सक्रिय कर दिया गया है।\n\n"
-               . "📲 *Owner Portal App डाउनलोड लिंक:*\n"
-               . $appUrl . "\n\n"
-               . "🔐 *आपके लॉगिन क्रेडेंशियल्स:*\n"
-               . "• कंपनी कोड (Tenant ID): `" . $tenantId . "`\n"
-               . (!empty($liftCode) ? "• लिफ्ट कोड (Lift Code): `" . $liftCode . "`\n" : "")
-               . "• यूजरनेम / मोबाइल: `" . $phone . "`\n"
-               . "• लॉगिन पिन / पासवर्ड: `" . $mpin . "`\n\n"
-               . "✨ *ओनर ऐप की सुविधाएं:*\n"
-               . "• 1-टैप में ब्रेकडाउन शिकायत दर्ज करें\n"
-               . "• तकनीशियन की लाइव लोकेशन और आगमन समय देखें\n"
-               . "• सर्विस क्लोजर हेतु गोपनीय 4-अंकीय OTP सत्यापन\n\n"
-               . "कस्टमर केयर / 24x7 हेल्पलाइन: 8533955333 (अंकित चौधरी)";
-    }
+        $waMsg = "🏢 *" . $brandTitle . "* 🏢
 
+"
+               . "नमस्ते *" . $fullName . "* जी,
+"
+               . "आपकी लिफ्ट की सुरक्षा और रियल-टाइम मॉनिटरिंग हेतु *" . $brandTitle . "* द्वारा आपका ओनर खाता सक्रिय कर दिया गया है।
+
+"
+               . "📲 *Customer App डाउनलोड लिंक:*
+"
+               . $appUrl . "
+
+"
+               . "🔐 *आपके लॉगिन क्रेडेंशियल्स:*
+"
+               . "• कंपनी कोड: `" . $tenantId . "`
+"
+               . (!empty($liftCode) ? "• लिफ्ट कोड: `" . $liftCode . "`
+" : "")
+               . "• यूजर आईडी / मोबाइल: `" . $phone . "`
+"
+               . "• सुरक्षा पिन: `" . $mpin . "`
+
+"
+               . "✨ *सुविधाएं:* 1-टैप इमरजेंसी ब्रेकडाउन, डिजिटल सर्विस जॉब शीट्स, व AMC स्थिति।
+"
+               . (!empty($compSupport) ? "📞 24x7 हेल्पलाइन: " . $compSupport . "
+" : "")
+               . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+    }
     $waUrl = "https://wa.me/91" . $phone . "?text=" . rawurlencode($waMsg);
 
     sendJsonResponse([
@@ -860,6 +959,237 @@ if ($action === 'verify_session') {
     ]);
 }
 
+
+// 6. Request Company-Branded OTP
+if ($action === 'request_company_otp') {
+    $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $phone = normalizePhone($input['phone'] ?? $_GET['phone'] ?? '');
+    $purpose = trim($input['purpose'] ?? $_GET['purpose'] ?? 'OWNER_VERIFICATION');
+    $refId = trim($input['reference_id'] ?? $_GET['reference_id'] ?? '');
+
+    if (empty($phone)) {
+        sendJsonResponse(["success" => false, "error" => "फोन नंबर अनिवार्य है"], 400);
+    }
+
+    // Lookup company branding
+    $brandName = "EleveX";
+    if (!empty($tenantId)) {
+        $stmtC = $pdo->prepare("SELECT brand_display_name, company_name FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+        $stmtC->execute([':t' => $tenantId]);
+        $cRow = $stmtC->fetch();
+        if ($cRow) {
+            $brandName = !empty($cRow['brand_display_name']) ? $cRow['brand_display_name'] : $cRow['company_name'];
+        }
+    }
+
+    $otpCode = strval(rand(1000, 9999));
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+5 minutes'));
+
+    $stmtOtp = $pdo->prepare("INSERT INTO elevex_company_otps (tenant_id, phone, otp_code, purpose, reference_id, is_verified, expires_at) 
+                             VALUES (:t, :p, :code, :purp, :ref, 0, :exp)");
+    $stmtOtp->execute([
+        ':t' => $tenantId ?: 'tenant_master_elevex',
+        ':p' => $phone,
+        ':code' => $otpCode,
+        ':purp' => $purpose,
+        ':ref' => $refId,
+        ':exp' => $expiresAt
+    ]);
+
+    $waMsg = "🔐 *" . $brandName . " सत्यापन कोड*\n\n"
+           . "नमस्ते,\n"
+           . "आपका *" . $brandName . "* सुरक्षा कोड है: *" . $otpCode . "*\n\n"
+           . "यह कोड केवल 5 मिनट के लिए मान्य है। कृपया अपनी सुरक्षा के लिए इसे किसी से साझा न करें।\n\n"
+           . "- टीम *" . $brandName . "*";
+
+    $waUrl = "https://wa.me/91" . $phone . "?text=" . rawurlencode($waMsg);
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "सत्यापन कोड सफलतापूर्वक तैयार हुआ",
+        "otp_code" => $otpCode,
+        "phone" => $phone,
+        "brand_name" => $brandName,
+        "purpose" => $purpose,
+        "expires_at" => $expiresAt,
+        "whatsapp_message" => $waMsg,
+        "whatsapp_url" => $waUrl
+    ]);
+}
+
+// 7. Verify Company-Branded OTP
+if ($action === 'verify_company_otp') {
+    $phone = normalizePhone($input['phone'] ?? $_POST['phone'] ?? '');
+    $otpCode = trim($input['otp_code'] ?? $input['otp'] ?? $_POST['otp_code'] ?? '');
+    $purpose = trim($input['purpose'] ?? $_POST['purpose'] ?? '');
+
+    if (empty($phone) || empty($otpCode)) {
+        sendJsonResponse(["success" => false, "error" => "फोन नंबर व ओटीपी अनिवार्य है"], 400);
+    }
+
+    $stmtV = $pdo->prepare("SELECT id, tenant_id FROM elevex_company_otps 
+                            WHERE phone = :p AND otp_code = :c AND is_verified = 0 AND expires_at > NOW() 
+                            ORDER BY id DESC LIMIT 1");
+    $stmtV->execute([':p' => $phone, ':c' => $otpCode]);
+    $otpRecord = $stmtV->fetch();
+
+    if (!$otpRecord) {
+        sendJsonResponse(["success" => false, "error" => "अमान्य अथवा समय-समाप्त (Expired) ओटीपी कोड"], 401);
+    }
+
+    $stmtUp = $pdo->prepare("UPDATE elevex_company_otps SET is_verified = 1 WHERE id = :id");
+    $stmtUp->execute([':id' => $otpRecord['id']]);
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "ओटीपी सफलतापूर्वक सत्यापित हुआ (OTP Verified)",
+        "phone" => $phone,
+        "tenant_id" => $otpRecord['tenant_id']
+    ]);
+}
+
+// 8. Onboard Lift Owner On-Site (Called by Field Technician or Supervisor)
+if ($action === 'onboard_owner_on_site') {
+    $tenantId = trim($input['tenant_id'] ?? '');
+    $ownerName = trim($input['owner_name'] ?? $input['full_name'] ?? '');
+    $phone = normalizePhone($input['owner_phone'] ?? $input['phone'] ?? '');
+    $liftId = intval($input['lift_id'] ?? 0);
+    $liftCode = trim($input['lift_code'] ?? '');
+    $contractType = trim($input['contract_type'] ?? 'AMC'); // AMC or NON_AMC
+    $buildingName = trim($input['building_name'] ?? '');
+    $flatOffice = trim($input['flat_office'] ?? '');
+    $technicianId = intval($input['technician_id'] ?? 0);
+    $technicianName = trim($input['technician_name'] ?? '');
+
+    if (empty($tenantId) || empty($ownerName) || empty($phone)) {
+        sendJsonResponse(["success" => false, "error" => "कंपनी, ग्राहक नाम व फोन नंबर अनिवार्य है"], 400);
+    }
+
+    // Lookup company branding
+    $stmtC = $pdo->prepare("SELECT company_name, brand_display_name, support_phone, office_address, website_domain FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+    $stmtC->execute([':t' => $tenantId]);
+    $comp = $stmtC->fetch(PDO::FETCH_ASSOC);
+    $brandName = !empty($comp['brand_display_name']) ? $comp['brand_display_name'] : ($comp['company_name'] ?? 'Elevators');
+    $supportPhone = !empty($comp['support_phone']) ? $comp['support_phone'] : '';
+
+    $mpin = strval(rand(1000, 9999));
+    $mpinHash = password_hash($mpin, PASSWORD_BCRYPT);
+
+    $stmtCheck = $pdo->prepare("SELECT id FROM elevex_users WHERE phone = :p LIMIT 1");
+    $stmtCheck->execute([':p' => $phone]);
+    $existing = $stmtCheck->fetch();
+
+    if ($existing) {
+        $ownerId = intval($existing['id']);
+        $stmtUp = $pdo->prepare("UPDATE elevex_users SET tenant_id = :t, role = 'lift_owner', full_name = :n, mpin_hash = :m, created_by_technician_id = :tid, is_active = 1 WHERE id = :id");
+        $stmtUp->execute([
+            ':t' => $tenantId,
+            ':n' => $ownerName,
+            ':m' => $mpinHash,
+            ':tid' => $technicianId,
+            ':id' => $ownerId
+        ]);
+    } else {
+        $stmtIns = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mobile, mpin_hash, created_by_technician_id, is_active) 
+                                  VALUES (:t, 'lift_owner', :n, :p, :mob, :m, :tid, 1)");
+        $stmtIns->execute([
+            ':t' => $tenantId,
+            ':n' => $ownerName,
+            ':p' => $phone,
+            ':mob' => $phone,
+            ':m' => $mpinHash,
+            ':tid' => $technicianId
+        ]);
+        $ownerId = intval($pdo->lastInsertId());
+    }
+
+    // Link Lift to Owner if specified
+    if ($liftId > 0) {
+        $stmtL = $pdo->prepare("UPDATE elevex_lifts_amc SET owner_id = :oid WHERE id = :lid AND tenant_id = :t");
+        $stmtL->execute([':oid' => $ownerId, ':lid' => $liftId, ':t' => $tenantId]);
+    }
+
+    // White-Label WhatsApp Welcome Invitation
+    $waMsg = "🏢 *" . $brandName . "* 🏢\n\n"
+           . "नमस्ते *" . $ownerName . "* जी,\n\n"
+           . "आपकी बिल्डिंग *" . (!empty($buildingName) ? $buildingName : "साइट") . "* की लिफ्ट के डिजिटल प्रबंधन हेतु *" . $brandName . "* द्वारा आपका ग्राहक पोर्टल सक्रिय कर दिया गया है।\n\n"
+           . "📲 *Customer App डाउनलोड लिंक:*\n"
+           . "https://shribalajikripadham.online/download.php?app=owner\n\n"
+           . "🔐 *लॉगिन क्रेडेंशियल्स:*\n"
+           . "• कंपनी कोड (Tenant ID): `" . $tenantId . "`\n"
+           . "• यूजर आईडी / मोबाइल: `" . $phone . "`\n"
+           . "• सुरक्षा पिन: `" . $mpin . "`\n\n"
+           . "✨ *सुविधाएं:*\n"
+           . "• 1-टैप में ब्रेकडाउन शिकायत दर्ज करें\n"
+           . "• लिफ्ट सर्विस की डिजिटल जॉब शीट्स देखें\n"
+           . "• AMC स्थिति व अगला सर्विस शेड्यूल देखें\n\n"
+           . (!empty($technicianName) ? "👷 फील्ड तकनीशियन: " . $technicianName . "\n" : "")
+           . (!empty($supportPhone) ? "📞 24x7 हेल्पलाइन: " . $supportPhone . "\n" : "")
+           . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+
+    $waUrl = "https://wa.me/91" . $phone . "?text=" . rawurlencode($waMsg);
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "ग्राहक (Lift Owner) सफलतापूर्वक ऑनबोर्ड किया गया!",
+        "owner_id" => $ownerId,
+        "owner_name" => $ownerName,
+        "phone" => $phone,
+        "mpin" => $mpin,
+        "tenant_id" => $tenantId,
+        "brand_name" => $brandName,
+        "whatsapp_message" => $waMsg,
+        "whatsapp_url" => $waUrl
+    ]);
+}
+
+// 9. Get Full Corporate Proforma Dossier
+if ($action === 'get_company_proforma') {
+    $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    if (empty($tenantId)) {
+        sendJsonResponse(["success" => false, "error" => "Tenant ID required"], 400);
+    }
+
+    $stmt = $pdo->prepare("SELECT * FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+    $stmt->execute([':t' => $tenantId]);
+    $comp = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$comp) {
+        sendJsonResponse(["success" => false, "error" => "Company not found"], 404);
+    }
+
+    sendJsonResponse([
+        "success" => true,
+        "proforma" => [
+            "tenant_id" => $comp['tenant_id'],
+            "company_name" => $comp['company_name'],
+            "brand_display_name" => $comp['brand_display_name'],
+            "logo_url" => $comp['logo_url'],
+            "primary_color" => $comp['primary_color_hex'] ?: '#0284C7',
+            "support_phone" => $comp['support_phone'],
+            "office_address" => $comp['office_address'],
+            "gst_number" => $comp['gst_number'] ?? '',
+            "cin_number" => $comp['cin_number'] ?? '',
+            "msme_number" => $comp['msme_number'] ?? '',
+            "registered_address" => $comp['registered_address'] ?? $comp['office_address'],
+            "city" => $comp['city'] ?? '',
+            "state" => $comp['state'] ?? '',
+            "pincode" => $comp['pincode'] ?? '',
+            "official_email" => $comp['official_email'] ?? '',
+            "tollfree_phone" => $comp['tollfree_phone'] ?? '',
+            "website_domain" => $comp['website_domain'] ?? '',
+            "seo_keywords" => $comp['seo_keywords'] ?? '',
+            "google_maps_link" => $comp['google_maps_link'] ?? '',
+            "bank_name" => $comp['bank_name'] ?? '',
+            "bank_account_no" => $comp['bank_account_no'] ?? '',
+            "bank_ifsc" => $comp['bank_ifsc'] ?? '',
+            "bank_upi_id" => $comp['bank_upi_id'] ?? '',
+            "services_catalog" => !empty($comp['services_catalog']) ? json_decode($comp['services_catalog'], true) : [],
+            "features" => !empty($comp['features_config']) ? json_decode($comp['features_config'], true) : []
+        ]
+    ]);
+}
+
 sendJsonResponse(["success" => false, "error" => "Invalid action requested"], 400);
 } catch (Throwable $e) {
     sendJsonResponse([
@@ -869,3 +1199,4 @@ sendJsonResponse(["success" => false, "error" => "Invalid action requested"], 40
         "line" => $e->getLine()
     ], 500);
 }
+
