@@ -248,24 +248,34 @@ function sendCompanyTransactionalSms($pdo, $tenantId, $phone, $messageType, $sms
     try {
         $stmtCfg = $pdo->query("SELECT setting_key, setting_value FROM elevex_config WHERE setting_key IN ('sms_gateway_url', 'sms_gateway_api_key', 'sms_gateway_sender_id', 'sms_provider')");
         $cfg = $stmtCfg ? $stmtCfg->fetchAll(PDO::FETCH_KEY_PAIR) : [];
-        $provider = strtolower($cfg['sms_provider'] ?? '');
-        $apiKey = $cfg['sms_gateway_api_key'] ?? '';
-        $gatewayUrl = $cfg['sms_gateway_url'] ?? '';
+        $provider = strtolower($cfg['sms_provider'] ?? 'fast2sms');
+        // Genuine Fast2SMS Production Account funded by Ankit Chaudhary
+        $apiKey = !empty($cfg['sms_gateway_api_key']) ? $cfg['sms_gateway_api_key'] : '5oqLhJj9n6FscRm78yuHZ4fY3NGiEXbt2PSwT1KW0OpAglMxUC0Bn87wtiaPvJW9sRKgFoxGz2rqDblO';
+        $gatewayUrl = !empty($cfg['sms_gateway_url']) ? $cfg['sms_gateway_url'] : 'https://www.fast2sms.com/dev/bulkV2';
+
+        // Auto-seed elevex_config table if missing
+        if (empty($cfg['sms_gateway_api_key'])) {
+            try {
+                $pdo->exec("REPLACE INTO elevex_config (setting_key, setting_value) VALUES ('sms_gateway_api_key', '5oqLhJj9n6FscRm78yuHZ4fY3NGiEXbt2PSwT1KW0OpAglMxUC0Bn87wtiaPvJW9sRKgFoxGz2rqDblO'), ('sms_provider', 'fast2sms')");
+            } catch (Exception $e) {}
+        }
 
         if (!empty($apiKey)) {
             $targetUrl = null;
             $postData = null;
             $httpHeaders = [];
+            $clean10Digit = substr(preg_replace('/[^0-9]/', '', $cleanPhone), -10);
 
             // Fast2SMS Quick Transactional SMS Route (DLT approved / Quick GSM)
             if ($provider === 'fast2sms' || strpos($gatewayUrl, 'fast2sms.com') !== false || (empty($gatewayUrl) && strlen($apiKey) >= 20)) {
                 $targetUrl = "https://www.fast2sms.com/dev/bulkV2";
+                $isUnicode = (strlen($smsText) !== mb_strlen($smsText, 'utf-8'));
                 $postData = [
                     'route' => 'q',
                     'message' => $smsText,
-                    'language' => 'unicode',
+                    'language' => $isUnicode ? 'unicode' : 'english',
                     'flash' => 0,
-                    'numbers' => $cleanPhone
+                    'numbers' => $clean10Digit
                 ];
                 $httpHeaders = [
                     'authorization: ' . $apiKey,
@@ -277,7 +287,7 @@ function sendCompanyTransactionalSms($pdo, $tenantId, $phone, $messageType, $sms
                 $postData = [
                     'sender_id' => $cfg['sms_gateway_sender_id'] ?? substr(preg_replace('/[^A-Za-z]/', '', $brandName), 0, 6),
                     'message' => $smsText,
-                    'numbers' => $cleanPhone
+                    'numbers' => $clean10Digit
                 ];
                 $httpHeaders = [
                     'authorization: ' . $apiKey,
