@@ -1333,14 +1333,15 @@ if ($action === 'resolve_breakdown_script') {
     if (!$ticket && $liftId > 0) {
         $genTn = 'BD-' . date('Ymd') . '-' . rand(1000, 9999);
         $stmtInsBD = $pdo->prepare("INSERT INTO elevex_breakdowns 
-            (tenant_id, lift_id, ticket_number, issue_description, status, reported_by_phone, technician_id, created_at) 
-            VALUES (:t, :lid, :tn, :issue, 'resolved', 'field_technician', :tech, NOW())");
+            (tenant_id, lift_id, ticket_number, issue_description, status, reported_by_id, assigned_technician_id, created_at) 
+            VALUES (:t, :lid, :tn, :issue, 'resolved', :rep, :tech, NOW())");
         $stmtInsBD->execute([
             ':t' => $tenantId,
             ':lid' => $liftId,
             ':tn' => $genTn,
             ':issue' => $rootDetails ?: 'Field Breakdown Resolution',
-            ':tech' => $techId
+            ':rep' => ($techId > 0 ? $techId : 1),
+            ':tech' => ($techId > 0 ? $techId : null)
         ]);
         $ticket = ['id' => intval($pdo->lastInsertId()), 'tenant_id' => $tenantId, 'lift_id' => $liftId, 'ticket_number' => $genTn];
     }
