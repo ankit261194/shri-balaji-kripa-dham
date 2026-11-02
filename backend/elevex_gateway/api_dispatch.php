@@ -748,16 +748,6 @@ if ($action === 'list_lifts') {
     ]);
 }
 
-    sendJsonResponse(["success" => false, "error" => "Invalid dispatch action"], 400);
-} catch (Throwable $e) {
-    sendJsonResponse([
-        "success" => false,
-        "error" => "Exception: " . $e->getMessage(),
-        "file" => basename($e->getFile()),
-        "line" => $e->getLine()
-    ], 500);
-}
-
 // Gate 4: Trigger High-Priority Emergency SOS (Passenger Trapped)
 if ($action === 'trigger_emergency_sos') {
     $tenantId = trim($input['tenant_id'] ?? '');
@@ -824,3 +814,15 @@ if ($action === 'trigger_emergency_sos') {
         "trapped_count" => $trappedCount
     ]);
 }
+
+
+    sendJsonResponse(["success" => false, "error" => "Invalid dispatch action"], 400);
+} catch (Throwable $e) {
+    sendJsonResponse([
+        "success" => false,
+        "error" => "Exception: " . $e->getMessage(),
+        "file" => basename($e->getFile()),
+        "line" => $e->getLine()
+    ], 500);
+}
+
