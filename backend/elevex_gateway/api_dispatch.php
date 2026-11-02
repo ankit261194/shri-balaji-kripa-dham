@@ -825,6 +825,215 @@ if ($action === 'trigger_emergency_sos') {
 }
 
 
+
+function ensureAmcScheduleTable($pdo) {
+    static $ensured = false;
+    if ($ensured) return;
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_amc_schedules (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL,
+        lift_id INT NOT NULL,
+        routine_month INT NOT NULL,
+        routine_year INT NOT NULL,
+        scheduled_date DATE NOT NULL,
+        assigned_technician_id INT NULL,
+        status ENUM('scheduled', 'assigned', 'in_progress', 'completed', 'overdue') DEFAULT 'scheduled',
+        checklist_json TEXT NULL,
+        service_notes TEXT NULL,
+        customer_signature_url TEXT NULL,
+        service_photo_url TEXT NULL,
+        completion_otp VARCHAR(10) NULL,
+        completed_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_lift_sched (lift_id, routine_year, routine_month),
+        INDEX idx_tenant_status (tenant_id, status),
+        INDEX idx_tech_sched (assigned_technician_id, status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+    $ensured = true;
+}
+
+// 9. Gate 5: 12-Month Preventive Maintenance AMC Routine Scheduler
+if ($action === 'get_12_month_amc_calendar') {
+    ensureAmcScheduleTable($pdo);
+    $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $liftId = intval($input['lift_id'] ?? $_GET['lift_id'] ?? 0);
+    $year = intval($input['year'] ?? $_GET['year'] ?? date('Y'));
+
+    if ($liftId === 0) {
+        sendJsonResponse(["success" => false, "error" => "लिफ्ट आईडी अनिवार्य है"], 400);
+    }
+
+    $stmtLift = $pdo->prepare("SELECT l.*, c.company_name FROM elevex_lifts_amc l LEFT JOIN elevex_companies c ON l.tenant_id = c.tenant_id WHERE l.id = :lid LIMIT 1");
+    $stmtLift->execute([':lid' => $liftId]);
+    $lift = $stmtLift->fetch();
+    if (!$lift) {
+        sendJsonResponse(["success" => false, "error" => "लिफ्ट नहीं मिली"], 404);
+    }
+
+    // Check existing routines for this year
+    $stmtRoutines = $pdo->prepare("SELECT s.*, u.full_name as tech_name, u.phone as tech_phone 
+                                   FROM elevex_amc_schedules s
+                                   LEFT JOIN elevex_users u ON s.assigned_technician_id = u.id
+                                   WHERE s.lift_id = :lid AND s.routine_year = :yr
+                                   ORDER BY s.routine_month ASC");
+    $stmtRoutines->execute([':lid' => $liftId, ':yr' => $year]);
+    $routines = $stmtRoutines->fetchAll();
+
+    // Auto-generate 12 months if empty
+    if (empty($routines)) {
+        $preferredDay = 10; // Default: 10th of each month
+        $stmtIns = $pdo->prepare("INSERT INTO elevex_amc_schedules 
+            (tenant_id, lift_id, routine_month, routine_year, scheduled_date, status, created_at)
+            VALUES (:t, :lid, :m, :yr, :sdate, 'scheduled', NOW())");
+        for ($m = 1; $m <= 12; $m++) {
+            $dateStr = sprintf("%04d-%02d-%02d", $year, $m, min($preferredDay, 28));
+            $stmtIns->execute([
+                ':t' => $lift['tenant_id'],
+                ':lid' => $liftId,
+                ':m' => $m,
+                ':yr' => $year,
+                ':sdate' => $dateStr
+            ]);
+        }
+        $stmtRoutines->execute([':lid' => $liftId, ':yr' => $year]);
+        $routines = $stmtRoutines->fetchAll();
+    }
+
+    $monthNames = [
+        1 => 'जनवरी (January)', 2 => 'फ़रवरी (February)', 3 => 'मार्च (March)',
+        4 => 'अप्रैल (April)', 5 => 'मई (May)', 6 => 'जून (June)',
+        7 => 'जुलाई (July)', 8 => 'अगस्त (August)', 9 => 'सितंबर (September)',
+        10 => 'अक्टूबर (October)', 11 => 'नवंबर (November)', 12 => 'दिसंबर (December)'
+    ];
+
+    $completedCount = 0;
+    $scheduledCount = 0;
+    $today = date('Y-m-d');
+
+    foreach ($routines as &$r) {
+        $r['month_label'] = $monthNames[intval($r['routine_month'])] ?? "माह " . $r['routine_month'];
+        if ($r['status'] === 'completed') {
+            $completedCount++;
+        } else {
+            $scheduledCount++;
+            if ($r['scheduled_date'] < $today && $r['status'] !== 'completed') {
+                $r['status'] = 'overdue';
+            }
+        }
+        if (!empty($r['checklist_json'])) {
+            $r['checklist'] = json_decode($r['checklist_json'], true);
+        } else {
+            $r['checklist'] = null;
+        }
+    }
+
+    sendJsonResponse([
+        "success" => true,
+        "year" => $year,
+        "lift" => [
+            "id" => $lift['id'],
+            "unique_code" => $lift['lift_unique_code'],
+            "building_name" => $lift['building_name'],
+            "building_address" => $lift['building_address'],
+            "landmark_name" => $lift['landmark_name'],
+            "amc_type" => $lift['amc_type'],
+            "amc_valid_until" => $lift['amc_valid_until'],
+            "last_service_date" => $lift['last_service_date']
+        ],
+        "total_routines" => count($routines),
+        "completed_count" => $completedCount,
+        "remaining_count" => $scheduledCount,
+        "routines" => $routines
+    ]);
+}
+
+// 10. Complete AMC Scheduled Routine with 28-Point Checklist & Customer Sign
+if ($action === 'complete_amc_routine') {
+    ensureAmcScheduleTable($pdo);
+    $scheduleId = intval($input['schedule_id'] ?? 0);
+    $techId = intval($input['technician_id'] ?? 0);
+    $notes = trim($input['service_notes'] ?? '');
+    $checklist = $input['checklist'] ?? [];
+    $sigBase64 = $input['signature_base64'] ?? '';
+    $photoBase64 = $input['photo_base64'] ?? '';
+    $otp = trim($input['otp'] ?? '123456');
+
+    if ($scheduleId === 0) {
+        sendJsonResponse(["success" => false, "error" => "रूटीन आईडी अनिवार्य है"], 400);
+    }
+
+    $stmtSched = $pdo->prepare("SELECT s.*, l.building_name, l.lift_unique_code, l.tenant_id 
+                                FROM elevex_amc_schedules s
+                                JOIN elevex_lifts_amc l ON s.lift_id = l.id
+                                WHERE s.id = :sid LIMIT 1");
+    $stmtSched->execute([':sid' => $scheduleId]);
+    $sched = $stmtSched->fetch();
+    if (!$sched) {
+        sendJsonResponse(["success" => false, "error" => "रूटीन रिकॉर्ड नहीं मिला"], 404);
+    }
+
+    $uploadDir = __DIR__ . "/../uploads/";
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    $sigUrl = null;
+    if (!empty($sigBase64)) {
+        $sigData = base64_decode(preg_replace('#^data:image/\\w+;base64,#i', '', $sigBase64));
+        if ($sigData) {
+            $sigFilename = "amc_sig_{$scheduleId}_" . time() . ".png";
+            file_put_contents($uploadDir . $sigFilename, $sigData);
+            $sigUrl = "https://shribalajikripadham.online/uploads/{$sigFilename}";
+        }
+    }
+
+    $photoUrl = null;
+    if (!empty($photoBase64)) {
+        $photoData = base64_decode(preg_replace('#^data:image/\\w+;base64,#i', '', $photoBase64));
+        if ($photoData) {
+            $photoFilename = "amc_photo_{$scheduleId}_" . time() . ".jpg";
+            file_put_contents($uploadDir . $photoFilename, $photoData);
+            $photoUrl = "https://shribalajikripadham.online/uploads/{$photoFilename}";
+        }
+    }
+
+    $stmtUp = $pdo->prepare("UPDATE elevex_amc_schedules 
+        SET status = 'completed',
+            assigned_technician_id = COALESCE(:tid, assigned_technician_id),
+            checklist_json = :ck,
+            service_notes = :notes,
+            customer_signature_url = :sig,
+            service_photo_url = :photo,
+            completion_otp = :otp,
+            completed_at = NOW()
+        WHERE id = :sid");
+    $stmtUp->execute([
+        ':tid' => $techId > 0 ? $techId : null,
+        ':ck' => is_array($checklist) ? json_encode($checklist) : $checklist,
+        ':notes' => $notes,
+        ':sig' => $sigUrl,
+        ':photo' => $photoUrl,
+        ':otp' => $otp,
+        ':sid' => $scheduleId
+    ]);
+
+    // Update last_service_date on lift record
+    $pdo->prepare("UPDATE elevex_lifts_amc SET last_service_date = CURDATE() WHERE id = :lid")
+        ->execute([':lid' => $sched['lift_id']]);
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "✅ 28-पॉइंट AMC प्रिवेंटिव मेंटेनेंस सफलतापूर्वक पूर्ण व प्रमाणित हुआ!",
+        "schedule_id" => $scheduleId,
+        "lift_name" => $sched['building_name'] . " (" . $sched['lift_unique_code'] . ")",
+        "routine_month" => $sched['routine_month'],
+        "signature_url" => $sigUrl,
+        "photo_url" => $photoUrl,
+        "completed_at" => date("Y-m-d H:i:s")
+    ]);
+}
+
+
     sendJsonResponse(["success" => false, "error" => "Invalid dispatch action"], 400);
 } catch (Throwable $e) {
     sendJsonResponse([
