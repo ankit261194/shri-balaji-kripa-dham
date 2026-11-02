@@ -1080,7 +1080,7 @@ if ($action === 'complete_amc_routine') {
     // Automated Company Transactional SMS on AMC Routine Completion
     $stmtLiftOwner = $pdo->prepare("SELECT l.tenant_id, l.building_name, u.phone as owner_phone, c.brand_display_name, c.company_name, c.support_phone 
                                     FROM elevex_lifts_amc l 
-                                    LEFT JOIN elevex_users u ON l.owner_user_id = u.id 
+                                    LEFT JOIN elevex_users u ON l.owner_id = u.id 
                                     LEFT JOIN elevex_companies c ON l.tenant_id = c.tenant_id 
                                     WHERE l.id = :lid LIMIT 1");
     $stmtLiftOwner->execute([':lid' => $sched['lift_id']]);
@@ -1477,7 +1477,7 @@ if ($action === 'resolve_breakdown_script') {
     // Dynamic Company Transactional SMS
     $stmtOwner = $pdo->prepare("SELECT l.tenant_id, l.building_name, u.phone as owner_phone, c.brand_display_name, c.company_name, c.support_phone
                                 FROM elevex_lifts_amc l
-                                LEFT JOIN elevex_users u ON l.owner_user_id = u.id
+                                LEFT JOIN elevex_users u ON l.owner_id = u.id
                                 LEFT JOIN elevex_companies c ON l.tenant_id = c.tenant_id
                                 WHERE l.id = :lid LIMIT 1");
     $stmtOwner->execute([':lid' => $ticket['lift_id']]);
