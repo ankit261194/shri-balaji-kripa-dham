@@ -231,29 +231,63 @@ function sendCompanyTransactionalSms($pdo, $tenantId, $phone, $messageType, $sms
     $status = 'SENT';
     $gatewayResponse = 'LOGGED_AND_QUEUED';
 
-    // Outbound HTTP Integration hook (e.g. Fast2SMS / Twilio / DLT Gateway)
+    // Outbound Production HTTP Integration (Fast2SMS Quick Transactional, MSG91, DLT Gateway)
     try {
-        $stmtCfg = $pdo->query("SELECT setting_key, setting_value FROM elevex_config WHERE setting_key IN ('sms_gateway_url', 'sms_gateway_api_key', 'sms_gateway_sender_id')");
+        $stmtCfg = $pdo->query("SELECT setting_key, setting_value FROM elevex_config WHERE setting_key IN ('sms_gateway_url', 'sms_gateway_api_key', 'sms_gateway_sender_id', 'sms_provider')");
         $cfg = $stmtCfg ? $stmtCfg->fetchAll(PDO::FETCH_KEY_PAIR) : [];
-        if (!empty($cfg['sms_gateway_url']) && !empty($cfg['sms_gateway_api_key'])) {
-            $postData = [
-                'sender_id' => $cfg['sms_gateway_sender_id'] ?? substr(preg_replace('/[^A-Za-z]/', '', $brandName), 0, 6),
-                'message' => $smsText,
-                'numbers' => $cleanPhone
-            ];
-            $ch = curl_init($cfg['sms_gateway_url']);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'authorization: ' . $cfg['sms_gateway_api_key'],
-                'Content-Type: application/json'
-            ]);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-            $res = curl_exec($ch);
-            curl_close($ch);
-            if ($res) {
-                $gatewayResponse = substr($res, 0, 500);
+        $provider = strtolower($cfg['sms_provider'] ?? '');
+        $apiKey = $cfg['sms_gateway_api_key'] ?? '';
+        $gatewayUrl = $cfg['sms_gateway_url'] ?? '';
+
+        if (!empty($apiKey)) {
+            $targetUrl = null;
+            $postData = null;
+            $httpHeaders = [];
+
+            // Fast2SMS Quick Transactional SMS Route (DLT approved / Quick GSM)
+            if ($provider === 'fast2sms' || strpos($gatewayUrl, 'fast2sms.com') !== false || (empty($gatewayUrl) && strlen($apiKey) >= 20)) {
+                $targetUrl = "https://www.fast2sms.com/dev/bulkV2";
+                $postData = [
+                    'route' => 'q',
+                    'message' => $smsText,
+                    'language' => 'unicode',
+                    'flash' => 0,
+                    'numbers' => $cleanPhone
+                ];
+                $httpHeaders = [
+                    'authorization: ' . $apiKey,
+                    'Content-Type: application/json'
+                ];
+            } else if (!empty($gatewayUrl)) {
+                // Generic Enterprise / MSG91 / Twilio REST Webhook
+                $targetUrl = $gatewayUrl;
+                $postData = [
+                    'sender_id' => $cfg['sms_gateway_sender_id'] ?? substr(preg_replace('/[^A-Za-z]/', '', $brandName), 0, 6),
+                    'message' => $smsText,
+                    'numbers' => $cleanPhone
+                ];
+                $httpHeaders = [
+                    'authorization: ' . $apiKey,
+                    'Content-Type: application/json'
+                ];
+            }
+
+            if (!empty($targetUrl) && !empty($postData)) {
+                $ch = curl_init($targetUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, $httpHeaders);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+                $res = curl_exec($ch);
+                curl_close($ch);
+                if ($res) {
+                    $gatewayResponse = substr($res, 0, 500);
+                    $decodedRes = json_decode($res, true);
+                    if (isset($decodedRes['return']) && $decodedRes['return'] === true) {
+                        $status = 'DELIVERED_TO_CARRIER';
+                    }
+                }
             }
         }
     } catch (Exception $e) {}

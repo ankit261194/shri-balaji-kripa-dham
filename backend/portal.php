@@ -1290,7 +1290,7 @@ if ($pdo) {
                         action: 'create_breakdown',
                         tenant_id: currentTenantId,
                         lift_id: liftId,
-                        reported_by_id: 1,
+                        caller_phone: SUPER_ADMIN_PHONE,
                         description: desc,
                         auto_dispatch: autoDisp
                     })

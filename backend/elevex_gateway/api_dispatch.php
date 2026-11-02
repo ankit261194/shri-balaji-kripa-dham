@@ -58,7 +58,11 @@ function sendOneSignalSirenNotification($pdo, $technicianId, $ticketNumber, $des
         $tech = $stmt->fetch();
 
         $playerId = $tech['onesignal_player_id'] ?? null;
-        $appId = "04f981dc-8316-43bc-91ca-71bf9129525c";
+        // Dynamically align OneSignal App ID with Flutter client & elevex_config
+        $stmtCfg = $pdo->query("SELECT setting_key, setting_value FROM elevex_config WHERE setting_key IN ('onesignal_app_id', 'onesignal_rest_api_key')");
+        $cfg = $stmtCfg ? $stmtCfg->fetchAll(PDO::FETCH_KEY_PAIR) : [];
+        $appId = !empty($cfg['onesignal_app_id']) ? $cfg['onesignal_app_id'] : "db065153-88a1-4a01-badc-ae33c4b38cbe";
+        $restApiKey = !empty($cfg['onesignal_rest_api_key']) ? $cfg['onesignal_rest_api_key'] : "ZmFjMjFkMTItMzM0NC00NWIyLWFjYjEtN2I5YjI3MjM3YzA1";
 
         $payload = [
             "app_id" => $appId,
@@ -90,7 +94,7 @@ function sendOneSignalSirenNotification($pdo, $technicianId, $ticketNumber, $des
         $ch = curl_init("https://onesignal.com/api/v1/notifications");
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json; charset=utf-8',
-            'Authorization: Basic ZmFjMjFkMTItMzM0NC00NWIyLWFjYjEtN2I5YjI3MjM3YzA1'
+            'Authorization: Basic ' . $restApiKey
         ]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HEADER, false);
@@ -133,6 +137,33 @@ if ($action === 'create_breakdown') {
     $tenantId = trim($input['tenant_id'] ?? '');
     $liftId = intval($input['lift_id'] ?? 0);
     $reportedById = intval($input['reported_by_id'] ?? 0);
+
+    // Robust Dynamic Resolution of Reporter (Zero Arbitrary Fallbacks)
+    if ($reportedById <= 0) {
+        $token = getBearerToken();
+        if (!empty($token)) {
+            $user = verifyBearerToken($pdo);
+            if ($user && !empty($user['id'])) {
+                $reportedById = intval($user['id']);
+            }
+        }
+        if ($reportedById <= 0 && $liftId > 0) {
+            $stmtOwner = $pdo->prepare("SELECT owner_id FROM elevex_lifts_amc WHERE id = :lid LIMIT 1");
+            $stmtOwner->execute([':lid' => $liftId]);
+            $oRow = $stmtOwner->fetch(PDO::FETCH_ASSOC);
+            if (!empty($oRow['owner_id'])) {
+                $reportedById = intval($oRow['owner_id']);
+            }
+        }
+        if ($reportedById <= 0 && !empty($tenantId)) {
+            $stmtSup = $pdo->prepare("SELECT id FROM elevex_users WHERE tenant_id = :t AND role = 'supervisor' LIMIT 1");
+            $stmtSup->execute([':t' => $tenantId]);
+            $sRow = $stmtSup->fetch(PDO::FETCH_ASSOC);
+            if (!empty($sRow['id'])) {
+                $reportedById = intval($sRow['id']);
+            }
+        }
+    }
     $description = trim($input['description'] ?? 'लिफ्ट आपातकालीन ब्रेकडाउन (Emergency Breakdown)');
     $isAdhoc = !empty($input['is_adhoc']); // Non-AMC emergency site
 
@@ -773,6 +804,15 @@ if ($action === 'list_lifts') {
     if (!empty($token)) {
         $authUser = verifyBearerToken($pdo);
         enforceTenantIsolation($authUser, $tenantId);
+    } else {
+        $callerPhone = trim($input['caller_phone'] ?? $_GET['caller_phone'] ?? '');
+        if (!isSuperAdmin($pdo, $callerPhone)) {
+            sendJsonResponse([
+                "success" => false,
+                "error" => "प्रमाणीकरण आवश्यक है (Authentication token or SuperAdmin authorization required)",
+                "auth_required" => true
+            ], 401);
+        }
     }
     $ownerId = intval($input['owner_id'] ?? $_GET['owner_id'] ?? 0);
 
@@ -1396,6 +1436,11 @@ if ($action === 'resolve_breakdown_script') {
 
     if (!$ticket && $liftId > 0) {
         $genTn = 'BD-' . date('Ymd') . '-' . rand(1000, 9999);
+        $stmtOwner = $pdo->prepare("SELECT owner_id FROM elevex_lifts_amc WHERE id = :lid LIMIT 1");
+        $stmtOwner->execute([':lid' => $liftId]);
+        $ownerRow = $stmtOwner->fetch(PDO::FETCH_ASSOC);
+        $realReporterId = ($techId > 0) ? $techId : (!empty($ownerRow['owner_id']) ? intval($ownerRow['owner_id']) : null);
+
         $stmtInsBD = $pdo->prepare("INSERT INTO elevex_breakdowns 
             (tenant_id, lift_id, ticket_number, issue_description, status, reported_by_id, assigned_technician_id, created_at) 
             VALUES (:t, :lid, :tn, :issue, 'resolved', :rep, :tech, NOW())");
@@ -1404,7 +1449,7 @@ if ($action === 'resolve_breakdown_script') {
             ':lid' => $liftId,
             ':tn' => $genTn,
             ':issue' => $rootDetails ?: 'Field Breakdown Resolution',
-            ':rep' => ($techId > 0 ? $techId : 1),
+            ':rep' => $realReporterId,
             ':tech' => ($techId > 0 ? $techId : null)
         ]);
         $stmtL = $pdo->prepare("SELECT building_name, lift_unique_code FROM elevex_lifts_amc WHERE id = :id LIMIT 1");
