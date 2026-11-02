@@ -1302,24 +1302,48 @@ if ($action === 'get_technician_lift_directory') {
 // -----------------------------------------------------------------------------
 if ($action === 'resolve_breakdown_script') {
     $ticketNumber = trim($input['ticket_number'] ?? '');
+    $ticketId = intval($input['ticket_id'] ?? 0);
+    $liftId = intval($input['lift_id'] ?? 0);
+    $tenantId = trim($input['tenant_id'] ?? '');
     $techId = intval($input['technician_id'] ?? 0);
     $rootCause = trim($input['root_cause_category'] ?? 'DOOR_LOCK_FAULT');
     $rootDetails = trim($input['root_cause_details'] ?? '');
     $replacedParts = trim($input['replaced_parts'] ?? 'NONE');
     $resolutionNotes = trim($input['resolution_notes'] ?? 'समस्या का निवारण किया गया। लिफ्ट सुचारू रूप से चालू है।');
-    $sigBase64 = trim($input['customer_signature_base64'] ?? '');
-    $otpCode = trim($input['customer_otp_code'] ?? '');
+    $sigBase64 = trim($input['customer_signature'] ?? $input['customer_signature_base64'] ?? '');
+    $otpCode = trim($input['customer_otp'] ?? $input['customer_otp_code'] ?? '');
 
-    if (empty($ticketNumber)) {
-        sendJsonResponse(["success" => false, "error" => "टिकट संख्या अनिवार्य है"], 400);
+    $ticket = null;
+    if (!empty($ticketNumber)) {
+        $stmtT = $pdo->prepare("SELECT b.*, l.building_name, l.lift_unique_code 
+                               FROM elevex_breakdowns b 
+                               JOIN elevex_lifts_amc l ON b.lift_id = l.id 
+                               WHERE b.ticket_number = :tn LIMIT 1");
+        $stmtT->execute([':tn' => $ticketNumber]);
+        $ticket = $stmtT->fetch(PDO::FETCH_ASSOC);
+    } else if ($ticketId > 0) {
+        $stmtT = $pdo->prepare("SELECT b.*, l.building_name, l.lift_unique_code 
+                               FROM elevex_breakdowns b 
+                               JOIN elevex_lifts_amc l ON b.lift_id = l.id 
+                               WHERE b.id = :id LIMIT 1");
+        $stmtT->execute([':id' => $ticketId]);
+        $ticket = $stmtT->fetch(PDO::FETCH_ASSOC);
     }
 
-    $stmtT = $pdo->prepare("SELECT b.*, l.building_name, l.lift_unique_code 
-                           FROM elevex_breakdowns b 
-                           JOIN elevex_lifts_amc l ON b.lift_id = l.id 
-                           WHERE b.ticket_number = :tn LIMIT 1");
-    $stmtT->execute([':tn' => $ticketNumber]);
-    $ticket = $stmtT->fetch(PDO::FETCH_ASSOC);
+    if (!$ticket && $liftId > 0) {
+        $genTn = 'BD-' . date('Ymd') . '-' . rand(1000, 9999);
+        $stmtInsBD = $pdo->prepare("INSERT INTO elevex_breakdowns 
+            (tenant_id, lift_id, ticket_number, issue_description, status, reported_by_phone, technician_id, created_at) 
+            VALUES (:t, :lid, :tn, :issue, 'resolved', 'field_technician', :tech, NOW())");
+        $stmtInsBD->execute([
+            ':t' => $tenantId,
+            ':lid' => $liftId,
+            ':tn' => $genTn,
+            ':issue' => $rootDetails ?: 'Field Breakdown Resolution',
+            ':tech' => $techId
+        ]);
+        $ticket = ['id' => intval($pdo->lastInsertId()), 'tenant_id' => $tenantId, 'lift_id' => $liftId, 'ticket_number' => $genTn];
+    }
 
     if (!$ticket) {
         sendJsonResponse(["success" => false, "error" => "ब्रेकडाउन टिकट नहीं मिला"], 404);

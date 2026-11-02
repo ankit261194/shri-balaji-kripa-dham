@@ -1103,10 +1103,30 @@ if ($action === 'onboard_owner_on_site') {
         $ownerId = intval($pdo->lastInsertId());
     }
 
-    // Link Lift to Owner if specified
+    // Link or Create Lift for Owner
     if ($liftId > 0) {
         $stmtL = $pdo->prepare("UPDATE elevex_lifts_amc SET owner_id = :oid WHERE id = :lid AND tenant_id = :t");
         $stmtL->execute([':oid' => $ownerId, ':lid' => $liftId, ':t' => $tenantId]);
+    } else if (!empty($buildingName) || !empty($input['lift_unique_code']) || !empty($liftCode)) {
+        $lCode = !empty($liftCode) ? $liftCode : (!empty($input['lift_unique_code']) ? trim($input['lift_unique_code']) : ('LIFT-' . rand(100, 999)));
+        $isAmc = (strtoupper($contractType) === 'NON_AMC') ? 0 : 1;
+        $stmtNewLift = $pdo->prepare("INSERT INTO elevex_lifts_amc 
+            (tenant_id, building_name, lift_unique_code, building_address, contract_type, is_amc, owner_id, controller_model, stops_count, capacity_kg, next_service_due_date, created_at)
+            VALUES 
+            (:t, :bname, :code, :addr, :ctype, :isamc, :oid, :ctrl, :stops, :cap, DATE_ADD(CURDATE(), INTERVAL 30 DAY), NOW())");
+        $stmtNewLift->execute([
+            ':t' => $tenantId,
+            ':bname' => $buildingName,
+            ':code' => $lCode,
+            ':addr' => trim($input['building_address'] ?? $input['address'] ?? ''),
+            ':ctype' => $contractType,
+            ':isamc' => $isAmc,
+            ':oid' => $ownerId,
+            ':ctrl' => trim($input['controller_model'] ?? 'MONARCH NICE3000+'),
+            ':stops' => intval($input['stops_count'] ?? 10),
+            ':cap' => intval($input['capacity_kg'] ?? 680)
+        ]);
+        $liftId = intval($pdo->lastInsertId());
     }
 
     // White-Label WhatsApp Welcome Invitation
@@ -1133,6 +1153,7 @@ if ($action === 'onboard_owner_on_site') {
         "success" => true,
         "message" => "ग्राहक (Lift Owner) सफलतापूर्वक ऑनबोर्ड किया गया!",
         "owner_id" => $ownerId,
+        "lift_id" => $liftId,
         "owner_name" => $ownerName,
         "phone" => $phone,
         "mpin" => $mpin,
