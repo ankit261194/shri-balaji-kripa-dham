@@ -15,6 +15,11 @@ header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 
 require_once __DIR__ . '/config.php';
 
+// Production Lockout: Seeder cannot be triggered in production without explicit token
+if ((['auth_key'] ?? '') !== 'ELEVE_ECOSYSTEM_STRICT_PROD_AUTH_2026') {
+    die(json_encode(['success' => false, 'error' => 'ACCESS DENIED: Production Seeder is permanently locked.'], JSON_UNESCAPED_UNICODE));
+}
+
 $pdo = getDbConnection();
 if (!$pdo) {
     echo json_encode(["success" => false, "error" => "Database connection unavailable"], JSON_UNESCAPED_UNICODE);

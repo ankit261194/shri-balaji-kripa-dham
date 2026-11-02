@@ -727,7 +727,7 @@ if ($pdo) {
             <div class="brand-logo" id="headerLogo">E</div>
             <div class="brand-titles">
                 <h1 id="headerCompanyName">Apex Elevators NCR</h1>
-                <p id="headerBrandSubtitle">Apex EleveX Pro • 24x7 Emergency Lift Support: <span id="headerSupportPhone">9811001122</span></p>
+                <p id="headerBrandSubtitle">Apex EleveX Pro • 24x7 Emergency Lift Support: <span id="headerSupportPhone"><?= htmlspecialchars(!empty($company['support_phone']) ? $company['support_phone'] : "") ?></span></p>
             </div>
         </div>
 

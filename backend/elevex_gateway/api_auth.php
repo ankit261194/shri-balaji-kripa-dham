@@ -62,8 +62,9 @@ function isSuperAdmin($pdo, $phone) {
     }
 }
 
-// 1. Multi-Role Login (Phone + MPIN + Hardware Device ID)
+// 1. Multi-Role Login (Company Code + Phone + MPIN + Hardware Device ID)
 if ($action === 'login') {
+    $companyCode = trim($input['company_code'] ?? $input['tenant_id'] ?? $_POST['company_code'] ?? $_POST['tenant_id'] ?? $_GET['company_code'] ?? $_GET['tenant_id'] ?? '');
     $phoneRaw = trim($input['phone'] ?? $input['mobile'] ?? $_POST['phone'] ?? $_POST['mobile'] ?? $_GET['phone'] ?? $_GET['mobile'] ?? '');
     $mpin = trim($input['mpin'] ?? $input['pin'] ?? $_POST['mpin'] ?? $_POST['pin'] ?? '');
     $deviceId = trim($input['device_id'] ?? $_POST['device_id'] ?? $_GET['device_id'] ?? '');
@@ -75,16 +76,50 @@ if ($action === 'login') {
     $normPhone = normalizePhone($phoneRaw);
     $fullPhone = '+91' . $normPhone;
 
-    // Check user across phone formats
-    $stmt = $pdo->prepare("SELECT u.*, c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.features_config, c.default_language 
-                           FROM elevex_users u 
-                           JOIN elevex_companies c ON u.tenant_id COLLATE utf8mb4_unicode_ci = c.tenant_id COLLATE utf8mb4_unicode_ci 
-                           WHERE (u.phone = :p OR u.phone = :norm OR u.phone = :full) AND u.is_active = 1 LIMIT 1");
-    $stmt->execute([':p' => $phoneRaw, ':norm' => $normPhone, ':full' => $fullPhone]);
+    // Strict Multi-Tenant Isolation: If Company Code is supplied, verify company and bind query
+    $matchedTenantId = null;
+    if (!empty($companyCode)) {
+        $stmtCompCheck = $pdo->prepare("SELECT tenant_id, company_name, is_active FROM elevex_companies 
+                                        WHERE tenant_id COLLATE utf8mb4_unicode_ci = :c1 
+                                           OR company_name COLLATE utf8mb4_unicode_ci = :c2 LIMIT 1");
+        $stmtCompCheck->execute([':c1' => $companyCode, ':c2' => $companyCode]);
+        $compRow = $stmtCompCheck->fetch();
+        if (!$compRow) {
+            sendJsonResponse([
+                "success" => false, 
+                "error" => "अमान्य कंपनी कोड! कृपया अपनी कंपनी द्वारा जारी सही कोड दर्ज करें (Invalid Company Code: {$companyCode})"
+            ], 404);
+        }
+        if (isset($compRow['is_active']) && intval($compRow['is_active']) === 0) {
+            sendJsonResponse([
+                "success" => false, 
+                "error" => "कंपनी का खाता अस्थायी रूप से निष्क्रिय है। कृपया सुपरएडमिन से संपर्क करें।"
+            ], 403);
+        }
+        $matchedTenantId = $compRow['tenant_id'];
+    }
+
+    // Query user: If matchedTenantId is present, strictly enforce tenant binding
+    if (!empty($matchedTenantId)) {
+        $stmt = $pdo->prepare("SELECT u.*, c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.features_config, c.default_language 
+                               FROM elevex_users u 
+                               JOIN elevex_companies c ON u.tenant_id COLLATE utf8mb4_unicode_ci = c.tenant_id COLLATE utf8mb4_unicode_ci 
+                               WHERE u.tenant_id COLLATE utf8mb4_unicode_ci = :tid 
+                                 AND (u.phone = :p OR u.phone = :norm OR u.phone = :full) 
+                                 AND u.is_active = 1 LIMIT 1");
+        $stmt->execute([':tid' => $matchedTenantId, ':p' => $phoneRaw, ':norm' => $normPhone, ':full' => $fullPhone]);
+    } else {
+        $stmt = $pdo->prepare("SELECT u.*, c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.features_config, c.default_language 
+                               FROM elevex_users u 
+                               JOIN elevex_companies c ON u.tenant_id COLLATE utf8mb4_unicode_ci = c.tenant_id COLLATE utf8mb4_unicode_ci 
+                               WHERE (u.phone = :p OR u.phone = :norm OR u.phone = :full) AND u.is_active = 1 LIMIT 1");
+        $stmt->execute([':p' => $phoneRaw, ':norm' => $normPhone, ':full' => $fullPhone]);
+    }
     $user = $stmt->fetch();
 
     if (!$user) {
-        sendJsonResponse(["success" => false, "error" => "यह नंबर किसी भी अधिकृत कंपनी में पंजीकृत नहीं है (Unregistered user)"], 404);
+        $errSuffix = !empty($matchedTenantId) ? "इस कंपनी कोड ($companyCode) में पंजीकृत नहीं है" : "किसी भी अधिकृत कंपनी में पंजीकृत नहीं है";
+        sendJsonResponse(["success" => false, "error" => "यह मोबाइल नंबर $errSuffix (Unregistered user)"], 404);
     }
 
     // Verify MPIN if provided and set
@@ -502,7 +537,7 @@ if ($action === 'list_companies') {
                . "• सुरक्षा पिन: `1234`
 
 "
-               . "📞 सपोर्ट हेल्पलाइन: " . (!empty($comp['support_phone']) ? $comp['support_phone'] : '9811001122') . "
+               . "📞 सपोर्ट हेल्पलाइन: " . (!empty($comp['support_phone']) ? $comp['support_phone'] : $sPhone) . "
 "
                . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
         $comp['whatsapp_message'] = $waMsg;
@@ -1154,9 +1189,9 @@ if ($action === 'onboard_owner_on_site') {
             ':ctype' => $contractType,
             ':isamc' => $isAmc,
             ':oid' => $ownerId,
-            ':ctrl' => trim($input['controller_model'] ?? 'MONARCH NICE3000+'),
-            ':stops' => intval($input['stops_count'] ?? 10),
-            ':cap' => intval($input['capacity_kg'] ?? 680)
+            ':ctrl' => trim(!empty($input['controller_model']) ? $input['controller_model'] : 'अनिर्दिष्ट / कस्टम (Custom / Non-Standard)'),
+            ':stops' => intval($input['stops_count'] ?? 0),
+            ':cap' => intval($input['capacity_kg'] ?? 0)
         ]);
         $liftId = intval($pdo->lastInsertId());
     }

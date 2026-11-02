@@ -145,10 +145,19 @@ if ($action === 'create_breakdown') {
 
     // If adhoc non-AMC site, ensure or create dummy lift record
     if ($isAdhoc) {
-        $adhocAddress = trim($input['adhoc_address'] ?? 'Non-AMC Emergency Site');
-        $adhocLandmark = trim($input['adhoc_landmark'] ?? 'Pari Chowk');
-        $adhocLat = floatval($input['adhoc_lat'] ?? 28.4744);
-        $adhocLng = floatval($input['adhoc_lng'] ?? 77.5040);
+        $adhocAddress = trim($input['adhoc_address'] ?? 'गैर-AMC आपातकालीन स्थल');
+        $adhocLandmark = trim($input['adhoc_landmark'] ?? 'अनिर्दिष्ट स्थल (Emergency Site)');
+        $adhocLat = floatval($input['adhoc_lat'] ?? 0.0);
+        $adhocLng = floatval($input['adhoc_lng'] ?? 0.0);
+        if ($adhocLat == 0.0 && !empty($tenantId)) {
+            $stmtOff = $pdo->prepare("SELECT office_lat, office_lng FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+            $stmtOff->execute([':t' => $tenantId]);
+            $off = $stmtOff->fetch();
+            if ($off && !empty($off['office_lat'])) {
+                $adhocLat = floatval($off['office_lat']);
+                $adhocLng = floatval($off['office_lng']);
+            }
+        }
 
         $stmtAdhoc = $pdo->prepare("INSERT INTO elevex_lifts_amc 
             (tenant_id, lift_unique_code, building_name, building_address, landmark_name, lat, lng, amc_type, amc_valid_until, is_active) 
@@ -615,7 +624,7 @@ if ($action === 'complete_breakdown') {
     }
 
     $brandName = "कंपनी";
-    $supportPhone = "9811001122";
+    $supportPhone = "";
     if (!empty($liftTenantId)) {
         $stmtComp = $pdo->prepare("SELECT brand_display_name, company_name, support_phone FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
         $stmtComp->execute([':t' => $liftTenantId]);
@@ -624,7 +633,14 @@ if ($action === 'complete_breakdown') {
             $brandName = !empty($comp['brand_display_name']) ? $comp['brand_display_name'] : $comp['company_name'];
             if (!empty($comp['support_phone'])) $supportPhone = $comp['support_phone'];
         }
+        if (empty($supportPhone)) {
+            $stmtSup = $pdo->prepare("SELECT phone FROM elevex_users WHERE tenant_id = :t AND role IN ('supervisor', 'company_admin') AND is_active = 1 LIMIT 1");
+            $stmtSup->execute([':t' => $liftTenantId]);
+            $sRow = $stmtSup->fetch();
+            if ($sRow && !empty($sRow['phone'])) $supportPhone = $sRow['phone'];
+        }
     }
+    if (empty($supportPhone)) $supportPhone = $techPhone ?: "";
 
     $waText = "📋 *{$brandName} - कार्य पूर्णता प्रमाण पत्र (Official Job Sheet)* 📋\n"
             . "--------------------------------------------------\n"
@@ -694,11 +710,11 @@ if ($action === 'add_lift') {
     $code = trim($input['lift_unique_code'] ?? 'LIFT-' . rand(100, 999));
     $building = trim($input['building_name'] ?? '');
     $address = trim($input['building_address'] ?? '');
-    $landmark = trim($input['landmark_name'] ?? 'Pari Chowk');
-    $lat = floatval($input['lat'] ?? 28.4744);
-    $lng = floatval($input['lng'] ?? 77.5040);
+    $landmark = trim($input['landmark_name'] ?? '');
+    $lat = floatval($input['lat'] ?? 0.0);
+    $lng = floatval($input['lng'] ?? 0.0);
     $geofence = intval($input['geofence_radius_meters'] ?? 100);
-    $brand = trim($input['controller_brand'] ?? 'MONARCH');
+    $brand = trim(!empty($input['controller_brand']) ? $input['controller_brand'] : 'कस्टम / अन्य (Custom / Non-Standard)');
     $amcType = trim($input['amc_type'] ?? 'Comprehensive');
     $validUntil = trim($input['amc_valid_until'] ?? date('Y-m-d', strtotime('+1 year')));
     $ownerId = !empty($input['owner_id']) ? intval($input['owner_id']) : null;
@@ -991,7 +1007,10 @@ if ($action === 'complete_amc_routine') {
     $checklist = $input['checklist'] ?? [];
     $sigBase64 = $input['signature_base64'] ?? '';
     $photoBase64 = $input['photo_base64'] ?? '';
-    $otp = trim($input['otp'] ?? '123456');
+    $otp = trim($input['otp'] ?? $input['customer_otp'] ?? '');
+    if (empty($otp)) {
+        sendJsonResponse(["success" => false, "error" => "ग्राहक प्रमाणीकरण OTP अनिवार्य है (Customer Verification OTP required)"], 400);
+    }
 
     if ($scheduleId === 0) {
         sendJsonResponse(["success" => false, "error" => "रूटीन आईडी अनिवार्य है"], 400);
@@ -1055,6 +1074,22 @@ if ($action === 'complete_amc_routine') {
     // Update last_service_date on lift record
     $pdo->prepare("UPDATE elevex_lifts_amc SET last_service_date = CURDATE() WHERE id = :lid")
         ->execute([':lid' => $sched['lift_id']]);
+
+    // Automated Company Transactional SMS on AMC Routine Completion
+    $stmtLiftOwner = $pdo->prepare("SELECT l.tenant_id, l.building_name, u.phone as owner_phone, c.brand_display_name, c.company_name, c.support_phone 
+                                    FROM elevex_lifts_amc l 
+                                    LEFT JOIN elevex_users u ON l.owner_user_id = u.id 
+                                    LEFT JOIN elevex_companies c ON l.tenant_id = c.tenant_id 
+                                    WHERE l.id = :lid LIMIT 1");
+    $stmtLiftOwner->execute([':lid' => $sched['lift_id']]);
+    $amcInfo = $stmtLiftOwner->fetch(PDO::FETCH_ASSOC);
+    if ($amcInfo && !empty($amcInfo['owner_phone'])) {
+        $cBrand = !empty($amcInfo['brand_display_name']) ? $amcInfo['brand_display_name'] : (!empty($amcInfo['company_name']) ? $amcInfo['company_name'] : 'कंपनी');
+        $cPhone = !empty($amcInfo['support_phone']) ? $amcInfo['support_phone'] : '';
+        $certUrl = "https://shribalajikripadham.online/elevex_gateway/jobsheet.php?schedule_id={$scheduleId}";
+        $smsAmc = "[{$cBrand}] साइट {$amcInfo['building_name']} की मासिक 28-पॉइंट AMC सेवा संपन्न हुई। प्रमाण पत्र देखें: {$certUrl}" . (!empty($cPhone) ? " | हेल्पलाइन: {$cPhone}" : "") . " - टीम {$cBrand}";
+        sendCompanyTransactionalSms($pdo, $amcInfo['tenant_id'], $amcInfo['owner_phone'], 'AMC_COMPLETED', $smsAmc, $cBrand);
+    }
 
     sendJsonResponse([
         "success" => true,
@@ -1338,7 +1373,7 @@ if ($action === 'resolve_breakdown_script') {
     $replacedParts = trim($input['replaced_parts'] ?? 'NONE');
     $resolutionNotes = trim($input['resolution_notes'] ?? 'समस्या का निवारण किया गया। लिफ्ट सुचारू रूप से चालू है।');
     $sigBase64 = trim($input['customer_signature'] ?? $input['customer_signature_base64'] ?? '');
-    $otpCode = trim($input['customer_otp'] ?? $input['customer_otp_code'] ?? '');
+    $otpCode = trim($input['customer_otp'] ?? $input['customer_otp_code'] ?? $input['otp'] ?? '');
 
     $ticket = null;
     if (!empty($ticketNumber)) {
@@ -1390,6 +1425,16 @@ if ($action === 'resolve_breakdown_script') {
         sendJsonResponse(["success" => false, "error" => "ब्रेकडाउन टिकट नहीं मिला"], 404);
     }
 
+    // Strict Customer OTP Verification
+    if (!empty($ticket['completion_otp'])) {
+        if (empty($otpCode)) {
+            sendJsonResponse(["success" => false, "error" => "ग्राहक प्रमाणीकरण OTP अनिवार्य है! केवल लिफ्ट मालिक/RWA द्वारा प्राप्त 6-अंकीय कोड दर्ज करें।"], 400);
+        }
+        if ($ticket['completion_otp'] !== $otpCode) {
+            sendJsonResponse(["success" => false, "error" => "अमान्य ग्राहक OTP! कोड मेल नहीं खा रहा है। कृपया ग्राहक से सही 6-अंकीय OTP पूछकर दर्ज करें। (Invalid OTP)"], 401);
+        }
+    }
+
     // Save signature image if provided
     $sigUrl = null;
     if (!empty($sigBase64)) {
@@ -1437,7 +1482,13 @@ if ($action === 'resolve_breakdown_script') {
     $oInfo = $stmtOwner->fetch(PDO::FETCH_ASSOC);
     if ($oInfo) {
         $brandName = !empty($oInfo['brand_display_name']) ? $oInfo['brand_display_name'] : (!empty($oInfo['company_name']) ? $oInfo['company_name'] : 'कंपनी');
-        $suppPhone = !empty($oInfo['support_phone']) ? $oInfo['support_phone'] : '9811001122';
+        $suppPhone = !empty($oInfo['support_phone']) ? $oInfo['support_phone'] : '';
+        if (empty($suppPhone)) {
+            $stmtSupP = $pdo->prepare("SELECT phone FROM elevex_users WHERE tenant_id = :t AND role IN ('supervisor', 'company_admin') AND is_active = 1 LIMIT 1");
+            $stmtSupP->execute([':t' => $oInfo['tenant_id']]);
+            $supPRow = $stmtSupP->fetch();
+            if ($supPRow && !empty($supPRow['phone'])) $suppPhone = $supPRow['phone'];
+        }
         if (!empty($oInfo['owner_phone'])) {
             $smsText = "[{$brandName}] टिकट #{$ticketNumber} साइट {$oInfo['building_name']} की लिफ्ट सेवा संपन्न हुई। जॉब शीट देखें: {$jobsheetUrl} | हेल्पलाइन: {$suppPhone} - टीम {$brandName}";
             sendCompanyTransactionalSms($pdo, $oInfo['tenant_id'], $oInfo['owner_phone'], 'BREAKDOWN_RESOLVED', $smsText, $brandName);
@@ -1467,7 +1518,7 @@ if ($action === 'get_dynamic_layout') {
     $brandLogo = "https://shribalajikripadham.online/assets/elevex_shield_logo.png";
     $themePrimary = "#0F172A";
     $themeAccent = "#0284C7";
-    $supportPhone = "9811001122";
+    $supportPhone = "";
 
     if (!empty($tenantId)) {
         $stmtC = $pdo->prepare("SELECT brand_display_name, company_name, logo_url, primary_color_hex, support_phone 

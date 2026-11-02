@@ -365,7 +365,7 @@ $waUrl = "https://wa.me/?text=" . rawurlencode($waShareText);
         <div class="info-card">
             <h4>फील्ड तकनीशियन विवरण (Technician Details)</h4>
             <p><?= htmlspecialchars($job['tech_name'] ?: 'फील्ड तकनीशियन') ?></p>
-            <span>संपर्क: <?= htmlspecialchars($job['tech_phone'] ?: '9811334455') ?></span>
+            <span>संपर्क: <?= htmlspecialchars($job['tech_phone'] ?: ($job['support_phone'] ?: 'उपलब्ध नहीं')) ?></span>
             <span>सत्यापन OTP: <b><?= htmlspecialchars($job['completion_otp']) ?></b> (6-Digit Crypto OTP)</span>
         </div>
     </div>
@@ -480,7 +480,7 @@ $waUrl = "https://wa.me/?text=" . rawurlencode($waShareText);
     </div>
 
     <div class="footer">
-        यह एक सिस्टम-जनरेटेड आधिकारिक जॉब शीट है • Ankit EleveX Pro (v5.9.45) • होस्टिंगर NVMe SSD सुरक्षित क्लाउड क्लस्टर
+        यह एक सिस्टम-जनरेटेड आधिकारिक डिजिटल कार्य पूर्णता प्रमाण पत्र है • <?= htmlspecialchars($brandName) ?> • सुरक्षित क्लाउड क्लस्टर
     </div>
 </div>
 
