@@ -292,19 +292,26 @@ if ($action === 'punch_in') {
     $existing = $check->fetch();
 
     if ($existing) {
+        // Idempotency for Offline Outbox: if already punched in, return success without failing the outbox queue
         sendJsonResponse([
-            "success" => false, 
-            "error" => "आप आज की ड्यूटी के लिए पहले ही सुबह " . date("h:i A", strtotime($existing['punch_in_time'])) . " बजे उपस्थिति दर्ज कर चुके हैं।"
-        ], 409);
+            "success" => true, 
+            "message" => "उपस्थिति पहले ही दर्ज है (" . date("h:i A", strtotime($existing['punch_in_time'])) . ") - Outbox Idempotent OK",
+            "duty_date" => $today,
+            "punch_in_time" => $existing['punch_in_time'],
+            "is_idempotent" => true
+        ]);
     }
+
+    $punchInTime = !empty($input['offline_recorded_at']) ? date("Y-m-d H:i:s", strtotime($input['offline_recorded_at'])) : date("Y-m-d H:i:s");
 
     $stmt = $pdo->prepare("INSERT INTO elevex_attendance_ledger 
         (tenant_id, technician_id, duty_date, punch_in_time, punch_in_lat, punch_in_lng, punch_in_location_text, is_mock_detected, is_locked_immutable, created_at) 
-        VALUES (:t, :tid, :d, NOW(), :lat, :lng, :ltext, 0, 1, NOW())");
+        VALUES (:t, :tid, :d, :pitime, :lat, :lng, :ltext, 0, 1, NOW())");
     $stmt->execute([
         ':t' => $tenantId,
         ':tid' => $technicianId,
         ':d' => $today,
+        ':pitime' => $punchInTime,
         ':lat' => $lat,
         ':lng' => $lng,
         ':ltext' => $locationText
@@ -314,7 +321,7 @@ if ($action === 'punch_in') {
         "success" => true,
         "message" => "उपस्थिति सफलतापूर्वक दर्ज हुई! (Present)",
         "duty_date" => $today,
-        "punch_in_time" => date("Y-m-d H:i:s"),
+        "punch_in_time" => $punchInTime,
         "location" => $locationText
     ]);
 }
@@ -327,15 +334,17 @@ if ($action === 'punch_out') {
     $lng = floatval($input['lng'] ?? 0);
     $locationText = trim($input['location_text'] ?? 'Site Exit');
     $today = date("Y-m-d");
+    $punchOutTime = !empty($input['offline_recorded_at']) ? date("Y-m-d H:i:s", strtotime($input['offline_recorded_at'])) : date("Y-m-d H:i:s");
 
     $stmt = $pdo->prepare("UPDATE elevex_attendance_ledger 
-        SET punch_out_time = NOW(), punch_out_lat = :lat, punch_out_lng = :lng, punch_out_location_text = :ltext 
+        SET punch_out_time = :potime, punch_out_lat = :lat, punch_out_lng = :lng, punch_out_location_text = :ltext 
         WHERE technician_id = :tid AND duty_date = :d");
-    $stmt->execute([':lat' => $lat, ':lng' => $lng, ':ltext' => $locationText, ':tid' => $technicianId, ':d' => $today]);
+    $stmt->execute([':potime' => $punchOutTime, ':lat' => $lat, ':lng' => $lng, ':ltext' => $locationText, ':tid' => $technicianId, ':d' => $today]);
 
     sendJsonResponse([
         "success" => true,
-        "message" => "ड्यूटी सफलतापूर्वक समाप्त (Punched Out) दर्ज हुई!"
+        "message" => "ड्यूटी सफलतापूर्वक समाप्त (Punched Out) दर्ज हुई!",
+        "punch_out_time" => $punchOutTime
     ]);
 }
 

@@ -451,6 +451,18 @@ if ($action === 'complete_breakdown') {
         sendJsonResponse(["success" => false, "error" => "टिकट नहीं मिला"], 404);
     }
 
+    // Idempotency: If ticket was already resolved (e.g., from an intermittent offline outbox retry), return success safely
+    if ($ticket['status'] === 'resolved') {
+        $jobsheetUrl = "https://shribalajikripadham.online/elevex_gateway/jobsheet.php?ticket_id={$ticketId}";
+        sendJsonResponse([
+            "success" => true,
+            "message" => "कार्य पहले ही सफलतापूर्वक संपन्न और सत्यापित हो चुका है (Idempotent Outbox OK)",
+            "ticket_number" => $ticket['ticket_number'],
+            "jobsheet_url" => $jobsheetUrl,
+            "is_idempotent" => true
+        ]);
+    }
+
     // Priority 1: Geofence lock check: Technician MUST be within 150m radius of the AMC building site
     if ($techLat != 0 && $ticket['lat'] != 0) {
         $dist = calculateDistanceKm($ticket['lat'], $ticket['lng'], $techLat, $techLng) * 1000; // in meters
@@ -518,10 +530,11 @@ if ($action === 'complete_breakdown') {
     }
 
     $jobsheetUrl = "https://shribalajikripadham.online/elevex_gateway/jobsheet.php?ticket_id={$ticketId}";
+    $resolvedAt = !empty($input['offline_recorded_at']) ? date("Y-m-d H:i:s", strtotime($input['offline_recorded_at'])) : date("Y-m-d H:i:s");
 
     $stmtDone = $pdo->prepare("UPDATE elevex_breakdowns 
         SET status = 'resolved', 
-            resolved_at = NOW(),
+            resolved_at = :rat,
             resolution_notes = :notes,
             replaced_parts = :parts,
             customer_signature_url = :sig,
@@ -530,6 +543,7 @@ if ($action === 'complete_breakdown') {
             jobsheet_pdf_url = :jurl
         WHERE id = :bid");
     $stmtDone->execute([
+        ':rat' => $resolvedAt,
         ':notes' => $resolutionNotes,
         ':parts' => $replacedParts,
         ':sig' => $sigUrl,
