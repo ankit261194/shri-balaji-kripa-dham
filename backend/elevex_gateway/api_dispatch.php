@@ -1343,7 +1343,20 @@ if ($action === 'resolve_breakdown_script') {
             ':rep' => ($techId > 0 ? $techId : 1),
             ':tech' => ($techId > 0 ? $techId : null)
         ]);
-        $ticket = ['id' => intval($pdo->lastInsertId()), 'tenant_id' => $tenantId, 'lift_id' => $liftId, 'ticket_number' => $genTn];
+        $stmtL = $pdo->prepare("SELECT building_name, lift_unique_code FROM elevex_lifts_amc WHERE id = :id LIMIT 1");
+        $stmtL->execute([':id' => $liftId]);
+        $lRow = $stmtL->fetch(PDO::FETCH_ASSOC);
+        $bName = $lRow ? $lRow['building_name'] : 'Elevator Site';
+        $lCode = $lRow ? $lRow['lift_unique_code'] : 'LIFT';
+
+        $ticket = [
+            'id' => intval($pdo->lastInsertId()),
+            'tenant_id' => $tenantId,
+            'lift_id' => $liftId,
+            'ticket_number' => $genTn,
+            'building_name' => $bName,
+            'lift_unique_code' => $lCode
+        ];
     }
 
     if (!$ticket) {
