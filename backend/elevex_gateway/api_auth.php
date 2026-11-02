@@ -152,6 +152,9 @@ if ($action === 'create_company') {
     $logo = trim($input['logo_url'] ?? '');
     $adminName = trim($input['admin_name'] ?? 'Company Admin');
     $adminPhone = trim($input['admin_phone'] ?? $phone);
+    $supervisorName = trim($input['supervisor_name'] ?? $adminName);
+    $supervisorPhone = trim($input['supervisor_phone'] ?? $adminPhone);
+    $supervisorMpin = trim($input['supervisor_mpin'] ?? $input['default_mpin'] ?? '1234');
 
     if (empty($cname) || empty($phone)) {
         sendJsonResponse(["success" => false, "error" => "कंपनी का नाम व फोन नंबर अनिवार्य है"], 400);
@@ -187,28 +190,94 @@ if ($action === 'create_company') {
             ':feat' => $features
         ]);
 
-        // Create Default Company Admin user
-        $defaultMpin = password_hash('1234', PASSWORD_BCRYPT);
-        $cleanAdminPhone = normalizePhone($adminPhone);
-        $stmtUsr = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mobile, mpin_hash, is_active) 
-                                  VALUES (:tid, 'company_admin', :name, :phone, :mob, :mpin, 1)");
-        $stmtUsr->execute([
-            ':tid' => $tenantId,
-            ':name' => $adminName,
-            ':phone' => $cleanAdminPhone,
-            ':mob' => $cleanAdminPhone,
-            ':mpin' => $defaultMpin
+        // Create or Update Head Supervisor user with role = 'supervisor'
+        $defaultMpin = password_hash($supervisorMpin, PASSWORD_BCRYPT);
+        $cleanSupervisorPhone = normalizePhone($supervisorPhone);
+
+        $stmtCheck = $pdo->prepare("SELECT id FROM elevex_users WHERE phone = :p OR phone = :norm OR phone = :full LIMIT 1");
+        $stmtCheck->execute([
+            ':p' => $supervisorPhone,
+            ':norm' => $cleanSupervisorPhone,
+            ':full' => '+91' . $cleanSupervisorPhone
         ]);
+        $existing = $stmtCheck->fetch();
+
+        if ($existing) {
+            $stmtUp = $pdo->prepare("UPDATE elevex_users SET tenant_id = :tid, role = 'supervisor', full_name = :name, phone = :phone, mpin_hash = :mpin, is_active = 1 WHERE id = :id");
+            $stmtUp->execute([
+                ':tid' => $tenantId,
+                ':name' => $supervisorName,
+                ':phone' => $cleanSupervisorPhone,
+                ':mpin' => $defaultMpin,
+                ':id' => $existing['id']
+            ]);
+        } else {
+            $colCheck = $pdo->query("SHOW COLUMNS FROM elevex_users LIKE 'mobile'")->fetch();
+            if ($colCheck) {
+                $stmtUsr = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mobile, mpin_hash, is_active) 
+                                          VALUES (:tid, 'supervisor', :name, :phone, :mob, :mpin, 1)");
+                $stmtUsr->execute([
+                    ':tid' => $tenantId,
+                    ':name' => $supervisorName,
+                    ':phone' => $cleanSupervisorPhone,
+                    ':mob' => $cleanSupervisorPhone,
+                    ':mpin' => $defaultMpin
+                ]);
+            } else {
+                $stmtUsr = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mpin_hash, is_active) 
+                                          VALUES (:tid, 'supervisor', :name, :phone, :mpin, 1)");
+                $stmtUsr->execute([
+                    ':tid' => $tenantId,
+                    ':name' => $supervisorName,
+                    ':phone' => $cleanSupervisorPhone,
+                    ':mpin' => $defaultMpin
+                ]);
+            }
+        }
 
         $pdo->commit();
 
+        // 1-Click WhatsApp Onboarding Message & Link
+        $waMsg = "🏢 *Ankit EleveX Pro - सुपरवाइज़र आमंत्रण (Supervisor Onboarding)* 🏢
+
+"
+               . "प्रिय " . $supervisorName . " जी,
+"
+               . "आपको *" . $cname . "* का हेड सुपरवाइज़र (Operations Head) नियुक्त किया गया है।
+
+"
+               . "📲 *Supervisor Cockpit App डाउनलोड करें:*
+"
+               . "https://shribalajikripadham.online/download.php?app=supervisor
+
+"
+               . "🔐 *आपके लॉगिन क्रेडेंशियल्स:*
+"
+               . "• कंपनी कोड (Tenant ID): `" . $tenantId . "`
+"
+               . "• यूजरनेम / मोबाइल: `" . $cleanSupervisorPhone . "`
+"
+               . "• लॉगिन पिन / पासवर्ड: `" . $supervisorMpin . "`
+
+"
+               . "👉 कृपया ऐप डाउनलोड करके तुरंत लॉगिन करें और अपनी टीम के टेक्नीशियनों और लिफ्ट ग्राहकों को जोड़ना शुरू करें।
+
+"
+               . "हेल्पलाइन / तकनीकी सहायता: 8533955333 (अंकित चौधरी)";
+        $waUrl = "https://wa.me/91" . $cleanSupervisorPhone . "?text=" . rawurlencode($waMsg);
+
         sendJsonResponse([
             "success" => true,
-            "message" => "नई कंपनी व 3-ऐप्स वाइट लेबलिंग प्रोफाइल सफलतापूर्वक सक्रिय हुई!",
+            "message" => "नई कंपनी व सुपरवाइज़र सफलतापूर्वक सक्रिय हुए!",
             "tenant_id" => $tenantId,
             "company_name" => $cname,
-            "admin_phone" => normalizePhone($adminPhone),
-            "default_mpin" => "1234"
+            "brand_display_name" => $brandName,
+            "supervisor_name" => $supervisorName,
+            "supervisor_phone" => $cleanSupervisorPhone,
+            "supervisor_mpin" => $supervisorMpin,
+            "supervisor_app_url" => "https://shribalajikripadham.online/download.php?app=supervisor",
+            "whatsapp_message" => $waMsg,
+            "whatsapp_url" => $waUrl
         ]);
     } catch (Exception $e) {
         $pdo->rollBack();
@@ -258,9 +327,46 @@ if ($action === 'list_companies') {
     $stmt = $pdo->query("SELECT c.*, 
                          (SELECT COUNT(*) FROM elevex_users WHERE tenant_id = c.tenant_id) as total_users,
                          (SELECT COUNT(*) FROM elevex_lifts_amc WHERE tenant_id = c.tenant_id) as total_lifts,
-                         (SELECT COUNT(*) FROM elevex_breakdowns WHERE tenant_id = c.tenant_id AND status != 'resolved') as active_breakdowns
+                         (SELECT COUNT(*) FROM elevex_breakdowns WHERE tenant_id = c.tenant_id AND status != 'resolved') as active_breakdowns,
+                         (SELECT full_name FROM elevex_users WHERE tenant_id = c.tenant_id AND role IN ('supervisor', 'company_admin') ORDER BY id ASC LIMIT 1) as supervisor_name,
+                         (SELECT phone FROM elevex_users WHERE tenant_id = c.tenant_id AND role IN ('supervisor', 'company_admin') ORDER BY id ASC LIMIT 1) as supervisor_phone
                          FROM elevex_companies c ORDER BY c.id DESC");
-    $companies = $stmt->fetchAll();
+    $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($companies as &$comp) {
+        $sName = !empty($comp['supervisor_name']) ? $comp['supervisor_name'] : 'हेड सुपरवाइज़र';
+        $sPhone = normalizePhone(!empty($comp['supervisor_phone']) ? $comp['supervisor_phone'] : $comp['support_phone']);
+        $tId = $comp['tenant_id'];
+        $cName = $comp['company_name'];
+        $waMsg = "🏢 *Ankit EleveX Pro - सुपरवाइज़र आमंत्रण (Supervisor Onboarding)* 🏢
+
+"
+               . "प्रिय " . $sName . " जी,
+"
+               . "आपको *" . $cName . "* का हेड सुपरवाइज़र नियुक्त किया गया है।
+
+"
+               . "📲 *Supervisor Cockpit App डाउनलोड करें:*
+"
+               . "https://shribalajikripadham.online/download.php?app=supervisor
+
+"
+               . "🔐 *आपके लॉगिन क्रेडेंशियल्स:*
+"
+               . "• कंपनी कोड (Tenant ID): `" . $tId . "`
+"
+               . "• यूजरनेम / मोबाइल: `" . $sPhone . "`
+"
+               . "• लॉगिन पिन / पासवर्ड: `1234`
+
+"
+               . "👉 कृपया ऐप डाउनलोड करके तुरंत लॉगिन करें और अपने टेक्नीशियनों और लिफ्ट ग्राहकों को जोड़ना शुरू करें।
+
+"
+               . "हेल्पलाइन / तकनीकी सहायता: 8533955333 (अंकित चौधरी)";
+        $comp['whatsapp_message'] = $waMsg;
+        $comp['whatsapp_url'] = "https://wa.me/91" . $sPhone . "?text=" . rawurlencode($waMsg);
+    }
+    unset($comp);
 
     sendJsonResponse([
         "success" => true,
