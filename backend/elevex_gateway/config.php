@@ -301,8 +301,12 @@ function sendCompanyTransactionalSms($pdo, $tenantId, $phone, $messageType, $sms
                 curl_setopt($ch, CURLOPT_POST, true);
                 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
                 curl_setopt($ch, CURLOPT_HTTPHEADER, $httpHeaders);
-                curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
+                curl_setopt($ch, CURLOPT_TIMEOUT, 6);
                 $res = curl_exec($ch);
+                $err = curl_error($ch);
                 curl_close($ch);
                 if ($res) {
                     $gatewayResponse = substr($res, 0, 500);
@@ -310,6 +314,8 @@ function sendCompanyTransactionalSms($pdo, $tenantId, $phone, $messageType, $sms
                     if (isset($decodedRes['return']) && $decodedRes['return'] === true) {
                         $status = 'DELIVERED_TO_CARRIER';
                     }
+                } else if (!empty($err)) {
+                    $gatewayResponse = 'CURL_ERR: ' . substr($err, 0, 200);
                 }
             }
         }
