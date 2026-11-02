@@ -28,7 +28,12 @@ function ensureBreakdownJobsheetColumns($pdo) {
         "photo_after_url" => "TEXT NULL",
         "jobsheet_pdf_url" => "TEXT NULL",
         "replaced_parts" => "TEXT NULL",
-        "resolution_notes" => "TEXT NULL"
+        "resolution_notes" => "TEXT NULL",
+        "is_emergency" => "TINYINT(1) NOT NULL DEFAULT 0",
+        "is_passenger_trapped" => "TINYINT(1) NOT NULL DEFAULT 0",
+        "trapped_passenger_count" => "INT NOT NULL DEFAULT 0",
+        "emergency_floor" => "VARCHAR(50) NULL",
+        "emergency_reported_at" => "DATETIME NULL"
     ];
     foreach ($cols as $col => $def) {
         try {
@@ -159,16 +164,26 @@ if ($action === 'create_breakdown') {
         $liftId = intval($pdo->lastInsertId());
     }
 
+    $isPassengerTrapped = !empty($input['is_passenger_trapped']) ? 1 : 0;
+    $isEmergency = (!empty($input['is_emergency']) || $isPassengerTrapped == 1) ? 1 : 0;
+    $trappedCount = intval($input['trapped_passenger_count'] ?? 0);
+    $emergencyFloor = trim($input['emergency_floor'] ?? '');
+
     $stmt = $pdo->prepare("INSERT INTO elevex_breakdowns 
-        (tenant_id, ticket_number, lift_id, reported_by_id, status, issue_description, completion_otp, created_at) 
-        VALUES (:t, :tno, :lid, :rid, 'pending', :desc, :otp, NOW())");
+        (tenant_id, ticket_number, lift_id, reported_by_id, status, issue_description, completion_otp, 
+         is_emergency, is_passenger_trapped, trapped_passenger_count, emergency_floor, emergency_reported_at, created_at) 
+        VALUES (:t, :tno, :lid, :rid, 'pending', :desc, :otp, :iemerg, :itrapped, :tcount, :efloor, IF(:iemerg=1, NOW(), NULL), NOW())");
     $stmt->execute([
         ':t' => $tenantId,
         ':tno' => $ticketNo,
         ':lid' => $liftId,
         ':rid' => $reportedById,
         ':desc' => $description,
-        ':otp' => $otp
+        ':otp' => $otp,
+        ':iemerg' => $isEmergency,
+        ':itrapped' => $isPassengerTrapped,
+        ':tcount' => $trappedCount,
+        ':efloor' => $emergencyFloor
     ]);
 
     $ticketId = intval($pdo->lastInsertId());
@@ -348,6 +363,12 @@ if ($action === 'list_breakdowns') {
             $row['arrival_eta_minutes'] = null;
             $row['radar_status_text'] = $row['status'] === 'resolved' ? "✅ Resolved" : "📍 En Route";
         }
+
+        // Gate 4: Loud Emergency Siren Alert Flags
+        $row['is_emergency'] = intval($row['is_emergency'] ?? 0) === 1 || intval($row['is_passenger_trapped'] ?? 0) === 1;
+        $row['is_passenger_trapped'] = intval($row['is_passenger_trapped'] ?? 0) === 1;
+        $row['trapped_passenger_count'] = intval($row['trapped_passenger_count'] ?? 0);
+        $row['emergency_siren_required'] = ($row['is_emergency'] || $row['is_passenger_trapped']) && in_array($row['status'], ['pending', 'assigned']);
     }
     unset($row);
 
@@ -735,4 +756,71 @@ if ($action === 'list_lifts') {
         "file" => basename($e->getFile()),
         "line" => $e->getLine()
     ], 500);
+}
+
+// Gate 4: Trigger High-Priority Emergency SOS (Passenger Trapped)
+if ($action === 'trigger_emergency_sos') {
+    $tenantId = trim($input['tenant_id'] ?? '');
+    $liftId = intval($input['lift_id'] ?? 0);
+    $trappedCount = intval($input['trapped_count'] ?? 1);
+    $floor = trim($input['floor'] ?? 'Ground');
+    $notes = trim($input['notes'] ?? 'यात्री लिफ्ट में फंसे हैं (Emergency SOS Alert)');
+    $reportedPhone = trim($input['phone'] ?? '');
+
+    if ($liftId === 0) {
+        sendJsonResponse(["success" => false, "error" => "लिफ्ट चयन अनिवार्य है"], 400);
+    }
+
+    $stmtLift = $pdo->prepare("SELECT * FROM elevex_lifts_amc WHERE id = :lid LIMIT 1");
+    $stmtLift->execute([':lid' => $liftId]);
+    $lift = $stmtLift->fetch();
+    if (!$lift) {
+        sendJsonResponse(["success" => false, "error" => "लिफ्ट रिकॉर्ड नहीं मिला"], 404);
+    }
+
+    $ticketNo = 'SOS-' . date('ymd') . '-' . rand(1000, 9999);
+    $otp = strval(rand(100000, 999999));
+
+    // Find nearest on-duty technician
+    $stmtTech = $pdo->prepare("SELECT t.technician_id, u.full_name, u.phone, t.current_lat, t.current_lng
+                               FROM elevex_technician_telemetry t
+                               JOIN elevex_users u ON t.technician_id = u.id
+                               WHERE t.tenant_id = :t AND t.duty_status = 'on_duty'
+                               ORDER BY (POW(t.current_lat - :lat, 2) + POW(t.current_lng - :lng, 2)) ASC LIMIT 1");
+    $stmtTech->execute([':t' => $tenantId, ':lat' => $lift['lat'], ':lng' => $lift['lng']]);
+    $assignedTech = $stmtTech->fetch();
+    $techId = $assignedTech ? intval($assignedTech['technician_id']) : null;
+    $status = $techId ? 'assigned' : 'pending';
+
+    $stmt = $pdo->prepare("INSERT INTO elevex_breakdowns 
+        (tenant_id, ticket_number, lift_id, assigned_technician_id, status, issue_description, completion_otp, 
+         is_emergency, is_passenger_trapped, trapped_passenger_count, emergency_floor, emergency_reported_at, created_at, assigned_at) 
+        VALUES (:t, :tno, :lid, :tid, :st, :desc, :otp, 1, 1, :tcount, :efloor, NOW(), NOW(), IF(:tid IS NOT NULL, NOW(), NULL))");
+    $stmt->execute([
+        ':t' => $tenantId,
+        ':tno' => $ticketNo,
+        ':lid' => $liftId,
+        ':tid' => $techId,
+        ':st' => $status,
+        ':desc' => "[EMERGENCY SOS PASSENGER TRAPPED] Floor: $floor • Trapped: $trappedCount • $notes",
+        ':otp' => $otp,
+        ':tcount' => $trappedCount,
+        ':efloor' => $floor
+    ]);
+
+    $ticketId = intval($pdo->lastInsertId());
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "🚨 आपातकालीन सायरन ब्रेकडाउन अलर्ट सक्रिय! नजदीकी तकनीशियन को असाइन किया गया।",
+        "ticket_id" => $ticketId,
+        "ticket_number" => $ticketNo,
+        "is_emergency" => true,
+        "is_passenger_trapped" => true,
+        "assigned_technician" => $assignedTech ? $assignedTech['full_name'] : "Auto-dispatching...",
+        "assigned_phone" => $assignedTech ? $assignedTech['phone'] : null,
+        "lift_name" => $lift['building_name'] . " (" . $lift['lift_unique_code'] . ")",
+        "floor" => $floor,
+        "trapped_count" => $trappedCount
+    ]);
 }
