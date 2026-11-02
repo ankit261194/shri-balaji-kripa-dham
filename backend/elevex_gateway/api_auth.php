@@ -156,12 +156,12 @@ if ($action === 'create_company') {
 
     $cname = trim($input['company_name'] ?? '');
     $brandName = trim($input['brand_display_name'] ?? $cname);
-    $phone = trim($input['support_phone'] ?? '');
-    $address = trim($input['office_address'] ?? 'Greater Noida');
-    $color = trim($input['primary_color'] ?? '#0284C7');
+    $phone = trim($input['support_phone'] ?? $input['phone'] ?? '');
+    $address = trim($input['office_address'] ?? $input['address'] ?? 'Greater Noida');
+    $color = trim($input['primary_color'] ?? $input['primary_color_hex'] ?? '#0284C7');
     $logo = trim($input['logo_url'] ?? '');
-    $adminName = trim($input['admin_name'] ?? 'Company Admin');
-    $adminPhone = trim($input['admin_phone'] ?? $phone);
+    $adminName = trim($input['admin_name'] ?? $input['contact_person'] ?? 'Company Admin');
+    $adminPhone = trim($input['admin_phone'] ?? $input['phone'] ?? $phone);
     $supervisorName = trim($input['supervisor_name'] ?? $adminName);
     $supervisorPhone = trim($input['supervisor_phone'] ?? $adminPhone);
     $supervisorMpin = trim($input['supervisor_mpin'] ?? $input['default_mpin'] ?? '');
@@ -170,7 +170,7 @@ if ($action === 'create_company') {
     }
 
     // Extended 12-Point Corporate Proforma Fields
-    $gstNumber = strtoupper(trim($input['gst_number'] ?? ''));
+    $gstNumber = strtoupper(trim($input['gst_number'] ?? $input['gstin'] ?? ''));
     $cinNumber = strtoupper(trim($input['cin_number'] ?? ''));
     $msmeNumber = trim($input['msme_number'] ?? '');
     $city = trim($input['city'] ?? '');
