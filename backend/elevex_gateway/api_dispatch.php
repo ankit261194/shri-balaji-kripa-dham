@@ -413,20 +413,26 @@ if ($action === 'complete_breakdown') {
         sendJsonResponse(["success" => false, "error" => "टिकट नहीं मिला"], 404);
     }
 
-    if ($ticket['completion_otp'] !== $otpEntered) {
-        sendJsonResponse(["success" => false, "error" => "अमान्य ग्राहक OTP! केवल लिफ्ट मालिक/RWA द्वारा प्राप्त 6-अंकीय कोड दर्ज करें।"], 401);
-    }
-
-    // Geofence lock check: Technician MUST be within 150m radius of the AMC building site
+    // Priority 1: Geofence lock check: Technician MUST be within 150m radius of the AMC building site
     if ($techLat != 0 && $ticket['lat'] != 0) {
         $dist = calculateDistanceKm($ticket['lat'], $ticket['lng'], $techLat, $techLng) * 1000; // in meters
         $maxRadius = intval($ticket['geofence_radius_meters'] ?: 150);
         if ($dist > $maxRadius) {
             sendJsonResponse([
                 "success" => false, 
-                "error" => "जियोफेंस सुरक्षा लॉक: आप लिफ्ट साइट से " . round($dist) . " मीटर दूर हैं। कृपया 150 मीटर के दायरे में आकर ग्राहक OTP दर्ज करें।"
+                "error" => "जियोफेंस सुरक्षा लॉक: आप लिफ्ट साइट से " . round($dist) . " मीटर दूर हैं। कृपया 150 मीटर के दायरे में आकर ग्राहक OTP दर्ज करें।",
+                "distance_meters" => round($dist),
+                "geofence_radius" => $maxRadius
             ], 403);
         }
+    }
+
+    // Priority 2: Cryptographic Customer OTP verification
+    if ($ticket['completion_otp'] !== $otpEntered) {
+        sendJsonResponse([
+            "success" => false, 
+            "error" => "अमान्य ग्राहक OTP! केवल लिफ्ट मालिक/RWA द्वारा प्राप्त 6-अंकीय कोड दर्ज करें।"
+        ], 401);
     }
 
     $stmtDone = $pdo->prepare("UPDATE elevex_breakdowns SET status = 'resolved', resolved_at = NOW() WHERE id = :bid");
