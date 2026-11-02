@@ -788,11 +788,12 @@ if ($action === 'trigger_emergency_sos') {
 
     $techId = $assignedTech ? intval($assignedTech['technician_id']) : null;
     $status = $techId ? 'assigned' : 'pending';
+    $assignedAt = $techId ? date('Y-m-d H:i:s') : null;
 
     $stmt = $pdo->prepare("INSERT INTO elevex_breakdowns 
         (tenant_id, ticket_number, lift_id, assigned_technician_id, status, issue_description, completion_otp, 
          is_emergency, is_passenger_trapped, trapped_passenger_count, emergency_floor, emergency_reported_at, created_at, assigned_at) 
-        VALUES (:t, :tno, :lid, :tid, :st, :desc, :otp, 1, 1, :tcount, :efloor, NOW(), NOW(), IF(:tid IS NOT NULL, NOW(), NULL))");
+        VALUES (:t, :tno, :lid, :tid, :st, :desc, :otp, 1, 1, :tcount, :efloor, NOW(), NOW(), :aat)");
     $stmt->execute([
         ':t' => $tenantId,
         ':tno' => $ticketNo,
@@ -802,7 +803,8 @@ if ($action === 'trigger_emergency_sos') {
         ':desc' => "[EMERGENCY SOS PASSENGER TRAPPED] Floor: $floor • Trapped: $trappedCount • $notes",
         ':otp' => $otp,
         ':tcount' => $trappedCount,
-        ':efloor' => $floor
+        ':efloor' => $floor,
+        ':aat' => $assignedAt
     ]);
 
     $ticketId = intval($pdo->lastInsertId());
