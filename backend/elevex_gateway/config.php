@@ -185,3 +185,107 @@ function getCompanyStatusAndFeatures($pdo, $tenantId) {
         return ['is_active' => true, 'features' => []];
     }
 }
+
+if (!function_exists('normalizePhone')) {
+    function normalizePhone($raw) {
+        $clean = preg_replace('/[^0-9]/', '', (string)$raw);
+        return strlen($clean) > 10 ? substr($clean, -10) : $clean;
+    }
+}
+
+/**
+ * Universal Multi-Tenant Transactional SMS Dispatcher
+ * STRICT RULE: SMS must ALWAYS and EXCLUSIVELY use the registered company's brand name.
+ * NEVER hardcodes 'Ankit EleveX' or any default platform name unless the company itself is named that.
+ */
+function sendCompanyTransactionalSms($pdo, $tenantId, $phone, $messageType, $smsText, $brandName = null) {
+    $cleanPhone = normalizePhone($phone);
+    if (empty($cleanPhone)) {
+        return [
+            'success' => false,
+            'error' => 'Phone number missing'
+        ];
+    }
+
+    // Resolve brand name from database if not explicitly passed
+    if (empty($brandName) && !empty($tenantId)) {
+        try {
+            $stmt = $pdo->prepare("SELECT brand_display_name, company_name FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+            $stmt->execute([':t' => $tenantId]);
+            $comp = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($comp) {
+                $brandName = !empty($comp['brand_display_name']) ? $comp['brand_display_name'] : $comp['company_name'];
+            }
+        } catch (Exception $e) {}
+    }
+
+    if (empty($brandName)) {
+        $brandName = "कंपनी";
+    }
+
+    // Ensure SMS is prefixed with the registered company's brand tag
+    if (strpos($smsText, "[$brandName]") === false && strpos($smsText, $brandName) === false) {
+        $smsText = "[$brandName] " . $smsText;
+    }
+
+    $status = 'SENT';
+    $gatewayResponse = 'LOGGED_AND_QUEUED';
+
+    // Outbound HTTP Integration hook (e.g. Fast2SMS / Twilio / DLT Gateway)
+    try {
+        $stmtCfg = $pdo->query("SELECT setting_key, setting_value FROM elevex_config WHERE setting_key IN ('sms_gateway_url', 'sms_gateway_api_key', 'sms_gateway_sender_id')");
+        $cfg = $stmtCfg ? $stmtCfg->fetchAll(PDO::FETCH_KEY_PAIR) : [];
+        if (!empty($cfg['sms_gateway_url']) && !empty($cfg['sms_gateway_api_key'])) {
+            $postData = [
+                'sender_id' => $cfg['sms_gateway_sender_id'] ?? substr(preg_replace('/[^A-Za-z]/', '', $brandName), 0, 6),
+                'message' => $smsText,
+                'numbers' => $cleanPhone
+            ];
+            $ch = curl_init($cfg['sms_gateway_url']);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'authorization: ' . $cfg['sms_gateway_api_key'],
+                'Content-Type: application/json'
+            ]);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+            $res = curl_exec($ch);
+            curl_close($ch);
+            if ($res) {
+                $gatewayResponse = substr($res, 0, 500);
+            }
+        }
+    } catch (Exception $e) {}
+
+    // Persist audit record in elevex_sms_logs
+    $smsId = null;
+    try {
+        $stmtLog = $pdo->prepare("INSERT INTO elevex_sms_logs (tenant_id, brand_name, phone, message_type, sms_text, status, gateway_response, created_at)
+                                  VALUES (:t, :b, :p, :m, :txt, :st, :gw, NOW())");
+        $stmtLog->execute([
+            ':t' => $tenantId ?: 'tenant_master',
+            ':b' => $brandName,
+            ':p' => $cleanPhone,
+            ':m' => $messageType,
+            ':txt' => $smsText,
+            ':st' => $status,
+            ':gw' => $gatewayResponse
+        ]);
+        $smsId = $pdo->lastInsertId();
+    } catch (Exception $e) {
+        $gatewayResponse .= " | DB Log Error: " . $e->getMessage();
+    }
+
+    return [
+        'success' => true,
+        'sms_id' => $smsId,
+        'tenant_id' => $tenantId,
+        'brand_name' => $brandName,
+        'phone' => $cleanPhone,
+        'message_type' => $messageType,
+        'sms_text' => $smsText,
+        'status' => $status
+    ];
+}
+

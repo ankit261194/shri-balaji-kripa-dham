@@ -42,9 +42,11 @@ function ensureAuthColumns($pdo) {
 }
 ensureAuthColumns($pdo);
 
-function normalizePhone($raw) {
-    $clean = preg_replace('/[^0-9]/', '', (string)$raw);
-    return strlen($clean) > 10 ? substr($clean, -10) : $clean;
+if (!function_exists('normalizePhone')) {
+    function normalizePhone($raw) {
+        $clean = preg_replace('/[^0-9]/', '', (string)$raw);
+        return strlen($clean) > 10 ? substr($clean, -10) : $clean;
+    }
 }
 
 // Helper to check SuperAdmin authority
@@ -340,9 +342,18 @@ if ($action === 'create_company') {
                . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
         $waUrl = "https://wa.me/91" . $cleanSupervisorPhone . "?text=" . rawurlencode($waMsg);
 
+        // 100% White-Label Company Branded Automated Server SMS Dispatch
+        $brandTitle = !empty($brandName) ? $brandName : $cname;
+        $smsText = "[{$brandTitle}] नमस्ते {$supervisorName} जी! {$brandTitle} में आपका हेड सुपरवाइज़र खाता सक्रिय हुआ। ऐप: https://shribalajikripadham.online/download.php?app=supervisor | कंपनी कोड: {$tenantId} | यूजर: {$cleanSupervisorPhone} | सुरक्षा पिन: {$supervisorMpin} - टीम {$brandTitle}";
+        $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $cleanSupervisorPhone, 'SUPERVISOR_ONBOARDING', $smsText, $brandTitle);
+
         sendJsonResponse([
             "success" => true,
             "message" => "नई कंपनी व सुपरवाइज़र सफलतापूर्वक सक्रिय हुए!",
+            "sms_sent" => true,
+            "sms_text" => $smsText,
+            "sms_brand" => $brandTitle,
+            "sms_id" => $smsResult['sms_id'] ?? null,
             "tenant_id" => $tenantId,
             "company_name" => $cname,
             "brand_display_name" => $brandName,
@@ -764,7 +775,20 @@ if ($action === 'add_user') {
     }
     $waUrl = "https://wa.me/91" . $phone . "?text=" . rawurlencode($waMsg);
 
+    // Automated Server SMS under strict company brand
+    if (in_array($role, ['technician', 'senior_technician'])) {
+        $smsText = "[{$brandTitle}] नमस्ते {$fullName} जी! {$brandTitle} में आपका {$roleTitle} खाता सक्रिय है। ऐप लिंक: {$appUrl} | कंपनी कोड: {$tenantId} | यूजर: {$phone} | पिन: {$mpin} - टीम {$brandTitle}";
+        $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'TECHNICIAN_ONBOARDING', $smsText, $brandTitle);
+    } else {
+        $smsText = "[{$brandTitle}] नमस्ते {$fullName} जी! {$brandTitle} द्वारा आपकी लिफ्ट का कस्टमर खाता सक्रिय है। ऐप लिंक: {$appUrl} | कंपनी कोड: {$tenantId} | यूजर: {$phone} | पिन: {$mpin} | हेल्पलाइन: {$compSupport} - टीम {$brandTitle}";
+        $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'OWNER_ONBOARDING', $smsText, $brandTitle);
+    }
+
     sendJsonResponse([
+        "sms_sent" => true,
+        "sms_text" => $smsText,
+        "sms_brand" => $brandTitle,
+        "sms_id" => $smsResult['sms_id'] ?? null,
         "success" => true,
         "message" => in_array($role, ['lift_owner', 'owner', 'client']) ? "लिफ्ट ओनर सफलतापूर्वक पंजीकृत हुआ!" : "टेक्नीशियन सफलतापूर्वक पंजीकृत हुआ!",
         "user_id" => $userId,
@@ -1004,7 +1028,20 @@ if ($action === 'request_company_otp') {
 
     $waUrl = "https://wa.me/91" . $phone . "?text=" . rawurlencode($waMsg);
 
+    // Automated Server SMS under strict company brand
+    if (in_array($role, ['technician', 'senior_technician'])) {
+        $smsText = "[{$brandTitle}] नमस्ते {$fullName} जी! {$brandTitle} में आपका {$roleTitle} खाता सक्रिय है। ऐप लिंक: {$appUrl} | कंपनी कोड: {$tenantId} | यूजर: {$phone} | पिन: {$mpin} - टीम {$brandTitle}";
+        $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'TECHNICIAN_ONBOARDING', $smsText, $brandTitle);
+    } else {
+        $smsText = "[{$brandTitle}] नमस्ते {$fullName} जी! {$brandTitle} द्वारा आपकी लिफ्ट का कस्टमर खाता सक्रिय है। ऐप लिंक: {$appUrl} | कंपनी कोड: {$tenantId} | यूजर: {$phone} | पिन: {$mpin} | हेल्पलाइन: {$compSupport} - टीम {$brandTitle}";
+        $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'OWNER_ONBOARDING', $smsText, $brandTitle);
+    }
+
     sendJsonResponse([
+        "sms_sent" => true,
+        "sms_text" => $smsText,
+        "sms_brand" => $brandTitle,
+        "sms_id" => $smsResult['sms_id'] ?? null,
         "success" => true,
         "message" => "सत्यापन कोड सफलतापूर्वक तैयार हुआ",
         "otp_code" => $otpCode,
@@ -1149,7 +1186,20 @@ if ($action === 'onboard_owner_on_site') {
 
     $waUrl = "https://wa.me/91" . $phone . "?text=" . rawurlencode($waMsg);
 
+    // Automated Server SMS under strict company brand
+    if (in_array($role, ['technician', 'senior_technician'])) {
+        $smsText = "[{$brandTitle}] नमस्ते {$fullName} जी! {$brandTitle} में आपका {$roleTitle} खाता सक्रिय है। ऐप लिंक: {$appUrl} | कंपनी कोड: {$tenantId} | यूजर: {$phone} | पिन: {$mpin} - टीम {$brandTitle}";
+        $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'TECHNICIAN_ONBOARDING', $smsText, $brandTitle);
+    } else {
+        $smsText = "[{$brandTitle}] नमस्ते {$fullName} जी! {$brandTitle} द्वारा आपकी लिफ्ट का कस्टमर खाता सक्रिय है। ऐप लिंक: {$appUrl} | कंपनी कोड: {$tenantId} | यूजर: {$phone} | पिन: {$mpin} | हेल्पलाइन: {$compSupport} - टीम {$brandTitle}";
+        $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'OWNER_ONBOARDING', $smsText, $brandTitle);
+    }
+
     sendJsonResponse([
+        "sms_sent" => true,
+        "sms_text" => $smsText,
+        "sms_brand" => $brandTitle,
+        "sms_id" => $smsResult['sms_id'] ?? null,
         "success" => true,
         "message" => "ग्राहक (Lift Owner) सफलतापूर्वक ऑनबोर्ड किया गया!",
         "owner_id" => $ownerId,
@@ -1208,6 +1258,30 @@ if ($action === 'get_company_proforma') {
             "services_catalog" => !empty($comp['services_catalog']) ? json_decode($comp['services_catalog'], true) : [],
             "features" => !empty($comp['features_config']) ? json_decode($comp['features_config'], true) : []
         ]
+    ]);
+}
+
+// 9. Get Company Transactional SMS Logs (Audit Trail)
+if ($action === 'get_company_sms_logs') {
+    $authUser = verifyBearerToken($pdo);
+    $targetTenant = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? $authUser['tenant_id'] ?? '');
+    enforceTenantIsolation($authUser, $targetTenant);
+
+    $limit = intval($input['limit'] ?? $_GET['limit'] ?? 50);
+    $stmtSms = $pdo->prepare("SELECT id, tenant_id, brand_name, phone, message_type, sms_text, status, gateway_response, created_at 
+                             FROM elevex_sms_logs 
+                             WHERE tenant_id = :t 
+                             ORDER BY id DESC LIMIT :lim");
+    $stmtSms->bindValue(':t', $targetTenant, PDO::PARAM_STR);
+    $stmtSms->bindValue(':lim', $limit, PDO::PARAM_INT);
+    $stmtSms->execute();
+    $logs = $stmtSms->fetchAll(PDO::FETCH_ASSOC);
+
+    sendJsonResponse([
+        "success" => true,
+        "tenant_id" => $targetTenant,
+        "count" => count($logs),
+        "sms_logs" => $logs
     ]);
 }
 

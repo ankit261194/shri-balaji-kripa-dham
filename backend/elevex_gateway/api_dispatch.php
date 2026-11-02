@@ -605,7 +605,28 @@ if ($action === 'complete_breakdown') {
     $ownerPhone = $ticketInfo['owner_phone'] ?? '';
     $supPhone = $ticketInfo['supervisor_phone'] ?: '8533955333';
 
-    $waText = "📋 *ANKIT ELEVEX PRO - कार्य पूर्णता प्रमाण पत्र (Official Job Sheet)* 📋\n"
+    // Dynamic Tenant Company Resolution for 100% Brand Isolation
+    $liftTenantId = $authUser['tenant_id'] ?? '';
+    if (empty($liftTenantId)) {
+        $stmtLT = $pdo->prepare("SELECT tenant_id FROM elevex_lifts_amc WHERE id = (SELECT lift_id FROM elevex_breakdowns WHERE id = :bid LIMIT 1) LIMIT 1");
+        $stmtLT->execute([':bid' => $ticketId]);
+        $ltRow = $stmtLT->fetch();
+        if ($ltRow) $liftTenantId = $ltRow['tenant_id'];
+    }
+
+    $brandName = "कंपनी";
+    $supportPhone = "9811001122";
+    if (!empty($liftTenantId)) {
+        $stmtComp = $pdo->prepare("SELECT brand_display_name, company_name, support_phone FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+        $stmtComp->execute([':t' => $liftTenantId]);
+        $comp = $stmtComp->fetch();
+        if ($comp) {
+            $brandName = !empty($comp['brand_display_name']) ? $comp['brand_display_name'] : $comp['company_name'];
+            if (!empty($comp['support_phone'])) $supportPhone = $comp['support_phone'];
+        }
+    }
+
+    $waText = "📋 *{$brandName} - कार्य पूर्णता प्रमाण पत्र (Official Job Sheet)* 📋\n"
             . "--------------------------------------------------\n"
             . "🎫 *टिकट:* " . $ticketInfo['ticket_number'] . "\n"
             . "🏢 *साइट:* " . $building . " (" . $liftCode . ")\n"
@@ -621,7 +642,13 @@ if ($action === 'complete_breakdown') {
             . "--------------------------------------------------\n"
             . "📄 *डिजिटल जॉब शीट देखें व PDF डाउनलोड करें:*\n"
             . $jobsheetUrl . "\n\n"
-            . "📞 24x7 हेल्पलाइन: 8533955333 (अंकित चौधरी)";
+            . "📞 24x7 हेल्पलाइन: " . $supportPhone . " (टीम " . $brandName . ")";
+
+    // Automated Transactional SMS under Registered Company Name
+    if (!empty($ownerPhone)) {
+        $smsText = "[{$brandName}] टिकट #{$ticketInfo['ticket_number']} साइट {$building} की लिफ्ट सेवा सफलतापूर्वक पूर्ण हुई। जॉब शीट देखें: {$jobsheetUrl} | हेल्पलाइन: {$supportPhone} - टीम {$brandName}";
+        sendCompanyTransactionalSms($pdo, $liftTenantId, $ownerPhone, 'JOB_COMPLETION', $smsText, $brandName);
+    }
 
     $waOwnerUrl = !empty($ownerPhone) ? "https://wa.me/91" . normalizePhone($ownerPhone) . "?text=" . rawurlencode($waText) : null;
     $waSupUrl = "https://wa.me/91" . normalizePhone($supPhone) . "?text=" . rawurlencode($waText);
@@ -1400,6 +1427,23 @@ if ($action === 'resolve_breakdown_script') {
 
     $jobsheetUrl = "https://shribalajikripadham.online/elevex_gateway/jobsheet.php?ticket_id=" . $ticket['id'];
 
+    // Dynamic Company Transactional SMS
+    $stmtOwner = $pdo->prepare("SELECT l.tenant_id, l.building_name, u.phone as owner_phone, c.brand_display_name, c.company_name, c.support_phone
+                                FROM elevex_lifts_amc l
+                                LEFT JOIN elevex_users u ON l.owner_user_id = u.id
+                                LEFT JOIN elevex_companies c ON l.tenant_id = c.tenant_id
+                                WHERE l.id = :lid LIMIT 1");
+    $stmtOwner->execute([':lid' => $ticket['lift_id']]);
+    $oInfo = $stmtOwner->fetch(PDO::FETCH_ASSOC);
+    if ($oInfo) {
+        $brandName = !empty($oInfo['brand_display_name']) ? $oInfo['brand_display_name'] : (!empty($oInfo['company_name']) ? $oInfo['company_name'] : 'कंपनी');
+        $suppPhone = !empty($oInfo['support_phone']) ? $oInfo['support_phone'] : '9811001122';
+        if (!empty($oInfo['owner_phone'])) {
+            $smsText = "[{$brandName}] टिकट #{$ticketNumber} साइट {$oInfo['building_name']} की लिफ्ट सेवा संपन्न हुई। जॉब शीट देखें: {$jobsheetUrl} | हेल्पलाइन: {$suppPhone} - टीम {$brandName}";
+            sendCompanyTransactionalSms($pdo, $oInfo['tenant_id'], $oInfo['owner_phone'], 'BREAKDOWN_RESOLVED', $smsText, $brandName);
+        }
+    }
+
     sendJsonResponse([
         "success" => true,
         "message" => "✅ ब्रेकडाउन शिकायत का निवारण सफलतापूर्वक पूर्ण व प्रमाणित हुआ!",
@@ -1408,6 +1452,61 @@ if ($action === 'resolve_breakdown_script') {
         "jobsheet_url" => $jobsheetUrl,
         "signature_url" => $sigUrl,
         "resolved_at" => date("Y-m-d H:i:s")
+    ]);
+}
+
+    
+// -----------------------------------------------------------------------------
+// ENTERPRISE MODULE: DYNAMIC SERVER-DRIVEN UI & SERVICE CATALOG (ZERO APK REBUILD)
+// -----------------------------------------------------------------------------
+if ($action === 'get_dynamic_layout') {
+    $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $role = trim($input['role'] ?? $_GET['role'] ?? 'technician');
+
+    $brandName = "कंपनी";
+    $brandLogo = "https://shribalajikripadham.online/assets/elevex_shield_logo.png";
+    $themePrimary = "#0F172A";
+    $themeAccent = "#0284C7";
+    $supportPhone = "9811001122";
+
+    if (!empty($tenantId)) {
+        $stmtC = $pdo->prepare("SELECT brand_display_name, company_name, logo_url, theme_color_primary, theme_color_secondary, support_phone 
+                                FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+        $stmtC->execute([':t' => $tenantId]);
+        $comp = $stmtC->fetch();
+        if ($comp) {
+            $brandName = !empty($comp['brand_display_name']) ? $comp['brand_display_name'] : $comp['company_name'];
+            if (!empty($comp['logo_url'])) $brandLogo = $comp['logo_url'];
+            if (!empty($comp['theme_color_primary'])) $themePrimary = $comp['theme_color_primary'];
+            if (!empty($comp['theme_color_secondary'])) $themeAccent = $comp['theme_color_secondary'];
+            if (!empty($comp['support_phone'])) $supportPhone = $comp['support_phone'];
+        }
+    }
+
+    $routineChecklist = [
+        ["id" => "CHK_MOTOR", "label" => "मोटर व ट्रैक्शन मशीन जांच (Traction Motor & Bearings)", "category" => "MACHINE_ROOM", "is_mandatory" => true],
+        ["id" => "CHK_BRAKE", "label" => "इलेक्ट्रोमैग्नेटिक ब्रेक लाइनिंग व कॉइल टेस्ट (Brake Coil & Gap)", "category" => "MACHINE_ROOM", "is_mandatory" => true],
+        ["id" => "CHK_ROPE", "label" => "स्टील वायर रोप टेंशन व घिसाव (Wire Ropes & Equalizers)", "category" => "SHAFT", "is_mandatory" => true],
+        ["id" => "CHK_GOV", "label" => "ओवर-स्पीड गवर्नर व सेफ्टी गियर (Overspeed Governor & Safety)", "category" => "SAFETY", "is_mandatory" => true],
+        ["id" => "CHK_DOOR", "label" => "डोर ऑपरेटर, कपलर व फोटोसेल सेंसर (Door Operator & Photocell)", "category" => "CAR", "is_mandatory" => true],
+        ["id" => "CHK_LOCK", "label" => "लैंडिंग डोर इंटरलॉक कांटेक्ट (Landing Door Interlocks)", "category" => "LANDING", "is_mandatory" => true],
+        ["id" => "CHK_ARD", "label" => "ARD सिस्टम व 12V बैटरी बैकअप वोल्टेज (ARD Battery Voltage)", "category" => "ELECTRICAL", "is_mandatory" => true],
+        ["id" => "CHK_PIT", "label" => "शाफ्ट पिट सफाई व बफर स्प्रिंग/ऑयल जांच (Pit Cleanliness & Buffers)", "category" => "PIT", "is_mandatory" => true]
+    ];
+
+    sendJsonResponse([
+        "success" => true,
+        "tenant_id" => $tenantId,
+        "brand_name" => $brandName,
+        "brand_logo" => $brandLogo,
+        "theme" => [
+            "primary" => $themePrimary,
+            "accent" => $themeAccent,
+            "surface" => "#FFFFFF"
+        ],
+        "support_phone" => $supportPhone,
+        "routine_checklist" => $routineChecklist,
+        "version_tag" => "v5.9.46_live_layout"
     ]);
 }
 

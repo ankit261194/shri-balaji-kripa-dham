@@ -337,6 +337,25 @@ try {
 
 // 4. Create Company-Branded OTP Table
 try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_sms_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL,
+        brand_name VARCHAR(128) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        message_type VARCHAR(64) NOT NULL,
+        sms_text TEXT NOT NULL,
+        status VARCHAR(32) DEFAULT 'SENT',
+        gateway_response TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_tenant_phone (tenant_id, phone),
+        INDEX idx_created (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+    $results['elevex_sms_logs'] = "TABLE_READY";
+} catch (Exception $e) {
+    $results['elevex_sms_logs_error'] = $e->getMessage();
+}
+
+try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_company_otps (
         id INT AUTO_INCREMENT PRIMARY KEY,
         tenant_id VARCHAR(64) NOT NULL,
