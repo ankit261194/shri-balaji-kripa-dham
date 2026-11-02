@@ -494,6 +494,19 @@ if ($action === 'add_user') {
     $phone = normalizePhone($input['phone'] ?? '');
     $mpin = trim($input['mpin'] ?? '1234');
     $preferredLang = trim($input['preferred_language'] ?? 'hi');
+    $liftId = intval($input['lift_id'] ?? 0);
+    $liftCode = trim($input['lift_unique_code'] ?? $input['lift_code'] ?? '');
+
+    // Token Auth & Tenant Isolation Wall
+    $token = getBearerToken();
+    if (!empty($token)) {
+        $authUser = verifyBearerToken($pdo);
+        enforceTenantIsolation($authUser, $tenantId);
+        // Restrict non-SuperAdmins: Supervisor can only create technicians or lift owners
+        if ($authUser['role'] !== 'superadmin' && !in_array($role, ['technician', 'senior_technician', 'lift_owner', 'owner', 'client'])) {
+            sendJsonResponse(["success" => false, "error" => "सुपरवाइज़र केवल अपनी कंपनी के टेक्नीशियन या लिफ्ट ओनर ही जोड़ सकते हैं"], 403);
+        }
+    }
 
     if (empty($tenantId) || empty($fullName) || empty($phone)) {
         sendJsonResponse(["success" => false, "error" => "कंपनी, नाम व फोन अनिवार्य है"], 400);
@@ -506,7 +519,7 @@ if ($action === 'add_user') {
     $existing = $stmtCheck->fetch();
 
     if ($existing) {
-        $stmtUp = $pdo->prepare("UPDATE elevex_users SET tenant_id = :t, role = :r, full_name = :n, mpin_hash = :m, preferred_language = :lang, is_active = 1 WHERE id = :id");
+        $stmtUp = $pdo->prepare("UPDATE elevex_users SET tenant_id = :t, role = :r, full_name = :n, mpin_hash = :m, preferred_language = :lang, is_first_login = 1, mpin_changed_at = NULL, is_active = 1 WHERE id = :id");
         $stmtUp->execute([
             ':t' => $tenantId,
             ':r' => $role,
@@ -517,8 +530,8 @@ if ($action === 'add_user') {
         ]);
         $userId = intval($existing['id']);
     } else {
-        $stmtIns = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mobile, mpin_hash, preferred_language, is_active) 
-                                  VALUES (:t, :r, :n, :p, :mob, :m, :lang, 1)");
+        $stmtIns = $pdo->prepare("INSERT INTO elevex_users (tenant_id, role, full_name, phone, mobile, mpin_hash, preferred_language, is_first_login, is_active) 
+                                  VALUES (:t, :r, :n, :p, :mob, :m, :lang, 1, 1)");
         $stmtIns->execute([
             ':t' => $tenantId,
             ':r' => $role,
@@ -531,12 +544,74 @@ if ($action === 'add_user') {
         $userId = intval($pdo->lastInsertId());
     }
 
+    // Link Lift Owner if lift specified
+    if (in_array($role, ['lift_owner', 'owner', 'client'])) {
+        if ($liftId > 0) {
+            $stmtLiftOwner = $pdo->prepare("UPDATE elevex_lifts_amc SET owner_id = :oid WHERE id = :lid AND tenant_id = :t");
+            $stmtLiftOwner->execute([':oid' => $userId, ':lid' => $liftId, ':t' => $tenantId]);
+        } else if (!empty($liftCode)) {
+            $stmtLiftOwner = $pdo->prepare("UPDATE elevex_lifts_amc SET owner_id = :oid WHERE lift_unique_code = :lc AND tenant_id = :t");
+            $stmtLiftOwner->execute([':oid' => $userId, ':lc' => $liftCode, ':t' => $tenantId]);
+        }
+    }
+
+    // Fetch company display name
+    $stmtC = $pdo->prepare("SELECT company_name, brand_display_name, support_phone FROM elevex_companies WHERE tenant_id = :t LIMIT 1");
+    $stmtC->execute([':t' => $tenantId]);
+    $comp = $stmtC->fetch(PDO::FETCH_ASSOC);
+    $cName = $comp['company_name'] ?? 'EleveX Network';
+
+    // 1-Click WhatsApp Onboarding Message & Link
+    if (in_array($role, ['technician', 'senior_technician'])) {
+        $roleTitle = ($role === 'senior_technician') ? "सीनियर फील्ड टेक्नीशियन (Senior Technician)" : "फील्ड टेक्नीशियन (Field Technician)";
+        $appUrl = "https://shribalajikripadham.online/download.php?app=technician";
+        $waMsg = "🛠️ *Ankit EleveX Pro - फील्ड तकनीशियन आमंत्रण (Technician Onboarding)* 🛠️\n\n"
+               . "प्रिय *" . $fullName . "* जी,\n"
+               . "आपको *" . $cName . "* में *" . $roleTitle . "* के रूप में पंजीकृत कर दिया गया है।\n\n"
+               . "📲 *Technician Toolkit App डाउनलोड लिंक:*\n"
+               . $appUrl . "\n\n"
+               . "🔐 *लॉगिन क्रेडेंशियल्स:*\n"
+               . "• कंपनी कोड (Tenant ID): `" . $tenantId . "`\n"
+               . "• यूजरनेम / मोबाइल: `" . $phone . "`\n"
+               . "• लॉगिन पिन / पासवर्ड: `" . $mpin . "`\n\n"
+               . "⚡ *मुख्य निर्देश:*\n"
+               . "1. ऊपर दिए लिंक से ऐप डाउनलोड व इंस्टॉल करें।\n"
+               . "2. अपने मोबाइल व पिन से लॉगिन करके लोकेशन परमिशन की अनुमति दें।\n"
+               . "3. असाइन किए गए ब्रेकडाउन टिकट स्वीकार करें व ग्राहक OTP से जॉब क्लोज करें।\n\n"
+               . "हेल्पलाइन / तकनीकी सहायता: 8533955333 (अंकित चौधरी)";
+    } else {
+        $appUrl = "https://shribalajikripadham.online/download.php?app=owner";
+        $waMsg = "🏢 *Ankit EleveX Pro - लिफ्ट ओनर / ग्राहक पोर्टल आमंत्रण (Owner Portal)* 🏢\n\n"
+               . "प्रिय *" . $fullName . "* जी,\n"
+               . "आपकी लिफ्ट की सुरक्षा और रियल-टाइम मॉनिटरिंग हेतु *" . $cName . "* द्वारा आपका ओनर अकाउंट सक्रिय कर दिया गया है।\n\n"
+               . "📲 *Owner Portal App डाउनलोड लिंक:*\n"
+               . $appUrl . "\n\n"
+               . "🔐 *आपके लॉगिन क्रेडेंशियल्स:*\n"
+               . "• कंपनी कोड (Tenant ID): `" . $tenantId . "`\n"
+               . (!empty($liftCode) ? "• लिफ्ट कोड (Lift Code): `" . $liftCode . "`\n" : "")
+               . "• यूजरनेम / मोबाइल: `" . $phone . "`\n"
+               . "• लॉगिन पिन / पासवर्ड: `" . $mpin . "`\n\n"
+               . "✨ *ओनर ऐप की सुविधाएं:*\n"
+               . "• 1-टैप में ब्रेकडाउन शिकायत दर्ज करें\n"
+               . "• तकनीशियन की लाइव लोकेशन और आगमन समय देखें\n"
+               . "• सर्विस क्लोजर हेतु गोपनीय 4-अंकीय OTP सत्यापन\n\n"
+               . "कस्टमर केयर / 24x7 हेल्पलाइन: 8533955333 (अंकित चौधरी)";
+    }
+
+    $waUrl = "https://wa.me/91" . $phone . "?text=" . rawurlencode($waMsg);
+
     sendJsonResponse([
         "success" => true,
-        "message" => "उपयोगकर्ता सफलतापूर्वक पंजीकृत किया गया!",
+        "message" => in_array($role, ['lift_owner', 'owner', 'client']) ? "लिफ्ट ओनर सफलतापूर्वक पंजीकृत हुआ!" : "टेक्नीशियन सफलतापूर्वक पंजीकृत हुआ!",
         "user_id" => $userId,
         "role" => $role,
-        "phone" => $phone
+        "full_name" => $fullName,
+        "phone" => $phone,
+        "mpin" => $mpin,
+        "tenant_id" => $tenantId,
+        "app_download_url" => $appUrl,
+        "whatsapp_message" => $waMsg,
+        "whatsapp_url" => $waUrl
     ]);
 }
 
@@ -585,19 +660,75 @@ if ($action === 'list_users') {
     }
     $roleFilter = trim($input['role'] ?? $_GET['role'] ?? '');
 
-    $sql = "SELECT id, tenant_id, role, full_name, phone, hardware_device_id, preferred_language, is_active, created_at 
-            FROM elevex_users WHERE tenant_id = :t AND is_active = 1";
+    $sql = "SELECT u.id, u.tenant_id, u.role, u.full_name, u.phone, u.hardware_device_id, u.preferred_language, u.is_active, u.created_at,
+                   c.company_name, c.brand_display_name,
+                   (CASE WHEN t.last_heartbeat > NOW() - INTERVAL 10 MINUTE THEN 1 ELSE 0 END) as is_online,
+                   t.location_landmark_text, t.last_heartbeat
+            FROM elevex_users u
+            LEFT JOIN elevex_companies c ON u.tenant_id COLLATE utf8mb4_unicode_ci = c.tenant_id COLLATE utf8mb4_unicode_ci
+            LEFT JOIN elevex_technician_telemetry t ON u.id = t.technician_id
+            WHERE u.tenant_id = :t AND u.is_active = 1";
     $params = [':t' => $tenantId];
 
     if (!empty($roleFilter)) {
-        $sql .= " AND role = :r";
-        $params[':r'] = $roleFilter;
+        if ($roleFilter === 'technician') {
+            $sql .= " AND u.role IN ('technician', 'senior_technician')";
+        } else if ($roleFilter === 'owner' || $roleFilter === 'lift_owner') {
+            $sql .= " AND u.role IN ('lift_owner', 'owner', 'client')";
+        } else {
+            $sql .= " AND u.role = :r";
+            $params[':r'] = $roleFilter;
+        }
     }
 
-    $sql .= " ORDER BY full_name ASC";
+    $sql .= " ORDER BY u.id DESC";
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    $users = $stmt->fetchAll();
+    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($users as &$usr) {
+        $uRole = $usr['role'];
+        $uName = $usr['full_name'];
+        $uPhone = normalizePhone($usr['phone']);
+        $cName = $usr['company_name'] ?: 'EleveX Network';
+        $tId = $usr['tenant_id'];
+
+        if (in_array($uRole, ['technician', 'senior_technician'])) {
+            $roleLabel = ($uRole === 'senior_technician') ? "सीनियर फील्ड तकनीशियन" : "फील्ड तकनीशियन";
+            $appLink = "https://shribalajikripadham.online/download.php?app=technician";
+            $msg = "🛠️ *Ankit EleveX Pro - फील्ड तकनीशियन आमंत्रण* 🛠️\n\n"
+                 . "प्रिय *" . $uName . "* जी,\n"
+                 . "आपको *" . $cName . "* में *" . $roleLabel . "* नियुक्त किया गया है।\n\n"
+                 . "📲 *Technician App डाउनलोड लिंक:*\n"
+                 . $appLink . "\n\n"
+                 . "🔐 *लॉगिन क्रेडेंशियल्स:*\n"
+                 . "• कंपनी कोड (Tenant ID): `" . $tId . "`\n"
+                 . "• यूजरनेम / मोबाइल: `" . $uPhone . "`\n"
+                 . "• डिफॉल्ट पिन: `1234`\n\n"
+                 . "👉 कृपया ऐप इंस्टॉल करके तुरंत लॉगिन करें और अपने असाइन ब्रेकडाउन टिकट देखें।\n\n"
+                 . "हेल्पलाइन: 8533955333 (अंकित चौधरी)";
+            $usr['app_download_url'] = $appLink;
+            $usr['whatsapp_message'] = $msg;
+            $usr['whatsapp_url'] = "https://wa.me/91" . $uPhone . "?text=" . rawurlencode($msg);
+        } else if (in_array($uRole, ['lift_owner', 'owner', 'client'])) {
+            $appLink = "https://shribalajikripadham.online/download.php?app=owner";
+            $msg = "🏢 *Ankit EleveX Pro - लिफ्ट ओनर पोर्टल आमंत्रण* 🏢\n\n"
+                 . "प्रिय *" . $uName . "* जी,\n"
+                 . "आपकी लिफ्ट की रियल-टाइम मॉनिटरिंग और सुरक्षा हेतु *" . $cName . "* द्वारा आपका ओनर पोर्टल अकाउंट सक्रिय कर दिया गया है।\n\n"
+                 . "📲 *Owner App डाउनलोड लिंक:*\n"
+                 . $appLink . "\n\n"
+                 . "🔐 *लॉगिन क्रेडेंशियल्स:*\n"
+                 . "• कंपनी कोड (Tenant ID): `" . $tId . "`\n"
+                 . "• यूजरनेम / मोबाइल: `" . $uPhone . "`\n"
+                 . "• डिफॉल्ट पिन: `1234`\n\n"
+                 . "👉 ऐप से आप 1-टैप में ब्रेकडाउन रिपोर्ट कर सकते हैं और तकनीशियन की लाइव लोकेशन ट्रैक कर सकते हैं।\n\n"
+                 . "कस्टमर केयर: 8533955333 (अंकित चौधरी)";
+            $usr['app_download_url'] = $appLink;
+            $usr['whatsapp_message'] = $msg;
+            $usr['whatsapp_url'] = "https://wa.me/91" . $uPhone . "?text=" . rawurlencode($msg);
+        }
+    }
+    unset($usr);
 
     sendJsonResponse([
         "success" => true,
