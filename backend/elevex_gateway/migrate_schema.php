@@ -387,6 +387,28 @@ try {
     $results['elevex_company_otps_error'] = $e->getMessage();
 }
 
+// 4.5 Create Enterprise Asynchronous Outbox Queue
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_outbox_queue (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL DEFAULT 'tenant_master_elevex',
+        payload_type VARCHAR(32) NOT NULL,
+        recipient VARCHAR(128) NOT NULL,
+        payload_json LONGTEXT NOT NULL,
+        status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+        retry_count INT NOT NULL DEFAULT 0,
+        max_retries INT NOT NULL DEFAULT 3,
+        last_error TEXT NULL,
+        processed_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_status_created (status, created_at),
+        INDEX idx_tenant (tenant_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+    $results['elevex_outbox_queue'] = "TABLE_READY";
+} catch (Exception $e) {
+    $results['elevex_outbox_queue_error'] = $e->getMessage();
+}
+
 // 5. PURGE ALL OLD TEST SEED ACCOUNTS (Zero Dummy Data Enforcement)
 try {
     $purgeStmt = $pdo->prepare("DELETE FROM elevex_users WHERE phone IN ('9811001122', '9811004455') OR (role = 'technician' AND full_name LIKE '%Demo%')");

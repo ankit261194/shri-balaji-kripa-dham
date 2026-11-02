@@ -375,3 +375,56 @@ function sendCompanyTransactionalSms($pdo, $tenantId, $phone, $messageType, $sms
     ];
 }
 
+/**
+ * Autonomous Meta WhatsApp Cloud API Dispatcher
+ * Ready for live Meta Business Account credentials without altering frontend
+ */
+function sendMetaWhatsAppMessage($pdo, $tenantId, $phone, $templateName, $components = []) {
+    $cleanPhone = normalizePhone($phone);
+    if (empty($cleanPhone)) return ['success' => false, 'error' => 'Phone missing'];
+
+    $stmtCfg = $pdo->query("SELECT setting_key, setting_value FROM elevex_config WHERE setting_key IN ('meta_wa_phone_id', 'meta_wa_token', 'meta_wa_waba_id')");
+    $cfg = $stmtCfg ? $stmtCfg->fetchAll(PDO::FETCH_KEY_PAIR) : [];
+
+    $phoneId = $cfg['meta_wa_phone_id'] ?? null;
+    $token = $cfg['meta_wa_token'] ?? null;
+
+    if (empty($phoneId) || empty($token)) {
+        return [
+            'success' => false,
+            'configured' => false,
+            'message' => 'Meta WhatsApp Cloud API credentials not yet provisioned in elevex_config'
+        ];
+    }
+
+    $url = "https://graph.facebook.com/v18.0/{$phoneId}/messages";
+    $postData = [
+        'messaging_product' => 'whatsapp',
+        'to' => '91' . $cleanPhone,
+        'type' => 'template',
+        'template' => [
+            'name' => $templateName,
+            'language' => ['code' => 'hi'],
+            'components' => $components
+        ]
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postData));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $token,
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+    $res = curl_exec($ch);
+    $err = curl_error($ch);
+    curl_close($ch);
+
+    return [
+        'success' => empty($err) && !empty($res),
+        'response' => $res,
+        'error' => $err
+    ];
+}

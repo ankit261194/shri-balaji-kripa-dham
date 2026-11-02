@@ -1032,6 +1032,18 @@ if ($action === 'request_company_otp') {
         sendJsonResponse(["success" => false, "error" => "फोन नंबर अनिवार्य है"], 400);
     }
 
+    // Strict Security Rate Limiter: Max 3 OTP requests per phone in 15 minutes
+    $stmtRate = $pdo->prepare("SELECT COUNT(*) FROM elevex_company_otps WHERE phone = :p AND created_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
+    $stmtRate->execute([':p' => $phone]);
+    if (intval($stmtRate->fetchColumn()) >= 3) {
+        sendJsonResponse([
+            "success" => false,
+            "error" => "सुरक्षा प्रतिबंध: आपने 15 मिनट में अधिकतम OTP अनुरोध सीमा (3) पार कर ली है। कृपया 15 मिनट बाद पुनः प्रयास करें। (Rate limit: Max 3 OTPs per 15 min)",
+            "rate_limited" => true,
+            "retry_after_minutes" => 15
+        ], 429);
+    }
+
     // Lookup company branding
     $brandName = "EleveX";
     if (!empty($tenantId)) {
@@ -1065,8 +1077,9 @@ if ($action === 'request_company_otp') {
 
     $waUrl = "https://wa.me/91" . $phone . "?text=" . rawurlencode($waMsg);
 
-    // Automated Server SMS under strict company brand
-    $smsText = "[{$brandName}] आपका {$brandName} सुरक्षा कोड: {$otpCode}. यह 5 मिनट के लिए मान्य है। किसी से शेयर न करें। - टीम {$brandName}";
+    // Ultra-optimized Compact Hindi Transactional SMS (under 70 Unicode chars = exactly 1 credit)
+    $compactBrand = mb_substr($brandName, 0, 10);
+    $smsText = "[{$compactBrand}] सुरक्षा OTP: {$otpCode}. 5 मिनट मान्य. शेयर न करें.";
     $smsResult = sendCompanyTransactionalSms($pdo, $tenantId, $phone, 'SECURITY_OTP', $smsText, $brandName);
 
     sendJsonResponse([
@@ -1083,6 +1096,140 @@ if ($action === 'request_company_otp') {
         "sms_id" => $smsResult['sms_id'] ?? null,
         "whatsapp_message" => $waMsg,
         "whatsapp_url" => $waUrl
+    ]);
+}
+
+// 6.5 Request Forgot MPIN OTP
+if ($action === 'forgot_mpin_request_otp') {
+    $companyCode = trim($input['company_code'] ?? $input['tenant_id'] ?? $_GET['company_code'] ?? $_GET['tenant_id'] ?? '');
+    $phoneRaw = trim($input['phone'] ?? $input['mobile'] ?? $_GET['phone'] ?? '');
+
+    if (empty($phoneRaw)) {
+        sendJsonResponse(["success" => false, "error" => "मोबाइल नंबर अनिवार्य है"], 400);
+    }
+
+    $phone = normalizePhone($phoneRaw);
+    $fullPhone = '+91' . $phone;
+
+    // Check tenant if supplied
+    $targetTenant = null;
+    $brandName = "EleveX";
+    if (!empty($companyCode)) {
+        $stmtC = $pdo->prepare("SELECT tenant_id, company_name, brand_display_name FROM elevex_companies WHERE tenant_id = :c1 OR company_name = :c2 LIMIT 1");
+        $stmtC->execute([':c1' => $companyCode, ':c2' => $companyCode]);
+        $cRow = $stmtC->fetch();
+        if (!$cRow) {
+            sendJsonResponse(["success" => false, "error" => "अमान्य कंपनी कोड ({$companyCode})"], 404);
+        }
+        $targetTenant = $cRow['tenant_id'];
+        $brandName = !empty($cRow['brand_display_name']) ? $cRow['brand_display_name'] : $cRow['company_name'];
+    }
+
+    // Verify user exists
+    if (!empty($targetTenant)) {
+        $stmtU = $pdo->prepare("SELECT id, full_name, tenant_id FROM elevex_users WHERE tenant_id = :t AND (phone = :p OR phone = :norm OR phone = :full) AND is_active = 1 LIMIT 1");
+        $stmtU->execute([':t' => $targetTenant, ':p' => $phoneRaw, ':norm' => $phone, ':full' => $fullPhone]);
+    } else {
+        $stmtU = $pdo->prepare("SELECT id, full_name, tenant_id FROM elevex_users WHERE (phone = :p OR phone = :norm OR phone = :full) AND is_active = 1 LIMIT 1");
+        $stmtU->execute([':p' => $phoneRaw, ':norm' => $phone, ':full' => $fullPhone]);
+    }
+    $user = $stmtU->fetch();
+
+    if (!$user) {
+        sendJsonResponse(["success" => false, "error" => "यह मोबाइल नंबर किसी भी अधिकृत खाते में पंजीकृत नहीं है"], 404);
+    }
+
+    $actualTenant = $user['tenant_id'];
+
+    // Strict Rate Limiting: Max 3 OTPs per 15 minutes
+    $stmtRate = $pdo->prepare("SELECT COUNT(*) FROM elevex_company_otps WHERE phone = :p AND purpose = 'FORGOT_MPIN' AND created_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
+    $stmtRate->execute([':p' => $phone]);
+    if (intval($stmtRate->fetchColumn()) >= 3) {
+        sendJsonResponse([
+            "success" => false,
+            "error" => "सुरक्षा प्रतिबंध: आपने 15 मिनट में अधिकतम पिन-रीसेट अनुरोध (3) पूरे कर लिए हैं। कृपया 15 मिनट बाद पुनः प्रयास करें।",
+            "rate_limited" => true
+        ], 429);
+    }
+
+    $otpCode = strval(rand(1000, 9999));
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+5 minutes'));
+
+    $stmtOtp = $pdo->prepare("INSERT INTO elevex_company_otps (tenant_id, phone, otp_code, purpose, reference_id, is_verified, expires_at) 
+                             VALUES (:t, :p, :code, 'FORGOT_MPIN', :uid, 0, :exp)");
+    $stmtOtp->execute([
+        ':t' => $actualTenant,
+        ':p' => $phone,
+        ':code' => $otpCode,
+        ':uid' => strval($user['id']),
+        ':exp' => $expiresAt
+    ]);
+
+    $compactBrand = mb_substr($brandName, 0, 10);
+    $smsText = "[{$compactBrand}] पिन रीसेट OTP: {$otpCode}. 5 मिनट मान्य. शेयर न करें.";
+    $smsResult = sendCompanyTransactionalSms($pdo, $actualTenant, $phone, 'FORGOT_MPIN_OTP', $smsText, $brandName);
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "पिन रीसेट OTP आपके पंजीकृत मोबाइल नंबर पर भेज दिया गया है",
+        "phone" => $phone,
+        "tenant_id" => $actualTenant,
+        "brand_name" => $brandName,
+        "expires_at" => $expiresAt,
+        "sms_id" => $smsResult['sms_id'] ?? null
+    ]);
+}
+
+// 6.6 Verify Forgot MPIN OTP and Reset PIN
+if ($action === 'forgot_mpin_verify_and_reset') {
+    $phoneRaw = trim($input['phone'] ?? $input['mobile'] ?? $_POST['phone'] ?? '');
+    $otpCode = trim($input['otp_code'] ?? $input['otp'] ?? $_POST['otp_code'] ?? '');
+    $newMpin = trim($input['new_mpin'] ?? $input['mpin'] ?? $_POST['new_mpin'] ?? '');
+
+    if (empty($phoneRaw) || empty($otpCode) || empty($newMpin)) {
+        sendJsonResponse(["success" => false, "error" => "फ़ोन नंबर, OTP और नया पिन सभी अनिवार्य हैं"], 400);
+    }
+
+    if (!preg_match('/^[0-9]{4}$/', $newMpin)) {
+        sendJsonResponse(["success" => false, "error" => "सुरक्षा पिन ठीक 4 अंकों का होना चाहिए"], 400);
+    }
+
+    $phone = normalizePhone($phoneRaw);
+
+    // Verify OTP
+    $stmtVerify = $pdo->prepare("SELECT id, tenant_id, reference_id FROM elevex_company_otps 
+                                WHERE phone = :p AND otp_code = :c AND purpose = 'FORGOT_MPIN' 
+                                  AND is_verified = 0 AND expires_at > NOW() 
+                                ORDER BY id DESC LIMIT 1");
+    $stmtVerify->execute([':p' => $phone, ':c' => $otpCode]);
+    $otpRecord = $stmtVerify->fetch();
+
+    if (!$otpRecord) {
+        sendJsonResponse(["success" => false, "error" => "अमान्य या समाप्त हो चुका OTP कोड! कृपया नया कोड मंगाएं."], 400);
+    }
+
+    // Mark OTP as verified
+    $pdo->prepare("UPDATE elevex_company_otps SET is_verified = 1 WHERE id = :id")->execute([':id' => $otpRecord['id']]);
+
+    // Update User MPIN
+    $hashedPin = password_hash($newMpin, PASSWORD_BCRYPT);
+    $userId = intval($otpRecord['reference_id']);
+
+    if ($userId > 0) {
+        $stmtUp = $pdo->prepare("UPDATE elevex_users SET mpin_hash = :hash, mpin_changed_at = NOW(), session_token = NULL WHERE id = :uid");
+        $stmtUp->execute([':hash' => $hashedPin, ':uid' => $userId]);
+    } else {
+        $stmtUp = $pdo->prepare("UPDATE elevex_users SET mpin_hash = :hash, mpin_changed_at = NOW(), session_token = NULL WHERE phone = :p");
+        $stmtUp->execute([':hash' => $hashedPin, ':p' => $phone]);
+    }
+
+    // Send confirmation SMS
+    $smsText = "[EleveX] आपका सुरक्षा पिन सफलतापूर्वक रीसेट कर दिया गया है. अब नए पिन से लॉगिन करें.";
+    sendCompanyTransactionalSms($pdo, $otpRecord['tenant_id'], $phone, 'PIN_RESET_SUCCESS', $smsText);
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "आपका सुरक्षा पिन सफलतापूर्वक बदल दिया गया है! अब आप नए पिन के साथ लॉगिन कर सकते हैं."
     ]);
 }
 
