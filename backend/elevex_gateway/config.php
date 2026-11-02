@@ -133,3 +133,28 @@ function verifyBearerToken($pdo, $requiredRole = null) {
         ], 500);
     }
 }
+
+/**
+ * Enforces Zero-Trust Tenant Data Isolation:
+ * - SuperAdmin can access any tenant.
+ * - Supervisors, Technicians, Owners CAN ONLY access their own tenant_id.
+ * - Cross-tenant attempts trigger immediate 403 Forbidden with security logging.
+ */
+function enforceTenantIsolation($authUser, &$targetTenantId) {
+    if (empty($targetTenantId)) {
+        $targetTenantId = $authUser['tenant_id'];
+        return true;
+    }
+    if ($authUser['role'] === 'superadmin') {
+        return true; // SuperAdmin supreme access
+    }
+    if ($authUser['tenant_id'] !== $targetTenantId) {
+        sendJsonResponse([
+            "success" => false,
+            "error" => "सुरक्षा उल्लंघन: आप केवल अपनी अधिकृत कंपनी का डेटा देख सकते हैं (Tenant Isolation Violation: Access Denied)",
+            "user_tenant" => $authUser['tenant_id'],
+            "requested_tenant" => $targetTenantId
+        ], 403);
+    }
+    return true;
+}

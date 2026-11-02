@@ -262,6 +262,11 @@ if ($action === 'ghost_reassign') {
 // 4. List Breakdowns for Supervisor / Owner / Technician
 if ($action === 'list_breakdowns') {
     $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $token = getBearerToken();
+    if (!empty($token)) {
+        $authUser = verifyBearerToken($pdo);
+        enforceTenantIsolation($authUser, $tenantId);
+    }
     $role = trim($input['role'] ?? $_GET['role'] ?? 'supervisor');
     $userId = intval($input['user_id'] ?? $_GET['user_id'] ?? 0);
 
@@ -500,6 +505,11 @@ if ($action === 'add_lift') {
 // 8. List AMC Lifts for Company
 if ($action === 'list_lifts') {
     $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $token = getBearerToken();
+    if (!empty($token)) {
+        $authUser = verifyBearerToken($pdo);
+        enforceTenantIsolation($authUser, $tenantId);
+    }
     $ownerId = intval($input['owner_id'] ?? $_GET['owner_id'] ?? 0);
 
     $sql = "SELECT l.*, 

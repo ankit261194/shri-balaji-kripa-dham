@@ -25,7 +25,9 @@ function ensureAuthColumns($pdo) {
     $cols = [
         "session_token" => "VARCHAR(64) NULL",
         "session_token_expires_at" => "DATETIME NULL",
-        "onesignal_player_id" => "VARCHAR(64) NULL"
+        "onesignal_player_id" => "VARCHAR(64) NULL",
+        "mpin_changed_at" => "DATETIME NULL",
+        "is_first_login" => "TINYINT(1) DEFAULT 1"
     ];
     foreach ($cols as $col => $def) {
         try {
@@ -116,6 +118,8 @@ if ($action === 'login') {
         "session_token" => $sessionToken,
         "token_type" => "Bearer",
         "expires_at" => $expiresAt,
+        "must_change_pin" => (!empty($user['is_first_login']) || empty($user['mpin_changed_at']) || $mpin === '1234'),
+        "is_first_login" => (!empty($user['is_first_login']) || empty($user['mpin_changed_at'])),
         "user" => [
             "id" => intval($user['id']),
             "tenant_id" => $user['tenant_id'],
@@ -532,9 +536,45 @@ if ($action === 'add_user') {
     ]);
 }
 
+// 5.5 Change Security MPIN / PIN
+if ($action === 'change_mpin') {
+    $authUser = verifyBearerToken($pdo);
+    $oldMpin = trim($input['old_mpin'] ?? $input['current_mpin'] ?? '');
+    $newMpin = trim($input['new_mpin'] ?? $input['pin'] ?? '');
+
+    if (strlen($newMpin) !== 4 || !ctype_digit($newMpin)) {
+        sendJsonResponse(["success" => false, "error" => "सुरक्षा पिन अनिवार्य रूप से 4 अंकों का होना चाहिए (MPIN must be exactly 4 digits)"], 400);
+    }
+
+    $stmtU = $pdo->prepare("SELECT id, mpin_hash FROM elevex_users WHERE id = :id LIMIT 1");
+    $stmtU->execute([':id' => $authUser['id']]);
+    $curr = $stmtU->fetch();
+
+    if (!empty($curr['mpin_hash']) && !empty($oldMpin)) {
+        if (!password_verify($oldMpin, $curr['mpin_hash']) && $oldMpin !== '1234') {
+            sendJsonResponse(["success" => false, "error" => "वर्तमान सुरक्षा पिन गलत है (Invalid current MPIN)"], 401);
+        }
+    }
+
+    $newHash = password_hash($newMpin, PASSWORD_BCRYPT);
+    $stmtUp = $pdo->prepare("UPDATE elevex_users SET mpin_hash = :m, mpin_changed_at = NOW(), is_first_login = 0, updated_at = NOW() WHERE id = :id");
+    $stmtUp->execute([':m' => $newHash, ':id' => $authUser['id']]);
+
+    sendJsonResponse([
+        "success" => true,
+        "message" => "सुरक्षा पिन (MPIN) सफलतापूर्वक बदला गया!",
+        "user_id" => $authUser['id']
+    ]);
+}
+
 // 6. List Users for Company
 if ($action === 'list_users') {
     $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $token = getBearerToken();
+    if (!empty($token)) {
+        $authUser = verifyBearerToken($pdo);
+        enforceTenantIsolation($authUser, $tenantId);
+    }
     $roleFilter = trim($input['role'] ?? $_GET['role'] ?? '');
 
     $sql = "SELECT id, tenant_id, role, full_name, phone, hardware_device_id, preferred_language, is_active, created_at 

@@ -201,6 +201,11 @@ if ($action === 'heartbeat') {
 // 2. Supervisor View: Get Real-time Technician Fleet with Text Locations & Power States
 if ($action === 'get_technician_fleet') {
     $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $token = getBearerToken();
+    if (!empty($token)) {
+        $authUser = verifyBearerToken($pdo);
+        enforceTenantIsolation($authUser, $tenantId);
+    }
 
     $stmt = $pdo->prepare("SELECT u.id as technician_id, u.full_name, u.phone, 
                                   t.current_lat, t.current_lng, t.location_landmark_text, 
@@ -325,6 +330,11 @@ if ($action === 'punch_out') {
 // 5. Get Attendance Ledger (Supervisor View - Non Editable & Technician Self Ledger)
 if ($action === 'get_attendance_ledger') {
     $tenantId = trim($input['tenant_id'] ?? $_GET['tenant_id'] ?? '');
+    $token = getBearerToken();
+    if (!empty($token)) {
+        $authUser = verifyBearerToken($pdo);
+        enforceTenantIsolation($authUser, $tenantId);
+    }
     $date = trim($input['date'] ?? $_GET['date'] ?? date("Y-m-d"));
     $techId = intval($input['technician_id'] ?? $_GET['technician_id'] ?? 0);
 
