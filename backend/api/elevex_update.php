@@ -39,15 +39,15 @@ if (file_exists($manifestPath)) {
 
 if (!is_array($data)) {
     $data = [
-        "latest_version" => "5.9.41",
-        "version_code" => 631,
+        "latest_version" => "5.9.42",
+        "version_code" => 632,
         "force_update" => false,
-        "title_en" => "ANKIT ELEVEX PRO v5.9.40 - Enterprise Multi-App Fleet Sync",
-        "title_hi" => "अंकित एलेवेक्स प्रो v5.9.40 - एंटरप्राइज मल्टी-ऐप फ्लीट सिंक",
+        "title_en" => "ANKIT ELEVEX PRO v5.9.42 - Enterprise Multi-App Fleet Sync",
+        "title_hi" => "अंकित एलेवेक्स प्रो v5.9.42 - एंटरप्राइज मल्टी-ऐप फ्लीट सिंक",
         "release_notes_en" => "• Real-Time Synchronized Fleet Management across all 4 Standalone Apps\n• Fortune 500 MNC Executive Titanium UI System (Otis & Siemens Standards)\n• Cryptographic Bearer Session Security with SHA-256 Tokens\n• 1-Tap manual update check button on top bar",
         "release_notes_hi" => "• चारों स्टैंडअलोन ऐप्स के लिए रियल-टाइम फ्लीट सिंक\n• फॉर्च्यून 500 MNC एग्जीक्यूटिव टाइटेनियम UI सिस्टम (ओटिस व सीमेंस मानक)\n• SHA-256 क्रिप्टोग्राफिक बेयरर सेशन सुरक्षा\n• टॉप बार में 1-टैप मैन्युअल अपडेट चेक बटन",
         "file_size" => "39.5 MB",
-        "sha256_checksum" => "75e92b67d1263d48864c5ada47c254d819b4d5b272b5218ee876b58c110cda4d",
+        "sha256_checksum" => "1357ad2fb41753e3d58520b81858fc1d4d4be3f0f1b6b37b2de71f50932b40db",
         "verified_oem_brands" => ["MONARCH", "STEP", "OTIS", "SCHINDLER", "KONE"]
     ];
 }

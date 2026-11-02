@@ -1,19 +1,22 @@
 {
-  "latest_version": "5.9.41",
-  "version_code": 631,
+  "latest_version": "5.9.42",
+  "version_code": 632,
   "force_update": false,
-  "title_en": "ANKIT ELEVEX PRO v5.9.41 (Build 631) - Enterprise Multi-App Fleet Sync",
-  "title_hi": "अंकित एलेवेक्स प्रो v5.9.41 (बिल्ड 631) - एंटरप्राइज मल्टी-ऐप फ्लीट सिंक",
-  "release_notes_en": "• Fortune 500 MNC Executive Titanium Theme unified across all 4 Standalone Apps (Otis & Siemens Standards).\n• 24-Hour Smart Update Cooldown & Non-Blocking App Launch.\n• Native Android Package Installer Hardening with Auto-Permission Prompting.\n• Cryptographic Bearer Session Security with SHA-256 Tokens & Anti-Tamper Protection.\n• 1,012+ Verified OEM Fault Code Diagnostic Engine.",
-  "release_notes_hi": "• चारों स्टैंडअलोन ऐप्स के लिए फॉर्च्यून 500 MNC एग्जीक्यूटिव टाइटेनियम थीम (ओटिस व सीमेंस मानक)।\n• 24-घंटे स्मार्ट अपडेट कूलडाउन व नॉन-ब्लॉकिंग ऐप लॉन्च।\n• ऑटो-परमिशन प्रॉम्प्टिंग के साथ नेटिव एंड्रॉइड इंस्टॉलर सुरक्षा।\n• SHA-256 क्रिप्टोग्राफिक बेयरर सेशन सुरक्षा व एंटी-टैम्परिंग लॉक।\n• 1,012+ सत्यापित OEM फॉल्ट कोड डायग्नोस्टिक इंजन।",
+  "title_en": "ANKIT ELEVEX PRO v5.9.42 (Build 632) - Official MNC Enterprise Design System",
+  "title_hi": "अंकित एलेवेक्स प्रो v5.9.42 (बिल्ड 632) - ऑफिशियल MNC कॉर्पोरेट डिज़ाइन सिस्टम",
+  "release_notes_en": "• Official Fortune 500 MNC Enterprise Design System: Otis, Siemens & ABB executive slate styling.\n• 100% Inter Typography: Complete eradication of legacy gaming/neon fonts.\n• Precision Corporate Sky & Sapphire Palette: Zero glowing neon cyan artifacts.\n• Automatic Resume of In-App APK Installer on Permission Grant.\n• 4-in-1 Master Enterprise Portal with 50+ Engineering Diagnostic Tools.\n• Hairline 1px structural borders & high-contrast telemetry.",
+  "release_notes_hi": "• ऑफिशियल फॉर्च्यून 500 MNC कॉर्पोरेट डिज़ाइन सिस्टम: ओटिस, सीमेंस व एबीबी इंडस्ट्रियल स्टैंडर्ड।\n• 100% इंटर टाइपोग्राफी: गैर-मानक गेमिंग फॉन्ट्स पूरी तरह समाप्त।\n• प्रेसिजन कॉर्पोरेट स्काई व सफायर पैलेट: सभी निऑन चमक व विकृतियाँ समाप्त।\n• अनुमति मिलते ही इन-ऐप APK इंस्टॉलर का ऑटोमैटिक रेज्यूम।\n• 4-इन-1 मास्टर एंटरप्राइज पोर्टल व 50+ इंजीनियरिंग डायग्नोस्टिक टूल्स।\n• सूक्ष्म 1px स्ट्रक्चरल बॉर्डर्स व हाई-कंट्रास्ट टेलीमेट्री।",
   "apk_download_url": "https://shribalajikripadham.online/download.php?app=gateway",
   "file_size": "39.5 MB",
-  "sha256_checksum": "75e92b67d1263d48864c5ada47c254d819b4d5b272b5218ee876b58c110cda4d",
+  "sha256_checksum": "1357ad2fb41753e3d58520b81858fc1d4d4be3f0f1b6b37b2de71f50932b40db",
   "verified_oem_brands": [
     "MONARCH",
     "STEP",
     "OTIS",
     "SCHINDLER",
-    "KONE"
+    "KONE",
+    "ARKEL",
+    "MITSUBISHI",
+    "THYSSENKRUPP"
   ]
 }
