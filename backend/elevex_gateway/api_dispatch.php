@@ -19,6 +19,31 @@ try {
 $input = getJsonInput();
 $action = $_GET['action'] ?? $_POST['action'] ?? ($input['action'] ?? '');
 
+function ensureBreakdownJobsheetColumns($pdo) {
+    static $ensured = false;
+    if ($ensured) return;
+    $cols = [
+        "customer_signature_url" => "TEXT NULL",
+        "photo_before_url" => "TEXT NULL",
+        "photo_after_url" => "TEXT NULL",
+        "jobsheet_pdf_url" => "TEXT NULL",
+        "replaced_parts" => "TEXT NULL",
+        "resolution_notes" => "TEXT NULL"
+    ];
+    foreach ($cols as $col => $def) {
+        try {
+            $pdo->exec("ALTER TABLE elevex_breakdowns ADD COLUMN IF NOT EXISTS $col $def");
+        } catch (Exception $e) {
+            try {
+                $pdo->exec("ALTER TABLE elevex_breakdowns ADD COLUMN $col $def");
+            } catch (Exception $e2) {}
+        }
+    }
+    $ensured = true;
+}
+ensureBreakdownJobsheetColumns($pdo);
+
+
 // Helper: Haversine distance in KM
 // Helper: Instant OneSignal Siren Push Dispatch
 function sendOneSignalSirenNotification($pdo, $technicianId, $ticketNumber, $description, $liftName = '') {
@@ -448,12 +473,131 @@ if ($action === 'complete_breakdown') {
         ], 401);
     }
 
-    $stmtDone = $pdo->prepare("UPDATE elevex_breakdowns SET status = 'resolved', resolved_at = NOW() WHERE id = :bid");
-    $stmtDone->execute([':bid' => $ticketId]);
+    $resolutionNotes = trim($input['resolution_notes'] ?? '');
+    $replacedParts = trim($input['replaced_parts'] ?? '');
+    $sigBase64 = $input['signature_base64'] ?? '';
+    $photoBeforeBase64 = $input['photo_before_base64'] ?? '';
+    $photoAfterBase64 = $input['photo_after_base64'] ?? '';
+
+    $uploadDir = __DIR__ . '/../../uploads/';
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0755, true);
+    }
+
+    $sigUrl = null;
+    if (!empty($sigBase64)) {
+        $cleanSig = preg_replace('/^data:image\/\w+;base64,/', '', $sigBase64);
+        $sigData = base64_decode($cleanSig);
+        if ($sigData) {
+            $sigFilename = "sig_{$ticketId}_" . time() . ".png";
+            file_put_contents($uploadDir . $sigFilename, $sigData);
+            $sigUrl = "https://shribalajikripadham.online/uploads/{$sigFilename}";
+        }
+    }
+
+    $beforeUrl = null;
+    if (!empty($photoBeforeBase64)) {
+        $cleanBefore = preg_replace('/^data:image\/\w+;base64,/', '', $photoBeforeBase64);
+        $beforeData = base64_decode($cleanBefore);
+        if ($beforeData) {
+            $beforeFilename = "before_{$ticketId}_" . time() . ".jpg";
+            file_put_contents($uploadDir . $beforeFilename, $beforeData);
+            $beforeUrl = "https://shribalajikripadham.online/uploads/{$beforeFilename}";
+        }
+    }
+
+    $afterUrl = null;
+    if (!empty($photoAfterBase64)) {
+        $cleanAfter = preg_replace('/^data:image\/\w+;base64,/', '', $photoAfterBase64);
+        $afterData = base64_decode($cleanAfter);
+        if ($afterData) {
+            $afterFilename = "after_{$ticketId}_" . time() . ".jpg";
+            file_put_contents($uploadDir . $afterFilename, $afterData);
+            $afterUrl = "https://shribalajikripadham.online/uploads/{$afterFilename}";
+        }
+    }
+
+    $jobsheetUrl = "https://shribalajikripadham.online/elevex_gateway/jobsheet.php?ticket_id={$ticketId}";
+
+    $stmtDone = $pdo->prepare("UPDATE elevex_breakdowns 
+        SET status = 'resolved', 
+            resolved_at = NOW(),
+            resolution_notes = :notes,
+            replaced_parts = :parts,
+            customer_signature_url = :sig,
+            photo_before_url = :pbefore,
+            photo_after_url = :pafter,
+            jobsheet_pdf_url = :jurl
+        WHERE id = :bid");
+    $stmtDone->execute([
+        ':notes' => $resolutionNotes,
+        ':parts' => $replacedParts,
+        ':sig' => $sigUrl,
+        ':pbefore' => $beforeUrl,
+        ':pafter' => $afterUrl,
+        ':jurl' => $jobsheetUrl,
+        ':bid' => $ticketId
+    ]);
+
+    // Fetch full ticket details for auto WhatsApp message
+    $stmtFetch = $pdo->prepare("SELECT b.ticket_number, b.issue_description, b.resolved_at,
+                                       l.lift_unique_code, l.building_name, l.building_address, l.landmark_name,
+                                       owner.phone as owner_phone, owner.full_name as owner_name,
+                                       sup.phone as supervisor_phone,
+                                       tech.full_name as tech_name, tech.phone as tech_phone
+                                FROM elevex_breakdowns b
+                                JOIN elevex_lifts_amc l ON b.lift_id = l.id
+                                LEFT JOIN elevex_users owner ON b.reported_by_id = owner.id
+                                LEFT JOIN elevex_users tech ON b.assigned_technician_id = tech.id
+                                LEFT JOIN elevex_users sup ON b.assigned_by_id = sup.id
+                                WHERE b.id = :bid LIMIT 1");
+    $stmtFetch->execute([':bid' => $ticketId]);
+    $ticketInfo = $stmtFetch->fetch(PDO::FETCH_ASSOC);
+
+    $techName = $ticketInfo['tech_name'] ?? 'फील्ड तकनीशियन';
+    $techPhone = $ticketInfo['tech_phone'] ?? '';
+    $building = $ticketInfo['building_name'] ?? 'साइट';
+    $liftCode = $ticketInfo['lift_unique_code'] ?? 'LIFT';
+    $loc = $ticketInfo['landmark_name'] ?: ($ticketInfo['building_address'] ?: 'साइट स्थान');
+    $ownerPhone = $ticketInfo['owner_phone'] ?? '';
+    $supPhone = $ticketInfo['supervisor_phone'] ?: '8533955333';
+
+    $waText = "📋 *ANKIT ELEVEX PRO - कार्य पूर्णता प्रमाण पत्र (Official Job Sheet)* 📋\n"
+            . "--------------------------------------------------\n"
+            . "🎫 *टिकट:* " . $ticketInfo['ticket_number'] . "\n"
+            . "🏢 *साइट:* " . $building . " (" . $liftCode . ")\n"
+            . "📍 *स्थान:* " . $loc . "\n"
+            . "👨‍🔧 *टेक्नीशियन:* " . $techName . " (" . $techPhone . ")\n"
+            . "⏱️ *समय:* " . date("d M Y, h:i A") . "\n"
+            . "--------------------------------------------------\n"
+            . "🔧 *कार्य विवरण:* " . ($resolutionNotes ?: 'लिफ्ट की समस्या सफलतापूर्वक ठीक की गई।') . "\n";
+    if (!empty($replacedParts)) {
+        $waText .= "⚙️ *स्पेयर पार्ट्स:* " . $replacedParts . "\n";
+    }
+    $waText .= "✅ *सत्यापन:* ग्राहक OTP व डिजिटल सिग्नेचर द्वारा सत्यापित।\n"
+            . "--------------------------------------------------\n"
+            . "📄 *डिजिटल जॉब शीट देखें व PDF डाउनलोड करें:*\n"
+            . $jobsheetUrl . "\n\n"
+            . "📞 24x7 हेल्पलाइन: 8533955333 (अंकित चौधरी)";
+
+    $waOwnerUrl = !empty($ownerPhone) ? "https://wa.me/91" . normalizePhone($ownerPhone) . "?text=" . rawurlencode($waText) : null;
+    $waSupUrl = "https://wa.me/91" . normalizePhone($supPhone) . "?text=" . rawurlencode($waText);
 
     sendJsonResponse([
         "success" => true,
-        "message" => "कार्य सफलतापूर्वक संपन्न हुआ और सत्यापन पूर्ण हुआ!"
+        "message" => "कार्य सफलतापूर्वक संपन्न हुआ और डिजिटल जॉब शीट तैयार हुई!",
+        "ticket_id" => $ticketId,
+        "ticket_number" => $ticketInfo['ticket_number'],
+        "jobsheet_url" => $jobsheetUrl,
+        "signature_url" => $sigUrl,
+        "photo_before_url" => $beforeUrl,
+        "photo_after_url" => $afterUrl,
+        "whatsapp_text" => $waText,
+        "whatsapp_owner_url" => $waOwnerUrl,
+        "whatsapp_supervisor_url" => $waSupUrl,
+        "owner_phone" => $ownerPhone,
+        "owner_name" => $ticketInfo['owner_name'] ?? 'ग्राहक',
+        "supervisor_phone" => $supPhone
     ]);
 }
 
