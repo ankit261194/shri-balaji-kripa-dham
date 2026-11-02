@@ -24,7 +24,7 @@ $query = "SELECT b.*,
                  owner.full_name as owner_name, owner.phone as owner_phone
           FROM elevex_breakdowns b
           JOIN elevex_lifts_amc l ON b.lift_id = l.id
-          JOIN elevex_companies c ON b.tenant_id = c.tenant_id
+          LEFT JOIN elevex_companies c ON b.tenant_id = c.tenant_id
           LEFT JOIN elevex_users tech ON b.assigned_technician_id = tech.id
           LEFT JOIN elevex_users owner ON b.reported_by_id = owner.id
           WHERE ";
@@ -295,10 +295,26 @@ $waUrl = "https://wa.me/?text=" . rawurlencode($waShareText);
         </div>
         <div class="ticket-badge">
             <div class="ticket-no"><?= htmlspecialchars($job['ticket_number']) ?></div>
-            <div><span class="status-pill">✅ प्रमाणित व पूर्ण (RESOLVED)</span></div>
+            <div>
+                <?php if ($job['status'] === 'resolved'): ?>
+                <span class="status-pill">✅ प्रमाणित व पूर्ण (RESOLVED)</span>
+                <?php else: ?>
+                <span class="status-pill" style="background: #FEF3C7; color: #D97706; border-color: #F59E0B;">⏳ कार्य प्रगति पर (<?= strtoupper($job['status']) ?>)</span>
+                <?php endif; ?>
+            </div>
             <div style="font-size: 11px; color: #64748B; margin-top: 4px;">तारीख: <?= htmlspecialchars($resolvedDate) ?></div>
         </div>
     </div>
+
+    <?php if (!empty($job['is_passenger_trapped']) || !empty($job['is_emergency'])): ?>
+    <div style="background: #FEE2E2; border: 2px solid #EF4444; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+            <span style="font-weight: 800; color: #DC2626; font-size: 14px;">🚨 आपातकालीन ब्रेकडाउन (EMERGENCY SOS: PASSENGER TRAPPED)</span>
+            <div style="font-size: 12px; color: #991B1B; margin-top: 4px;">फ्लोर: <?= htmlspecialchars($job['emergency_floor'] ?: 'Ground') ?> • फंसे यात्री: <?= intval($job['trapped_passenger_count'] ?: 1) ?> व्यक्ति • रिपोर्ट समय: <?= htmlspecialchars($job['emergency_reported_at'] ?: $job['created_at']) ?></div>
+        </div>
+        <span style="background: #DC2626; color: white; padding: 4px 10px; border-radius: 4px; font-weight: 700; font-size: 11px;">CRITICAL RESCUE</span>
+    </div>
+    <?php endif; ?>
 
     <div class="grid">
         <div class="info-card">
