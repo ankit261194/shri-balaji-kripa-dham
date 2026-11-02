@@ -16,35 +16,63 @@ if (!$pdo) {
 
 $ticketId = intval($_GET['ticket_id'] ?? 0);
 $ticketNo = trim($_GET['ticket'] ?? $_GET['ticket_number'] ?? '');
+$scheduleId = intval($_GET['schedule_id'] ?? 0);
+$isAmcMode = false;
 
-$query = "SELECT b.*, 
-                 l.lift_unique_code, l.building_name, l.building_address, l.landmark_name, l.controller_brand, l.amc_type,
-                 c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.office_address,
-                 tech.full_name as tech_name, tech.phone as tech_phone,
-                 owner.full_name as owner_name, owner.phone as owner_phone
-          FROM elevex_breakdowns b
-          JOIN elevex_lifts_amc l ON b.lift_id = l.id
-          LEFT JOIN elevex_companies c ON b.tenant_id = c.tenant_id
-          LEFT JOIN elevex_users tech ON b.assigned_technician_id = tech.id
-          LEFT JOIN elevex_users owner ON b.reported_by_id = owner.id
-          WHERE ";
-
-if ($ticketId > 0) {
-    $query .= "b.id = :tid LIMIT 1";
-    $params = [':tid' => $ticketId];
-} elseif (!empty($ticketNo)) {
-    $query .= "b.ticket_number = :tno LIMIT 1";
-    $params = [':tno' => $ticketNo];
+if ($scheduleId > 0) {
+    $isAmcMode = true;
+    $stmtAmc = $pdo->prepare("SELECT s.*, 
+                     l.lift_unique_code, l.building_name, l.building_address, l.landmark_name, l.controller_brand, l.amc_type,
+                     c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.office_address,
+                     tech.full_name as tech_name, tech.phone as tech_phone
+              FROM elevex_amc_schedules s
+              JOIN elevex_lifts_amc l ON s.lift_id = l.id
+              LEFT JOIN elevex_companies c ON s.tenant_id = c.tenant_id
+              LEFT JOIN elevex_users tech ON s.assigned_technician_id = tech.id
+              WHERE s.id = :sid LIMIT 1");
+    $stmtAmc->execute([':sid' => $scheduleId]);
+    $job = $stmtAmc->fetch(PDO::FETCH_ASSOC);
+    if (!$job) {
+        die("AMC routine schedule record not found");
+    }
+    $job['ticket_number'] = "AMC-" . $job['routine_year'] . "-M" . sprintf("%02d", $job['routine_month']);
+    $job['issue_description'] = "नियमित मासिक प्रिवेंटिव मेंटेनेंस (28-Point AMC Preventive Checklist) - माह: " . $job['routine_month'] . "/" . $job['routine_year'];
+    $job['resolution_notes'] = $job['service_notes'] ?: 'सभी 28 बिंदुओं की सघन तकनीकी जांच पूर्ण की गई। लिफ्ट परिचालन पूर्णतः सुरक्षित है।';
+    $job['resolved_at'] = $job['completed_at'];
+    $job['photo_after_url'] = $job['service_photo_url'];
+    $job['photo_before_url'] = null;
+    $job['owner_name'] = 'सोसाइटी / RWA प्रतिनिधि';
+    $job['owner_phone'] = '';
 } else {
-    die("Ticket identifier missing");
-}
+    $query = "SELECT b.*, 
+                     l.lift_unique_code, l.building_name, l.building_address, l.landmark_name, l.controller_brand, l.amc_type,
+                     c.company_name, c.brand_display_name, c.logo_url, c.primary_color_hex, c.support_phone, c.office_address,
+                     tech.full_name as tech_name, tech.phone as tech_phone,
+                     owner.full_name as owner_name, owner.phone as owner_phone
+              FROM elevex_breakdowns b
+              JOIN elevex_lifts_amc l ON b.lift_id = l.id
+              LEFT JOIN elevex_companies c ON b.tenant_id = c.tenant_id
+              LEFT JOIN elevex_users tech ON b.assigned_technician_id = tech.id
+              LEFT JOIN elevex_users owner ON b.reported_by_id = owner.id
+              WHERE ";
 
-$stmt = $pdo->prepare($query);
-$stmt->execute($params);
-$job = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($ticketId > 0) {
+        $query .= "b.id = :tid LIMIT 1";
+        $params = [':tid' => $ticketId];
+    } elseif (!empty($ticketNo)) {
+        $query .= "b.ticket_number = :tno LIMIT 1";
+        $params = [':tno' => $ticketNo];
+    } else {
+        die("Ticket identifier missing");
+    }
 
-if (!$job) {
-    die("Job sheet record not found");
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
+    $job = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$job) {
+        die("Job sheet record not found");
+    }
 }
 
 $primaryColor = !empty($job['primary_color_hex']) ? $job['primary_color_hex'] : '#1E40AF';
@@ -52,7 +80,11 @@ $brandName = !empty($job['brand_display_name']) ? $job['brand_display_name'] : $
 $resolvedDate = !empty($job['resolved_at']) ? date("d M Y, h:i A", strtotime($job['resolved_at'])) : date("d M Y, h:i A");
 $createdDate = !empty($job['created_at']) ? date("d M Y, h:i A", strtotime($job['created_at'])) : '';
 
-$waShareText = "📋 Ankit EleveX Pro - Job Sheet for Ticket " . $job['ticket_number'] . " at " . $job['building_name'] . ":\nhttps://shribalajikripadham.online/elevex_gateway/jobsheet.php?ticket_id=" . $job['id'];
+if ($isAmcMode) {
+    $waShareText = "📋 Ankit EleveX Pro - AMC Service Certificate for " . $job['building_name'] . " (" . $job['ticket_number'] . "):\nhttps://shribalajikripadham.online/elevex_gateway/jobsheet.php?schedule_id=" . $job['id'];
+} else {
+    $waShareText = "📋 Ankit EleveX Pro - Job Sheet for Ticket " . $job['ticket_number'] . " at " . $job['building_name'] . ":\nhttps://shribalajikripadham.online/elevex_gateway/jobsheet.php?ticket_id=" . $job['id'];
+}
 $waUrl = "https://wa.me/?text=" . rawurlencode($waShareText);
 ?>
 <!DOCTYPE html>
@@ -348,6 +380,54 @@ $waUrl = "https://wa.me/?text=" . rawurlencode($waShareText);
             <?php endif; ?>
         </div>
     </div>
+
+    <?php if ($isAmcMode && !empty($job['checklist_json'])): 
+        $checklistData = json_decode($job['checklist_json'], true);
+        if (is_array($checklistData)):
+    ?>
+    <div class="section">
+        <div class="section-title">28-पॉइंट तकनीकी प्रिवेंटिव इंस्पेक्शन (28-Point AMC Preventive Audit)</div>
+        <div style="background: #FFF; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+                <thead>
+                    <tr style="background: #F1F5F9; border-bottom: 1px solid var(--border); text-align: left;">
+                        <th style="padding: 10px 14px; font-weight: 700; color: #475569;">#</th>
+                        <th style="padding: 10px 14px; font-weight: 700; color: #475569;">जांच बिंदु (Check Point)</th>
+                        <th style="padding: 10px 14px; font-weight: 700; color: #475569; width: 120px;">स्थिति (Status)</th>
+                        <th style="padding: 10px 14px; font-weight: 700; color: #475569;">टिप्पणी (Remarks)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $ptIndex = 1;
+                    foreach ($checklistData as $item): 
+                        $status = strtolower($item['status'] ?? 'ok');
+                        $badgeStyle = 'background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0;';
+                        $statusLabel = 'सामान्य (OK)';
+                        if ($status === 'adjusted') {
+                            $badgeStyle = 'background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A;';
+                            $statusLabel = 'समायोजित (Adj)';
+                        } elseif ($status === 'defective') {
+                            $badgeStyle = 'background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA;';
+                            $statusLabel = 'दोषपूर्ण (Fault)';
+                        }
+                    ?>
+                    <tr style="border-bottom: 1px solid #F1F5F9;">
+                        <td style="padding: 9px 14px; color: #94A3B8; font-weight: 600;"><?= $ptIndex++ ?></td>
+                        <td style="padding: 9px 14px; color: #1E293B; font-weight: 500;"><?= htmlspecialchars($item['name'] ?? $item['point'] ?? '') ?></td>
+                        <td style="padding: 9px 14px;">
+                            <span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; <?= $badgeStyle ?>">
+                                <?= $statusLabel ?>
+                            </span>
+                        </td>
+                        <td style="padding: 9px 14px; color: #64748B; font-size: 11.5px;"><?= htmlspecialchars($item['notes'] ?? '-') ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <?php endif; endif; ?>
 
     <?php if (!empty($job['photo_before_url']) || !empty($job['photo_after_url'])): ?>
     <div class="section">
