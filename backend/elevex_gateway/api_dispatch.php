@@ -178,10 +178,11 @@ if ($action === 'create_breakdown') {
     $trappedCount = intval($input['trapped_passenger_count'] ?? 0);
     $emergencyFloor = trim($input['emergency_floor'] ?? '');
 
+    $emergReportedAt = ($isEmergency === 1) ? date('Y-m-d H:i:s') : null;
     $stmt = $pdo->prepare("INSERT INTO elevex_breakdowns 
         (tenant_id, ticket_number, lift_id, reported_by_id, status, issue_description, completion_otp, 
          is_emergency, is_passenger_trapped, trapped_passenger_count, emergency_floor, emergency_reported_at, created_at) 
-        VALUES (:t, :tno, :lid, :rid, 'pending', :desc, :otp, :iemerg, :itrapped, :tcount, :efloor, IF(:iemerg=1, NOW(), NULL), NOW())");
+        VALUES (:t, :tno, :lid, :rid, 'pending', :desc, :otp, :iemerg, :itrapped, :tcount, :efloor, :edate, NOW())");
     $stmt->execute([
         ':t' => $tenantId,
         ':tno' => $ticketNo,
@@ -192,7 +193,8 @@ if ($action === 'create_breakdown') {
         ':iemerg' => $isEmergency,
         ':itrapped' => $isPassengerTrapped,
         ':tcount' => $trappedCount,
-        ':efloor' => $emergencyFloor
+        ':efloor' => $emergencyFloor,
+        ':edate' => $emergReportedAt
     ]);
 
     $ticketId = intval($pdo->lastInsertId());
