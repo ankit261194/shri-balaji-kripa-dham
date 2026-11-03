@@ -38,11 +38,11 @@ $elevexApps = [
 
         'package' => 'com.ankit.elevex.superadmin',
 
-        'version' => '5.9.49',
+        'version' => '5.9.51',
 
-        'build'   => 640,
+        'build'   => 641,
 
-        'filename' => 'EleveX_SuperAdmin_v5.9.50.apk',
+        'filename' => 'EleveX_SuperAdmin_v5.9.51.apk',
 
         'size'    => '37.9 MB',
 
@@ -64,11 +64,11 @@ $elevexApps = [
 
         'package' => 'com.ankit.elevex.supervisor',
 
-        'version' => '5.9.49',
+        'version' => '5.9.51',
 
-        'build'   => 640,
+        'build'   => 641,
 
-        'filename' => 'EleveX_Supervisor_v5.9.50.apk',
+        'filename' => 'EleveX_Supervisor_v5.9.51.apk',
 
         'size'    => '37.9 MB',
 
@@ -90,11 +90,11 @@ $elevexApps = [
 
         'package' => 'com.ankit.elevex.technician',
 
-        'version' => '5.9.49',
+        'version' => '5.9.51',
 
-        'build'   => 640,
+        'build'   => 641,
 
-        'filename' => 'EleveX_Technician_v5.9.50.apk',
+        'filename' => 'EleveX_Technician_v5.9.51.apk',
 
         'size'    => '37.9 MB',
 
@@ -116,11 +116,11 @@ $elevexApps = [
 
         'package' => 'com.ankit.elevex.owner',
 
-        'version' => '5.9.49',
+        'version' => '5.9.51',
 
-        'build'   => 640,
+        'build'   => 641,
 
-        'filename' => 'EleveX_Owner_v5.9.50.apk',
+        'filename' => 'EleveX_Owner_v5.9.51.apk',
 
         'size'    => '37.9 MB',
 
@@ -142,11 +142,11 @@ $elevexApps = [
 
         'package' => 'com.ankit.liftramban.ankits_lift_ramban_ai',
 
-        'version' => '5.9.49',
+        'version' => '5.9.51',
 
-        'build'   => 640,
+        'build'   => 641,
 
-        'filename' => 'EleveX_Master_Gateway_v5.9.50.apk',
+        'filename' => 'EleveX_Master_Gateway_v5.9.51.apk',
 
         'size'    => '37.9 MB',
 
@@ -210,7 +210,7 @@ if (isset($elevexApps[$appParam])) {
 
 
 
-        // 1. Specific named APK (e.g. EleveX_Technician_v5.9.50.apk)
+        // 1. Specific named APK (e.g. EleveX_Technician_v5.9.51.apk)
 
         $specific = "$dir/{$filename}";
 
