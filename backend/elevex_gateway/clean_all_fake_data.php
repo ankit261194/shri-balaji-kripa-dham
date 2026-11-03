@@ -16,6 +16,17 @@ require_once __DIR__ . '/config.php';
 
 $pdo = getDbConnection();
 if (!$pdo) {
+        // 6. PURGE ALL FAKE/TEST COMPANIES (Keep ONLY real ones: TENANT_DEFAULT_ANKIT and tenant_master_elevex)
+    $stmtPurge = $pdo->exec("DELETE FROM elevex_companies WHERE tenant_id LIKE 'tenant_surakshaelevator_%' 
+        OR tenant_id LIKE 'tenant_apexotisvertical_%' 
+        OR tenant_id LIKE 'tenant_testverification_%'
+        OR tenant_id LIKE 'tenant_kripaliftspvtltd_%'
+        OR tenant_id LIKE 'tenant_apexhightechelev_%'
+        OR tenant_id LIKE 'tenant_apexelevatorsncr_%'
+        OR tenant_id LIKE 'tenant_kripaelevatorsno_%'
+        OR tenant_id LIKE 'tenant_horizon_%'");
+    $results[] = 'Purged ' . intval($stmtPurge) . ' fake/test companies from elevex_companies';
+
     echo json_encode(["success" => false, "error" => "Database connection unavailable"]);
     exit;
 }
@@ -74,6 +85,17 @@ try {
         $results[] = "Travel claims purge skipped: " . $e->getMessage();
     }
 
+        // 6. PURGE ALL FAKE/TEST COMPANIES (Keep ONLY real ones: TENANT_DEFAULT_ANKIT and tenant_master_elevex)
+    $stmtPurge = $pdo->exec("DELETE FROM elevex_companies WHERE tenant_id LIKE 'tenant_surakshaelevator_%' 
+        OR tenant_id LIKE 'tenant_apexotisvertical_%' 
+        OR tenant_id LIKE 'tenant_testverification_%'
+        OR tenant_id LIKE 'tenant_kripaliftspvtltd_%'
+        OR tenant_id LIKE 'tenant_apexhightechelev_%'
+        OR tenant_id LIKE 'tenant_apexelevatorsncr_%'
+        OR tenant_id LIKE 'tenant_kripaelevatorsno_%'
+        OR tenant_id LIKE 'tenant_horizon_%'");
+    $results[] = 'Purged ' . intval($stmtPurge) . ' fake/test companies from elevex_companies';
+
     echo json_encode([
         "success" => true,
         "message" => "Database successfully purged of all fake data and schema updated with exact GPS coordinates!",
@@ -81,6 +103,17 @@ try {
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {
+        // 6. PURGE ALL FAKE/TEST COMPANIES (Keep ONLY real ones: TENANT_DEFAULT_ANKIT and tenant_master_elevex)
+    $stmtPurge = $pdo->exec("DELETE FROM elevex_companies WHERE tenant_id LIKE 'tenant_surakshaelevator_%' 
+        OR tenant_id LIKE 'tenant_apexotisvertical_%' 
+        OR tenant_id LIKE 'tenant_testverification_%'
+        OR tenant_id LIKE 'tenant_kripaliftspvtltd_%'
+        OR tenant_id LIKE 'tenant_apexhightechelev_%'
+        OR tenant_id LIKE 'tenant_apexelevatorsncr_%'
+        OR tenant_id LIKE 'tenant_kripaelevatorsno_%'
+        OR tenant_id LIKE 'tenant_horizon_%'");
+    $results[] = 'Purged ' . intval($stmtPurge) . ' fake/test companies from elevex_companies';
+
     echo json_encode([
         "success" => false,
         "error" => $e->getMessage()
