@@ -748,7 +748,7 @@ header("Content-Type: text/html; charset=utf-8");
 
         <h1>Ankit EleveX Pro Suite</h1>
 
-        <p class="subtitle">अंकित एलेवेक्स प्रो — इंडस्ट्रियल लिफ्ट फ्लीट इकोसिस्टम (v5.9.41 • Build 631)<br>Dedicated Standalone Enterprise APKs for Super Admin, Supervisor, Technician & Lift Owners</p>
+        <p class="subtitle">अंकित एलेवेक्स प्रो — इंडस्ट्रियल लिफ्ट फ्लीट इकोसिस्टम (v5.9.52 • Build 642)<br>Dedicated Standalone Enterprise APKs for Super Admin, Supervisor, Technician & Lift Owners</p>
 
     </div>
 
