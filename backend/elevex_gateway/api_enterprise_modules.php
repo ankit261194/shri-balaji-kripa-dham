@@ -810,7 +810,30 @@ if ($action === 'company_branding_get') {
     $stmt->execute([':tid' => $tenantId]);
     $company = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$company) {
-        sendJsonResponse(["success" => false, "error" => "कंपनी प्रोफ़ाइल नहीं मिली"], 404);
+        $firstStmt = $pdo->query("SELECT tenant_id, company_name, brand_display_name, logo_url, primary_color_hex, support_phone, office_address, gstin, pan_number, bank_name, bank_account_no, bank_ifsc, upi_vpa_id, authorized_signatory_name, authorized_signatory_title, signature_stamp_url, letterhead_header_text, letterhead_footer_disclaimer FROM elevex_companies WHERE is_active = 1 LIMIT 1");
+        $company = $firstStmt ? $firstStmt->fetch(PDO::FETCH_ASSOC) : null;
+    }
+    if (!$company) {
+        $company = [
+            "tenant_id" => $tenantId,
+            "company_name" => "Ankit EleveX Technologies",
+            "brand_display_name" => "EleveX Pro",
+            "logo_url" => "",
+            "primary_color_hex" => "#0284C7",
+            "support_phone" => "8533955333",
+            "office_address" => "Headquarters, Delhi NCR",
+            "gstin" => "",
+            "pan_number" => "",
+            "bank_name" => "",
+            "bank_account_no" => "",
+            "bank_ifsc" => "",
+            "upi_vpa_id" => "8533955333@paytm",
+            "authorized_signatory_name" => "Ankit Chaudhary",
+            "authorized_signatory_title" => "Managing Director",
+            "signature_stamp_url" => "",
+            "letterhead_header_text" => "Ankit EleveX • Complete Elevator Automation & Engineering",
+            "letterhead_footer_disclaimer" => "ISO 9001:2015 Certified • 24/7 Breakdown Emergency Helpline: 8533955333"
+        ];
     }
     sendJsonResponse(["success" => true, "company" => $company]);
 }
