@@ -44,9 +44,9 @@ $elevexApps = [
 
         'filename' => 'EleveX_SuperAdmin_v5.9.51.apk',
 
-        'size'    => '37.9 MB',
+        'size'    => '38.31 MB',
 
-        'sha256'  => '455b83da8b71efa66ed56dfb589d660506ef2eb795d0989e0b11a4be7da3985c',
+        'sha256'  => 'df278aa3d0c5a9800b3fee5e2004303cd04b6fa3ce0d496c710ccbf195676d28',
 
         'color' => '#8B5CF6',
 
@@ -70,9 +70,9 @@ $elevexApps = [
 
         'filename' => 'EleveX_Supervisor_v5.9.51.apk',
 
-        'size'    => '37.9 MB',
+        'size'    => '38.31 MB',
 
-        'sha256'  => '455b83da8b71efa66ed56dfb589d660506ef2eb795d0989e0b11a4be7da3985c',
+        'sha256'  => 'df278aa3d0c5a9800b3fee5e2004303cd04b6fa3ce0d496c710ccbf195676d28',
 
         'color' => '#0284C7',
 
@@ -96,9 +96,9 @@ $elevexApps = [
 
         'filename' => 'EleveX_Technician_v5.9.51.apk',
 
-        'size'    => '37.9 MB',
+        'size'    => '38.31 MB',
 
-        'sha256'  => '455b83da8b71efa66ed56dfb589d660506ef2eb795d0989e0b11a4be7da3985c',
+        'sha256'  => 'df278aa3d0c5a9800b3fee5e2004303cd04b6fa3ce0d496c710ccbf195676d28',
 
         'color' => '#10B981',
 
@@ -122,9 +122,9 @@ $elevexApps = [
 
         'filename' => 'EleveX_Owner_v5.9.51.apk',
 
-        'size'    => '37.9 MB',
+        'size'    => '38.31 MB',
 
-        'sha256'  => '455b83da8b71efa66ed56dfb589d660506ef2eb795d0989e0b11a4be7da3985c',
+        'sha256'  => 'df278aa3d0c5a9800b3fee5e2004303cd04b6fa3ce0d496c710ccbf195676d28',
 
         'color' => '#F59E0B',
 
@@ -148,9 +148,9 @@ $elevexApps = [
 
         'filename' => 'EleveX_Master_Gateway_v5.9.51.apk',
 
-        'size'    => '37.9 MB',
+        'size'    => '38.31 MB',
 
-        'sha256'  => '455b83da8b71efa66ed56dfb589d660506ef2eb795d0989e0b11a4be7da3985c',
+        'sha256'  => 'df278aa3d0c5a9800b3fee5e2004303cd04b6fa3ce0d496c710ccbf195676d28',
 
         'color' => '#3B82F6',
 
