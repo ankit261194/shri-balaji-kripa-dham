@@ -1193,6 +1193,85 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
     $results['elevex_phase2_spare_parts_tables'] = "VERIFIED_AND_CREATED_OK";
+
+    // =========================================================================
+    // PHASE 3: 10-STAGE NEW LIFT ERECTION PROJECT TRACKER & STATUTORY AUDITS
+    // =========================================================================
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_erection_projects (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL,
+        project_code VARCHAR(64) UNIQUE NOT NULL,
+        customer_name VARCHAR(128) NOT NULL,
+        customer_phone VARCHAR(20) NOT NULL,
+        customer_email VARCHAR(128) NULL,
+        building_name VARCHAR(191) NOT NULL,
+        site_address TEXT NOT NULL,
+        elevator_type ENUM('PASSENGER_MR', 'PASSENGER_MRL', 'HOSPITAL_BED', 'FREIGHT_CARGO', 'HYDRAULIC', 'HOME_VILLA') NOT NULL DEFAULT 'PASSENGER_MRL',
+        capacity_kg INT NOT NULL DEFAULT 544,
+        speed_mps DECIMAL(4,2) NOT NULL DEFAULT 1.00,
+        stops_count INT NOT NULL DEFAULT 6,
+        current_stage INT NOT NULL DEFAULT 1,
+        progress_pct INT NOT NULL DEFAULT 0,
+        assigned_supervisor_id INT NULL,
+        assigned_technician_id INT NULL,
+        target_handover_date DATE NULL,
+        actual_handover_date DATE NULL,
+        status ENUM('planning', 'civil_readiness', 'under_erection', 'testing_commissioning', 'statutory_inspection', 'handed_over', 'on_hold') NOT NULL DEFAULT 'under_erection',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_tenant_proj (tenant_id, project_code),
+        INDEX idx_status (status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_erection_stages (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        stage_number INT NOT NULL,
+        stage_name VARCHAR(191) NOT NULL,
+        stage_name_hi VARCHAR(191) NOT NULL,
+        description TEXT NULL,
+        status ENUM('pending', 'in_progress', 'completed', 'verified_by_supervisor') NOT NULL DEFAULT 'pending',
+        site_photo_url VARCHAR(500) NULL,
+        technician_id INT NULL,
+        technician_name VARCHAR(128) NULL,
+        technician_notes TEXT NULL,
+        supervisor_id INT NULL,
+        supervisor_remarks TEXT NULL,
+        completed_at DATETIME NULL,
+        verified_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_proj_stage (project_id, stage_number),
+        INDEX idx_stage_status (project_id, status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_statutory_audits (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL,
+        audit_no VARCHAR(64) UNIQUE NOT NULL,
+        lift_id INT NULL,
+        project_id INT NULL,
+        building_name VARCHAR(191) NOT NULL,
+        site_address TEXT NOT NULL,
+        audit_type ENUM('FORM_D_INITIAL_COMMISSIONING', 'ANNUAL_SAFETY_INSPECTION', 'SPECIAL_INVESTIGATION') NOT NULL DEFAULT 'ANNUAL_SAFETY_INSPECTION',
+        inspector_name VARCHAR(128) NOT NULL,
+        inspector_license_no VARCHAR(64) NOT NULL,
+        inspection_date DATE NOT NULL,
+        valid_until DATE NOT NULL,
+        checklist_json LONGTEXT NOT NULL,
+        total_checkpoints INT NOT NULL DEFAULT 10,
+        passed_checkpoints INT NOT NULL DEFAULT 10,
+        failed_checkpoints INT NOT NULL DEFAULT 0,
+        safety_score_pct INT NOT NULL DEFAULT 100,
+        certificate_status ENUM('PASSED_CERTIFIED', 'FAILED_CORRECTION_REQUIRED', 'SUSPENDED') NOT NULL DEFAULT 'PASSED_CERTIFIED',
+        certificate_hash VARCHAR(64) NOT NULL,
+        inspector_signature_url VARCHAR(500) NULL,
+        pdf_certificate_url VARCHAR(500) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_tenant_audit (tenant_id, audit_no),
+        INDEX idx_audit_status (certificate_status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $results['elevex_phase3_erection_and_audit_tables'] = "VERIFIED_AND_CREATED_OK";
 } catch (Exception $e) {
     $results['elevex_phase2_error'] = $e->getMessage();
 }
