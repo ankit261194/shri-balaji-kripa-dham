@@ -26,6 +26,69 @@ if (!$pdo) {
     sendJsonResponse(["success" => false, "error" => "Database connection unavailable"], 500);
 }
 
+function ensureAmcTables($pdo) {
+    static $done = false;
+    if ($done) return;
+    
+    // Check elevex_amc_contracts
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_amc_contracts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL,
+        contract_no VARCHAR(64) UNIQUE NOT NULL,
+        building_name VARCHAR(191) NOT NULL,
+        building_address TEXT NOT NULL,
+        city VARCHAR(64) NOT NULL DEFAULT 'Delhi NCR',
+        customer_name VARCHAR(128) NOT NULL,
+        customer_phone VARCHAR(20) NOT NULL,
+        customer_email VARCHAR(128) NULL,
+        lift_count INT NOT NULL DEFAULT 1,
+        amc_type ENUM('Comprehensive', 'Non-Comprehensive', 'Semi-Comprehensive') NOT NULL DEFAULT 'Non-Comprehensive',
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        annual_amount DECIMAL(12,2) NOT NULL DEFAULT 15000.00,
+        payment_status ENUM('paid', 'partial', 'pending', 'overdue') NOT NULL DEFAULT 'pending',
+        paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        service_frequency ENUM('monthly', 'bi_monthly', 'quarterly') NOT NULL DEFAULT 'monthly',
+        services_completed INT NOT NULL DEFAULT 0,
+        total_services_scheduled INT NOT NULL DEFAULT 12,
+        status ENUM('active', 'expiring_soon', 'expired', 'renewed', 'terminated') NOT NULL DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_tenant_status (tenant_id, status),
+        INDEX idx_dates (start_date, end_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // Recreate elevex_amc_schedules if contract_id is missing
+    try {
+        $check = $pdo->query("SHOW COLUMNS FROM elevex_amc_schedules LIKE 'contract_id'");
+        if (!$check || $check->rowCount() == 0) {
+            $pdo->exec("DROP TABLE IF EXISTS elevex_amc_schedules");
+        }
+    } catch (Exception $e) {}
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_amc_schedules (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        contract_id INT NOT NULL,
+        tenant_id VARCHAR(64) NOT NULL,
+        service_month VARCHAR(20) NOT NULL,
+        scheduled_date DATE NOT NULL,
+        assigned_technician_id INT NULL,
+        assigned_technician_name VARCHAR(128) NULL,
+        completed_date DATETIME NULL,
+        service_status ENUM('scheduled', 'in_progress', 'completed', 'missed', 'rescheduled') DEFAULT 'scheduled',
+        checklist_score INT DEFAULT 0,
+        technician_notes TEXT NULL,
+        customer_signature_url TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_contract (contract_id),
+        INDEX idx_tenant_sched (tenant_id, scheduled_date),
+        INDEX idx_status (service_status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $done = true;
+}
+ensureAmcTables($pdo);
+
 $input = getJsonInput();
 $action = $_GET['action'] ?? $_POST['action'] ?? ($input['action'] ?? 'list_contracts');
 $tenantId = trim($_GET['tenant_id'] ?? $_POST['tenant_id'] ?? ($input['tenant_id'] ?? ''));
