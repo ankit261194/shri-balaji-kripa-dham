@@ -46,7 +46,7 @@ $elevexApps = [
 
         'size'    => '37.9 MB',
 
-        'sha256'  => '1d4045cb7fec898095d2041660a5576213d527006d0f3beb6061705ecf8a07a8',
+        'sha256'  => '455b83da8b71efa66ed56dfb589d660506ef2eb795d0989e0b11a4be7da3985c',
 
         'color' => '#8B5CF6',
 
@@ -72,7 +72,7 @@ $elevexApps = [
 
         'size'    => '37.9 MB',
 
-        'sha256'  => '1d4045cb7fec898095d2041660a5576213d527006d0f3beb6061705ecf8a07a8',
+        'sha256'  => '455b83da8b71efa66ed56dfb589d660506ef2eb795d0989e0b11a4be7da3985c',
 
         'color' => '#0284C7',
 
@@ -98,7 +98,7 @@ $elevexApps = [
 
         'size'    => '37.9 MB',
 
-        'sha256'  => '1d4045cb7fec898095d2041660a5576213d527006d0f3beb6061705ecf8a07a8',
+        'sha256'  => '455b83da8b71efa66ed56dfb589d660506ef2eb795d0989e0b11a4be7da3985c',
 
         'color' => '#10B981',
 
@@ -124,7 +124,7 @@ $elevexApps = [
 
         'size'    => '37.9 MB',
 
-        'sha256'  => '1d4045cb7fec898095d2041660a5576213d527006d0f3beb6061705ecf8a07a8',
+        'sha256'  => '455b83da8b71efa66ed56dfb589d660506ef2eb795d0989e0b11a4be7da3985c',
 
         'color' => '#F59E0B',
 
@@ -150,7 +150,7 @@ $elevexApps = [
 
         'size'    => '37.9 MB',
 
-        'sha256'  => '1d4045cb7fec898095d2041660a5576213d527006d0f3beb6061705ecf8a07a8',
+        'sha256'  => '455b83da8b71efa66ed56dfb589d660506ef2eb795d0989e0b11a4be7da3985c',
 
         'color' => '#3B82F6',
 
