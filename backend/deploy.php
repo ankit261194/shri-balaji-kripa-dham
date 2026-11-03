@@ -103,6 +103,8 @@ $filesToSync = [
     "elevex_gateway/api_queue.php",
     "elevex_gateway/seed_ecosystem.php",
     "elevex_gateway/jobsheet.php",
+    "elevex_gateway/api_amc.php",
+    "elevex_gateway/api_breakdown_sla.php",
     "portal.php",
     "portal/index.php"
 ];
