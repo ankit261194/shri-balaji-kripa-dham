@@ -38,15 +38,15 @@ $elevexApps = [
 
         'package' => 'com.ankit.elevex.superadmin',
 
-        'version' => '5.9.48',
+        'version' => '5.9.49',
 
-        'build' => 638,
+        'build'   => 639,
 
-        'filename' => 'EleveX_SuperAdmin_v5.9.48.apk',
+        'filename' => 'EleveX_SuperAdmin_v5.9.49.apk',
 
-        'size' => '37.9 MB',
+        'size'    => '37.9 MB',
 
-        'sha256' => '7542b5a343d1d9be5d04c2ba9bdfe5cde0ca5a14c6dc3b3994c3258642f3c4ee',
+        'sha256'  => '1d4045cb7fec898095d2041660a5576213d527006d0f3beb6061705ecf8a07a8',
 
         'color' => '#8B5CF6',
 
@@ -64,15 +64,15 @@ $elevexApps = [
 
         'package' => 'com.ankit.elevex.supervisor',
 
-        'version' => '5.9.48',
+        'version' => '5.9.49',
 
-        'build' => 638,
+        'build'   => 639,
 
-        'filename' => 'EleveX_Supervisor_v5.9.48.apk',
+        'filename' => 'EleveX_Supervisor_v5.9.49.apk',
 
-        'size' => '37.9 MB',
+        'size'    => '37.9 MB',
 
-        'sha256' => '7542b5a343d1d9be5d04c2ba9bdfe5cde0ca5a14c6dc3b3994c3258642f3c4ee',
+        'sha256'  => '1d4045cb7fec898095d2041660a5576213d527006d0f3beb6061705ecf8a07a8',
 
         'color' => '#0284C7',
 
@@ -90,15 +90,15 @@ $elevexApps = [
 
         'package' => 'com.ankit.elevex.technician',
 
-        'version' => '5.9.48',
+        'version' => '5.9.49',
 
-        'build' => 638,
+        'build'   => 639,
 
-        'filename' => 'EleveX_Technician_v5.9.48.apk',
+        'filename' => 'EleveX_Technician_v5.9.49.apk',
 
-        'size' => '37.9 MB',
+        'size'    => '37.9 MB',
 
-        'sha256' => '7542b5a343d1d9be5d04c2ba9bdfe5cde0ca5a14c6dc3b3994c3258642f3c4ee',
+        'sha256'  => '1d4045cb7fec898095d2041660a5576213d527006d0f3beb6061705ecf8a07a8',
 
         'color' => '#10B981',
 
@@ -116,15 +116,15 @@ $elevexApps = [
 
         'package' => 'com.ankit.elevex.owner',
 
-        'version' => '5.9.48',
+        'version' => '5.9.49',
 
-        'build' => 638,
+        'build'   => 639,
 
-        'filename' => 'EleveX_Owner_v5.9.48.apk',
+        'filename' => 'EleveX_Owner_v5.9.49.apk',
 
-        'size' => '37.9 MB',
+        'size'    => '37.9 MB',
 
-        'sha256' => '7542b5a343d1d9be5d04c2ba9bdfe5cde0ca5a14c6dc3b3994c3258642f3c4ee',
+        'sha256'  => '1d4045cb7fec898095d2041660a5576213d527006d0f3beb6061705ecf8a07a8',
 
         'color' => '#F59E0B',
 
@@ -142,15 +142,15 @@ $elevexApps = [
 
         'package' => 'com.ankit.liftramban.ankits_lift_ramban_ai',
 
-        'version' => '5.9.48',
+        'version' => '5.9.49',
 
-        'build' => 638,
+        'build'   => 639,
 
-        'filename' => 'EleveX_Master_Gateway_v5.9.48.apk',
+        'filename' => 'EleveX_Master_Gateway_v5.9.49.apk',
 
-        'size' => '37.9 MB',
+        'size'    => '37.9 MB',
 
-        'sha256' => '7542b5a343d1d9be5d04c2ba9bdfe5cde0ca5a14c6dc3b3994c3258642f3c4ee',
+        'sha256'  => '1d4045cb7fec898095d2041660a5576213d527006d0f3beb6061705ecf8a07a8',
 
         'color' => '#3B82F6',
 
@@ -210,7 +210,7 @@ if (isset($elevexApps[$appParam])) {
 
 
 
-        // 1. Specific named APK (e.g. EleveX_Technician_v5.9.48.apk)
+        // 1. Specific named APK (e.g. EleveX_Technician_v5.9.49.apk)
 
         $specific = "$dir/{$filename}";
 

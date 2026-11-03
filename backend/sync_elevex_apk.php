@@ -109,11 +109,11 @@ if (isset($_GET['sync_flavor_copies'])) {
             "EleveX_Technician_v5.9.47.apk",
 
             "EleveX_Owner_v5.9.47.apk",
-            "EleveX_Master_Gateway_v5.9.48.apk",
-            "EleveX_SuperAdmin_v5.9.48.apk",
-            "EleveX_Supervisor_v5.9.48.apk",
-            "EleveX_Technician_v5.9.48.apk",
-            "EleveX_Owner_v5.9.48.apk"
+            "EleveX_Master_Gateway_v5.9.49.apk",
+            "EleveX_SuperAdmin_v5.9.49.apk",
+            "EleveX_Supervisor_v5.9.49.apk",
+            "EleveX_Technician_v5.9.49.apk",
+            "EleveX_Owner_v5.9.49.apk"
 
         ];
 
