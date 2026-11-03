@@ -40,9 +40,9 @@ $elevexApps = [
 
         'version' => '5.9.49',
 
-        'build'   => 639,
+        'build'   => 640,
 
-        'filename' => 'EleveX_SuperAdmin_v5.9.49.apk',
+        'filename' => 'EleveX_SuperAdmin_v5.9.50.apk',
 
         'size'    => '37.9 MB',
 
@@ -66,9 +66,9 @@ $elevexApps = [
 
         'version' => '5.9.49',
 
-        'build'   => 639,
+        'build'   => 640,
 
-        'filename' => 'EleveX_Supervisor_v5.9.49.apk',
+        'filename' => 'EleveX_Supervisor_v5.9.50.apk',
 
         'size'    => '37.9 MB',
 
@@ -92,9 +92,9 @@ $elevexApps = [
 
         'version' => '5.9.49',
 
-        'build'   => 639,
+        'build'   => 640,
 
-        'filename' => 'EleveX_Technician_v5.9.49.apk',
+        'filename' => 'EleveX_Technician_v5.9.50.apk',
 
         'size'    => '37.9 MB',
 
@@ -118,9 +118,9 @@ $elevexApps = [
 
         'version' => '5.9.49',
 
-        'build'   => 639,
+        'build'   => 640,
 
-        'filename' => 'EleveX_Owner_v5.9.49.apk',
+        'filename' => 'EleveX_Owner_v5.9.50.apk',
 
         'size'    => '37.9 MB',
 
@@ -144,9 +144,9 @@ $elevexApps = [
 
         'version' => '5.9.49',
 
-        'build'   => 639,
+        'build'   => 640,
 
-        'filename' => 'EleveX_Master_Gateway_v5.9.49.apk',
+        'filename' => 'EleveX_Master_Gateway_v5.9.50.apk',
 
         'size'    => '37.9 MB',
 
@@ -210,7 +210,7 @@ if (isset($elevexApps[$appParam])) {
 
 
 
-        // 1. Specific named APK (e.g. EleveX_Technician_v5.9.49.apk)
+        // 1. Specific named APK (e.g. EleveX_Technician_v5.9.50.apk)
 
         $specific = "$dir/{$filename}";
 
