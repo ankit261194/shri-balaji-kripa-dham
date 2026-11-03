@@ -1116,6 +1116,87 @@ try {
     $results['elevex_phase1_error'] = $e->getMessage();
 }
 
+// =============================================================================
+// PHASE 2: SPARE PARTS CATALOG, TECHNICIAN REQUISITION & QUOTATION TABLES
+// =============================================================================
+try {
+    // 1. elevex_spare_parts
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_spare_parts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL,
+        part_number VARCHAR(64) UNIQUE NOT NULL,
+        part_name VARCHAR(191) NOT NULL,
+        oem_brand VARCHAR(64) NOT NULL DEFAULT 'UNIVERSAL',
+        category ENUM('Safety', 'Door_Operator', 'Traction_Drive', 'Electrical_PCB', 'Sensor_Switch', 'Mechanical_Hardware') NOT NULL DEFAULT 'Mechanical_Hardware',
+        description TEXT NULL,
+        cost_price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        selling_price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        stock_quantity INT NOT NULL DEFAULT 0,
+        min_reorder_level INT NOT NULL DEFAULT 2,
+        unit VARCHAR(32) NOT NULL DEFAULT 'Piece',
+        is_active TINYINT(1) NOT NULL DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_tenant_brand (tenant_id, oem_brand)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // 2. elevex_part_requisitions
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_part_requisitions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL,
+        requisition_no VARCHAR(64) UNIQUE NOT NULL,
+        ticket_id INT NULL,
+        lift_id INT NULL,
+        technician_id INT NOT NULL,
+        technician_name VARCHAR(128) NOT NULL,
+        technician_phone VARCHAR(20) NOT NULL,
+        part_id INT NOT NULL,
+        part_name VARCHAR(191) NOT NULL,
+        requested_qty INT NOT NULL DEFAULT 1,
+        urgency_level ENUM('CRITICAL_STOPPAGE', 'HIGH', 'ROUTINE') NOT NULL DEFAULT 'ROUTINE',
+        site_fault_photo_url TEXT NULL,
+        fault_description TEXT NOT NULL,
+        status ENUM('pending_supervisor', 'approved', 'rejected', 'quoted_to_client', 'dispatched', 'installed') NOT NULL DEFAULT 'pending_supervisor',
+        supervisor_id INT NULL,
+        supervisor_notes TEXT NULL,
+        approved_at DATETIME NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_tenant_status (tenant_id, status),
+        INDEX idx_ticket (ticket_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // 3. elevex_part_quotations
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_part_quotations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL,
+        quotation_no VARCHAR(64) UNIQUE NOT NULL,
+        requisition_id INT NULL,
+        ticket_id INT NULL,
+        building_name VARCHAR(191) NOT NULL,
+        customer_name VARCHAR(128) NOT NULL,
+        customer_phone VARCHAR(20) NOT NULL,
+        items_json LONGTEXT NOT NULL,
+        subtotal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        gst_rate_pct DECIMAL(5,2) NOT NULL DEFAULT 18.00,
+        gst_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        grand_total DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+        markup_pct DECIMAL(5,2) NOT NULL DEFAULT 20.00,
+        approval_status ENUM('draft', 'sent_to_client', 'client_approved', 'client_rejected', 'invoiced') NOT NULL DEFAULT 'draft',
+        client_approved_at DATETIME NULL,
+        client_ip VARCHAR(45) NULL,
+        client_notes TEXT NULL,
+        whatsapp_message TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_tenant_quo (tenant_id, quotation_no),
+        INDEX idx_status (approval_status)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $results['elevex_phase2_spare_parts_tables'] = "VERIFIED_AND_CREATED_OK";
+} catch (Exception $e) {
+    $results['elevex_phase2_error'] = $e->getMessage();
+}
+
 if (isset($_GET['seed']) || isset($_POST['seed']) || !empty($_REQUEST['ecosystem'])) {
 
     if (file_exists(__DIR__ . '/seed_ecosystem.php')) {

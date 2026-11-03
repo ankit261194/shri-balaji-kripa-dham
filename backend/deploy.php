@@ -105,6 +105,7 @@ $filesToSync = [
     "elevex_gateway/jobsheet.php",
     "elevex_gateway/api_amc.php",
     "elevex_gateway/api_breakdown_sla.php",
+    "elevex_gateway/api_spare_parts.php",
     "portal.php",
     "portal/index.php"
 ];
