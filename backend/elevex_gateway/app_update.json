@@ -7,8 +7,8 @@
   "release_notes_en": "• SuperAdmin Phase 1: Central AMC Master with 12-Month Visit Schedules\n• Expiry Radar for <=30d, <=15d, <=7d and expired contracts with risk analysis\n• 1-Click WhatsApp Renewal Quote generator\n• Live Breakdown & Passenger Trap SLA Command Center (P1 15m, P2 2h, P3 24h)\n• Executive Dark Obsidian Styling across all cockpits",
   "release_notes_hi": "• सुपरएडमिन चरण 1: 12-माह रूटीन विज़िट के साथ केंद्रीय AMC मास्टर\n• एक्सपायरी रडार: 30 दिन, 15 दिन, 7 दिन व समाप्त अनुबंधों का जोखिम विश्लेषण\n• 1-क्लिक WhatsApp रिन्यूअल कोटेशन जनरेटर\n• लाइव ब्रेकडाउन व यात्री ट्रैप SLA कमान केंद्र (P1 15 मिनट, P2 2 घंटे, P3 24 घंटे)\n• सभी कॉकपिट्स में एक्जीक्यूटिव डार्क स्टाइलिंग",
   "apk_download_url": "https://shribalajikripadham.online/download.php?app=gateway",
-  "file_size": "37.9 MB",
-  "sha256_checksum": "PENDING_BUILD_640",
+  "file_size": "38.1 MB",
+  "sha256_checksum": "b8cf5b55ab62618c2a912893887303ec73adffa3fe95e6573846fabc11ef0d2e",
   "verified_oem_brands": [
     "MONARCH",
     "STEP",
