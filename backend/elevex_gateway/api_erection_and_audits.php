@@ -46,6 +46,31 @@ $standardStages = [
     10 => ["name" => "Slow-Speed Inspection Run, Final Commissioning & Handover", "name_hi" => "स्लो-स्पीड इंस्पेक्शन रन, फाइनल कमिशनिंग व हैंडओवर", "desc" => "Run on car-top inspection speed, calibrate floor leveling vanes, execute 125% brake test, handover to client."]
 ];
 
+if ($action === 'debug_stage') {
+    try {
+        echo "Step 1: start\n";
+        $stmt = $pdo->prepare("UPDATE elevex_erection_stages SET status = 'completed' WHERE id = 1");
+        $stmt->execute();
+        echo "Step 2: updated stage\n";
+        $stgInfo = $pdo->prepare("SELECT project_id, stage_number FROM elevex_erection_stages WHERE id = 1");
+        $stgInfo->execute();
+        $curr = $stgInfo->fetch(PDO::FETCH_ASSOC);
+        echo "Step 3: got curr: " . json_encode($curr) . "\n";
+        $countStmt = $pdo->prepare("SELECT COUNT(*) FROM elevex_erection_stages WHERE project_id = 1 AND status IN ('completed', 'verified_by_supervisor')");
+        $countStmt->execute();
+        $doneCount = (int)$countStmt->fetchColumn();
+        echo "Step 4: doneCount: $doneCount\n";
+        $pct = (int)round(($doneCount / 10.0) * 100);
+        $currStageVal = min(10, $doneCount + 1);
+        $pdo->prepare("UPDATE elevex_erection_projects SET progress_pct = :pct, current_stage = :cstage, status = 'under_erection' WHERE id = 1")
+            ->execute([':pct' => $pct, ':cstage' => $currStageVal]);
+        echo "Step 5: updated project\n";
+    } catch (Exception $e) {
+        echo "DEBUG ERROR: " . $e->getMessage() . " at line " . $e->getLine() . "\n";
+    }
+    exit;
+}
+
 // 1. CREATE NEW ERECTION PROJECT
 if ($action === 'create_project') {
     $custName = trim($input['customer_name'] ?? '');
