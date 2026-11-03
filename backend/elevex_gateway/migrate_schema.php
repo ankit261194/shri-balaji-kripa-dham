@@ -1272,6 +1272,34 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
     $results['elevex_phase3_erection_and_audit_tables'] = "VERIFIED_AND_CREATED_OK";
+
+    // =========================================================================
+    // PHASE 4: ANTI-CHEATING 50M GPS GEOFENCING & DAILY BIKE TRAVEL (TA-DA)
+    // =========================================================================
+    $pdo->exec("CREATE TABLE IF NOT EXISTS elevex_technician_travel_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tenant_id VARCHAR(64) NOT NULL,
+        technician_id INT NOT NULL,
+        duty_date DATE NOT NULL,
+        start_lat DECIMAL(10, 7) NULL,
+        start_lng DECIMAL(10, 7) NULL,
+        end_lat DECIMAL(10, 7) NULL,
+        end_lng DECIMAL(10, 7) NULL,
+        waypoints_json LONGTEXT NULL,
+        total_km DECIMAL(8, 2) NOT NULL DEFAULT 0.00,
+        ta_rate_per_km DECIMAL(6, 2) NOT NULL DEFAULT 3.50,
+        ta_claim_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+        geofence_violations_count INT NOT NULL DEFAULT 0,
+        status ENUM('active_tracking', 'submitted_for_approval', 'approved', 'reimbursed', 'rejected') NOT NULL DEFAULT 'active_tracking',
+        approved_by_supervisor_id INT NULL,
+        supervisor_remarks TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_tech_duty_date (technician_id, duty_date),
+        INDEX idx_tenant_duty (tenant_id, duty_date)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $results['elevex_phase4_geofence_and_travel_tables'] = "VERIFIED_AND_CREATED_OK";
 } catch (Exception $e) {
     $results['elevex_phase2_error'] = $e->getMessage();
 }
