@@ -167,18 +167,20 @@ if ($action === 'update_stage_progress') {
         exit;
     }
 
+    $completedAtExpr = ($status === 'completed') ? date('Y-m-d H:i:s') : null;
     $stmt = $pdo->prepare("UPDATE elevex_erection_stages SET 
         status = :st, 
         site_photo_url = CASE WHEN :p != '' THEN :p ELSE site_photo_url END,
         technician_name = :tname,
         technician_notes = :tnotes,
-        completed_at = CASE WHEN :st = 'completed' THEN NOW() ELSE completed_at END
+        completed_at = COALESCE(:cat, completed_at)
         WHERE id = :sid");
     $stmt->execute([
         ':st' => $status,
         ':p' => $photoUrl,
         ':tname' => $techName,
         ':tnotes' => $techNotes,
+        ':cat' => $completedAtExpr,
         ':sid' => $stageId
     ]);
 
@@ -193,6 +195,7 @@ if ($action === 'update_stage_progress') {
         $countStmt->execute([':pid' => $pid]);
         $doneCount = (int)$countStmt->fetchColumn();
         $pct = (int)round(($doneCount / 10.0) * 100);
+        $currStageVal = min(10, $doneCount + 1);
 
         // Next stage to in_progress if completed
         $nextStage = $curr['stage_number'] + 1;
@@ -202,8 +205,8 @@ if ($action === 'update_stage_progress') {
         }
 
         $projStatus = ($pct >= 100) ? 'handed_over' : 'under_erection';
-        $pdo->prepare("UPDATE elevex_erection_projects SET progress_pct = :pct, current_stage = LEAST(10, :done + 1), status = :ps WHERE id = :pid")
-            ->execute([':pct' => $pct, ':done' => $doneCount, ':ps' => $projStatus, ':pid' => $pid]);
+        $pdo->prepare("UPDATE elevex_erection_projects SET progress_pct = :pct, current_stage = :cstage, status = :ps WHERE id = :pid")
+            ->execute([':pct' => $pct, ':cstage' => $currStageVal, ':ps' => $projStatus, ':pid' => $pid]);
     }
 
     echo json_encode([
