@@ -5,7 +5,7 @@
 // Form-D Initial Commissioning Safety Audit & Annual Inspection Generator
 // ==============================================================================
 
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 header('Content-Type: application/json; charset=utf-8');
@@ -167,22 +167,23 @@ if ($action === 'update_stage_progress') {
         exit;
     }
 
-    $completedAtExpr = ($status === 'completed') ? date('Y-m-d H:i:s') : null;
-    $stmt = $pdo->prepare("UPDATE elevex_erection_stages SET 
-        status = :st, 
-        site_photo_url = CASE WHEN :p != '' THEN :p ELSE site_photo_url END,
-        technician_name = :tname,
-        technician_notes = :tnotes,
-        completed_at = COALESCE(:cat, completed_at)
-        WHERE id = :sid");
-    $stmt->execute([
+    $fields = ["status = :st", "technician_name = :tname", "technician_notes = :tnotes"];
+    $params = [
         ':st' => $status,
-        ':p' => $photoUrl,
         ':tname' => $techName,
         ':tnotes' => $techNotes,
-        ':cat' => $completedAtExpr,
         ':sid' => $stageId
-    ]);
+    ];
+    if (!empty($photoUrl)) {
+        $fields[] = "site_photo_url = :photo";
+        $params[':photo'] = $photoUrl;
+    }
+    if ($status === 'completed') {
+        $fields[] = "completed_at = NOW()";
+    }
+    $sql = "UPDATE elevex_erection_stages SET " . implode(", ", $fields) . " WHERE id = :sid";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
 
     // Recalculate project progress %
     $stgInfo = $pdo->prepare("SELECT project_id, stage_number FROM elevex_erection_stages WHERE id = :sid");
