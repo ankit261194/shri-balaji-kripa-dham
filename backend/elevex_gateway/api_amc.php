@@ -60,8 +60,9 @@ function ensureAmcTables($pdo) {
 
     // Recreate elevex_amc_schedules if contract_id is missing
     try {
-        $check = $pdo->query("SHOW COLUMNS FROM elevex_amc_schedules LIKE 'contract_id'");
-        if (!$check || $check->rowCount() == 0) {
+        $checkStmt = $pdo->query("SHOW COLUMNS FROM elevex_amc_schedules LIKE 'contract_id'");
+        $cols = $checkStmt ? $checkStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        if (empty($cols)) {
             $pdo->exec("DROP TABLE IF EXISTS elevex_amc_schedules");
         }
     } catch (Exception $e) {}
