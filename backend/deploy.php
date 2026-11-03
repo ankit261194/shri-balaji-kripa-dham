@@ -106,6 +106,9 @@ $filesToSync = [
     "elevex_gateway/api_amc.php",
     "elevex_gateway/api_breakdown_sla.php",
     "elevex_gateway/api_spare_parts.php",
+    "elevex_gateway/api_erection_and_audits.php",
+    "elevex_gateway/api_geofence_and_tada.php",
+    "elevex_gateway/clean_all_fake_data.php",
     "portal.php",
     "portal/index.php"
 ];

@@ -321,4 +321,26 @@ if ($action === 'active_traps') {
     }
 }
 
+// =============================================================================
+// 7. DELETE / ARCHIVE BREAKDOWN TICKET (SUPERADMIN ACTION)
+// =============================================================================
+if ($action === 'delete_ticket') {
+    try {
+        $ticketId = intval($input['ticket_id'] ?? ($_GET['ticket_id'] ?? 0));
+        if ($ticketId <= 0) {
+            sendJsonResponse(["success" => false, "error" => "Ticket ID required"], 400);
+        }
+
+        $stmt = $pdo->prepare("DELETE FROM elevex_breakdowns WHERE id = :id");
+        $stmt->execute([':id' => $ticketId]);
+
+        sendJsonResponse([
+            "success" => true,
+            "message" => "ब्रेकडाउन टिकट सफलतापूर्वक हटा दी गई!"
+        ]);
+    } catch (Exception $e) {
+        sendJsonResponse(["success" => false, "error" => $e->getMessage()], 500);
+    }
+}
+
 sendJsonResponse(["success" => false, "error" => "Unknown SLA action specified"], 400);

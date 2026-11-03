@@ -582,4 +582,26 @@ if ($action === 'client_respond_quote') {
     }
 }
 
+// =============================================================================
+// 9. DELETE SPARE PART (SUPERADMIN ACTION)
+// =============================================================================
+if ($action === 'delete_part') {
+    try {
+        $partId = intval($input['part_id'] ?? ($_GET['part_id'] ?? 0));
+        if ($partId <= 0) {
+            sendJsonResponse(["success" => false, "error" => "Part ID required"], 400);
+        }
+
+        $stmt = $pdo->prepare("DELETE FROM elevex_spare_parts WHERE id = :id");
+        $stmt->execute([':id' => $partId]);
+
+        sendJsonResponse([
+            "success" => true,
+            "message" => "स्पेयर पार्ट कैटलॉग से सफलतापूर्वक हटा दिया गया!"
+        ]);
+    } catch (Exception $e) {
+        sendJsonResponse(["success" => false, "error" => $e->getMessage()], 500);
+    }
+}
+
 sendJsonResponse(["success" => false, "error" => "Unknown spare parts action specified"], 400);

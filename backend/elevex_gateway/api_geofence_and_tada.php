@@ -276,6 +276,24 @@ if ($action === 'list_claims') {
     exit;
 }
 
+// 6. DELETE TRAVEL CLAIM (SUPERADMIN ACTION)
+if ($action === 'delete_claim') {
+    $claimId = (int)($input['claim_id'] ?? $_GET['claim_id'] ?? 0);
+    if ($claimId <= 0) {
+        echo json_encode(["success" => false, "error" => "Claim ID required"]);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("DELETE FROM elevex_technician_travel_logs WHERE id = :id");
+    $stmt->execute([':id' => $claimId]);
+
+    echo json_encode([
+        "success" => true,
+        "message" => "यात्रा भत्ता क्लेम सफलतापूर्वक हटा दिया गया!"
+    ]);
+    exit;
+}
+
 echo json_encode(["success" => false, "error" => "Invalid action specified: " . htmlspecialchars($action)]);
 
 } catch (Throwable $e) {

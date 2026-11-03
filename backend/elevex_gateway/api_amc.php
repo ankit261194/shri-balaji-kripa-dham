@@ -246,6 +246,10 @@ if ($action === 'create_contract') {
         $buildingName = trim($input['building_name'] ?? '');
         $buildingAddress = trim($input['building_address'] ?? '');
         $city = trim($input['city'] ?? 'Delhi NCR');
+        $lat = !empty($input['latitude']) ? floatval($input['latitude']) : null;
+        $lng = !empty($input['longitude']) ? floatval($input['longitude']) : null;
+        $elevatorType = trim($input['elevator_type'] ?? 'PASSENGER_MRL');
+        $floorsCount = max(1, intval($input['floors_count'] ?? 4));
         $customerName = trim($input['customer_name'] ?? '');
         $customerPhone = trim($input['customer_phone'] ?? '');
         $customerEmail = trim($input['customer_email'] ?? '');
@@ -279,11 +283,13 @@ if ($action === 'create_contract') {
         $numServices = ($serviceFrequency === 'quarterly') ? 4 : (($serviceFrequency === 'bi_monthly') ? 6 : 12);
 
         $stmt = $pdo->prepare("INSERT INTO elevex_amc_contracts (
-            tenant_id, contract_no, building_name, building_address, city, customer_name, customer_phone,
+            tenant_id, contract_no, building_name, building_address, city, latitude, longitude,
+            elevator_type, floors_count, customer_name, customer_phone,
             customer_email, lift_count, amc_type, start_date, end_date, annual_amount, payment_status,
             paid_amount, service_frequency, services_completed, total_services_scheduled, status
         ) VALUES (
-            :tenant_id, :contract_no, :building_name, :building_address, :city, :customer_name, :customer_phone,
+            :tenant_id, :contract_no, :building_name, :building_address, :city, :latitude, :longitude,
+            :elevator_type, :floors_count, :customer_name, :customer_phone,
             :customer_email, :lift_count, :amc_type, :start_date, :end_date, :annual_amount, :payment_status,
             :paid_amount, :service_frequency, 0, :total_services, 'active'
         )");
@@ -294,6 +300,10 @@ if ($action === 'create_contract') {
             ':building_name' => $buildingName,
             ':building_address' => $buildingAddress,
             ':city' => $city,
+            ':latitude' => $lat,
+            ':longitude' => $lng,
+            ':elevator_type' => $elevatorType,
+            ':floors_count' => $floorsCount,
             ':customer_name' => $customerName,
             ':customer_phone' => $customerPhone,
             ':customer_email' => $customerEmail,
@@ -502,6 +512,34 @@ if ($action === 'renew_contract') {
             "message" => "AMC कॉन्ट्रैक्ट 1 वर्ष के लिए सफलतापूर्वक रिन्यू हो गया!",
             "new_start_date" => $newStart,
             "new_end_date" => $newEnd
+        ]);
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        sendJsonResponse(["success" => false, "error" => $e->getMessage()], 500);
+    }
+}
+
+// =============================================================================
+// 7. DELETE AMC CONTRACT (SUPERADMIN FULL PURGE)
+// =============================================================================
+if ($action === 'delete_contract') {
+    try {
+        $contractId = intval($input['contract_id'] ?? ($_GET['contract_id'] ?? 0));
+        if ($contractId <= 0) {
+            sendJsonResponse(["success" => false, "error" => "Contract ID required"], 400);
+        }
+
+        $pdo->beginTransaction();
+        $stmtSched = $pdo->prepare("DELETE FROM elevex_amc_schedules WHERE contract_id = :id");
+        $stmtSched->execute([':id' => $contractId]);
+
+        $stmtCont = $pdo->prepare("DELETE FROM elevex_amc_contracts WHERE id = :id");
+        $stmtCont->execute([':id' => $contractId]);
+        $pdo->commit();
+
+        sendJsonResponse([
+            "success" => true,
+            "message" => "AMC अनुबंध व उसके सभी 12 सर्विस शेड्यूल सफलतापूर्वक हटा दिए गए!"
         ]);
     } catch (Exception $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();

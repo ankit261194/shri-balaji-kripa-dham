@@ -327,6 +327,29 @@ if ($action === 'list_audits') {
     exit;
 }
 
+// 7. DELETE ERECTION PROJECT (SUPERADMIN ACTION)
+if ($action === 'delete_project') {
+    $projectId = intval($input['project_id'] ?? ($_GET['project_id'] ?? 0));
+    if ($projectId <= 0) {
+        echo json_encode(["success" => false, "error" => "Project ID required"]);
+        exit;
+    }
+
+    $pdo->beginTransaction();
+    $stmtSt = $pdo->prepare("DELETE FROM elevex_erection_stages WHERE project_id = :id");
+    $stmtSt->execute([':id' => $projectId]);
+
+    $stmtPr = $pdo->prepare("DELETE FROM elevex_erection_projects WHERE id = :id");
+    $stmtPr->execute([':id' => $projectId]);
+    $pdo->commit();
+
+    echo json_encode([
+        "success" => true,
+        "message" => "इरेक्शन प्रोजेक्ट व उसके सभी 10 स्टेज सफलतापूर्वक हटा दिए गए!"
+    ]);
+    exit;
+}
+
 echo json_encode(["success" => false, "error" => "Invalid action specified: " . htmlspecialchars($action)]);
 
 } catch (Throwable $e) {
