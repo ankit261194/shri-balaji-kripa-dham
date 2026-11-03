@@ -27,6 +27,7 @@ try {
     exit;
 }
 
+try {
 $input = getJsonInput();
 $action = $_GET['action'] ?? $_POST['action'] ?? ($input['action'] ?? '');
 $tenantId = trim($_GET['tenant_id'] ?? $_POST['tenant_id'] ?? ($input['tenant_id'] ?? 'tenant_master_elevex'));
@@ -327,3 +328,13 @@ if ($action === 'list_audits') {
 }
 
 echo json_encode(["success" => false, "error" => "Invalid action specified: " . htmlspecialchars($action)]);
+
+} catch (Throwable $e) {
+    echo json_encode([
+        "success" => false,
+        "error" => $e->getMessage(),
+        "line" => $e->getLine(),
+        "file" => basename($e->getFile())
+    ]);
+    exit;
+}
