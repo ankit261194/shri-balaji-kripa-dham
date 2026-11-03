@@ -160,6 +160,12 @@ if (isset($_GET['sync_manifest'])) {
 
 
 $apkFilename = "Ankit_EleveX_v{$latestVer}_Final.apk";
+if (!empty($_GET['filename'])) {
+    $customName = basename(trim($_GET['filename']));
+    if (preg_match('/^[a-zA-Z0-9_\-\.]+\.apk$/', $customName)) {
+        $apkFilename = $customName;
+    }
+}
 
 $targetFile = $targetDir . '/' . $apkFilename;
 
@@ -257,7 +263,9 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
             rename($tmpFile, $targetFile);
 
-            @copy($targetFile, $targetDir . '/Ankit_EleveX_Release.apk');
+            if (empty($_GET['filename'])) {
+                @copy($targetFile, $targetDir . '/Ankit_EleveX_Release.apk');
+            }
 
             echo json_encode([
 
@@ -269,7 +277,9 @@ if (isset($_GET['chunk_upload']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 "size" => filesize($targetFile),
 
-                "size_mb" => round(filesize($targetFile) / (1024 * 1024), 2) . " MB"
+                "size_mb" => round(filesize($targetFile) / (1024 * 1024), 2) . " MB",
+
+                "sha256" => hash_file('sha256', $targetFile)
 
             ]);
 

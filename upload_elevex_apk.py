@@ -3,35 +3,46 @@ import sys
 import time
 import urllib.request
 import json
+import argparse
+import hashlib
 
-APK_PATH = r"C:\Users\hp\Downloads\abc\Ankit_EleveX_v5.9.38_Final.apk"
 BASE_URL = "https://shribalajikripadham.online/sync_elevex_apk.php"
-VERSION = "5.9.38"
-CHUNK_SIZE = 3 * 1024 * 1024  # 3 MB per chunk for reliable HTTP delivery
+VERSION = "5.9.52"
+CHUNK_SIZE = 3 * 1024 * 1024  # 3 MB per chunk
 
-def upload():
-    if not os.path.exists(APK_PATH):
-        print(f"Error: {APK_PATH} does not exist!")
-        return False
+def calculate_sha256(filepath):
+    h = hashlib.sha256()
+    with open(filepath, "rb") as f:
+        while chunk := f.read(65536):
+            h.update(chunk)
+    return h.hexdigest().lower()
 
-    total_size = os.path.getsize(APK_PATH)
-    print(f"============================================================")
-    print(f"Uploading Ankit EleveX v{VERSION} Final Release APK")
-    print(f"File: {APK_PATH}")
-    print(f"Total Size: {total_size:,} bytes ({total_size / (1024*1024):.2f} MB)")
+def upload_apk(apk_path, filename):
+    if not os.path.exists(apk_path):
+        print(f"Error: {apk_path} does not exist!")
+        return False, None, None
+
+    total_size = os.path.getsize(apk_path)
+    local_sha = calculate_sha256(apk_path)
+    print("=" * 60)
+    print(f"Uploading Standalone APK: {filename}")
+    print(f"Source: {apk_path}")
+    print(f"Size: {total_size:,} bytes ({total_size / (1024*1024):.2f} MB)")
+    print(f"Local SHA-256: {local_sha}")
     print(f"Target URL: {BASE_URL}")
-    print(f"============================================================")
+    print("=" * 60)
 
-    # 1. Reset any pending temporary upload
-    reset_url = f"{BASE_URL}?reset=1&version={VERSION}"
+    # 1. Reset pending upload
+    reset_url = f"{BASE_URL}?reset=1&filename={filename}&version={VERSION}"
     try:
-        with urllib.request.urlopen(reset_url, timeout=15) as resp:
-            print("Reset state:", resp.read().decode('utf-8'))
+        req = urllib.request.Request(reset_url, headers={"User-Agent": "EleveX-Uploader/2.0"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            print("Reset response:", resp.read().decode('utf-8', errors='ignore'))
     except Exception as e:
         print(f"Reset warning: {e}")
 
     # 2. Upload chunks
-    with open(APK_PATH, "rb") as f:
+    with open(apk_path, "rb") as f:
         chunk_idx = 0
         bytes_sent = 0
         while True:
@@ -42,7 +53,7 @@ def upload():
             bytes_sent += len(chunk_data)
             is_last = (bytes_sent >= total_size)
 
-            url = f"{BASE_URL}?chunk_upload=1&chunk={chunk_idx}&last={'1' if is_last else '0'}&version={VERSION}"
+            url = f"{BASE_URL}?chunk_upload=1&chunk={chunk_idx}&last={'1' if is_last else '0'}&filename={filename}&version={VERSION}"
 
             retries = 3
             success = False
@@ -53,7 +64,7 @@ def upload():
                         data=chunk_data,
                         headers={
                             "Content-Type": "application/octet-stream",
-                            "User-Agent": "EleveX-Chunk-Uploader/1.0"
+                            "User-Agent": "EleveX-Chunk-Uploader/2.0"
                         }
                     )
                     with urllib.request.urlopen(req, timeout=60) as resp:
@@ -69,27 +80,37 @@ def upload():
 
             if not success:
                 print(f"Failed to upload chunk {chunk_idx} after 3 attempts.")
-                return False
+                return False, None, None
 
             chunk_idx += 1
 
-    print("\n------------------------------------------------------------")
-    print("Verifying uploaded APK status on server...")
-    status_url = f"{BASE_URL}?status=1&version={VERSION}"
+    print("\nVerifying server status...")
+    status_url = f"{BASE_URL}?status=1&filename={filename}&version={VERSION}"
     try:
-        with urllib.request.urlopen(status_url, timeout=15) as sresp:
+        req = urllib.request.Request(status_url, headers={"User-Agent": "EleveX-Uploader/2.0"})
+        with urllib.request.urlopen(req, timeout=15) as sresp:
             status = json.loads(sresp.read().decode('utf-8'))
             print("Server Status:", json.dumps(status, indent=2))
             if status.get("exists") and status.get("size") == total_size:
-                print("\n[SUCCESS] APK upload and byte integrity verified 100%!")
-                return True
+                print(f"\n[SUCCESS] {filename} uploaded and verified ({total_size} bytes)!")
+                return True, total_size, local_sha
             else:
                 print("\n[WARNING] Size mismatch or file not found on server.")
-                return False
+                return False, total_size, local_sha
     except Exception as e:
         print("Status check error:", e)
-        return False
+        return False, total_size, local_sha
 
 if __name__ == "__main__":
-    success = upload()
-    sys.exit(0 if success else 1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--apk", required=True, help="Path to APK file")
+    parser.add_argument("--filename", required=True, help="Remote filename")
+    args = parser.parse_args()
+
+    ok, size, sha = upload_apk(args.apk, args.filename)
+    if ok:
+        print(f"RESULT: SUCCESS | Size: {size} | SHA: {sha}")
+        sys.exit(0)
+    else:
+        print("RESULT: FAILED")
+        sys.exit(1)
