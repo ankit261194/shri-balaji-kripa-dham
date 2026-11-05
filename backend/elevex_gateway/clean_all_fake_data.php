@@ -2,7 +2,7 @@
 // ==============================================================================
 // ANKIT ELEVEX PRO - ENTERPRISE ZERO-TOLERANCE DATABASE PURGE & SCHEMA MIGRATOR
 // Hostinger NVMe SSD Cluster: https://shribalajikripadham.online
-// Conceived & Engineered by Ankit Chaudhary (8533955333)
+// Sole Authorized SuperAdmin: 910010025123343 / 910010025123343
 // ==============================================================================
 
 ini_set('display_errors', 1);
@@ -16,17 +16,6 @@ require_once __DIR__ . '/config.php';
 
 $pdo = getDbConnection();
 if (!$pdo) {
-        // 6. PURGE ALL FAKE/TEST COMPANIES (Keep ONLY real ones: TENANT_DEFAULT_ANKIT and tenant_master_elevex)
-    $stmtPurge = $pdo->exec("DELETE FROM elevex_companies WHERE tenant_id LIKE 'tenant_surakshaelevator_%' 
-        OR tenant_id LIKE 'tenant_apexotisvertical_%' 
-        OR tenant_id LIKE 'tenant_testverification_%'
-        OR tenant_id LIKE 'tenant_kripaliftspvtltd_%'
-        OR tenant_id LIKE 'tenant_apexhightechelev_%'
-        OR tenant_id LIKE 'tenant_apexelevatorsncr_%'
-        OR tenant_id LIKE 'tenant_kripaelevatorsno_%'
-        OR tenant_id LIKE 'tenant_horizon_%'");
-    $results[] = 'Purged ' . intval($stmtPurge) . ' fake/test companies from elevex_companies';
-
     echo json_encode(["success" => false, "error" => "Database connection unavailable"]);
     exit;
 }
@@ -55,8 +44,8 @@ try {
     }
 
     // 2. PURGE ALL FAKE/DUMMY/TEST AMC CONTRACTS & SCHEDULES
-    $stmt1 = $pdo->exec("DELETE FROM elevex_amc_schedules");
-    $stmt2 = $pdo->exec("DELETE FROM elevex_amc_contracts");
+    $pdo->exec("DELETE FROM elevex_amc_schedules");
+    $pdo->exec("DELETE FROM elevex_amc_contracts");
     $results[] = "Purged all fake AMC contracts and schedules (100% Clean Slate)";
 
     // 3. PURGE ALL FAKE/STALE BREAKDOWN SLA TICKETS
@@ -85,7 +74,7 @@ try {
         $results[] = "Travel claims purge skipped: " . $e->getMessage();
     }
 
-        // 6. PURGE ALL FAKE/TEST COMPANIES (Keep ONLY real ones: TENANT_DEFAULT_ANKIT and tenant_master_elevex)
+    // 6. PURGE ALL FAKE/TEST COMPANIES (Keep ONLY real ones)
     $stmtPurge = $pdo->exec("DELETE FROM elevex_companies WHERE tenant_id LIKE 'tenant_surakshaelevator_%' 
         OR tenant_id LIKE 'tenant_apexotisvertical_%' 
         OR tenant_id LIKE 'tenant_testverification_%'
@@ -96,24 +85,68 @@ try {
         OR tenant_id LIKE 'tenant_horizon_%'");
     $results[] = 'Purged ' . intval($stmtPurge) . ' fake/test companies from elevex_companies';
 
+    // 7. PURGE ALL OTHER USERS FROM elevex_users (ONLY 910010025123343 ALLOWED!)
+    $superUsername = '910010025123343';
+    $superPassword = '910010025123343';
+    $superPasswordHash = password_hash($superPassword, PASSWORD_BCRYPT);
+
+    $stmtDeleteUsers = $pdo->prepare("DELETE FROM elevex_users WHERE phone != :p");
+    $stmtDeleteUsers->execute([':p' => $superUsername]);
+    $deletedUsersCount = $stmtDeleteUsers->rowCount();
+    $results[] = "Purged $deletedUsersCount unauthorized/other registered users from elevex_users";
+
+    // 8. ENSURE SOLE SUPERADMIN 910010025123343 EXISTS WITH EXACT BCRYPT PASSWORD
+    $stmtCheckSuper = $pdo->prepare("SELECT id FROM elevex_users WHERE phone = :p LIMIT 1");
+    $stmtCheckSuper->execute([':p' => $superUsername]);
+    $superUserRow = $stmtCheckSuper->fetch(PDO::FETCH_ASSOC);
+
+    if ($superUserRow) {
+        $stmtUp = $pdo->prepare("UPDATE elevex_users SET 
+            tenant_id = 'tenant_master_elevex',
+            role = 'superadmin',
+            full_name = 'Super Admin',
+            mpin_hash = :hash,
+            is_active = 1,
+            is_first_login = 0,
+            mpin_changed_at = NOW(),
+            session_token = NULL
+            WHERE phone = :p");
+        $stmtUp->execute([':hash' => $superPasswordHash, ':p' => $superUsername]);
+        $results[] = "Updated SuperAdmin user ($superUsername) with fresh bcrypt password hash and role 'superadmin'";
+    } else {
+        $stmtIns = $pdo->prepare("INSERT INTO elevex_users 
+            (tenant_id, role, full_name, phone, mpin_hash, is_active, is_first_login, mpin_changed_at) 
+            VALUES ('tenant_master_elevex', 'superadmin', 'Super Admin', :p, :hash, 1, 0, NOW())");
+        $stmtIns->execute([':p' => $superUsername, ':hash' => $superPasswordHash]);
+        $results[] = "Created Sole SuperAdmin user ($superUsername) with bcrypt password hash and role 'superadmin'";
+    }
+
+    // 9. PURGE ATTENDANCE LEDGER OF NON-EXISTENT USERS
+    try {
+        $pdo->exec("DELETE FROM elevex_attendance_ledger WHERE phone != '910010025123343'");
+        $results[] = "Cleaned attendance ledger";
+    } catch (Exception $e) {}
+
+    // 10. VERIFY SOLE USER STATUS IN DATABASE
+    $allUsers = $pdo->query("SELECT id, tenant_id, role, full_name, phone, is_active FROM elevex_users")->fetchAll(PDO::FETCH_ASSOC);
+    $pwdCheck = false;
+    if (!empty($allUsers)) {
+        $checkStmt = $pdo->prepare("SELECT mpin_hash FROM elevex_users WHERE phone = :p LIMIT 1");
+        $checkStmt->execute([':p' => $superUsername]);
+        $hashInDb = $checkStmt->fetchColumn();
+        $pwdCheck = password_verify($superPassword, $hashInDb);
+    }
+
     echo json_encode([
         "success" => true,
-        "message" => "Database successfully purged of all fake data and schema updated with exact GPS coordinates!",
+        "message" => "Database successfully purged! Exactly ONE user registered in entire app: 910010025123343",
+        "total_registered_users" => count($allUsers),
+        "superadmin_password_verified" => $pwdCheck,
+        "registered_users" => $allUsers,
         "details" => $results
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {
-        // 6. PURGE ALL FAKE/TEST COMPANIES (Keep ONLY real ones: TENANT_DEFAULT_ANKIT and tenant_master_elevex)
-    $stmtPurge = $pdo->exec("DELETE FROM elevex_companies WHERE tenant_id LIKE 'tenant_surakshaelevator_%' 
-        OR tenant_id LIKE 'tenant_apexotisvertical_%' 
-        OR tenant_id LIKE 'tenant_testverification_%'
-        OR tenant_id LIKE 'tenant_kripaliftspvtltd_%'
-        OR tenant_id LIKE 'tenant_apexhightechelev_%'
-        OR tenant_id LIKE 'tenant_apexelevatorsncr_%'
-        OR tenant_id LIKE 'tenant_kripaelevatorsno_%'
-        OR tenant_id LIKE 'tenant_horizon_%'");
-    $results[] = 'Purged ' . intval($stmtPurge) . ' fake/test companies from elevex_companies';
-
     echo json_encode([
         "success" => false,
         "error" => $e->getMessage()
