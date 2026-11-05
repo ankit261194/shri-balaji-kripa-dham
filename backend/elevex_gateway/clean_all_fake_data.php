@@ -73,8 +73,6 @@ try {
         $results[] = "Ensured authentic company 'श्री बालाजी कृपा धाम लिफ्ट्स एंड इंजीनियर्स' exists";
     }
 
-    // Reset company counts
-    $pdo->exec("UPDATE elevex_companies SET total_users = 1, total_lifts = 0, active_breakdowns = 0, supervisor_name = NULL, supervisor_phone = NULL WHERE tenant_id = 'TENANT_DEFAULT_ANKIT'");
 
     // 8. PURGE ALL USERS EXCEPT SOLE SUPERADMIN 910010025123343
     $superUsername = '910010025123343';
