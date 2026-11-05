@@ -1304,17 +1304,7 @@ try {
     $results['elevex_phase2_error'] = $e->getMessage();
 }
 
-if (isset($_GET['seed']) || isset($_POST['seed']) || !empty($_REQUEST['ecosystem'])) {
-
-    if (file_exists(__DIR__ . '/seed_ecosystem.php')) {
-
-        require __DIR__ . '/seed_ecosystem.php';
-
-        exit;
-
-    }
-
-}
+// Production Seeder Permanently Disabled - Zero Dummy Data Policy
 
 
 
