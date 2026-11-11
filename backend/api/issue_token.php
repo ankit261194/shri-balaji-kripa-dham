@@ -270,7 +270,7 @@ if (!$isSuperAdmin) {
             exit;
         }
 
-        $isPhysicallyAtAshram = ($gpsDistanceMeters <= $allowedRadiusM);
+        $isPhysicallyAtAshram = ($gpsDistanceMeters <= ($allowedRadiusM + 50.0));
         $isGpsOutstation = ($gpsDistanceKm >= $outstationMinKm);
 
         // SACRED ZERO-TRUST GEOFENCE RULE:
@@ -281,13 +281,13 @@ if (!$isSuperAdmin) {
         // 4. Server strictly relies on server-side Haversine distance, ignoring any client claims!
         if (!$isPhysicallyAtAshram) {
             if (!$isOutstationAllowed || !$isGpsOutstation) {
-                $distStr = number_format($gpsDistanceKm, 1);
-                $radDesc = ($allowedRadiusM >= 1000) ? number_format($allowedRadiusM / 1000, 1) . " किमी" : round($allowedRadiusM) . " मीटर";
-                logSecurityViolation($pdo, 'SECURITY_BLOCKED_GEOFENCE', 'लोकल दायरे (30 KM) में बिना आश्रम परिसर (' . $radDesc . ') आए टोकन प्रयास', 'Actual distance: ' . $distStr . ' km, Lat: ' . $lat . ', Lng: ' . $long, $patientName, $phoneNumber, $deviceId, $darbarDate);
+                $distStr = ($gpsDistanceMeters < 1000.0) ? round($gpsDistanceMeters) . " मीटर" : number_format($gpsDistanceKm, 1) . " किमी";
+                $radDesc = round($allowedRadiusM) . " मीटर";
+                logSecurityViolation($pdo, 'SECURITY_BLOCKED_GEOFENCE', 'लोकल दायरे (30 KM) में बिना आश्रम परिसर (' . $radDesc . ') आए टोकन प्रयास', 'Actual distance: ' . $distStr . ', Lat: ' . $lat . ', Lng: ' . $long, $patientName, $phoneNumber, $deviceId, $darbarDate);
                 http_response_code(403);
                 echo json_encode([
                     "success" => false,
-                    "error" => "⚠️ दूरी नियम उल्लंघन:\n\n{$outstationMinKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल {$venueNameForNotice} परिसर (" . $radDesc . " के भीतर) में ही मान्य है।\n\nआपकी वास्तविक दूरी " . $distStr . " किमी है। कृपया परिसर में पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का हक न छूटे।"
+                    "error" => "⚠️ दूरी नियम उल्लंघन:\n\n{$outstationMinKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल {$venueNameForNotice} परिसर (" . $radDesc . " के भीतर) में ही मान्य है।\n\nआपकी वास्तविक दूरी " . $distStr . " है। कृपया परिसर में पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का हक न छूटे।"
                 ], JSON_UNESCAPED_UNICODE);
                 exit;
             }

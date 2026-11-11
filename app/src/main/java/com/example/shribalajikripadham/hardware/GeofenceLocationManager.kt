@@ -46,8 +46,8 @@ object GeofenceLocationManager {
         // 2 km buffer for outstation straight-line vs actual road distance
         val outstationMinMeters = ((outstationMinDistanceKm - 2.0).coerceAtLeast(1.0)) * 1000.0
         val isOutstationPermitted = isOutstationAdvanceAllowed && (distanceMeters >= outstationMinMeters)
-        // 150m GPS drift and campus buffer for Ashram local devotees (200m + 150m = 350m radius)
-        val isLocalPermitted = (distanceMeters <= (allowedRadiusMeters + 150.0))
+        // Strictly 200m allowed radius + 50m satellite atmospheric jitter buffer (250m max)
+        val isLocalPermitted = (distanceMeters <= (allowedRadiusMeters + 50.0))
         return isOutstationPermitted || isLocalPermitted
     }
 
@@ -312,8 +312,8 @@ object GeofenceLocationManager {
             )
         }
 
-        // Case B: Devotee is physically at Ashram (<= allowedRadiusMeters + 150m drift buffer)
-        val effectiveRadius = allowedRadiusMeters + 150.0
+        // Case B: Devotee is physically at Ashram (<= allowedRadiusMeters + 50m satellite jitter buffer)
+        val effectiveRadius = allowedRadiusMeters + 50.0
         if (distance <= effectiveRadius) {
             // Validate Accuracy Threshold for local Ashram check
             if (accuracy > MAX_ALLOWED_ACCURACY_METERS) {
@@ -339,14 +339,14 @@ object GeofenceLocationManager {
         }
 
         // Case C: Devotee is within boundary (beyond allowed radius) -> Strictly BLOCKED!
-        val km = String.format(java.util.Locale.US, "%.1f", distance / 1000.0)
+        val distText = if (distance < 1000.0) "${distance.toInt()} मीटर" else "${String.format(java.util.Locale.US, "%.1f", distance / 1000.0)} किमी"
         val allowedM = allowedRadiusMeters.toInt()
         val radiusDesc = if (allowedM >= 1000) "${String.format(java.util.Locale.US, "%.1f", allowedM / 1000.0)} किमी" else "$allowedM मीटर"
         val outDesc = String.format(java.util.Locale.US, "%.0f", outstationMinDistanceKm)
         val reason = if (isOutstationAdvanceAllowed) {
-            "⚠️ आश्रम दूरी नियम: ${outDesc} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।"
+            "⚠️ आश्रम दूरी नियम: ${outDesc} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $distText दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि दूर से आने वाले भक्तों का अवसर न छूटे।"
         } else {
-            "⚠️ आश्रम जिओफेंस नियम: टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $km किमी दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें।"
+            "⚠️ आश्रम जिओफेंस नियम: टोकन पंजीकरण केवल आश्रम परिसर ($radiusDesc के भीतर) में ही मान्य है। आप अभी आश्रम से $distText दूर हैं। कृपया आश्रम पहुँचकर ही टोकन जनरेट करें।"
         }
         return LocationSecurityResult(
             isValid = false,
@@ -361,20 +361,32 @@ object GeofenceLocationManager {
     }
 
     /**
-     * Tries to get the highest accuracy location from GPS or Network provider.
+     * Tries to get the highest accuracy location, prioritizing real satellite GPS / passive fixes
+     * over coarse cellular network tower fixes.
      */
     @Suppress("MissingPermission")
     fun getLastKnownLocation(context: Context): Location? {
         val locManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
         return try {
-            val gpsLoc = locManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-            val netLoc = locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            val gpsLoc = try { locManager.getLastKnownLocation(LocationManager.GPS_PROVIDER) } catch (_: Exception) { null }
+            val passiveLoc = try { locManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER) } catch (_: Exception) { null }
+            val netLoc = try { locManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER) } catch (_: Exception) { null }
+
+            val now = System.currentTimeMillis()
+
+            // Filter reasonably recent fixes (< 30 minutes)
+            val freshGps = if (gpsLoc != null && (now - gpsLoc.time) < 1800_000L) gpsLoc else null
+            val freshPassive = if (passiveLoc != null && (now - passiveLoc.time) < 1800_000L && passiveLoc.hasAccuracy() && passiveLoc.accuracy <= 100f) passiveLoc else null
+            val freshNet = if (netLoc != null && (now - netLoc.time) < 1800_000L) netLoc else null
+
+            // True satellite GPS always takes precedence over cell tower
             when {
-                gpsLoc != null && netLoc != null -> {
-                    // Prefer GPS if reasonably recent or more accurate
-                    if (gpsLoc.hasAccuracy() && gpsLoc.accuracy <= (netLoc.accuracy + 20f)) gpsLoc else netLoc
-                }
+                freshGps != null && (freshPassive == null || freshGps.accuracy <= freshPassive.accuracy) -> freshGps
+                freshPassive != null -> freshPassive
+                freshGps != null -> freshGps
+                freshNet != null -> freshNet
                 gpsLoc != null -> gpsLoc
+                passiveLoc != null -> passiveLoc
                 else -> netLoc
             }
         } catch (e: Exception) {
@@ -383,33 +395,63 @@ object GeofenceLocationManager {
     }
 
     /**
-     * Actively requests a fresh location fix from GPS and Network providers.
-     * Guaranteed to trigger phone GPS hardware so passive cache is not empty.
+     * Actively requests a fresh satellite GPS location fix.
+     * CRITICAL FIX: Dedicated listeners for GPS and Network.
+     * Network provider (cell tower) NEVER cancels or aborts GPS satellite updates!
+     * GPS provider is given priority and time to lock satellites.
      */
     @Suppress("MissingPermission")
     fun requestFreshLocation(
         context: Context,
+        timeoutMs: Long = 10_000L,
         onLocationResult: (Location?) -> Unit
     ) {
-        val last = getLastKnownLocation(context)
-        if (last != null && (System.currentTimeMillis() - last.time) < 20_000L && last.hasAccuracy() && last.accuracy <= MAX_ALLOWED_ACCURACY_METERS) {
-            onLocationResult(last)
+        val locManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+        if (locManager == null) {
+            onLocationResult(getLastKnownLocation(context))
             return
         }
 
-        val locManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-        if (locManager == null) {
+        val last = getLastKnownLocation(context)
+        // Only skip if we ALREADY have a very recent genuine GPS fix (< 10 seconds) with high accuracy (<= 35m)
+        if (last != null && last.provider == LocationManager.GPS_PROVIDER && (System.currentTimeMillis() - last.time) < 10_000L && last.hasAccuracy() && last.accuracy <= 35.0f) {
             onLocationResult(last)
             return
         }
 
         var delivered = false
-        val listener = object : android.location.LocationListener {
+        var bestGpsCandidate: Location? = null
+        var networkCandidate: Location? = null
+
+        val mainLooper = android.os.Looper.getMainLooper()
+        val handler = android.os.Handler(mainLooper)
+
+        var gpsListener: android.location.LocationListener? = null
+        var networkListener: android.location.LocationListener? = null
+
+        fun cleanupAndDeliver(chosenLoc: Location?) {
+            if (delivered) return
+            delivered = true
+            try {
+                gpsListener?.let { locManager.removeUpdates(it) }
+            } catch (_: Exception) {}
+            try {
+                networkListener?.let { locManager.removeUpdates(it) }
+            } catch (_: Exception) {}
+            onLocationResult(chosenLoc ?: getLastKnownLocation(context))
+        }
+
+        gpsListener = object : android.location.LocationListener {
             override fun onLocationChanged(loc: Location) {
-                if (!delivered) {
-                    delivered = true
-                    try { locManager.removeUpdates(this) } catch (e: Exception) {}
-                    onLocationResult(loc)
+                if (delivered) return
+                // Check if this GPS fix is high accuracy (<= 75 meters)
+                if (loc.hasAccuracy() && loc.accuracy <= 75.0f) {
+                    cleanupAndDeliver(loc)
+                } else {
+                    // Update best GPS candidate so far
+                    if (bestGpsCandidate == null || (loc.hasAccuracy() && loc.accuracy < (bestGpsCandidate?.accuracy ?: Float.MAX_VALUE))) {
+                        bestGpsCandidate = loc
+                    }
                 }
             }
             @Deprecated("Deprecated in Java")
@@ -418,24 +460,38 @@ object GeofenceLocationManager {
             override fun onProviderDisabled(provider: String) {}
         }
 
+        networkListener = object : android.location.LocationListener {
+            override fun onLocationChanged(loc: Location) {
+                if (delivered) return
+                // Only keep as fallback candidate! NEVER abort GPS!
+                networkCandidate = loc
+            }
+            @Deprecated("Deprecated in Java")
+            override fun onStatusChanged(provider: String?, status: Int, extras: android.os.Bundle?) {}
+            override fun onProviderEnabled(provider: String) {}
+            override fun onProviderDisabled(provider: String) {}
+        }
+
+        val isGpsEnabled = try { locManager.isProviderEnabled(LocationManager.GPS_PROVIDER) } catch (_: Exception) { false }
+        val isNetEnabled = try { locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) } catch (_: Exception) { false }
+
         try {
-            val mainLooper = android.os.Looper.getMainLooper()
-            if (locManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 1.0f, listener, mainLooper)
+            if (isGpsEnabled) {
+                locManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0.5f, gpsListener, mainLooper)
             }
-            if (locManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000L, 1.0f, listener, mainLooper)
+            if (isNetEnabled) {
+                locManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000L, 0.5f, networkListener, mainLooper)
             }
-            // Auto timeout removal after 5 seconds
-            android.os.Handler(mainLooper).postDelayed({
+
+            // Fallback timeout to ensure we never hang the UI
+            handler.postDelayed({
                 if (!delivered) {
-                    delivered = true
-                    try { locManager.removeUpdates(listener) } catch (e: Exception) {}
-                    onLocationResult(getLastKnownLocation(context))
+                    val finalChoice = bestGpsCandidate ?: networkCandidate ?: getLastKnownLocation(context)
+                    cleanupAndDeliver(finalChoice)
                 }
-            }, 5000L)
+            }, timeoutMs)
         } catch (e: Exception) {
-            onLocationResult(last)
+            cleanupAndDeliver(last)
         }
     }
 
@@ -445,16 +501,17 @@ object GeofenceLocationManager {
      */
     suspend fun awaitFreshLocation(
         context: Context,
-        timeoutMs: Long = 4000L
+        timeoutMs: Long = 8000L
     ): Location? {
         val last = getLastKnownLocation(context)
-        if (last != null && (System.currentTimeMillis() - last.time) < 20_000L && last.hasAccuracy() && last.accuracy <= MAX_ALLOWED_ACCURACY_METERS) {
+        // If we already have a genuine recent GPS fix with high accuracy, return it immediately
+        if (last != null && last.provider == LocationManager.GPS_PROVIDER && (System.currentTimeMillis() - last.time) < 15_000L && last.hasAccuracy() && last.accuracy <= 40.0f) {
             return last
         }
         return try {
-            withTimeoutOrNull(timeoutMs) {
+            withTimeoutOrNull(timeoutMs + 1000L) {
                 suspendCancellableCoroutine<Location?> { cont ->
-                    requestFreshLocation(context) { loc ->
+                    requestFreshLocation(context, timeoutMs = timeoutMs) { loc ->
                         if (cont.isActive) {
                             cont.resumeWith(Result.success(loc ?: last))
                         }

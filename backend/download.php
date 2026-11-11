@@ -1,832 +1,423 @@
 <?php
-
-ini_set('display_errors', 1);
-
-ini_set('display_startup_errors', 1);
-
-error_reporting(E_ALL);
-
+// ==============================================================================
+// SHRI BALAJI KRIPA DHAM - OFFICIAL APP DOWNLOAD & DISTRIBUTION ENGINE
+// Mandir: Gram Dungra Jaat, Bulandshahr, Uttar Pradesh
+// Hostinger High-Speed NVMe Cluster: https://shribalajikripadham.online
 // ==============================================================================
 
-// ANKIT ELEVEX PRO - ENTERPRISE MULTI-APP DOWNLOAD & DISTRIBUTION HUB
-
-// Conceived & Engineered by Ankit Chaudhary (8533955333)
-
-// Hostinger NVMe SSD Cluster: https://shribalajikripadham.online
-
-// ==============================================================================
-
-
+ini_set('display_errors', 0);
+error_reporting(0);
 
 $appParam = strtolower(trim($_GET['app'] ?? ''));
-
 $viewParam = strtolower(trim($_GET['view'] ?? ''));
+$actionParam = strtolower(trim($_GET['action'] ?? ''));
 
-$isPortal = ($appParam === 'hub' || $appParam === 'portal' || $viewParam === 'portal' || isset($_GET['hub']));
-
-
-
-// 1. Dedicated EleveX Multi-App Mapping
-
+// ==============================================================================
+// 1. ELEVEX MULTI-APP HANDLER (ONLY IF EXPLICITLY REQUESTED VIA ?app=...)
+// ==============================================================================
 $elevexApps = [
-
     'superadmin' => [
-
         'name' => 'EleveX SuperAdmin App',
-
         'title_hi' => 'सुपर एडमिन सुप्रीम कंट्रोलर',
-
         'package' => 'com.ankit.elevex.superadmin',
-
         'version' => '5.9.52',
-
         'build'   => 642,
-
         'filename' => 'EleveX_SuperAdmin_v5.9.52.apk',
-
         'size'    => '33.08 MB',
-
-        'sha256'  => 'e00ea5342b1f96cd2b7915e09c9f6d282d168fef1e35b03057fa3932c3f3c85d',
-
         'color' => '#8B5CF6',
-
-        'icon' => '🛡️',
-
-        'features' => ['घोस्ट मोड (Ghost Mode Supreme)', 'मल्टी-टेनेंट कंपनी प्रोविजनिंग', 'डायनामिक फीचर टॉगल्स', 'अपरिवर्तनीय लेज़र ऑडिट ट्रेल']
-
+        'icon' => '🛡️'
     ],
-
     'supervisor' => [
-
         'name' => 'EleveX Supervisor Cockpit',
-
         'title_hi' => 'सुपरवाइज़र फ्लीट कॉकपिट',
-
         'package' => 'com.ankit.elevex.supervisor',
-
         'version' => '5.9.52',
-
         'build'   => 642,
-
         'filename' => 'EleveX_Supervisor_v5.9.52.apk',
-
         'size'    => '32.40 MB',
-
-        'sha256'  => '878a39ea9f642b85e1b347ed3376b0e2dd1e8a55ce76bf2aa05d9e62399f68bf',
-
         'color' => '#0284C7',
-
-        'icon' => '📡',
-
-        'features' => ['लाइव OpenStreetMap लैंडमार्क', 'स्मार्ट हैवर्सिन ऑटो-डिस्पैच', 'नॉन-AMC आपातकालीन डिस्पैच', 'रियल-टाइम पावर/बैटरी स्थिति']
-
+        'icon' => '📡'
     ],
-
     'technician' => [
-
         'name' => 'EleveX Technician Terminal',
-
         'title_hi' => 'फील्ड टेक्नीशियन टर्मिनल',
-
         'package' => 'com.ankit.elevex.technician',
-
         'version' => '5.9.52',
-
         'build'   => 642,
-
         'filename' => 'EleveX_Technician_v5.9.52.apk',
-
         'size'    => '36.71 MB',
-
-        'sha256'  => '87a3269c3a7d696e99de99ecb6980b94f0e4bac52d117300a78e35261c7d48ca',
-
         'color' => '#10B981',
-
-        'icon' => '🔧',
-
-        'features' => ['1,012+ ऑफलाइन OEM फॉल्ट कोड्स', '4-लेयर एंटी-मॉक GPS सुरक्षा', '150m जियोफेंस कस्टमर OTP लॉक', 'रूट व USB डिबगिंग डिटेक्शन']
-
+        'icon' => '🔧'
     ],
-
     'owner' => [
-
         'name' => 'EleveX Lift Owner App',
-
         'title_hi' => 'लिफ्ट ओनर क्लाइंट पोर्टल',
-
         'package' => 'com.ankit.elevex.owner',
-
         'version' => '5.9.52',
-
         'build'   => 642,
-
         'filename' => 'EleveX_Owner_v5.9.52.apk',
-
         'size'    => '31.73 MB',
-
-        'sha256'  => '631bc99b6430ba6cca6d5d4c742d2f26c03bd540367ef1ad7d6f622486d42fa7',
-
         'color' => '#F59E0B',
-
-        'icon' => '🏢',
-
-        'features' => ['1-टैप आपातकालीन SOS डिस्पैच', 'लाइव टेक्नीशियन राडार व ETA', 'डायनामिक 6-अंकीय समापन OTP', '1 से 5 स्टार सर्विस ऑडिट रेटिंग']
-
+        'icon' => '🏢'
     ],
-
     'gateway' => [
-
         'name' => 'EleveX Master Gateway Portal',
-
         'title_hi' => 'मास्टर 4-इन-1 गेटवे पोर्टल',
-
         'package' => 'com.ankit.liftramban.ankits_lift_ramban_ai',
-
         'version' => '5.9.52',
-
         'build'   => 642,
-
         'filename' => 'EleveX_Master_Gateway_v5.9.52.apk',
-
         'size'    => '38.41 MB',
-
-        'sha256'  => '2e779fb3d3d7b933fa74098142fd3117c50a2248fea33b2957a2c1944d6ba292',
-
         'color' => '#3B82F6',
-
-        'icon' => '🌐',
-
-        'features' => ['एकीकृत 4-ऐप स्विचर', 'मल्टी-टेनेंट कंपनी टेस्टिंग', '47 इंडस्ट्रियल इंजीनियरिंग टूल्स', '1-टैप द्विभाषी स्विच (Hindi/Eng)']
-
+        'icon' => '🌐'
     ]
-
 ];
 
-
-
-// Alias for generic elevex
-
-if ($appParam === 'elevex' || $appParam === 'ankit_elevex' || $appParam === 'ankit_elievex') {
-
+if ($appParam === 'elevex' || $appParam === 'ankit_elevex') {
     $appParam = 'gateway';
-
 }
-
-
-
-// 2. Direct APK Download Delivery
 
 if (isset($elevexApps[$appParam])) {
-
     $appInfo = $elevexApps[$appParam];
-
     $filename = $appInfo['filename'];
-
-
-
     $candidateDirs = array_filter([
-
         __DIR__ . '/elevex_gateway/downloads',
-
         isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] . '/elevex_gateway/downloads' : null,
-
         dirname(__DIR__) . '/elevex_gateway/downloads',
-
         __DIR__ . '/downloads',
-
-        dirname(__DIR__) . '/downloads',
-
         '/home/u237101617/domains/shribalajikripadham.online/public_html/elevex_gateway/downloads'
-
     ]);
-
-
-
     $targetFile = '';
-
     foreach ($candidateDirs as $dir) {
-
         if (!is_dir($dir)) continue;
-
-
-
-        // 1. Specific named APK (e.g. EleveX_Technician_v5.9.51.apk)
-
         $specific = "$dir/{$filename}";
-
         if (file_exists($specific) && filesize($specific) > 10000000) {
-
             $targetFile = $specific;
-
             break;
-
         }
-
-
-
-        // 2. Specific flavor APK (e.g. EleveX_Technician_*.apk)
-
-        $flavorName = ucfirst($appParam);
-
-        $flavorMatches = glob("$dir/EleveX_{$flavorName}*.apk");
-
-        if (!empty($flavorMatches)) {
-
-            natsort($flavorMatches);
-
-            $flavorMatches = array_reverse($flavorMatches);
-
-            foreach ($flavorMatches as $fm) {
-
-                if (filesize($fm) > 10000000) {
-
-                    $targetFile = $fm;
-
-                    break 2;
-
-                }
-
-            }
-
-        }
-
-
-
-        // 3. Check app-flavor-release.apk
-
-        $appFlavor = "$dir/app-{$appParam}-release.apk";
-
-        if (file_exists($appFlavor) && filesize($appFlavor) > 10000000) {
-
-            $targetFile = $appFlavor;
-
-            break;
-
-        }
-
-
-
-        // 4. Generic Release APK fallback
-
-        $rel = "$dir/Ankit_EleveX_Release.apk";
-
-        if (file_exists($rel) && filesize($rel) > 10000000) {
-
-            $targetFile = $rel;
-
-            break;
-
-        }
-
-
-
-        // 5. Any Ankit_EleveX*.apk (v5.9.45 / v5.9.46 / latest)
-
-        $matches = glob("$dir/Ankit_EleveX*.apk");
-
-        if (!empty($matches)) {
-
-            natsort($matches);
-
-            $matches = array_reverse($matches);
-
-            foreach ($matches as $m) {
-
-                if (filesize($m) > 10000000) {
-
-                    $targetFile = $m;
-
-                    break 2;
-
-                }
-
-            }
-
-        }
-
     }
-
-
-
     if (!empty($targetFile) && file_exists($targetFile)) {
-
         $filesize = filesize($targetFile);
-
         while (ob_get_level()) ob_end_clean();
-
         header("Content-Type: application/vnd.android.package-archive");
-
         header("Content-Disposition: attachment; filename=\"" . $filename . "\"");
-
         header("Content-Length: {$filesize}");
-
         header("Accept-Ranges: bytes");
-
         header("Cache-Control: public, no-cache, no-store, must-revalidate, max-age=0");
-
         header("Pragma: no-cache");
+        header("Expires: 0");
+        $handle = fopen($targetFile, "rb");
+        if ($handle) {
+            while (!feof($handle)) {
+                echo fread($handle, 1048576);
+                flush();
+            }
+            fclose($handle);
+        } else {
+            readfile($targetFile);
+        }
+        exit;
+    }
+    header("Location: https://github.com/ankit261194/ankits-liftramban/releases/download/v5.9.39/Ankit_EleveX_v5.9.39_Final.apk", true, 302);
+    exit;
+}
 
+// ==============================================================================
+// 2. PRIMARY DEFAULT: SHRI BALAJI KRIPA DHAM OFFICIAL APK DELIVERY
+// ==============================================================================
+$tag = 'v2.82.0';
+$buildCode = 169;
+$versionName = '2.82.0';
+$apkFilename = 'ShriBalajiKripaDham-release.apk';
+$fallbackUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/{$tag}/ShriBalajiKripaDham-release.apk";
+
+// Candidate search locations for physical APK on Hostinger SSD
+$ashramCandidateDirs = array_filter([
+    __DIR__ . '/downloads',
+    isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] . '/downloads' : null,
+    dirname(__DIR__) . '/downloads',
+    '/home/u237101617/domains/shribalajikripadham.online/public_html/downloads'
+]);
+
+$ashramTargetFile = '';
+foreach ($ashramCandidateDirs as $d) {
+    if (!$d || !is_dir($d)) continue;
+    // 1. Check exact ShriBalajiKripaDham-release.apk
+    $p1 = "$d/{$apkFilename}";
+    if (file_exists($p1) && filesize($p1) > 10000000) {
+        $ashramTargetFile = $p1;
+        break;
+    }
+    // 2. Check version specific ShriBalajiKripaDham-v169.apk
+    $p2 = "$d/ShriBalajiKripaDham-v{$buildCode}.apk";
+    if (file_exists($p2) && filesize($p2) > 10000000) {
+        $ashramTargetFile = $p2;
+        break;
+    }
+    // 3. Any ShriBalajiKripaDham*.apk
+    $m = glob("$d/ShriBalajiKripaDham*.apk");
+    if (!empty($m)) {
+        natsort($m);
+        $m = array_reverse($m);
+        foreach ($m as $candidate) {
+            if (filesize($candidate) > 10000000) {
+                $ashramTargetFile = $candidate;
+                break 2;
+            }
+        }
+    }
+}
+
+// Check if user specifically requested the HTML information page
+$showInfoPage = ($viewParam === 'page' || $viewParam === 'info' || isset($_GET['info']) || $actionParam === 'info');
+
+if (!$showInfoPage) {
+    // DIRECT HIGH-SPEED BINARY DOWNLOAD STREAM (DEFAULT BEHAVIOR)
+    if (!empty($ashramTargetFile) && file_exists($ashramTargetFile)) {
+        $filesize = filesize($ashramTargetFile);
+        while (ob_get_level()) ob_end_clean();
+        header("Content-Type: application/vnd.android.package-archive");
+        header("Content-Disposition: attachment; filename=\"{$apkFilename}\"");
+        header("Content-Length: {$filesize}");
+        header("Accept-Ranges: bytes");
+        header("Cache-Control: public, no-cache, no-store, must-revalidate, max-age=0");
+        header("Pragma: no-cache");
         header("Expires: 0");
 
-
-
-        $handle = fopen($targetFile, "rb");
-
+        $handle = fopen($ashramTargetFile, "rb");
         if ($handle) {
-
             while (!feof($handle)) {
-
-                echo fread($handle, 1048576); // 1 MB chunk
-
+                echo fread($handle, 1048576);
                 flush();
-
             }
-
             fclose($handle);
-
         } else {
-
-            readfile($targetFile);
-
+            readfile($ashramTargetFile);
         }
-
         exit;
-
+    } else {
+        // High-Speed Guaranteed GitHub Releases Mirror Fallback
+        header("Location: " . $fallbackUrl, true, 302);
+        exit;
     }
-
-
-
-    // High-Speed Guaranteed GitHub Releases Mirror
-
-    header("Location: https://github.com/ankit261194/ankits-liftramban/releases/download/v5.9.39/Ankit_EleveX_v5.9.39_Final.apk", true, 302);
-
-    exit;
-
 }
 
-
-
-// 3. Fallback for Ashram App if explicitly requested
-
-if ($appParam === 'ashram' || $appParam === 'balaji') {
-
-    $tag = 'v2.81.0';
-
-    $externalCdnUrl = "https://github.com/ankit261194/shri-balaji-kripa-dham/releases/download/{$tag}/ShriBalajiKripaDham-release.apk";
-
-    header("Location: " . $externalCdnUrl, true, 302);
-
-    exit;
-
-}
-
-
-
-// 4. Ultra-Modern Responsive Enterprise Web Download Portal
+// ==============================================================================
+// 3. BEAUTIFUL SACRED WEB DOWNLOAD PORTAL (when ?view=page is requested)
+// ==============================================================================
+$filesizeMB = (!empty($ashramTargetFile) && file_exists($ashramTargetFile))
+    ? round(filesize($ashramTargetFile) / (1024 * 1024), 2)
+    : 80.84;
 
 header("Content-Type: text/html; charset=utf-8");
-
 ?>
-
 <!DOCTYPE html>
-
 <html lang="hi">
-
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Ankit EleveX Pro — Enterprise Multi-App Download Hub</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
-
+    <title>श्री बालाजी कृपा धाम — आधिकारिक मोबाइल ऐप डाउनलोड (v<?= htmlspecialchars($versionName) ?>)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-
         :root {
-
-            --bg-dark: #070B14;
-
-            --surface-dark: #0F172A;
-
-            --border-color: #1E293B;
-
-            --text-primary: #F8FAFC;
-
-            --text-secondary: #94A3B8;
-
-            --accent-blue: #0284C7;
-
-            --accent-purple: #8B5CF6;
-
-            --accent-green: #10B981;
-
-            --accent-amber: #F59E0B;
-
+            --bg-color: #FFFDF9;
+            --primary-saffron: #E65100;
+            --primary-gold: #FF8F00;
+            --maroon-dark: #800000;
+            --card-bg: #FFFFFF;
+            --text-main: #212121;
+            --text-muted: #555555;
+            --border-color: #FFE0B2;
+            --success-green: #2E7D32;
         }
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-
         body {
-
-            font-family: 'Inter', 'Noto Sans Devanagari', -apple-system, sans-serif;
-
-            background-color: var(--bg-dark);
-
-            color: var(--text-primary);
-
+            font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', -apple-system, sans-serif;
+            background: linear-gradient(180deg, #FFF8E1 0%, #FFFFFF 100%);
+            color: var(--text-main);
             min-height: 100vh;
-
             padding: 30px 16px;
-
             display: flex;
-
             flex-direction: column;
-
             align-items: center;
-
         }
-
-        .header {
-
-            text-align: center;
-
-            max-width: 800px;
-
-            margin-bottom: 36px;
-
-        }
-
-        .badge-live {
-
-            display: inline-flex;
-
-            align-items: center;
-
-            gap: 6px;
-
-            padding: 6px 14px;
-
-            background: rgba(16, 185, 129, 0.12);
-
-            border: 1px solid rgba(16, 185, 129, 0.3);
-
-            border-radius: 9999px;
-
-            color: #34D399;
-
-            font-size: 0.82rem;
-
-            font-weight: 700;
-
-            margin-bottom: 14px;
-
-        }
-
-        .badge-live::before {
-
-            content: '';
-
-            width: 8px;
-
-            height: 8px;
-
-            border-radius: 50%;
-
-            background: #10B981;
-
-            box-shadow: 0 0 8px #10B981;
-
-        }
-
-        h1 {
-
-            font-size: 2.1rem;
-
-            font-weight: 800;
-
-            letter-spacing: -0.5px;
-
-            margin-bottom: 8px;
-
-            background: linear-gradient(135deg, #FFFFFF, #94A3B8);
-
-            -webkit-background-clip: text;
-
-            -webkit-text-fill-color: transparent;
-
-        }
-
-        .subtitle {
-
-            font-size: 1rem;
-
-            color: var(--text-secondary);
-
-            line-height: 1.5;
-
-        }
-
-        .grid {
-
-            display: grid;
-
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-
-            gap: 20px;
-
-            max-width: 1140px;
-
+        .container {
+            max-width: 680px;
             width: 100%;
-
-            margin-bottom: 40px;
-
-        }
-
-        .card {
-
-            background: var(--surface-dark);
-
-            border: 1px solid var(--border-color);
-
-            border-radius: 18px;
-
-            padding: 24px;
-
-            display: flex;
-
-            flex-direction: column;
-
-            justify-content: space-between;
-
-            transition: transform 0.2s, border-color 0.2s;
-
-            position: relative;
-
-            overflow: hidden;
-
-        }
-
-        .card:hover {
-
-            transform: translateY(-3px);
-
-            border-color: rgba(2, 132, 199, 0.5);
-
-        }
-
-        .card-top {
-
-            display: flex;
-
-            align-items: flex-start;
-
-            gap: 14px;
-
-            margin-bottom: 16px;
-
-        }
-
-        .card-icon {
-
-            font-size: 2.2rem;
-
-            width: 54px;
-
-            height: 54px;
-
-            border-radius: 14px;
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            background: rgba(255, 255, 255, 0.05);
-
-            flex-shrink: 0;
-
-        }
-
-        .card-title {
-
-            font-size: 1.2rem;
-
-            font-weight: 700;
-
-            color: white;
-
-            line-height: 1.3;
-
-        }
-
-        .card-sub {
-
-            font-size: 0.85rem;
-
-            color: var(--text-secondary);
-
-            margin-top: 2px;
-
-        }
-
-        .feature-list {
-
-            list-style: none;
-
-            margin: 16px 0 20px 0;
-
-        }
-
-        .feature-list li {
-
-            font-size: 0.88rem;
-
-            color: #CBD5E1;
-
-            margin-bottom: 8px;
-
-            display: flex;
-
-            align-items: center;
-
-            gap: 8px;
-
-        }
-
-        .feature-list li::before {
-
-            content: '✓';
-
-            color: #10B981;
-
-            font-weight: bold;
-
-        }
-
-        .meta-bar {
-
-            display: flex;
-
-            justify-content: space-between;
-
-            align-items: center;
-
-            padding: 10px 14px;
-
-            background: rgba(0, 0, 0, 0.25);
-
-            border-radius: 10px;
-
-            font-size: 0.78rem;
-
-            color: var(--text-secondary);
-
-            margin-bottom: 16px;
-
-        }
-
-        .btn-download {
-
-            display: flex;
-
-            align-items: center;
-
-            justify-content: center;
-
-            gap: 10px;
-
-            padding: 13px 20px;
-
-            background: linear-gradient(135deg, var(--accent-blue), #0369A1);
-
-            color: white;
-
-            text-decoration: none;
-
-            border-radius: 12px;
-
-            font-weight: 700;
-
-            font-size: 0.95rem;
-
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
-
-            transition: filter 0.2s;
-
-        }
-
-        .btn-download:hover {
-
-            filter: brightness(1.15);
-
-        }
-
-        .footer {
-
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 24px;
+            box-shadow: 0 12px 40px rgba(230, 81, 0, 0.1);
+            padding: 36px 24px;
             text-align: center;
-
-            color: var(--text-secondary);
-
-            font-size: 0.82rem;
-
-            line-height: 1.6;
-
         }
-
+        .mandir-icon {
+            font-size: 54px;
+            margin-bottom: 12px;
+            display: inline-block;
+            animation: pulse 2s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        h1 {
+            color: var(--maroon-dark);
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+        }
+        .badge-ver {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            background: #FFF3E0;
+            border: 1.5px solid var(--primary-gold);
+            border-radius: 9999px;
+            color: var(--primary-saffron);
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+        .btn-download-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 16px 28px;
+            background: linear-gradient(135deg, #E65100 0%, #F57C00 100%);
+            color: #FFFFFF;
+            font-size: 1.15rem;
+            font-weight: 800;
+            text-decoration: none;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(230, 81, 0, 0.35);
+            transition: all 0.2s ease;
+            margin-bottom: 16px;
+        }
+        .btn-download-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(230, 81, 0, 0.45);
+        }
+        .btn-download-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px 20px;
+            background: #F5F5F5;
+            color: #424242;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 12px;
+            border: 1px solid #E0E0E0;
+            transition: all 0.2s ease;
+        }
+        .btn-download-secondary:hover {
+            background: #EEEEEE;
+        }
+        .features-list {
+            margin-top: 28px;
+            text-align: left;
+            background: #FAFAFA;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #EEEEEE;
+        }
+        .features-list h3 {
+            font-size: 1rem;
+            color: var(--maroon-dark);
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        .features-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        .features-list li {
+            font-size: 0.9rem;
+            color: #424242;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .features-list li::before {
+            content: '✔';
+            color: var(--success-green);
+            font-weight: bold;
+        }
+        .install-guide {
+            margin-top: 24px;
+            padding: 16px;
+            background: #E8F5E9;
+            border-radius: 14px;
+            border: 1px solid #C8E6C9;
+            text-align: left;
+            font-size: 0.85rem;
+            color: #1B5E20;
+            line-height: 1.5;
+        }
+        .footer-text {
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: #9E9E9E;
+        }
     </style>
-
 </head>
-
 <body>
+    <div class="container">
+        <div class="mandir-icon">🚩</div>
+        <h1>श्री बालाजी कृपा धाम</h1>
+        <div class="subtitle">ग्राम डूँगरा जाट, तहसील अनूपशहर, जिला बुलन्दशहर (उत्तर प्रदेश)</div>
 
-    <div class="header">
-
-        <div class="badge-live">HOSTINGER NVMe SSD • HIGH-SPEED MIRROR</div>
-
-        <h1>Ankit EleveX Pro Suite</h1>
-
-        <p class="subtitle">अंकित एलेवेक्स प्रो — इंडस्ट्रियल लिफ्ट फ्लीट इकोसिस्टम (v5.9.52 • Build 642)<br>Dedicated Standalone Enterprise APKs for Super Admin, Supervisor, Technician & Lift Owners</p>
-
-    </div>
-
-
-
-    <div class="grid">
-
-        <?php foreach ($elevexApps as $key => $app): ?>
-
-        <div class="card">
-
-            <div>
-
-                <div class="card-top">
-
-                    <div class="card-icon"><?= $app['icon'] ?></div>
-
-                    <div>
-
-                        <div class="card-title"><?= $app['name'] ?></div>
-
-                        <div class="card-sub"><?= $app['title_hi'] ?></div>
-
-                    </div>
-
-                </div>
-
-                <ul class="feature-list">
-
-                    <?php foreach ($app['features'] as $feat): ?>
-
-                    <li><?= $feat ?></li>
-
-                    <?php endforeach; ?>
-
-                </ul>
-
-            </div>
-
-            <div>
-
-                <div class="meta-bar">
-
-                    <span>Package: <?= $app['package'] ?></span>
-
-                    <span><?= $app['size'] ?></span>
-
-                </div>
-
-                <a href="download.php?app=<?= $key ?>" class="btn-download" style="background: linear-gradient(135deg, <?= $app['color'] ?>, #0284C7);">
-
-                    📥 Download APK (v<?= $app['version'] ?>)
-
-                </a>
-
-            </div>
-
+        <div class="badge-ver">
+            <span>✨ नवीनतम संस्करण: v<?= htmlspecialchars($versionName) ?> (बिल्ड <?= $buildCode ?>)</span>
+            <span>•</span>
+            <span><?= $filesizeMB ?> MB</span>
         </div>
 
-        <?php endforeach; ?>
+        <a href="download.php" class="btn-download-primary">
+            <span>📥</span>
+            <span>श्री बालाजी कृपा धाम ऐप डाउनलोड करें (APK)</span>
+        </a>
 
+        <a href="<?= htmlspecialchars($fallbackUrl) ?>" class="btn-download-secondary" target="_blank">
+            <span>🌐</span>
+            <span>वैकल्पिक डाउनलोड लिंक (GitHub CDN Mirror)</span>
+        </a>
+
+        <div class="features-list">
+            <h3>🌟 इस नए संस्करण (v<?= htmlspecialchars($versionName) ?>) की प्रमुख विशेषताएँ:</h3>
+            <ul>
+                <li><strong>🛰️ आश्रम 200m जीपीएस सैटेलाइट शुद्धता इंजन:</strong> मोबाइल टावर द्वारा जीपीएस कैंसल होने की समस्या का स्थायी समाधान। आश्रम परिसर (200 मीटर) में खड़े होने पर तत्काल सटीक सैटेलाइट टोकन सत्यापन।</li>
+                <li><strong>📏 मीटर में लाइव दूरी प्रदर्शन:</strong> 1 किमी के भीतर सटीक मीटर (जैसे 45 मीटर, 120 मीटर) में दूरी। कोई भ्रामक दशमलव या सड़क कारक नहीं।</li>
+                <li><strong>⏳ पावन 180° फ्लिप रेत-घड़ी एनीमेशन:</strong> टोकन उल्टी गिनती में सजीव सोने के कण व रेत प्रवाह।</li>
+                <li><strong>🛡️ 100% सुरक्षित व प्रमाणित:</strong> मंदिर के वास्तविक भक्तों हेतु निर्मित आधिकारिक एप्लिकेशन।</li>
+            </ul>
+        </div>
+
+        <div class="install-guide">
+            <strong>📲 फोन में इनस्टॉल कैसे करें:</strong><br>
+            1. 'ऐप डाउनलोड करें' बटन दबाएं।<br>
+            2. डाउनलोड पूरा होने पर नोटिफिकेशन बार से <code>ShriBalajiKripaDham-release.apk</code> पर टैप करें।<br>
+            3. यदि क्रोम "Unknown Sources" या "अज्ञात स्रोत" पूछे, तो 'Allow from this source' (अनुमति दें) पर क्लिक करें।<br>
+            4. 'Install' (इनस्टॉल) दबाएं और ऐप चालू करें।
+        </div>
+
+        <div class="footer-text">
+            © <?= date('Y') ?> श्री बालाजी कृपा धाम, डूँगरा जाट • सर्वाधिकार सुरक्षित
+        </div>
     </div>
-
-
-
-    <div class="footer">
-
-        <p>Conceived & Engineered by <strong>Ankit Chaudhary (8533955333)</strong></p>
-
-        <p>Protected by Android Enterprise Device Admin & Immutable Server Ledger Audit • All 4 Apps Supported on Android 7.0+</p>
-
-    </div>
-
 </body>
-
 </html>
-
-<?php
-
-exit;
-

@@ -208,10 +208,11 @@ fun TokenRegistrationScreen(
                 userLatitude, userLongitude,
                 ashLat, ashLon
             )
-            val straightKm = (distMeters / 1000.0).toFloat()
-            if (distMeters <= settings.allowedRadiusMeters) {
-                estimatedDistanceKm = (kotlin.math.round(straightKm * 10) / 10)
+            if (distMeters <= 1000.0) {
+                // Local walking/campus distance: straight-line distance, no highway multiplier!
+                estimatedDistanceKm = (distMeters / 1000.0).toFloat()
             } else {
+                val straightKm = (distMeters / 1000.0).toFloat()
                 estimatedDistanceKm = (kotlin.math.round(straightKm * 1.28f * 10) / 10)
             }
         } else {
@@ -1282,11 +1283,18 @@ fun TokenRegistrationScreen(
                                     Text("🚗", fontSize = 16.sp)
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = if (isCalculatingDistance) {
-                                            if (isHindi) "सड़क दूरी की गणना हो रही है..." else "Calculating road distance..."
+                                        text = if (isCalculatingDistance || isRefreshingLocation) {
+                                            if (isHindi) "🛰️ सैटेलाइट जीपीएस सिग्नल खोज रहे हैं..." else "Searching GPS satellites..."
+                                        } else if (distanceMeters >= 0.0 && distanceMeters < 1000.0) {
+                                            val dM = distanceMeters.toInt()
+                                            if (distanceMeters <= (settings.allowedRadiusMeters + 50.0)) {
+                                                if (isHindi) "आश्रम परिसर ($dM मीटर)" else "Ashram Campus ($dM m)"
+                                            } else {
+                                                if (isHindi) "आश्रम से दूरी: $dM मीटर" else "Distance from Ashram: $dM m"
+                                            }
                                         } else if (estimatedDistanceKm >= 0f) {
-                                            if (isHindi) "अनुमानित सड़क दूरी: ${if (estimatedDistanceKm <= 0.2f) "आश्रम परिसर (<200m)" else "%.1f किमी (KM)".format(estimatedDistanceKm)}"
-                                            else "Estimated Road Distance: ${if (estimatedDistanceKm <= 0.2f) "Ashram Campus (<200m)" else "%.1f km".format(estimatedDistanceKm)}"
+                                            if (isHindi) "अनुमानित सड़क दूरी: %.1f किमी (KM)".format(estimatedDistanceKm)
+                                            else "Estimated Road Distance: %.1f km".format(estimatedDistanceKm)
                                         } else {
                                             if (isHindi) "पता दर्ज करें (दूरी स्वतः निर्धारित होगी)" else "Enter location to calculate distance"
                                         },
@@ -1312,12 +1320,13 @@ fun TokenRegistrationScreen(
                                             } else if (settings.isOutstationAdvanceAllowed && distanceMeters > (settings.outstationMinDistanceKm * 1000.0)) {
                                                 val kmStr = String.format(java.util.Locale.US, "%.1f km", distanceMeters/1000.0)
                                                 if (isHindi) "🟢 दूरस्थ भक्त ($kmStr): अग्रिम टोकन मान्य" else "🟢 Outstation ($kmStr): Advance Token Eligible"
-                                            } else if (distanceMeters <= settings.allowedRadiusMeters) {
-                                                val radText = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(java.util.Locale.US, "%.1f", settings.allowedRadiusMeters/1000.0)}km" else "${settings.allowedRadiusMeters.toInt()}m"
-                                                if (isHindi) "🟢 आश्रम परिसर में उपस्थित ($radText सत्यापित)" else "🟢 Inside Ashram Premises ($radText Verified)"
+                                            } else if (isDistanceEligible) {
+                                                val dM = distanceMeters.toInt()
+                                                if (isHindi) "🟢 आश्रम परिसर में उपस्थित (${dM}m सत्यापित)" else "🟢 Inside Ashram Premises (${dM}m Verified)"
                                             } else {
-                                                val kmStr = String.format(java.util.Locale.US, "%.1f km", distanceMeters/1000.0)
-                                                if (isHindi) "🔴 स्थानीय दायरा ($kmStr): आश्रम परिसर में आकर लें" else "🔴 Local ($kmStr): Collect at Ashram"
+                                                val distText = if (distanceMeters < 1000.0) "${distanceMeters.toInt()} मीटर" else String.format(java.util.Locale.US, "%.1f km", distanceMeters/1000.0)
+                                                val radText = "${settings.allowedRadiusMeters.toInt()} मीटर"
+                                                if (isHindi) "🔴 स्थानीय दायरा ($distText): आश्रम परिसर ($radText) में आकर लें" else "🔴 Local ($distText): Collect at Ashram ($radText)"
                                             },
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.SemiBold,
@@ -1328,10 +1337,12 @@ fun TokenRegistrationScreen(
                                     OutlinedButton(
                                         onClick = {
                                             isRefreshingLocation = true
-                                            GeofenceLocationManager.requestFreshLocation(context) { loc ->
+                                            GeofenceLocationManager.requestFreshLocation(context) {
+ loc ->
                                                 if (loc != null) {
                                                     userLatitude = loc.latitude
                                                     userLongitude = loc.longitude
+                                                    freshLocationAccuracy = if (loc.hasAccuracy()) loc.accuracy else 10.0f
                                                 }
                                                 isRefreshingLocation = false
                                             }
@@ -1341,6 +1352,8 @@ fun TokenRegistrationScreen(
                                     ) {
                                         if (isRefreshingLocation) {
                                             CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(if (isHindi) "खोज रहे हैं..." else "Searching...", fontSize = 10.sp)
                                         } else {
                                             Text(if (isHindi) "🔄 GPS रीफ्रेश" else "🔄 Refresh GPS", fontSize = 10.sp)
                                         }
@@ -1648,18 +1661,18 @@ fun TokenRegistrationScreen(
                                         return@Button
                                     }
                                     if (!isDistanceEligible) {
-                                        val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
+                                        val distText = if (distanceMeters < 1000.0) "${distanceMeters.toInt()} मीटर" else String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0)
                                         val outKm = settings.outstationMinDistanceKm.toInt()
-                                        val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
+                                        val radM = "${settings.allowedRadiusMeters.toInt()} मीटर"
                                         locationAlertTitle = if (isHindi) "📍 आश्रम दूरी नियम (स्थानीय भक्त)" else "📍 Ashram Distance Policy"
                                         locationAlertMessage = if (isHindi) {
                                             if (settings.isOutstationAdvanceAllowed) {
-                                                "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: जो भक्त $outKm किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु $outKm किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल आश्रम परिसर ($radM के भीतर) में आकर ही मिलेगा।\n\nकृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि व्यवस्था सुचारू रहे।"
+                                                "⚠️ आप अभी आश्रम से $distText दूर हैं!\n\nनियम: जो भक्त $outKm किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु $outKm किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल आश्रम परिसर ($radM के भीतर) में आकर ही मिलेगा।\n\nकृपया आश्रम पहुँचकर ही टोकन जनरेट करें ताकि व्यवस्था सुचारू रहे।"
                                             } else {
-                                                "⚠️ आप अभी आश्रम से $distKm दूर हैं!\n\nनियम: टोकन केवल आश्रम परिसर ($radM के भीतर) में उपस्थित होने पर ही मिलेगा।"
+                                                "⚠️ आप अभी आश्रम से $distText दूर हैं!\n\nनियम: टोकन केवल आश्रम परिसर ($radM के भीतर) में उपस्थित होने पर ही मिलेगा।"
                                             }
                                         } else {
-                                            "⚠️ You are $distKm away from Ashram! Must be within $radM of Ashram premises to register."
+                                            "⚠️ You are $distText away from Ashram! Must be within $radM of Ashram premises to register."
                                         }
                                         showLocationAlertDialog = true
                                         errorMessage = if (isHindi) "⚠️ $outKm किमी दायरे वाले स्थानीय भक्त आश्रम परिसर ($radM) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Must be at Ashram (within $radM)."
@@ -1699,8 +1712,8 @@ fun TokenRegistrationScreen(
                                     try {
                                         // 1. Actively acquire fresh GPS satellite location to eliminate Cold-Start 0.0 or Stale Cache
                                         var loc = GeofenceLocationManager.getLastKnownLocation(context)
-                                        if (userLatitude == 0.0 || userLongitude == 0.0 || loc == null || (System.currentTimeMillis() - loc.time) > 20_000L || (loc.hasAccuracy() && loc.accuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS)) {
-                                            val fresh = GeofenceLocationManager.awaitFreshLocation(context, timeoutMs = 3500L)
+                                        if (userLatitude == 0.0 || userLongitude == 0.0 || loc == null || loc.provider != android.location.LocationManager.GPS_PROVIDER || (System.currentTimeMillis() - loc.time) > 30_000L || freshLocationAccuracy > 100.0f) {
+                                            val fresh = GeofenceLocationManager.awaitFreshLocation(context, timeoutMs = 6000L)
                                             if (fresh != null) {
                                                 loc = fresh
                                                 userLatitude = fresh.latitude
@@ -1805,20 +1818,20 @@ fun TokenRegistrationScreen(
                                                 outstationMinDistanceKm = settings.outstationMinDistanceKm
                                             )
                                             if (!isPermitted) {
-                                                val distKm = String.format(Locale.US, "%.1f", currentGpsMeters / 1000.0)
+                                                val distText = if (currentGpsMeters < 1000.0) "${currentGpsMeters.toInt()} मीटर" else "${String.format(Locale.US, "%.1f", currentGpsMeters / 1000.0)} किमी"
                                                 val outKm = settings.outstationMinDistanceKm.toInt()
-                                                val radM = if (settings.allowedRadiusMeters >= 1000.0) "${String.format(Locale.US, "%.1f", settings.allowedRadiusMeters / 1000.0)} किमी" else "${settings.allowedRadiusMeters.toInt()} मीटर"
+                                                val radM = "${settings.allowedRadiusMeters.toInt()} मीटर"
                                                 errorMessage = if (isHindi)
-                                                    "⚠️ आश्रम दूरी नियम: ${outKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radM के भीतर) में ही मान्य है। आपकी वास्तविक दूरी $distKm किमी है। कृपया परिसर में पहुँचकर ही टोकन जनरेट करें।"
+                                                    "⚠️ आश्रम दूरी नियम: ${outKm} किमी के दायरे में रहने वाले स्थानीय भक्तों हेतु टोकन पंजीकरण केवल आश्रम परिसर ($radM के भीतर) में ही मान्य है। आपकी वास्तविक दूरी $distText किमी है। कृपया परिसर में पहुँचकर ही टोकन जनरेट करें।"
                                                 else
-                                                    "Local devotees within $outKm km can only register inside Ashram premises ($radM). Your distance is $distKm km."
+                                                    "Local devotees within $outKm km can only register inside Ashram premises ($radM). Your distance is $distText km."
                                                 try {
                                                     repository.logAuditEvent(
                                                         action = "SECURITY_BLOCKED_GEOFENCE",
                                                         performedBy = patientName.trim().ifBlank { "अज्ञात भक्त" },
                                                         role = "BLOCKED_DEVICE",
                                                         reason = "लोकल दायरे ($outKm KM) में बिना आश्रम ($radM) आए टोकन प्रयास",
-                                                        details = "Phone: ${phoneNumber.trim()}, Distance: $distKm km"
+                                                        details = "Phone: ${phoneNumber.trim()}, Distance: $distText km"
                                                     )
                                                 } catch (ignored: Exception) {}
                                                 isSubmitting = false

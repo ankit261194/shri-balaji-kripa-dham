@@ -968,19 +968,19 @@ fun FaceTokenRegistrationScreen(
                                     }
 
                                     if (settings.isGeofenceEnforced && !isDistanceEligible) {
-                                        val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
+                                        val distText = if (distanceMeters < 1000.0) "${distanceMeters.toInt()} मीटर" else if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
                                         val outKm = targetOutstationKm.toInt()
-                                        val radM = if (targetRadius >= 1000.0) "${String.format(Locale.US, "%.1f", targetRadius / 1000.0)} किमी" else "${targetRadius.toInt()} मीटर"
+                                        val radM = "${targetRadius.toInt()} मीटर"
                                         val venueTitle = if (isTuesdayVenue) "बुलन्दशहर दरबार" else "आश्रम"
                                         locationAlertTitle = if (isHindi) "📍 $venueTitle दूरी नियम (स्थानीय भक्त)" else "📍 Darbar Distance Policy"
                                         locationAlertMessage = if (isHindi) {
                                             if (settings.isOutstationAdvanceAllowed) {
-                                                "⚠️ आप अभी $venueTitle से $distKm दूर हैं!\n\nनियम: जो भक्त $outKm किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु $outKm किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल $venueTitle परिसर ($radM के भीतर) में आकर ही मिलेगा।\n\nकृपया $venueTitle पहुँचकर ही सेल्फी व टोकन प्रक्रिया करें।"
+                                                "⚠️ आप अभी $venueTitle से $distText दूर हैं!\n\nनियम: जो भक्त $outKm किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु $outKm किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल $venueTitle परिसर ($radM के भीतर) में आकर ही मिलेगा।\n\nकृपया $venueTitle पहुँचकर ही सेल्फी व टोकन प्रक्रिया करें।"
                                             } else {
-                                                "⚠️ आप अभी $venueTitle से $distKm दूर हैं!\n\nनियम: टोकन केवल $venueTitle परिसर ($radM के भीतर) में उपस्थित होने पर ही मिलेगा।"
+                                                "⚠️ आप अभी $venueTitle से $distText दूर हैं!\n\nनियम: टोकन केवल $venueTitle परिसर ($radM के भीतर) में उपस्थित होने पर ही मिलेगा।"
                                             }
                                         } else {
-                                            "⚠️ You are $distKm away from $venueTitle! Must be within $radM of premises."
+                                            "⚠️ You are $distText away from $venueTitle! Must be within $radM of premises."
                                         }
                                         showLocationAlertDialog = true
                                         errorMessage = if (isHindi) "⚠️ $outKm किमी दायरे वाले स्थानीय भक्त $venueTitle परिसर ($radM) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Must be at $venueTitle (within $radM)."
@@ -1018,19 +1018,19 @@ fun FaceTokenRegistrationScreen(
                                     }
 
                                     if (settings.isGeofenceEnforced && !isDistanceEligible) {
-                                        val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
+                                        val distText = if (distanceMeters < 1000.0) "${distanceMeters.toInt()} मीटर" else if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
                                         val outKm = targetOutstationKm.toInt()
-                                        val radM = if (targetRadius >= 1000.0) "${String.format(Locale.US, "%.1f", targetRadius / 1000.0)} किमी" else "${targetRadius.toInt()} मीटर"
+                                        val radM = "${targetRadius.toInt()} मीटर"
                                         val venueTitle = if (isTuesdayVenue) "बुलन्दशहर दरबार" else "आश्रम"
                                         locationAlertTitle = if (isHindi) "📍 $venueTitle दूरी नियम (स्थानीय भक्त)" else "📍 Darbar Distance Policy"
                                         locationAlertMessage = if (isHindi) {
                                             if (settings.isOutstationAdvanceAllowed) {
-                                                "⚠️ आप अभी $venueTitle से $distKm दूर हैं!\n\nनियम: जो भक्त $outKm किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु $outKm किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल $venueTitle परिसर ($radM के भीतर) में आकर ही मिलेगा।\n\nकृपया $venueTitle पहुँचकर ही फोटो व टोकन प्रक्रिया करें।"
+                                                "⚠️ आप अभी $venueTitle से $distText दूर हैं!\n\nनियम: जो भक्त $outKm किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु $outKm किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल $venueTitle परिसर ($radM के भीतर) में आकर ही मिलेगा।\n\nकृपया $venueTitle पहुँचकर ही फोटो व टोकन प्रक्रिया करें।"
                                             } else {
-                                                "⚠️ आप अभी $venueTitle से $distKm दूर हैं!\n\nनियम: टोकन केवल $venueTitle परिसर ($radM के भीतर) में उपस्थित होने पर ही मिलेगा।"
+                                                "⚠️ आप अभी $venueTitle से $distText दूर हैं!\n\nनियम: टोकन केवल $venueTitle परिसर ($radM के भीतर) में उपस्थित होने पर ही मिलेगा।"
                                             }
                                         } else {
-                                            "⚠️ You are $distKm away from $venueTitle! Must be within $radM of premises."
+                                            "⚠️ You are $distText away from $venueTitle! Must be within $radM of premises."
                                         }
                                         showLocationAlertDialog = true
                                         errorMessage = if (isHindi) "⚠️ $outKm किमी दायरे वाले स्थानीय भक्त $venueTitle परिसर ($radM) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Must be at $venueTitle (within $radM)."
@@ -1493,7 +1493,7 @@ fun FaceTokenRegistrationScreen(
                                                     }
                                                     val currentGpsMeters = GeofenceLocationManager.calculateDistanceMeters(finalLat, finalLon, ashLat, ashLon)
                                                     val outstationM = targetOutstationKm * 1000.0
-                                                    val isAtAshram = currentGpsMeters <= targetRadius
+                                                    val isAtAshram = currentGpsMeters <= (targetRadius + 50.0)
                                                     val isOutstationAdvance = currentGpsMeters > outstationM && settings.isOutstationAdvanceAllowed
                                                     if (!isAtAshram && !isOutstationAdvance) {
                                                         val distKm = String.format(Locale.US, "%.1f", currentGpsMeters / 1000.0)
@@ -1942,19 +1942,19 @@ fun FaceTokenRegistrationScreen(
                                     }
 
                                     if (settings.isGeofenceEnforced && !isDistanceEligible) {
-                                        val distKm = if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
+                                        val distText = if (distanceMeters < 1000.0) "${distanceMeters.toInt()} मीटर" else if (distanceMeters < 999990.0) String.format(Locale.US, "%.1f किमी", distanceMeters / 1000.0) else "अज्ञात"
                                         val outKm = targetOutstationKm.toInt()
-                                        val radM = if (targetRadius >= 1000.0) "${String.format(Locale.US, "%.1f", targetRadius / 1000.0)} किमी" else "${targetRadius.toInt()} मीटर"
+                                        val radM = "${targetRadius.toInt()} मीटर"
                                         val venueTitle = if (isTuesdayVenue) "बुलन्दशहर दरबार" else "आश्रम"
                                         locationAlertTitle = if (isHindi) "📍 $venueTitle दूरी नियम (स्थानीय भक्त)" else "📍 Darbar Distance Policy"
                                         locationAlertMessage = if (isHindi) {
                                             if (settings.isOutstationAdvanceAllowed) {
-                                                "⚠️ आप अभी $venueTitle से $distKm दूर हैं!\n\nनियम: जो भक्त $outKm किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु $outKm किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल $venueTitle परिसर ($radM के भीतर) में आकर ही मिलेगा।"
+                                                "⚠️ आप अभी $venueTitle से $distText दूर हैं!\n\nनियम: जो भक्त $outKm किमी से अधिक दूरी पर हैं, वे घर से अग्रिम टोकन ले सकते हैं। परंतु $outKm किमी के दायरे वाले स्थानीय भक्तों को टोकन केवल $venueTitle परिसर ($radM के भीतर) में आकर ही मिलेगा।"
                                             } else {
-                                                "⚠️ आप अभी $venueTitle से $distKm दूर हैं!\n\nनियम: टोकन केवल $venueTitle परिसर ($radM के भीतर) में उपस्थित होने पर ही मिलेगा।"
+                                                "⚠️ आप अभी $venueTitle से $distText दूर हैं!\n\nनियम: टोकन केवल $venueTitle परिसर ($radM के भीतर) में उपस्थित होने पर ही मिलेगा।"
                                             }
                                         } else {
-                                            "⚠️ You are $distKm away from $venueTitle! Must be within $radM of premises."
+                                            "⚠️ You are $distText away from $venueTitle! Must be within $radM of premises."
                                         }
                                         showLocationAlertDialog = true
                                         errorMessage = if (isHindi) "⚠️ $outKm किमी दायरे वाले स्थानीय भक्त $venueTitle परिसर ($radM) में आकर ही टोकन प्राप्त कर सकते हैं।" else "Must be at $venueTitle (within $radM)."
@@ -1980,7 +1980,7 @@ fun FaceTokenRegistrationScreen(
                                                 }
                                                 val currentGpsM = GeofenceLocationManager.calculateDistanceMeters(userLatitude, userLongitude, targetLat, targetLng)
                                                 val currentGpsKm = (currentGpsM / 1000.0).toFloat()
-                                                val isAtVenue = currentGpsM <= targetRadius
+                                                val isAtVenue = currentGpsM <= (targetRadius + 50.0)
                                                 val isOutstation = currentGpsKm >= targetOutstationKm && settings.isOutstationAdvanceAllowed
                                                 if (!isAtVenue && !isOutstation) {
                                                     val venueTitle = if (isTuesdayVenue) "बुलन्दशहर दरबार" else "आश्रम"
@@ -2150,8 +2150,8 @@ fun FaceTokenRegistrationScreen(
                                             }
 
                                             val straightKm = (gpsDistanceM / 1000.0).toFloat()
-                                            val calculatedRoadKm = if (gpsDistanceM <= targetRadius) {
-                                                (kotlin.math.round(straightKm * 10) / 10)
+                                            val calculatedRoadKm = if (gpsDistanceM <= 1000.0) {
+                                                (gpsDistanceM / 1000.0).toFloat()
                                             } else {
                                                 (kotlin.math.round(straightKm * 1.28f * 10) / 10)
                                             }
