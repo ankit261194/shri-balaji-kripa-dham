@@ -68,6 +68,17 @@ fun DailyDarshanHeroCard(
         SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH).format(Date())
     }
 
+    var guruVicharText by remember {
+        val initialPrefs = context.getSharedPreferences("sbkd_daily_darshan_prefs", Context.MODE_PRIVATE)
+        val savedQuote = initialPrefs.getString("last_darshan_quote", "")
+        mutableStateOf(if (!savedQuote.isNullOrBlank()) savedQuote else com.example.shribalajikripadham.ui.home.DailyDarshanHelper.getTodayGuruVichar())
+    }
+    var darshanTitle by remember {
+        val initialPrefs = context.getSharedPreferences("sbkd_daily_darshan_prefs", Context.MODE_PRIVATE)
+        val savedTitle = initialPrefs.getString("last_darshan_title", "")
+        mutableStateOf(if (!savedTitle.isNullOrBlank()) savedTitle else com.example.shribalajikripadham.ui.home.DailyDarshanHelper.getTodayDefaultDarshanTitle())
+    }
+
     fun loadDarshan(forceRefresh: Boolean = false) {
         scope.launch {
             if (forceRefresh) isRefreshing = true
@@ -78,8 +89,12 @@ fun DailyDarshanHeroCard(
                         cacheFile.delete()
                     }
 
-                    // 1. If cached bitmap exists and not force refresh, use it immediately
-                    if (!forceRefresh && cacheFile.exists() && cacheFile.length() > 0) {
+                    val prefs = context.getSharedPreferences("sbkd_daily_darshan_prefs", Context.MODE_PRIVATE)
+                    val lastCachedDate = prefs.getString("last_darshan_date", "") ?: ""
+                    val lastCachedUrl = prefs.getString("last_darshan_photo_url", "") ?: ""
+
+                    // 1. Instant local display (Zero UI flicker)
+                    if (cacheFile.exists() && cacheFile.length() > 0) {
                         val cachedBmp = BitmapFactory.decodeFile(cacheFile.absolutePath)
                         if (cachedBmp != null) {
                             withContext(Dispatchers.Main) {
@@ -88,13 +103,14 @@ fun DailyDarshanHeroCard(
                         }
                     }
 
-                    // 2. Fetch fresh API info
+                    // 2. Fetch fresh API info (check if today's darshan or Guru Vachan has been updated)
                     val apiUrl = "https://shribalajikripadham.online/api/daily_darshan.php?action=get_latest" +
                             if (forceRefresh) "&cb=${System.currentTimeMillis()}" else ""
                     val conn = (URL(apiUrl).openConnection() as HttpURLConnection).apply {
                         connectTimeout = 6000
                         readTimeout = 6000
                         requestMethod = "GET"
+                        setRequestProperty("User-Agent", "ShriBalajiApp-DailyDarshan")
                     }
                     if (conn.responseCode in 200..299) {
                         val body = conn.inputStream.bufferedReader().use { it.readText() }
@@ -107,15 +123,36 @@ fun DailyDarshanHeroCard(
                                 rawUrl.isNotBlank() -> "https://shribalajikripadham.online/$rawUrl"
                                 else -> "https://shribalajikripadham.online/uploads/darshan_latest.jpg"
                             }
-                            photoUrl = finalUrl
-                            darshanDateStr = data.optString("darshan_date", todayStr)
-                            viewsCount = data.optInt("views_count", 0)
+                            val serverDate = data.optString("darshan_date", todayStr)
+                            val serverQuote = data.optString("blessings_quote", "").ifBlank {
+                                data.optString("quote", "").ifBlank {
+                                    com.example.shribalajikripadham.ui.home.DailyDarshanHelper.getTodayGuruVichar()
+                                }
+                            }
+                            val serverTitle = data.optString("title", "").ifBlank {
+                                com.example.shribalajikripadham.ui.home.DailyDarshanHelper.getTodayDefaultDarshanTitle()
+                            }
+                            val serverViews = data.optInt("views_count", viewsCount)
 
-                            // 3. Download fresh image if forceRefresh or bitmap is null
-                            if (forceRefresh || darshanBitmap == null) {
+                            withContext(Dispatchers.Main) {
+                                photoUrl = finalUrl
+                                darshanDateStr = serverDate
+                                viewsCount = serverViews
+                                guruVicharText = serverQuote
+                                darshanTitle = serverTitle
+                            }
+
+                            // 3. Intelligent Date-Aware & URL-Aware Auto-Refresh
+                            // Downloads new photo automatically if it is a new day or URL changed, without requiring manual refresh!
+                            val isDateDifferent = (serverDate != lastCachedDate) || (todayStr != lastCachedDate)
+                            val isUrlDifferent = (finalUrl != lastCachedUrl)
+                            val needsFreshDownload = forceRefresh || !cacheFile.exists() || (darshanBitmap == null) || isDateDifferent || isUrlDifferent
+
+                            if (needsFreshDownload) {
                                 val imgConn = (URL("$finalUrl?cb=${System.currentTimeMillis()}").openConnection() as HttpURLConnection).apply {
                                     connectTimeout = 8000
                                     readTimeout = 8000
+                                    setRequestProperty("User-Agent", "ShriBalajiApp-DailyDarshan")
                                 }
                                 if (imgConn.responseCode in 200..299) {
                                     val bmp = BitmapFactory.decodeStream(imgConn.inputStream)
@@ -124,6 +161,12 @@ fun DailyDarshanHeroCard(
                                             FileOutputStream(cacheFile).use { fos ->
                                                 bmp.compress(Bitmap.CompressFormat.JPEG, 92, fos)
                                             }
+                                            prefs.edit()
+                                                .putString("last_darshan_date", serverDate)
+                                                .putString("last_darshan_photo_url", finalUrl)
+                                                .putString("last_darshan_quote", serverQuote)
+                                                .putString("last_darshan_title", serverTitle)
+                                                .apply()
                                         } catch (ignored: Exception) {}
                                         withContext(Dispatchers.Main) {
                                             darshanBitmap = bmp
@@ -378,6 +421,132 @@ fun DailyDarshanHeroCard(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 🚩 Sacred Guru Vachan Card (आज का पावन अमृत गुरु वचन)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFFFF9E6),
+                border = BorderStroke(1.dp, Color(0xFFE2B452).copy(alpha = 0.7f))
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    // Header Row: Lotus/Diya Icon + Title + Guruji subtitle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text("🌅", fontSize = 16.sp)
+                            Text(
+                                text = if (isHindi) "आज का पावन अमृत गुरु वचन" else "Today's Sacred Guru Vachan",
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF8B2500)
+                            )
+                        }
+                        Surface(
+                            color = Color(0xFFE2B452).copy(alpha = 0.25f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = if (isHindi) "पूज्य गुरुदेव" else "Gurudev",
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF8B2500),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Quote Content
+                    Text(
+                        text = "“ $guruVicharText ”",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF2E1A05),
+                        lineHeight = 19.sp,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Actions Row: Copy Quote & Share on WhatsApp
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+
+                        TextButton(
+                            onClick = {
+                                clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(guruVicharText))
+                                Toast.makeText(context, if (isHindi) "गुरु वचन कॉपी किया गया" else "Guru Vachan copied", Toast.LENGTH_SHORT).show()
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (isHindi) "📋 कॉपी करें" else "📋 Copy",
+                                fontSize = 11.5.sp,
+                                color = Color(0xFF8B2500),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(4.dp))
+
+                        Button(
+                            onClick = {
+                                val shareText = if (isHindi) {
+                                    "🌅 *आज का पावन अमृत गुरु विचार* 🌅\n" +
+                                    "🚩 *श्री बालाजी कृपा धाम, डूँगरा जाट* 🚩\n" +
+                                    "══════════════════════════\n" +
+                                    "“$guruVicharText”\n\n" +
+                                    "— *परम पूज्य गुरुजी तेजवीर सिंह जी*\n" +
+                                    "══════════════════════════\n" +
+                                    "📲 *आधिकारिक धाम ऐप डाउनलोड करें:* https://shribalajikripadham.online/app"
+                                } else {
+                                    "🌅 *Today's Sacred Guru Vachan* 🌅\n" +
+                                    "🚩 *Shri Balaji Kripa Dham, Dungra Jaat* 🚩\n" +
+                                    "══════════════════════════\n" +
+                                    "“$guruVicharText”\n\n" +
+                                    "— *Param Poojya Guruji Tejveer Singh Ji*\n" +
+                                    "══════════════════════════\n" +
+                                    "📲 *Download Ashram App:* https://shribalajikripadham.online/app"
+                                }
+                                val waIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, shareText)
+                                }
+                                try {
+                                    context.startActivity(Intent.createChooser(waIntent, if (isHindi) "गुरु विचार शेयर करें" else "Share Guru Vachan"))
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, if (isHindi) "शेयर करने में असमर्थ" else "Unable to share", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
+                            modifier = Modifier.height(30.dp)
+                        ) {
+                            Text(
+                                text = "💬 WhatsApp",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }

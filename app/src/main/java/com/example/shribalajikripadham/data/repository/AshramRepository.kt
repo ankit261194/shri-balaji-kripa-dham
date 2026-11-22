@@ -1162,24 +1162,12 @@ class AshramRepository(context: Context) {
             }
             tokCursor.close()
 
-            // Anti-Clear-Data check: Query Central Server to ensure this device hasn't already registered
-            try {
-                var serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, targetDarbarDate, cleanPhone10)
-                if (serverTok == null && targetDarbarDate != today) {
-                    serverTok = com.example.shribalajikripadham.data.network.HostingerCentralSyncManager.checkDeviceRegisteredOnServer(deviceId, today, cleanPhone10)
-                }
-                if (serverTok != null) {
-                    throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
-                }
-            } catch (se: SecurityException) {
-                throw se
-            } catch (e: Exception) {
-                // If offline, check persistent hardware receipt in external storage
-                val persistent = com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(deviceId, targetDarbarDate)
-                    ?: com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(deviceId, today)
-                if (persistent != null) {
-                    throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
-                }
+            // Fast Atomic Anti-Clear-Data check: Persistent hardware receipt in external storage
+            // (Central Server duplicate verification is atomic inside issueCentralToken in 1 single fast round-trip)
+            val persistent = com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(deviceId, targetDarbarDate)
+                ?: com.example.shribalajikripadham.hardware.PersistentTokenReceiptHelper.readPersistentReceipt(deviceId, today)
+            if (persistent != null) {
+                throw SecurityException("Security Exception: Spoofed Location or Duplicate Device Request Denied.")
             }
         }
 
@@ -1222,14 +1210,16 @@ class AshramRepository(context: Context) {
         }
 
         if (settings.isGeofenceEnforced && !shouldBypassGeofence) {
-            val isPhysicallyAtVenue = distFromDarbar in 0.0..targetRadius
+            val isPhysicallyAtVenue = distFromDarbar in 0.0..(targetRadius + 50.0)
             val isOutstationAdvance = distFromDarbar > (targetOutstationKm * 1000.0) && settings.isOutstationAdvanceAllowed
             if (!isPhysicallyAtVenue && !isOutstationAdvance) {
                 val outstationKm = targetOutstationKm.toInt()
                 val allowedM = targetRadius.toInt()
                 val radiusDesc = if (allowedM >= 1000) "${String.format(java.util.Locale.US, "%.1f", allowedM / 1000.0)} किमी" else "$allowedM मीटर"
-                val realKm = if (distFromDarbar >= 0.0) String.format(java.util.Locale.US, "%.1f", distFromDarbar / 1000.0) else String.format(java.util.Locale.US, "%.1f", calculatedDistance)
-                throw SecurityException("⚠️ $targetVenueLabel दूरी नियम: आपकी वास्तविक दूरी ($realKm किमी) ${outstationKm} किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल $targetVenueLabel परिसर ($radiusDesc के भीतर) में उपस्थित होकर ही मान्य है। कृपया परिसर में आकर टोकन प्राप्त करें।")
+                val realDistStr = if (distFromDarbar >= 0.0) {
+                    if (distFromDarbar < 1000.0) "${distFromDarbar.toInt()} मीटर" else "${String.format(java.util.Locale.US, "%.1f", distFromDarbar / 1000.0)} किमी"
+                } else "${String.format(java.util.Locale.US, "%.1f", calculatedDistance)} किमी"
+                throw SecurityException("⚠️ $targetVenueLabel दूरी नियम: आपकी वास्तविक दूरी ($realDistStr) ${outstationKm} किमी के दायरे में है।\n\nस्थानीय भक्तों के लिए टोकन पंजीकरण केवल $targetVenueLabel परिसर ($radiusDesc के भीतर) में उपस्थित होकर ही मान्य है। कृपया परिसर में आकर टोकन प्राप्त करें।")
             }
         }
 

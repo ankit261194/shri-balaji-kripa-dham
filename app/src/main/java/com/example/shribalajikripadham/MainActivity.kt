@@ -109,6 +109,10 @@ class MainActivity : ComponentActivity() {
                         try {
                             com.example.shribalajikripadham.notification.AshramBackgroundPushJobService.executeBackgroundCheck(context)
                             com.example.shribalajikripadham.util.DevotionalAudioCacheManager.startSilentBackgroundSync(context)
+                            // Proactive Sunday / Darbar GPS Pre-Warming: silent satellite location lock
+                            if (androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                com.example.shribalajikripadham.hardware.GeofenceLocationManager.requestFreshLocation(context) { _ -> }
+                            }
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }

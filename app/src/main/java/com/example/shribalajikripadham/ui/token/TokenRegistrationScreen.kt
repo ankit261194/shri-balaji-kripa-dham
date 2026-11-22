@@ -1710,10 +1710,10 @@ fun TokenRegistrationScreen(
                                 errorMessage = null
                                 scope.launch {
                                     try {
-                                        // 1. Actively acquire fresh GPS satellite location to eliminate Cold-Start 0.0 or Stale Cache
+                                        // 1. Instant 0-second token generation: If location is already pre-warmed, proceed immediately!
                                         var loc = GeofenceLocationManager.getLastKnownLocation(context)
-                                        if (userLatitude == 0.0 || userLongitude == 0.0 || loc == null || loc.provider != android.location.LocationManager.GPS_PROVIDER || (System.currentTimeMillis() - loc.time) > 30_000L || freshLocationAccuracy > 100.0f) {
-                                            val fresh = GeofenceLocationManager.awaitFreshLocation(context, timeoutMs = 6000L)
+                                        if (userLatitude == 0.0 || userLongitude == 0.0) {
+                                            val fresh = GeofenceLocationManager.awaitFreshLocation(context, timeoutMs = 2500L)
                                             if (fresh != null) {
                                                 loc = fresh
                                                 userLatitude = fresh.latitude

@@ -1403,8 +1403,8 @@ fun FaceTokenRegistrationScreen(
                                                     return@launch
                                                 }
                                                 var loc = GeofenceLocationManager.getLastKnownLocation(context)
-                                                if (userLatitude == 0.0 || userLongitude == 0.0 || loc == null || (System.currentTimeMillis() - loc.time) > 20_000L || (loc.hasAccuracy() && loc.accuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS)) {
-                                                    val fresh = GeofenceLocationManager.awaitFreshLocation(context, timeoutMs = 3500L)
+                                                if (userLatitude == 0.0 || userLongitude == 0.0) {
+                                                    val fresh = GeofenceLocationManager.awaitFreshLocation(context, timeoutMs = 2500L)
                                                     if (fresh != null) {
                                                         loc = fresh
                                                         userLatitude = fresh.latitude
@@ -2030,8 +2030,8 @@ fun FaceTokenRegistrationScreen(
                                             }
 
                                             var loc = GeofenceLocationManager.getLastKnownLocation(context)
-                                            if (userLatitude == 0.0 || userLongitude == 0.0 || loc == null || (System.currentTimeMillis() - loc.time) > 20_000L || (loc.hasAccuracy() && loc.accuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS)) {
-                                                val fresh = GeofenceLocationManager.awaitFreshLocation(context, timeoutMs = 3500L)
+                                            if (userLatitude == 0.0 || userLongitude == 0.0) {
+                                                val fresh = GeofenceLocationManager.awaitFreshLocation(context, timeoutMs = 2500L)
                                                 if (fresh != null) {
                                                     loc = fresh
                                                     userLatitude = fresh.latitude
