@@ -43,7 +43,7 @@ class SecurityAndAntiFraudTest {
     @Test
     fun testLocationAccuracyThreshold() {
         val acceptableAccuracy = 25.0f
-        val unacceptableAccuracy = 125.0f // greater than MAX_ALLOWED_ACCURACY_METERS (100m)
+        val unacceptableAccuracy = 300.0f // greater than MAX_ALLOWED_ACCURACY_METERS (250m)
 
         assertTrue(acceptableAccuracy <= GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS)
         assertTrue(unacceptableAccuracy > GeofenceLocationManager.MAX_ALLOWED_ACCURACY_METERS)
